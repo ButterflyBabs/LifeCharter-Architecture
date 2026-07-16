@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       response,
       suggestions: generateSuggestions(brainScore, soulScore, profitScore)
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('AI Guide error:', error);
     
     // Handle specific OpenAI errors
