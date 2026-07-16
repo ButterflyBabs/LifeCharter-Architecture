@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Brain, Heart, TrendingUp, ArrowRight, Sparkles } from "lucide-react";
+import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Assessments | LifeCharter Architecture",
@@ -18,8 +18,9 @@ const assessments = [
     icon: Brain,
     color: "#2E7C83",
     bgColor: "bg-[#2E7C83]/10",
-    questions: 12,
+    questions: 10,
     timeEstimate: "8-10 min",
+    sections: ["Business Clarity", "Strategic Thinking"],
     benefits: [
       "Identify system gaps",
       "Reduce owner dependency",
@@ -34,8 +35,9 @@ const assessments = [
     icon: Heart,
     color: "#5E3B6C",
     bgColor: "bg-[#5E3B6C]/10",
-    questions: 12,
+    questions: 10,
     timeEstimate: "8-10 min",
+    sections: ["Founder Alignment", "Values & Vision"],
     benefits: [
       "Reconnect with mission",
       "Align offers with values",
@@ -46,12 +48,13 @@ const assessments = [
     id: "profit",
     title: "Profit Assessment",
     subtitle: "Financial Health",
-    description: "Analyze your financial sustainability. Review cash flow, pricing, revenue streams, and profitability patterns.",
+    description: "Analyze your financial sustainability. Review cash flow, pricing, revenue streams, and profitability across 12 business domains.",
     icon: TrendingUp,
     color: "#D4AF63",
     bgColor: "bg-[#D4AF63]/10",
-    questions: 12,
-    timeEstimate: "8-10 min",
+    questions: 60,
+    timeEstimate: "25-30 min",
+    sections: ["12 Business Domains"],
     benefits: [
       "Improve cash flow",
       "Optimize pricing",
@@ -86,7 +89,7 @@ export default function AssessmentsPage() {
           {assessments.map((assessment) => (
             <Card
               key={assessment.id}
-              className="border-[#D4AF63]/20 hover:border-[#D4AF63]/50 transition-all duration-300 hover:shadow-lg"
+              className="border-[#D4AF63]/20 hover:border-[#D4AF63]/50 transition-all duration-300 hover:shadow-lg flex flex-col"
             >
               <CardHeader>
                 <div
@@ -102,20 +105,38 @@ export default function AssessmentsPage() {
                   {assessment.subtitle}
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 flex-1 flex flex-col">
                 <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 text-sm">
                   {assessment.description}
                 </p>
 
+                {/* Sections */}
+                <div className="flex flex-wrap gap-2">
+                  {assessment.sections.map((section) => (
+                    <span
+                      key={section}
+                      className="text-xs px-2 py-1 rounded-full bg-[#1F315B]/10 text-[#1F315B] dark:text-[#CDBED6]"
+                    >
+                      {section}
+                    </span>
+                  ))}
+                </div>
+
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-xs text-[#B9A9A9]">
-                  <span>{assessment.questions} questions</span>
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {assessment.questions} questions
+                  </span>
                   <span>•</span>
-                  <span>{assessment.timeEstimate}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {assessment.timeEstimate}
+                  </span>
                 </div>
 
                 {/* Benefits */}
-                <ul className="space-y-2">
+                <ul className="space-y-2 flex-1">
                   {assessment.benefits.map((benefit, idx) => (
                     <li
                       key={idx}
@@ -130,8 +151,8 @@ export default function AssessmentsPage() {
                   ))}
                 </ul>
 
-                <Link href={`/assessments/${assessment.id}`}>
-                  <Button variant="primary" className="w-full mt-4">
+                <Link href={`/assessments/${assessment.id}`} className="mt-auto pt-4">
+                  <Button variant="primary" className="w-full">
                     Start Assessment
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -141,29 +162,79 @@ export default function AssessmentsPage() {
           ))}
         </div>
 
-        {/* Complete Assessment CTA */}
-        <div className="mt-12 text-center">
+        {/* Quick Start Pulse Option */}
+        <div className="mt-12">
           <Card className="border-[#D4AF63]/30 bg-gradient-to-br from-[#D4AF63]/5 to-transparent">
             <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-4">
-                Complete the Full Assessment
-              </h2>
-              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6 max-w-xl mx-auto">
-                Take all three assessments to get your complete Business Health Score 
-                and receive a personalized growth roadmap.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/assessments/brain">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="w-16 h-16 rounded-full bg-[#D4AF63]/20 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-8 h-8 text-[#D4AF63]" />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                    Quick Start Pulse
+                  </h2>
+                  <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-4">
+                    Short on time? Take our condensed 15-20 question assessment that
+                    samples key areas from all three dimensions. Get a snapshot of your
+                    business health in just 5 minutes.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-[#B9A9A9]">
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4" />
+                      15-20 questions
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      ~5 minutes
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-4 h-4" />
+                      Instant insights
+                    </span>
+                  </div>
+                </div>
+                <Link href="/assessments/pulse">
                   <Button variant="primary" size="lg">
-                    Start with Brain
+                    Start Quick Pulse
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link href="/dashboard">
-                  <Button variant="secondary" size="lg">
-                    Back to Dashboard
-                  </Button>
-                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Complete Assessment CTA */}
+        <div className="mt-8">
+          <Card className="border-[#2E7C83]/30">
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="w-16 h-16 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
+                  <Brain className="w-8 h-8 text-[#2E7C83]" />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                    Complete the Full Assessment
+                  </h2>
+                  <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70">
+                    Take all three assessments to get your complete Business Health Score 
+                    and receive a personalized growth roadmap with detailed recommendations.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Link href="/assessments/brain">
+                    <Button variant="primary" size="lg">
+                      Start with Brain
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard">
+                    <Button variant="secondary" size="lg">
+                      Back to Dashboard
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>
