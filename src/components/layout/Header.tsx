@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
 import {
   Search,
   Plus,
@@ -23,6 +24,25 @@ export function Header({
   notificationCount = 3,
 }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
+  const { mounted } = useTheme();
+
+  // SSR fallback - simplified version
+  if (!mounted) {
+    return (
+      <header className="h-16 bg-card border-b border-[#D4AF63]/20 flex items-center justify-between px-6 sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <h1 className="font-serif text-xl font-bold text-[#1F315B]">
+            {title}
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#1F315B]/5" />
+          <div className="w-9 h-9 rounded-full bg-[#1F315B]/5" />
+          <div className="w-9 h-9 rounded-full bg-[#1F315B]/5" />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="h-16 bg-card border-b border-[#D4AF63]/20 flex items-center justify-between px-6 sticky top-0 z-40">

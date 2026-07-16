@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 // Dynamic import to avoid SSR issues with recharts
 const LineChart = dynamic(
   () => import("recharts").then((mod) => mod.LineChart),
-  { ssr: false }
+  { ssr: false, loading: () => <ChartSkeleton /> }
 );
 const Line = dynamic(
   () => import("recharts").then((mod) => mod.Line),
@@ -32,6 +32,17 @@ const ResponsiveContainer = dynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false }
 );
+
+// Loading skeleton for chart
+function ChartSkeleton() {
+  return (
+    <div className="h-[200px] flex items-center justify-center">
+      <div className="w-full h-1 bg-[#CDBED6]/30 rounded-full overflow-hidden">
+        <div className="w-1/3 h-full bg-[#1F315B] animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 const data = [
   { date: "Apr 1", score: 58 },

@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 // Dynamic import to avoid SSR issues with recharts
 const BarChart = dynamic(
   () => import("recharts").then((mod) => mod.BarChart),
-  { ssr: false }
+  { ssr: false, loading: () => <ChartSkeleton /> }
 );
 const Bar = dynamic(
   () => import("recharts").then((mod) => mod.Bar),
@@ -29,6 +29,20 @@ const ResponsiveContainer = dynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false }
 );
+
+// Loading skeleton for chart
+function ChartSkeleton() {
+  return (
+    <div className="h-[140px] flex items-center justify-center">
+      <div className="flex gap-2">
+        <div className="w-8 h-24 bg-[#CDBED6]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-32 bg-[#CDBED6]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-28 bg-[#CDBED6]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-36 bg-[#CDBED6]/30 rounded-t animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 const revenueData = [
   { month: "Jan", revenue: 28000 },

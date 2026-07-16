@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -39,30 +40,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
+  const { theme, toggleTheme, mounted } = useTheme();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    // Check localStorage and system preference
-    const stored = localStorage.getItem("lc-theme") as "light" | "dark";
-    if (stored) {
-      setTheme(stored);
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("lc-theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
-
-  // Prevent hydration mismatch
+  // SSR fallback - render a simplified version without theme-dependent classes
   if (!mounted) {
     return (
       <aside className="fixed left-0 top-0 h-full w-64 bg-[#F6F1E8] border-r border-[#D4AF63]/20 flex flex-col z-50">
@@ -85,6 +66,9 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
               <div key={item.id} className="h-10 bg-[#1F315B]/5 rounded-xl" />
             ))}
           </div>
+        </div>
+        <div className="p-4 border-t border-[#D4AF63]/20">
+          <div className="h-16 bg-[#1F315B]/5 rounded-xl" />
         </div>
       </aside>
     );

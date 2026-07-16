@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 // Dynamic import to avoid SSR issues with recharts
 const RadarChart = dynamic(
   () => import("recharts").then((mod) => mod.RadarChart),
-  { ssr: false }
+  { ssr: false, loading: () => <ChartSkeleton /> }
 );
 const Radar = dynamic(
   () => import("recharts").then((mod) => mod.Radar),
@@ -32,6 +32,15 @@ const ResponsiveContainer = dynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false }
 );
+
+// Loading skeleton for chart
+function ChartSkeleton() {
+  return (
+    <div className="h-[320px] flex items-center justify-center">
+      <div className="w-48 h-48 rounded-full border-4 border-[#CDBED6]/30 border-t-[#1F315B] animate-spin" />
+    </div>
+  );
+}
 
 const data = [
   { domain: "Marketing", you: 72, ideal: 90 },
