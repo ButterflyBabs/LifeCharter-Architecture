@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
 import { TrendingUp, ArrowLeft, ArrowRight, Save, CheckCircle, BarChart3 } from "lucide-react";
@@ -313,7 +313,7 @@ export default function ProfitAssessmentPage() {
                 Profit Assessment Complete!
               </h1>
               <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6">
-                Congratulations! You've completed all 12 domains. Your comprehensive
+                Congratulations! You&apos;ve completed all 12 domains. Your comprehensive
                 Profit Architecture profile is ready.
               </p>
               <div className="grid grid-cols-3 gap-2 mb-6">
