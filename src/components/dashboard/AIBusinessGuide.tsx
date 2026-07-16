@@ -48,7 +48,7 @@ export function AIBusinessGuide({
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   const getInitialMessage = (score?: number) => {
     if (score === undefined) {
