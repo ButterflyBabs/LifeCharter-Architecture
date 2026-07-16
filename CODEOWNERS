@@ -1,0 +1,19 @@
+# Global owners
+* @ButterflyBabs
+
+# Database and security changes require review
+/supabase/migrations/ @ButterflyBabs
+/lib/auth/ @ButterflyBabs
+/lib/supabase/ @ButterflyBabs
+
+# AI-related changes
+/lib/ai/ @ButterflyBabs
+/app/api/ai/ @ButterflyBabs
+
+# Design system changes
+/components/ui/ @ButterflyBabs
+/public/brand/ @ButterflyBabs
+
+# Documentation
+/docs/adr/ @ButterflyBabs
+/docs/decisions/ @ButterflyBabs

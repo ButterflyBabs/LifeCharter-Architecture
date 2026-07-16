@@ -1,0 +1,333 @@
+One ecosystem. Multiple doorways. A business operating system built from clarity, evidence and aligned action.
+
+0. Directive to Mariposa
+
+This is a new standalone product. It must have its own GitHub repository, its own Supabase environments, and its own Vercel project. It must not be merged into, developed inside, or made structurally dependent upon the current LifeCharter Command Suite or the existing Profit Architecture application.
+The application may remain integration-ready through documented APIs and events, but its users, workspaces, assessments, dashboard data, plans, reviews, AI context and audit history must be owned by this new application.
+Do not delay routine setup while waiting for minor clarification. Record reasonable assumptions in the Decision Register and proceed. Escalate only decisions that materially affect product scope, client privacy, scoring methodology, pricing, legal risk, or the approved visual design.
+Project Identity
+1. Source-of-Truth Hierarchy
+When instructions, legacy code, prior reports, or implementation preferences conflict, use the following authority order. No agent may silently reverse this order.
+1. This Master Build Directive and any written amendments approved by Babs Carroll.
+2. The embedded Light Mode and Dark Mode dashboard prototype images. These are the exclusive and specific visual source of truth for the application shell and dashboard experience.
+3. The approved LifeCharter Standalone Application Blueprint, including the standalone product boundary, progressive assessment model, MVP scope and security requirements.
+4. Mariposa's Profit Architecture Integration Assessment, used as strategic source material for the 12-domain model, reusable ideas and technical inventory, but not as authority to merge this product into another application.
+5. The LifeCharter Brand Board, used only to derive supporting assets, tokens and motifs that are already consistent with the approved prototypes.
+6. Documented Architecture Decision Records approved through the process defined in this directive.
+
+2. Exclusive Visual Build Reference
+Both modes are required. Light Mode is the primary default experience. Dark Mode is a complete theme variant, not a separate application. The same information architecture, component placement and product behavior must remain recognizable across both modes.
+
+Figure 1. Approved LifeCharter-Architecture Light Mode dashboard prototype
+
+Figure 2. Approved LifeCharter-Architecture Dark Mode dashboard prototype
+Visual Fidelity Rules
+Match the overall page grid: left navigation, top utility bar, central dashboard grid, right-side guidance and analytics areas.
+Preserve the approved modules: Overall Business Health, 12-Domain Business Alignment, Next 3 Moves, Domain Scores, Operating Rhythm, Milestones & Momentum, AI Business Guide, Business Health Trend and Revenue Snapshot.
+Preserve the approved hierarchy, card proportions, rounded shapes, gold linework, indigo/plum/teal palette, readable serif display headings and clean supporting typography.
+Use ornament as shown: subtle butterfly, compass, sacred geometry, watercolor and gold filigree accents. Decoration must never compete with information or reduce accessibility.
+Use the approved icons and labels wherever possible. New icons must match the same thin-line, refined visual language.
+Do not invent an alternate home screen, alternate sidebar, alternate chart type or alternate priority system without written approval.
+Responsive behavior may stack or collapse panels, but may not remove critical functionality. Mobile navigation may become a drawer while preserving the same destinations.
+The theme toggle, keyboard focus states, hover states, empty states, loading states and error states must look native to the approved design.
+Visual Acceptance Process
+1. Create a component-level visual specification before coding the dashboard.
+2. Capture implementation screenshots at 1440 x 900 and 1920 x 1080 for both themes.
+3. Compare screenshots side by side with the approved prototypes during every dashboard pull request.
+4. Log differences in spacing, typography, color, border, icon, chart, alignment and responsive behavior.
+5. Do not mark the dashboard complete until Brújula confirms product hierarchy, the UI Lead confirms fidelity, QA confirms accessibility, and Mariposa records the approval gate.
+3. Agent Assignment and Operating Model
+Mariposa must assign the following agents or the closest available equivalents. If a named specialist does not exist, create the role and assign an agent with the required competence. One agent may hold more than one role only when Mariposa documents the capacity and review safeguards.
+Agent Collaboration Rules
+Every requirement must have a named owner, acceptance criteria, dependencies and a target milestone.
+Agents must work through issues, branches and pull requests. No direct production edits and no undocumented schema changes.
+Every substantial technical choice must be recorded as an Architecture Decision Record.
+Every uncertain product interpretation must be recorded in the Decision Register with the chosen assumption and impact.
+No agent may mark its own work fully approved. The designated downstream reviewer must verify the handoff.
+Mariposa must keep the build moving, resolve agent collisions, prevent scope drift and escalate only high-impact decisions.
+4. Product Scope for Version 1.0
+Version 1.0 must deliver a coherent client operating system, not a collection of disconnected screens. The first release begins with assessments, converts results into a personalized dashboard, and gives the client a practical rhythm of prioritized action, review and AI-assisted planning.
+Required Client Experience
+Secure account creation, sign-in, password recovery and protected session handling.
+A workspace for each client business with isolated data and role-based membership.
+Progressive onboarding that collects only enough information to provide the next useful layer of guidance.
+Brain assessment, Soul assessment and Profit Architecture assessment, all versioned, autosaved and resumable.
+Immediate provisional value before all assessment sections are complete.
+A personalized dashboard that follows the approved prototype and displays no more than three primary priorities at once.
+Twelve Profit Architecture domain scores with trends, evidence, confidence and critical-gate status.
+Next 3 Moves, operating rhythm, milestones, progress review and AI Business Guide.
+Client ability to accept, edit, defer, replace or complete recommended actions.
+Daily, weekly, monthly, quarterly and annual review structures, with V1.0 emphasizing daily, weekly and monthly workflows.
+Export or printable summary of assessment results, priorities and current plan.
+Light Mode and Dark Mode with a persistent user preference.
+Required Application Routes or Equivalent Navigation
+Explicitly Deferred Unless Mariposa Receives New Approval
+Full accounting-provider integrations and transaction categorization.
+A full CRM, omni-channel inbox, customer service ticketing system or complete sales pipeline suite.
+Autonomous AI actions in external systems without explicit user confirmation.
+Marketplace or affiliate tool recommendations as a core experience.
+Complex real-time collaborative document editing.
+Investor-grade financial modeling beyond practical planning worksheets.
+Shared database tables with another LifeCharter application.
+5. Assessment and Personalization Build Requirements
+The three assessments must operate as one progressive profiling system. Do not place three long forms back-to-back. The experience must create value early, reduce fatigue and increase confidence as more evidence is gathered.
+Approved Sequence
+1. Quick Start Pulse: 15 to 20 high-yield questions drawn across Brain, Soul and Profit Architecture.
+2. Brain Assessment: two short sections with branching based on role, working style and operating preferences.
+3. Soul Assessment: two short sections with sensitive questions optional, clearly explained and never required to unlock basic product value.
+4. Profit Architecture Core: three to five questions per domain to establish a provisional baseline.
+5. Profit Architecture Deep Dive: triggered only for the highest-priority, lowest-confidence or critical-gate domains.
+6. Ongoing Evidence Prompts: short questions embedded in weekly and monthly reviews to update stale or uncertain scores.
+Assessment Experience Standards
+Autosave every response and allow pause and resume.
+Display time estimates and progress by section, not one intimidating total count.
+Offer Save and Continue Later at every meaningful break.
+Use branching logic to hide irrelevant questions.
+Avoid repeated questions across Brain, Soul and Profit Architecture. Brújula must complete an overlap audit before final content entry.
+After each meaningful section, provide one insight and one practical next step.
+Show provisional language when evidence is incomplete. Never present a tentative score as objective truth.
+Allow clients to add evidence, context or disagreement to a score.
+Version assessment definitions so historical answers remain interpretable after questions change.
+Dashboard Personalization Rules
+Critical gates override ordinary low scores.
+Show no more than three primary priorities at one time.
+Balance urgent repair with at least one visible strength the business can leverage.
+Use Brain results to tune density, explanation depth, pace and action format.
+Use Soul results as values, purpose, capacity and sustainability guardrails, not deterministic labels.
+Adjust the suggested workload to founder capacity and current business pressure.
+Explain why every priority was selected and identify the evidence that informed it.
+Allow the client or authorized coach to pin, defer, replace or revise a recommendation.
+Completion alone must not automatically raise a business-health score. Scores change only when evidence changes.
+6. GitHub Repository Instructions
+
+Repository Initialization
+Initialize with a concise README that states the standalone product boundary, local setup, environment model and release flow.
+Use a proprietary license notice or the organization-approved private software license. Do not default to an open-source license without approval.
+Commit .gitignore, .editorconfig, .env.example, CODEOWNERS, CONTRIBUTING.md, SECURITY.md, CHANGELOG.md and a docs directory.
+Enable Issues, Pull Requests, Projects and Discussions only when they support the team workflow.
+Create GitHub labels for product, design, frontend, backend, database, AI, security, accessibility, bug, blocked, decision and release.
+Create milestones for Foundation, Assessment Engine, Dashboard, Operating Rhythm, AI Guide, Pilot and V1.0 Release.
+Store the approved prototypes in /docs/product-reference/prototypes and mark them read-only source assets in the README.
+Store architecture decisions in /docs/adr and product decisions in /docs/decisions.
+Branch and Pull Request Policy
+main: production-ready code only.
+staging: integrated pre-production branch deployed to the staging environment.
+feature/*, fix/*, chore/* and release/* branches: short-lived working branches.
+All changes enter staging through pull requests. Production releases enter main through a reviewed release pull request.
+Protect main and staging. Require passing checks, at least one specialist review, no unresolved conversations and no force push.
+Require CODEOWNER review for database, AI, security, design-system and deployment paths.
+Use semantic version tags. The first approved production tag is v1.0.0.
+Every pull request must include purpose, screenshots when visual, migration impact, test evidence, accessibility impact and rollback notes when applicable.
+Required Repository Structure
+LifeCharter-Architecture/
+  app/ or src/app/              # routes and server actions
+  components/
+    dashboard/                  # approved prototype modules
+    assessments/
+    ai-guide/
+    reviews/
+    ui/                         # primitives and tokens
+  lib/
+    auth/
+    supabase/
+    assessments/
+    scoring/
+    recommendations/
+    ai/
+    analytics/
+  supabase/
+    migrations/
+    seed/
+    tests/
+    functions/
+  public/
+    brand/
+    icons/
+  tests/
+    unit/
+    integration/
+    e2e/
+    security/
+    visual/
+  docs/
+    product-reference/prototypes/
+    adr/
+    decisions/
+    runbooks/
+  scripts/
+  .github/
+    workflows/
+    ISSUE_TEMPLATE/
+    PULL_REQUEST_TEMPLATE.md
+7. Supabase Environment and Data Instructions
+Use Supabase for authentication, PostgreSQL, row-level security, file storage and appropriate server-side functions. Build through version-controlled migrations. Do not make undocumented production changes through the dashboard.
+Environment Model
+Local development through the Supabase CLI and committed migrations.
+Dedicated Development project for shared development and integration testing.
+Dedicated Staging project for release candidates and pilot verification.
+Dedicated Production project for approved client data.
+Separate keys, URLs, storage buckets and secrets for every environment.
+Service-role keys must remain server-only. Never expose them through client-side environment variables.
+Minimum V1.0 Data Domains
+Users, profiles, workspaces and workspace memberships.
+Roles and permissions for client owner, client team member, coach/advisor and platform administrator.
+Assessment definitions, versions, sections, questions, options and branching rules.
+Assessment sessions, responses, completion state and consent records.
+Domain scores, score evidence, confidence, critical gates and score history.
+Dashboard configurations, user preferences and theme preference.
+Recommendations, priorities, actions, tasks and client decisions to accept, edit, defer or reject.
+Goals, milestones, operating rhythms and review records.
+Plans, plan sections, generated drafts and client-approved content.
+AI conversations, individual messages, structured memory, recommendations and model-usage logs.
+Files, exports, notifications and audit events.
+Data Design Rules
+Every workspace-scoped table must include workspace ownership and deny-by-default RLS.
+Test cross-tenant isolation with automated negative tests.
+Store individual AI messages as rows, not one indefinitely growing JSON message array.
+Store assessment definitions separately from responses and preserve version identifiers.
+Store evidence, confidence and date with domain scores.
+Use append-only audit events for role changes, scoring changes, exports, AI actions and sensitive access.
+Use OAuth or managed secrets for future third-party connections. Do not store credentials in ordinary application tables.
+Document retention, export and deletion behavior before pilot onboarding.
+Create backups and run a documented restore test before production launch.
+8. Vercel Deployment Instructions
+
+Name the Vercel project LifeCharter-Architecture or the closest Vercel-compatible equivalent while preserving the official project name in metadata and documentation.
+Configure Preview, Staging and Production environment variables separately.
+Require successful GitHub checks before promotion.
+Run database migrations through a controlled release step, never ad hoc from the browser.
+Add error monitoring, performance monitoring and release markers before pilot use.
+Create a rollback runbook covering application rollback, database migration rollback or forward-fix, environment variable restoration and incident communication.
+Do not attach the final public production domain until staging acceptance and data-protection checks are complete.
+Use secure headers, server-side secret access, rate limiting and abuse protection for Auth, assessment submission and AI endpoints.
+9. Technical Architecture Baseline
+LifeCharter Architect may refine implementation details through ADRs, but the following baseline is approved unless a documented compatibility or security reason requires a change.
+Next.js with App Router and strict TypeScript.
+Server components and server actions where appropriate, with clear client boundaries.
+Supabase Auth, PostgreSQL, Storage, RLS and server-side access patterns.
+A token-based theme layer that produces the approved light and dark experiences.
+Accessible UI primitives, reusable LifeCharter components and a chart library capable of the 12-domain radar chart and trend charts.
+Schema validation for all client and server data boundaries.
+Structured logging, error monitoring and usage analytics that respect client privacy.
+Automated tests for scoring, recommendations, RLS, core journeys and visual fidelity.
+Documented APIs or domain services so future LifeCharter products can integrate without shared-table coupling.
+Architecture Boundaries
+UI components must not contain scoring business logic.
+Scoring and recommendation services must be deterministic where rules are defined and separately testable from AI generation.
+AI may explain, synthesize and draft, but it must not be the sole source of assessment scores.
+Database access must use workspace-aware server services and RLS, not scattered raw queries.
+External integrations must use adapters so a provider can be replaced without rewriting the product core.
+Generated content must remain draft until the user approves it.
+10. AI Business Guide Requirements
+The AI Business Guide should feel deeply informed by the client without pretending that a separate model has been trained for each client. Personalization comes from isolated, approved business context, structured memory, assessment evidence, plans, reviews and current goals.
+V1.0 Responsibilities
+Explain why a priority or recommendation was selected and cite the client evidence used inside the application.
+Draft practical deliverables such as a 30-day plan, marketing brief, sales script, meeting agenda, review summary or SOP outline.
+Convert a conversation into proposed tasks, but require confirmation before creating or scheduling them.
+Ask clarifying questions when evidence is incomplete, conflicting or stale.
+Adapt tone, pacing and level of detail using Brain preferences and client choices.
+Respect Soul values, capacity and non-negotiables as guardrails.
+Recognize legal, tax, financial-crisis, mental-health, employment-conflict and other high-risk topics that require human or professional review.
+Create concise structured memory that can be inspected, corrected and deleted by authorized users.
+AI Engineering Controls
+Version every system prompt and tool instruction.
+Use structured outputs with schema validation for recommendations, task proposals and summaries.
+Separate client context by workspace and test for cross-tenant leakage.
+Log model, prompt version, token usage, latency, cost, outcome and user approval status.
+Set rate limits, budget alerts and per-workspace usage monitoring.
+Use retrieval only from approved workspace data and explicitly approved reference material.
+Provide a clear human handoff path and preserve a concise handoff summary.
+Never claim certainty beyond the evidence or present generated business advice as legal, tax or fiduciary advice.
+11. Build Phases, Ownership and Approval Gates
+Phase Deliverable Standards
+Every phase begins with approved stories and acceptance criteria.
+Every phase ends with working software in the correct environment, not a slide deck alone.
+Every gate includes product review, technical review, QA evidence and updated documentation.
+No gate is passed while a P0 or P1 defect remains open.
+Database migrations, security impacts and visual screenshots must accompany the relevant gate review.
+Mariposa records the decision to pass, conditionally pass or reject each gate.
+12. First 72 Hours: Immediate Assignment Order
+
+Day 1
+Create the private GitHub repository LifeCharter-Architecture.
+Create the GitHub Project board, milestones, labels, issue templates and protected branch plan.
+Commit this directive, the approved light and dark prototypes, the brand board and the standalone blueprint into /docs/product-reference.
+Assign every lead role and publish the responsibility matrix.
+Create the Decision Register, Risk Register, Dependency Register and Architecture Decision Record template.
+Open setup issues for Supabase Development, Vercel, CI, application scaffold and design tokens.
+Day 2
+LifeCharter Architect scaffolds the application and documents the proposed module boundaries.
+DevOps connects Vercel, enables preview builds and creates the environment-variable matrix.
+Supabase Data Architect creates local and Development environments, the first migration and workspace/Auth baseline.
+UI Lead extracts design tokens from the approved prototypes and builds the application shell, sidebar, header and theme switch.
+Brújula translates the blueprint into epics, user stories and acceptance criteria, beginning with onboarding and dashboard modules.
+QA creates the test strategy, visual baseline, accessibility checklist and tenant-isolation test plan.
+Day 3
+Deploy the first working shell to a Vercel preview and Development environment.
+Demonstrate Auth placeholder flow, protected route, workspace creation, light/dark shell and Supabase connection health.
+Publish ADR-001: Standalone Product Boundary.
+Publish ADR-002: Environment and Release Model.
+Publish the first two-week sprint backlog with owners and dependencies.
+Send Babs a kickoff report containing repository link, staging/preview link, assigned agents, unresolved high-impact decisions and the next approval date.
+13. Quality, Security and Accessibility Gates
+Required Automated Tests
+Unit tests for assessment scoring, confidence, gates and priority ordering.
+Integration tests for Auth, autosave, assessment resume, dashboard generation, action state and review submission.
+RLS tests that prove users cannot read or modify another workspace.
+End-to-end tests for onboarding -> assessment -> dashboard -> action -> review -> AI Guide.
+Visual regression tests for light and dark dashboard at approved desktop widths and key mobile/tablet breakpoints.
+Accessibility tests for keyboard navigation, landmarks, labels, contrast, focus, charts and reduced-motion support.
+AI contract tests for structured output, evidence references, confirmation requirements and handoff triggers.
+Migration tests, backup verification and restore rehearsal before production.
+Release Blocking Conditions
+Any cross-tenant data exposure or RLS failure.
+Any critical Auth, secret-management or file-upload vulnerability.
+Prototype fidelity failure in core dashboard hierarchy or theme behavior.
+Unusable assessment flow, lost responses or inability to resume.
+AI creating external actions or permanent tasks without required confirmation.
+Critical flow inaccessible by keyboard or unreadable at required contrast.
+Missing rollback, backup or restore procedure.
+Undocumented production migration or environment configuration.
+14. Definition of Done for Version 1.0
+The application is deployed from the LifeCharter-Architecture repository to Vercel production through the approved release pipeline.
+Development, Staging and Production Supabase environments are separated and migration history is reproducible.
+The approved Light Mode and Dark Mode prototypes are recognizably and specifically implemented as real responsive software.
+A new client can create an account, create a workspace, begin assessments, pause, return and receive progressive value.
+Assessment evidence produces transparent domain scores, confidence, gates and no more than three primary priorities.
+The dashboard modules shown in the prototype are populated by real or clearly labeled pilot data.
+Clients can manage actions, milestones and review rhythms and can see changes over time.
+The AI Business Guide can explain, draft and propose while respecting confirmation, context isolation and escalation guardrails.
+Tenant isolation, security, accessibility, performance and visual regression suites pass.
+Pilot users have completed acceptance testing and critical feedback is resolved or documented for V1.1.
+README, runbooks, user guidance, admin guidance, release notes and data-handling documentation are complete.
+Mariposa produces a final release report and Babs provides production approval.
+15. Decisions Requiring Babs Approval
+These questions should be prepared by Mariposa with a recommended option and impact analysis. They should not block basic infrastructure setup unless directly relevant.
+1. Final display name inside the product: LifeCharter, LifeCharter Architecture, or another approved label.
+2. Initial customer segment for the pilot and whether V1.0 is limited to coaches, consultants or broader service businesses.
+3. Whether clients may invite team members in the first release.
+4. Final content and scoring rules for brain.md, soul.md and Profit Architecture.
+5. Which generated documents must be fully functional in V1.0.
+6. Whether LifeCharter coaches will actively access client workspaces during the pilot.
+7. Billing, subscription and entitlement scope for V1.0 or a later release.
+8. Final production domain, support process and client-facing privacy terms.
+9. AI model/provider selection and monthly cost ceiling.
+10. Pilot group, launch timing and criteria for broad release.
+16. Required Mariposa Reporting Cadence
+Daily internal agent check: completed work, blockers, decisions, risks and next actions.
+Twice-weekly build summary to Babs during active implementation, limited to what changed, what is ready to review, decisions needed and risk to timing.
+End-of-sprint demonstration from the deployed Staging environment.
+Approval-gate packet with screenshots, test results, migration summary, unresolved defects and recommendation.
+Immediate escalation for security, data-loss, cross-tenant exposure, major cost overrun or a decision that would change the approved product boundary or visual design.
+Release report for v1.0.0 with deployment record, backup confirmation, known issues, rollback steps and V1.1 backlog.
+17. Final Command
+
+The product must remain faithful to its purpose: a clear, evidence-based business consulting and management system that helps each client understand the whole business, identify the few priorities that matter now, take aligned action and review progress over time.
+Appendix A. Handoff Package Contents
+LifeCharter-Architecture_Master_Build_Directive_v1.0.docx
+LifeCharter-Architecture_Light_Mode_Prototype.png
+LifeCharter-Architecture_Dark_Mode_Prototype.png
+LifeCharter_Brand_Board.png
+LifeCharter_Standalone_Application_Blueprint.docx
+Profit-Architecture-Integration-Assessment.docx
+The prototype images must remain in the repository as permanent product references. The build team should not rely on compressed screenshots pasted into chat when the original reference files are available in the handoff package.
