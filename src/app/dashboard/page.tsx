@@ -89,12 +89,7 @@ export default function DashboardPage() {
             { id: "4", label: "Hit revenue target", completed: false },
           ]}
         />
-        <RevenueSnapshot
-          revenue={38450}
-          profit={12760}
-          profitMargin={33}
-          changePercent={12}
-        />
+        <RevenueSnapshot />
       </div>
 
       {/* Bottom decorative element */}
