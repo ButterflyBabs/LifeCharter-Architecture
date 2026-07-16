@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LifeCharter Architecture - Design Tokens */
+
+:root {
+  /* Light Mode - Default */
+  --background: #F6F1E8;
+  --foreground: #1F315B;
+  --primary: #1F315B;
+  --primary-foreground: #F6F1E8;
+  --secondary: #5E3B6C;
+  --secondary-foreground: #F6F1E8;
+  --muted: #CDBED6;
+  --muted-foreground: #5E3B6C;
+  --accent: #D4AF63;
+  --accent-foreground: #1F315B;
+  --card: #FFFFFF;
+  --card-foreground: #1F315B;
+  --border: #B9A9A9;
+  
+  /* Domain Colors for 12-Domain Architecture */
+  --domain-1: #1F315B;  /* Quality of Life - Deep Indigo */
+  --domain-2: #5E3B6C;  /* Character - Royal Plum */
+  --domain-3: #2E7C83;  /* Intellectual - Sacred Teal */
+  --domain-4: #CDBED6;  /* Emotional - Soft Lavender */
+  --domain-5: #D4AF63;  /* Health - Warm Gold */
+  --domain-6: #B9A9A9;  /* Love - Soft Taupe */
+  --domain-7: #1F315B;  /* Parenting - Deep Indigo */
+  --domain-8: #5E3B6C;  /* Career - Royal Plum */
+  --domain-9: #2E7C83;  /* Spiritual - Sacred Teal */
+  --domain-10: #CDBED6; /* Social - Soft Lavender */
+  --domain-11: #D4AF63; /* Financial - Warm Gold */
+  --domain-12: #B9A9A9; /* Life Vision - Soft Taupe */
+}
+
+.dark {
+  /* Dark Mode */
+  --background: #1A1A2E;
+  --foreground: #F6F1E8;
+  --primary: #CDBED6;
+  --primary-foreground: #1A1A2E;
+  --secondary: #D4AF63;
+  --secondary-foreground: #1A1A2E;
+  --muted: #2D3561;
+  --muted-foreground: #B9A9A9;
+  --accent: #D4AF63;
+  --accent-foreground: #1A1A2E;
+  --card: #16213E;
+  --card-foreground: #F6F1E8;
+  --border: #2D3561;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Georgia, Cambria, 'Times New Roman', serif;
+  font-weight: 600;
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .lc-card {
+    @apply bg-card text-card-foreground rounded-lc shadow-lc border border-border;
+  }
+  
+  .lc-panel {
+    @apply bg-card/50 backdrop-blur-sm rounded-lc border border-border/50;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
