@@ -2,11 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // System prompt for the AI Business Guide
 const SYSTEM_PROMPT = `You are an AI Business Guide for LifeCharter Architecture, a business assessment and optimization platform. 
 
@@ -34,6 +29,13 @@ Always sign off as "Your AI Business Guide".`;
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({
+        reply: "I'm here to help you align your business with your vision. To get personalized AI guidance, please configure the OPENAI_API_KEY environment variable. In the meantime, focus on one priority: What's the single most important action you could take this week to move your business forward?"
+      });
+    }
+
     const supabase = createClient();
     
     // Get the current user
@@ -54,6 +56,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Prepare context about the user's business
     let contextPrompt = "";
@@ -93,9 +100,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reply });
   } catch (error) {
     console.error("AI Guide Error:", error);
-    return NextResponse.json(
-      { error: "Failed to get AI response" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      reply: "I'm here to support your business journey. While I process that, consider this: What's one small step you could take today to move closer to your vision?"
+    });
   }
 }
