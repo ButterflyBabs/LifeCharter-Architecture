@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/components/theme-provider";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -40,8 +39,56 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
-  const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Check localStorage and system preference
+    const stored = localStorage.getItem("lc-theme") as "light" | "dark";
+    if (stored) {
+      setTheme(stored);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("lc-theme", newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+  };
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <aside className="fixed left-0 top-0 h-full w-64 bg-[#F6F1E8] border-r border-[#D4AF63]/20 flex flex-col z-50">
+        <div className="p-6 border-b border-[#D4AF63]/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#1F315B] flex items-center justify-center">
+              <span className="text-[#D4AF63] font-bold">LC</span>
+            </div>
+            <div>
+              <h1 className="font-serif text-lg font-bold text-[#1F315B]">
+                LifeCharter
+              </h1>
+              <p className="text-xs text-[#5E3B6C]">Architecture</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 py-4 px-3">
+          <div className="space-y-2">
+            {navigationItems.map((item) => (
+              <div key={item.id} className="h-10 bg-[#1F315B]/5 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#F6F1E8] dark:bg-[#1A1A2E] border-r border-[#D4AF63]/20 flex flex-col z-50">
