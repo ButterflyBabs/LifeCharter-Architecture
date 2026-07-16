@@ -1,0 +1,121 @@
+"use client";
+
+import { Card, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+
+interface OverallBusinessHealthProps {
+  score?: number;
+  status?: string;
+  focusAreas?: string[];
+  description?: string;
+}
+
+export function OverallBusinessHealth({
+  score = 68,
+  status = "Growth",
+  focusAreas = ["Sales", "Finance", "Systems"],
+  description = "You're building momentum. Align your systems and cash flow to scale with ease and clarity.",
+}: OverallBusinessHealthProps) {
+  // Calculate stroke dasharray for circular progress
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  return (
+    <Card className="h-full border-[#D4AF63]/30">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-6">
+          {/* Circular Score Gauge */}
+          <div className="relative flex-shrink-0">
+            <svg
+              width="120"
+              height="120"
+              viewBox="0 0 120 120"
+              className="transform -rotate-90"
+            >
+              {/* Background circle */}
+              <circle
+                cx="60"
+                cy="60"
+                r={radius}
+                fill="none"
+                stroke="#CDBED6"
+                strokeWidth="8"
+                opacity="0.3"
+              />
+              {/* Progress circle */}
+              <circle
+                cx="60"
+                cy="60"
+                r={radius}
+                fill="none"
+                stroke="#1F315B"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-1000 ease-out"
+              />
+              {/* Gold accent arc */}
+              <circle
+                cx="60"
+                cy="60"
+                r={radius + 6}
+                fill="none"
+                stroke="#D4AF63"
+                strokeWidth="2"
+                strokeDasharray="40 287"
+                strokeDashoffset="0"
+                opacity="0.6"
+              />
+            </svg>
+            {/* Score text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                {score}
+              </span>
+              <span className="text-xs text-[#B9A9A9]">/ 100</span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-xs font-semibold tracking-wider uppercase text-[#5E3B6C] dark:text-[#CDBED6]">
+                Overall Business Health
+              </h2>
+              {/* Butterfly decoration */}
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4 text-[#D4AF63]"
+                fill="currentColor"
+              >
+                <path d="M12 3C12 3 11 5 11 7C11 9 12 11 12 11C12 11 13 9 13 7C13 5 12 3 12 3Z" />
+                <path d="M7 7C7 7 3 5 1 9C-1 13 3 17 7 15C7 15 5 11 7 7Z" />
+                <path d="M17 7C17 7 21 5 23 9C25 13 21 17 17 15C17 15 19 11 17 7Z" />
+                <path d="M12 11C12 11 8 15 8 19C8 23 12 23 12 23C12 23 16 23 16 19C16 15 12 11 12 11Z" />
+              </svg>
+            </div>
+
+            <p className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              {status}
+            </p>
+
+            <Badge variant="success" className="mb-3">
+              On Track
+            </Badge>
+
+            <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] mb-2">
+              <span className="font-medium">Primary focus:</span>{" "}
+              {focusAreas.join(", ")}
+            </p>
+
+            <p className="text-sm text-[#1F315B]/70 dark:text-[#F6F1E8]/70 leading-relaxed">
+              {description}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
