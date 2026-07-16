@@ -1,7 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -18,123 +17,85 @@ Your role is to provide compassionate, practical, and strategic guidance to entr
 3. **Profit (Financial Health)** - How sustainable and profitable their business is
 
 Each dimension is scored 0-100. The overall business health is determined by:
-- 0-30: Survival Mode - urgent attention needed
-- 31-60: Building - foundational work in progress
-- 61-80: Growth - scaling and optimizing
-- 81-100: Thriving - industry leader potential
 
-Your guidance should be:
-- Warm and encouraging but honest about challenges
-- Practical with actionable next steps
-- Spiritually grounded (the user values alignment over hustle)
-- Focused on sustainable growth, not quick fixes
-- Tailored to their specific scores and concerns
+- 0-40: Survival Phase - Focus on immediate cash flow and stability
+- 41-60: Growth Phase - Build systems and team capacity
+- 61-80: Expansion Phase - Scale and optimize operations
+- 81-100: Legacy Phase - Create lasting impact and freedom
 
-When responding:
-1. Acknowledge where they are without judgment
-2. Identify the highest-impact area to focus on
-3. Provide 2-3 specific, actionable recommendations
-4. End with an encouraging invitation to take the next step
+Provide guidance that is:
+- Compassionate and non-judgmental
+- Practical with specific next steps
+- Aligned with their values and vision
+- Focused on one priority at a time
+- Celebratory of progress made
 
-Keep responses concise (3-5 paragraphs) and focused on their question.`;
+Always sign off as "Your AI Business Guide".`;
 
-// POST: Ask the AI Guide a question
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    const body = await request.json();
-    const { message, brainScore, soulScore, profitScore, overallScore, context } = body;
+    const { message, context } = await request.json();
 
     if (!message) {
-      return NextResponse.json({ error: 'message is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 }
+      );
     }
 
-    // Build context about the user's business scores
-    let scoreContext = '';
-    if (brainScore !== undefined || soulScore !== undefined || profitScore !== undefined) {
-      scoreContext = `\n\nUser's Current Business Scores:\n`;
-      if (brainScore !== undefined) scoreContext += `- Brain (Systems): ${brainScore}/100\n`;
-      if (soulScore !== undefined) scoreContext += `- Soul (Purpose): ${soulScore}/100\n`;
-      if (profitScore !== undefined) scoreContext += `- Profit (Financial): ${profitScore}/100\n`;
-      if (overallScore !== undefined) scoreContext += `- Overall: ${overallScore}/100\n`;
+    // Prepare context about the user's business
+    let contextPrompt = "";
+    if (context) {
+      contextPrompt = `\n\nUser Context:\n`;
+      if (context.brainScore !== undefined) {
+        contextPrompt += `- Brain (Systems): ${context.brainScore}/100\n`;
+      }
+      if (context.soulScore !== undefined) {
+        contextPrompt += `- Soul (Purpose): ${context.soulScore}/100\n`;
+      }
+      if (context.profitScore !== undefined) {
+        contextPrompt += `- Profit (Finance): ${context.profitScore}/100\n`;
+      }
+      if (context.overallScore !== undefined) {
+        contextPrompt += `- Overall Health: ${context.overallScore}/100\n`;
+      }
+      if (context.focusAreas?.length > 0) {
+        contextPrompt += `- Focus Areas: ${context.focusAreas.join(", ")}\n`;
+      }
     }
-
-    // Add any additional context
-    const additionalContext = context ? `\n\nAdditional Context:\n${context}` : '';
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { 
-          role: 'user', 
-          content: `User Question: ${message}${scoreContext}${additionalContext}` 
-        }
+        { role: "system", content: SYSTEM_PROMPT + contextPrompt },
+        { role: "user", content: message },
       ],
       temperature: 0.7,
-      max_tokens: 800,
+      max_tokens: 500,
     });
 
-    const response = completion.choices[0]?.message?.content || 
-      "I'm here to help guide your business journey. Could you share a bit more about what specific area you'd like guidance on?";
+    const reply = completion.choices[0]?.message?.content || 
+      "I'm here to help you align your business with your vision. What would you like to explore today?";
 
-    return NextResponse.json({ 
-      response,
-      suggestions: generateSuggestions(brainScore, soulScore, profitScore)
-    });
-  } catch (error: Record<string, unknown>) {
-    console.error('AI Guide error:', error);
-    
-    // Handle specific OpenAI errors
-    if (error.status === 429) {
-      return NextResponse.json({ 
-        error: 'Rate limit exceeded. Please try again in a moment.' 
-      }, { status: 429 });
-    }
-    
-    if (error.status === 401) {
-      return NextResponse.json({ 
-        error: 'AI service configuration error. Please contact support.' 
-      }, { status: 500 });
-    }
-
-    return NextResponse.json({ 
-      error: 'Failed to get AI response. Please try again.' 
-    }, { status: 500 });
-  }
-}
-
-// Helper function to generate contextual suggestions based on scores
-function generateSuggestions(brainScore?: number, soulScore?: number, profitScore?: number): string[] {
-  const suggestions: string[] = [];
-  
-  if (brainScore !== undefined && brainScore < 50) {
-    suggestions.push('Document your core processes to reduce dependency on you');
-  }
-  if (soulScore !== undefined && soulScore < 50) {
-    suggestions.push('Reconnect with your original mission and why you started');
-  }
-  if (profitScore !== undefined && profitScore < 50) {
-    suggestions.push('Review your pricing and cash flow forecasting');
-  }
-  
-  // Default suggestions if no scores or all scores are good
-  if (suggestions.length === 0) {
-    suggestions.push(
-      'Improve cash flow forecasting',
-      'Document and automate key processes',
-      'Nurture warm leads into paying clients'
+    return NextResponse.json({ reply });
+  } catch (error) {
+    console.error("AI Guide Error:", error);
+    return NextResponse.json(
+      { error: "Failed to get AI response" },
+      { status: 500 }
     );
   }
-  
-  return suggestions.slice(0, 3);
 }
