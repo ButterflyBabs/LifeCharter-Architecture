@@ -1,15 +1,37 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+// Dynamic import to avoid SSR issues with recharts
+const LineChart = dynamic(
+  () => import("recharts").then((mod) => mod.LineChart),
+  { ssr: false }
+);
+const Line = dynamic(
+  () => import("recharts").then((mod) => mod.Line),
+  { ssr: false }
+);
+const XAxis = dynamic(
+  () => import("recharts").then((mod) => mod.XAxis),
+  { ssr: false }
+);
+const YAxis = dynamic(
+  () => import("recharts").then((mod) => mod.YAxis),
+  { ssr: false }
+);
+const CartesianGrid = dynamic(
+  () => import("recharts").then((mod) => mod.CartesianGrid),
+  { ssr: false }
+);
+const Tooltip = dynamic(
+  () => import("recharts").then((mod) => mod.Tooltip),
+  { ssr: false }
+);
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false }
+);
 
 const data = [
   { date: "Apr 1", score: 58 },
@@ -61,14 +83,13 @@ export function BusinessHealthTrend({ period = "90 Days" }: BusinessHealthTrendP
                   backgroundColor: "#F6F1E8",
                   border: "1px solid #D4AF63",
                   borderRadius: "8px",
-                  fontSize: "12px",
                 }}
-                itemStyle={{ color: "#1F315B" }}
+                labelStyle={{ color: "#1F315B" }}
+                itemStyle={{ color: "#5E3B6C" }}
               />
               <Line
                 type="monotone"
                 dataKey="score"
-                name="Current Score"
                 stroke="#5E3B6C"
                 strokeWidth={2}
                 dot={{ fill: "#5E3B6C", strokeWidth: 0, r: 4 }}
@@ -76,24 +97,6 @@ export function BusinessHealthTrend({ period = "90 Days" }: BusinessHealthTrendP
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#5E3B6C]" />
-            <span className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
-              Current Score
-            </span>
-          </div>
-        </div>
-
-        {/* Current score indicator */}
-        <div className="mt-4 text-center">
-          <span className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-            68
-          </span>
-          <span className="text-sm text-[#B9A9A9] ml-1">current</span>
         </div>
       </CardContent>
     </Card>

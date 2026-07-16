@@ -1,15 +1,37 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+// Dynamic import to avoid SSR issues with recharts
+const RadarChart = dynamic(
+  () => import("recharts").then((mod) => mod.RadarChart),
+  { ssr: false }
+);
+const Radar = dynamic(
+  () => import("recharts").then((mod) => mod.Radar),
+  { ssr: false }
+);
+const PolarGrid = dynamic(
+  () => import("recharts").then((mod) => mod.PolarGrid),
+  { ssr: false }
+);
+const PolarAngleAxis = dynamic(
+  () => import("recharts").then((mod) => mod.PolarAngleAxis),
+  { ssr: false }
+);
+const PolarRadiusAxis = dynamic(
+  () => import("recharts").then((mod) => mod.PolarRadiusAxis),
+  { ssr: false }
+);
+const Legend = dynamic(
+  () => import("recharts").then((mod) => mod.Legend),
+  { ssr: false }
+);
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false }
+);
 
 const data = [
   { domain: "Marketing", you: 72, ideal: 90 },
