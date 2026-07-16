@@ -133,7 +133,7 @@ export function RevenueSnapshot() {
                 }}
                 labelStyle={{ color: "#1F315B" }}
                 itemStyle={{ color: "#5E3B6C" }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+                formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
               />
               <Bar
                 dataKey="revenue"
