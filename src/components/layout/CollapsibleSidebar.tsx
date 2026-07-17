@@ -19,7 +19,6 @@ import {
   Settings2,
   Moon,
   Sun,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -72,7 +71,6 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
 export function CollapsibleSidebar() {
   const { theme, toggleTheme, mounted } = useTheme();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
 
   // Get active item based on current path
@@ -252,7 +250,7 @@ export function CollapsibleSidebar() {
 
 // Mobile sidebar toggle button
 export function MobileSidebarToggle() {
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   
   return (
     <button
