@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -13,8 +13,6 @@ import {
   Brain, 
   Heart, 
   DollarSign, 
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
   Calendar,
   Target,
@@ -25,8 +23,6 @@ import {
   Lightbulb,
   ArrowRight
 } from "lucide-react";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 interface BusinessPlanSection {
   id: string;
@@ -61,14 +57,14 @@ interface PivotSignal {
 }
 
 export default function BusinessPlanPage() {
-  const [planHealth, setPlanHealth] = useState({
+  const [planHealth] = useState({
     overall: 78,
     vision: 85,
     revenue: 72,
     systems: 91,
   });
   
-  const [sections, setSections] = useState<BusinessPlanSection[]>([
+  const [sections] = useState<BusinessPlanSection[]>([
     { id: "executive_summary", title: "Executive Summary", status: "complete", lastUpdated: "2 days ago", aiGenerated: true },
     { id: "products", title: "Products & Services", status: "complete", lastUpdated: "1 week ago", aiGenerated: true },
     { id: "pricing", title: "Pricing Strategy", status: "in_progress", lastUpdated: "3 days ago", aiGenerated: true },
@@ -81,14 +77,14 @@ export default function BusinessPlanPage() {
     { id: "milestones", title: "Milestones & Metrics", status: "complete", lastUpdated: "5 days ago", aiGenerated: true },
   ]);
   
-  const [reviewCycles, setReviewCycles] = useState<ReviewCycle[]>([
+  const [reviewCycles] = useState<ReviewCycle[]>([
     { type: "monthly", status: "due", dueDate: "2026-07-20", completionRate: 67 },
     { type: "quarterly", status: "upcoming", dueDate: "2026-08-15" },
     { type: "semi_annual", status: "upcoming", dueDate: "2026-10-01" },
     { type: "annual", status: "upcoming", dueDate: "2027-01-01" },
   ]);
   
-  const [nextSteps, setNextSteps] = useState<NextStep[]>([
+  const [nextSteps] = useState<NextStep[]>([
     { 
       id: "1", 
       title: "Review and increase Package B pricing by 15%", 
@@ -123,7 +119,7 @@ export default function BusinessPlanPage() {
     },
   ]);
   
-  const [pivotSignals, setPivotSignals] = useState<PivotSignal[]>([
+  const [pivotSignals] = useState<PivotSignal[]>([
     {
       id: "1",
       signal: "Revenue consistently 12% below plan for 3 months",
