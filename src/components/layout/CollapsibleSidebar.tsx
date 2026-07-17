@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, createContext, useContext, ReactNode } from "react";
+import { useState, createContext, useContext, ReactNode, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
@@ -65,6 +65,100 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
     <SidebarContext.Provider value={{ isCollapsed, toggleSidebar }}>
       {children}
     </SidebarContext.Provider>
+  );
+}
+
+// Tooltip component that renders outside the scrollable container
+function NavTooltip({ 
+  label, 
+  isVisible, 
+  targetRef 
+}: { 
+  label: string; 
+  isVisible: boolean; 
+  targetRef: React.RefObject<HTMLAnchorElement | null>;
+}) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (targetRef.current && isVisible) {
+      const rect = targetRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.top + rect.height / 2,
+        left: rect.right + 8,
+      });
+    }
+  }, [isVisible, targetRef]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div
+      className="fixed px-3 py-1.5 bg-[#1F315B] text-[#F6F1E8] text-sm font-medium rounded-lg whitespace-nowrap shadow-lg z-[9999] pointer-events-none"
+      style={{
+        top: position.top,
+        left: position.left,
+        transform: "translateY(-50%)",
+      }}
+    >
+      {label}
+      {/* Arrow */}
+      <div 
+        className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2"
+        style={{
+          width: 0,
+          height: 0,
+          borderTop: "6px solid transparent",
+          borderBottom: "6px solid transparent",
+          borderRight: "6px solid #1F315B",
+        }}
+      />
+    </div>
+  );
+}
+
+// Navigation item with tooltip
+function NavItem({ 
+  item, 
+  isActive, 
+  isCollapsed 
+}: { 
+  item: typeof navigationItems[0]; 
+  isActive: boolean; 
+  isCollapsed: boolean;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const Icon = item.icon;
+
+  return (
+    <>
+      <Link
+        ref={linkRef}
+        href={item.href}
+        onMouseEnter={() => isCollapsed && setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={cn(
+          "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200",
+          isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
+          isActive
+            ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
+            : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+        )}
+      >
+        <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
+        {!isCollapsed && <span>{item.label}</span>}
+      </Link>
+      
+      {/* Tooltip rendered via portal-like fixed positioning */}
+      {isCollapsed && (
+        <NavTooltip 
+          label={item.label} 
+          isVisible={isHovered} 
+          targetRef={linkRef} 
+        />
+      )}
+    </>
   );
 }
 
@@ -158,36 +252,15 @@ export function CollapsibleSidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-4 px-2 overflow-y-auto">
         <ul className="space-y-1">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeItem === item.id;
-            return (
-              <li key={item.id} className="relative group">
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200",
-                    isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
-                    isActive
-                      ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-                      : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
-                  )}
-                >
-                  <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
-                  {!isCollapsed && <span>{item.label}</span>}
-                </Link>
-                
-                {/* Tooltip for collapsed mode */}
-                {isCollapsed && (
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-[#1F315B] text-[#F6F1E8] text-sm font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
-                    {item.label}
-                    {/* Tooltip arrow */}
-                    <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-[#1F315B]" />
-                  </div>
-                )}
-              </li>
-            );
-          })}
+          {navigationItems.map((item) => (
+            <li key={item.id}>
+              <NavItem
+                item={item}
+                isActive={activeItem === item.id}
+                isCollapsed={isCollapsed}
+              />
+            </li>
+          ))}
         </ul>
       </nav>
 
