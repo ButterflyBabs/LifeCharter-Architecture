@@ -957,29 +957,38 @@ export default function QuickPulseCheckinPage() {
             setWorkspaceId(existingPlan.workspace_id);
           } else {
             // Create demo workspace
-            const { data: demoWorkspace } = await supabase
+            const { data: demoWorkspace, error: wsError } = await supabase
               .from('workspaces')
               .insert({
                 name: 'Demo Workspace',
-                slug: 'demo-workspace-' + Date.now(),
+                slug: 'demo-workspace-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
               })
               .select('id')
               .single();
             
+            if (wsError) {
+              console.error('Workspace creation error:', wsError);
+              throw new Error('Failed to create demo workspace: ' + wsError.message);
+            }
+            
             if (!demoWorkspace) {
-              throw new Error('Failed to create demo workspace');
+              throw new Error('Failed to create demo workspace - no data returned');
             }
             
             // Create demo profile
-            await supabase.from('profiles').upsert({
+            const { error: profileError } = await supabase.from('profiles').upsert({
               id: demoUser.id,
               email: demoUser.email,
               full_name: demoUser.user_metadata.full_name,
               workspace_id: demoWorkspace.id,
             });
+            
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            }
 
             // Create demo master plan
-            const { data: newPlan } = await supabase
+            const { data: newPlan, error: planError } = await supabase
               .from('client_master_plans')
               .insert({
                 workspace_id: demoWorkspace.id,
@@ -991,8 +1000,13 @@ export default function QuickPulseCheckinPage() {
               .select('id, workspace_id')
               .single();
 
+            if (planError) {
+              console.error('Master plan creation error:', planError);
+              throw new Error('Failed to create demo master plan: ' + planError.message);
+            }
+            
             if (!newPlan) {
-              throw new Error('Failed to create demo master plan');
+              throw new Error('Failed to create demo master plan - no data returned');
             }
 
             setMasterPlanId(newPlan.id);
