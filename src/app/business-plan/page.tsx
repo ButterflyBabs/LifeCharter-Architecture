@@ -274,10 +274,10 @@ export default function BusinessPlanPage() {
             <CardContent className="p-6">
               <div className="space-y-3">
                 {sections.map((section) => (
-                  <div 
+                  <Link 
                     key={section.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/30 transition-colors cursor-pointer"
-                  >
+                    href={`/business-plan/${section.id}`}
+                    className="flex items-center justify-between p-4 rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/30 transition-colors cursor-pointer no-underline"
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusBg(section.status)}`}>
                         {section.status === "complete" ? (
@@ -303,7 +303,7 @@ export default function BusinessPlanPage() {
                       </span>
                       <ArrowRight className="w-4 h-4 text-[#B9A9A9]" />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
