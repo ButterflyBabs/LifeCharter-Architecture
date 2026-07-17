@@ -312,8 +312,6 @@ export default function BusinessPlanPage() {
                 {hoursVariance <= 0 ? '✓' : '⚠'} {monthlyData.hours_worked}hrs / {monthlyData.target_hours}hrs target
               </span>
             </div>
-            </div>
-            <Progress value={planHealth.systems} className="h-2" />
           </CardContent>
         </Card>
       </div>
