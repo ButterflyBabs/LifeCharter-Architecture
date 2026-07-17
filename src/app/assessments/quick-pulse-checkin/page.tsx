@@ -1121,8 +1121,9 @@ export default function QuickPulseCheckinPage() {
               </p>
               {!isDemoMode && (
                 <Link href="/login">
-                <Button variant="primary">Sign In</Button>
-              </Link>
+                  <Button variant="primary">Sign In</Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         </div>
