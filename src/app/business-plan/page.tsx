@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -24,6 +24,13 @@ import {
   ArrowRight
 } from "lucide-react";
 import Link from "next/link";
+import { 
+  calculateRevenueHealth, 
+  calculateSystemsHealth,
+  calculateOverallHealth,
+  getHealthStatus,
+  MonthlyReviewData 
+} from "@/lib/business-plan/healthCalculations";
 
 interface BusinessPlanSection {
   id: string;
@@ -58,12 +65,43 @@ interface PivotSignal {
 }
 
 export default function BusinessPlanPage() {
-  const [planHealth] = useState({
-    overall: 78,
-    vision: 85,
-    revenue: 72,
-    systems: 91,
+  // Demo monthly review data - in production this comes from database
+  const [monthlyData] = useState<MonthlyReviewData>({
+    revenue: 8500,
+    expenses: 5500,
+    revenue_goal: 10000,
+    cash_in_bank: 33000,
+    new_clients: 3,
+    total_clients: 12,
+    leads: 15,
+    conversion_rate: 20,
+    hours_worked: 45,
+    target_hours: 35,
+    sops_created: 10,
+    delegated_tasks: 8,
+    goal_progress: 67,
   });
+
+  // Calculate real health scores from actual data
+  const [planHealth, setPlanHealth] = useState({
+    overall: 0,
+    vision: 85, // Still from Soul assessment
+    revenue: 0,
+    systems: 0,
+  });
+
+  useEffect(() => {
+    const revenueHealth = calculateRevenueHealth(monthlyData);
+    const systemsHealth = calculateSystemsHealth(monthlyData);
+    const overallHealth = calculateOverallHealth(revenueHealth, systemsHealth, 85);
+    
+    setPlanHealth({
+      overall: overallHealth,
+      vision: 85,
+      revenue: revenueHealth,
+      systems: systemsHealth,
+    });
+  }, [monthlyData]);
   
   const [sections] = useState<BusinessPlanSection[]>([
     { id: "executive_summary", title: "Executive Summary", status: "complete", lastUpdated: "2 days ago", aiGenerated: true },
@@ -137,6 +175,12 @@ export default function BusinessPlanPage() {
   
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastAiReview, setLastAiReview] = useState("3 days ago");
+
+  // Calculate variances for display
+  const revenueVariance = ((monthlyData.revenue - monthlyData.revenue_goal) / monthlyData.revenue_goal) * 100;
+  const hoursVariance = ((monthlyData.hours_worked - monthlyData.target_hours) / monthlyData.target_hours) * 100;
+  const profit = monthlyData.revenue - monthlyData.expenses;
+  const margin = monthlyData.revenue > 0 ? (profit / monthlyData.revenue) * 100 : 0;
 
   const handleRefreshPlan = async () => {
     setIsRefreshing(true);
@@ -242,6 +286,14 @@ export default function BusinessPlanPage() {
               {planHealth.revenue}%
             </div>
             <Progress value={planHealth.revenue} className="h-2" />
+            <div className="mt-2 text-xs">
+              <span className={revenueVariance >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {revenueVariance >= 0 ? '↑' : '↓'} {Math.abs(revenueVariance).toFixed(0)}% vs goal
+              </span>
+              <span className="text-[#B9A9A9] ml-2">
+                (${monthlyData.revenue.toLocaleString()} / ${monthlyData.revenue_goal.toLocaleString()})
+              </span>
+            </div>
           </CardContent>
         </Card>
 
@@ -253,6 +305,13 @@ export default function BusinessPlanPage() {
             </div>
             <div className="text-3xl font-bold text-[#2E7C83] mb-2">
               {planHealth.systems}%
+            </div>
+            <Progress value={planHealth.systems} className="h-2" />
+            <div className="mt-2 text-xs">
+              <span className={hoursVariance <= 0 ? 'text-green-500' : 'text-red-500'}>
+                {hoursVariance <= 0 ? '✓' : '⚠'} {monthlyData.hours_worked}hrs / {monthlyData.target_hours}hrs target
+              </span>
+            </div>
             </div>
             <Progress value={planHealth.systems} className="h-2" />
           </CardContent>
@@ -453,29 +512,44 @@ export default function BusinessPlanPage() {
             </CardContent>
           </Card>
 
-          {/* Assessment Data Sources */}
+          {/* Data Sources - Now includes Finance/Monthly Review */}
           <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-white">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Brain className="w-5 h-5" />
-                Data Sources
+                Health Score Data Sources
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Brain Assessment</span>
-                  <span className="text-[#D4AF63]">Last: 1 week ago</span>
+                <div className="border-b border-white/10 pb-2">
+                  <p className="text-[#D4AF63] font-medium mb-1">Revenue Health (Real Data)</p>
+                  <div className="flex justify-between text-xs opacity-80">
+                    <span>Finance Page</span>
+                    <span>Monthly Review</span>
+                  </div>
+                  <div className="mt-1 text-xs">
+                    Revenue: ${monthlyData.revenue.toLocaleString()} | 
+                    Margin: {margin.toFixed(0)}% | 
+                    Runway: {(monthlyData.cash_in_bank / monthlyData.expenses).toFixed(1)}mo
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Soul Assessment</span>
-                  <span className="text-[#D4AF63]">Last: 2 weeks ago</span>
+                <div className="border-b border-white/10 pb-2">
+                  <p className="text-[#D4AF63] font-medium mb-1">Systems Strength (Real Data)</p>
+                  <div className="flex justify-between text-xs opacity-80">
+                    <span>Operations</span>
+                    <span>Monthly Review</span>
+                  </div>
+                  <div className="mt-1 text-xs">
+                    Hours: {monthlyData.hours_worked}h / {monthlyData.target_hours}h target | 
+                    SOPs: {monthlyData.sops_created} | 
+                    Delegated: {monthlyData.delegated_tasks} tasks
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Profit Architecture</span>
-                  <span className="text-[#D4AF63]">Last: 3 days ago</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Quick Pulse</span>
-                  <span className="text-[#D4AF63]">Last: 5 days ago</span>
+                <div>
+                  <p className="text-[#D4AF63] font-medium mb-1">Vision Alignment</p>
+                  <div className="flex justify-between text-xs opacity-80">
+                    <span>Soul Assessment</span>
+                    <span>Last: 2 weeks ago</span>
+                  </div>
                 </div>
               </div>
               <Button className="w-full mt-4 bg-white/10 hover:bg-white/20 text-white border-0">
