@@ -29,18 +29,7 @@ interface Question {
   section: string;
 }
 
-interface SectionData {
-  id: string;
-  title: string;
-  aiGenerated: string;
-  questions: Question[];
-  metrics: {
-    label: string;
-    value: string;
-    target: string;
-    unit: string;
-  }[];
-}
+
 
 const sectionQuestions: Record<string, Question[]> = {
   "products": [
@@ -222,7 +211,7 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
         {["questions", "content", "metrics"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab as "questions" | "content" | "metrics")}
             className={`px-4 py-2 text-sm font-medium capitalize ${
               activeTab === tab 
                 ? "text-[#D4AF63] border-b-2 border-[#D4AF63]" 
