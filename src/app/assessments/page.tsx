@@ -162,7 +162,7 @@ export default function AssessmentsPage() {
           ))}
         </div>
 
-        {/* Quick Start Pulse Option */}
+        {/* Quick Pulse Check-in Option */}
         <div className="mt-12">
           <Card className="border-[#D4AF63]/30 bg-gradient-to-br from-[#D4AF63]/5 to-transparent">
             <CardContent className="p-8">
@@ -172,17 +172,17 @@ export default function AssessmentsPage() {
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-                    Quick Start Pulse
+                    Quick Pulse Check-in
                   </h2>
                   <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-4">
-                    Short on time? Take our condensed 15-20 question assessment that
-                    samples key areas from all three dimensions. Get a snapshot of your
-                    business health in just 5 minutes.
+                    Track your progress over time with this 18-question follow-up assessment.
+                    Compare your results against your initial Brain, Soul, and Profit assessments
+                    to see trends and get personalized action steps. Takes just 5 minutes.
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-[#B9A9A9]">
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4" />
-                      15-20 questions
+                      18 questions
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
@@ -190,11 +190,11 @@ export default function AssessmentsPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Sparkles className="w-4 h-4" />
-                      Instant insights
+                      Progress tracking
                     </span>
                   </div>
                 </div>
-                <Link href="/assessments/pulse">
+                <Link href="/assessments/quick-pulse-checkin">
                   <Button variant="primary" size="lg">
                     Start Quick Pulse
                     <ArrowRight className="w-4 h-4 ml-2" />

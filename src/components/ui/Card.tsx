@@ -5,9 +5,10 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   variant?: "default" | "glass" | "bordered";
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, className, variant = "default" }: CardProps) {
+export function Card({ children, className, variant = "default", style }: CardProps) {
   return (
     <div
       className={cn(
@@ -17,6 +18,7 @@ export function Card({ children, className, variant = "default" }: CardProps) {
         variant === "bordered" && "bg-card text-card-foreground border border-[#D4AF63]/30 shadow-[0_4px_20px_rgba(31,49,91,0.08)]",
         className
       )}
+      style={style}
     >
       {children}
     </div>
