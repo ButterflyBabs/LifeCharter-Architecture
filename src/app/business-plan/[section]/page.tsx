@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Progress } from "@/components/ui/Progress";
 import { 
   ArrowLeft,
   Edit3,
