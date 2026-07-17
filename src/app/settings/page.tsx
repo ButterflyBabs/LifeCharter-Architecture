@@ -30,9 +30,9 @@ import {
   Database,
   ExternalLink,
   Trash2,
-  Lock
+  Lock,
+  FileText
 } from "lucide-react";
-import Link from "next/link";
 
 interface SettingsSection {
   id: string;
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   });
 
   // Integration settings
-  const [integrations, setIntegrations] = useState({
+  const [integrations] = useState({
     ghl: { connected: false, apiKey: "" },
     stripe: { connected: false, apiKey: "" },
     convertkit: { connected: false, apiKey: "" },
@@ -411,7 +411,7 @@ export default function SettingsPage() {
           ].map((theme) => (
             <button
               key={theme.id}
-              onClick={() => setAppearance({ ...appearance, theme: theme.id as any })}
+              onClick={() => setAppearance({ ...appearance, theme: theme.id as "light" | "dark" | "system" })}
               className={`p-4 rounded-lg border-2 transition-all ${
                 appearance.theme === theme.id
                   ? "border-[#D4AF63] bg-[#D4AF63]/10"
@@ -435,7 +435,7 @@ export default function SettingsPage() {
           ].map((scheme) => (
             <button
               key={scheme.id}
-              onClick={() => setAppearance({ ...appearance, colorScheme: scheme.id as any })}
+              onClick={() => setAppearance({ ...appearance, colorScheme: scheme.id as "lifecharter" | "sacred" | "modern" })}
               className={`p-4 rounded-lg border-2 transition-all ${
                 appearance.colorScheme === scheme.id
                   ? "border-[#D4AF63] bg-[#D4AF63]/10"
@@ -466,7 +466,7 @@ export default function SettingsPage() {
               {["small", "medium", "large"].map((size) => (
                 <button
                   key={size}
-                  onClick={() => setAppearance({ ...appearance, fontSize: size as any })}
+                  onClick={() => setAppearance({ ...appearance, fontSize: size as "small" | "medium" | "large" })}
                   className={`px-4 py-2 rounded-lg border transition-all ${
                     appearance.fontSize === size
                       ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]"
