@@ -914,13 +914,6 @@ function QuickPulseCheckinContent() {
   );
 }
 
-// Demo user for testing
-const DEMO_USER = {
-  id: 'demo-user-123',
-  email: 'demo@lifecharter.architecture',
-  user_metadata: { full_name: 'Demo User' }
-};
-
 // Main page component with provider
 export default function QuickPulseCheckinPage() {
   const [masterPlanId, setMasterPlanId] = useState<string | null>(null);
@@ -936,82 +929,23 @@ export default function QuickPulseCheckinPage() {
         
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
-        // If no user, enable demo mode
+        // If no user, enable demo mode and call API
         if (authError || !user) {
           setIsDemoMode(true);
-          // Use demo user for testing
-          const demoUser = DEMO_USER;
           
-          // Check for existing demo workspace and plan
-          const { data: existingPlans } = await supabase
-            .from('client_master_plans')
-            .select('id, workspace_id')
-            .eq('user_id', demoUser.id)
-            .eq('status', 'active')
-            .limit(1);
+          // Call demo setup API (uses service role to bypass RLS)
+          const response = await fetch('/api/demo-setup', {
+            method: 'POST',
+          });
           
-          const existingPlan = existingPlans?.[0];
-
-          if (existingPlan) {
-            setMasterPlanId(existingPlan.id);
-            setWorkspaceId(existingPlan.workspace_id);
-          } else {
-            // Create demo workspace
-            const { data: demoWorkspace, error: wsError } = await supabase
-              .from('workspaces')
-              .insert({
-                name: 'Demo Workspace',
-                slug: 'demo-workspace-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
-              })
-              .select('id')
-              .single();
-            
-            if (wsError) {
-              console.error('Workspace creation error:', wsError);
-              throw new Error('Failed to create demo workspace: ' + wsError.message);
-            }
-            
-            if (!demoWorkspace) {
-              throw new Error('Failed to create demo workspace - no data returned');
-            }
-            
-            // Create demo profile
-            const { error: profileError } = await supabase.from('profiles').upsert({
-              id: demoUser.id,
-              email: demoUser.email,
-              full_name: demoUser.user_metadata.full_name,
-              workspace_id: demoWorkspace.id,
-            });
-            
-            if (profileError) {
-              console.error('Profile creation error:', profileError);
-            }
-
-            // Create demo master plan
-            const { data: newPlan, error: planError } = await supabase
-              .from('client_master_plans')
-              .insert({
-                workspace_id: demoWorkspace.id,
-                user_id: demoUser.id,
-                client_name: demoUser.user_metadata.full_name,
-                client_email: demoUser.email,
-                status: 'active',
-              })
-              .select('id, workspace_id')
-              .single();
-
-            if (planError) {
-              console.error('Master plan creation error:', planError);
-              throw new Error('Failed to create demo master plan: ' + planError.message);
-            }
-            
-            if (!newPlan) {
-              throw new Error('Failed to create demo master plan - no data returned');
-            }
-
-            setMasterPlanId(newPlan.id);
-            setWorkspaceId(newPlan.workspace_id);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to initialize demo mode');
           }
+          
+          const data = await response.json();
+          setMasterPlanId(data.masterPlanId);
+          setWorkspaceId(data.workspaceId);
           setIsLoading(false);
           return;
         }
