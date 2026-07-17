@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 const DEMO_USER = {
   id: 'demo-user-123',
@@ -9,7 +9,17 @@ const DEMO_USER = {
 
 export async function POST() {
   try {
-    const supabase = createServerClient();
+    // Use raw supabase-js client with service role to bypass RLS
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
     
     // Check for existing demo plan
     const { data: existingPlans } = await supabase
@@ -75,7 +85,7 @@ export async function POST() {
     if (planError || !newPlan) {
       console.error('Master plan creation error:', planError);
       return NextResponse.json(
-        { error: 'Failed to create demo master plan' },
+        { error: 'Failed to create demo master plan: ' + (planError?.message || 'Unknown error') },
         { status: 500 }
       );
     }
