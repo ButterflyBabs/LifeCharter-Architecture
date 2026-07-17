@@ -198,7 +198,7 @@ export default function MonthlyReviewPage() {
               Monthly Review Complete!
             </h2>
             <p className="text-[#B9A9A9] mb-6">
-              Your Business Plan health scores have been updated based on this month's data.
+              Your Business Plan health scores have been updated based on this month&apos;s data.
             </p>
             <div className="flex justify-center gap-3">
               <Link href="/finance">
@@ -271,7 +271,7 @@ export default function MonthlyReviewPage() {
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-6">
-            {section.questions.map((question, index) => (
+            {section.questions.map((question) => (
               <div key={question.id}>
                 <div className="flex items-start gap-3 mb-2">
                   {answers[question.id] ? (
@@ -323,11 +323,11 @@ export default function MonthlyReviewPage() {
         {reviewSections.map((s, idx) => (
           <button
             key={s.id}
-            onClick={() => setCurrentSection(index)}
+            onClick={() => setCurrentSection(idx)}
             className={`w-2 h-2 rounded-full transition-all ${
-              index === currentSection 
+              idx === currentSection 
                 ? "bg-[#D4AF63] w-6" 
-                : index < currentSection 
+                : idx < currentSection 
                   ? "bg-green-500" 
                   : "bg-[#1F315B]/20"
             }`}
