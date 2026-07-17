@@ -10,18 +10,19 @@ import Link from "next/link";
 interface Question {
   id: string;
   text: string;
-  type: "radio" | "text" | "multiselect";
+  type: "radio" | "text" | "number" | "multiselect";
   options?: { value: string; label: string }[];
   section: string;
+  placeholder?: string;
 }
 
 const questions: Question[] = [
-  // Section 1: Business Clarity
+  // Section 1: Business Model (10 questions)
   {
-    id: "bc1",
+    id: "bm1",
     text: "What is your primary business model?",
     type: "radio",
-    section: "Business Clarity",
+    section: "Business Model",
     options: [
       { value: "product", label: "Product-based (selling physical/digital products)" },
       { value: "service", label: "Service-based (consulting, coaching, agency)" },
@@ -31,119 +32,485 @@ const questions: Question[] = [
     ],
   },
   {
-    id: "bc2",
-    text: "Who is your ideal client?",
-    type: "radio",
-    section: "Business Clarity",
-    options: [
-      { value: "very_clear", label: "Very clear - I can describe them in detail" },
-      { value: "somewhat_clear", label: "Somewhat clear - I have a general idea" },
-      { value: "unclear", label: "Unclear - I serve anyone who needs my help" },
-      { value: "multiple", label: "I have multiple ideal client types" },
-      { value: "evolving", label: "Still figuring it out" },
-    ],
-  },
-  {
-    id: "bc3",
-    text: "What problem do you solve for your clients?",
-    type: "radio",
-    section: "Business Clarity",
-    options: [
-      { value: "clearly_defined", label: "Clearly defined and validated" },
-      { value: "mostly_clear", label: "Mostly clear, some refinement needed" },
-      { value: "vague", label: "Vague or too broad" },
-      { value: "multiple", label: "Multiple problems across different offerings" },
-      { value: "unclear", label: "Not sure / hard to articulate" },
-    ],
-  },
-  {
-    id: "bc4",
-    text: "What is your unique value proposition?",
-    type: "radio",
-    section: "Business Clarity",
-    options: [
-      { value: "strong", label: "Strong and differentiated from competitors" },
-      { value: "developing", label: "Developing, needs refinement" },
-      { value: "generic", label: "Generic / similar to others in my space" },
-      { value: "unclear", label: "Unclear or not articulated" },
-      { value: "untested", label: "Not tested with real customers" },
-    ],
-  },
-  {
-    id: "bc5",
-    text: "What are your top 3 revenue streams?",
+    id: "bm2",
+    text: "What are your current revenue streams? List them in order of importance.",
     type: "text",
-    section: "Business Clarity",
+    section: "Business Model",
+    placeholder: "e.g., 1-on-1 coaching, group programs, digital products, affiliate...",
   },
-  // Section 2: Strategic Thinking
   {
-    id: "st1",
-    text: "What are your 90-day priorities?",
+    id: "bm3",
+    text: "What is your pricing strategy?",
     type: "radio",
-    section: "Strategic Thinking",
+    section: "Business Model",
     options: [
-      { value: "clear", label: "Crystal clear with specific milestones" },
-      { value: "mostly_clear", label: "Mostly clear, some ambiguity" },
-      { value: "reactive", label: "Reactive - dealing with what comes up" },
-      { value: "too_many", label: "Too many priorities (scattered focus)" },
-      { value: "none", label: "No formal 90-day plan" },
+      { value: "premium", label: "Premium pricing (high value, fewer clients)" },
+      { value: "mid_market", label: "Mid-market (balanced value and volume)" },
+      { value: "volume", label: "Volume-based (lower price, higher volume)" },
+      { value: "tiered", label: "Tiered (multiple price points)" },
+      { value: "unclear", label: "Still figuring it out" },
     ],
   },
   {
-    id: "st2",
-    text: "What metrics matter most to your business?",
+    id: "bm4",
+    text: "Who is your ideal client? Describe them in detail.",
+    type: "text",
+    section: "Business Model",
+    placeholder: "Demographics, psychographics, pain points, desires...",
+  },
+  {
+    id: "bm5",
+    text: "What specific problem do you solve for your clients?",
+    type: "text",
+    section: "Business Model",
+    placeholder: "The #1 transformation or outcome you deliver...",
+  },
+  {
+    id: "bm6",
+    text: "What is your unique value proposition? What makes you different?",
+    type: "text",
+    section: "Business Model",
+    placeholder: "Why should someone choose you over alternatives?",
+  },
+  {
+    id: "bm7",
+    text: "How clear is your business model to you right now?",
     type: "radio",
-    section: "Strategic Thinking",
+    section: "Business Model",
     options: [
-      { value: "tracked", label: "Tracked and reviewed regularly" },
-      { value: "known", label: "Known but not consistently tracked" },
-      { value: "some", label: "Some metrics, not comprehensive" },
-      { value: "vanity", label: "Mostly vanity metrics" },
-      { value: "none", label: "Not sure what to track" },
+      { value: "crystal", label: "Crystal clear - I can explain it in one sentence" },
+      { value: "mostly", label: "Mostly clear - some refinement needed" },
+      { value: "somewhat", label: "Somewhat clear - working through it" },
+      { value: "unclear", label: "Unclear - still exploring" },
+      { value: "pivoting", label: "In transition/pivoting" },
     ],
   },
   {
-    id: "st3",
-    text: "What is your competitive advantage?",
+    id: "bm8",
+    text: "What is your approximate monthly revenue range?",
     type: "radio",
-    section: "Strategic Thinking",
+    section: "Business Model",
     options: [
-      { value: "sustainable", label: "Sustainable and defensible" },
-      { value: "temporary", label: "Temporary or easily copied" },
-      { value: "price", label: "Price (lowest cost provider)" },
-      { value: "unclear", label: "Unclear what sets me apart" },
-      { value: "none", label: "No distinct advantage" },
+      { value: "0", label: "Pre-revenue / Just starting" },
+      { value: "1_5k", label: "$1K - $5K/month" },
+      { value: "5_10k", label: "$5K - $10K/month" },
+      { value: "10_25k", label: "$10K - $25K/month" },
+      { value: "25_50k", label: "$25K - $50K/month" },
+      { value: "50k_plus", label: "$50K+/month" },
     ],
   },
   {
-    id: "st4",
-    text: "What partnerships could accelerate your growth?",
+    id: "bm9",
+    text: "What percentage of your revenue is recurring vs. one-time?",
     type: "radio",
-    section: "Strategic Thinking",
+    section: "Business Model",
     options: [
-      { value: "active", label: "Active partnerships in place" },
-      { value: "identified", label: "Identified and pursuing" },
-      { value: "considering", label: "Considering but not actively pursuing" },
-      { value: "unclear", label: "Unclear who would be good partners" },
-      { value: "solo", label: "Prefer to grow independently" },
+      { value: "mostly_recurring", label: "Mostly recurring (70%+)" },
+      { value: "balanced", label: "Fairly balanced (40-60%)" },
+      { value: "mostly_onetime", label: "Mostly one-time (70%+)" },
+      { value: "no_recurring", label: "No recurring revenue yet" },
+      { value: "unsure", label: "Not sure / Haven't tracked" },
     ],
   },
   {
-    id: "st5",
-    text: "What is your exit strategy (if any)?",
+    id: "bm10",
+    text: "What is your customer acquisition cost (CAC) relative to customer lifetime value (LTV)?",
     type: "radio",
-    section: "Strategic Thinking",
+    section: "Business Model",
     options: [
-      { value: "defined", label: "Clearly defined with timeline" },
-      { value: "considering", label: "Considering options" },
-      { value: "lifestyle", label: "Lifestyle business - no exit planned" },
-      { value: "legacy", label: "Legacy/impact focus - pass to family/team" },
-      { value: "none", label: "Haven't thought about it" },
+      { value: "healthy", label: "Healthy ratio (LTV is 3x+ CAC)" },
+      { value: "break_even", label: "Breaking even (LTV ~ 1-2x CAC)" },
+      { value: "losing", label: "Losing money (CAC higher than LTV)" },
+      { value: "unsure", label: "Not tracking these metrics" },
+      { value: "organic", label: "Mostly organic - low CAC" },
     ],
+  },
+  // Section 2: Offers (10 questions)
+  {
+    id: "of1",
+    text: "What are your current offers? List them with prices.",
+    type: "text",
+    section: "Offers",
+    placeholder: "Offer name - Price - Format (1-on-1, group, self-paced, etc.)",
+  },
+  {
+    id: "of2",
+    text: "What is your offer ladder? How do clients typically progress through your offers?",
+    type: "text",
+    section: "Offers",
+    placeholder: "Entry offer → Core offer → Premium offer...",
+  },
+  {
+    id: "of3",
+    text: "What is your signature/core offer - the one you want to be known for?",
+    type: "text",
+    section: "Offers",
+    placeholder: "Describe your main offer and why it's central to your business...",
+  },
+  {
+    id: "of4",
+    text: "What offers are in development or planning stages?",
+    type: "text",
+    section: "Offers",
+    placeholder: "New offers you're creating or considering...",
+  },
+  {
+    id: "of5",
+    text: "How do you currently deliver your offers?",
+    type: "radio",
+    section: "Offers",
+    options: [
+      { value: "live", label: "Live delivery (calls, in-person)" },
+      { value: "async", label: "Asynchronous (recorded, self-paced)" },
+      { value: "hybrid", label: "Hybrid (combination of live and async)" },
+      { value: "done_for_you", label: "Done-for-you services" },
+      { value: "mixed", label: "Mixed across different offers" },
+    ],
+  },
+  {
+    id: "of6",
+    text: "What is your average client value (how much does a typical client spend with you)?",
+    type: "radio",
+    section: "Offers",
+    options: [
+      { value: "under_500", label: "Under $500" },
+      { value: "500_2k", label: "$500 - $2,000" },
+      { value: "2k_5k", label: "$2,000 - $5,000" },
+      { value: "5k_10k", label: "$5,000 - $10,000" },
+      { value: "10k_plus", label: "$10,000+" },
+      { value: "variable", label: "Highly variable" },
+    ],
+  },
+  {
+    id: "of7",
+    text: "How satisfied are you with your current offer suite?",
+    type: "radio",
+    section: "Offers",
+    options: [
+      { value: "very", label: "Very satisfied - it's working well" },
+      { value: "mostly", label: "Mostly satisfied - minor tweaks needed" },
+      { value: "mixed", label: "Mixed - some work, some don't" },
+      { value: "unsatisfied", label: "Unsatisfied - needs significant changes" },
+      { value: "confused", label: "Confused - not sure what to offer" },
+    ],
+  },
+  {
+    id: "of8",
+    text: "What is your refund/return policy?",
+    type: "radio",
+    section: "Offers",
+    options: [
+      { value: "guarantee", label: "Money-back guarantee" },
+      { value: "conditional", label: "Conditional refund policy" },
+      { value: "no_refund", label: "No refunds" },
+      { value: "case_by_case", label: "Case by case" },
+      { value: "none", label: "No formal policy yet" },
+    ],
+  },
+  {
+    id: "of9",
+    text: "How do you handle payment plans and financing?",
+    type: "radio",
+    section: "Offers",
+    options: [
+      { value: "all", label: "Offer payment plans on everything" },
+      { value: "high_ticket", label: "Payment plans for high-ticket only" },
+      { value: "case_by_case", label: "Case by case basis" },
+      { value: "none", label: "No payment plans offered" },
+      { value: "third_party", label: "Use third-party financing" },
+    ],
+  },
+  {
+    id: "of10",
+    text: "What offer gaps do you see in your business? What's missing?",
+    type: "text",
+    section: "Offers",
+    placeholder: "Price gaps, format gaps, client journey gaps...",
+  },
+  // Section 3: Marketing & Sales (10 questions)
+  {
+    id: "ms1",
+    text: "What are your primary marketing channels?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Social media, email, podcast, referrals, ads, SEO, etc.",
+  },
+  {
+    id: "ms2",
+    text: "What is your sales process? Walk me through how someone becomes a client.",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Discovery call → Proposal → Close, or other flow...",
+  },
+  {
+    id: "ms3",
+    text: "What is your client journey from first touch to purchase?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Awareness → Interest → Consideration → Decision...",
+  },
+  {
+    id: "ms4",
+    text: "What are your current conversion rates?",
+    type: "radio",
+    section: "Marketing & Sales",
+    options: [
+      { value: "high", label: "High (20%+ from qualified leads)" },
+      { value: "good", label: "Good (10-20% from qualified leads)" },
+      { value: "average", label: "Average (5-10% from qualified leads)" },
+      { value: "low", label: "Low (under 5%)" },
+      { value: "unknown", label: "Not tracking conversion rates" },
+    ],
+  },
+  {
+    id: "ms5",
+    text: "How do you currently generate leads?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Content marketing, paid ads, partnerships, events, etc.",
+  },
+  {
+    id: "ms6",
+    text: "What is your email list size and engagement rate?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Approximate list size and open/click rates...",
+  },
+  {
+    id: "ms7",
+    text: "How do you nurture leads who aren't ready to buy yet?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Email sequences, content, community, retargeting...",
+  },
+  {
+    id: "ms8",
+    text: "What is your current marketing budget as a percentage of revenue?",
+    type: "radio",
+    section: "Marketing & Sales",
+    options: [
+      { value: "0", label: "$0 (organic only)" },
+      { value: "under_5", label: "Under 5%" },
+      { value: "5_10", label: "5-10%" },
+      { value: "10_20", label: "10-20%" },
+      { value: "20_plus", label: "20%+" },
+      { value: "unsure", label: "Not sure" },
+    ],
+  },
+  {
+    id: "ms9",
+    text: "What sales objections do you hear most often?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "Price, timing, need to think about it, not the right fit...",
+  },
+  {
+    id: "ms10",
+    text: "What marketing activities feel most aligned and effective for you?",
+    type: "text",
+    section: "Marketing & Sales",
+    placeholder: "What do you enjoy doing that also brings results?",
+  },
+  // Section 4: Operations (10 questions)
+  {
+    id: "op1",
+    text: "What is your current team structure?",
+    type: "text",
+    section: "Operations",
+    placeholder: "Full-time, part-time, contractors, VA, etc. - list roles",
+  },
+  {
+    id: "op2",
+    text: "What are your key workflows? Describe your main repeatable processes.",
+    type: "text",
+    section: "Operations",
+    placeholder: "Onboarding, content creation, client delivery, etc.",
+  },
+  {
+    id: "op3",
+    text: "What is your tech stack? List your main tools.",
+    type: "text",
+    section: "Operations",
+    placeholder: "CRM, email, scheduling, project management, etc.",
+  },
+  {
+    id: "op4",
+    text: "What SOPs (Standard Operating Procedures) do you have documented?",
+    type: "text",
+    section: "Operations",
+    placeholder: "Which processes are documented and which aren't?",
+  },
+  {
+    id: "op5",
+    text: "What systems need the most improvement right now?",
+    type: "text",
+    section: "Operations",
+    placeholder: "Biggest operational pain points...",
+  },
+  {
+    id: "op6",
+    text: "How do you manage your time and priorities?",
+    type: "radio",
+    section: "Operations",
+    options: [
+      { value: "systematic", label: "Systematic (time blocking, calendar management)" },
+      { value: "list", label: "To-do lists and prioritization" },
+      { value: "reactive", label: "Reactive (handle what comes up)" },
+      { value: "intuitive", label: "Intuitive (go with the flow)" },
+      { value: "chaotic", label: "Chaotic (often overwhelmed)" },
+    ],
+  },
+  {
+    id: "op7",
+    text: "How do you handle client communication and support?",
+    type: "text",
+    section: "Operations",
+    placeholder: "Email, Slack, Voxer, community platform, etc.",
+  },
+  {
+    id: "op8",
+    text: "What is your content creation workflow?",
+    type: "text",
+    section: "Operations",
+    placeholder: "How do you create and distribute content?",
+  },
+  {
+    id: "op9",
+    text: "How do you track and manage business metrics?",
+    type: "radio",
+    section: "Operations",
+    options: [
+      { value: "dashboard", label: "Formal dashboard reviewed regularly" },
+      { value: "spreadsheets", label: "Spreadsheets I update manually" },
+      { value: "casual", label: "Casual tracking - I check when needed" },
+      { value: "accountant", label: "My accountant/bookkeeper handles it" },
+      { value: "none", label: "Not really tracking metrics" },
+    ],
+  },
+  {
+    id: "op10",
+    text: "What would you delegate first if you had unlimited support?",
+    type: "text",
+    section: "Operations",
+    placeholder: "The tasks you'd love to hand off...",
+  },
+  // Section 5: Financials (10 questions)
+  {
+    id: "fi1",
+    text: "What is your approximate monthly revenue?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "0", label: "Pre-revenue" },
+      { value: "under_5k", label: "Under $5K" },
+      { value: "5k_10k", label: "$5K - $10K" },
+      { value: "10k_25k", label: "$10K - $25K" },
+      { value: "25k_50k", label: "$25K - $50K" },
+      { value: "50k_plus", label: "$50K+" },
+    ],
+  },
+  {
+    id: "fi2",
+    text: "What are your primary monthly expenses?",
+    type: "text",
+    section: "Financials",
+    placeholder: "Software, team, ads, contractors, etc. - rough breakdown",
+  },
+  {
+    id: "fi3",
+    text: "What is your approximate profit margin?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "under_20", label: "Under 20%" },
+      { value: "20_40", label: "20-40%" },
+      { value: "40_60", label: "40-60%" },
+      { value: "60_plus", label: "60%+" },
+      { value: "unsure", label: "Not sure / Haven't calculated" },
+    ],
+  },
+  {
+    id: "fi4",
+    text: "What are your financial goals for the next 12 months?",
+    type: "text",
+    section: "Financials",
+    placeholder: "Revenue targets, profit goals, savings, investments...",
+  },
+  {
+    id: "fi5",
+    text: "How is your cash flow situation?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "strong", label: "Strong - consistent and predictable" },
+      { value: "good", label: "Good - mostly steady with some fluctuations" },
+      { value: "variable", label: "Variable - feast or famine cycles" },
+      { value: "tight", label: "Tight - often stressful" },
+      { value: "crisis", label: "In crisis - need immediate help" },
+    ],
+  },
+  {
+    id: "fi6",
+    text: "Do you have an emergency fund? If so, how many months of expenses does it cover?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "6_plus", label: "6+ months" },
+      { value: "3_6", label: "3-6 months" },
+      { value: "1_3", label: "1-3 months" },
+      { value: "under_1", label: "Under 1 month" },
+      { value: "none", label: "No emergency fund" },
+    ],
+  },
+  {
+    id: "fi7",
+    text: "How do you handle taxes and bookkeeping?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "professional", label: "Professional accountant/bookkeeper" },
+      { value: "software", label: "Accounting software (I do it myself)" },
+      { value: "spreadsheets", label: "Spreadsheets and manual tracking" },
+      { value: "shoebox", label: "Shoebox method (need to get organized)" },
+      { value: "behind", label: "Behind and need to catch up" },
+    ],
+  },
+  {
+    id: "fi8",
+    text: "What is your personal salary/draw from the business?",
+    type: "radio",
+    section: "Financials",
+    options: [
+      { value: "consistent", label: "Consistent monthly amount" },
+      { value: "variable", label: "Variable based on revenue" },
+      { value: "as_needed", label: "Take money as needed" },
+      { value: "reinvesting", label: "Reinvesting everything" },
+      { value: "unsure", label: "Not sure / Haven't separated personal/business" },
+    ],
+  },
+  {
+    id: "fi9",
+    text: "What financial habits or patterns do you want to change?",
+    type: "text",
+    section: "Financials",
+    placeholder: "Overspending, undercharging, not saving, avoiding numbers...",
+  },
+  {
+    id: "fi10",
+    text: "What would financial freedom look like for you?",
+    type: "text",
+    section: "Financials",
+    placeholder: "Your definition of enough and financial peace...",
   },
 ];
 
-const sections = ["Business Clarity", "Strategic Thinking"];
+const sections = [
+  "Business Model",
+  "Offers",
+  "Marketing & Sales",
+  "Operations",
+  "Financials",
+];
 
 export default function BrainAssessmentPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -328,8 +695,8 @@ export default function BrainAssessmentPage() {
               <textarea
                 value={answers[currentQ.id] || ""}
                 onChange={(e) => handleAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                rows={4}
+                placeholder={currentQ.placeholder || "Type your answer here..."}
+                rows={5}
                 className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#2E7C83] focus:ring-2 focus:ring-[#2E7C83]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1F315B] dark:text-[#F6F1E8]"
               />
             )}
@@ -357,7 +724,7 @@ export default function BrainAssessmentPage() {
         </Card>
 
         {/* Section Summary */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
           {sections.map((section) => {
             const sectionQs = questions.filter((q) => q.section === section);
             const answeredQs = sectionQs.filter((q) => answers[q.id]).length;

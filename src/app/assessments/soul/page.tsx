@@ -17,107 +17,334 @@ interface Question {
 }
 
 const questions: Question[] = [
-  // Section 1: Founder Alignment
+  // Section 1: Core Identity (10 questions)
   {
-    id: "fa1",
-    text: "Why did you start this business?",
-    type: "radio",
-    section: "Founder Alignment",
-    options: [
-      { value: "purpose", label: "To fulfill a deeper purpose or calling" },
-      { value: "freedom", label: "To create freedom and flexibility in my life" },
-      { value: "problem", label: "To solve a specific problem I experienced" },
-      { value: "opportunity", label: "I saw a market opportunity" },
-      { value: "transition", label: "Transitioned from job/circumstances" },
-    ],
-  },
-  {
-    id: "fa2",
-    text: "What does success look like for you personally?",
-    type: "radio",
-    section: "Founder Alignment",
-    options: [
-      { value: "impact", label: "Making a meaningful impact on others" },
-      { value: "balance", label: "Work-life balance and personal fulfillment" },
-      { value: "wealth", label: "Financial abundance and security" },
-      { value: "recognition", label: "Recognition and status in my field" },
-      { value: "freedom", label: "Freedom to do what I want, when I want" },
-    ],
-  },
-  {
-    id: "fa3",
-    text: "What drains your energy in your business?",
+    id: "ci1",
+    text: "What is your full name?",
     type: "text",
-    section: "Founder Alignment",
+    section: "Core Identity",
+  },
+  {
+    id: "ci2",
+    text: "What name do you prefer to be called professionally?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci3",
+    text: "What name do you prefer to be called personally?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci4",
+    text: "What pronouns do you use?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci5",
+    text: "Where are you based?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci6",
+    text: "What communities, cultures, or regions have shaped how you see the world?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci7",
+    text: "How do you currently describe who you are in one sentence?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci8",
+    text: "What parts of your identity feel most central to your work?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci9",
+    text: "What season of life are you currently in?",
+    type: "text",
+    section: "Core Identity",
+  },
+  {
+    id: "ci10",
+    text: "What are you learning, releasing, and building right now?",
+    type: "text",
+    section: "Core Identity",
+  },
+  // Section 2: Origin Story (10 questions)
+  {
+    id: "os1",
+    text: "What were you like as a child?",
+    type: "text",
+    section: "Origin Story",
     sensitive: true,
   },
   {
-    id: "fa4",
-    text: "What gives you energy and makes you feel alive?",
+    id: "os2",
+    text: "What did people often notice about you when you were young?",
     type: "text",
-    section: "Founder Alignment",
+    section: "Origin Story",
   },
   {
-    id: "fa5",
-    text: "What would you do if money was not a concern?",
-    type: "radio",
-    section: "Founder Alignment",
-    options: [
-      { value: "same", label: "Continue doing exactly what I'm doing now" },
-      { value: "similar", label: "Something similar but with changes" },
-      { value: "different", label: "Something completely different" },
-      { value: "pause", label: "Take a long pause to reflect and rest" },
-      { value: "unclear", label: "I'm not sure - I need to think about it" },
-    ],
-  },
-  // Section 2: Values & Vision
-  {
-    id: "vv1",
-    text: "What are your top 3 personal values?",
+    id: "os3",
+    text: "What did you love before the world told you what was practical?",
     type: "text",
-    section: "Values & Vision",
+    section: "Origin Story",
+    sensitive: true,
   },
   {
-    id: "vv2",
-    text: "How do your values show up in your business?",
-    type: "radio",
-    section: "Values & Vision",
-    options: [
-      { value: "fully", label: "Fully integrated into every decision" },
-      { value: "mostly", label: "Mostly aligned with some compromises" },
-      { value: "sometimes", label: "Sometimes, but often overlooked" },
-      { value: "rarely", label: "Rarely - business demands come first" },
-      { value: "unclear", label: "Unclear how to align values with business" },
-    ],
-  },
-  {
-    id: "vv3",
-    text: "What legacy do you want to create through your work?",
+    id: "os4",
+    text: "What did you have to become good at to survive, belong, succeed, or be loved?",
     type: "text",
-    section: "Values & Vision",
+    section: "Origin Story",
+    sensitive: true,
   },
   {
-    id: "vv4",
-    text: "What does 'enough' look like for you?",
-    type: "radio",
-    section: "Values & Vision",
-    options: [
-      { value: "defined", label: "Clearly defined - I know my 'enough' number" },
-      { value: "evolving", label: "Evolving - it changes as I grow" },
-      { value: "more", label: "Always more - I haven't found my limit" },
-      { value: "simple", label: "Simple living - I need very little" },
-      { value: "unclear", label: "Unclear - I haven't defined it yet" },
-    ],
-  },
-  {
-    id: "vv5",
-    text: "What would make you proud when you look back in 10 years?",
+    id: "os5",
+    text: "What role did you play in your family? (caretaker, achiever, rebel, peacekeeper, etc.)",
     type: "text",
-    section: "Values & Vision",
+    section: "Origin Story",
+    sensitive: true,
+  },
+  {
+    id: "os6",
+    text: "What did you learn too early?",
+    type: "text",
+    section: "Origin Story",
+    sensitive: true,
+  },
+  {
+    id: "os7",
+    text: "What are the major life events that shaped who you are?",
+    type: "text",
+    section: "Origin Story",
+    sensitive: true,
+  },
+  {
+    id: "os8",
+    text: "Which experiences broke something open in you? Which gave you wisdom you could not have learned otherwise?",
+    type: "text",
+    section: "Origin Story",
+    sensitive: true,
+  },
+  {
+    id: "os9",
+    text: "What losses and victories have shaped your worldview and confidence?",
+    type: "text",
+    section: "Origin Story",
+    sensitive: true,
+  },
+  {
+    id: "os10",
+    text: "Was there a specific moment when your life or work changed direction?",
+    type: "text",
+    section: "Origin Story",
+  },
+  // Section 3: Calling and Purpose (10 questions)
+  {
+    id: "cp1",
+    text: "Why do you do the work you do?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp2",
+    text: "What problem can you not unsee?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp3",
+    text: "What transformation do you feel assigned to help others experience?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp4",
+    text: "Who are you here to serve?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp5",
+    text: "What do you want people to feel in your presence?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp6",
+    text: "What would still matter even if no one applauded?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp7",
+    text: "What is your current mission?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp8",
+    text: "What does aligned success feel like to you?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  {
+    id: "cp9",
+    text: "What are you unwilling to sacrifice for success?",
+    type: "text",
+    section: "Calling and Purpose",
+    sensitive: true,
+  },
+  {
+    id: "cp10",
+    text: "What makes your work feel sacred or meaningful?",
+    type: "text",
+    section: "Calling and Purpose",
+  },
+  // Section 4: Values and Standards (10 questions)
+  {
+    id: "vs1",
+    text: "What are your top 5-10 core values?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  {
+    id: "vs2",
+    text: "Which value do you protect most fiercely?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  {
+    id: "vs3",
+    text: "Which value has cost you something?",
+    type: "text",
+    section: "Values and Standards",
+    sensitive: true,
+  },
+  {
+    id: "vs4",
+    text: "What are your personal non-negotiables?",
+    type: "text",
+    section: "Values and Standards",
+    sensitive: true,
+  },
+  {
+    id: "vs5",
+    text: "What are your professional non-negotiables?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  {
+    id: "vs6",
+    text: "What will you no longer tolerate in your life or work?",
+    type: "text",
+    section: "Values and Standards",
+    sensitive: true,
+  },
+  {
+    id: "vs7",
+    text: "What does integrity mean to you?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  {
+    id: "vs8",
+    text: "What compromises are dangerous for you?",
+    type: "text",
+    section: "Values and Standards",
+    sensitive: true,
+  },
+  {
+    id: "vs9",
+    text: "How do your values show up in your daily decisions?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  {
+    id: "vs10",
+    text: "What boundaries do you need to protect what matters most?",
+    type: "text",
+    section: "Values and Standards",
+  },
+  // Section 5: Beliefs and Worldview (10 questions)
+  {
+    id: "bw1",
+    text: "What do you believe about people?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw2",
+    text: "What do you believe about transformation?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw3",
+    text: "What do you believe about healing and growth?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw4",
+    text: "What do you believe about suffering?",
+    type: "text",
+    section: "Beliefs and Worldview",
+    sensitive: true,
+  },
+  {
+    id: "bw5",
+    text: "What do you believe about resilience?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw6",
+    text: "What do you believe about purpose?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw7",
+    text: "What do you believe that goes against common advice in your industry?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw8",
+    text: "What popular belief do you disagree with?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw9",
+    text: "Do you have a spiritual or philosophical foundation that shapes your work?",
+    type: "text",
+    section: "Beliefs and Worldview",
+  },
+  {
+    id: "bw10",
+    text: "What truth do you keep coming back to, no matter what changes?",
+    type: "text",
+    section: "Beliefs and Worldview",
   },
 ];
 
-const sections = ["Founder Alignment", "Values & Vision"];
+const sections = [
+  "Core Identity",
+  "Origin Story",
+  "Calling and Purpose",
+  "Values and Standards",
+  "Beliefs and Worldview",
+];
 
 export default function SoulAssessmentPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -208,9 +435,9 @@ export default function SoulAssessmentPage() {
                 insights about your alignment with your business and purpose.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/assessments/profit">
+                <Link href="/assessments/brain">
                   <Button variant="primary">
-                    Continue to Profit Assessment
+                    Continue to Brain Assessment
                   </Button>
                 </Link>
                 <Link href="/dashboard">
@@ -306,39 +533,12 @@ export default function SoulAssessmentPage() {
                 )}
               </div>
 
-              {currentQ.type === "radio" && currentQ.options && (
-                <div className="space-y-3">
-                  {currentQ.options.map((option) => (
-                    <label
-                      key={option.value}
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        answers[currentQ.id] === option.value
-                          ? "border-[#5E3B6C] bg-[#5E3B6C]/5"
-                          : "border-[#D4AF63]/20 hover:border-[#D4AF63]/40"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={currentQ.id}
-                        value={option.value}
-                        checked={answers[currentQ.id] === option.value}
-                        onChange={(e) => handleAnswer(e.target.value)}
-                        className="mt-1 w-4 h-4 text-[#5E3B6C] focus:ring-[#5E3B6C]"
-                      />
-                      <span className="text-[#1F315B] dark:text-[#F6F1E8]">
-                        {option.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
               {currentQ.type === "text" && (
                 <textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswer(e.target.value)}
                   placeholder="Take your time to reflect..."
-                  rows={4}
+                  rows={6}
                   className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#5E3B6C] focus:ring-2 focus:ring-[#5E3B6C]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1F315B] dark:text-[#F6F1E8]"
                 />
               )}
@@ -367,7 +567,7 @@ export default function SoulAssessmentPage() {
         )}
 
         {/* Section Summary */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
           {sections.map((section) => {
             const sectionQs = questions.filter((q) => q.section === section);
             const answeredQs = sectionQs.filter((q) => answers[q.id]).length;
