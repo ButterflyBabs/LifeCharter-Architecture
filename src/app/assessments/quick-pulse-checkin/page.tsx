@@ -943,12 +943,14 @@ export default function QuickPulseCheckinPage() {
           const demoUser = DEMO_USER;
           
           // Check for existing demo workspace and plan
-          const { data: existingPlan } = await supabase
+          const { data: existingPlans } = await supabase
             .from('client_master_plans')
             .select('id, workspace_id')
             .eq('user_id', demoUser.id)
             .eq('status', 'active')
-            .single();
+            .limit(1);
+          
+          const existingPlan = existingPlans?.[0];
 
           if (existingPlan) {
             setMasterPlanId(existingPlan.id);
@@ -1082,7 +1084,7 @@ export default function QuickPulseCheckinPage() {
     );
   }
 
-  if (error && !isDemoMode) {
+  if (error) {
     return (
       <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
@@ -1119,7 +1121,14 @@ export default function QuickPulseCheckinPage() {
                   : "Please sign in to start your check-in and track your progress across all dimensions."
                 }
               </p>
-              {!isDemoMode && (
+              {isDemoMode ? (
+                <Button 
+                  variant="primary" 
+                  onClick={() => window.location.reload()}
+                >
+                  Start Demo Check-in
+                </Button>
+              ) : (
                 <Link href="/login">
                   <Button variant="primary">Sign In</Button>
                 </Link>
