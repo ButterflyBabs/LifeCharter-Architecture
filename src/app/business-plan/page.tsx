@@ -23,6 +23,7 @@ import {
   Lightbulb,
   ArrowRight
 } from "lucide-react";
+import Link from "next/link";
 
 interface BusinessPlanSection {
   id: string;
