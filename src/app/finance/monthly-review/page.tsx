@@ -20,7 +20,6 @@ import {
   Clock,
   Target,
   TrendingUp,
-  Save,
   ArrowLeft,
   Sparkles
 } from "lucide-react";
@@ -321,7 +320,7 @@ export default function MonthlyReviewPage() {
 
       {/* Section Navigation Dots */}
       <div className="flex justify-center gap-2 mt-6">
-        {reviewSections.map((s, index) => (
+        {reviewSections.map((s, idx) => (
           <button
             key={s.id}
             onClick={() => setCurrentSection(index)}
