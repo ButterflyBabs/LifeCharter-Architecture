@@ -38,22 +38,37 @@ interface Metric {
   trend: "up" | "down" | "stable";
 }
 
-const sectionConfigs: Record<string, { questions: Question[]; metrics: Metric[] }> = {
+// Product-specific question template
+const productQuestionTemplate = (productNum: number, isFlagship: boolean) => [
+  { id: `p${productNum}_name`, question: isFlagship ? "Flagship product/service name" : `Product ${productNum} name`, type: "text", required: true },
+  { id: `p${productNum}_price`, question: "Price point", type: "currency", required: true },
+  { id: `p${productNum}_clients`, question: "How many clients have purchased this?", type: "number", required: true },
+  { id: `p${productNum}_transformation`, question: "What transformation does this provide?", type: "textarea", required: true },
+  { id: `p${productNum}_format`, question: "Delivery format (1:1, group, digital, hybrid)", type: "text", required: true },
+  { id: `p${productNum}_duration`, question: "Time to deliver results", type: "text", required: false },
+  { id: `p${productNum}_differentiator`, question: "What makes this different from competitors?", type: "textarea", required: true },
+];
+
+const sectionConfigs: Record<string, { questions: Question[]; metrics: Metric[]; hasDynamicProducts?: boolean }> = {
   "products": {
     questions: [
-      { id: "p1", question: "What is your flagship product/service name?", type: "text", required: true },
-      { id: "p2", question: "Current price point", type: "currency", required: true },
-      { id: "p3", question: "How many clients have purchased this?", type: "number", required: true },
-      { id: "p4", question: "What transformation does this provide?", type: "textarea", required: true },
-      { id: "p5", question: "Delivery format (1:1, group, digital, hybrid)", type: "text", required: true },
-      { id: "p6", question: "Time to deliver results", type: "text", required: false },
-      { id: "p7", question: "What makes this different from competitors?", type: "textarea", required: true },
+      // Flagship product first
+      { id: "flagship_name", question: "🌟 FLAGSHIP PRODUCT: What is your main/flagship product or service name?", type: "text", required: true },
+      { id: "flagship_price", question: "Flagship product price point", type: "currency", required: true },
+      { id: "flagship_clients", question: "How many clients have purchased your flagship product?", type: "number", required: true },
+      { id: "flagship_transformation", question: "What transformation does your flagship product provide?", type: "textarea", required: true },
+      { id: "flagship_format", question: "Delivery format (1:1, group, digital, hybrid, etc.)", type: "text", required: true },
+      { id: "flagship_duration", question: "Time to deliver results from flagship product", type: "text", required: false },
+      { id: "flagship_differentiator", question: "What makes your flagship product different from competitors?", type: "textarea", required: true },
+      // Then ask about additional products
+      { id: "other_products_count", question: "How many OTHER products/services do you offer? (excluding flagship)", type: "number", required: true },
     ],
     metrics: [
-      { label: "Products Live", current: "4", target: "6", unit: "count", trend: "stable" },
+      { label: "Total Products", current: "1", target: "4", unit: "count", trend: "up" },
+      { label: "Flagship Revenue %", current: "80%", target: "60%", unit: "%", trend: "down" },
       { label: "Avg. Price Point", current: "$297", target: "$397", unit: "$", trend: "up" },
-      { label: "Product-Market Fit", current: "Strong", target: "Very Strong", unit: "rating", trend: "up" },
-    ]
+    ],
+    hasDynamicProducts: true,
   },
   "pricing": {
     questions: [
@@ -183,6 +198,38 @@ export function SectionContent({ sectionId }: SectionContentProps) {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
+  // Generate dynamic product questions based on count
+  const getDynamicQuestions = (): Question[] => {
+    if (sectionId !== "products") return config.questions;
+    
+    const baseQuestions = config.questions;
+    const otherProductCount = parseInt(answers["other_products_count"] || "0");
+    
+    let dynamicQuestions = [...baseQuestions];
+    
+    // Add questions for each additional product
+    for (let i = 1; i <= otherProductCount; i++) {
+      const productNum = i + 1; // Start at 2 (flagship is 1)
+      dynamicQuestions = [
+        ...dynamicQuestions,
+        { id: `p${productNum}_divider`, question: `📦 PRODUCT ${i}:`, type: "text", required: false },
+        { id: `p${productNum}_name`, question: "Product name", type: "text", required: true },
+        { id: `p${productNum}_price`, question: "Price point", type: "currency", required: true },
+        { id: `p${productNum}_clients`, question: "How many clients have purchased this?", type: "number", required: true },
+        { id: `p${productNum}_transformation`, question: "What transformation does this provide?", type: "textarea", required: true },
+        { id: `p${productNum}_format`, question: "Delivery format", type: "text", required: true },
+        { id: `p${productNum}_duration`, question: "Time to deliver results", type: "text", required: false },
+        { id: `p${productNum}_differentiator`, question: "What makes this different?", type: "textarea", required: true },
+      ];
+    }
+    
+    return dynamicQuestions;
+  };
+
+  const allQuestions = getDynamicQuestions();
+  const dynamicCompletedCount = allQuestions.filter(q => q.id.includes("divider") || answers[q.id]).length;
+  const dynamicProgress = allQuestions.length > 0 ? (dynamicCompletedCount / allQuestions.length) * 100 : 0;
+
   const handleGeneratePlan = () => {
     setIsGenerating(true);
     setTimeout(() => {
@@ -269,16 +316,19 @@ export function SectionContent({ sectionId }: SectionContentProps) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm text-[#B9A9A9] mb-1">
-                {completedCount} of {config.questions.length} questions answered
+                {sectionId === "products" 
+                  ? `${dynamicCompletedCount} of ${allQuestions.length} questions answered (including ${parseInt(answers["other_products_count"] || "0")} additional products)`
+                  : `${completedCount} of ${config.questions.length} questions answered`
+                }
               </p>
               <div className="w-48 bg-[#1F315B]/10 rounded-full h-2">
                 <div 
                   className="bg-[#D4AF63] h-2 rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${sectionId === "products" ? dynamicProgress : progress}%` }}
                 />
               </div>
             </div>
-            {progress === 100 && (
+            {(sectionId === "products" ? dynamicProgress : progress) >= 100 && (
               <Button onClick={handleGeneratePlan} disabled={isGenerating}>
                 <Sparkles className="w-4 h-4 mr-2" />
                 {isGenerating ? "Generating..." : "Generate Plan Section"}
@@ -291,7 +341,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-[#1F315B]/10">
         {[
-          { id: "questions", label: "Questions", count: completedCount },
+          { id: "questions", label: "Questions", count: sectionId === "products" ? dynamicCompletedCount : completedCount },
           { id: "plan", label: "Business Plan", count: null },
           { id: "metrics", label: "Metrics", count: config.metrics.length },
         ].map((tab) => (
@@ -320,7 +370,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
       {/* Questions Tab */}
       {activeTab === "questions" && (
         <div className="space-y-4">
-          {config.questions.map((question, index) => (
+          {(sectionId === "products" ? allQuestions : config.questions).map((question, index) => (
             <Card 
               key={question.id} 
               className={answers[question.id] ? "border-green-500/30" : "border-[#1F315B]/10"}
@@ -335,16 +385,24 @@ export function SectionContent({ sectionId }: SectionContentProps) {
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs text-[#B9A9A9]">Q{index + 1}</span>
-                      {question.required && (
-                        <span className="text-xs text-red-500">*Required</span>
-                      )}
-                    </div>
-                    <label className="block text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-3">
-                      {question.question}
-                    </label>
-                    {renderInput(question)}
+                    {question.id.includes("divider") ? (
+                      <div className="py-4 border-t-2 border-[#D4AF63]/30 mt-4">
+                        <h3 className="text-lg font-bold text-[#D4AF63]">{question.question}</h3>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xs text-[#B9A9A9]">Q{index + 1}</span>
+                          {question.required && (
+                            <span className="text-xs text-red-500">*Required</span>
+                          )}
+                        </div>
+                        <label className="block text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-3">
+                          {question.question}
+                        </label>
+                        {renderInput(question)}
+                      </>
+                    )}
                     
                     {question.aiSuggested && !answers[question.id] && (
                       <div className="mt-3 p-3 bg-[#D4AF63]/10 rounded-lg border border-[#D4AF63]/20">
