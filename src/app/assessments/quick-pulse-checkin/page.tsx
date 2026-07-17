@@ -929,23 +929,12 @@ export default function QuickPulseCheckinPage() {
         
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
-        // If no user, enable demo mode and call API
+        // If no user, enable demo mode with local-only storage
         if (authError || !user) {
           setIsDemoMode(true);
-          
-          // Call demo setup API (uses service role to bypass RLS)
-          const response = await fetch('/api/demo-setup', {
-            method: 'POST',
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to initialize demo mode');
-          }
-          
-          const data = await response.json();
-          setMasterPlanId(data.masterPlanId);
-          setWorkspaceId(data.workspaceId);
+          // Use demo IDs that don't need database
+          setMasterPlanId('demo-master-plan');
+          setWorkspaceId('demo-workspace');
           setIsLoading(false);
           return;
         }

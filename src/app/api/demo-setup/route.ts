@@ -55,18 +55,36 @@ export async function POST() {
       );
     }
     
-    // Create demo profile
+    // Create demo user in auth schema first (required for profiles FK)
+    const { error: authError } = await supabase.auth.admin.createUser({
+      id: DEMO_USER.id,
+      email: DEMO_USER.email,
+      email_confirm: true,
+      user_metadata: { full_name: DEMO_USER.full_name }
+    });
+    
+    // Ignore error if user already exists
+    if (authError && !authError.message.includes('already been registered')) {
+      console.error('Auth user creation error:', authError);
+    }
+    
+    // Create demo profile first (required for FK constraint)
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: DEMO_USER.id,
         email: DEMO_USER.email,
         full_name: DEMO_USER.full_name,
-        workspace_id: demoWorkspace.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
     
     if (profileError) {
       console.error('Profile creation error:', profileError);
+      return NextResponse.json(
+        { error: 'Failed to create demo profile: ' + profileError.message },
+        { status: 500 }
+      );
     }
     
     // Create demo master plan
