@@ -210,4 +210,339 @@ const allQuestions: Question[] = [
   { id: "et4", text: "What emotions do you help others navigate?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
   { id: "et5", text: "What emotions signal that something is misaligned?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
   { id: "et6", text: "What emotions signal that something is deeply right?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
-  { id: "et7", text:
+  { id: "et7", text: "What emotions do you consider sacred?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et8", text: "What emotions do you consider warning signs?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et9", text: "How do you process grief, anger, or disappointment?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7, sensitive: true },
+  { id: "et10", text: "How do you process joy, excitement, or success?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et11", text: "What emotions are you still learning to feel?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7, sensitive: true },
+  { id: "et12", text: "What emotions are you healing your relationship with?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7, sensitive: true },
+  { id: "et13", text: "How do you want people to feel when they encounter your work?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et14", text: "How do you want people to feel when they work with you directly?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et15", text: "What emotional states support your best work?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et16", text: "What emotional states diminish your capacity?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et17", text: "How do you restore yourself emotionally?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et18", text: "How do you know when you are emotionally depleted?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et19", text: "How do you know when you are emotionally resourced?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et20", text: "What is your relationship with vulnerability?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7, sensitive: true },
+  { id: "et21", text: "When do you feel most alive?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et22", text: "When do you feel most at peace?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et23", text: "When do you feel most like yourself?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et24", text: "What presence do you bring to difficult conversations?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et25", text: "What presence do you bring to celebratory moments?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et26", text: "What presence do you bring to everyday interactions?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+  { id: "et27", text: "How do you want to be remembered?", type: "text", section: "Emotional Texture and Presence", sectionIndex: 7 },
+
+  // Section 8: Client Transformation (28 questions)
+  // Who You Serve (ct1-ct11)
+  { id: "ct1", text: "Who are your people? Describe them in detail.", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct2", text: "What do they have in common?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct3", text: "What are they carrying when they come to you?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct4", text: "What are they hoping for?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct5", text: "What are they afraid of?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct6", text: "What have they already tried?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct7", text: "What do they believe about themselves when they first encounter you?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct8", text: "What do they believe about their situation?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct9", text: "What do they believe about what is possible?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct10", text: "What do they need to hear but have not been told?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct11", text: "What do they need to feel but have not felt safe enough to feel?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  // The Before State (ct12-ct21)
+  { id: "ct12", text: "What does life look like for them before working with you?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct13", text: "What are they tolerating?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct14", text: "What are they pretending not to know?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct15", text: "What are they exhausted by?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct16", text: "What are they longing for?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct17", text: "What patterns keep repeating for them?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct18", text: "What are they ready to leave behind?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct19", text: "What are they afraid will never change?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct20", text: "What are they secretly hoping is true?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct21", text: "What do they need permission to do, feel, or believe?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  // The After State (ct22-ct31)
+  { id: "ct22", text: "What becomes possible for them after working with you?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct23", text: "How do they think differently?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct24", text: "How do they speak differently?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct25", text: "How do they decide differently?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct26", text: "How do they relate to themselves differently?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct27", text: "How do they relate to others differently?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct28", text: "What do they stop tolerating?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct29", text: "What do they start claiming?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct30", text: "What do they finally understand about themselves?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct31", text: "What do they finally trust?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  // Your Role in Transformation (ct32-ct39)
+  { id: "ct32", text: "What role do you play in their transformation?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct33", text: "What do you help them see?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct34", text: "What do you help them name?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct35", text: "What do you help them release?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct36", text: "What do you help them build?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct37", text: "What do you help them remember?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct38", text: "What do you hold space for?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+  { id: "ct39", text: "What do you refuse to do for them?", type: "text", section: "Client Transformation", sectionIndex: 8 },
+
+  // Section 9: Story Library (25 questions)
+  // Personal Stories (sl1-sl15)
+  { id: "sl1", text: "Tell me about a moment that changed everything for you.", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl2", text: "Tell me about a time you had to begin again.", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl3", text: "Tell me about a moment when you were deeply misunderstood.", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl4", text: "Tell me about a time you surprised yourself.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl5", text: "Tell me about a failure that became a gift.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl6", text: "Tell me about a person who saw something in you that you could not see in yourself.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl7", text: "Tell me about a time you had to stand alone.", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl8", text: "Tell me about a time you chose alignment over approval.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl9", text: "Tell me about a moment of clarity that arrived unexpectedly.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl10", text: "Tell me about a time you had to let go of something you thought you needed.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl11", text: "Tell me about a time you created something that scared you.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl12", text: "Tell me about a time you showed up when it would have been easier to hide.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl13", text: "Tell me about a moment when you knew you were exactly where you were meant to be.", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl14", text: "Tell me about a time you had to forgive yourself.", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl15", text: "Tell me about a time you witnessed someone else transform.", type: "text", section: "Story Library", sectionIndex: 9 },
+  // Protected Stories and Sensitive Context (sl16-sl25)
+  { id: "sl16", text: "Are there stories that are private context only?", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl17", text: "What topics are off-limits for public storytelling?", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl18", text: "What names, dates, or details should be omitted from public versions of your stories?", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl19", text: "What stories should AI never reference or allude to?", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl20", text: "What stories are okay to reference in general terms but not in detail?", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl21", text: "What stories are central to your message and should be told often?", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl22", text: "What stories are still being written and should be handled gently?", type: "text", section: "Story Library", sectionIndex: 9, sensitive: true },
+  { id: "sl23", text: "What stories demonstrate your values in action?", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl24", text: "What stories demonstrate your expertise without you having to claim it?", type: "text", section: "Story Library", sectionIndex: 9 },
+  { id: "sl25", text: "What stories help people trust you before they know you?", type: "text", section: "Story Library", sectionIndex: 9 },
+];
+
+const sections = [
+  "Core Identity",
+  "Origin Story",
+  "Calling, Purpose, and Sacred Why",
+  "Values and Standards",
+  "Beliefs and Worldview",
+  "Voice and Communication Style",
+  "Emotional Texture and Presence",
+  "Client Transformation",
+  "Story Library",
+];
+
+export default function SoulAssessmentPage() {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+
+  // Load saved progress
+  useEffect(() => {
+    const saved = localStorage.getItem("soul-assessment");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setAnswers(parsed.answers || {});
+        setCurrentQuestion(parsed.currentQuestion || 0);
+        setLastSaved(new Date(parsed.savedAt));
+      } catch {
+        // Invalid saved data, start fresh
+      }
+    }
+  }, []);
+
+  // Autosave
+  const saveProgress = useCallback(() => {
+    setIsSaving(true);
+    const data = {
+      answers,
+      currentQuestion,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem("soul-assessment", JSON.stringify(data));
+    setTimeout(() => {
+      setLastSaved(new Date());
+      setIsSaving(false);
+    }, 500);
+  }, [answers, currentQuestion]);
+
+  useEffect(() => {
+    const timer = setTimeout(saveProgress, 1000);
+    return () => clearTimeout(timer);
+  }, [answers, currentQuestion, saveProgress]);
+
+  const handleAnswer = (value: string) => {
+    setAnswers((prev) => ({ ...prev, [allQuestions[currentQuestion].id]: value }));
+  };
+
+  const handleNext = () => {
+    if (currentQuestion < allQuestions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setIsComplete(true);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion((prev) => prev - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const currentQ = allQuestions[currentQuestion];
+  const progress = ((currentQuestion + 1) / allQuestions.length) * 100;
+  const currentSection = currentQ.section;
+  const sectionQuestions = allQuestions.filter((q) => q.section === currentSection);
+  const sectionProgress =
+    ((sectionQuestions.findIndex((q) => q.id === currentQ.id) + 1) /
+      sectionQuestions.length) *
+    100;
+
+  if (isComplete) {
+    return (
+      <div className="min-h-screen bg-[#F6F1E8] dark:bg-[#1a1a2e] py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <Card className="border-[#5E3B6C]/30">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#5E3B6C]/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-[#5E3B6C]" />
+              </div>
+              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+                Soul Assessment Complete!
+              </h1>
+              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6">
+                Thank you for completing the Soul Assessment. Your responses have been
+                saved and will contribute to your overall LifeCharter Alignment Score.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/assessments/brain">
+                  <Button variant="primary">
+                    Continue to Brain Assessment
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button variant="secondary">Go to Dashboard</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F6F1E8] dark:bg-[#1a1a2e]">
+      {/* Header */}
+      <div className="bg-[#1F315B] text-white py-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-[#5E3B6C]/20 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-[#CDBED6]" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Soul Assessment</h1>
+              <p className="text-sm text-[#CDBED6]">Core Identity & Purpose</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Overall Progress</span>
+              <span>
+                {currentQuestion + 1} of {allQuestions.length}
+              </span>
+            </div>
+            <Progress value={progress} variant="purple" />
+          </div>
+        </div>
+      </div>
+
+      {/* Question Card */}
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <Card className="border-[#5E3B6C]/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-[#5E3B6C]">
+                {currentQ.section}
+              </span>
+              <div className="flex items-center gap-2 text-sm text-[#B9A9A9]">
+                <Save className="w-4 h-4" />
+                {isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
+              </div>
+            </div>
+            <div className="mt-2">
+              <Progress value={sectionProgress} variant="purple" className="h-1" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-start gap-3">
+              {currentQ.sensitive && (
+                <div className="flex items-center gap-1 text-amber-600 text-sm bg-amber-50 px-2 py-1 rounded">
+                  <Shield className="w-4 h-4" />
+                  <span>Private</span>
+                </div>
+              )}
+            </div>
+            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              {currentQ.text}
+            </h2>
+
+            {currentQ.type === "text" && (
+              <textarea
+                value={answers[currentQ.id] || ""}
+                onChange={(e) => handleAnswer(e.target.value)}
+                placeholder="Type your answer here..."
+                rows={5}
+                className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#5E3B6C] focus:ring-2 focus:ring-[#5E3B6C]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1F315B] dark:text-[#F6F1E8]"
+              />
+            )}
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-6 border-t border-[#D4AF63]/20">
+              <Button
+                variant="ghost"
+                onClick={handlePrevious}
+                disabled={currentQuestion === 0}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleNext}
+              >
+                {currentQuestion === allQuestions.length - 1 ? "Complete" : "Next"}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Summary */}
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+          {sections.map((section) => {
+            const sectionQs = allQuestions.filter((q) => q.section === section);
+            const answeredQs = sectionQs.filter((q) => answers[q.id]).length;
+            const isCurrent = section === currentSection;
+            return (
+              <div
+                key={section}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  isCurrent
+                    ? "border-[#5E3B6C] bg-[#5E3B6C]/5"
+                    : "border-[#D4AF63]/20"
+                }`}
+              >
+                <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                  {section}
+                </p>
+                <p className="text-xs text-[#B9A9A9] mt-1">
+                  {answeredQs} of {sectionQs.length} answered
+                </p>
+                <div className="mt-2">
+                  <Progress
+                    value={(answeredQs / sectionQs.length) * 100}
+                    variant="purple"
+                    className="h-1"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
