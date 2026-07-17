@@ -162,7 +162,7 @@ export function CollapsibleSidebar() {
             const Icon = item.icon;
             const isActive = activeItem === item.id;
             return (
-              <li key={item.id}>
+              <li key={item.id} className="relative group">
                 <Link
                   href={item.href}
                   className={cn(
@@ -172,11 +172,19 @@ export function CollapsibleSidebar() {
                       ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
                       : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
                   )}
-                  title={isCollapsed ? item.label : undefined}
                 >
                   <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
                   {!isCollapsed && <span>{item.label}</span>}
                 </Link>
+                
+                {/* Tooltip for collapsed mode */}
+                {isCollapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-[#1F315B] text-[#F6F1E8] text-sm font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg">
+                    {item.label}
+                    {/* Tooltip arrow */}
+                    <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-[#1F315B]" />
+                  </div>
+                )}
               </li>
             );
           })}
