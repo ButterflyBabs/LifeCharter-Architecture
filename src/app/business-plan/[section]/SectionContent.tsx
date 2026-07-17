@@ -38,17 +38,6 @@ interface Metric {
   trend: "up" | "down" | "stable";
 }
 
-// Product-specific question template
-const productQuestionTemplate = (productNum: number, isFlagship: boolean) => [
-  { id: `p${productNum}_name`, question: isFlagship ? "Flagship product/service name" : `Product ${productNum} name`, type: "text", required: true },
-  { id: `p${productNum}_price`, question: "Price point", type: "currency", required: true },
-  { id: `p${productNum}_clients`, question: "How many clients have purchased this?", type: "number", required: true },
-  { id: `p${productNum}_transformation`, question: "What transformation does this provide?", type: "textarea", required: true },
-  { id: `p${productNum}_format`, question: "Delivery format (1:1, group, digital, hybrid)", type: "text", required: true },
-  { id: `p${productNum}_duration`, question: "Time to deliver results", type: "text", required: false },
-  { id: `p${productNum}_differentiator`, question: "What makes this different from competitors?", type: "textarea", required: true },
-];
-
 const sectionConfigs: Record<string, { questions: Question[]; metrics: Metric[]; hasDynamicProducts?: boolean }> = {
   "products": {
     questions: [
