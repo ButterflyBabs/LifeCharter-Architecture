@@ -444,7 +444,7 @@ export default function SoulAssessmentPage() {
                 {currentQuestion + 1} of {allQuestions.length}
               </span>
             </div>
-            <Progress value={progress} variant="purple" />
+            <Progress value={progress} variant="lavender" />
           </div>
         </div>
       </div>
@@ -463,7 +463,7 @@ export default function SoulAssessmentPage() {
               </div>
             </div>
             <div className="mt-2">
-              <Progress value={sectionProgress} variant="purple" className="h-1" />
+              <Progress value={sectionProgress} variant="lavender" className="h-1" />
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -534,7 +534,7 @@ export default function SoulAssessmentPage() {
                 <div className="mt-2">
                   <Progress
                     value={(answeredQs / sectionQs.length) * 100}
-                    variant="purple"
+                    variant="lavender"
                     className="h-1"
                   />
                 </div>
