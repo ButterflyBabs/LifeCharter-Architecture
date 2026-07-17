@@ -14,7 +14,6 @@ import {
   CheckCircle, 
   Circle, 
   Sparkles,
-  Save,
   ChevronRight,
   AlertCircle,
   TrendingUp,
@@ -298,7 +297,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as "questions" | "plan" | "metrics")}
             className={`px-4 py-2 text-sm font-medium relative ${
               activeTab === tab.id 
                 ? "text-[#D4AF63]" 

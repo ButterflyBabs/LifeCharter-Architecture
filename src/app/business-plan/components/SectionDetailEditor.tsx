@@ -16,8 +16,6 @@ import {
   Sparkles,
   Save,
   Edit3,
-  ChevronDown,
-  ChevronUp,
   AlertCircle
 } from "lucide-react";
 
@@ -112,14 +110,13 @@ const sectionQuestions: Record<string, Question[]> = {
 interface SectionDetailEditorProps {
   sectionId: string;
   sectionTitle: string;
-  initialData?: Partial<SectionData>;
 }
 
-export function SectionDetailEditor({ sectionId, sectionTitle, initialData }: SectionDetailEditorProps) {
+export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEditorProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"questions" | "content" | "metrics">("questions");
-  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
+  const [showAiSuggestions] = useState(true);
 
   const questions = sectionQuestions[sectionId] || [];
   const completedCount = questions.filter(q => answers[q.id]).length;
