@@ -65,7 +65,7 @@ const assessments = [
 
 export default function AssessmentsPage() {
   return (
-    <div className="min-h-screen bg-[#F6F1E8] dark:bg-[#1a1a2e]">
+    <div>
       {/* Header */}
       <div className="bg-[#1F315B] text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">

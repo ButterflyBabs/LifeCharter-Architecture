@@ -4069,7 +4069,7 @@ export default function BrainAssessmentPage() {
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-[#F6F1E8] dark:bg-[#1a1a2e] py-12 px-4">
+      <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
           <Card className="border-[#2E7C83]/30">
             <CardContent className="p-8 text-center">
@@ -4101,7 +4101,7 @@ export default function BrainAssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F1E8] dark:bg-[#1a1a2e]">
+    <div>
       {/* Header */}
       <div className="bg-[#1F315B] text-white py-8 px-4">
         <div className="max-w-3xl mx-auto">
