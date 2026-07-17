@@ -28,7 +28,6 @@ import {
   calculateRevenueHealth, 
   calculateSystemsHealth,
   calculateOverallHealth,
-  getHealthStatus,
   MonthlyReviewData 
 } from "@/lib/business-plan/healthCalculations";
 

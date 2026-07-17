@@ -35,8 +35,7 @@ export interface HealthScores {
  * NOT from theoretical assessment scores
  */
 export function calculateRevenueHealth(
-  data: MonthlyReviewData,
-  historicalMonths: number = 3
+  data: MonthlyReviewData
 ): number {
   // 1. Revenue vs Goal (40% weight)
   const revenueAchievement = Math.min(
