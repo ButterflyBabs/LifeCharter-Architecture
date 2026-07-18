@@ -17,14 +17,9 @@ import {
   Plus,
   Send,
   CheckCircle,
-  AlertCircle,
   Sparkles,
-  ArrowRight,
   Zap,
   BarChart3,
-  Quote,
-  Heart,
-  ThumbsUp,
   Download,
   Copy,
   Mail,
@@ -366,7 +361,7 @@ export default function ReviewsPage() {
                           {review.program} • {review.date}
                         </p>
                         <p className="text-[#1F315B] dark:text-[#F6F1E8] mt-3">
-                          "{review.content}"
+                          &quot;{review.content}&quot;
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {review.tags.map((tag) => (
