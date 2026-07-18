@@ -178,7 +178,7 @@ Babs`,
   }
 ];
 
-const categories: Category[] = ["Sales", "Prospecting", "Objections", "Onboarding", "Follow-up", "Content", "Nurture", "Closing"];
+const defaultCategories: Category[] = ["Sales", "Prospecting", "Objections", "Onboarding", "Follow-up", "Content", "Nurture", "Closing"];
 const scriptTypes = [
   { id: "sales", label: "Sales Calls", icon: Phone },
   { id: "email", label: "Emails", icon: Mail },
@@ -188,6 +188,7 @@ const scriptTypes = [
 
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>(mockScripts);
+  const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | "All">("All");
   const [selectedType, setSelectedType] = useState<ScriptType | "all">("all");
@@ -209,6 +210,10 @@ export default function ScriptsPage() {
   const [newScriptTags, setNewScriptTags] = useState("");
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [aiAssistPrompt, setAiAssistPrompt] = useState("");
+  
+  // Custom category state
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const filteredScripts = scripts.filter((script) => {
     const matchesSearch = script.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -309,6 +314,20 @@ CLOSE:
     setShowCreateModal(false);
     setShowAIAssist(false);
     setAiAssistPrompt("");
+    setShowNewCategoryInput(false);
+    setNewCategoryName("");
+  };
+
+  const handleCreateCategory = () => {
+    if (!newCategoryName.trim()) return;
+    
+    const formattedCategory = newCategoryName.trim() as Category;
+    if (!categories.includes(formattedCategory)) {
+      setCategories([...categories, formattedCategory]);
+    }
+    setNewScriptCategory(formattedCategory);
+    setShowNewCategoryInput(false);
+    setNewCategoryName("");
   };
 
   const handleAIAssist = async () => {
@@ -470,15 +489,52 @@ INVITATION:
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
-                <select
-                  value={newScriptCategory}
-                  onChange={(e) => setNewScriptCategory(e.target.value as Category)}
-                  className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                {!showNewCategoryInput ? (
+                  <div className="flex gap-2">
+                    <select
+                      value={newScriptCategory}
+                      onChange={(e) => setNewScriptCategory(e.target.value as Category)}
+                      className="flex-1 p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowNewCategoryInput(true)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="New category name..."
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      size="sm"
+                      onClick={handleCreateCategory}
+                      disabled={!newCategoryName.trim()}
+                    >
+                      Add
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setShowNewCategoryInput(false);
+                        setNewCategoryName("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm text-[#B9A9A9] mb-1 block">Communication Type</label>
@@ -501,28 +557,6 @@ INVITATION:
                 value={newScriptDescription}
                 onChange={(e) => setNewScriptDescription(e.target.value)}
               />
-            </div>
-            <div>
-              <label className="text-sm text-[#B9A9A9] mb-1 block">Communication Type</label>
-              <div className="flex gap-2">
-                {scriptTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <button
-                      key={type.id}
-                      onClick={() => setNewScriptType(type.id as Script["type"])}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                        newScriptType === type.id
-                          ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#2E7C83]"
-                          : "border-[#1F315B]/20 text-[#B9A9A9]"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {type.label}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
             
             {/* AI Assist Section */}
