@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const { userId, planId } = subscription.metadata;
+          const { userId } = subscription.metadata;
 
           await supabase
             .from("subscriptions")

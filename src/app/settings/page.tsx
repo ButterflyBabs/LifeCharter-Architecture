@@ -100,6 +100,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
   const supabase = createClient();
   
   // Theme context for appearance settings
@@ -1148,42 +1149,41 @@ export default function SettingsPage() {
     );
   };
 
-  const renderBillingSettings = () => {
-    const [isLoading, setIsLoading] = useState<string | null>(null);
+  const handleSubscribe = async (planId: string) => {
+    if (planId === "vip") {
+      // For VIP, open contact form or email
+      window.location.href = "mailto:babs@lifecharter.architecture?subject=VIP%20Plan%20Inquiry";
+      return;
+    }
     
-    const handleSubscribe = async (planId: string) => {
-      if (planId === "vip") {
-        // For VIP, open contact form or email
-        window.location.href = "mailto:babs@lifecharter.architecture?subject=VIP%20Plan%20Inquiry";
-        return;
-      }
+    setIsLoadingCheckout(planId);
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId,
+          userId,
+          userEmail: profile.email,
+        }),
+      });
       
-      setIsLoading(planId);
-      try {
-        const response = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planId,
-            userId,
-            userEmail: profile.email,
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          alert("Failed to start checkout. Please try again.");
-        }
-      } catch (error) {
-        console.error("Checkout error:", error);
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
         alert("Failed to start checkout. Please try again.");
-      } finally {
-        setIsLoading(null);
       }
-    };
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Failed to start checkout. Please try again.");
+    } finally {
+      setIsLoadingCheckout(null);
+    }
+  };
+
+  const renderBillingSettings = () => {
     
     const plans = [
       {
@@ -1297,9 +1297,9 @@ export default function SettingsPage() {
                     className="w-full mt-6"
                     variant={plan.popular ? "primary" : "outline"}
                     onClick={() => handleSubscribe(plan.id)}
-                    disabled={isLoading === plan.id}
+                    disabled={isLoadingCheckout === plan.id}
                   >
-                    {isLoading === plan.id ? "Loading..." : plan.cta}
+                    {isLoadingCheckout === plan.id ? "Loading..." : plan.cta}
                   </Button>
                 </CardContent>
               </Card>
