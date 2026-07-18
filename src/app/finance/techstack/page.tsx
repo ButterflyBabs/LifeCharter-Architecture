@@ -12,14 +12,12 @@ import {
   CheckCircle,
   AlertCircle,
   Sparkles,
-  Search,
   TrendingDown,
   Copy,
   Clock,
   Tag,
   ExternalLink,
-  RefreshCw,
-  DollarSign
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 

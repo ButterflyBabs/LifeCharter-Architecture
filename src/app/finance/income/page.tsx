@@ -11,16 +11,12 @@ import {
   Plus,
   Upload,
   FileText,
-  X,
   Calendar,
-  DollarSign,
-  User,
   CreditCard,
   CheckCircle,
   AlertCircle,
   Sparkles,
-  Link as LinkIcon,
-  RefreshCw
+  Link as LinkIcon
 } from "lucide-react";
 import Link from "next/link";
 
@@ -299,7 +295,7 @@ export default function IncomePage() {
                   <select
                     className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
                     value={newIncome.status}
-                    onChange={(e) => setNewIncome({...newIncome, status: e.target.value as any})}
+                    onChange={(e) => setNewIncome({...newIncome, status: e.target.value as "received" | "pending" | "scheduled"})}
                   >
                     <option value="received">Received</option>
                     <option value="pending">Pending</option>
