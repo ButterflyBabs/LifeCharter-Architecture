@@ -119,6 +119,29 @@ export default function SettingsPage() {
     avatar: null as string | null
   });
 
+  // Billing state
+  const [currentPlan, setCurrentPlan] = useState<"starter" | "growth" | "vip">("growth");
+  const [billingCycle, setBillingCycle] = useState({
+    startDate: new Date("2026-07-15"),
+    endDate: new Date("2026-08-15"),
+    nextBillingDate: new Date("2026-08-15")
+  });
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [selectedNewPlan, setSelectedNewPlan] = useState<"starter" | "growth" | "vip" | null>(null);
+  const [prorationAmount, setProrationAmount] = useState<number | null>(null);
+  const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
+  const [showDowngradeMessage, setShowDowngradeMessage] = useState(false);
+
+  // Calculate proration when plan selection changes
+  useEffect(() => {
+    if (selectedNewPlan && selectedNewPlan !== currentPlan) {
+      const proration = calculateProration(currentPlan, selectedNewPlan, billingCycle);
+      setProrationAmount(proration);
+    } else {
+      setProrationAmount(null);
+    }
+  }, [selectedNewPlan, currentPlan, billingCycle]);
+
   // Load profile data on mount
   useEffect(() => {
     async function loadProfile() {
@@ -228,6 +251,105 @@ For questions, please contact support@lifecharter.architecture
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+  };
+
+  // Billing helper functions
+  const planPrices: Record<string, number> = {
+    starter: 297,
+    growth: 497,
+    vip: 997
+  };
+
+  const planHierarchy: Record<string, number> = {
+    starter: 1,
+    growth: 2,
+    vip: 3
+  };
+
+  const calculateProration = (
+    currentPlanId: string,
+    newPlanId: string,
+    cycle: { startDate: Date; endDate: Date }
+  ): number => {
+    const now = new Date();
+    const daysInCycle = Math.ceil((cycle.endDate.getTime() - cycle.startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil((cycle.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysRemaining <= 0) return planPrices[newPlanId];
+    
+    const currentPlanDaily = planPrices[currentPlanId] / daysInCycle;
+    const newPlanDaily = planPrices[newPlanId] / daysInCycle;
+    
+    const unusedCurrent = currentPlanDaily * daysRemaining;
+    const costNewPlan = newPlanDaily * daysRemaining;
+    
+    return Math.max(0, costNewPlan - unusedCurrent);
+  };
+
+  const isUpgrade = (current: string, selected: string): boolean => {
+    return planHierarchy[selected] > planHierarchy[current];
+  };
+
+  const isDowngrade = (current: string, selected: string): boolean => {
+    return planHierarchy[selected] < planHierarchy[current];
+  };
+
+  const handlePlanChangeClick = () => {
+    setShowChangePlanModal(true);
+    setSelectedNewPlan(null);
+    setProrationAmount(null);
+    setShowDowngradeMessage(false);
+  };
+
+  const handlePlanSelection = (planId: "starter" | "growth" | "vip") => {
+    setSelectedNewPlan(planId);
+    
+    if (isDowngrade(currentPlan, planId)) {
+      setShowDowngradeMessage(true);
+    } else {
+      setShowDowngradeMessage(false);
+    }
+  };
+
+  const processUpgrade = async () => {
+    if (!selectedNewPlan || !isUpgrade(currentPlan, selectedNewPlan)) return;
+    
+    setIsProcessingUpgrade(true);
+    try {
+      const response = await fetch("/api/stripe/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPlan,
+          newPlan: selectedNewPlan,
+          prorationAmount,
+          userId,
+          userEmail: profile.email,
+          billingCycle
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.success) {
+        setCurrentPlan(selectedNewPlan);
+        setShowChangePlanModal(false);
+        alert(`Successfully upgraded to ${selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} plan!`);
+      } else {
+        alert("Failed to process upgrade. Please try again.");
+      }
+    } catch (error) {
+      console.error("Upgrade error:", error);
+      alert("Failed to process upgrade. Please try again.");
+    } finally {
+      setIsProcessingUpgrade(false);
+    }
+  };
+
+  const contactSupportForDowngrade = () => {
+    window.location.href = "mailto:support@lifecharter.architecture?subject=Plan%20Downgrade%20Request";
   };
 
   // Social platform type
@@ -1415,16 +1537,148 @@ For questions, please contact support@lifecharter.architecture
               <div>
                 <p className="text-sm text-[#B9A9A9]">Current Plan</p>
                 <h3 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-                  Growth
+                  {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                 </h3>
                 <p className="text-sm text-[#B9A9A9] mt-1">
-                  $497/month • Renews Aug 15, 2026
+                  ${planPrices[currentPlan]}/month • Renews {billingCycle.nextBillingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <Button variant="outline">Change Plan</Button>
+              <Button variant="outline" onClick={handlePlanChangeClick}>Change Plan</Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Change Plan Modal */}
+        {showChangePlanModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                    Change Your Plan
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => setShowChangePlanModal(false)}>
+                    ✕
+                  </Button>
+                </div>
+
+                <p className="text-sm text-[#B9A9A9] mb-4">
+                  Current plan: <strong>{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</strong> at ${planPrices[currentPlan]}/month
+                </p>
+
+                {/* Plan Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {[
+                    { id: "starter", name: "Starter", price: "$297", features: ["Command Center", "Business Architecture", "1 seat", "50 AI actions"] },
+                    { id: "growth", name: "Growth", price: "$497", features: ["Everything in Starter", "Operations", "5 seats", "500 AI actions"], popular: true },
+                    { id: "vip", name: "VIP", price: "$997+", features: ["Everything in Growth", "Unlimited seats", "Custom AI setup", "White-label"] }
+                  ].map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() => handlePlanSelection(plan.id as "starter" | "growth" | "vip")}
+                      disabled={plan.id === currentPlan}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        selectedNewPlan === plan.id
+                          ? "border-[#D4AF63] bg-[#D4AF63]/10"
+                          : plan.id === currentPlan
+                          ? "border-gray-200 opacity-50 cursor-not-allowed"
+                          : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                      }`}
+                    >
+                      {plan.popular && (
+                        <span className="text-xs bg-[#D4AF63] text-[#1F315B] px-2 py-0.5 rounded-full mb-2 inline-block">
+                          Popular
+                        </span>
+                      )}
+                      {plan.id === currentPlan && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mb-2 inline-block">
+                          Current
+                        </span>
+                      )}
+                      <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{plan.name}</h4>
+                      <p className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">{plan.price}<span className="text-sm font-normal text-[#B9A9A9]">/mo</span></p>
+                      <ul className="mt-2 space-y-1">
+                        {plan.features.slice(0, 2).map((feature, i) => (
+                          <li key={i} className="text-xs text-[#B9A9A9]">• {feature}</li>
+                        ))}
+                      </ul>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Downgrade Message */}
+                {showDowngradeMessage && selectedNewPlan && (
+                  <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                          Downgrade Request
+                        </p>
+                        <p className="text-sm text-[#B9A9A9] mt-1">
+                          To downgrade from {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to {selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)}, please contact our support team. We'll help you transition smoothly.
+                        </p>
+                        <Button 
+                          className="mt-3" 
+                          size="sm"
+                          onClick={contactSupportForDowngrade}
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Contact Support
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upgrade Summary */}
+                {selectedNewPlan && isUpgrade(currentPlan, selectedNewPlan) && prorationAmount !== null && (
+                  <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20 mb-6">
+                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">Upgrade Summary</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-[#B9A9A9]">Current Plan</span>
+                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} (${planPrices[currentPlan]}/mo)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#B9A9A9]">New Plan</span>
+                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} (${planPrices[selectedNewPlan]}/mo)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#B9A9A9]">Days Remaining in Cycle</span>
+                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{Math.ceil((billingCycle.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</span>
+                      </div>
+                      <div className="border-t border-[#1F315B]/10 pt-2 mt-2">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-[#1F315B] dark:text-[#F6F1E8]">Amount Due Today (Prorated)</span>
+                          <span className="text-green-600">${prorationAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#B9A9A9] mt-3">
+                      Your new billing cycle will start today. You'll be charged the prorated difference for the remaining days in your current cycle.
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 justify-end">
+                  <Button variant="outline" onClick={() => setShowChangePlanModal(false)}>
+                    Cancel
+                  </Button>
+                  {selectedNewPlan && isUpgrade(currentPlan, selectedNewPlan) && (
+                    <Button 
+                      onClick={processUpgrade}
+                      disabled={isProcessingUpgrade}
+                    >
+                      {isProcessingUpgrade ? "Processing..." : `Upgrade & Pay $${prorationAmount?.toFixed(2)}`}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Payment Method */}
         <div>
