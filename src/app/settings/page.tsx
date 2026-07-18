@@ -889,7 +889,7 @@ export default function SettingsPage() {
                               <Input
                                 type="password"
                                 placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                                value={(status as any).botToken || ""}
+                                value={(status as { botToken?: string }).botToken || ""
                                 onChange={(e) => setIntegrations(prev => ({
                                   ...prev,
                                   telegram: { ...prev.telegram, botToken: e.target.value }
