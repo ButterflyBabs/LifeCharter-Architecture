@@ -349,7 +349,7 @@ export default function InternalCulturePage() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(answers[question.id] || []).map((item: string, index: number) => (
+                {((answers[question.id] as string[]) || []).map((item: string, index: number) => (
                   <span
                     key={index}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-[#5E3B6C]/10 text-[#5E3B6C] rounded-full text-sm"

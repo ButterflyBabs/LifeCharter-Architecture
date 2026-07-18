@@ -346,7 +346,7 @@ export default function OnboardingPage() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(answers[question.id] || []).map((item: string, index: number) => (
+                {((answers[question.id] as string[]) || []).map((item: string, index: number) => (
                   <span
                     key={index}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-orange-500/10 text-orange-600 rounded-full text-sm"
