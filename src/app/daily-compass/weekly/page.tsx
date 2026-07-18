@@ -68,11 +68,12 @@ export default function WeeklyViewPage() {
   });
 
   // Calculate weekly totals for display
-  const _totalActivities = weekData.reduce((acc, day) => 
-    acc + day.activities.calls + day.activities.content + day.activities.followups, 0
-  );
-
-  const _completedDays = weekData.filter(day => day.completed).length;
+  const weeklyStats = {
+    totalActivities: weekData.reduce((acc, day) => 
+      acc + day.activities.calls + day.activities.content + day.activities.followups, 0
+    ),
+    completedDays: weekData.filter(day => day.completed).length
+  };
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import {
   ArrowLeft,
   Phone,
@@ -110,7 +109,7 @@ const typeIcons = {
 
 export default function SalesActivitiesPage() {
   const [activities, setActivities] = useState<SalesActivity[]>(mockActivities);
-  const [filter, setFilter] = useState<"all" | "today" | "overdue" | "completed">("all");
+  const [filter, setFilter] = useState<string>("all");
   const [, setShowAddModal] = useState(false);
 
   const [stats] = useState<DailyStats>({

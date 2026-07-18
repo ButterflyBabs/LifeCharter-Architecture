@@ -24,9 +24,7 @@ import {
   Battery,
   BatteryMedium,
   BatteryLow,
-  X,
-  Quote,
-  BarChart3
+  X
 } from "lucide-react";
 import Link from "next/link";
 
