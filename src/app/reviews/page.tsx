@@ -22,10 +22,7 @@ import {
   BarChart3,
   Download,
   Copy,
-  Mail,
-  Instagram,
-  Linkedin,
-  Twitter
+  Mail
 } from "lucide-react";
 import Link from "next/link";
 
@@ -565,15 +562,15 @@ export default function ReviewsPage() {
             <CardContent>
               <div className="grid grid-cols-3 gap-2">
                 <Button variant="outline" size="sm" className="flex flex-col items-center py-3">
-                  <Instagram className="w-5 h-5 mb-1" />
+                  <Share2 className="w-5 h-5 mb-1" />
                   <span className="text-xs">Instagram</span>
                 </Button>
                 <Button variant="outline" size="sm" className="flex flex-col items-center py-3">
-                  <Linkedin className="w-5 h-5 mb-1" />
+                  <Share2 className="w-5 h-5 mb-1" />
                   <span className="text-xs">LinkedIn</span>
                 </Button>
                 <Button variant="outline" size="sm" className="flex flex-col items-center py-3">
-                  <Twitter className="w-5 h-5 mb-1" />
+                  <Share2 className="w-5 h-5 mb-1" />
                   <span className="text-xs">Twitter</span>
                 </Button>
               </div>
