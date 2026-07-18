@@ -82,7 +82,7 @@ export default function AIGuidePage() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [apiKey, setApiKey] = useState<string>("");
   const [savedKeys, setSavedKeys] = useState<APIKey[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([
+  const [conversations] = useState<Conversation[]>([
     {
       id: "1",
       page: "/business-plan",
@@ -459,7 +459,7 @@ export default function AIGuidePage() {
           <CardContent>
             {conversations.length > 0 ? (
               <div className="space-y-3">
-                {conversations.map((conv) => (
+                {conversations.map((conv: Conversation) => (
                   <div
                     key={conv.id}
                     className="flex items-center justify-between p-4 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors cursor-pointer"
