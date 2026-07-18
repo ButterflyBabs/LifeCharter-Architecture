@@ -94,8 +94,7 @@ const mockActivities: SalesActivity[] = [
   }
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const priorityColors: any = {
+const priorityColors: Record<string, string> = {
   hot: "bg-red-100 text-red-700 border-red-200",
   warm: "bg-yellow-100 text-yellow-700 border-yellow-200",
   cold: "bg-blue-100 text-blue-700 border-blue-200"

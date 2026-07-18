@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Phone,
   Mail,
+  Copy,
   CheckCircle,
   Sparkles,
   Search,
@@ -175,11 +176,10 @@ export default function ScriptsPage() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const filteredScripts = scripts.filter((script: any) => {
+  const filteredScripts = scripts.filter((script) => {
     const matchesSearch = script.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          script.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         script.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         script.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === "All" || script.category === selectedCategory;
     const matchesType = selectedType === "all" || script.type === selectedType;
     return matchesSearch && matchesCategory && matchesType;
