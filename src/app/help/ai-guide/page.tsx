@@ -139,7 +139,7 @@ export default function AIGuideHelpPage() {
     },
     {
       question: "Can I change AI models mid-conversation?",
-      answer: "Currently, the model is set at the start of each conversation. To switch models, you can start a new conversation by clicking the "New conversation" button in the chat panel, then change your default model in the AI Guide settings. Future updates will allow mid-conversation model switching."
+      answer: "Currently, the model is set at the start of each conversation. To switch models, you can start a new conversation by clicking the 'New conversation' button in the chat panel, then change your default model in the AI Guide settings. Future updates will allow mid-conversation model switching."
     },
     {
       question: "Does the AI Guide remember past conversations?",
