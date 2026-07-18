@@ -475,7 +475,7 @@ export default function TechStackPage() {
                     <select
                       className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
                       value={newTool.billingCycle}
-                      onChange={(e) => setNewTool({...newTool, billingCycle: e.target.value as any})}
+                      onChange={(e) => setNewTool({...newTool, billingCycle: e.target.value as "monthly" | "annual"})}
                     >
                       <option value="monthly">Monthly</option>
                       <option value="annual">Annual</option>
@@ -486,7 +486,7 @@ export default function TechStackPage() {
                     <select
                       className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
                       value={newTool.usageLevel}
-                      onChange={(e) => setNewTool({...newTool, usageLevel: e.target.value as any})}
+                      onChange={(e) => setNewTool({...newTool, usageLevel: e.target.value as "high" | "medium" | "low" | "none"})}
                     >
                       <option value="high">High - Daily use</option>
                       <option value="medium">Medium - Weekly use</option>
