@@ -13,7 +13,9 @@ import {
   CheckCircle,
   Upload,
   Camera,
-  Sparkles
+  Sparkles,
+  Heart,
+  Quote
 } from "lucide-react";
 
 export default function ReviewCollectionPage() {
