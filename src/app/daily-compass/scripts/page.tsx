@@ -23,24 +23,33 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+type ItemType = "script" | "template";
+type ScriptType = "sales" | "email" | "dm" | "objection";
+type Category = "Sales" | "Prospecting" | "Objections" | "Onboarding" | "Follow-up" | "Content" | "Nurture" | "Closing";
+
 interface Script {
   id: string;
   title: string;
-  category: string;
-  type: "sales" | "email" | "dm" | "objection";
+  itemType: ItemType;
+  category: Category;
+  type: ScriptType;
   content: string;
   tags: string[];
   isFavorite: boolean;
   usageCount: number;
   lastUsed?: string;
+  createdAt: string;
+  description?: string;
 }
 
 const mockScripts: Script[] = [
   {
     id: "1",
     title: "Incubator to Circle Follow-up Call",
+    itemType: "script",
     category: "Sales",
     type: "sales",
+    description: "Complete call script for converting Incubator attendees to Circle members",
     content: `OPENING:
 "Hi [Name], it's Babs from LifeCharter. How are you doing since the Incubator?"
 
@@ -57,13 +66,16 @@ CLOSE:
     tags: ["incubator", "circle", "conversion"],
     isFavorite: true,
     usageCount: 23,
-    lastUsed: "2026-07-15"
+    lastUsed: "2026-07-15",
+    createdAt: "2026-01-15"
   },
   {
     id: "2",
     title: "LinkedIn DM - Cold Outreach",
+    itemType: "template",
     category: "Prospecting",
     type: "dm",
+    description: "Template for initial LinkedIn outreach to cold prospects",
     content: `Hi [Name],
 
 I came across your profile and noticed you're focused on [specific area]. I've been helping entrepreneurs in similar positions align their businesses with their true values—and I thought you might appreciate this perspective.
@@ -77,13 +89,16 @@ Babs`,
     tags: ["linkedin", "outreach", "incubator"],
     isFavorite: false,
     usageCount: 15,
-    lastUsed: "2026-07-10"
+    lastUsed: "2026-07-10",
+    createdAt: "2026-02-01"
   },
   {
     id: "3",
     title: "Price Objection Handler",
+    itemType: "script",
     category: "Objections",
     type: "objection",
+    description: "Step-by-step response framework for price objections",
     content: `PROSPECT: "That's more than I was expecting to spend."
 
 RESPONSE:
@@ -99,13 +114,16 @@ RESPONSE:
     tags: ["objection", "price", "sales"],
     isFavorite: true,
     usageCount: 42,
-    lastUsed: "2026-07-17"
+    lastUsed: "2026-07-17",
+    createdAt: "2026-01-20"
   },
   {
     id: "4",
     title: "Welcome Email - New Circle Member",
+    itemType: "template",
     category: "Onboarding",
     type: "email",
+    description: "Email template for welcoming new members to the Circle",
     content: `Subject: Welcome to the Circle, [Name] 🦋
 
 Dear [Name],
@@ -130,13 +148,16 @@ P.S. Mark your calendar for our weekly Circle gatherings every Thursday at 1pm M
     tags: ["onboarding", "email", "circle"],
     isFavorite: false,
     usageCount: 8,
-    lastUsed: "2026-07-12"
+    lastUsed: "2026-07-12",
+    createdAt: "2026-03-01"
   },
   {
     id: "5",
     title: "Follow-up After No Response",
+    itemType: "template",
     category: "Follow-up",
     type: "email",
+    description: "Gentle follow-up email for prospects who haven't responded",
     content: `Subject: Following up, [Name]
 
 Hi [Name],
@@ -152,13 +173,13 @@ Babs`,
     tags: ["follow-up", "email", "nurture"],
     isFavorite: false,
     usageCount: 31,
-    lastUsed: "2026-07-14"
+    lastUsed: "2026-07-14",
+    createdAt: "2026-02-15"
   }
 ];
 
-const categories = ["All", "Sales", "Prospecting", "Objections", "Onboarding", "Follow-up"];
-const types = [
-  { id: "all", label: "All Types", icon: MessageSquare },
+const categories: Category[] = ["Sales", "Prospecting", "Objections", "Onboarding", "Follow-up", "Content", "Nurture", "Closing"];
+const scriptTypes = [
   { id: "sales", label: "Sales Calls", icon: Phone },
   { id: "email", label: "Emails", icon: Mail },
   { id: "dm", label: "DMs", icon: MessageSquare },
@@ -168,8 +189,9 @@ const types = [
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>(mockScripts);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedType, setSelectedType] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<Category | "All">("All");
+  const [selectedType, setSelectedType] = useState<ScriptType | "all">("all");
+  const [selectedItemType, setSelectedItemType] = useState<ItemType | "all">("all");
   const [expandedScript, setExpandedScript] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
@@ -179,8 +201,10 @@ export default function ScriptsPage() {
   // New script creation state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newScriptTitle, setNewScriptTitle] = useState("");
-  const [newScriptCategory, setNewScriptCategory] = useState("Sales");
-  const [newScriptType, setNewScriptType] = useState<Script["type"]>("sales");
+  const [newScriptDescription, setNewScriptDescription] = useState("");
+  const [newScriptItemType, setNewScriptItemType] = useState<ItemType>("script");
+  const [newScriptCategory, setNewScriptCategory] = useState<Category>("Sales");
+  const [newScriptType, setNewScriptType] = useState<ScriptType>("sales");
   const [newScriptContent, setNewScriptContent] = useState("");
   const [newScriptTags, setNewScriptTags] = useState("");
   const [showAIAssist, setShowAIAssist] = useState(false);
@@ -192,7 +216,8 @@ export default function ScriptsPage() {
                          script.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === "All" || script.category === selectedCategory;
     const matchesType = selectedType === "all" || script.type === selectedType;
-    return matchesSearch && matchesCategory && matchesType;
+    const matchesItemType = selectedItemType === "all" || script.itemType === selectedItemType;
+    return matchesSearch && matchesCategory && matchesType && matchesItemType;
   });
 
   const handleCopy = (script: Script) => {
@@ -257,18 +282,23 @@ CLOSE:
     const newScript: Script = {
       id: Date.now().toString(),
       title: newScriptTitle,
+      itemType: newScriptItemType,
       category: newScriptCategory,
       type: newScriptType,
+      description: newScriptDescription,
       content: newScriptContent,
       tags: newScriptTags.split(",").map(tag => tag.trim()).filter(tag => tag),
       isFavorite: false,
-      usageCount: 0
+      usageCount: 0,
+      createdAt: new Date().toISOString().split("T")[0]
     };
     
     setScripts([newScript, ...scripts]);
     
     // Reset form
     setNewScriptTitle("");
+    setNewScriptDescription("");
+    setNewScriptItemType("script");
     setNewScriptCategory("Sales");
     setNewScriptType("sales");
     setNewScriptContent("");
@@ -409,22 +439,70 @@ INVITATION:
                 />
               </div>
               <div>
+                <label className="text-sm text-[#B9A9A9] mb-1 block">Item Type</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setNewScriptItemType("script")}
+                    className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                      newScriptItemType === "script"
+                        ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#2E7C83]"
+                        : "border-[#1F315B]/20 text-[#B9A9A9]"
+                    }`}
+                  >
+                    Script
+                  </button>
+                  <button
+                    onClick={() => setNewScriptItemType("template")}
+                    className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                      newScriptItemType === "template"
+                        ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#D4AF63]"
+                        : "border-[#1F315B]/20 text-[#B9A9A9]"
+                    }`}
+                  >
+                    Template
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
                 <select
                   value={newScriptCategory}
-                  onChange={(e) => setNewScriptCategory(e.target.value)}
+                  onChange={(e) => setNewScriptCategory(e.target.value as Category)}
                   className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
                 >
-                  {categories.filter(c => c !== "All").map(cat => (
+                  {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="text-sm text-[#B9A9A9] mb-1 block">Communication Type</label>
+                <select
+                  value={newScriptType}
+                  onChange={(e) => setNewScriptType(e.target.value as ScriptType)}
+                  className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                >
+                  <option value="sales">Sales Call</option>
+                  <option value="email">Email</option>
+                  <option value="dm">DM/Message</option>
+                  <option value="objection">Objection Handler</option>
+                </select>
+              </div>
             </div>
             <div>
-              <label className="text-sm text-[#B9A9A9] mb-1 block">Type</label>
+              <label className="text-sm text-[#B9A9A9] mb-1 block">Description</label>
+              <Input
+                placeholder="Brief description of when/why to use this..."
+                value={newScriptDescription}
+                onChange={(e) => setNewScriptDescription(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[#B9A9A9] mb-1 block">Communication Type</label>
               <div className="flex gap-2">
-                {types.filter(t => t.id !== "all").map((type) => {
+                {scriptTypes.map((type) => {
                   const Icon = type.icon;
                   return (
                     <button
@@ -541,7 +619,7 @@ INVITATION:
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B9A9A9]" />
           <Input
-            placeholder="Search scripts..."
+            placeholder="Search scripts and templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -549,10 +627,20 @@ INVITATION:
         </div>
         <div className="flex gap-2">
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={selectedItemType}
+            onChange={(e) => setSelectedItemType(e.target.value as ItemType | "all")}
             className="px-4 py-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
           >
+            <option value="all">All Items</option>
+            <option value="script">Scripts</option>
+            <option value="template">Templates</option>
+          </select>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as Category | "All")}
+            className="px-4 py-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+          >
+            <option value="All">All Categories</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -562,12 +650,23 @@ INVITATION:
 
       {/* Type Filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {types.map((type) => {
+        <button
+          onClick={() => setSelectedType("all")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+            selectedType === "all"
+              ? "bg-[#1F315B] text-[#F6F1E8]"
+              : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/20"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          All Types
+        </button>
+        {scriptTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button
               key={type.id}
-              onClick={() => setSelectedType(type.id)}
+              onClick={() => setSelectedType(type.id as ScriptType)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                 selectedType === type.id
                   ? "bg-[#1F315B] text-[#F6F1E8]"
@@ -592,7 +691,14 @@ INVITATION:
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs px-2 py-0.5 bg-[#2E7C83]/20 text-[#2E7C83] rounded-full">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      script.itemType === "script" 
+                        ? "bg-[#2E7C83]/20 text-[#2E7C83]" 
+                        : "bg-[#D4AF63]/20 text-[#D4AF63]"
+                    }`}>
+                      {script.itemType === "script" ? "📜 Script" : "📋 Template"}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full">
                       {script.category}
                     </span>
                     {script.isFavorite && (
@@ -602,9 +708,13 @@ INVITATION:
                   <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
                     {script.title}
                   </h3>
+                  {script.description && (
+                    <p className="text-sm text-[#B9A9A9] mt-1">{script.description}</p>
+                  )}
                   <div className="flex items-center gap-4 mt-2 text-sm text-[#B9A9A9]">
                     <span>Used {script.usageCount} times</span>
                     {script.lastUsed && <span>Last used: {script.lastUsed}</span>}
+                    <span>Created: {script.createdAt}</span>
                     <div className="flex gap-1">
                       {script.tags.map(tag => (
                         <span key={tag} className="text-xs px-2 py-0.5 bg-[#1F315B]/10 rounded-full">
