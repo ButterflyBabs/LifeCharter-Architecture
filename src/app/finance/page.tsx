@@ -1,265 +1,535 @@
-/**
- * Finance Page
- * Simple revenue and expense tracking for solo-preneurs
- */
-
 "use client";
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Progress } from "@/components/ui/Progress";
 import { 
   DollarSign, 
+  TrendingDown, 
   TrendingUp, 
-  TrendingDown,
   Wallet,
+  CreditCard,
   PieChart,
-  Calendar,
-  Plus,
-  ArrowRight
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  BarChart3,
+  Lightbulb,
+  ArrowRight,
+  RefreshCw,
+  ChevronRight,
+  Sparkles,
+  Upload,
+  Link as LinkIcon,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 
-interface MonthlyData {
-  month: string;
-  revenue: number;
-  expenses: number;
-  profit: number;
-  margin: number;
+interface FinanceSection {
+  id: string;
+  title: string;
+  status: "complete" | "in_progress" | "needs_attention" | "not_started";
+  lastUpdated: string;
+  aiGenerated: boolean;
+  completionRate: number;
+  description: string;
+}
+
+interface NextStep {
+  id: string;
+  title: string;
+  priority: "high" | "medium" | "low";
+  source: string;
+  impact: string;
+  completed: boolean;
+}
+
+interface Insight {
+  id: string;
+  type: "opportunity" | "warning" | "suggestion";
+  message: string;
+  action: string;
 }
 
 export default function FinancePage() {
-  const [currentMonth, setCurrentMonth] = useState({
-    revenue: "",
-    expenses: "",
+  const [financeHealth] = useState({
+    overall: 58,
+    income: 65,
+    expenses: 55,
+    techstack: 45,
+    cashflow: 60,
   });
 
-  // Demo historical data
-  const [historicalData] = useState<MonthlyData[]>([
-    { month: "Mar 2026", revenue: 7200, expenses: 4800, profit: 2400, margin: 33 },
-    { month: "Apr 2026", revenue: 8100, expenses: 5200, profit: 2900, margin: 36 },
-    { month: "May 2026", revenue: 7800, expenses: 5100, profit: 2700, margin: 35 },
-    { month: "Jun 2026", revenue: 8500, expenses: 5500, profit: 3000, margin: 35 },
+  const [sections] = useState<FinanceSection[]>([
+    { 
+      id: "income", 
+      title: "Income Tracker", 
+      status: "in_progress", 
+      lastUpdated: "2 days ago", 
+      aiGenerated: true,
+      completionRate: 65,
+      description: "Revenue from all sources with payment processor connections"
+    },
+    { 
+      id: "expenses", 
+      title: "Expense Manager", 
+      status: "in_progress", 
+      lastUpdated: "1 week ago", 
+      aiGenerated: true,
+      completionRate: 55,
+      description: "Track and categorize all business expenses"
+    },
+    { 
+      id: "techstack", 
+      title: "Tech Stack Optimizer", 
+      status: "in_progress", 
+      lastUpdated: "3 days ago", 
+      aiGenerated: true,
+      completionRate: 45,
+      description: "Software inventory with AI-powered cost optimization"
+    },
+    { 
+      id: "cashflow", 
+      title: "Cash Flow Dashboard", 
+      status: "in_progress", 
+      lastUpdated: "4 days ago", 
+      aiGenerated: true,
+      completionRate: 60,
+      description: "Real-time view of money in and out"
+    },
+    { 
+      id: "reports", 
+      title: "Financial Reports", 
+      status: "not_started", 
+      lastUpdated: "Never", 
+      aiGenerated: false,
+      completionRate: 0,
+      description: "P&L, tax reports, and business health summaries"
+    },
+    { 
+      id: "budget", 
+      title: "Budget Planner", 
+      status: "not_started", 
+      lastUpdated: "Never", 
+      aiGenerated: false,
+      completionRate: 0,
+      description: "Set and track spending limits by category"
+    },
+    { 
+      id: "taxes", 
+      title: "Tax Preparation", 
+      status: "needs_attention", 
+      lastUpdated: "2 weeks ago", 
+      aiGenerated: true,
+      completionRate: 30,
+      description: "Organize deductions and estimated payments"
+    },
   ]);
 
-  const currentRevenue = parseFloat(currentMonth.revenue) || 0;
-  const currentExpenses = parseFloat(currentMonth.expenses) || 0;
-  const currentProfit = currentRevenue - currentExpenses;
-  const currentMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0;
+  const [nextSteps] = useState<NextStep[]>([
+    { 
+      id: "1", 
+      title: "Connect Stripe account for automatic income tracking", 
+      priority: "high", 
+      source: "Income Tracker",
+      impact: "Eliminates manual data entry",
+      completed: false 
+    },
+    { 
+      id: "2", 
+      title: "Upload bank statements for expense categorization", 
+      priority: "high", 
+      source: "Expense Manager",
+      impact: "Complete financial picture",
+      completed: false 
+    },
+    { 
+      id: "3", 
+      title: "Run Tech Stack AI assessment", 
+      priority: "medium", 
+      source: "Tech Stack Optimizer",
+      impact: "Identify $200-500/month in savings",
+      completed: true 
+    },
+    { 
+      id: "4", 
+      title: "Review duplicate software subscriptions", 
+      priority: "medium", 
+      source: "Tech Stack Analysis",
+      impact: "Reduce redundant expenses",
+      completed: false 
+    },
+  ]);
 
-  const avgRevenue = historicalData.reduce((sum, m) => sum + m.revenue, 0) / historicalData.length;
-  const totalProfit = historicalData.reduce((sum, m) => sum + m.profit, 0) + currentProfit;
-  const avgMargin = historicalData.reduce((sum, m) => sum + m.margin, 0) / historicalData.length;
+  const [insights] = useState<Insight[]>([
+    {
+      id: "1",
+      type: "opportunity",
+      message: "You may be paying for 3 overlapping project management tools",
+      action: "Run Tech Stack assessment"
+    },
+    {
+      id: "2",
+      type: "warning",
+      message: "Q3 estimated tax payment due in 15 days",
+      action: "Review tax preparation section"
+    },
+    {
+      id: "3",
+      type: "suggestion",
+      message: "Connect payment processors to automate income tracking",
+      action: "Set up Stripe/PayPal integration"
+    },
+  ]);
 
-  const handleSave = () => {
-    // Save to database
-    console.log("Saving:", { revenue: currentRevenue, expenses: currentExpenses });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastAiReview, setLastAiReview] = useState("2 days ago");
+
+  const handleRefreshPlan = async () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      setLastAiReview("Just now");
+    }, 2000);
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "complete": return "text-green-500";
+      case "in_progress": return "text-yellow-500";
+      case "needs_attention": return "text-red-500";
+      case "not_started": return "text-gray-400";
+      default: return "text-gray-500";
+    }
+  };
+
+  const getStatusBg = (status: string) => {
+    switch (status) {
+      case "complete": return "bg-green-500/10";
+      case "in_progress": return "bg-yellow-500/10";
+      case "needs_attention": return "bg-red-500/10";
+      case "not_started": return "bg-gray-500/10";
+      default: return "bg-gray-500/10";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "complete": return "Complete";
+      case "in_progress": return "In Progress";
+      case "needs_attention": return "Needs Attention";
+      case "not_started": return "Not Started";
+      default: return status;
+    }
+  };
+
+  const getInsightColor = (type: string) => {
+    switch (type) {
+      case "opportunity": return "border-green-500/30 bg-green-500/5";
+      case "warning": return "border-red-500/30 bg-red-500/5";
+      case "suggestion": return "border-[#D4AF63]/30 bg-[#D4AF63]/5";
+      default: return "border-gray-500/30";
+    }
+  };
+
+  const completedSections = sections.filter(s => s.status === "complete").length;
+  const inProgressSections = sections.filter(s => s.status === "in_progress").length;
+
   return (
-    <div className="py-8 px-4 max-w-6xl mx-auto">
+    <div className="py-8 px-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-          Finance
-        </h1>
-        <p className="text-[#B9A9A9]">
-          Track revenue, expenses, and profitability
-        </p>
-      </div>
-
-      {/* Current Month Input */}
-      <Card className="mb-8 border-[#D4AF63]/20">
-        <CardHeader>
-          <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#D4AF63]" />
-            July 2026 - Enter Your Numbers
-          </h2>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-                Revenue (Money In)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">$</span>
-                <Input
-                  type="number"
-                  value={currentMonth.revenue}
-                  onChange={(e) => setCurrentMonth({ ...currentMonth, revenue: e.target.value })}
-                  placeholder="0"
-                  className="pl-8 text-lg"
-                />
-              </div>
-              <p className="text-xs text-[#B9A9A9] mt-1">
-                All money received this month
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-                Expenses (Money Out)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">$</span>
-                <Input
-                  type="number"
-                  value={currentMonth.expenses}
-                  onChange={(e) => setCurrentMonth({ ...currentMonth, expenses: e.target.value })}
-                  placeholder="0"
-                  className="pl-8 text-lg"
-                />
-              </div>
-              <p className="text-xs text-[#B9A9A9] mt-1">
-                All costs, subscriptions, contractor payments
-              </p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              Finance Center
+            </h1>
+            <p className="text-[#B9A9A9]">
+              AI-powered financial management • Last review: {lastAiReview}
+            </p>
           </div>
-
-          {/* Live Calculation */}
-          {(currentRevenue > 0 || currentExpenses > 0) && (
-            <div className="mt-6 p-4 bg-[#1F315B]/5 rounded-lg">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-sm text-[#B9A9A9]">Revenue</p>
-                  <p className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-                    ${currentRevenue.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-[#B9A9A9]">Expenses</p>
-                  <p className="text-xl font-bold text-red-500">
-                    ${currentExpenses.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-[#B9A9A9]">Profit</p>
-                  <p className={`text-xl font-bold ${currentProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    ${currentProfit.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <p className="text-sm text-[#B9A9A9]">
-                  Profit Margin: <span className="font-bold text-[#1F315B] dark:text-[#F6F1E8]">{currentMargin.toFixed(1)}%</span>
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            <Button onClick={handleSave}>
-              <Plus className="w-4 h-4 mr-2" />
-              Save July Data
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleRefreshPlan}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Refreshing..." : "AI Refresh"}
             </Button>
-            <Link href="/finance/monthly-review">
-              <Button variant="outline">
-                Complete Monthly Review
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
+            <Button>
+              <FileText className="w-4 h-4 mr-2" />
+              Export Report
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
+      {/* Executive Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <Card className="border-[#D4AF63]/20">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-[#B9A9A9]">Avg Monthly Revenue</span>
-              <DollarSign className="w-5 h-5 text-[#D4AF63]" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#B9A9A9]">Overall Health</span>
+              <BarChart3 className="w-5 h-5 text-[#D4AF63]" />
             </div>
-            <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-              ${avgRevenue.toLocaleString()}
-            </p>
+            <div className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              {financeHealth.overall}%
+            </div>
+            <Progress value={financeHealth.overall} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#5E3B6C]/20">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-[#B9A9A9]">Total Profit (4 mo)</span>
-              <Wallet className="w-5 h-5 text-green-500" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#B9A9A9]">Income</span>
+              <TrendingUp className="w-5 h-5 text-[#5E3B6C]" />
             </div>
-            <p className="text-2xl font-bold text-green-500">
-              ${totalProfit.toLocaleString()}
-            </p>
+            <div className="text-3xl font-bold text-[#5E3B6C] mb-2">
+              {financeHealth.income}%
+            </div>
+            <Progress value={financeHealth.income} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#2E7C83]/20">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-[#B9A9A9]">Avg Profit Margin</span>
-              <PieChart className="w-5 h-5 text-[#2E7C83]" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#B9A9A9]">Expenses</span>
+              <TrendingDown className="w-5 h-5 text-[#2E7C83]" />
             </div>
-            <p className="text-2xl font-bold text-[#2E7C83]">
-              {avgMargin.toFixed(0)}%
-            </p>
+            <div className="text-3xl font-bold text-[#2E7C83] mb-2">
+              {financeHealth.expenses}%
+            </div>
+            <Progress value={financeHealth.expenses} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#D4AF63]/20">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-[#B9A9A9]">Trend</span>
-              {avgRevenue > 7500 ? (
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
-              )}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#B9A9A9]">Tech Stack</span>
+              <Zap className="w-5 h-5 text-[#D4AF63]" />
             </div>
-            <p className={`text-2xl font-bold ${avgRevenue > 7500 ? 'text-green-500' : 'text-red-500'}`}>
-              {avgRevenue > 7500 ? '↑' : '↓'}
-            </p>
+            <div className="text-3xl font-bold text-[#D4AF63] mb-2">
+              {financeHealth.techstack}%
+            </div>
+            <Progress value={financeHealth.techstack} className="h-2" />
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#1F315B]/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#B9A9A9]">Cash Flow</span>
+              <Wallet className="w-5 h-5 text-[#1F315B]" />
+            </div>
+            <div className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              {financeHealth.cashflow}%
+            </div>
+            <Progress value={financeHealth.cashflow} className="h-2" />
           </CardContent>
         </Card>
       </div>
 
-      {/* Historical Table */}
-      <Card>
-        <CardHeader>
-          <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
-            Recent History
-          </h2>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#1F315B]/10">
-                  <th className="text-left py-3 text-sm font-medium text-[#B9A9A9]">Month</th>
-                  <th className="text-right py-3 text-sm font-medium text-[#B9A9A9]">Revenue</th>
-                  <th className="text-right py-3 text-sm font-medium text-[#B9A9A9]">Expenses</th>
-                  <th className="text-right py-3 text-sm font-medium text-[#B9A9A9]">Profit</th>
-                  <th className="text-right py-3 text-sm font-medium text-[#B9A9A9]">Margin</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historicalData.map((month, index) => (
-                  <tr key={index} className="border-b border-[#1F315B]/5">
-                    <td className="py-3 text-[#1F315B] dark:text-[#F6F1E8]">{month.month}</td>
-                    <td className="py-3 text-right text-[#1F315B] dark:text-[#F6F1E8]">
-                      ${month.revenue.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right text-red-500">
-                      ${month.expenses.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right text-green-500">
-                      ${month.profit.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right text-[#1F315B] dark:text-[#F6F1E8]">
-                      {month.margin}%
-                    </td>
-                  </tr>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Plan Sections */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Plan Sections */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                Finance Sections
+              </h2>
+              <span className="text-sm text-[#B9A9A9]">
+                {completedSections}/{sections.length} Complete • {inProgressSections} In Progress
+              </span>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {sections.map((section) => (
+                  <Link 
+                    key={section.id}
+                    href={`/finance/${section.id}`}
+                    className="flex items-center justify-between p-4 rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/30 transition-colors cursor-pointer no-underline"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusBg(section.status)}`}>
+                        {section.status === "complete" ? (
+                          <CheckCircle className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        ) : section.status === "needs_attention" ? (
+                          <AlertCircle className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        ) : section.id === "income" ? (
+                          <TrendingUp className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        ) : section.id === "expenses" ? (
+                          <TrendingDown className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        ) : section.id === "techstack" ? (
+                          <Zap className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        ) : (
+                          <DollarSign className={`w-5 h-5 ${getStatusColor(section.status)}`} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                            {section.title}
+                          </h3>
+                          {section.aiGenerated && (
+                            <Sparkles className="w-3 h-3 text-[#D4AF63]" />
+                          )}
+                        </div>
+                        <p className="text-sm text-[#B9A9A9]">{section.description}</p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className={`text-xs ${getStatusColor(section.status)}`}>
+                            {getStatusLabel(section.status)}
+                          </span>
+                          <span className="text-xs text-[#B9A9A9]">
+                            {section.completionRate}% complete
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24">
+                        <Progress value={section.completionRate} className="h-1.5" />
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-[#B9A9A9]" />
+                    </div>
+                  </Link>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Insights */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+                AI Insights
+              </h2>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {insights.map((insight) => (
+                  <div 
+                    key={insight.id}
+                    className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1">
+                        <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-1">
+                          {insight.message}
+                        </p>
+                        <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+                          Suggested action: {insight.action}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Next Steps & Quick Actions */}
+        <div className="space-y-6">
+          {/* Next Steps */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                Next Steps
+              </h2>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {nextSteps.map((step) => (
+                  <div 
+                    key={step.id}
+                    className={`p-4 rounded-lg border ${step.completed ? 'border-green-500/30 bg-green-500/5' : 'border-[#1F315B]/10'} transition-colors`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 ${step.completed ? 'text-green-500' : 'text-[#D4AF63]'}`}>
+                        {step.completed ? (
+                          <CheckCircle className="w-5 h-5" />
+                        ) : (
+                          <div className={`w-5 h-5 rounded-full border-2 ${step.priority === 'high' ? 'border-red-500' : 'border-[#D4AF63]'}`} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-medium ${step.completed ? 'line-through text-[#B9A9A9]' : 'text-[#1F315B] dark:text-[#F6F1E8]'}`}>
+                          {step.title}
+                        </p>
+                        <p className="text-xs text-[#B9A9A9] mt-1">
+                          From: {step.source}
+                        </p>
+                        <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                          Impact: {step.impact}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" className="w-full mt-4">
+                View All Tasks
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                Quick Actions
+              </h2>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Statement
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Connect Account
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Add Expense
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <PieChart className="w-4 h-4 mr-2" />
+                  View Reports
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Help Card */}
+          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+            <CardContent className="p-6">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+                Need Help?
+              </h3>
+              <p className="text-sm text-[#CDBED6] mb-4">
+                Questions about your finances? Ask Brujula for guidance on optimizing cash flow.
+              </p>
+              <Button variant="outline" className="w-full border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63] hover:text-[#1F315B]">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Ask Brujula
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
