@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
   Settings,
@@ -13,11 +13,13 @@ import {
   Package,
   Heart,
   Share2,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
   ArrowRight,
   Sparkles,
+  Target,
   Zap,
   BarChart3
 } from "lucide-react";
