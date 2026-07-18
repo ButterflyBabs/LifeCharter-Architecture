@@ -98,9 +98,9 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>Quick Suggestions are context-aware buttons that appear when you open the AI Guide on a specific page. They offer common questions or actions relevant to that page:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
-            <li>On Business Plan: "Refine value prop," "Analyze competition"</li>
-            <li>On Marketing Plan: "Content ideas," "Channel strategy"</li>
-            <li>On Finance: "Expense analysis," "Cash flow tips"</li>
+            <li>On Business Plan: "Refine value prop," "Analyze competition"quot;Analyze competition"Analyze competition"quot;</li>
+            <li>On Marketing Plan: "Content ideas," "Channel strategy"quot;Channel strategy"Channel strategy"quot;</li>
+            <li>On Finance: "Expense analysis," "Cash flow tips"quot;Cash flow tips"Cash flow tips"quot;</li>
           </ul>
           <p>Clicking a suggestion instantly sends that question to the AI Guide.</p>
         </div>
@@ -167,7 +167,7 @@ export default function AIGuideHelpPage() {
           <p>To clear conversations:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li>Open the AI Guide chat panel on any page</li>
-            <li>Click "New conversation" to clear the current page's chat</li>
+            <li>Click "New conversation"quot;New conversation"New conversation"quot; to clear the current page's chat</li>
             <li>Or go to AI Guide → History to see and manage all conversations</li>
             <li>To disable history entirely, turn off "Save conversation history" in Settings</li>
           </ol>
@@ -437,7 +437,7 @@ export default function AIGuideHelpPage() {
             </div>
 
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-              <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">✗ Don't:</h4>
+              <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">✗ DonDon'tapos;t:</h4>
               <ul className="list-disc pl-5 space-y-1 text-red-700 dark:text-red-300 text-sm">
                 <li>Share sensitive personal information or passwords</li>
                 <li>Make critical business decisions without verification</li>
