@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, useSidebar } from "./CollapsibleSidebar";
 import { cn } from "@/lib/utils";
+import AIGuideWidget from "@/components/ai-guide/AIGuideWidget";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -23,6 +24,9 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       )}>
         {children}
       </main>
+
+      {/* AI Guide Widget - appears on all pages */}
+      <AIGuideWidget />
     </div>
   );
 }
