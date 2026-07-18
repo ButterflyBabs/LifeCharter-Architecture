@@ -1149,6 +1149,42 @@ export default function SettingsPage() {
   };
 
   const renderBillingSettings = () => {
+    const [isLoading, setIsLoading] = useState<string | null>(null);
+    
+    const handleSubscribe = async (planId: string) => {
+      if (planId === "vip") {
+        // For VIP, open contact form or email
+        window.location.href = "mailto:babs@lifecharter.architecture?subject=VIP%20Plan%20Inquiry";
+        return;
+      }
+      
+      setIsLoading(planId);
+      try {
+        const response = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId,
+            userId,
+            userEmail: profile.email,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Failed to start checkout. Please try again.");
+        }
+      } catch (error) {
+        console.error("Checkout error:", error);
+        alert("Failed to start checkout. Please try again.");
+      } finally {
+        setIsLoading(null);
+      }
+    };
+    
     const plans = [
       {
         name: "Starter",
@@ -1167,6 +1203,7 @@ export default function SettingsPage() {
           "2 automations enabled",
           "Guided roadmap onboarding"
         ],
+        id: "starter",
         cta: "Get Started",
         popular: false
       },
@@ -1188,6 +1225,7 @@ export default function SettingsPage() {
           "Branded client portal",
           "Multi-brand data scoping"
         ],
+        id: "growth",
         cta: "Get Started",
         popular: true
       },
@@ -1205,6 +1243,7 @@ export default function SettingsPage() {
           "Custom AI agent setup with our team",
           "Dedicated onboarding support"
         ],
+        id: "vip",
         cta: "Contact Us",
         popular: false
       }
@@ -1257,8 +1296,10 @@ export default function SettingsPage() {
                   <Button 
                     className="w-full mt-6"
                     variant={plan.popular ? "primary" : "outline"}
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={isLoading === plan.id}
                   >
-                    {plan.cta}
+                    {isLoading === plan.id ? "Loading..." : plan.cta}
                   </Button>
                 </CardContent>
               </Card>
