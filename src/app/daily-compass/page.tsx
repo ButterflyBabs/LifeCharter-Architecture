@@ -20,7 +20,13 @@ import {
   Plus,
   Flame,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  Battery,
+  BatteryMedium,
+  BatteryLow,
+  X,
+  Quote,
+  BarChart3
 } from "lucide-react";
 import Link from "next/link";
 
@@ -119,6 +125,12 @@ export default function DailyCompassPage() {
   });
 
   const [energyLevel, setEnergyLevel] = useState<number>(3);
+  const [showEnergyInfo, setShowEnergyInfo] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskType, setNewTaskType] = useState<DailyFocus["type"]>("sales");
+  const [newTaskPriority, setNewTaskPriority] = useState<DailyFocus["priority"]>("medium");
+  const [newTaskTime, setNewTaskTime] = useState(15);
 
   useEffect(() => {
     const hour = currentDate.getHours();
@@ -167,6 +179,51 @@ export default function DailyCompassPage() {
   const completedCount = focusItems.filter(i => i.completed).length;
   const totalCount = focusItems.length;
   const progress = (completedCount / totalCount) * 100;
+
+  const handleAddTask = () => {
+    if (!newTaskTitle) return;
+    const newTask: DailyFocus = {
+      id: Date.now().toString(),
+      type: newTaskType,
+      title: newTaskTitle,
+      description: "Added manually",
+      estimatedTime: newTaskTime,
+      priority: newTaskPriority,
+      completed: false,
+      source: "manual"
+    };
+    setFocusItems([...focusItems, newTask]);
+    setNewTaskTitle("");
+    setShowAddTask(false);
+  };
+
+  const handleQuickWin = (type: string) => {
+    if (type === "testimonial") {
+      const newTask: DailyFocus = {
+        id: Date.now().toString(),
+        type: "followup",
+        title: "Send testimonial request to best client",
+        description: "Ask for a review from last week's success story",
+        estimatedTime: 5,
+        priority: "high",
+        completed: false,
+        source: "manual"
+      };
+      setFocusItems([newTask, ...focusItems]);
+    } else if (type === "win") {
+      const newTask: DailyFocus = {
+        id: Date.now().toString(),
+        type: "content",
+        title: "Share a client win on social media",
+        description: "5-minute post about recent transformation",
+        estimatedTime: 5,
+        priority: "medium",
+        completed: false,
+        source: "manual"
+      };
+      setFocusItems([newTask, ...focusItems]);
+    }
+  };
 
   return (
     <div className="py-6 px-4 max-w-6xl mx-auto">
@@ -228,21 +285,143 @@ export default function DailyCompassPage() {
               Today&apos;s Focus
             </h2>
             <div className="flex gap-2">
-              <select 
-                className="text-sm p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
-                value={energyLevel}
-                onChange={(e) => setEnergyLevel(Number(e.target.value))}
-              >
-                <option value={3}>High Energy</option>
-                <option value={2}>Medium Energy</option>
-                <option value={1}>Low Energy</option>
-              </select>
-              <Button size="sm" variant="outline">
+              <div className="relative">
+                <select 
+                  className="text-sm p-2 pr-8 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                  value={energyLevel}
+                  onChange={(e) => setEnergyLevel(Number(e.target.value))}
+                >
+                  <option value={3}>High Energy</option>
+                  <option value={2}>Medium Energy</option>
+                  <option value={1}>Low Energy</option>
+                </select>
+                <button 
+                  onClick={() => setShowEnergyInfo(true)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1F315B]/10 rounded"
+                >
+                  <AlertCircle className="w-3 h-3 text-[#B9A9A9]" />
+                </button>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setShowAddTask(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Task
               </Button>
             </div>
           </div>
+
+          {/* Energy Level Info Modal */}
+          {showEnergyInfo && (
+            <Card className="border-[#D4AF63]/30">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#D4AF63]" />
+                  Energy Levels Guide
+                </CardTitle>
+                <button onClick={() => setShowEnergyInfo(false)}>
+                  <X className="w-4 h-4 text-[#B9A9A9]" />
+                </button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <Battery className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-green-800 dark:text-green-200">High Energy</p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      You are firing on all cylinders. Perfect for sales calls, content creation, 
+                      strategic planning, and tackling your hardest tasks. Aim for 5+ meaningful activities.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <BatteryMedium className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-yellow-800 dark:text-yellow-200">Medium Energy</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Steady and sustainable. Good for follow-ups, scheduling, light content creation, 
+                      and administrative tasks. Aim for 3-4 focused activities.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <BatteryLow className="w-5 h-5 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-800 dark:text-red-200">Low Energy</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">
+                      Rest and recharge mode. Focus on quick wins, reviewing your Domain Scores, 
+                      light planning, or self-care. Aim for 1-2 small wins and permission to rest.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Add Task Modal */}
+          {showAddTask && (
+            <Card className="border-[#2E7C83]/30">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-[#2E7C83]" />
+                  Add New Task
+                </CardTitle>
+                <button onClick={() => setShowAddTask(false)}>
+                  <X className="w-4 h-4 text-[#B9A9A9]" />
+                </button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-sm text-[#B9A9A9] mb-1 block">Task Title</label>
+                  <input
+                    type="text"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="What needs to be done?"
+                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-sm text-[#B9A9A9] mb-1 block">Type</label>
+                    <select
+                      value={newTaskType}
+                      onChange={(e) => setNewTaskType(e.target.value as DailyFocus["type"])}
+                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                    >
+                      <option value="sales">Sales</option>
+                      <option value="content">Content</option>
+                      <option value="followup">Follow-up</option>
+                      <option value="strategic">Strategic</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#B9A9A9] mb-1 block">Priority</label>
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as DailyFocus["priority"])}
+                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#B9A9A9] mb-1 block">Time (min)</label>
+                    <input
+                      type="number"
+                      value={newTaskTime}
+                      onChange={(e) => setNewTaskTime(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleAddTask} className="w-full">
+                  Add Task
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Focus Items */}
           <div className="space-y-3">
@@ -442,27 +621,37 @@ export default function DailyCompassPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-left h-auto py-3"
+                onClick={() => handleQuickWin("testimonial")}
+              >
                 <span className="text-2xl mr-3">💬</span>
                 <div>
                   <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Send a testimonial request</p>
                   <p className="text-xs text-[#B9A9A9]">To your best client from last week</p>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-left h-auto py-3"
+                onClick={() => handleQuickWin("win")}
+              >
                 <span className="text-2xl mr-3">📱</span>
                 <div>
                   <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Share a client win</p>
                   <p className="text-xs text-[#B9A9A9]">5-minute social post</p>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
-                <span className="text-2xl mr-3">✅</span>
-                <div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Review your Domain Scores</p>
-                  <p className="text-xs text-[#B9A9A9]">2-minute check-in</p>
-                </div>
-              </Button>
+              <Link href="/dashboard">
+                <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
+                  <span className="text-2xl mr-3">✅</span>
+                  <div>
+                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Review your Domain Scores</p>
+                    <p className="text-xs text-[#B9A9A9]">2-minute check-in</p>
+                  </div>
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
