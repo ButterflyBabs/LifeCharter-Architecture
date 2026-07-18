@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Progress } from "@/components/ui/Progress";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { 
@@ -153,7 +152,7 @@ export default function PositioningPage() {
               Positioning Complete!
             </h2>
             <p className="text-[#5E3B6C] dark:text-[#CDBED6] mb-6">
-              Your unique value proposition is now defined. Here's what we captured:
+              Your unique value proposition is now defined. Here&apos;s what we captured:
             </p>
 
             <div className="text-left space-y-4 max-w-2xl mx-auto">
