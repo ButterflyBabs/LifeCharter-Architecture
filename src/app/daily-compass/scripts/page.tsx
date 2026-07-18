@@ -175,6 +175,16 @@ export default function ScriptsPage() {
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // New script creation state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newScriptTitle, setNewScriptTitle] = useState("");
+  const [newScriptCategory, setNewScriptCategory] = useState("Sales");
+  const [newScriptType, setNewScriptType] = useState<Script["type"]>("sales");
+  const [newScriptContent, setNewScriptContent] = useState("");
+  const [newScriptTags, setNewScriptTags] = useState("");
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiAssistPrompt, setAiAssistPrompt] = useState("");
 
   const filteredScripts = scripts.filter((script) => {
     const matchesSearch = script.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -241,6 +251,62 @@ CLOSE:
     }, 2000);
   };
 
+  const handleCreateScript = () => {
+    if (!newScriptTitle || !newScriptContent) return;
+    
+    const newScript: Script = {
+      id: Date.now().toString(),
+      title: newScriptTitle,
+      category: newScriptCategory,
+      type: newScriptType,
+      content: newScriptContent,
+      tags: newScriptTags.split(",").map(tag => tag.trim()).filter(tag => tag),
+      isFavorite: false,
+      usageCount: 0
+    };
+    
+    setScripts([newScript, ...scripts]);
+    
+    // Reset form
+    setNewScriptTitle("");
+    setNewScriptCategory("Sales");
+    setNewScriptType("sales");
+    setNewScriptContent("");
+    setNewScriptTags("");
+    setShowCreateModal(false);
+    setShowAIAssist(false);
+    setAiAssistPrompt("");
+  };
+
+  const handleAIAssist = async () => {
+    if (!aiAssistPrompt) return;
+    setIsGenerating(true);
+    
+    // Simulate AI generating content based on prompt
+    setTimeout(() => {
+      const generatedContent = `[AI-Assisted Script Based on: "${aiAssistPrompt}"]
+
+OPENING:
+"Hi [Name], I noticed [specific observation about their business/situation]."
+
+CONTEXT:
+"Many entrepreneurs I work with tell me that [relevant challenge]. Does that resonate with you?"
+
+VALUE:
+"What we've found is that [solution/benefit]. For example, [brief example or case study]."
+
+INVITATION:
+"I'd love to explore how this might work for you specifically. Would you be open to a brief conversation?"
+
+[Customize the placeholders with specific details before using]`;
+      
+      setNewScriptContent(generatedContent);
+      setIsGenerating(false);
+      setShowAIAssist(false);
+      setAiAssistPrompt("");
+    }, 2000);
+  };
+
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
@@ -264,10 +330,16 @@ CLOSE:
               </p>
             </div>
           </div>
-          <Button onClick={() => setShowAIGenerator(true)}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            AI Generate Script
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create New
+            </Button>
+            <Button onClick={() => setShowAIGenerator(true)}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Generate Script
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -310,6 +382,153 @@ CLOSE:
                 )}
               </Button>
               <Button variant="outline" onClick={() => setShowAIGenerator(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create New Script Modal */}
+      {showCreateModal && (
+        <Card className="mb-6 border-[#2E7C83]/30">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Plus className="w-5 h-5 text-[#2E7C83]" />
+              Create New Script/Template
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-[#B9A9A9] mb-1 block">Title</label>
+                <Input
+                  placeholder="e.g., Discovery Call Script"
+                  value={newScriptTitle}
+                  onChange={(e) => setNewScriptTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
+                <select
+                  value={newScriptCategory}
+                  onChange={(e) => setNewScriptCategory(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                >
+                  {categories.filter(c => c !== "All").map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-[#B9A9A9] mb-1 block">Type</label>
+              <div className="flex gap-2">
+                {types.filter(t => t.id !== "all").map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => setNewScriptType(type.id as Script["type"])}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                        newScriptType === type.id
+                          ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#2E7C83]"
+                          : "border-[#1F315B]/20 text-[#B9A9A9]"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {type.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* AI Assist Section */}
+            {!showAIAssist ? (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAIAssist(true)}
+                className="w-full"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Get AI Help Writing This Script
+              </Button>
+            ) : (
+              <div className="p-4 bg-[#D4AF63]/10 rounded-lg space-y-3">
+                <label className="text-sm text-[#B9A9A9] block">
+                  Describe what you want the script to accomplish
+                </label>
+                <Textarea
+                  placeholder="e.g., A script for reaching out to past clients about a new service offering..."
+                  value={aiAssistPrompt}
+                  onChange={(e) => setAiAssistPrompt(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleAIAssist}
+                    disabled={!aiAssistPrompt || isGenerating}
+                    size="sm"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Writing...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Generate Script Content
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowAIAssist(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div>
+              <label className="text-sm text-[#B9A9A9] mb-1 block">Script Content</label>
+              <Textarea
+                placeholder="Paste or type your script here..."
+                value={newScriptContent}
+                onChange={(e) => setNewScriptContent(e.target.value)}
+                className="min-h-[200px] font-mono text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[#B9A9A9] mb-1 block">Tags (comma separated)</label>
+              <Input
+                placeholder="e.g., discovery, sales, follow-up"
+                value={newScriptTags}
+                onChange={(e) => setNewScriptTags(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={handleCreateScript}
+                disabled={!newScriptTitle || !newScriptContent}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Save Script
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setShowAIAssist(false);
+                  setNewScriptTitle("");
+                  setNewScriptContent("");
+                  setNewScriptTags("");
+                }}
+              >
                 Cancel
               </Button>
             </div>
