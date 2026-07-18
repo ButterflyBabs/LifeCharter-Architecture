@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Assessments | LifeCharter Architecture",
-  description: "Assess your business across Brain (Systems), Soul (Purpose), and Profit (Financial Health) dimensions.",
+  title: "Alignment Profile | LifeCharter Architecture",
+  description: "Discover your business alignment across Brain (Systems), Soul (Purpose), and Profit (Financial Health) dimensions.",
 };
 
-const assessments = [
+const alignmentProfiles = [
   {
     id: "brain",
-    title: "Brain Assessment",
+    title: "Brain Profile",
     subtitle: "Systems & Operations",
     description: "Evaluate how well your business runs without you. Assess documentation, automation, team capacity, and operational efficiency.",
     icon: Brain,
@@ -29,7 +29,7 @@ const assessments = [
   },
   {
     id: "soul",
-    title: "Soul Assessment",
+    title: "Soul Profile",
     subtitle: "Purpose & Alignment",
     description: "Measure alignment between your business and your deeper mission. Evaluate values, vision clarity, and meaningful work.",
     icon: Heart,
@@ -46,7 +46,7 @@ const assessments = [
   },
   {
     id: "profit",
-    title: "Profit Assessment",
+    title: "Profit Profile",
     subtitle: "Financial Health",
     description: "Analyze your financial sustainability. Review cash flow, pricing, revenue streams, and profitability across 12 business domains.",
     icon: TrendingUp,
@@ -74,10 +74,10 @@ export default function AssessmentsPage() {
             <span className="text-sm font-medium text-[#CDBED6]">LifeCharter Architecture</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Business Assessments
+            Alignment Profiles
           </h1>
           <p className="text-lg text-[#CDBED6] max-w-2xl">
-            Discover where your business stands across the three dimensions that matter: 
+            Discover your business alignment across the three dimensions that matter: 
             Brain (Systems), Soul (Purpose), and Profit (Financial Health).
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function AssessmentsPage() {
       {/* Assessment Cards */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid md:grid-cols-3 gap-6">
-          {assessments.map((assessment) => (
+          {alignmentProfiles.map((assessment) => (
             <Card
               key={assessment.id}
               className="border-[#D4AF63]/20 hover:border-[#D4AF63]/50 transition-all duration-300 hover:shadow-lg flex flex-col"

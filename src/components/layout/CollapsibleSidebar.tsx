@@ -37,7 +37,7 @@ import {
 
 const navigationItems = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
-  { id: "assessments", label: "Assessments", icon: ClipboardList, href: "/assessments" },
+  { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
   { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
   { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
