@@ -214,7 +214,7 @@ const questions: Question[] = [
 ];
 
 // AI response generator based on answers
-function generateAIResponse(questionId: string, answer: string, allAnswers: Answer[]): string {
+function generateAIResponse(questionId: string, _answer: string, _allAnswers: Answer[]): string {
   const responses: Record<string, string[]> = {
     q1: [
       "Perfect—that clarity is gold. I can already see who we're serving.",
@@ -261,7 +261,7 @@ function generateMarketingPlan(answers: Answer[]): MarketingPlan {
   const getAnswer = (id: string) => answers.find(a => a.questionId === id)?.answer || "";
   
   const q1 = getAnswer("q1");
-  const q3 = getAnswer("q3");
+  // const q3 = getAnswer("q3"); // Reserved for future use
   const q6 = getAnswer("q6");
   const q8 = getAnswer("q8");
   const q9 = getAnswer("q9");
@@ -482,7 +482,7 @@ export default function MarketingPlanPage() {
                   and create a personalized strategy you can start using immediately.
                 </p>
                 <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-2">
-                  Ready? Let's start with the first question...
+                  Ready? Let&apos;s start with the first question...
                 </p>
               </div>
             </div>
