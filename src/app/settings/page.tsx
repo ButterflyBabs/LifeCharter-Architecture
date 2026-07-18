@@ -101,6 +101,9 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
   const supabase = createClient();
+  
+  // Theme context for appearance settings
+  const theme = useTheme();
 
   // Profile settings
   const [profile, setProfile] = useState({
@@ -617,7 +620,6 @@ export default function SettingsPage() {
   );
 
   const renderAppearanceSettings = () => {
-    const { theme, setTheme, colorScheme, setColorScheme, fontSize, setFontSize, compactMode, setCompactMode } = useTheme();
     
     return (
       <div className="space-y-6">
@@ -631,9 +633,9 @@ export default function SettingsPage() {
             ].map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTheme(t.id as "light" | "dark" | "system")}
+                onClick={() => theme.setTheme(t.id as "light" | "dark" | "system")}
                 className={`p-4 rounded-lg border-2 transition-all ${
-                  theme === t.id
+                  theme.theme === t.id
                     ? "border-[#D4AF63] bg-[#D4AF63]/10"
                     : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
                 }`}
@@ -655,9 +657,9 @@ export default function SettingsPage() {
             ].map((scheme) => (
               <button
                 key={scheme.id}
-                onClick={() => setColorScheme(scheme.id as "lifecharter" | "sacred" | "modern")}
+                onClick={() => theme.setColorScheme(scheme.id as "lifecharter" | "sacred" | "modern")}
                 className={`p-4 rounded-lg border-2 transition-all ${
-                  colorScheme === scheme.id
+                  theme.colorScheme === scheme.id
                     ? "border-[#D4AF63] bg-[#D4AF63]/10"
                     : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
                 }`}
@@ -686,9 +688,9 @@ export default function SettingsPage() {
                 {["small", "medium", "large"].map((size) => (
                   <button
                     key={size}
-                    onClick={() => setFontSize(size as "small" | "medium" | "large")}
+                    onClick={() => theme.setFontSize(size as "small" | "medium" | "large")}
                     className={`px-4 py-2 rounded-lg border transition-all ${
-                      fontSize === size
+                      theme.fontSize === size
                         ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]"
                         : "border-[#1F315B]/10 text-[#B9A9A9]"
                     }`}
@@ -701,8 +703,8 @@ export default function SettingsPage() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                checked={compactMode}
-                onChange={(e) => setCompactMode(e.target.checked)}
+                checked={theme.compactMode}
+                onChange={(e) => theme.setCompactMode(e.target.checked)}
                 className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
               />
               <span className="text-[#1F315B] dark:text-[#F6F1E8]">Compact mode (less padding)</span>
