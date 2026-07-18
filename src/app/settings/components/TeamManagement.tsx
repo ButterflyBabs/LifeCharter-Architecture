@@ -119,7 +119,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
     setMembers(members.map(m => m.id === id ? { ...m, role: newRole } : m));
   };
 
-  const handleResendInvite = (_id: string) => {
+  const handleResendInvite = () => {
     setInviteSent(true);
     setTimeout(() => setInviteSent(false), 3000);
   };
@@ -295,7 +295,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleResendInvite(member.id)}
+                      onClick={() => handleResendInvite()}
                     >
                       Resend Invite
                     </Button>
