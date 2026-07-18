@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { User, Upload, X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -20,8 +20,27 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatar || null);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+
+  // Check if we're in demo mode (no authenticated user)
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsDemoMode(!user);
+      
+      // Load from localStorage in demo mode
+      if (!user) {
+        const savedAvatar = localStorage.getItem(`demo-avatar-${userId}`);
+        if (savedAvatar) {
+          setPreviewUrl(savedAvatar);
+          onAvatarChange(savedAvatar);
+        }
+      }
+    }
+    checkAuth();
+  }, [userId, onAvatarChange, supabase.auth]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,11 +61,29 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
     setIsUploading(true);
 
     try {
-      // Create preview
+      // Create preview URL
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
 
-      // Upload to Supabase Storage
+      if (isDemoMode) {
+        // Demo mode: Convert to base64 and store in localStorage
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          localStorage.setItem(`demo-avatar-${userId}`, base64String);
+          onAvatarChange(base64String);
+          setIsUploading(false);
+        };
+        reader.onerror = () => {
+          setError("Failed to read image file");
+          setPreviewUrl(currentAvatar || null);
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // Production mode: Upload to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
@@ -56,11 +93,12 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
       const avatarsBucket = buckets?.find(b => b.name === "avatars");
       
       if (!avatarsBucket) {
-        await supabase.storage.createBucket("avatars", {
+        const { error: bucketError } = await supabase.storage.createBucket("avatars", {
           public: true,
           fileSizeLimit: 5242880, // 5MB
           allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp"]
         });
+        if (bucketError) throw bucketError;
       }
 
       // Upload file
@@ -112,7 +150,16 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
     setIsUploading(true);
 
     try {
-      // Extract file path from URL
+      if (isDemoMode) {
+        // Demo mode: Remove from localStorage
+        localStorage.removeItem(`demo-avatar-${userId}`);
+        onAvatarChange(null);
+        setPreviewUrl(null);
+        setIsUploading(false);
+        return;
+      }
+
+      // Production mode: Extract file path from URL
       const urlParts = previewUrl.split("/");
       const filePath = `avatars/${urlParts[urlParts.length - 1]}`;
 
@@ -206,6 +253,11 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
         {error && (
           <p className="text-xs text-red-500 mt-2">
             {error}
+          </p>
+        )}
+        {isDemoMode && (
+          <p className="text-xs text-[#D4AF63] mt-2">
+            Demo mode: Avatar stored locally
           </p>
         )}
       </div>
