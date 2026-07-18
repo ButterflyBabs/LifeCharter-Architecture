@@ -166,7 +166,7 @@ export default function AIGuidePage() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <Button
-          variant={activeTab === "settings" ? "default" : "outline"}
+          variant={activeTab === "settings" ? "primary" : "outline"}
           onClick={() => setActiveTab("settings")}
           className="flex items-center gap-2"
         >
@@ -174,7 +174,7 @@ export default function AIGuidePage() {
           Settings
         </Button>
         <Button
-          variant={activeTab === "providers" ? "default" : "outline"}
+          variant={activeTab === "providers" ? "primary" : "outline"}
           onClick={() => setActiveTab("providers")}
           className="flex items-center gap-2"
         >
@@ -182,7 +182,7 @@ export default function AIGuidePage() {
           API Keys
         </Button>
         <Button
-          variant={activeTab === "history" ? "default" : "outline"}
+          variant={activeTab === "history" ? "primary" : "outline"}
           onClick={() => setActiveTab("history")}
           className="flex items-center gap-2"
         >
