@@ -30,7 +30,6 @@ interface IntegrationCategory {
 
 interface IntegrationsPanelProps {
   planId: string;
-  maxIntegrations?: number;
   currentIntegrationCount: number;
 }
 
@@ -222,7 +221,7 @@ const integrationCategories: IntegrationCategory[] = [
   }
 ];
 
-export function IntegrationsPanel({ planId, maxIntegrations, currentIntegrationCount }: IntegrationsPanelProps) {
+export function IntegrationsPanel({ planId, currentIntegrationCount }: IntegrationsPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["AI Providers"]);
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});

@@ -848,13 +848,13 @@ export default function SettingsPage() {
     return (
       <IntegrationsPanel 
         planId={currentPlanId}
-        maxIntegrations={currentPlanId === "starter" ? 10 : currentPlanId === "growth" ? 25 : -1}
         currentIntegrationCount={connectedCount}
       />
     );
   };
 
-  const unusedOldIntegrationSettings = () => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const _oldIntegrationCode = () => {
     const integrationCategories = [
       {
         title: "AI Providers",
