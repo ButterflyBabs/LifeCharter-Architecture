@@ -1,23 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   ArrowLeft,
   Heart,
-  FileText,
   CheckCircle,
   HelpCircle,
   ChevronRight,
   ChevronLeft,
   Sparkles,
   Plus,
-  X,
-  Users,
-  Lightbulb
+  X
 } from "lucide-react";
 import Link from "next/link";
 
