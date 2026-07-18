@@ -106,7 +106,7 @@ export default function IncomePage() {
     amount: "",
     source: "",
     description: "",
-    status: "received" as const
+    status: "received" as "received" | "pending" | "scheduled"
   });
 
   const handleAddIncome = () => {
