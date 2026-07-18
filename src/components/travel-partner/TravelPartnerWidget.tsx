@@ -370,9 +370,12 @@ export default function TravelPartnerWidget() {
   return (
     <div ref={widgetRef} style={getWidgetStyle()}>
       <Card className="w-96 max-h-[80vh] overflow-hidden flex flex-col">
-        <CardHeader 
-          className={`bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0 drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
+        <div 
+          className={`drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
           onMouseDown={handleMouseDown}
+        >
+        <CardHeader 
+          className="bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0"
         >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -416,6 +419,7 @@ export default function TravelPartnerWidget() {
           </div>
         </div>
       </CardHeader>
+      </div>
 
       <CardContent className="p-0 overflow-y-auto flex-1">
         {/* Current Step Highlight */}
