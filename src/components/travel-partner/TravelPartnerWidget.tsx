@@ -329,25 +329,23 @@ export default function TravelPartnerWidget() {
 
   if (showCelebration) {
     return (
-      <Card 
-        ref={widgetRef}
-        className="w-80 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]"
-        style={getWidgetStyle()}
-      >
-        <CardContent className="p-6 text-center">
-          <Award className="w-12 h-12 text-[#D4AF63] mx-auto mb-3" />
-          <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
-          <p className="text-sm text-[#CDBED6] mb-4">
-            You have set up your LifeCharter Architecture. You are ready to align and grow!
-          </p>
-          <Button 
-            onClick={() => setShowCelebration(false)}
-            className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90"
-          >
-            Continue to Dashboard
-          </Button>
-        </CardContent>
-      </Card>
+      <div ref={widgetRef} style={getWidgetStyle()}>
+        <Card className="w-80 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <CardContent className="p-6 text-center">
+            <Award className="w-12 h-12 text-[#D4AF63] mx-auto mb-3" />
+            <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
+            <p className="text-sm text-[#CDBED6] mb-4">
+              You have set up your LifeCharter Architecture. You are ready to align and grow!
+            </p>
+            <Button 
+              onClick={() => setShowCelebration(false)}
+              className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90"
+            >
+              Continue to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -370,15 +368,12 @@ export default function TravelPartnerWidget() {
   }
 
   return (
-    <Card 
-      ref={widgetRef}
-      className="w-96 max-h-[80vh] overflow-hidden flex flex-col"
-      style={getWidgetStyle()}
-    >
-      <CardHeader 
-        className={`bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0 drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
-        onMouseDown={handleMouseDown}
-      >
+    <div ref={widgetRef} style={getWidgetStyle()}>
+      <Card className="w-96 max-h-[80vh] overflow-hidden flex flex-col">
+        <CardHeader 
+          className={`bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0 drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
+          onMouseDown={handleMouseDown}
+        >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GripVertical className="w-4 h-4 text-[#CDBED6] opacity-50" />
@@ -554,5 +549,6 @@ export default function TravelPartnerWidget() {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
