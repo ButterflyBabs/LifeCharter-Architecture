@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
@@ -13,9 +13,7 @@ import {
   CheckCircle,
   Upload,
   Camera,
-  Sparkles,
-  Heart,
-  Quote
+  Sparkles
 } from "lucide-react";
 
 export default function ReviewCollectionPage() {
