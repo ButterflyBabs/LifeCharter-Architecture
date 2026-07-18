@@ -210,33 +210,134 @@ export default function SettingsPage() {
     }
   });
 
-  // Integration settings
+  // Integration settings - comprehensive tech stack for coaches and small business
   const [integrations, setIntegrations] = useState({
-    // Business & CRM
-    ghl: { connected: false, apiKey: "" },
-    stripe: { connected: false, apiKey: "" },
-    convertkit: { connected: false, apiKey: "" },
-    calendly: { connected: false, apiKey: "" },
     // AI Providers
     openai: { connected: true, apiKey: "sk-••••••••••••••••••••" },
     anthropic: { connected: false, apiKey: "" },
     moonshot: { connected: false, apiKey: "" },
+    
+    // Business Foundation
+    googleWorkspace: { connected: false, apiKey: "" },
+    microsoft365: { connected: false, apiKey: "" },
+    cloudflare: { connected: false, apiKey: "" },
+    namecheap: { connected: false, apiKey: "" },
+    zoom: { connected: false, apiKey: "" },
+    openPhone: { connected: false, apiKey: "" },
+    
+    // CRM & Sales
+    ghl: { connected: false, apiKey: "" },
+    hubspot: { connected: false, apiKey: "" },
+    salesforce: { connected: false, apiKey: "" },
+    pipedrive: { connected: false, apiKey: "" },
+    honeybook: { connected: false, apiKey: "" },
+    dubsado: { connected: false, apiKey: "" },
+    activecampaign: { connected: false, apiKey: "" },
+    
+    // Email Marketing
+    convertkit: { connected: false, apiKey: "" },
+    mailchimp: { connected: false, apiKey: "" },
+    kit: { connected: false, apiKey: "" },
+    mailerlite: { connected: false, apiKey: "" },
+    beehiiv: { connected: false, apiKey: "" },
+    
+    // Scheduling
+    calendly: { connected: false, apiKey: "" },
+    acuity: { connected: false, apiKey: "" },
+    savvycal: { connected: false, apiKey: "" },
+    calcom: { connected: false, apiKey: "" },
+    
+    // Website & Landing Pages
+    wordpress: { connected: false, apiKey: "" },
+    squarespace: { connected: false, apiKey: "" },
+    webflow: { connected: false, apiKey: "" },
+    kajabi: { connected: false, apiKey: "" },
+    leadpages: { connected: false, apiKey: "" },
+    clickfunnels: { connected: false, apiKey: "" },
+    systeme: { connected: false, apiKey: "" },
+    
+    // Forms & Assessments
+    typeform: { connected: false, apiKey: "" },
+    jotform: { connected: false, apiKey: "" },
+    tally: { connected: false, apiKey: "" },
+    scoreapp: { connected: false, apiKey: "" },
+    interact: { connected: false, apiKey: "" },
+    
+    // Payments & Finance
+    stripe: { connected: false, apiKey: "" },
+    paypal: { connected: false, apiKey: "" },
+    quickbooks: { connected: false, apiKey: "" },
+    xero: { connected: false, apiKey: "" },
+    wise: { connected: false, apiKey: "" },
+    thrivecart: { connected: false, apiKey: "" },
+    
+    // Contracts & Proposals
+    pandadoc: { connected: false, apiKey: "" },
+    docusign: { connected: false, apiKey: "" },
+    betterproposals: { connected: false, apiKey: "" },
+    proposify: { connected: false, apiKey: "" },
+    
+    // Course & Membership
+    teachable: { connected: false, apiKey: "" },
+    thinkific: { connected: false, apiKey: "" },
+    skool: { connected: false, apiKey: "" },
+    circle: { connected: false, apiKey: "" },
+    memberful: { connected: false, apiKey: "" },
+    
+    // Video & Content
+    loom: { connected: false, apiKey: "" },
+    wistia: { connected: false, apiKey: "" },
+    vimeo: { connected: false, apiKey: "" },
+    youtube: { connected: false, apiKey: "" },
+    descript: { connected: false, apiKey: "" },
+    
+    // Call Recording & Analysis
+    fathom: { connected: false, apiKey: "" },
+    fireflies: { connected: false, apiKey: "" },
+    otter: { connected: false, apiKey: "" },
+    grain: { connected: false, apiKey: "" },
+    gong: { connected: false, apiKey: "" },
+    avoma: { connected: false, apiKey: "" },
+    
+    // Testimonials
+    senja: { connected: false, apiKey: "" },
+    vocalvideo: { connected: false, apiKey: "" },
+    trustpilot: { connected: false, apiKey: "" },
+    googleBusiness: { connected: false, apiKey: "" },
+    
+    // Affiliate & Referrals
+    rewardful: { connected: false, apiKey: "" },
+    firstpromoter: { connected: false, apiKey: "" },
+    referralcandy: { connected: false, apiKey: "" },
+    tapfiliate: { connected: false, apiKey: "" },
+    
     // Messaging
     telegram: { connected: false, apiKey: "", botToken: "" },
     whatsapp: { connected: false, apiKey: "" },
     slack: { connected: false, apiKey: "" },
     discord: { connected: false, apiKey: "" },
+    twilio: { connected: false, apiKey: "" },
+    
     // Social Media
     facebook: { connected: false, apiKey: "" },
     instagram: { connected: false, apiKey: "" },
     linkedin: { connected: false, apiKey: "" },
     twitter: { connected: false, apiKey: "" },
     tiktok: { connected: false, apiKey: "" },
-    // Storage & Tools
+    pinterest: { connected: false, apiKey: "" },
+    threads: { connected: false, apiKey: "" },
+    bluesky: { connected: false, apiKey: "" },
+    
+    // Storage & Productivity
     googleDrive: { connected: false, apiKey: "" },
     dropbox: { connected: false, apiKey: "" },
+    oneDrive: { connected: false, apiKey: "" },
     notion: { connected: false, apiKey: "" },
-    airtable: { connected: false, apiKey: "" }
+    airtable: { connected: false, apiKey: "" },
+    asana: { connected: false, apiKey: "" },
+    trello: { connected: false, apiKey: "" },
+    monday: { connected: false, apiKey: "" },
+    clickup: { connected: false, apiKey: "" }
   });
 
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
@@ -748,14 +849,136 @@ export default function SettingsPage() {
         ]
       },
       {
-        title: "Business & CRM",
+        title: "Business Foundation",
+        items: [
+          { id: "googleWorkspace", name: "Google Workspace", description: "Email, Docs, Calendar, Drive", icon: "📧", color: "#4285F4" },
+          { id: "microsoft365", name: "Microsoft 365", description: "Outlook, Word, Excel, Teams", icon: "🏢", color: "#D83B01" },
+          { id: "cloudflare", name: "Cloudflare", description: "Domain & DNS management", icon: "☁️", color: "#F48120" },
+          { id: "namecheap", name: "Namecheap", description: "Domain registration", icon: "🌐", color: "#DE3723" },
+          { id: "zoom", name: "Zoom", description: "Meetings and webinars", icon: "🎥", color: "#2D8CFF" },
+          { id: "openPhone", name: "OpenPhone", description: "Business phone system", icon: "📞", color: "#00A8E8" }
+        ]
+      },
+      {
+        title: "CRM & Sales",
         items: [
           { id: "ghl", name: "GoHighLevel", description: "CRM, funnels, and automation", icon: "📊", color: "#3B82F6" },
-          { id: "stripe", name: "Stripe", description: "Payment processing", icon: "💳", color: "#635BFF" },
-          { id: "convertkit", name: "ConvertKit", description: "Email marketing", icon: "✉️", color: "#FB6970" },
+          { id: "hubspot", name: "HubSpot", description: "CRM, marketing, sales, service", icon: "🟠", color: "#FF7A59" },
+          { id: "salesforce", name: "Salesforce", description: "Enterprise CRM", icon: "☁️", color: "#00A1E0" },
+          { id: "pipedrive", name: "Pipedrive", description: "Sales pipeline management", icon: "🎯", color: "#0087CC" },
+          { id: "honeybook", name: "HoneyBook", description: "Service business CRM", icon: "🍯", color: "#FF6B6B" },
+          { id: "dubsado", name: "Dubsado", description: "Client management", icon: "📋", color: "#1B1B1B" },
+          { id: "activecampaign", name: "ActiveCampaign", description: "CRM and automation", icon: "⚡", color: "#0056D2" }
+        ]
+      },
+      {
+        title: "Email Marketing",
+        items: [
+          { id: "convertkit", name: "ConvertKit", description: "Email marketing for creators", icon: "✉️", color: "#FB6970" },
+          { id: "mailchimp", name: "Mailchimp", description: "Email marketing platform", icon: "🐵", color: "#FFE01B" },
+          { id: "kit", name: "Kit", description: "Email marketing", icon: "📬", color: "#FF6B6B" },
+          { id: "mailerlite", name: "MailerLite", description: "Email marketing", icon: "📨", color: "#00A8E8" },
+          { id: "beehiiv", name: "Beehiiv", description: "Newsletter platform", icon: "🐝", color: "#FFD700" }
+        ]
+      },
+      {
+        title: "Scheduling & Appointments",
+        items: [
           { id: "calendly", name: "Calendly", description: "Scheduling and appointments", icon: "📅", color: "#006BFF" },
-          { id: "notion", name: "Notion", description: "Documentation and wiki", icon: "📝", color: "#000000" },
-          { id: "airtable", name: "Airtable", description: "Database and spreadsheets", icon: "🗂️", color: "#18BFFF" }
+          { id: "acuity", name: "Acuity Scheduling", description: "Appointment scheduling", icon: "🗓️", color: "#5D50E1" },
+          { id: "savvycal", name: "SavvyCal", description: "Scheduling for professionals", icon: "🕐", color: "#FF6B6B" },
+          { id: "calcom", name: "Cal.com", description: "Open scheduling", icon: "📆", color: "#292929" }
+        ]
+      },
+      {
+        title: "Website & Landing Pages",
+        items: [
+          { id: "wordpress", name: "WordPress", description: "Website platform", icon: "📝", color: "#21759B" },
+          { id: "squarespace", name: "Squarespace", description: "Website builder", icon: "🟥", color: "#000000" },
+          { id: "webflow", name: "Webflow", description: "No-code website builder", icon: "🌊", color: "#4353FF" },
+          { id: "kajabi", name: "Kajabi", description: "All-in-one platform", icon: "🎓", color: "#2FC3E9" },
+          { id: "leadpages", name: "Leadpages", description: "Landing page builder", icon: "📄", color: "#0066CC" },
+          { id: "clickfunnels", name: "ClickFunnels", description: "Sales funnels", icon: "🔄", color: "#00A8E8" },
+          { id: "systeme", name: "Systeme.io", description: "All-in-one marketing", icon: "⚙️", color: "#1E90FF" }
+        ]
+      },
+      {
+        title: "Forms & Assessments",
+        items: [
+          { id: "typeform", name: "Typeform", description: "Forms and surveys", icon: "❓", color: "#FF6B6B" },
+          { id: "jotform", name: "Jotform", description: "Online forms", icon: "📋", color: "#FF6B00" },
+          { id: "tally", name: "Tally", description: "Form builder", icon: "✅", color: "#FF6B6B" },
+          { id: "scoreapp", name: "ScoreApp", description: "Assessments and quizzes", icon: "🎯", color: "#6B4EE6" },
+          { id: "interact", name: "Interact", description: "Quizzes and assessments", icon: "💡", color: "#FF6B6B" }
+        ]
+      },
+      {
+        title: "Payments & Finance",
+        items: [
+          { id: "stripe", name: "Stripe", description: "Payment processing", icon: "💳", color: "#635BFF" },
+          { id: "paypal", name: "PayPal", description: "Payment platform", icon: "💰", color: "#003087" },
+          { id: "quickbooks", name: "QuickBooks", description: "Accounting software", icon: "📊", color: "#2CA01C" },
+          { id: "xero", name: "Xero", description: "Accounting software", icon: "📈", color: "#13B5EA" },
+          { id: "wise", name: "Wise", description: "International payments", icon: "💱", color: "#00B9FF" },
+          { id: "thrivecart", name: "ThriveCart", description: "Shopping cart", icon: "🛒", color: "#00C853" }
+        ]
+      },
+      {
+        title: "Contracts & Proposals",
+        items: [
+          { id: "pandadoc", name: "PandaDoc", description: "Proposals and contracts", icon: "📄", color: "#00A8E8" },
+          { id: "docusign", name: "DocuSign", description: "Electronic signatures", icon: "✍️", color: "#0056D2" },
+          { id: "betterproposals", name: "Better Proposals", description: "Proposal software", icon: "📋", color: "#FF6B6B" },
+          { id: "proposify", name: "Proposify", description: "Proposal creation", icon: "📑", color: "#FF6B6B" }
+        ]
+      },
+      {
+        title: "Course & Membership",
+        items: [
+          { id: "teachable", name: "Teachable", description: "Online course platform", icon: "🎓", color: "#1B1B1B" },
+          { id: "thinkific", name: "Thinkific", description: "Course creation", icon: "💭", color: "#00A8E8" },
+          { id: "skool", name: "Skool", description: "Community platform", icon: "🏫", color: "#00C853" },
+          { id: "circle", name: "Circle", description: "Community platform", icon: "⭕", color: "#000000" },
+          { id: "memberful", name: "Memberful", description: "Membership platform", icon: "👥", color: "#1B1B1B" }
+        ]
+      },
+      {
+        title: "Video & Content",
+        items: [
+          { id: "loom", name: "Loom", description: "Video messaging", icon: "🎬", color: "#625DF5" },
+          { id: "wistia", name: "Wistia", description: "Video hosting", icon: "▶️", color: "#00A8E8" },
+          { id: "vimeo", name: "Vimeo", description: "Video platform", icon: "🎥", color: "#1AB7EA" },
+          { id: "youtube", name: "YouTube", description: "Video platform", icon: "📺", color: "#FF0000" },
+          { id: "descript", name: "Descript", description: "Video editing", icon: "🎙️", color: "#00C853" }
+        ]
+      },
+      {
+        title: "Call Recording & Analysis",
+        items: [
+          { id: "fathom", name: "Fathom", description: "Call recording and notes", icon: "🎤", color: "#00C853" },
+          { id: "fireflies", name: "Fireflies.ai", description: "Meeting transcription", icon: "🔥", color: "#FF6B00" },
+          { id: "otter", name: "Otter.ai", description: "Voice notes", icon: "🦦", color: "#00A8E8" },
+          { id: "grain", name: "Grain", description: "Call recording", icon: "🌾", color: "#FFD700" },
+          { id: "gong", name: "Gong", description: "Revenue intelligence", icon: "🔔", color: "#FF6B6B" },
+          { id: "avoma", name: "Avoma", description: "Meeting assistant", icon: "🤝", color: "#6B4EE6" }
+        ]
+      },
+      {
+        title: "Testimonials & Social Proof",
+        items: [
+          { id: "senja", name: "Senja", description: "Testimonial collection", icon: "⭐", color: "#FFD700" },
+          { id: "vocalvideo", name: "Vocal Video", description: "Video testimonials", icon: "🎤", color: "#FF6B6B" },
+          { id: "trustpilot", name: "Trustpilot", description: "Review platform", icon: "✓", color: "#00B67A" },
+          { id: "googleBusiness", name: "Google Business", description: "Business reviews", icon: "🔍", color: "#4285F4" }
+        ]
+      },
+      {
+        title: "Affiliate & Referrals",
+        items: [
+          { id: "rewardful", name: "Rewardful", description: "Affiliate tracking", icon: "🎁", color: "#00C853" },
+          { id: "firstpromoter", name: "FirstPromoter", description: "Referral program", icon: "🚀", color: "#FF6B6B" },
+          { id: "referralcandy", name: "ReferralCandy", description: "Referral marketing", icon: "🍬", color: "#FF6B6B" },
+          { id: "tapfiliate", name: "Tapfiliate", description: "Affiliate marketing", icon: "👆", color: "#00A8E8" }
         ]
       },
       {
@@ -764,7 +987,8 @@ export default function SettingsPage() {
           { id: "telegram", name: "Telegram", description: "Bot integration and messaging", icon: "✈️", color: "#26A5E4" },
           { id: "whatsapp", name: "WhatsApp", description: "Business API messaging", icon: "💬", color: "#25D366" },
           { id: "slack", name: "Slack", description: "Team communication", icon: "💼", color: "#4A154B" },
-          { id: "discord", name: "Discord", description: "Community and bots", icon: "🎮", color: "#5865F2" }
+          { id: "discord", name: "Discord", description: "Community and bots", icon: "🎮", color: "#5865F2" },
+          { id: "twilio", name: "Twilio", description: "SMS and voice API", icon: "📱", color: "#F22F46" }
         ]
       },
       {
@@ -774,14 +998,24 @@ export default function SettingsPage() {
           { id: "instagram", name: "Instagram", description: "Business account", icon: "📸", color: "#E4405F" },
           { id: "linkedin", name: "LinkedIn", description: "Professional network", icon: "💼", color: "#0A66C2" },
           { id: "twitter", name: "X (Twitter)", description: "Social posting", icon: "🐦", color: "#000000" },
-          { id: "tiktok", name: "TikTok", description: "Video content", icon: "🎵", color: "#000000" }
+          { id: "tiktok", name: "TikTok", description: "Video content", icon: "🎵", color: "#000000" },
+          { id: "pinterest", name: "Pinterest", description: "Visual discovery", icon: "📌", color: "#E60023" },
+          { id: "threads", name: "Threads", description: "Text sharing", icon: "🧵", color: "#000000" },
+          { id: "bluesky", name: "BlueSky", description: "Decentralized social", icon: "🦋", color: "#0085FF" }
         ]
       },
       {
-        title: "Storage & Files",
+        title: "Storage & Productivity",
         items: [
           { id: "googleDrive", name: "Google Drive", description: "File storage", icon: "📁", color: "#4285F4" },
-          { id: "dropbox", name: "Dropbox", description: "Cloud storage", icon: "📦", color: "#0061FF" }
+          { id: "dropbox", name: "Dropbox", description: "Cloud storage", icon: "📦", color: "#0061FF" },
+          { id: "oneDrive", name: "OneDrive", description: "Microsoft cloud storage", icon: "☁️", color: "#0078D4" },
+          { id: "notion", name: "Notion", description: "Documentation and wiki", icon: "📝", color: "#000000" },
+          { id: "airtable", name: "Airtable", description: "Database and spreadsheets", icon: "🗂️", color: "#18BFFF" },
+          { id: "asana", name: "Asana", description: "Project management", icon: "✅", color: "#F06A6A" },
+          { id: "trello", name: "Trello", description: "Kanban boards", icon: "📋", color: "#0079BF" },
+          { id: "monday", name: "Monday.com", description: "Work management", icon: "📊", color: "#FF3D57" },
+          { id: "clickup", name: "ClickUp", description: "Productivity platform", icon: "🚀", color: "#7B68EE" }
         ]
       }
     ];
