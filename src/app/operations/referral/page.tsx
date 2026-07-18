@@ -146,13 +146,13 @@ export default function ReferralPage() {
 
   const handleAddToList = () => {
     if (!listInput.trim()) return;
-    const current = answers[question.id] || [];
+    const current = (answers[question.id] as string[]) || [];
     handleAnswer([...current, listInput.trim()]);
     setListInput("");
   };
 
   const handleRemoveFromList = (index: number) => {
-    const current = answers[question.id] || [];
+    const current = (answers[question.id] as string[]) || [];
     handleAnswer(current.filter((_item: string, i: number) => i !== index));
   };
 
