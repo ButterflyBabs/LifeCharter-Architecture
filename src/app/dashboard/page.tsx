@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -18,7 +18,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ChevronDown, Building2, Plus } from "lucide-react";
 import { OverallBusinessHealth } from "@/components/dashboard/OverallBusinessHealth";
 import { DomainAlignmentRadar } from "@/components/dashboard/DomainAlignmentRadar";
 import { AIBusinessGuide } from "@/components/dashboard/AIBusinessGuide";
@@ -28,6 +28,7 @@ import { BusinessHealthTrend } from "@/components/dashboard/BusinessHealthTrend"
 import { OperatingRhythm } from "@/components/dashboard/OperatingRhythm";
 import { MilestonesMomentum } from "@/components/dashboard/MilestonesMomentum";
 import { RevenueSnapshot } from "@/components/dashboard/RevenueSnapshot";
+import { Card, CardContent } from "@/components/ui/Card";
 
 // Define the dashboard card type
 type DashboardCard = {
@@ -59,11 +60,11 @@ function SortableCard({ card }: { card: DashboardCard }) {
       style={style}
       className={`relative group ${isDragging ? "opacity-50" : ""}`}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle - z-50 to ensure it's above all card content */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-[#1F315B]/5 hover:bg-[#1F315B]/10 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 right-2 z-50 p-1.5 rounded-md bg-[#1F315B]/10 hover:bg-[#1F315B]/20 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-[#1F315B]/10"
         title="Drag to reorder"
       >
         <GripVertical className="w-4 h-4 text-[#1F315B] dark:text-[#F6F1E8]" />
@@ -123,6 +124,27 @@ export default function DashboardPage() {
     },
   ]);
 
+  // Workspace state
+  const [workspaces, setWorkspaces] = useState([
+    { id: "ws-1", name: "Soulful Solutions Co.", role: "Owner" },
+    { id: "ws-2", name: "Sacred Kaleidoscope", role: "Admin" },
+    { id: "ws-3", name: "LifeCharter Ventures", role: "Member" },
+  ]);
+  const [currentWorkspace, setCurrentWorkspace] = useState(workspaces[0]);
+  const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
+  const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(event.target as Node)) {
+        setShowWorkspaceDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Load saved order from localStorage on mount
   useEffect(() => {
     const savedOrder = localStorage.getItem("dashboard-card-order");
@@ -181,8 +203,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="mb-8 flex items-center justify-between">
+      {/* Welcome Section with Workspace Dropdown */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
             Welcome back, Seraphina
@@ -191,10 +213,72 @@ export default function DashboardPage() {
             Here&apos;s your business at a glance
           </p>
         </div>
-        <p className="text-sm text-[#B9A9A9] hidden sm:block">
-          💡 Hover over cards and drag the handle to reorder
-        </p>
+        
+        {/* Workspace Selector Dropdown */}
+        <div className="relative" ref={workspaceDropdownRef}>
+          <button
+            onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/20 transition-colors border border-[#1F315B]/10"
+          >
+            <Building2 className="w-4 h-4 text-[#1F315B] dark:text-[#F6F1E8]" />
+            <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              {currentWorkspace.name}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-[#B9A9A9] transition-transform ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {/* Dropdown Menu */}
+          {showWorkspaceDropdown && (
+            <Card className="absolute right-0 top-full mt-2 w-72 z-50 shadow-lg">
+              <CardContent className="p-2">
+                <p className="text-xs text-[#B9A9A9] uppercase tracking-wider px-3 py-2">
+                  Your Workspaces
+                </p>
+                {workspaces.map((workspace) => (
+                  <button
+                    key={workspace.id}
+                    onClick={() => {
+                      setCurrentWorkspace(workspace);
+                      setShowWorkspaceDropdown(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
+                      currentWorkspace.id === workspace.id
+                        ? 'bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]'
+                        : 'hover:bg-[#1F315B]/5 text-[#1F315B] dark:text-[#F6F1E8]'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{workspace.name}</p>
+                      <p className="text-xs text-[#B9A9A9]">{workspace.role}</p>
+                    </div>
+                    {currentWorkspace.id === workspace.id && (
+                      <div className="w-2 h-2 rounded-full bg-[#D4AF63]" />
+                    )}
+                  </button>
+                ))}
+                <div className="border-t border-[#1F315B]/10 mt-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowWorkspaceDropdown(false);
+                      // TODO: Open create workspace modal
+                      alert("Create new workspace - coming soon!");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/5 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm">Create New Workspace</span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
+
+      {/* Drag & Drop Hint */}
+      <p className="text-sm text-[#B9A9A9] mb-4">
+        💡 Hover over cards and drag the handle to reorder
+      </p>
 
       {/* Draggable Grid */}
       <DndContext
