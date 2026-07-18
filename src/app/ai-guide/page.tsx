@@ -12,7 +12,8 @@ import {
   CheckCircle,
   Trash2,
   Plus,
-  Settings
+  Settings,
+  History
 } from "lucide-react";
 
 interface AIProvider {
