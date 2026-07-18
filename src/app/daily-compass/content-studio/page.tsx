@@ -91,7 +91,7 @@ export default function ContentStudioPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [savedContent, setSavedContent] = useState<GeneratedContent[]>([]);
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [, setShowTemplates] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt) return;
@@ -114,7 +114,7 @@ export default function ContentStudioPage() {
     }, 2000);
   };
 
-  const generateMockContent = (type: string, platform: string, prompt: string): string => {
+  const generateMockContent = (type: string, _platform: string, _prompt: string): string => {
     if (type === "social") {
       return `🦋 What if I told you that everything you've been taught about business growth is backwards?
 
