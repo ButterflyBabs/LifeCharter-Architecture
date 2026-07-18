@@ -61,7 +61,7 @@ export default function ContactSupportPage() {
         message: "",
         priority: "normal"
       });
-    } catch (error) {
+    } catch {
       setSubmitError("Failed to submit request. Please try again or email us directly.");
     } finally {
       setIsSubmitting(false);
