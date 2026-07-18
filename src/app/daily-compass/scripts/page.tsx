@@ -248,8 +248,10 @@ export default function ScriptsPage() {
       const newScript: Script = {
         id: Date.now().toString(),
         title: `AI Generated: ${aiPrompt.substring(0, 30)}...`,
+        itemType: "script",
         category: "Sales",
         type: "sales",
+        description: "AI-generated script based on your prompt",
         content: `[AI Generated Script based on: "${aiPrompt}"]
 
 OPENING:
@@ -267,7 +269,8 @@ CLOSE:
 [This is a template - customize with specific details about your prospect]`,
         tags: ["ai-generated", "custom"],
         isFavorite: false,
-        usageCount: 0
+        usageCount: 0,
+        createdAt: new Date().toISOString().split("T")[0]
       };
       setScripts([newScript, ...scripts]);
       setIsGenerating(false);
