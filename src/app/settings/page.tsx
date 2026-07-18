@@ -854,7 +854,7 @@ export default function SettingsPage() {
     );
   };
 
-  const _oldRenderIntegrationSettings = () => {
+  const unusedOldIntegrationSettings = () => {
     const integrationCategories = [
       {
         title: "AI Providers",

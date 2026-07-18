@@ -12,10 +12,7 @@ import { Input } from "@/components/ui/Input";
 import {
   ChevronDown,
   ChevronUp,
-  CheckCircle,
-  Lock,
-  ExternalLink,
-  Plus
+  Lock
 } from "lucide-react";
 
 interface Integration {
@@ -33,7 +30,7 @@ interface IntegrationCategory {
 
 interface IntegrationsPanelProps {
   planId: string;
-  maxIntegrations: number;
+  maxIntegrations?: number;
   currentIntegrationCount: number;
 }
 
