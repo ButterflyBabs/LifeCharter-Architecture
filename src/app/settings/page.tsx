@@ -395,8 +395,8 @@ For questions, please contact support@lifecharter.architecture
     pro: 3,
     enterprise: 5
   };
-  const currentPlan = "pro" as keyof typeof planLimits;
-  const maxWorkspaces = planLimits[currentPlan];
+  const workspacePlan = "pro" as keyof typeof planLimits;
+  const maxWorkspaces = planLimits[workspacePlan];
   const canCreateMore = workspaces.length < maxWorkspaces;
 
   // Notification settings
