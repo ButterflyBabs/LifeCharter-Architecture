@@ -5,11 +5,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { AvatarUpload } from "./components/AvatarUpload";
+import { createClient } from "@/lib/supabase/client";
 import {
   User,
   Building2,
@@ -96,6 +98,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [userId, setUserId] = useState<string>("demo-user-123");
+  const supabase = createClient();
 
   // Profile settings
   const [profile, setProfile] = useState({
@@ -106,6 +110,33 @@ export default function SettingsPage() {
     bio: "Alignment Architect | Founder of Sacred Kaleidoscope Community",
     avatar: null as string | null
   });
+
+  // Load profile data on mount
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile) {
+          setProfile({
+            fullName: profile.full_name || "",
+            email: profile.email || user.email || "",
+            phone: profile.phone || "",
+            timezone: profile.timezone || "America/Denver",
+            bio: profile.bio || "",
+            avatar: profile.avatar_url || null
+          });
+        }
+      }
+    }
+    loadProfile();
+  }, []);
 
   // Workspace settings
   const [workspace, setWorkspace] = useState({
@@ -166,19 +197,11 @@ export default function SettingsPage() {
 
   const renderProfileSettings = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-          <User className="w-10 h-10 text-[#D4AF63]" />
-        </div>
-        <div>
-          <Button variant="outline" size="sm">
-            Upload Photo
-          </Button>
-          <p className="text-xs text-[#B9A9A9] mt-2">
-            Recommended: 400x400px, JPG or PNG
-          </p>
-        </div>
-      </div>
+      <AvatarUpload
+        currentAvatar={profile.avatar}
+        onAvatarChange={(url) => setProfile({ ...profile, avatar: url })}
+        userId={userId}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
