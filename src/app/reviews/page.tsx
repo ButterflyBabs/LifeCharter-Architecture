@@ -24,8 +24,6 @@ import {
   Copy,
   Mail
 } from "lucide-react";
-import Link from "next/link";
-
 interface Review {
   id: string;
   clientName: string;
