@@ -8,16 +8,12 @@ import {
   Bot,
   Key,
   MessageSquare,
-  Mic,
   Sparkles,
   CheckCircle,
-  AlertCircle,
-  ChevronDown,
   Trash2,
   Plus,
   Settings,
-  History,
-  Zap
+  History
 } from "lucide-react";
 
 interface AIProvider {
