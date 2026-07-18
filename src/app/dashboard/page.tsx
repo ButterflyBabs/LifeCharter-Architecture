@@ -202,11 +202,11 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6 pr-8">
       {/* Welcome Section with Centered Workspace Dropdown */}
       <div className="mb-8">
-        {/* Centered Workspace Selector */}
-        <div className="flex justify-center mb-4">
+        {/* Centered Workspace Selector with top padding */}
+        <div className="flex justify-center mb-6 pt-4">
           <div className="relative" ref={workspaceDropdownRef}>
             <button
               onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
@@ -288,21 +288,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Welcome Text */}
-        <div className="text-center">
-          <h1 className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-            Welcome back, Seraphina
-          </h1>
-          <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
-            Here&apos;s your business at a glance
+        {/* Welcome Text - Left justified with drag hint on same line right justified */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              Welcome back, Seraphina
+            </h1>
+            <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+              Here&apos;s your business at a glance
+            </p>
+          </div>
+          <p className="text-sm text-[#B9A9A9]">
+            💡 Hover over cards and drag the handle to reorder
           </p>
         </div>
       </div>
-
-      {/* Drag & Drop Hint */}
-      <p className="text-sm text-[#B9A9A9] mb-4">
-        💡 Hover over cards and drag the handle to reorder
-      </p>
 
       {/* Draggable Grid */}
       <DndContext
