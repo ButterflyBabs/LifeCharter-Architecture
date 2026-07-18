@@ -15,11 +15,11 @@ export default function TwelveDomainAlignmentPage() {
     {
       id: "score-bad",
       question: "Is a lower score bad?",
-      answer: "Not at all. A lower score simply means there's more room for growth. Some of our most successful clients started with overall scores in the 40s. The score is information, not judgment."
+      answer: "Not at all. A lower score simply means there&apos;s more room for growth. Some of our most successful clients started with overall scores in the 40s. The score is information, not judgment."
     },
     {
       id: "need-ideal",
-      question: "Do I need to be at 'Ideal' in all 12 domains?",
+      question: "Do I need to be at &apos;Ideal&apos; in all 12 domains?",
       answer: "No business is perfect in all areas. The most successful businesses we work with typically have 3-4 domains at or near ideal, with the rest in the 70-85% range. The key is knowing which domains need attention now."
     },
     {
@@ -30,7 +30,7 @@ export default function TwelveDomainAlignmentPage() {
     {
       id: "score-down",
       question: "Can my score go down?",
-      answer: "Yes, and that's okay. Sometimes addressing one domain temporarily lowers your score there as you dismantle old systems to build better ones. The overall trend matters more than any single measurement."
+      answer: "Yes, and that&apos;s okay. Sometimes addressing one domain temporarily lowers your score there as you dismantle old systems to build better ones. The overall trend matters more than any single measurement."
     },
     {
       id: "disagree",
@@ -40,7 +40,7 @@ export default function TwelveDomainAlignmentPage() {
     {
       id: "different",
       question: "How is this different from other business assessments?",
-      answer: "Most assessments look at one area (like marketing or finances). The 12-Domain approach recognizes that your marketing can't thrive if your operations are broken, and your team can't excel without clear leadership. We look at the whole ecosystem."
+      answer: "Most assessments look at one area (like marketing or finances). The 12-Domain approach recognizes that your marketing can&apos;t thrive if your operations are broken, and your team can&apos;t excel without clear leadership. We look at the whole ecosystem."
     }
   ];
 
@@ -83,7 +83,7 @@ export default function TwelveDomainAlignmentPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
-            Your "You" Score: Where You Are Today
+            Your &quot;You&quot; Score: Where You Are Today
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -109,12 +109,12 @@ export default function TwelveDomainAlignmentPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
-            The "Ideal" Score: Your North Star
+            The &quot;Ideal&quot; Score: Your North Star
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
-            The ideal represents <strong>best-practice standards</strong>—what healthy, thriving businesses typically achieve in each area. These aren't arbitrary numbers; they're based on:
+            The ideal represents <strong>best-practice standards</strong>—what healthy, thriving businesses typically achieve in each area. These aren&apos;t arbitrary numbers; they&apos;re based on:
           </p>
           <ul className="space-y-2 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li>• Research from thousands of successful businesses</li>
@@ -123,7 +123,7 @@ export default function TwelveDomainAlignmentPage() {
           </ul>
           <div className="bg-[#D4AF63]/10 rounded-lg p-4 border border-[#D4AF63]/30">
             <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
-              Important: You don't need 100% in every domain. The ideal is a guidepost, not a requirement. Even businesses doing seven figures often have domains in the 70-80% range.
+              Important: You don&apos;t need 100% in every domain. The ideal is a guidepost, not a requirement. Even businesses doing seven figures often have domains in the 70-80% range.
             </p>
           </div>
         </CardContent>
@@ -138,12 +138,12 @@ export default function TwelveDomainAlignmentPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
-            The space between "You" and "Ideal" isn't a problem—<strong>it's your opportunity</strong>.
+            The space between &quot;You&quot; and &quot;Ideal&quot; isn&apos;t a problem—<strong>it&apos;s your opportunity</strong>.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
               <h4 className="font-semibold text-green-600 mb-2">Small Gaps (0-15 points)</h4>
-              <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">You're doing well; fine-tuning will create excellence</p>
+              <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">You&apos;re doing well; fine-tuning will create excellence</p>
             </div>
             <div className="bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/20">
               <h4 className="font-semibold text-yellow-600 mb-2">Medium Gaps (15-30 points)</h4>
@@ -169,7 +169,7 @@ export default function TwelveDomainAlignmentPage() {
         </CardHeader>
         <CardContent>
           <p className="text-[#1F315B] dark:text-[#F6F1E8] mb-4">
-            Your alignment isn't static—it grows as you grow.
+            Your alignment isn&apos;t static—it grows as you grow.
           </p>
           <ul className="space-y-3 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li className="flex items-start gap-3">
@@ -178,7 +178,7 @@ export default function TwelveDomainAlignmentPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-[#D4AF63] mt-2 flex-shrink-0"></span>
-              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Unified Memory</strong> remembers your journey, so you're not starting from scratch</span>
+              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Unified Memory</strong> remembers your journey, so you&apos;re not starting from scratch</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-[#D4AF63] mt-2 flex-shrink-0"></span>
@@ -291,7 +291,7 @@ export default function TwelveDomainAlignmentPage() {
       {/* Closing Quote */}
       <div className="text-center py-8">
         <p className="text-lg text-[#5E3B6C] dark:text-[#CDBED6] italic">
-          "The goal isn't perfection. The goal is alignment—having all 12 domains working together so your business supports your life, rather than draining it."
+          &quot;The goal isn&apos;t perfection. The goal is alignment—having all 12 domains working together so your business supports your life, rather than draining it.&quot;
         </p>
       </div>
     </div>
