@@ -94,7 +94,7 @@ export default function RevenueSnapshotHelpPage() {
         <div className="space-y-2">
           <p>Set SMART revenue goals:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
-            <li><strong>Specific:</strong> "$10,000 monthly" not "more revenue"</li>
+            <li><strong>Specific:</strong> &quot;$10,000 monthly&quot; not &quot;more revenue&quot;</li>
             <li><strong>Measurable:</strong> Trackable in the Revenue Snapshot</li>
             <li><strong>Achievable:</strong> Challenging but realistic based on current trajectory</li>
             <li><strong>Relevant:</strong> Aligned with your business stage and capacity</li>
@@ -182,7 +182,7 @@ export default function RevenueSnapshotHelpPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
-            The <strong>Revenue Snapshot</strong> is your business's financial dashboard. It brings together 
+            The <strong>Revenue Snapshot</strong> is your business&apos;s financial dashboard. It brings together 
             income from all sources—payments, transfers, cash sales—into one clear, real-time view. 
             No more guessing. No more spreadsheets. Just the numbers you need to make smart decisions.
           </p>

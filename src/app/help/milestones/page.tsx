@@ -80,7 +80,7 @@ export default function MilestonesHelpPage() {
             <li><strong>Time-bound:</strong> Has a target date or season</li>
             <li><strong>Challenging but Achievable:</strong> Stretch, but not impossible</li>
           </ul>
-          <p>Break big goals into smaller milestone steps. Instead of "grow the business," try "launch new website," "reach 100 email subscribers," "make first $5K month."</p>
+          <p>Break big goals into smaller milestone steps. Instead of &quot;grow the business,&quot; try &quot;launch new website,&quot; &quot;reach 100 email subscribers,&quot; &quot;make first $5K month.&quot;</p>
         </div>
       )
     },
