@@ -35,7 +35,9 @@ import {
   ExternalLink,
   Trash2,
   Lock,
-  FileText
+  FileText,
+  Download,
+  Receipt
 } from "lucide-react";
 
 interface SettingsSection {
@@ -143,6 +145,90 @@ export default function SettingsPage() {
     }
     loadProfile();
   }, []);
+
+  // Invoice download functions
+  const downloadInvoice = (invoice: { id: string; date: string; amount: string; status: string; plan: string }) => {
+    // Create invoice content
+    const invoiceContent = `
+LIFECHARTER ARCHITECTURE - INVOICE
+=====================================
+
+Invoice ID: ${invoice.id}
+Date: ${invoice.date}
+Status: ${invoice.status}
+
+Plan: ${invoice.plan}
+Amount: ${invoice.amount}
+
+Billed To:
+${profile.fullName}
+${profile.email}
+
+Thank you for your business!
+
+For questions about this invoice, please contact support@lifecharter.architecture
+`;
+
+    // Create and download the file
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${invoice.id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadAllInvoices = () => {
+    const allInvoices = [
+      { id: "INV-2026-07-001", date: "Jul 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+      { id: "INV-2026-06-001", date: "Jun 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+      { id: "INV-2026-05-001", date: "May 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+      { id: "INV-2026-04-001", date: "Apr 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+      { id: "INV-2026-03-001", date: "Mar 15, 2026", amount: "$497.00", status: "Paid", plan: "Starter Plan" },
+      { id: "INV-2026-02-001", date: "Feb 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" },
+      { id: "INV-2026-01-001", date: "Jan 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" }
+    ];
+
+    let combinedContent = `LIFECHARTER ARCHITECTURE - ALL INVOICES
+========================================\n\n`;
+    
+    allInvoices.forEach((invoice, index) => {
+      combinedContent += `
+Invoice #${index + 1}
+-------------------
+Invoice ID: ${invoice.id}
+Date: ${invoice.date}
+Status: ${invoice.status}
+Plan: ${invoice.plan}
+Amount: ${invoice.amount}
+
+`;
+    });
+
+    combinedContent += `
+\nBilled To:
+${profile.fullName}
+${profile.email}
+
+Total Invoices: ${allInvoices.length}
+
+Thank you for your business!
+For questions, please contact support@lifecharter.architecture
+`;
+
+    const blob = new Blob([combinedContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `LifeCharter-All-Invoices.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   // Social platform type
   type SocialPlatform = {
@@ -1367,28 +1453,56 @@ export default function SettingsPage() {
 
         {/* Billing History */}
         <div>
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Billing History</h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Billing History</h4>
+            <Button variant="outline" size="sm" onClick={() => downloadAllInvoices()}>
+              <Download className="w-4 h-4 mr-2" />
+              Download All
+            </Button>
+          </div>
           <div className="space-y-2">
             {[
-              { date: "Jul 15, 2026", amount: "$497.00", status: "Paid" },
-              { date: "Jun 15, 2026", amount: "$497.00", status: "Paid" },
-              { date: "May 15, 2026", amount: "$497.00", status: "Paid" }
+              { id: "INV-2026-07-001", date: "Jul 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+              { id: "INV-2026-06-001", date: "Jun 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+              { id: "INV-2026-05-001", date: "May 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+              { id: "INV-2026-04-001", date: "Apr 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
+              { id: "INV-2026-03-001", date: "Mar 15, 2026", amount: "$497.00", status: "Paid", plan: "Starter Plan" },
+              { id: "INV-2026-02-001", date: "Feb 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" },
+              { id: "INV-2026-01-001", date: "Jan 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" }
             ].map((invoice, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10"
+                className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10 hover:bg-[#1F315B]/5 transition-colors"
               >
-                <div>
-                  <p className="text-[#1F315B] dark:text-[#F6F1E8]">{invoice.date}</p>
-                  <p className="text-sm text-[#B9A9A9]">Growth Plan</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/10 flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-[#D4AF63]" />
+                  </div>
+                  <div>
+                    <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">{invoice.id}</p>
+                    <p className="text-sm text-[#B9A9A9]">{invoice.date} • {invoice.plan}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{invoice.amount}</p>
-                  <span className="text-xs text-green-500">{invoice.status}</span>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{invoice.amount}</p>
+                    <span className="text-xs text-green-500">{invoice.status}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => downloadInvoice(invoice)}
+                    title="Download Invoice"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
+          <p className="text-xs text-[#B9A9A9] mt-4">
+            Invoices are generated automatically on your billing date. Click the download button to save a PDF copy.
+          </p>
         </div>
       </div>
     );
