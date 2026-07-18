@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
+import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -840,6 +841,20 @@ export default function SettingsPage() {
   };
 
   const renderIntegrationSettings = () => {
+    // Get user's current plan - in production this would come from subscription data
+    const currentPlanId = "growth"; // starter, growth, or vip
+    const connectedCount = 0; // This would be calculated from actual connected integrations
+    
+    return (
+      <IntegrationsPanel 
+        planId={currentPlanId}
+        maxIntegrations={currentPlanId === "starter" ? 10 : currentPlanId === "growth" ? 25 : -1}
+        currentIntegrationCount={connectedCount}
+      />
+    );
+  };
+
+  const _oldRenderIntegrationSettings = () => {
     const integrationCategories = [
       {
         title: "AI Providers",
