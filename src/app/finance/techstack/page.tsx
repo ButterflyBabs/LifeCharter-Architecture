@@ -244,8 +244,8 @@ export default function TechStackPage() {
     category: "",
     monthlyCost: "",
     annualCost: "",
-    billingCycle: "monthly" as const,
-    usageLevel: "medium" as const,
+    billingCycle: "monthly" as "monthly" | "annual",
+    usageLevel: "medium" as "high" | "medium" | "low" | "none",
     renewalDate: "",
     website: "",
     description: ""
