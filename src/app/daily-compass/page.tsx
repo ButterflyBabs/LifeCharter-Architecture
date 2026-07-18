@@ -71,7 +71,7 @@ export default function DailyCompassPage() {
       id: "2",
       type: "content",
       title: "Create LinkedIn post about alignment",
-      description: "Based on your Marketing Plan messaging: 'Alignment over hustle'",
+      description: "Based on your Marketing Plan messaging",
       estimatedTime: 20,
       priority: "high",
       completed: false,
@@ -204,7 +204,7 @@ export default function DailyCompassPage() {
         <div className="bg-white dark:bg-[#1F315B] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-              TodayTodayToday'sapos;sapos;s Progress
+              Today&apos;s Progress
             </span>
             <span className="text-sm text-[#B9A9A9]">
               {completedCount} of {totalCount} completed
@@ -222,87 +222,85 @@ export default function DailyCompassPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Focus Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* TodayTodayToday'sapos;sapos;s Focus */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#D4AF63]" />
-                TodayTodayToday'sapos;sapos;s Focus
-              </CardTitle>
-              <div className="flex gap-2">
-                <select 
-                  className="text-sm p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
-                  value={energyLevel}
-                  onChange={(e) => setEnergyLevel(Number(e.target.value))}
-                >
-                  <option value={3}>High Energy</option>
-                  <option value={2}>Medium Energy</option>
-                  <option value={1}>Low Energy</option>
-                </select>
-                <Button size="sm" variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Task
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {focusItems.map((item) => (
-                <div 
-                  key={item.id}
-                  className={`p-4 rounded-lg border transition-all ${
-                    item.completed 
-                      ? "bg-[#1F315B]/5 border-[#1F315B]/10 opacity-60" 
-                      : "bg-white dark:bg-[#1F315B]/50 border-[#1F315B]/20 hover:border-[#D4AF63]/50"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <button 
-                      onClick={() => toggleComplete(item.id)}
-                      className="mt-1"
-                    >
-                      {item.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#D4AF63]" />
-                      )}
-                    </button>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`p-1 rounded ${getPriorityColor(item.priority)}`}>
-                          {getTypeIcon(item.type)}
-                        </span>
-                        <span className={`font-medium ${item.completed ? "line-through text-[#B9A9A9]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
-                          {item.title}
-                        </span>
-                      </div>
-                      <p className="text-sm text-[#B9A9A9] mb-2">{item.description}</p>
-                      
-                      {/* Linked Goal */}
-                      {item.linkedGoal && (
-                        <div className="flex items-center gap-2 text-xs text-[#5E3B6C] dark:text-[#CDBED6] bg-[#5E3B6C]/10 px-2 py-1 rounded w-fit">
-                          <Link className="w-3 h-3" href={`/business-plan`} />
-                          <span>Linked to: {item.linkedGoal}</span>
-                        </div>
-                      )}
+          {/* Action Bar */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              Today&apos;s Focus
+            </h2>
+            <div className="flex gap-2">
+              <select 
+                className="text-sm p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                value={energyLevel}
+                onChange={(e) => setEnergyLevel(Number(e.target.value))}
+              >
+                <option value={3}>High Energy</option>
+                <option value={2}>Medium Energy</option>
+                <option value={1}>Low Energy</option>
+              </select>
+              <Button size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Task
+              </Button>
+            </div>
+          </div>
 
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-xs text-[#B9A9A9] flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {item.estimatedTime} min
-                        </span>
-                        <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full">
-                          From: {getSourceLabel(item.source)}
-                        </span>
-                      </div>
+          {/* Focus Items */}
+          <div className="space-y-3">
+            {focusItems.map((item) => (
+              <div 
+                key={item.id}
+                className={`p-4 rounded-lg border transition-all ${
+                  item.completed 
+                    ? "bg-[#1F315B]/5 border-[#1F315B]/10 opacity-60" 
+                    : "bg-white dark:bg-[#1F315B]/50 border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <button 
+                    onClick={() => toggleComplete(item.id)}
+                    className="mt-1"
+                  >
+                    {item.completed ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#D4AF63]" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`p-1 rounded ${getPriorityColor(item.priority)}`}>
+                        {getTypeIcon(item.type)}
+                      </span>
+                      <span className={`font-medium ${item.completed ? "line-through text-[#B9A9A9]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
+                        {item.title}
+                      </span>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
+                    <p className="text-sm text-[#B9A9A9] mb-2">{item.description}</p>
+                    
+                    {item.linkedGoal && (
+                      <div className="flex items-center gap-2 text-xs text-[#5E3B6C] dark:text-[#CDBED6] bg-[#5E3B6C]/10 px-2 py-1 rounded w-fit">
+                        <ArrowRight className="w-3 h-3" />
+                        <span>Linked to: {item.linkedGoal}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs text-[#B9A9A9] flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {item.estimatedTime} min
+                      </span>
+                      <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full">
+                        From: {getSourceLabel(item.source)}
+                      </span>
+                    </div>
                   </div>
+                  <Button variant="ghost" size="sm">
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </div>
+            ))}
+          </div>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -360,7 +358,7 @@ export default function DailyCompassPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#D4AF63]" />
-                TodayTodayToday'sapos;sapos;s Activity
+                Today&apos;s Activity
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -417,13 +415,13 @@ export default function DailyCompassPage() {
                 <div className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-[#D4AF63] mt-0.5" />
                   <p className="text-[#CDBED6]">
-                    Marketing Plan suggests posting about &quot;alignment over hustle&quot; - content idea ready in Studio.
+                    Marketing Plan suggests posting about alignment - content idea ready in Studio.
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <Trophy className="w-4 h-4 text-[#D4AF63] mt-0.5" />
                   <p className="text-[#CDBED6]">
-                    YouYouYou'reapos;reapos;re on track to hit your Q3 revenue goal! Keep the momentum.
+                    You are on track to hit your Q3 revenue goal! Keep the momentum.
                   </p>
                 </div>
               </div>
