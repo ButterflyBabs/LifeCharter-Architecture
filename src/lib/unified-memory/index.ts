@@ -413,9 +413,9 @@ export async function fetchCrossAssessmentContext(
       .order('due_date', { ascending: true });
     
     const context: CrossAssessmentContext = {
-      brainResponses: (responses || []).filter(r => r.assessment_type === 'brain'),
-      soulResponses: (responses || []).filter(r => r.assessment_type === 'soul'),
-      profitResponses: (responses || []).filter(r => r.assessment_type === 'profit_architecture'),
+      brainResponses: (responses || []).filter((r: { assessment_type: string }) => r.assessment_type === 'brain'),
+      soulResponses: (responses || []).filter((r: { assessment_type: string }) => r.assessment_type === 'soul'),
+      profitResponses: (responses || []).filter((r: { assessment_type: string }) => r.assessment_type === 'profit_architecture'),
       insights: insights || [],
       actionItems: actionItems || [],
     };
