@@ -18,7 +18,7 @@ export function createClient() {
         update: () => ({ data: null, error: null }),
         delete: () => ({ data: null, error: null }),
       }),
-    } as any;
+    } as ReturnType<typeof createBrowserClient>;
   }
   
   return createBrowserClient(url, key);
