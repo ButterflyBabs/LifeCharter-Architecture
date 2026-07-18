@@ -15,7 +15,6 @@ import {
   Flame,
   Trophy,
   Zap,
-  Clock,
   Phone,
   Share2,
   MessageSquare,
@@ -61,18 +60,19 @@ const weekData: DayActivity[] = [
 ];
 
 export default function WeeklyViewPage() {
-  const [currentWeek, setCurrentWeek] = useState("July 14-20, 2026");
+  const [currentWeek] = useState("July 14-20, 2026");
   const [streak] = useState({
     current: 12,
     longest: 28,
     weeklyStreak: 3
   });
 
-  const totalActivities = weekData.reduce((acc, day) => 
+  // Calculate weekly totals for display
+  const _totalActivities = weekData.reduce((acc, day) => 
     acc + day.activities.calls + day.activities.content + day.activities.followups, 0
   );
 
-  const completedDays = weekData.filter(day => day.completed).length;
+  const _completedDays = weekData.filter(day => day.completed).length;
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">

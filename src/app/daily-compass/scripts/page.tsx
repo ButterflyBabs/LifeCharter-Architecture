@@ -14,7 +14,6 @@ import {
   CheckCircle,
   Sparkles,
   Search,
-  Tag,
   Star,
   Plus,
   Wand2,

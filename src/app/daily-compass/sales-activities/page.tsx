@@ -15,10 +15,8 @@ import {
   TrendingUp,
   User,
   Plus,
-  Filter,
   ArrowRight,
-  Star,
-  AlertCircle
+  Star
 } from "lucide-react";
 import Link from "next/link";
 
@@ -97,7 +95,7 @@ const mockActivities: SalesActivity[] = [
   }
 ];
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   hot: "bg-red-100 text-red-700 border-red-200",
   warm: "bg-yellow-100 text-yellow-700 border-yellow-200",
   cold: "bg-blue-100 text-blue-700 border-blue-200"
@@ -113,7 +111,7 @@ const typeIcons = {
 export default function SalesActivitiesPage() {
   const [activities, setActivities] = useState<SalesActivity[]>(mockActivities);
   const [filter, setFilter] = useState<"all" | "today" | "overdue" | "completed">("all");
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [, setShowAddModal] = useState(false);
 
   const [stats] = useState<DailyStats>({
     callsMade: 2,
