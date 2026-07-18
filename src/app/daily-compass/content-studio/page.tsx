@@ -10,8 +10,6 @@ import {
   Share2,
   Sparkles,
   MessageSquare,
-  Video,
-  Mic,
   Copy,
   CheckCircle,
   RefreshCw,
@@ -19,7 +17,6 @@ import {
   Instagram,
   Linkedin,
   Twitter,
-  Facebook,
   Wand2,
   Lightbulb,
   Target,
@@ -91,7 +88,7 @@ export default function ContentStudioPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [savedContent, setSavedContent] = useState<GeneratedContent[]>([]);
-  const [, setShowTemplates] = useState(false);
+  const [showTemplates] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt) return;
@@ -104,7 +101,7 @@ export default function ContentStudioPage() {
         id: Date.now().toString(),
         type: selectedType,
         platform: selectedPlatform,
-        content: generateMockContent(selectedType, selectedPlatform, prompt),
+        content: generateMockContent(selectedType),
         hashtags: selectedType === "social" ? ["#LifeCharter", "#Alignment", "#BusinessGrowth"] : undefined,
         imagePrompt: selectedType === "social" ? "A serene image of a person meditating at sunrise with soft golden light" : undefined,
         status: "draft"
@@ -114,7 +111,7 @@ export default function ContentStudioPage() {
     }, 2000);
   };
 
-  const generateMockContent = (type: string, _platform: string, _prompt: string): string => {
+  const generateMockContent = (type: string): string => {
     if (type === "social") {
       return `🦋 What if I told you that everything you've been taught about business growth is backwards?
 
