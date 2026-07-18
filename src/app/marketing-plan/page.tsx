@@ -214,16 +214,16 @@ const questions: Question[] = [
 ];
 
 // AI response generator based on answers
-function generateAIResponse(questionId: string, _answer: string, _allAnswers: Answer[]): string {
+function generateAIResponse(questionId: string): string {
   const responses: Record<string, string[]> = {
     q1: [
-      "Perfect—that clarity is gold. I can already see who we're serving.",
+      "Perfect—that clarity is gold. I can already see who we&apos;re serving.",
       "Great specificity. Knowing exactly who you help makes everything else easier.",
-      "I love that transformation. That's the story we'll tell."
+      "I love that transformation. That&apos;s the story we&apos;ll tell."
     ],
     q2: [
-      "Excellent—let's double down on what's working.",
-      "Good intel. We'll build from that foundation.",
+      "Excellent—let&apos;s double down on what&apos;s working.",
+      "Good intel. We&apos;ll build from that foundation.",
       "Noted. Sometimes the best strategy is doing more of what already works."
     ],
     q3: [
@@ -232,18 +232,18 @@ function generateAIResponse(questionId: string, _answer: string, _allAnswers: An
       "Great insight—that's your growth lever."
     ],
     q6: [
-      "That's your superpower. We'll make sure everyone knows it.",
-      "Perfect differentiation. That's your competitive edge.",
-      "Exactly—that's what makes you the obvious choice."
+      "That&apos;s your superpower. We&apos;ll make sure everyone knows it.",
+      "Perfect differentiation. That&apos;s your competitive edge.",
+      "Exactly—that&apos;s what makes you the obvious choice."
     ],
     q10: [
-      "That's the vision. Let's build the bridge to get there.",
-      "Perfect goal. We'll reverse-engineer the path.",
-      "I can see it. Let's make it happen."
+      "That&apos;s the vision. Let&apos;s build the bridge to get there.",
+      "Perfect goal. We&apos;ll reverse-engineer the path.",
+      "I can see it. Let&apos;s make it happen."
     ],
     q15: [
       "Perfect starting point. Small steps create big momentum.",
-      "Excellent—that's how we begin. One action at a time.",
+      "Excellent—that&apos;s how we begin. One action at a time.",
       "Love it. Consistency beats intensity every time."
     ]
   };
@@ -253,7 +253,7 @@ function generateAIResponse(questionId: string, _answer: string, _allAnswers: An
     return questionResponses[Math.floor(Math.random() * questionResponses.length)];
   }
   
-  return "Great insight. I'm building your plan with this information.";
+  return "Great insight. I&apos;m building your plan with this information.";
 }
 
 // Generate marketing plan from answers
@@ -477,8 +477,8 @@ export default function MarketingPlanPage() {
               </div>
               <div className="bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 rounded-lg p-4 max-w-[80%]">
                 <p className="text-[#1F315B] dark:text-[#F6F1E8]">
-                  Hi! I'm here to help you build a marketing plan that actually works for your business. 
-                  This will be a conversation—not a form. I'll ask you 15 questions, adapt based on your answers, 
+                  Hi! I&apos;m here to help you build a marketing plan that actually works for your business. 
+                  This will be a conversation—not a form. I&apos;ll ask you 15 questions, adapt based on your answers, 
                   and create a personalized strategy you can start using immediately.
                 </p>
                 <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-2">
