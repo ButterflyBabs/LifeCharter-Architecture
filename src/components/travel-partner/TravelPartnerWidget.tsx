@@ -172,6 +172,7 @@ const journeyStages: JourneyStage[] = [
         estimatedTime: 10,
         completed: false
       },
+      {
         id: "ai-guide",
         title: "Configure AI Guide",
         description: "Set up your AI assistant preferences and API keys",
