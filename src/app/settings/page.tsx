@@ -139,13 +139,28 @@ export default function SettingsPage() {
   }, []);
 
   // Workspace settings
-  const [workspace, setWorkspace] = useState({
-    name: "Sacred Kaleidoscope Community",
-    slug: "sacred-kaleidoscope",
-    description: "Spiritually grounded personal transformation ecosystem",
-    website: "https://lifecharter.architecture",
-    logo: null as string | null
-  });
+  const [workspaces, setWorkspaces] = useState([
+    {
+      id: "ws-1",
+      name: "Sacred Kaleidoscope Community",
+      slug: "sacred-kaleidoscope",
+      description: "Spiritually grounded personal transformation ecosystem",
+      website: "https://lifecharter.architecture",
+      logo: null as string | null,
+      isDefault: true
+    }
+  ]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState("ws-1");
+  
+  // Plan limits
+  const planLimits = {
+    starter: 1,
+    pro: 3,
+    enterprise: 5
+  };
+  const currentPlan = "pro" as keyof typeof planLimits;
+  const maxWorkspaces = planLimits[currentPlan];
+  const canCreateMore = workspaces.length < maxWorkspaces;
 
   // Notification settings
   const [notifications, setNotifications] = useState({
@@ -264,85 +279,222 @@ export default function SettingsPage() {
     </div>
   );
 
-  const renderWorkspaceSettings = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-6">
-        <div className="w-24 h-24 rounded-xl bg-[#D4AF63]/20 flex items-center justify-center">
-          <Building2 className="w-10 h-10 text-[#D4AF63]" />
-        </div>
-        <div>
-          <Button variant="outline" size="sm">
-            Upload Logo
-          </Button>
-          <p className="text-xs text-[#B9A9A9] mt-2">
-            Recommended: 400x400px transparent PNG
-          </p>
-        </div>
-      </div>
+  const renderWorkspaceSettings = () => {
+    const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+    
+    const handleCreateWorkspace = () => {
+      if (!canCreateMore) return;
+      const newId = `ws-${workspaces.length + 1}`;
+      const newWorkspace = {
+        id: newId,
+        name: `New Workspace ${workspaces.length + 1}`,
+        slug: `workspace-${workspaces.length + 1}`,
+        description: "",
+        website: "",
+        logo: null as string | null,
+        isDefault: false
+      };
+      setWorkspaces([...workspaces, newWorkspace]);
+      setActiveWorkspaceId(newId);
+    };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-            Workspace Name
-          </label>
-          <Input
-            value={workspace.name}
-            onChange={(e) => setWorkspace({ ...workspace, name: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-            URL Slug
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">
-              lifecharter.architecture/
+    const handleDeleteWorkspace = (id: string) => {
+      if (workspaces.length <= 1) {
+        alert("You must have at least one workspace");
+        return;
+      }
+      const updated = workspaces.filter(w => w.id !== id);
+      setWorkspaces(updated);
+      if (activeWorkspaceId === id) {
+        setActiveWorkspaceId(updated[0].id);
+      }
+    };
+
+    const updateWorkspace = (id: string, updates: Partial<typeof workspaces[0]>) => {
+      setWorkspaces(workspaces.map(w => w.id === id ? { ...w, ...updates } : w));
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Workspace Selector */}
+        <div className="p-4 bg-[#1F315B]/5 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              Your Workspaces
+            </h4>
+            <span className="text-sm text-[#B9A9A9]">
+              {workspaces.length} of {maxWorkspaces} used
             </span>
-            <Input
-              value={workspace.slug}
-              onChange={(e) => setWorkspace({ ...workspace, slug: e.target.value })}
-              className="pl-44"
+          </div>
+          
+          <div className="space-y-2 mb-4">
+            {workspaces.map((ws) => (
+              <div
+                key={ws.id}
+                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                  activeWorkspaceId === ws.id
+                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
+                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                }`}
+                onClick={() => setActiveWorkspaceId(ws.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/20 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-[#D4AF63]" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      {ws.name}
+                      {ws.isDefault && (
+                        <span className="ml-2 text-xs bg-[#D4AF63]/20 text-[#D4AF63] px-2 py-0.5 rounded">
+                          Default
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-[#B9A9A9]">/{ws.slug}</p>
+                  </div>
+                </div>
+                {workspaces.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWorkspace(ws.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {canCreateMore ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleCreateWorkspace}
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Create New Workspace
+            </Button>
+          ) : (
+            <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+              <p className="text-sm text-yellow-600">
+                Workspace limit reached. Upgrade your plan to create more workspaces.
+              </p>
+              <Button variant="outline" size="sm" className="mt-2">
+                Upgrade Plan
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Active Workspace Settings */}
+        <div className="border-t border-[#1F315B]/10 pt-6">
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+            Edit: {activeWorkspace.name}
+          </h4>
+
+          <div className="flex items-center gap-6 mb-6">
+            <div className="w-24 h-24 rounded-xl bg-[#D4AF63]/20 flex items-center justify-center">
+              {activeWorkspace.logo ? (
+                <img src={activeWorkspace.logo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <Building2 className="w-10 h-10 text-[#D4AF63]" />
+              )}
+            </div>
+            <div>
+              <Button variant="outline" size="sm">
+                Upload Logo
+              </Button>
+              <p className="text-xs text-[#B9A9A9] mt-2">
+                Recommended: 400x400px transparent PNG
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                Workspace Name
+              </label>
+              <Input
+                value={activeWorkspace.name}
+                onChange={(e) => updateWorkspace(activeWorkspace.id, { name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                URL Slug
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">
+                  lifecharter.architecture/
+                </span>
+                <Input
+                  value={activeWorkspace.slug}
+                  onChange={(e) => updateWorkspace(activeWorkspace.id, { slug: e.target.value })}
+                  className="pl-44"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              Description
+            </label>
+            <Textarea
+              value={activeWorkspace.description}
+              onChange={(e) => updateWorkspace(activeWorkspace.id, { description: e.target.value })}
+              rows={2}
             />
           </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              Website
+            </label>
+            <Input
+              type="url"
+              value={activeWorkspace.website}
+              onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
+            />
+          </div>
+
+          <div className="mt-4 p-4 bg-[#1F315B]/5 rounded-lg">
+            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Team Members
+            </h4>
+            <p className="text-sm text-[#B9A9A9] mb-3">
+              Manage who has access to {activeWorkspace.name}
+            </p>
+            <Button variant="outline" size="sm">
+              Manage Team
+            </Button>
+          </div>
+
+          {!activeWorkspace.isDefault && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setWorkspaces(workspaces.map(w => ({ ...w, isDefault: w.id === activeWorkspace.id })));
+                }}
+              >
+                Set as Default Workspace
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-          Description
-        </label>
-        <Textarea
-          value={workspace.description}
-          onChange={(e) => setWorkspace({ ...workspace, description: e.target.value })}
-          rows={2}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
-          Website
-        </label>
-        <Input
-          type="url"
-          value={workspace.website}
-          onChange={(e) => setWorkspace({ ...workspace, website: e.target.value })}
-        />
-      </div>
-
-      <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          Team Members
-        </h4>
-        <p className="text-sm text-[#B9A9A9] mb-3">
-          Manage who has access to this workspace
-        </p>
-        <Button variant="outline" size="sm">
-          Manage Team
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderNotificationSettings = () => (
     <div className="space-y-6">
