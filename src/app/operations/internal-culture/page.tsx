@@ -191,7 +191,7 @@ export default function InternalCulturePage() {
           <div className="text-left bg-[#1F315B]/5 rounded-lg p-6 mb-6">
             <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-4">Summary</h3>
             <div className="space-y-2 text-sm">
-              <p><span className="text-[#B9A9A9]">Core Values:</span> {answers.core_values?.join(", ")}</p>
+              <p><span className="text-[#B9A9A9]">Core Values:</span> {Array.isArray(answers.core_values) ? answers.core_values.join(", ") : answers.core_values}</p>
               <p><span className="text-[#B9A9A9]">Team Size:</span> {answers.team_size}</p>
               <p><span className="text-[#B9A9A9]">SOPs Documented:</span> {answers.sops_documented}</p>
               <p><span className="text-[#B9A9A9]">Culture:</span> {answers.culture_description}</p>

@@ -175,7 +175,7 @@ export default function AcquisitionPage() {
           <div className="text-left bg-[#1F315B]/5 rounded-lg p-6 mb-6">
             <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-4">Summary</h3>
             <div className="space-y-2 text-sm">
-              <p><span className="text-[#B9A9A9]">Primary Channels:</span> {answers.primary_channels?.join(", ")}</p>
+              <p><span className="text-[#B9A9A9]">Primary Channels:</span> {Array.isArray(answers.primary_channels) ? answers.primary_channels.join(", ") : answers.primary_channels}</p>
               <p><span className="text-[#B9A9A9]">Most Effective:</span> {answers.channel_effectiveness}</p>
               <p><span className="text-[#B9A9A9]">Monthly Leads:</span> {answers.monthly_leads}</p>
               <p><span className="text-[#B9A9A9]">Conversion Rate:</span> {answers.lead_to_customer}</p>

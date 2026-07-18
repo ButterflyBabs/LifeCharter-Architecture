@@ -188,7 +188,7 @@ export default function ReferralPage() {
             <div className="space-y-2 text-sm">
               <p><span className="text-[#B9A9A9]">Program Status:</span> {answers.referral_program}</p>
               <p><span className="text-[#B9A9A9]">Referral Rate:</span> {answers.referral_rate}</p>
-              <p><span className="text-[#B9A9A9]">Incentives:</span> {answers.referral_incentives?.join(", ")}</p>
+              <p><span className="text-[#B9A9A9]">Incentives:</span> {Array.isArray(answers.referral_incentives) ? answers.referral_incentives.join(", ") : answers.referral_incentives}</p>
               <p><span className="text-[#B9A9A9]">Tracking:</span> {answers.referral_tracking}</p>
             </div>
           </div>
