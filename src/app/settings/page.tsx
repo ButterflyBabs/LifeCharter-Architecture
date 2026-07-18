@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
+import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import {
   User,
@@ -204,14 +205,6 @@ export default function SettingsPage() {
       goalReminders: true,
       teamMentions: true
     }
-  });
-
-  // Appearance settings
-  const [appearance, setAppearance] = useState({
-    theme: "system" as "light" | "dark" | "system",
-    colorScheme: "lifecharter" as "lifecharter" | "sacred" | "modern",
-    fontSize: "medium" as "small" | "medium" | "large",
-    compactMode: false
   });
 
   // Integration settings
@@ -623,98 +616,102 @@ export default function SettingsPage() {
     </div>
   );
 
-  const renderAppearanceSettings = () => (
-    <div className="space-y-6">
-      <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Theme</h4>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { id: "light", label: "Light", icon: Sun },
-            { id: "dark", label: "Dark", icon: Moon },
-            { id: "system", label: "System", icon: Sliders }
-          ].map((theme) => (
-            <button
-              key={theme.id}
-              onClick={() => setAppearance({ ...appearance, theme: theme.id as "light" | "dark" | "system" })}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                appearance.theme === theme.id
-                  ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                  : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
-              }`}
-            >
-              <theme.icon className="w-6 h-6 mx-auto mb-2 text-[#1F315B] dark:text-[#F6F1E8]" />
-              <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{theme.label}</span>
-            </button>
-          ))}
+  const renderAppearanceSettings = () => {
+    const { theme, setTheme, colorScheme, setColorScheme, fontSize, setFontSize, compactMode, setCompactMode } = useTheme();
+    
+    return (
+      <div className="space-y-6">
+        <div>
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Theme</h4>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { id: "light", label: "Light", icon: Sun },
+              { id: "dark", label: "Dark", icon: Moon },
+              { id: "system", label: "System", icon: Sliders }
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id as "light" | "dark" | "system")}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  theme === t.id
+                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
+                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                }`}
+              >
+                <t.icon className="w-6 h-6 mx-auto mb-2 text-[#1F315B] dark:text-[#F6F1E8]" />
+                <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{t.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Color Scheme</h4>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { id: "lifecharter", label: "LifeCharter", colors: "#1F315B, #D4AF63, #5E3B6C" },
-            { id: "sacred", label: "Sacred", colors: "#5E3B6C, #D4AF63, #2E7C83" },
-            { id: "modern", label: "Modern", colors: "#0F172A, #3B82F6, #10B981" }
-          ].map((scheme) => (
-            <button
-              key={scheme.id}
-              onClick={() => setAppearance({ ...appearance, colorScheme: scheme.id as "lifecharter" | "sacred" | "modern" })}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                appearance.colorScheme === scheme.id
-                  ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                  : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
-              }`}
-            >
-              <div className="flex justify-center gap-1 mb-2">
-                {scheme.colors.split(", ").map((color, i) => (
-                  <div
-                    key={i}
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
+        <div className="border-t border-[#1F315B]/10 pt-6">
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Color Scheme</h4>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { id: "lifecharter", label: "LifeCharter", colors: "#1F315B, #D4AF63, #5E3B6C" },
+              { id: "sacred", label: "Sacred", colors: "#5E3B6C, #D4AF63, #2E7C83" },
+              { id: "modern", label: "Modern", colors: "#0F172A, #3B82F6, #10B981" }
+            ].map((scheme) => (
+              <button
+                key={scheme.id}
+                onClick={() => setColorScheme(scheme.id as "lifecharter" | "sacred" | "modern")}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  colorScheme === scheme.id
+                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
+                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                }`}
+              >
+                <div className="flex justify-center gap-1 mb-2">
+                  {scheme.colors.split(", ").map((color, i) => (
+                    <div
+                      key={i}
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{scheme.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-[#1F315B]/10 pt-6">
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Display</h4>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-[#B9A9A9] mb-2">Font Size</label>
+              <div className="flex gap-2">
+                {["small", "medium", "large"].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setFontSize(size as "small" | "medium" | "large")}
+                    className={`px-4 py-2 rounded-lg border transition-all ${
+                      fontSize === size
+                        ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]"
+                        : "border-[#1F315B]/10 text-[#B9A9A9]"
+                    }`}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
                 ))}
               </div>
-              <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{scheme.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Display</h4>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-[#B9A9A9] mb-2">Font Size</label>
-            <div className="flex gap-2">
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setAppearance({ ...appearance, fontSize: size as "small" | "medium" | "large" })}
-                  className={`px-4 py-2 rounded-lg border transition-all ${
-                    appearance.fontSize === size
-                      ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]"
-                      : "border-[#1F315B]/10 text-[#B9A9A9]"
-                  }`}
-                >
-                  {size.charAt(0).toUpperCase() + size.slice(1)}
-                </button>
-              ))}
             </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={compactMode}
+                onChange={(e) => setCompactMode(e.target.checked)}
+                className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+              />
+              <span className="text-[#1F315B] dark:text-[#F6F1E8]">Compact mode (less padding)</span>
+            </label>
           </div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={appearance.compactMode}
-              onChange={(e) => setAppearance({ ...appearance, compactMode: e.target.checked })}
-              className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
-            />
-            <span className="text-[#1F315B] dark:text-[#F6F1E8]">Compact mode (less padding)</span>
-          </label>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderIntegrationSettings = () => (
     <div className="space-y-4">

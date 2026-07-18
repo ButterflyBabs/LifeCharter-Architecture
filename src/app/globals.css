@@ -105,6 +105,63 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--foreground);
 }
 
+/* Font Size Variants */
+.text-size-small {
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+}
+
+.text-size-medium {
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+}
+
+.text-size-large {
+  --text-base: 18px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 28px;
+}
+
+/* Compact Mode - Reduced padding */
+.compact-mode .lc-card {
+  padding: 0.75rem;
+}
+
+.compact-mode .lc-panel {
+  padding: 0.5rem;
+}
+
+.compact-mode [class*="p-"] {
+  padding: calc(var(--tw-space-x-reverse) * 0.5) !important;
+}
+
+.compact-mode [class*="py-"] {
+  padding-top: calc(var(--tw-space-y-reverse) * 0.5) !important;
+  padding-bottom: calc(var(--tw-space-y-reverse) * 0.5) !important;
+}
+
+.compact-mode [class*="px-"] {
+  padding-left: calc(var(--tw-space-x-reverse) * 0.5) !important;
+  padding-right: calc(var(--tw-space-x-reverse) * 0.5) !important;
+}
+
+.compact-mode [class*="gap-"] {
+  gap: 0.5rem !important;
+}
+
+.compact-mode [class*="space-y-"] > * + * {
+  margin-top: 0.5rem !important;
+}
+
+.compact-mode [class*="space-x-"] > * + * {
+  margin-left: 0.5rem !important;
+}
+
 /* Focus styles for accessibility */
 *:focus-visible {
   outline: 2px solid var(--accent);

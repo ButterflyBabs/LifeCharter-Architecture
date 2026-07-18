@@ -1,3 +1,8 @@
+/**
+ * Theme Provider
+ * Manages theme, color scheme, font size, and compact mode
+ */
+
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
@@ -9,7 +14,6 @@ type FontSize = "small" | "medium" | "large";
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
   colorScheme: ColorScheme;
   setColorScheme: (scheme: ColorScheme) => void;
   fontSize: FontSize;
@@ -17,7 +21,6 @@ interface ThemeContextType {
   compactMode: boolean;
   setCompactMode: (compact: boolean) => void;
   isDark: boolean;
-  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -30,72 +33,74 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Load preferences from localStorage on mount
   useEffect(() => {
     setMounted(true);
     
-    // Load all preferences from localStorage
-    try {
-      const storedTheme = localStorage.getItem("lc-theme") as Theme;
-      const storedColorScheme = localStorage.getItem("lc-color-scheme") as ColorScheme;
-      const storedFontSize = localStorage.getItem("lc-font-size") as FontSize;
-      const storedCompactMode = localStorage.getItem("lc-compact-mode");
+    const savedTheme = localStorage.getItem("theme") as Theme;
+    const savedColorScheme = localStorage.getItem("colorScheme") as ColorScheme;
+    const savedFontSize = localStorage.getItem("fontSize") as FontSize;
+    const savedCompactMode = localStorage.getItem("compactMode");
 
-      if (storedTheme) setThemeState(storedTheme);
-      if (storedColorScheme) setColorSchemeState(storedColorScheme);
-      if (storedFontSize) setFontSizeState(storedFontSize);
-      if (storedCompactMode !== null) setCompactModeState(storedCompactMode === "true");
-    } catch {
-      console.warn("Could not access localStorage for theme");
-    }
+    if (savedTheme) setThemeState(savedTheme);
+    if (savedColorScheme) setColorSchemeState(savedColorScheme);
+    if (savedFontSize) setFontSizeState(savedFontSize);
+    if (savedCompactMode !== null) setCompactModeState(savedCompactMode === "true");
   }, []);
 
-  // Apply theme changes
+  // Handle theme changes
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
+    
+    // Remove all theme classes
     root.classList.remove("light", "dark");
     
+    // Apply theme
     if (theme === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.add(prefersDark ? "dark" : "light");
-      setIsDark(prefersDark);
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.add(systemDark ? "dark" : "light");
+      setIsDark(systemDark);
     } else {
       root.classList.add(theme);
       setIsDark(theme === "dark");
     }
 
-    try {
-      localStorage.setItem("lc-theme", theme);
-    } catch {}
+    localStorage.setItem("theme", theme);
   }, [theme, mounted]);
 
-  // Apply color scheme changes
+  // Handle color scheme changes
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
+    
+    // Remove all color scheme classes
     root.classList.remove("scheme-lifecharter", "scheme-sacred", "scheme-modern");
+    
+    // Apply color scheme
     root.classList.add(`scheme-${colorScheme}`);
-
+    
+    // Apply CSS variables based on color scheme
     const schemes = {
       lifecharter: {
-        "--color-primary": "#1F315B",
-        "--color-accent": "#D4AF63",
-        "--color-secondary": "#5E3B6C",
-        "--color-tertiary": "#2E7C83"
+        "--primary": "#1F315B",
+        "--accent": "#D4AF63",
+        "--secondary": "#5E3B6C",
+        "--tertiary": "#2E7C83"
       },
       sacred: {
-        "--color-primary": "#5E3B6C",
-        "--color-accent": "#D4AF63",
-        "--color-secondary": "#2E7C83",
-        "--color-tertiary": "#1F315B"
+        "--primary": "#5E3B6C",
+        "--accent": "#D4AF63",
+        "--secondary": "#2E7C83",
+        "--tertiary": "#1F315B"
       },
       modern: {
-        "--color-primary": "#0F172A",
-        "--color-accent": "#3B82F6",
-        "--color-secondary": "#10B981",
-        "--color-tertiary": "#8B5CF6"
+        "--primary": "#0F172A",
+        "--accent": "#3B82F6",
+        "--secondary": "#10B981",
+        "--tertiary": "#8B5CF6"
       }
     };
 
@@ -104,19 +109,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.setProperty(key, value);
     });
 
-    try {
-      localStorage.setItem("lc-color-scheme", colorScheme);
-    } catch {}
+    localStorage.setItem("colorScheme", colorScheme);
   }, [colorScheme, mounted]);
 
-  // Apply font size changes
+  // Handle font size changes
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
+    
+    // Remove all font size classes
     root.classList.remove("text-size-small", "text-size-medium", "text-size-large");
+    
+    // Apply font size
     root.classList.add(`text-size-${fontSize}`);
-
+    
+    // Set base font size
     const sizes = {
       small: "14px",
       medium: "16px",
@@ -124,25 +132,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
     root.style.fontSize = sizes[fontSize];
 
-    try {
-      localStorage.setItem("lc-font-size", fontSize);
-    } catch {}
+    localStorage.setItem("fontSize", fontSize);
   }, [fontSize, mounted]);
 
-  // Apply compact mode changes
+  // Handle compact mode changes
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
+    
     if (compactMode) {
       root.classList.add("compact-mode");
     } else {
       root.classList.remove("compact-mode");
     }
 
-    try {
-      localStorage.setItem("lc-compact-mode", compactMode.toString());
-    } catch {}
+    localStorage.setItem("compactMode", compactMode.toString());
   }, [compactMode, mounted]);
 
   // Listen for system theme changes
@@ -166,25 +171,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setFontSize = (newSize: FontSize) => setFontSizeState(newSize);
   const setCompactMode = (newCompact: boolean) => setCompactModeState(newCompact);
 
-  const toggleTheme = () => {
-    const newTheme = isDark ? "light" : "dark";
-    setTheme(newTheme);
-  };
+  // Prevent flash of unstyled content
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <ThemeContext.Provider
       value={{
         theme,
         setTheme,
-        toggleTheme,
         colorScheme,
         setColorScheme,
         fontSize,
         setFontSize,
         compactMode,
         setCompactMode,
-        isDark,
-        mounted
+        isDark
       }}
     >
       {children}
