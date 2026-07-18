@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Circle,
   ChevronRight,
-  ChevronLeft,
+  ChevronUp,
   X,
   Sparkles,
   Target,
