@@ -17,7 +17,6 @@ import {
   Shield,
   CheckCircle,
   X,
-  MoreHorizontal,
   Crown
 } from "lucide-react";
 
@@ -58,7 +57,7 @@ const roleDescriptions = {
   viewer: "View-only access to reports and dashboards"
 };
 
-export function TeamManagement({ workspaceId, workspaceName }: TeamManagementProps) {
+export function TeamManagement({ workspaceName }: TeamManagementProps) {
   // Demo: Pro plan (5 members)
   const currentPlan: keyof typeof planLimits = "pro";
   const maxMembers = planLimits[currentPlan];
@@ -120,7 +119,7 @@ export function TeamManagement({ workspaceId, workspaceName }: TeamManagementPro
     setMembers(members.map(m => m.id === id ? { ...m, role: newRole } : m));
   };
 
-  const handleResendInvite = (id: string) => {
+  const handleResendInvite = (_id: string) => {
     setInviteSent(true);
     setTimeout(() => setInviteSent(false), 3000);
   };

@@ -19,7 +19,6 @@ import {
   Bell,
   Shield,
   CreditCard,
-  Users,
   Palette,
   Globe,
   Save,
