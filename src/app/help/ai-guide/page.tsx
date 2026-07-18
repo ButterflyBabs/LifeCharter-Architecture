@@ -46,7 +46,7 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>The AI Business Guide is uniquely designed for your LifeCharter journey:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
-            <li><strong>Context-Aware:</strong> Knows which page you're on and what you're working on</li>
+            <li><strong>Context-Aware:</strong> Knows which page you&apos;re on and what you&apos;re working on</li>
             <li><strong>Business-Integrated:</strong> Can reference your assessments, scores, and plans</li>
             <li><strong>Domain-Specific:</strong> Understands the 12-domain business alignment framework</li>
             <li><strong>Action-Oriented:</strong> Provides specific next steps, not just general advice</li>
@@ -62,7 +62,7 @@ export default function AIGuideHelpPage() {
           <p>You can access the AI Guide in two ways:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li><strong>Floating Widget:</strong> Look for the Bot icon in the bottom-right corner of any page. Click it to open the chat panel.</li>
-            <li><strong>AI Guide Settings:</strong> Click "AI Guide" in the left sidebar to configure your preferences, API keys, and view conversation history.</li>
+            <li><strong>AI Guide Settings:</strong> Click &quot;AI Guide&quot; in the left sidebar to configure your preferences, API keys, and view conversation history.</li>
           </ol>
         </div>
       )
@@ -73,20 +73,20 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>The AI Guide can help with virtually any business question, including:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
-            <li>"Analyze my business health score and suggest priorities"</li>
-            <li>"Help me refine my value proposition"</li>
-            <li>"What content should I create for my ideal client?"</li>
-            <li>"Review my sales pipeline and identify bottlenecks"</li>
-            <li>"Suggest ways to reduce my tech stack expenses"</li>
-            <li>"How can I improve my customer onboarding?"</li>
-            <li>"What should I focus on next?"</li>
+            <li>&quot;Analyze my business health score and suggest priorities&quot;</li>
+            <li>&quot;Help me refine my value proposition&quot;</li>
+            <li>&quot;What content should I create for my ideal client?&quot;</li>
+            <li>&quot;Review my sales pipeline and identify bottlenecks&quot;</li>
+            <li>&quot;Suggest ways to reduce my tech stack expenses&quot;</li>
+            <li>&quot;How can I improve my customer onboarding?&quot;</li>
+            <li>&quot;What should I focus on next?&quot;</li>
           </ul>
         </div>
       )
     },
     {
-      question: "How does the AI Guide know which page I'm on?",
-      answer: "The AI Guide automatically detects your current location in the platform. When you're on the Business Plan page, it knows you're working on business strategy. On the Finance page, it understands you're analyzing financials. This context allows it to provide relevant suggestions and understand your questions in the proper context. The current page name appears at the top of the chat panel."
+      question: "How does the AI Guide know which page I&apos;m on?",
+      answer: "The AI Guide automatically detects your current location in the platform. When you&apos;re on the Business Plan page, it knows you&apos;re working on business strategy. On the Finance page, it understands you&apos;re analyzing financials. This context allows it to provide relevant suggestions and understand your questions in the proper context. The current page name appears at the top of the chat panel."
     },
     {
       question: "Can I use voice to talk to the AI Guide?",
@@ -98,9 +98,9 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>Quick Suggestions are context-aware buttons that appear when you open the AI Guide on a specific page. They offer common questions or actions relevant to that page:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
-            <li>On Business Plan: "Refine value prop," "Analyze competition"quot;Analyze competition"Analyze competition"quot;</li>
-            <li>On Marketing Plan: "Content ideas," "Channel strategy"quot;Channel strategy"Channel strategy"quot;</li>
-            <li>On Finance: "Expense analysis," "Cash flow tips"quot;Cash flow tips"Cash flow tips"quot;</li>
+            <li>On Business Plan: &quot;Refine value prop,&quot; &quot;Analyze competition&quot;</li>
+            <li>On Marketing Plan: &quot;Content ideas,&quot; &quot;Channel strategy&quot;</li>
+            <li>On Finance: &quot;Expense analysis,&quot; &quot;Cash flow tips&quot;</li>
           </ul>
           <p>Clicking a suggestion instantly sends that question to the AI Guide.</p>
         </div>
@@ -116,7 +116,7 @@ export default function AIGuideHelpPage() {
             <li>Select your preferred provider (OpenAI, Anthropic, Moonshot, Google)</li>
             <li>Choose the model you want to use</li>
             <li>Enter your API key (stored securely and encrypted)</li>
-            <li>Click "Save API Key"</li>
+            <li>Click &quot;Save API Key&quot;</li>
           </ol>
           <p>You can add multiple keys and switch between them. The active key will be used for all AI Guide conversations.</p>
         </div>
@@ -130,8 +130,8 @@ export default function AIGuideHelpPage() {
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li>Your API keys are encrypted and never shared</li>
             <li>Conversations are stored locally in your browser (localStorage)</li>
-            <li>We don't store your messages on our servers</li>
-            <li>When you use your own API key, the provider's privacy policy applies</li>
+            <li>We don&apos;t store your messages on our servers</li>
+            <li>When you use your own API key, the provider&apos;s privacy policy applies</li>
             <li>You can clear conversation history anytime</li>
           </ul>
         </div>
@@ -139,20 +139,20 @@ export default function AIGuideHelpPage() {
     },
     {
       question: "Can I change AI models mid-conversation?",
-      answer: "Currently, the model is set at the start of each conversation. To switch models, you can start a new conversation by clicking the 'New conversation' button in the chat panel, then change your default model in the AI Guide settings. Future updates will allow mid-conversation model switching."
+      answer: "Currently, the model is set at the start of each conversation. To switch models, you can start a new conversation by clicking the New conversation button in the chat panel, then change your default model in the AI Guide settings. Future updates will allow mid-conversation model switching."
     },
     {
       question: "Does the AI Guide remember past conversations?",
-      answer: "Yes, the AI Guide maintains conversation history per page. When you return to a page, you'll see your previous conversation with that page's AI Guide. You can view all conversation history from the AI Guide → History tab. Conversations are stored locally in your browser and persist until you clear them."
+      answer: "Yes, the AI Guide maintains conversation history per page. When you return to a page, you&apos;ll see your previous conversation with that page&apos;s AI Guide. You can view all conversation history from the AI Guide → History tab. Conversations are stored locally in your browser and persist until you clear them."
     },
     {
       question: "What if the AI Guide gives incorrect information?",
       answer: (
         <div className="space-y-2">
-          <p>While the AI Guide is designed to be helpful and accurate, it's important to remember:</p>
+          <p>While the AI Guide is designed to be helpful and accurate, it&apos;s important to remember:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li>AI can make mistakes—always verify important business decisions</li>
-            <li>The AI doesn't have access to real-time data unless you provide it</li>
+            <li>The AI doesn&apos;t have access to real-time data unless you provide it</li>
             <li>Use AI suggestions as starting points, not final answers</li>
             <li>For legal, financial, or critical decisions, consult qualified professionals</li>
           </ul>
@@ -167,20 +167,20 @@ export default function AIGuideHelpPage() {
           <p>To clear conversations:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
             <li>Open the AI Guide chat panel on any page</li>
-            <li>Click "New conversation"quot;New conversation"New conversation"quot; to clear the current page's chat</li>
+            <li>Click New conversation to clear the current page&apos;s chat</li>
             <li>Or go to AI Guide → History to see and manage all conversations</li>
-            <li>To disable history entirely, turn off "Save conversation history" in Settings</li>
+            <li>To disable history entirely, turn off &quot;Save conversation history&quot; in Settings</li>
           </ol>
         </div>
       )
     },
     {
       question: "Can I export my AI Guide conversations?",
-      answer: "Currently, conversation export is not available, but it's on our roadmap. For now, you can manually copy important insights from conversations. We recommend documenting key recommendations in your Business Plan or relevant sections of the platform."
+      answer: "Currently, conversation export is not available, but it&apos;s on our roadmap. For now, you can manually copy important insights from conversations. We recommend documenting key recommendations in your Business Plan or relevant sections of the platform."
     },
     {
       question: "What happens if my API key runs out of credits?",
-      answer: "If your API key has insufficient credits or expires, the AI Guide will display an error message. You'll need to add a new API key or update your existing one in the AI Guide → API Keys settings. The platform will notify you when there's an issue with your API connection."
+      answer: "If your API key has insufficient credits or expires, the AI Guide will display an error message. You&apos;ll need to add a new API key or update your existing one in the AI Guide → API Keys settings. The platform will notify you when there&apos;s an issue with your API connection."
     }
   ];
 
@@ -226,7 +226,7 @@ export default function AIGuideHelpPage() {
                 <Target className="w-5 h-5 text-[#2E7C83]" />
               </div>
               <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-1">Context-Aware</h3>
-              <p className="text-sm text-[#B9A9A9]">Knows which page you're on and what you're working on</p>
+              <p className="text-sm text-[#B9A9A9]">Knows which page you&apos;re on and what you&apos;re working on</p>
             </div>
             <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
               <div className="w-10 h-10 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center mx-auto mb-2">
@@ -321,7 +321,7 @@ export default function AIGuideHelpPage() {
               <Target className="w-5 h-5 text-[#2E7C83] mt-0.5" />
               <div>
                 <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Page Context Awareness</h4>
-                <p className="text-sm text-[#B9A9A9]">Knows what you're working on and offers relevant suggestions</p>
+                <p className="text-sm text-[#B9A9A9]">Knows what you&apos;re working on and offers relevant suggestions</p>
               </div>
             </div>
 
@@ -426,7 +426,7 @@ export default function AIGuideHelpPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">✓ Do:</h4>
+              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Do:</h4>
               <ul className="list-disc pl-5 space-y-1 text-green-700 dark:text-green-300 text-sm">
                 <li>Be specific in your questions for better answers</li>
                 <li>Provide context about your business situation</li>
@@ -437,7 +437,7 @@ export default function AIGuideHelpPage() {
             </div>
 
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-              <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">✗ DonDon'tapos;t:</h4>
+              <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">Don&apos;t:</h4>
               <ul className="list-disc pl-5 space-y-1 text-red-700 dark:text-red-300 text-sm">
                 <li>Share sensitive personal information or passwords</li>
                 <li>Make critical business decisions without verification</li>
