@@ -78,28 +78,105 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.remove("scheme-lifecharter", "scheme-sacred", "scheme-modern");
     root.classList.add(`scheme-${colorScheme}`);
 
-    const schemes = {
+    const isDarkMode = root.classList.contains("dark");
+
+    const lightSchemes = {
       lifecharter: {
-        "--color-primary": "#1F315B",
-        "--color-accent": "#D4AF63",
-        "--color-secondary": "#5E3B6C",
-        "--color-tertiary": "#2E7C83"
+        "--primary": "#1F315B",
+        "--accent": "#D4AF63",
+        "--secondary": "#5E3B6C",
+        "--foreground": "#1F315B",
+        "--primary-foreground": "#F6F1E8",
+        "--secondary-foreground": "#F6F1E8",
+        "--muted": "#CDBED6",
+        "--muted-foreground": "#5E3B6C",
+        "--accent-foreground": "#1F315B",
+        "--border": "#B9A9A9",
+        "--background": "#F6F1E8",
+        "--card": "#FFFFFF",
+        "--card-foreground": "#1F315B"
       },
       sacred: {
-        "--color-primary": "#5E3B6C",
-        "--color-accent": "#D4AF63",
-        "--color-secondary": "#2E7C83",
-        "--color-tertiary": "#1F315B"
+        "--primary": "#5E3B6C",
+        "--accent": "#D4AF63",
+        "--secondary": "#2E7C83",
+        "--foreground": "#5E3B6C",
+        "--primary-foreground": "#F6F1E8",
+        "--secondary-foreground": "#F6F1E8",
+        "--muted": "#CDBED6",
+        "--muted-foreground": "#2E7C83",
+        "--accent-foreground": "#5E3B6C",
+        "--border": "#B9A9A9",
+        "--background": "#F6F1E8",
+        "--card": "#FFFFFF",
+        "--card-foreground": "#5E3B6C"
       },
       modern: {
-        "--color-primary": "#0F172A",
-        "--color-accent": "#3B82F6",
-        "--color-secondary": "#10B981",
-        "--color-tertiary": "#8B5CF6"
+        "--primary": "#0F172A",
+        "--accent": "#3B82F6",
+        "--secondary": "#10B981",
+        "--foreground": "#0F172A",
+        "--primary-foreground": "#FFFFFF",
+        "--secondary-foreground": "#FFFFFF",
+        "--muted": "#E2E8F0",
+        "--muted-foreground": "#64748B",
+        "--accent-foreground": "#FFFFFF",
+        "--border": "#CBD5E1",
+        "--background": "#F8FAFC",
+        "--card": "#FFFFFF",
+        "--card-foreground": "#0F172A"
       }
     };
 
-    const scheme = schemes[colorScheme];
+    const darkSchemes = {
+      lifecharter: {
+        "--primary": "#CDBED6",
+        "--accent": "#D4AF63",
+        "--secondary": "#D4AF63",
+        "--foreground": "#F6F1E8",
+        "--primary-foreground": "#1A1A2E",
+        "--secondary-foreground": "#1A1A2E",
+        "--muted": "#2D3561",
+        "--muted-foreground": "#B9A9A9",
+        "--accent-foreground": "#1A1A2E",
+        "--border": "#2D3561",
+        "--background": "#1A1A2E",
+        "--card": "#16213E",
+        "--card-foreground": "#F6F1E8"
+      },
+      sacred: {
+        "--primary": "#CDBED6",
+        "--accent": "#D4AF63",
+        "--secondary": "#2E7C83",
+        "--foreground": "#F6F1E8",
+        "--primary-foreground": "#1A1A2E",
+        "--secondary-foreground": "#F6F1E8",
+        "--muted": "#2D3561",
+        "--muted-foreground": "#B9A9A9",
+        "--accent-foreground": "#1A1A2E",
+        "--border": "#2D3561",
+        "--background": "#1A1A2E",
+        "--card": "#16213E",
+        "--card-foreground": "#F6F1E8"
+      },
+      modern: {
+        "--primary": "#3B82F6",
+        "--accent": "#10B981",
+        "--secondary": "#8B5CF6",
+        "--foreground": "#F1F5F9",
+        "--primary-foreground": "#0F172A",
+        "--secondary-foreground": "#F1F5F9",
+        "--muted": "#1E293B",
+        "--muted-foreground": "#94A3B8",
+        "--accent-foreground": "#0F172A",
+        "--border": "#334155",
+        "--background": "#0F172A",
+        "--card": "#1E293B",
+        "--card-foreground": "#F1F5F9"
+      }
+    };
+
+    const scheme = isDarkMode ? darkSchemes[colorScheme] : lightSchemes[colorScheme];
     Object.entries(scheme).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
@@ -107,7 +184,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem("lc-color-scheme", colorScheme);
     } catch {}
-  }, [colorScheme, mounted]);
+  }, [colorScheme, mounted, isDark]);
 
   // Apply font size changes
   useEffect(() => {
