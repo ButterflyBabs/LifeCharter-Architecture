@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
   Compass,
-  Sun,
   Target,
   CheckCircle2,
   Circle,
@@ -19,7 +18,6 @@ import {
   Zap,
   ArrowRight,
   Plus,
-  MoreHorizontal,
   Flame,
   Trophy,
   AlertCircle
@@ -206,7 +204,7 @@ export default function DailyCompassPage() {
         <div className="bg-white dark:bg-[#1F315B] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-              Today's Progress
+              TodayToday'sapos;s Progress
             </span>
             <span className="text-sm text-[#B9A9A9]">
               {completedCount} of {totalCount} completed
@@ -224,12 +222,12 @@ export default function DailyCompassPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Focus Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Today's Focus */}
+          {/* TodayToday'sapos;s Focus */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="w-5 h-5 text-[#D4AF63]" />
-                Today's Focus
+                TodayToday'sapos;s Focus
               </CardTitle>
               <div className="flex gap-2">
                 <select 
@@ -362,7 +360,7 @@ export default function DailyCompassPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#D4AF63]" />
-                Today's Activity
+                TodayToday'sapos;s Activity
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -419,13 +417,13 @@ export default function DailyCompassPage() {
                 <div className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-[#D4AF63] mt-0.5" />
                   <p className="text-[#CDBED6]">
-                    Marketing Plan suggests posting about "alignment over hustle" - content idea ready in Studio.
+                    Marketing Plan suggests posting about "alignment over hustle"quot;alignment over hustle"alignment over hustle"quot; - content idea ready in Studio.
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <Trophy className="w-4 h-4 text-[#D4AF63] mt-0.5" />
                   <p className="text-[#CDBED6]">
-                    You're on track to hit your Q3 revenue goal! Keep the momentum.
+                    YouYou'reapos;re on track to hit your Q3 revenue goal! Keep the momentum.
                   </p>
                 </div>
               </div>
