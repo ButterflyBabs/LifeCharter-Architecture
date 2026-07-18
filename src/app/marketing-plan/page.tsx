@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Progress } from "@/components/ui/Progress";
+// import { Progress } from "@/components/ui/Progress";
 import { 
   Target, 
   Users, 
@@ -51,7 +51,7 @@ interface Insight {
 }
 
 export default function MarketingPlanPage() {
-  const [planHealth, setPlanHealth] = useState({
+  const [planHealth] = useState({
     overall: 68,
     positioning: 75,
     audience: 60,
@@ -59,7 +59,7 @@ export default function MarketingPlanPage() {
     channels: 65,
   });
 
-  const [sections, setSections] = useState<MarketingPlanSection[]>([
+  const [sections] = useState<MarketingPlanSection[]>([
     { 
       id: "positioning", 
       title: "Positioning & UVP", 
@@ -94,7 +94,7 @@ export default function MarketingPlanPage() {
       lastUpdated: "4 days ago", 
       aiGenerated: true,
       completionRate: 45,
-      description: "Where you'll show up and how often"
+      description: "Where you&apos;ll show up and how often"
     },
     { 
       id: "content", 
@@ -103,7 +103,7 @@ export default function MarketingPlanPage() {
       lastUpdated: "Never", 
       aiGenerated: false,
       completionRate: 0,
-      description: "What you'll create and your content pillars"
+      description: "What you&apos;ll create and your content pillars"
     },
     { 
       id: "lead-gen", 
@@ -112,7 +112,7 @@ export default function MarketingPlanPage() {
       lastUpdated: "5 days ago", 
       aiGenerated: true,
       completionRate: 50,
-      description: "How you'll attract and capture potential clients"
+      description: "How you&apos;ll attract and capture potential clients"
     },
     { 
       id: "nurture", 
@@ -130,7 +130,7 @@ export default function MarketingPlanPage() {
       lastUpdated: "2 weeks ago", 
       aiGenerated: true,
       completionRate: 30,
-      description: "How you'll turn interest into sales"
+      description: "How you&apos;ll turn interest into sales"
     },
     { 
       id: "metrics", 
@@ -139,7 +139,7 @@ export default function MarketingPlanPage() {
       lastUpdated: "1 week ago", 
       aiGenerated: true,
       completionRate: 40,
-      description: "What you'll track to measure success"
+      description: "What you&apos;ll track to measure success"
     },
     { 
       id: "action-plan", 
