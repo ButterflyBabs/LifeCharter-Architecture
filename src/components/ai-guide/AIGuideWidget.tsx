@@ -14,7 +14,6 @@ import {
   Sparkles,
   MessageSquare,
   Settings,
-  History,
   Plus
 } from "lucide-react";
 import Link from "next/link";
@@ -112,7 +111,7 @@ export default function AIGuideWidget() {
     const saved = localStorage.getItem(`ai-guide-messages-${pathname}`);
     if (saved) {
       const parsed = JSON.parse(saved);
-      setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+      setMessages(parsed.map((m: { timestamp: string; [key: string]: unknown }) => ({ ...m, timestamp: new Date(m.timestamp) })));
     }
   }, [pathname]);
 
