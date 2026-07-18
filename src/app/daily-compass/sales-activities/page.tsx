@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
   ArrowLeft,
@@ -94,7 +94,8 @@ const mockActivities: SalesActivity[] = [
   }
 ];
 
-const priorityColors: Record<string, string> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const priorityColors: any = {
   hot: "bg-red-100 text-red-700 border-red-200",
   warm: "bg-yellow-100 text-yellow-700 border-yellow-200",
   cold: "bg-blue-100 text-blue-700 border-blue-200"

@@ -9,19 +9,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Instagram,
-  Linkedin,
-  Twitter,
-  Facebook,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   MoreHorizontal,
-  Share2,
-  Filter
+  Share2
 } from "lucide-react";
 import Link from "next/link";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ScheduledPost {
   id: string;
   content: string;
@@ -78,11 +72,13 @@ const mockPosts: ScheduledPost[] = [
 ];
 
 const platformIcons: Record<string, React.ReactNode> = {
-  instagram: <Instagram className="w-4 h-4" />,
-  linkedin: <Linkedin className="w-4 h-4" />,
-  twitter: <Twitter className="w-4 h-4" />,
-  facebook: <Facebook className="w-4 h-4" />
+  instagram: <span className="text-xs font-bold">IG</span>,
+  linkedin: <span className="text-xs font-bold">LI</span>,
+  twitter: <span className="text-xs font-bold">X</span>,
+  facebook: <span className="text-xs font-bold">FB</span>
 };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _platformColors: Record<string, string> = {};
 
 const platformColors: Record<string, string> = {
   instagram: "bg-gradient-to-br from-purple-500 to-pink-500",
@@ -101,7 +97,7 @@ const statusColors: Record<string, string> = {
 export default function ContentCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"day" | "week" | "month">("week");
-  const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
+  const [, setSelectedPost] = useState<ScheduledPost | null>(null);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();

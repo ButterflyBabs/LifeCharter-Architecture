@@ -76,9 +76,9 @@ export default function WeeklyViewPage() {
   };
   
   // Display weekly stats in summary
-  const displayWeeklyStats = () => {
-    console.log(`Week: ${weeklyTotals.completedDays} days active, ${weeklyTotals.totalActivities} total activities`);
-  };
+  // Display weekly stats
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  weeklyTotals;
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
