@@ -14,6 +14,7 @@ import {
   Sparkles,
   MessageSquare,
   Settings,
+  History,
   Plus
 } from "lucide-react";
 import Link from "next/link";
