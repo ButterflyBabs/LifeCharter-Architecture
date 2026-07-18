@@ -1,23 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   ArrowLeft,
   UserPlus,
-  Mail,
   CheckCircle,
   HelpCircle,
   ChevronRight,
   ChevronLeft,
   Sparkles,
   Plus,
-  X,
-  Clock,
-  Heart
+  X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -120,7 +117,7 @@ const questions: Question[] = [
 
 export default function OnboardingPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [showHint, setShowHint] = useState(false);
   const [listInput, setListInput] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -128,7 +125,7 @@ export default function OnboardingPage() {
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
-  const handleAnswer = (value: any) => {
+  const handleAnswer = (value: string | string[]) => {
     setAnswers({ ...answers, [question.id]: value });
   };
 

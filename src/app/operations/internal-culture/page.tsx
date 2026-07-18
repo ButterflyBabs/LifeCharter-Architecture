@@ -123,7 +123,7 @@ const questions: Question[] = [
 
 export default function InternalCulturePage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [showHint, setShowHint] = useState(false);
   const [listInput, setListInput] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -131,7 +131,7 @@ export default function InternalCulturePage() {
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
-  const handleAnswer = (value: any) => {
+  const handleAnswer = (value: string | string[]) => {
     setAnswers({ ...answers, [question.id]: value });
   };
 
