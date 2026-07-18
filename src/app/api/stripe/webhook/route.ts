@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
 
         // Get subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const subData = subscription as unknown as { current_period_start: number; current_period_end: number };
 
         // Update subscription record
         await supabase
@@ -47,8 +48,8 @@ export async function POST(req: NextRequest) {
           .update({
             stripe_subscription_id: subscriptionId,
             status: "active",
-            current_period_start: new Date(subscription.current_period_start * 1000),
-            current_period_end: new Date(subscription.current_period_end * 1000),
+            current_period_start: new Date(subData.current_period_start * 1000),
+            current_period_end: new Date(subData.current_period_end * 1000),
           })
           .eq("user_id", userId)
           .eq("plan_id", planId)
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
           .update({
             current_plan_id: planId,
             subscription_status: "active",
-            subscription_ends_at: new Date(subscription.current_period_end * 1000),
+            subscription_ends_at: new Date(subData.current_period_end * 1000),
           })
           .eq("id", userId);
 
@@ -73,14 +74,15 @@ export async function POST(req: NextRequest) {
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const { userId } = subscription.metadata;
+          const subData = subscription as unknown as { current_period_start: number; current_period_end: number; metadata: { userId: string } };
+          const { userId } = subData.metadata;
 
           await supabase
             .from("subscriptions")
             .update({
               status: "active",
-              current_period_start: new Date(subscription.current_period_start * 1000),
-              current_period_end: new Date(subscription.current_period_end * 1000),
+              current_period_start: new Date(subData.current_period_start * 1000),
+              current_period_end: new Date(subData.current_period_end * 1000),
               updated_at: new Date(),
             })
             .eq("stripe_subscription_id", subscriptionId);
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest) {
             .from("profiles")
             .update({
               subscription_status: "active",
-              subscription_ends_at: new Date(subscription.current_period_end * 1000),
+              subscription_ends_at: new Date(subData.current_period_end * 1000),
             })
             .eq("id", userId);
         }
@@ -111,7 +113,8 @@ export async function POST(req: NextRequest) {
             .eq("stripe_subscription_id", subscriptionId);
 
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const { userId } = subscription.metadata;
+          const subData = subscription as unknown as { metadata: { userId: string } };
+          const { userId } = subData.metadata;
 
           await supabase
             .from("profiles")
@@ -127,6 +130,7 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const subscriptionId = subscription.id;
+        const subData = subscription as unknown as { metadata: { userId: string } };
 
         await supabase
           .from("subscriptions")
@@ -136,7 +140,7 @@ export async function POST(req: NextRequest) {
           })
           .eq("stripe_subscription_id", subscriptionId);
 
-        const { userId } = subscription.metadata;
+        const { userId } = subData.metadata;
 
         await supabase
           .from("profiles")
@@ -152,14 +156,15 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const subscriptionId = subscription.id;
+        const subData = subscription as unknown as { status: string; cancel_at_period_end: boolean; current_period_start: number; current_period_end: number };
 
         await supabase
           .from("subscriptions")
           .update({
-            status: subscription.status,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            current_period_start: new Date(subscription.current_period_start * 1000),
-            current_period_end: new Date(subscription.current_period_end * 1000),
+            status: subData.status,
+            cancel_at_period_end: subData.cancel_at_period_end,
+            current_period_start: new Date(subData.current_period_start * 1000),
+            current_period_end: new Date(subData.current_period_end * 1000),
             updated_at: new Date(),
           })
           .eq("stripe_subscription_id", subscriptionId);
