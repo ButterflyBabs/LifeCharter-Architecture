@@ -90,7 +90,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
 
       // Check if avatars bucket exists, create if not
       const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarsBucket = buckets?.find(b => b.name === "avatars");
+      const avatarsBucket = buckets?.find((b: { name: string }) => b.name === "avatars");
       
       if (!avatarsBucket) {
         const { error: bucketError } = await supabase.storage.createBucket("avatars", {
