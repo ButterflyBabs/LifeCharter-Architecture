@@ -395,7 +395,7 @@ export default function AIGuideWidget() {
               <Button
                 onClick={() => handleSend()}
                 disabled={!inputValue.trim() || isLoading}
-                size="icon"
+                size="sm"
               >
                 <Send className="w-4 h-4" />
               </Button>
