@@ -1,23 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   ArrowLeft,
   Share2,
-  Gift,
   CheckCircle,
   HelpCircle,
   ChevronRight,
   ChevronLeft,
   Sparkles,
   Plus,
-  X,
-  Users,
-  TrendingUp
+  X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -156,13 +153,13 @@ export default function ReferralPage() {
 
   const handleRemoveFromList = (index: number) => {
     const current = answers[question.id] || [];
-    handleAnswer(current.filter((_: any, i: number) => i !== index));
+    handleAnswer(current.filter((_item: string, i: number) => i !== index));
   };
 
   const canProceed = () => {
     const answer = answers[question.id];
     if (question.type === "list") {
-      return answer && answer.length > 0;
+      return answer && (answer as string[]).length > 0;
     }
     return answer && answer.toString().trim() !== "";
   };

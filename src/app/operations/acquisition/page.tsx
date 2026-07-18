@@ -145,13 +145,13 @@ export default function AcquisitionPage() {
 
   const handleRemoveFromList = (index: number) => {
     const current = answers[question.id] || [];
-    handleAnswer(current.filter((_: any, i: number) => i !== index));
+    handleAnswer(current.filter((_item: string, i: number) => i !== index));
   };
 
   const canProceed = () => {
     const answer = answers[question.id];
     if (question.type === "list") {
-      return answer && answer.length > 0;
+      return answer && (answer as string[]).length > 0;
     }
     return answer && answer.toString().trim() !== "";
   };
