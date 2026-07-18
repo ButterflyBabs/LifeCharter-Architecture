@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Lightbulb,
   Award,
-  Flag
+  Flag,
+  GripVertical
 } from "lucide-react";
 import Link from "next/link";
 
@@ -244,9 +245,95 @@ export default function TravelPartnerWidget() {
   const currentStep = getCurrentStep();
   const progress = getProgress();
 
+  // Draggable functionality
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const widgetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load saved position
+    const savedPosition = localStorage.getItem("travelPartnerPosition");
+    if (savedPosition) {
+      setPosition(JSON.parse(savedPosition));
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const newX = position.x + (e.clientX - dragStart.x);
+      const newY = position.y + (e.clientY - dragStart.y);
+      
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - (widgetRef.current?.offsetWidth || 400);
+      const maxY = window.innerHeight - (widgetRef.current?.offsetHeight || 600);
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      });
+      setDragStart({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        localStorage.setItem("travelPartnerPosition", JSON.stringify(position));
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, dragStart, position]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag from the header
+    if ((e.target as HTMLElement).closest(".drag-handle")) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const resetPosition = () => {
+    setPosition({ x: 0, y: 0 });
+    localStorage.removeItem("travelPartnerPosition");
+  };
+
+  const getWidgetStyle = () => {
+    const baseStyle: React.CSSProperties = {
+      position: "fixed",
+      zIndex: 50,
+    };
+    
+    if (position.x === 0 && position.y === 0) {
+      // Default position
+      baseStyle.bottom = "1rem";
+      baseStyle.right = "1rem";
+    } else {
+      // Custom position
+      baseStyle.left = `${position.x}px`;
+      baseStyle.top = `${position.y}px`;
+    }
+    
+    return baseStyle;
+  };
+
   if (showCelebration) {
     return (
-      <Card className="fixed bottom-4 right-4 w-80 z-50 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card 
+        ref={widgetRef}
+        className="w-80 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]"
+        style={getWidgetStyle()}
+      >
         <CardContent className="p-6 text-center">
           <Award className="w-12 h-12 text-[#D4AF63] mx-auto mb-3" />
           <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
@@ -268,7 +355,8 @@ export default function TravelPartnerWidget() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        className="z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        style={getWidgetStyle()}
       >
         <Compass className="w-5 h-5 text-[#D4AF63]" />
         <span className="font-medium">Travel Partner</span>
@@ -282,19 +370,38 @@ export default function TravelPartnerWidget() {
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 z-50 max-h-[80vh] overflow-hidden flex flex-col">
-      <CardHeader className="bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0">
+    <Card 
+      ref={widgetRef}
+      className="w-96 max-h-[80vh] overflow-hidden flex flex-col"
+      style={getWidgetStyle()}
+    >
+      <CardHeader 
+        className={`bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0 drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
+        onMouseDown={handleMouseDown}
+      >
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Compass className="w-5 h-5 text-[#D4AF63]" />
-            Travel Partner
-          </CardTitle>
-          <button 
-            onClick={() => setIsOpen(false)}
-            className="p-1 hover:bg-[#F6F1E8]/10 rounded"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <GripVertical className="w-4 h-4 text-[#CDBED6] opacity-50" />
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Compass className="w-5 h-5 text-[#D4AF63]" />
+              Travel Partner
+            </CardTitle>
+          </div>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={resetPosition}
+              className="p-1 hover:bg-[#F6F1E8]/10 rounded text-xs text-[#CDBED6]"
+              title="Reset position"
+            >
+              Reset
+            </button>
+            <button 
+              onClick={() => setIsOpen(false)}
+              className="p-1 hover:bg-[#F6F1E8]/10 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <p className="text-sm text-[#CDBED6] mt-1">
           Your guide to setting up LifeCharter Architecture
