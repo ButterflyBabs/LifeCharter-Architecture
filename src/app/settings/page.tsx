@@ -138,6 +138,28 @@ export default function SettingsPage() {
     loadProfile();
   }, []);
 
+  // Social platform type
+  type SocialPlatform = {
+    id: string;
+    name: string;
+    placeholder: string;
+    icon: string;
+  };
+
+  const socialPlatforms: SocialPlatform[] = [
+    { id: "facebook", name: "Facebook Profile", placeholder: "https://facebook.com/yourname", icon: "📘" },
+    { id: "facebook_page", name: "Facebook Page", placeholder: "https://facebook.com/yourpage", icon: "📄" },
+    { id: "facebook_group", name: "Facebook Group", placeholder: "https://facebook.com/groups/yourgroup", icon: "👥" },
+    { id: "instagram", name: "Instagram", placeholder: "https://instagram.com/yourhandle", icon: "📸" },
+    { id: "linkedin", name: "LinkedIn", placeholder: "https://linkedin.com/in/yourprofile", icon: "💼" },
+    { id: "tiktok", name: "TikTok", placeholder: "https://tiktok.com/@yourhandle", icon: "🎵" },
+    { id: "x", name: "X (Twitter)", placeholder: "https://x.com/yourhandle", icon: "🐦" },
+    { id: "bluesky", name: "BlueSky", placeholder: "https://bsky.app/profile/yourhandle", icon: "🦋" },
+    { id: "youtube", name: "YouTube", placeholder: "https://youtube.com/@yourchannel", icon: "▶️" },
+    { id: "pinterest", name: "Pinterest", placeholder: "https://pinterest.com/yourhandle", icon: "📌" },
+    { id: "threads", name: "Threads", placeholder: "https://threads.net/@yourhandle", icon: "🧵" }
+  ];
+
   // Workspace settings
   const [workspaces, setWorkspaces] = useState([
     {
@@ -147,7 +169,8 @@ export default function SettingsPage() {
       description: "Spiritually grounded personal transformation ecosystem",
       website: "https://lifecharter.architecture",
       logo: null as string | null,
-      isDefault: true
+      isDefault: true,
+      socials: {} as Record<string, string>
     }
   ]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("ws-1");
@@ -292,7 +315,8 @@ export default function SettingsPage() {
         description: "",
         website: "",
         logo: null as string | null,
-        isDefault: false
+        isDefault: false,
+        socials: {} as Record<string, string>
       };
       setWorkspaces([...workspaces, newWorkspace]);
       setActiveWorkspaceId(newId);
@@ -463,6 +487,37 @@ export default function SettingsPage() {
               value={activeWorkspace.website}
               onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
             />
+          </div>
+
+          {/* Social Profiles */}
+          <div className="mt-6 border-t border-[#1F315B]/10 pt-6">
+            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              Social Profiles
+            </h4>
+            <p className="text-sm text-[#B9A9A9] mb-4">
+              Connect your social media accounts for easy sharing and cross-posting
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {socialPlatforms.map((platform) => (
+                <div key={platform.id}>
+                  <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                    <span className="mr-2">{platform.icon}</span>
+                    {platform.name}
+                  </label>
+                  <Input
+                    type="url"
+                    placeholder={platform.placeholder}
+                    value={activeWorkspace.socials?.[platform.id] || ""}
+                    onChange={(e) => {
+                      const newSocials = { ...activeWorkspace.socials, [platform.id]: e.target.value };
+                      updateWorkspace(activeWorkspace.id, { socials: newSocials });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="mt-6 border-t border-[#1F315B]/10 pt-6">
