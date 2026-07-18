@@ -203,75 +203,99 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section with Workspace Dropdown */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+      {/* Welcome Section with Centered Workspace Dropdown */}
+      <div className="mb-8">
+        {/* Centered Workspace Selector */}
+        <div className="flex justify-center mb-4">
+          <div className="relative" ref={workspaceDropdownRef}>
+            <button
+              onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#1F315B] dark:bg-[#5E3B6C] text-[#F6F1E8] hover:bg-[#1F315B]/90 dark:hover:bg-[#5E3B6C]/90 transition-all shadow-md hover:shadow-lg border border-[#D4AF63]/30"
+            >
+              <Building2 className="w-5 h-5 text-[#D4AF63]" />
+              <div className="text-left">
+                <p className="text-xs text-[#D4AF63] uppercase tracking-wider">Current Workspace</p>
+                <p className="text-sm font-semibold">{currentWorkspace.name}</p>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-[#D4AF63] transition-transform ml-2 ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Dropdown Menu - Theme Coordinated */}
+            {showWorkspaceDropdown && (
+              <Card className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 z-50 shadow-xl border-[#D4AF63]/20">
+                <CardContent className="p-3">
+                  <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] uppercase tracking-wider px-3 py-2 font-semibold">
+                    Your Workspaces
+                  </p>
+                  {workspaces.map((workspace) => (
+                    <button
+                      key={workspace.id}
+                      onClick={() => {
+                        setCurrentWorkspace(workspace);
+                        setShowWorkspaceDropdown(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all ${
+                        currentWorkspace.id === workspace.id
+                          ? 'bg-[#1F315B] dark:bg-[#5E3B6C] text-[#F6F1E8] shadow-md'
+                          : 'hover:bg-[#1F315B]/5 dark:hover:bg-[#CDBED6]/10 text-[#1F315B] dark:text-[#F6F1E8]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          currentWorkspace.id === workspace.id 
+                            ? 'bg-[#D4AF63]/20' 
+                            : 'bg-[#1F315B]/5 dark:bg-[#CDBED6]/10'
+                        }`}>
+                          <Building2 className={`w-5 h-5 ${
+                            currentWorkspace.id === workspace.id 
+                              ? 'text-[#D4AF63]' 
+                              : 'text-[#1F315B] dark:text-[#CDBED6]'
+                          }`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            currentWorkspace.id === workspace.id ? 'text-[#F6F1E8]' : ''
+                          }`}>{workspace.name}</p>
+                          <p className={`text-xs ${
+                            currentWorkspace.id === workspace.id 
+                              ? 'text-[#D4AF63]' 
+                              : 'text-[#B9A9A9]'
+                          }`}>{workspace.role}</p>
+                        </div>
+                      </div>
+                      {currentWorkspace.id === workspace.id && (
+                        <div className="w-3 h-3 rounded-full bg-[#D4AF63] shadow-sm" />
+                      )}
+                    </button>
+                  ))}
+                  <div className="border-t border-[#1F315B]/10 dark:border-[#CDBED6]/20 mt-2 pt-2">
+                    <button
+                      onClick={() => {
+                        setShowWorkspaceDropdown(false);
+                        alert("Create new workspace - coming soon!");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#D4AF63]/10 transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/10 flex items-center justify-center group-hover:bg-[#D4AF63]/20">
+                        <Plus className="w-5 h-5 text-[#D4AF63]" />
+                      </div>
+                      <span className="text-sm font-medium">Create New Workspace</span>
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Welcome Text */}
+        <div className="text-center">
           <h1 className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
             Welcome back, Seraphina
           </h1>
-          <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+          <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
             Here&apos;s your business at a glance
           </p>
-        </div>
-        
-        {/* Workspace Selector Dropdown */}
-        <div className="relative" ref={workspaceDropdownRef}>
-          <button
-            onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/20 transition-colors border border-[#1F315B]/10"
-          >
-            <Building2 className="w-4 h-4 text-[#1F315B] dark:text-[#F6F1E8]" />
-            <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-              {currentWorkspace.name}
-            </span>
-            <ChevronDown className={`w-4 h-4 text-[#B9A9A9] transition-transform ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {/* Dropdown Menu */}
-          {showWorkspaceDropdown && (
-            <Card className="absolute right-0 top-full mt-2 w-72 z-50 shadow-lg">
-              <CardContent className="p-2">
-                <p className="text-xs text-[#B9A9A9] uppercase tracking-wider px-3 py-2">
-                  Your Workspaces
-                </p>
-                {workspaces.map((workspace) => (
-                  <button
-                    key={workspace.id}
-                    onClick={() => {
-                      setCurrentWorkspace(workspace);
-                      setShowWorkspaceDropdown(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
-                      currentWorkspace.id === workspace.id
-                        ? 'bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]'
-                        : 'hover:bg-[#1F315B]/5 text-[#1F315B] dark:text-[#F6F1E8]'
-                    }`}
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{workspace.name}</p>
-                      <p className="text-xs text-[#B9A9A9]">{workspace.role}</p>
-                    </div>
-                    {currentWorkspace.id === workspace.id && (
-                      <div className="w-2 h-2 rounded-full bg-[#D4AF63]" />
-                    )}
-                  </button>
-                ))}
-                <div className="border-t border-[#1F315B]/10 mt-2 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowWorkspaceDropdown(false);
-                      // TODO: Open create workspace modal
-                      alert("Create new workspace - coming soon!");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/5 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm">Create New Workspace</span>
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
