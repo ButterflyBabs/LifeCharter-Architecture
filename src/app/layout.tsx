@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppLayout } from "@/components/layout/AppLayout";
+import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget";
 
 export const metadata: Metadata = {
   title: "LifeCharter Architecture",
@@ -20,6 +21,7 @@ export default function RootLayout({
           <AppLayout>
             {children}
           </AppLayout>
+          <TravelPartnerWidget />
         </ThemeProvider>
       </body>
     </html>
