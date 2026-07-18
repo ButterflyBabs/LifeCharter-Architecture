@@ -17,7 +17,6 @@ import {
   Heart,
   Quote
 } from "lucide-react";
-import Link from "next/link";
 
 export default function ReviewCollectionPage() {
   const [step, setStep] = useState(1);
