@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { HeartPulse, ChevronDown, ChevronUp, Activity, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { HeartPulse, ChevronDown, ChevronUp, Activity, AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function OverallBusinessHealthPage() {
