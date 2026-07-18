@@ -521,7 +521,7 @@ export default function MarketingPlanPage() {
                   </div>
                   <div className="bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 rounded-lg p-4 max-w-[80%]">
                     <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
-                      {generateAIResponse(answer.questionId, answer.answer, answers)}
+                      {generateAIResponse(answer.questionId)}
                     </p>
                   </div>
                 </div>
