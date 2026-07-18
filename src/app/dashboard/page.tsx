@@ -125,7 +125,7 @@ export default function DashboardPage() {
   ]);
 
   // Workspace state
-  const [workspaces, setWorkspaces] = useState([
+  const [workspaces] = useState([
     { id: "ws-1", name: "Soulful Solutions Co.", role: "Owner" },
     { id: "ws-2", name: "Sacred Kaleidoscope", role: "Admin" },
     { id: "ws-3", name: "LifeCharter Ventures", role: "Member" },
