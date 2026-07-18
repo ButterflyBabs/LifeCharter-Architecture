@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ListChecks, ChevronDown, ChevronUp, Target, Zap, Clock, ArrowRight } from "lucide-react";
+import { ListChecks, ChevronDown, ChevronUp, Target, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 export default function NextThreeMovesPage() {
