@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
+import { TeamManagement } from "./components/TeamManagement";
 import { createClient } from "@/lib/supabase/client";
 import {
   User,
@@ -465,17 +466,11 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="mt-4 p-4 bg-[#1F315B]/5 rounded-lg">
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Team Members
-            </h4>
-            <p className="text-sm text-[#B9A9A9] mb-3">
-              Manage who has access to {activeWorkspace.name}
-            </p>
-            <Button variant="outline" size="sm">
-              Manage Team
-            </Button>
+          <div className="mt-6 border-t border-[#1F315B]/10 pt-6">
+            <TeamManagement
+              workspaceId={activeWorkspace.id}
+              workspaceName={activeWorkspace.name}
+            />
           </div>
 
           {!activeWorkspace.isDefault && (
