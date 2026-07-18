@@ -1148,75 +1148,195 @@ export default function SettingsPage() {
     );
   };
 
-  const renderBillingSettings = () => (
-    <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-[#D4AF63]/20 to-[#5E3B6C]/20 border-[#D4AF63]/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-[#B9A9A9]">Current Plan</p>
-              <h3 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-                LifeCharter Pro
-              </h3>
-              <p className="text-sm text-[#B9A9A9] mt-1">
-                $97/month • Renews Aug 15, 2026
-              </p>
-            </div>
-            <Button variant="outline">Change Plan</Button>
-          </div>
-        </CardContent>
-      </Card>
+  const renderBillingSettings = () => {
+    const plans = [
+      {
+        name: "Starter",
+        price: "$297",
+        period: "/month",
+        onboarding: "+$1,997 one-time onboarding",
+        description: "For a single coach running one business.",
+        features: [
+          "Command Center",
+          "Business Architecture",
+          "Revenue Engine",
+          "Client Experience",
+          "1 seat",
+          "1 business unit",
+          "50 AI actions per month",
+          "2 automations enabled",
+          "Guided roadmap onboarding"
+        ],
+        cta: "Get Started",
+        popular: false
+      },
+      {
+        name: "Growth",
+        price: "$497",
+        period: "/month",
+        onboarding: "+$2,497 one-time onboarding",
+        description: "For a small delivery team across a few brands.",
+        features: [
+          "Everything in Starter, plus:",
+          "Operations",
+          "Review Center",
+          "AI Team",
+          "5 seats",
+          "3 business units",
+          "500 AI actions per month",
+          "10 automations enabled",
+          "Branded client portal",
+          "Multi-brand data scoping"
+        ],
+        cta: "Get Started",
+        popular: true
+      },
+      {
+        name: "VIP / Done-With-You",
+        price: "$997+",
+        period: "/month",
+        onboarding: "Custom onboarding, scoped to you",
+        description: "Platform plus hands-on implementation support.",
+        features: [
+          "Everything in Growth, plus:",
+          "Unlimited seats and business units",
+          "Unlimited AI actions and automations",
+          "White-label domain and branding",
+          "Custom AI agent setup with our team",
+          "Dedicated onboarding support"
+        ],
+        cta: "Contact Us",
+        popular: false
+      }
+    ];
 
-      <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Payment Method</h4>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-8 bg-[#1F315B]/10 rounded flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-[#1F315B] dark:text-[#F6F1E8]" />
-                </div>
-                <div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-                    •••• •••• •••• 4242
+    return (
+      <div className="space-y-8">
+        {/* Pricing Plans */}
+        <div>
+          <h3 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-6">
+            Choose Your Plan
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => (
+              <Card 
+                key={plan.name}
+                className={`relative ${plan.popular ? 'border-[#D4AF63] border-2' : ''}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-[#D4AF63] text-[#1F315B] text-xs font-semibold px-3 py-1 rounded-full">
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+                <CardContent className="p-6">
+                  <h4 className="text-lg font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                    {plan.name}
+                  </h4>
+                  <div className="mt-2 flex items-baseline">
+                    <span className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                      {plan.price}
+                    </span>
+                    <span className="text-[#B9A9A9] ml-1">{plan.period}</span>
+                  </div>
+                  <p className="text-sm text-[#B9A9A9] mt-1">{plan.onboarding}</p>
+                  <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] mt-3">
+                    {plan.description}
                   </p>
-                  <p className="text-sm text-[#B9A9A9]">Expires 12/27</p>
-                </div>
+                  
+                  <ul className="mt-4 space-y-2">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button 
+                    className="w-full mt-6"
+                    variant={plan.popular ? "primary" : "outline"}
+                  >
+                    {plan.cta}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Current Plan Status */}
+        <Card className="bg-gradient-to-br from-[#D4AF63]/20 to-[#5E3B6C]/20 border-[#D4AF63]/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#B9A9A9]">Current Plan</p>
+                <h3 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                  Growth
+                </h3>
+                <p className="text-sm text-[#B9A9A9] mt-1">
+                  $497/month • Renews Aug 15, 2026
+                </p>
               </div>
-              <Button variant="ghost" size="sm">
-                Update
-              </Button>
+              <Button variant="outline">Change Plan</Button>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Billing History</h4>
-        <div className="space-y-2">
-          {[
-            { date: "Jul 15, 2026", amount: "$97.00", status: "Paid" },
-            { date: "Jun 15, 2026", amount: "$97.00", status: "Paid" },
-            { date: "May 15, 2026", amount: "$97.00", status: "Paid" }
-          ].map((invoice, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10"
-            >
-              <div>
-                <p className="text-[#1F315B] dark:text-[#F6F1E8]">{invoice.date}</p>
-                <p className="text-sm text-[#B9A9A9]">LifeCharter Pro</p>
+        {/* Payment Method */}
+        <div>
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Payment Method</h4>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-8 bg-[#1F315B]/10 rounded flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-[#1F315B] dark:text-[#F6F1E8]" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      •••• •••• •••• 4242
+                    </p>
+                    <p className="text-sm text-[#B9A9A9]">Expires 12/27</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">
+                  Update
+                </Button>
               </div>
-              <div className="text-right">
-                <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{invoice.amount}</p>
-                <span className="text-xs text-green-500">{invoice.status}</span>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Billing History */}
+        <div>
+          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Billing History</h4>
+          <div className="space-y-2">
+            {[
+              { date: "Jul 15, 2026", amount: "$497.00", status: "Paid" },
+              { date: "Jun 15, 2026", amount: "$497.00", status: "Paid" },
+              { date: "May 15, 2026", amount: "$497.00", status: "Paid" }
+            ].map((invoice, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10"
+              >
+                <div>
+                  <p className="text-[#1F315B] dark:text-[#F6F1E8]">{invoice.date}</p>
+                  <p className="text-sm text-[#B9A9A9]">Growth Plan</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{invoice.amount}</p>
+                  <span className="text-xs text-green-500">{invoice.status}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSecuritySettings = () => (
     <div className="space-y-6">
