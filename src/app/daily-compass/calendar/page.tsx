@@ -204,7 +204,7 @@ export default function ContentCalendarPage() {
               {["day", "week", "month"].map((v) => (
                 <button
                   key={v}
-                  onClick={() => setView(v as any)}
+                  onClick={() => setView(v as "day" | "week" | "month")}
                   className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                     view === v
                       ? "bg-[#1F315B] text-[#F6F1E8]"

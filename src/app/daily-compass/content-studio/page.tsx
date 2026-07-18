@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+// Input component imported for future use
 import { Textarea } from "@/components/ui/Textarea";
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   Sparkles,
   MessageSquare,
   Mic,
-  Copy,
   CheckCircle,
   RefreshCw,
   Calendar,

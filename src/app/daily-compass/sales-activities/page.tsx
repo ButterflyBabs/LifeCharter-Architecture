@@ -230,7 +230,7 @@ export default function SalesActivitiesPage() {
         {["all", "today", "overdue", "completed"].map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f as any)}
+            onClick={() => setFilter(f as string)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === f
                 ? "bg-[#1F315B] text-[#F6F1E8]"
