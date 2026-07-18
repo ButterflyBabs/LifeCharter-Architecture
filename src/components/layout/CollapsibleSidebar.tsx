@@ -8,7 +8,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ClipboardList,
-  BarChart3,
   Briefcase,
   Megaphone,
   TrendingUp,
