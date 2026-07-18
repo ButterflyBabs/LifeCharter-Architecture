@@ -121,7 +121,7 @@ export default function SettingsPage() {
 
   // Billing state
   const [currentPlan, setCurrentPlan] = useState<"starter" | "growth" | "vip">("growth");
-  const [billingCycle, setBillingCycle] = useState({
+  const [billingCycle] = useState({
     startDate: new Date("2026-07-15"),
     endDate: new Date("2026-08-15"),
     nextBillingDate: new Date("2026-08-15")
@@ -1616,7 +1616,7 @@ For questions, please contact support@lifecharter.architecture
                           Downgrade Request
                         </p>
                         <p className="text-sm text-[#B9A9A9] mt-1">
-                          To downgrade from {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to {selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)}, please contact our support team. We'll help you transition smoothly.
+                          To downgrade from {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to {selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)}, please contact our support team. We&apos;ll help you transition smoothly.
                         </p>
                         <Button 
                           className="mt-3" 
@@ -1656,7 +1656,7 @@ For questions, please contact support@lifecharter.architecture
                       </div>
                     </div>
                     <p className="text-xs text-[#B9A9A9] mt-3">
-                      Your new billing cycle will start today. You'll be charged the prorated difference for the remaining days in your current cycle.
+                      Your new billing cycle will start today. You&apos;ll be charged the prorated difference for the remaining days in your current cycle.
                     </p>
                   </div>
                 )}
