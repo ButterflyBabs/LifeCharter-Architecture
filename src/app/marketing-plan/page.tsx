@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-// import { Progress } from "@/components/ui/Progress";
+import { Progress } from "@/components/ui/Progress";
 import { 
   Target, 
   Users, 
