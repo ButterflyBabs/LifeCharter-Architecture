@@ -202,7 +202,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6 pt-6 pr-8">
+    <div className="space-y-6 pt-6 px-8">
       {/* Welcome Section with Centered Workspace Dropdown */}
       <div className="mb-8">
         {/* Centered Workspace Selector with top padding */}
