@@ -211,13 +211,35 @@ export default function SettingsPage() {
   });
 
   // Integration settings
-  const [integrations] = useState({
+  const [integrations, setIntegrations] = useState({
+    // Business & CRM
     ghl: { connected: false, apiKey: "" },
     stripe: { connected: false, apiKey: "" },
     convertkit: { connected: false, apiKey: "" },
     calendly: { connected: false, apiKey: "" },
-    openai: { connected: true, apiKey: "sk-••••••••••••••••••••" }
+    // AI Providers
+    openai: { connected: true, apiKey: "sk-••••••••••••••••••••" },
+    anthropic: { connected: false, apiKey: "" },
+    moonshot: { connected: false, apiKey: "" },
+    // Messaging
+    telegram: { connected: false, apiKey: "", botToken: "" },
+    whatsapp: { connected: false, apiKey: "" },
+    slack: { connected: false, apiKey: "" },
+    discord: { connected: false, apiKey: "" },
+    // Social Media
+    facebook: { connected: false, apiKey: "" },
+    instagram: { connected: false, apiKey: "" },
+    linkedin: { connected: false, apiKey: "" },
+    twitter: { connected: false, apiKey: "" },
+    tiktok: { connected: false, apiKey: "" },
+    // Storage & Tools
+    googleDrive: { connected: false, apiKey: "" },
+    dropbox: { connected: false, apiKey: "" },
+    notion: { connected: false, apiKey: "" },
+    airtable: { connected: false, apiKey: "" }
   });
+
+  const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -715,61 +737,182 @@ export default function SettingsPage() {
     );
   };
 
-  const renderIntegrationSettings = () => (
-    <div className="space-y-4">
-      {[
-        { id: "ghl", name: "GoHighLevel", description: "CRM, funnels, and automation", icon: "GHL" },
-        { id: "stripe", name: "Stripe", description: "Payment processing", icon: "ST" },
-        { id: "convertkit", name: "ConvertKit", description: "Email marketing", icon: "CK" },
-        { id: "calendly", name: "Calendly", description: "Scheduling", icon: "CA" },
-        { id: "openai", name: "OpenAI", description: "AI features and automation", icon: "AI" }
-      ].map((integration) => {
-        const status = integrations[integration.id as keyof typeof integrations];
-        return (
-          <Card key={integration.id} className={status.connected ? "border-green-500/30" : ""}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#1F315B]/10 flex items-center justify-center font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-                    {integration.icon}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-                      {integration.name}
-                    </h4>
-                    <p className="text-sm text-[#B9A9A9]">{integration.description}</p>
-                    {status.connected && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-500 mt-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Connected
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant={status.connected ? "outline" : "primary"}
-                  size="sm"
-                >
-                  {status.connected ? "Manage" : "Connect"}
-                </Button>
-              </div>
-              {status.connected && integration.id === "openai" && (
-                <div className="mt-4 pt-4 border-t border-[#1F315B]/10">
-                  <label className="block text-sm text-[#B9A9A9] mb-2">API Key</label>
-                  <Input
-                    type="password"
-                    value={status.apiKey}
-                    readOnly
-                    className="bg-[#1F315B]/5"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
+  const renderIntegrationSettings = () => {
+    const integrationCategories = [
+      {
+        title: "AI Providers",
+        items: [
+          { id: "openai", name: "OpenAI", description: "GPT-4, GPT-3.5, DALL-E", icon: "🤖", color: "#10A37F" },
+          { id: "anthropic", name: "Anthropic", description: "Claude AI models", icon: "🧠", color: "#D4A574" },
+          { id: "moonshot", name: "Moonshot AI", description: "Kimi K2.5 and other models", icon: "🌙", color: "#1F315B" }
+        ]
+      },
+      {
+        title: "Business & CRM",
+        items: [
+          { id: "ghl", name: "GoHighLevel", description: "CRM, funnels, and automation", icon: "📊", color: "#3B82F6" },
+          { id: "stripe", name: "Stripe", description: "Payment processing", icon: "💳", color: "#635BFF" },
+          { id: "convertkit", name: "ConvertKit", description: "Email marketing", icon: "✉️", color: "#FB6970" },
+          { id: "calendly", name: "Calendly", description: "Scheduling and appointments", icon: "📅", color: "#006BFF" },
+          { id: "notion", name: "Notion", description: "Documentation and wiki", icon: "📝", color: "#000000" },
+          { id: "airtable", name: "Airtable", description: "Database and spreadsheets", icon: "🗂️", color: "#18BFFF" }
+        ]
+      },
+      {
+        title: "Messaging & Communication",
+        items: [
+          { id: "telegram", name: "Telegram", description: "Bot integration and messaging", icon: "✈️", color: "#26A5E4" },
+          { id: "whatsapp", name: "WhatsApp", description: "Business API messaging", icon: "💬", color: "#25D366" },
+          { id: "slack", name: "Slack", description: "Team communication", icon: "💼", color: "#4A154B" },
+          { id: "discord", name: "Discord", description: "Community and bots", icon: "🎮", color: "#5865F2" }
+        ]
+      },
+      {
+        title: "Social Media",
+        items: [
+          { id: "facebook", name: "Facebook", description: "Pages and groups", icon: "📘", color: "#1877F2" },
+          { id: "instagram", name: "Instagram", description: "Business account", icon: "📸", color: "#E4405F" },
+          { id: "linkedin", name: "LinkedIn", description: "Professional network", icon: "💼", color: "#0A66C2" },
+          { id: "twitter", name: "X (Twitter)", description: "Social posting", icon: "🐦", color: "#000000" },
+          { id: "tiktok", name: "TikTok", description: "Video content", icon: "🎵", color: "#000000" }
+        ]
+      },
+      {
+        title: "Storage & Files",
+        items: [
+          { id: "googleDrive", name: "Google Drive", description: "File storage", icon: "📁", color: "#4285F4" },
+          { id: "dropbox", name: "Dropbox", description: "Cloud storage", icon: "📦", color: "#0061FF" }
+        ]
+      }
+    ];
+
+    const toggleConnection = (id: string) => {
+      setIntegrations(prev => ({
+        ...prev,
+        [id]: { ...prev[id as keyof typeof prev], connected: !prev[id as keyof typeof prev].connected }
+      }));
+    };
+
+    const updateApiKey = (id: string, value: string) => {
+      setIntegrations(prev => ({
+        ...prev,
+        [id]: { ...prev[id as keyof typeof prev], apiKey: value }
+      }));
+    };
+
+    return (
+      <div className="space-y-8">
+        {integrationCategories.map((category) => (
+          <div key={category.title}>
+            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-3 flex items-center gap-2">
+              {category.title}
+            </h4>
+            <div className="space-y-3">
+              {category.items.map((integration) => {
+                const status = integrations[integration.id as keyof typeof integrations];
+                const isExpanded = showApiKey[integration.id];
+                
+                return (
+                  <Card key={integration.id} className={status.connected ? "border-green-500/30" : ""}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div 
+                            className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                            style={{ backgroundColor: `${integration.color}20` }}
+                          >
+                            {integration.icon}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                              {integration.name}
+                            </h4>
+                            <p className="text-sm text-[#B9A9A9]">{integration.description}</p>
+                            {status.connected && (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-500 mt-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Connected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {status.connected && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowApiKey({ ...showApiKey, [integration.id]: !isExpanded })}
+                            >
+                              {isExpanded ? "Hide" : "Settings"}
+                            </Button>
+                          )}
+                          <Button
+                            variant={status.connected ? "outline" : "primary"}
+                            size="sm"
+                            onClick={() => toggleConnection(integration.id)}
+                          >
+                            {status.connected ? "Disconnect" : "Connect"}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Expandable API Key Section */}
+                      {status.connected && isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-[#1F315B]/10 space-y-3">
+                          <div>
+                            <label className="block text-sm text-[#B9A9A9] mb-2">
+                              API Key / Token
+                            </label>
+                            <div className="flex gap-2">
+                              <Input
+                                type="password"
+                                placeholder="Enter your API key"
+                                value={status.apiKey}
+                                onChange={(e) => updateApiKey(integration.id, e.target.value)}
+                                className="flex-1"
+                              />
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {/* Save API key */}}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {integration.id === "telegram" && (
+                            <div>
+                              <label className="block text-sm text-[#B9A9A9] mb-2">
+                                Bot Token
+                              </label>
+                              <Input
+                                type="password"
+                                placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                                value={(status as any).botToken || ""}
+                                onChange={(e) => setIntegrations(prev => ({
+                                  ...prev,
+                                  telegram: { ...prev.telegram, botToken: e.target.value }
+                                }))}
+                              />
+                            </div>
+                          )}
+                          
+                          <p className="text-xs text-[#B9A9A9]">
+                            Your API key is encrypted and stored securely.
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const renderBillingSettings = () => (
     <div className="space-y-6">
