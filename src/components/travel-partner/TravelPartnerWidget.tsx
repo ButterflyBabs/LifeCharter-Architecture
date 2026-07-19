@@ -225,16 +225,8 @@ export default function TravelPartnerWidget() {
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
       
-      // Bounds
-      const maxX = window.innerWidth - 400;
-      const maxY = window.innerHeight - 600;
-      
-      const bounded = {
-        x: Math.max(10, Math.min(newX, maxX)),
-        y: Math.max(10, Math.min(newY, maxY))
-      };
-      
-      setPos(bounded);
+      // Allow dragging anywhere on screen, even partially off-screen
+      setPos({ x: newX, y: newY });
     };
     
     const onUp = () => {
