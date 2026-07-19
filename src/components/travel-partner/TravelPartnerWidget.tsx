@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -203,11 +203,21 @@ export default function TravelPartnerWidget() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Draggable state
+  const [position, setPosition] = useState({ x: -1, y: -1 }); // -1 means use default
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const widgetRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // Load completed steps from localStorage
     const saved = localStorage.getItem("travelPartnerCompleted");
     if (saved) {
       setCompletedSteps(JSON.parse(saved));
+    }
+    
+    const savedPos = localStorage.getItem("travelPartnerPosition");
+    if (savedPos) {
+      setPosition(JSON.parse(savedPos));
     }
   }, []);
 
@@ -219,7 +229,6 @@ export default function TravelPartnerWidget() {
     setCompletedSteps(newCompleted);
     localStorage.setItem("travelPartnerCompleted", JSON.stringify(newCompleted));
     
-    // Check if all steps are complete
     const totalSteps = journeyStages.reduce((acc, stage) => acc + stage.steps.length, 0);
     if (newCompleted.length === totalSteps) {
       setShowCelebration(true);
@@ -242,94 +251,84 @@ export default function TravelPartnerWidget() {
     return null;
   };
 
-  const currentStep = getCurrentStep();
-  const progress = getProgress();
-
-  // Draggable functionality
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const widgetRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Load saved position
-    const savedPosition = localStorage.getItem("travelPartnerPosition");
-    if (savedPosition) {
-      setPosition(JSON.parse(savedPosition));
+  // Drag handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest(".drag-handle") || target.closest(".drag-icon")) {
+      setIsDragging(true);
+      const rect = widgetRef.current?.getBoundingClientRect();
+      if (rect) {
+        dragOffset.current = {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+      e.preventDefault();
     }
   }, []);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      const newX = position.x + (e.clientX - dragStart.x);
-      const newY = position.y + (e.clientY - dragStart.y);
-      
-      // Keep within viewport bounds
-      const maxX = window.innerWidth - (widgetRef.current?.offsetWidth || 400);
-      const maxY = window.innerHeight - (widgetRef.current?.offsetHeight || 600);
-      
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      });
-      setDragStart({ x: e.clientX, y: e.clientY });
-    };
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return;
+    
+    const newX = e.clientX - dragOffset.current.x;
+    const newY = e.clientY - dragOffset.current.y;
+    
+    // Keep within bounds
+    const maxX = window.innerWidth - (widgetRef.current?.offsetWidth || 384);
+    const maxY = window.innerHeight - (widgetRef.current?.offsetHeight || 600);
+    
+    const boundedX = Math.max(0, Math.min(newX, maxX));
+    const boundedY = Math.max(0, Math.min(newY, maxY));
+    
+    setPosition({ x: boundedX, y: boundedY });
+  }, [isDragging]);
 
-    const handleMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        localStorage.setItem("travelPartnerPosition", JSON.stringify(position));
-      }
-    };
-
+  const handleMouseUp = useCallback(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      setIsDragging(false);
+      localStorage.setItem("travelPartnerPosition", JSON.stringify(position));
     }
+  }, [isDragging, position]);
 
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+    } else {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
-  }, [isDragging, dragStart, position]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // Only drag from the header
-    if ((e.target as HTMLElement).closest(".drag-handle")) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const resetPosition = () => {
-    setPosition({ x: 0, y: 0 });
+    setPosition({ x: -1, y: -1 });
     localStorage.removeItem("travelPartnerPosition");
   };
 
-  const getWidgetStyle = () => {
-    const baseStyle: React.CSSProperties = {
-      position: "fixed",
-      zIndex: 50,
-    };
-    
-    if (position.x === 0 && position.y === 0) {
-      // Default position
-      baseStyle.bottom = "1rem";
-      baseStyle.right = "1rem";
-    } else {
-      // Custom position
-      baseStyle.left = `${position.x}px`;
-      baseStyle.top = `${position.y}px`;
+  const currentStep = getCurrentStep();
+  const progress = getProgress();
+
+  const getPositionStyles = (): React.CSSProperties => {
+    if (position.x === -1 && position.y === -1) {
+      return { position: "fixed", bottom: "1rem", right: "1rem", zIndex: 50 };
     }
-    
-    return baseStyle;
+    return { position: "fixed", left: position.x, top: position.y, zIndex: 50 };
   };
 
   if (showCelebration) {
     return (
-      <div ref={widgetRef} style={getWidgetStyle()}>
+      <div style={getPositionStyles()} ref={widgetRef}>
         <Card className="w-80 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
           <CardContent className="p-6 text-center">
             <Award className="w-12 h-12 text-[#D4AF63] mx-auto mb-3" />
@@ -353,8 +352,8 @@ export default function TravelPartnerWidget() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        style={getWidgetStyle()}
+        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        style={getPositionStyles()}
       >
         <Compass className="w-5 h-5 text-[#D4AF63]" />
         <span className="font-medium">Travel Partner</span>
@@ -368,191 +367,187 @@ export default function TravelPartnerWidget() {
   }
 
   return (
-    <div ref={widgetRef} style={getWidgetStyle()}>
-      <Card className="w-96 max-h-[80vh] overflow-hidden flex flex-col">
+    <div style={getPositionStyles()} ref={widgetRef}>
+      <Card className="w-96 max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* Draggable Header */}
         <div 
-          className={`drag-handle cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
+          className={`drag-handle bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] p-4 cursor-move ${isDragging ? "cursor-grabbing" : ""}`}
           onMouseDown={handleMouseDown}
         >
-        <CardHeader 
-          className="bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] flex-shrink-0"
-        >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GripVertical className="w-4 h-4 text-[#CDBED6] opacity-50" />
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[#D4AF63]" />
-              Travel Partner
-            </CardTitle>
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={resetPosition}
-              className="p-1 hover:bg-[#F6F1E8]/10 rounded text-xs text-[#CDBED6]"
-              title="Reset position"
-            >
-              Reset
-            </button>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-[#F6F1E8]/10 rounded"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <p className="text-sm text-[#CDBED6] mt-1">
-          Your guide to setting up LifeCharter Architecture
-        </p>
-        
-        {/* Progress Bar */}
-        <div className="mt-3">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-[#CDBED6]">Setup Progress</span>
-            <span className="text-[#D4AF63] font-medium">{progress}%</span>
-          </div>
-          <div className="w-full bg-[#F6F1E8]/20 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-[#2E7C83] to-[#D4AF63] h-2 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      </CardHeader>
-      </div>
-
-      <CardContent className="p-0 overflow-y-auto flex-1">
-        {/* Current Step Highlight */}
-        {currentStep && (
-          <div className="p-4 bg-[#D4AF63]/10 border-b border-[#D4AF63]/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Flag className="w-4 h-4 text-[#D4AF63]" />
-              <span className="text-xs font-medium text-[#D4AF63]">Next Step</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GripVertical className="drag-icon w-5 h-5 text-[#CDBED6] opacity-60 hover:opacity-100" />
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[#D4AF63]" />
+                Travel Partner
+              </CardTitle>
             </div>
-            <Link href={currentStep.path}>
-              <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/50 rounded-lg hover:shadow-md transition-shadow cursor-pointer">
-                <div className="p-2 bg-[#2E7C83]/20 rounded-lg">
-                  {currentStep.icon}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-                    {currentStep.title}
-                  </h4>
-                  <p className="text-xs text-[#B9A9A9] mt-1">
-                    {currentStep.description}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-[#2E7C83]">
-                      {currentStep.section === "business" ? "Business Mgmt" : "Daily Compass"}
-                    </span>
-                    <span className="text-xs text-[#B9A9A9]">•</span>
-                    <span className="text-xs text-[#B9A9A9]">{currentStep.estimatedTime} min</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />
-              </div>
-            </Link>
-          </div>
-        )}
-
-        {/* Journey Stages */}
-        <div className="p-4 space-y-4">
-          {journeyStages.map((stage, stageIndex) => (
-            <div key={stage.id}>
-              <button
-                onClick={() => setCurrentStage(currentStage === stageIndex ? -1 : stageIndex)}
-                className="w-full flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors"
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={(e) => { e.stopPropagation(); resetPosition(); }}
+                className="p-1.5 hover:bg-[#F6F1E8]/10 rounded text-xs text-[#CDBED6] transition-colors"
+                title="Reset position"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    stage.steps.every(s => completedSteps.includes(s.id))
-                      ? "bg-green-500 text-white"
-                      : "bg-[#1F315B] text-[#F6F1E8]"
-                  }`}>
-                    {stage.steps.every(s => completedSteps.includes(s.id)) ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      stageIndex + 1
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
-                      {stage.name}
-                    </h4>
-                    <p className="text-xs text-[#B9A9A9]">{stage.description}</p>
-                  </div>
-                </div>
-                {currentStage === stageIndex ? (
-                  <ChevronUp className="w-4 h-4 text-[#B9A9A9]" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />
-                )}
+                Reset
               </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                className="p-1.5 hover:bg-[#F6F1E8]/10 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-[#CDBED6] mt-1">
+            Your guide to setting up LifeCharter Architecture
+          </p>
+          
+          {/* Progress Bar */}
+          <div className="mt-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-[#CDBED6]">Setup Progress</span>
+              <span className="text-[#D4AF63] font-medium">{progress}%</span>
+            </div>
+            <div className="w-full bg-[#F6F1E8]/20 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-[#2E7C83] to-[#D4AF63] h-2 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </div>
 
-              {currentStage === stageIndex && (
-                <div className="mt-2 ml-4 space-y-2">
-                  {stage.steps.map((step) => {
-                    const isCompleted = completedSteps.includes(step.id);
-                    return (
-                      <div
-                        key={step.id}
-                        className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/30 rounded-lg border border-[#1F315B]/10"
-                      >
-                        <button
-                          onClick={() => toggleStep(step.id)}
-                          className="mt-0.5"
+        <CardContent className="p-0 overflow-y-auto flex-1">
+          {/* Current Step Highlight */}
+          {currentStep && (
+            <div className="p-4 bg-[#D4AF63]/10 border-b border-[#D4AF63]/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Flag className="w-4 h-4 text-[#D4AF63]" />
+                <span className="text-xs font-medium text-[#D4AF63]">Next Step</span>
+              </div>
+              <Link href={currentStep.path} onClick={() => setIsOpen(false)}>
+                <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/50 rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="p-2 bg-[#2E7C83]/20 rounded-lg">
+                    {currentStep.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      {currentStep.title}
+                    </h4>
+                    <p className="text-xs text-[#B9A9A9] mt-1">
+                      {currentStep.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-[#2E7C83]">
+                        {currentStep.section === "business" ? "Business Mgmt" : "Daily Compass"}
+                      </span>
+                      <span className="text-xs text-[#B9A9A9]">•</span>
+                      <span className="text-xs text-[#B9A9A9]">{currentStep.estimatedTime} min</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* Journey Stages */}
+          <div className="p-4 space-y-4">
+            {journeyStages.map((stage, stageIndex) => (
+              <div key={stage.id}>
+                <button
+                  onClick={() => setCurrentStage(currentStage === stageIndex ? -1 : stageIndex)}
+                  className="w-full flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      stage.steps.every(s => completedSteps.includes(s.id))
+                        ? "bg-green-500 text-white"
+                        : "bg-[#1F315B] text-[#F6F1E8]"
+                    }`}>
+                      {stage.steps.every(s => completedSteps.includes(s.id)) ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        stageIndex + 1
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                        {stage.name}
+                      </h4>
+                      <p className="text-xs text-[#B9A9A9]">{stage.description}</p>
+                    </div>
+                  </div>
+                  {currentStage === stageIndex ? (
+                    <ChevronUp className="w-4 h-4 text-[#B9A9A9]" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />
+                  )}
+                </button>
+
+                {currentStage === stageIndex && (
+                  <div className="mt-2 ml-4 space-y-2">
+                    {stage.steps.map((step) => {
+                      const isCompleted = completedSteps.includes(step.id);
+                      return (
+                        <div
+                          key={step.id}
+                          className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/30 rounded-lg border border-[#1F315B]/10"
                         >
-                          {isCompleted ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-500" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#2E7C83]" />
-                          )}
-                        </button>
-                        <div className="flex-1">
-                          <Link href={step.path}>
-                            <h5 className={`font-medium ${
-                              isCompleted 
-                                ? "line-through text-[#B9A9A9]" 
-                                : "text-[#1F315B] dark:text-[#F6F1E8]"
-                            }`}>
-                              {step.title}
-                            </h5>
-                          </Link>
-                          <p className="text-xs text-[#B9A9A9] mt-1">
-                            {step.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              step.section === "business"
-                                ? "bg-[#1F315B]/10 text-[#5E3B6C]"
-                                : "bg-[#2E7C83]/10 text-[#2E7C83]"
-                            }`}>
-                              {step.section === "business" ? "Business" : "Daily"}
-                            </span>
-                            <span className="text-xs text-[#B9A9A9]">{step.estimatedTime} min</span>
+                          <button
+                            onClick={() => toggleStep(step.id)}
+                            className="mt-0.5"
+                          >
+                            {isCompleted ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#2E7C83]" />
+                            )}
+                          </button>
+                          <div className="flex-1">
+                            <Link href={step.path} onClick={() => setIsOpen(false)}>
+                              <h5 className={`font-medium ${
+                                isCompleted 
+                                  ? "line-through text-[#B9A9A9]" 
+                                  : "text-[#1F315B] dark:text-[#F6F1E8]"
+                              }`}>
+                                {step.title}
+                              </h5>
+                            </Link>
+                            <p className="text-xs text-[#B9A9A9] mt-1">
+                              {step.description}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                step.section === "business"
+                                  ? "bg-[#1F315B]/10 text-[#5E3B6C]"
+                                  : "bg-[#2E7C83]/10 text-[#2E7C83]"
+                              }`}>
+                                {step.section === "business" ? "Business" : "Daily"}
+                              </span>
+                              <span className="text-xs text-[#B9A9A9]">{step.estimatedTime} min</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Tips Section */}
-        <div className="p-4 bg-[#D4AF63]/10 border-t border-[#D4AF63]/20">
-          <div className="flex items-start gap-2">
-            <Lightbulb className="w-4 h-4 text-[#D4AF63] mt-0.5" />
-            <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
-              <strong>Tip:</strong> You do not need to complete everything at once. 
-              Focus on one step at a time. Your progress is saved automatically.
-            </p>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Tips Section */}
+          <div className="p-4 bg-[#D4AF63]/10 border-t border-[#D4AF63]/20">
+            <div className="flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-[#D4AF63] mt-0.5" />
+              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+                <strong>Tip:</strong> Drag the header to move this widget. Click Reset to return to corner.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
