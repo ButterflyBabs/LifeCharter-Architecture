@@ -330,17 +330,23 @@ export default function TravelPartnerWidget() {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
+      <div
+        ref={widgetRef}
         style={getStyle()}
-        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:scale-105 transition-transform"
+        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
+        onMouseDown={startDrag}
+        onClick={(e) => {
+          // Only open if not dragging
+          if (!dragging) setIsOpen(true);
+        }}
       >
+        <GripVertical data-drag className="w-5 h-5 text-[#CDBED6] opacity-60 cursor-grab active:cursor-grabbing" />
         <Compass className="w-5 h-5 text-[#D4AF63]" />
         <span className="font-medium">Travel Partner</span>
         {progress > 0 && (
           <span className="ml-2 text-xs bg-[#D4AF63] text-[#1F315B] px-2 py-0.5 rounded-full">{progress}%</span>
         )}
-      </button>
+      </div>
     );
   }
 
