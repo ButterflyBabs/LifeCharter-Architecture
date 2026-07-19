@@ -206,7 +206,9 @@ export default function TravelPartnerWidget() {
   // Simple draggable state
   const [pos, setPos] = useState<{x: number, y: number} | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const dragStartMousePos = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -225,6 +227,16 @@ export default function TravelPartnerWidget() {
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
       
+      // Check if user actually dragged (moved more than 5 pixels)
+      const moveDistance = Math.sqrt(
+        Math.pow(e.clientX - dragStartMousePos.current.x, 2) +
+        Math.pow(e.clientY - dragStartMousePos.current.y, 2)
+      );
+      
+      if (moveDistance > 5) {
+        setHasDragged(true);
+      }
+      
       // Allow dragging anywhere on screen, even partially off-screen
       setPos({ x: newX, y: newY });
     };
@@ -232,6 +244,8 @@ export default function TravelPartnerWidget() {
     const onUp = () => {
       setDragging(false);
       if (pos) localStorage.setItem("travelPartnerPos", JSON.stringify(pos));
+      // Reset hasDragged after a short delay so click can check it
+      setTimeout(() => setHasDragged(false), 50);
     };
     
     document.addEventListener("mousemove", onMove);
@@ -251,6 +265,8 @@ export default function TravelPartnerWidget() {
     if (!target.closest("[data-drag]")) return;
     
     setDragging(true);
+    setHasDragged(false);
+    dragStartMousePos.current = { x: e.clientX, y: e.clientY };
     const rect = widgetRef.current?.getBoundingClientRect();
     if (rect) {
       dragStartPos.current = {
@@ -328,8 +344,8 @@ export default function TravelPartnerWidget() {
         className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
         onMouseDown={startDrag}
         onClick={() => {
-          // Only open if not dragging
-          if (!dragging) setIsOpen(true);
+          // Only open if user didn't drag
+          if (!hasDragged) setIsOpen(true);
         }}
       >
         <GripVertical data-drag className="w-5 h-5 text-[#CDBED6] opacity-60 cursor-grab active:cursor-grabbing" />
