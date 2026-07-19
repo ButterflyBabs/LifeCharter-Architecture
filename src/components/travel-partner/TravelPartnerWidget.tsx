@@ -335,7 +335,7 @@ export default function TravelPartnerWidget() {
         style={getStyle()}
         className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
         onMouseDown={startDrag}
-        onClick={(e) => {
+        onClick={() => {
           // Only open if not dragging
           if (!dragging) setIsOpen(true);
         }}
