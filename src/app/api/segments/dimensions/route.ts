@@ -23,22 +23,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "segmentId and dimensions required" }, { status: 400 });
   }
 
-  for (const d of dimensions as Array<{ key: string; score: number }>) {
-    const score = Math.max(0, Math.min(100, Math.round(Number(d.score))));
-    if (!d.key || Number.isNaN(score)) continue;
-    const health = healthFor(score);
-    const { data: updated } = await supabase
-      .from("segment_dimensions")
-      .update({ score, health, updated_at: new Date().toISOString() })
-      .eq("segment_id", segmentId)
-      .eq("dimension_key", d.key)
-      .select("id");
-    if (!updated || updated.length === 0) {
-      await supabase
+  await Promise.all(
+    (dimensions as Array<{ key: string; score: number }>).map(async (d) => {
+      const score = Math.max(0, Math.min(100, Math.round(Number(d.score))));
+      if (!d.key || Number.isNaN(score)) return;
+      const health = healthFor(score);
+      const { data: updated } = await supabase
         .from("segment_dimensions")
-        .insert({ segment_id: segmentId, dimension_key: d.key, score, health });
-    }
-  }
+        .update({ score, health, updated_at: new Date().toISOString() })
+        .eq("segment_id", segmentId)
+        .eq("dimension_key", d.key)
+        .select("id");
+      if (!updated || updated.length === 0) {
+        await supabase
+          .from("segment_dimensions")
+          .insert({ segment_id: segmentId, dimension_key: d.key, score, health });
+      }
+    })
+  );
 
-  return NextResponse.json({ ok: true });
+  // Return the freshly-written state so the client can apply it directly
+  // (no separate reconcile read that could race the writes).
+  const { data: fresh } = await supabase
+    .from("segment_dimensions")
+    .select("dimension_key, score, health")
+    .eq("segment_id", segmentId);
+
+  return NextResponse.json(
+    { ok: true, dimensions: fresh ?? [] },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

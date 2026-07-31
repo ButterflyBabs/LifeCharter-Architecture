@@ -77,31 +77,38 @@ export default function SegmentsPage() {
 
   const saveEdit = async (segId: number) => {
     setSaving(true);
-    const newDims = DIMENSION_ORDER.map((k) => ({
+    // Fallback to the values we just set; replaced by the server's fresh copy.
+    let dims: DimensionScore[] = DIMENSION_ORDER.map((k) => ({
       dimension_key: k,
       score: editScores[k] ?? 70,
       health: healthFor(editScores[k] ?? 70),
     }));
-    await fetch("/api/segments/dimensions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        segmentId: segId,
-        dimensions: DIMENSION_ORDER.map((k) => ({ key: k, score: editScores[k] ?? 70 })),
-      }),
-    }).catch(() => {});
-    // Reflect the change immediately, then reconcile with a fresh fetch.
+    try {
+      const res = await fetch("/api/segments/dimensions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          segmentId: segId,
+          dimensions: DIMENSION_ORDER.map((k) => ({ key: k, score: editScores[k] ?? 70 })),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.dimensions) && data.dimensions.length) dims = data.dimensions;
+      }
+    } catch {
+      /* keep local dims */
+    }
     setBusinesses((prev) =>
       prev?.map((b) => ({
         ...b,
         segments: b.segments.map((s) =>
-          s.id === segId ? { ...s, segment_dimensions: newDims } : s
+          s.id === segId ? { ...s, segment_dimensions: dims } : s
         ),
       })) ?? null
     );
     setSaving(false);
     setEditingId(null);
-    load();
   };
 
   return (
