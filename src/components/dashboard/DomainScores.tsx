@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
@@ -44,7 +45,23 @@ const domainColors: Record<string, string> = {
   Sustainability: "#b8a898",
 };
 
-export function DomainScores({ scores = defaultScores }: DomainScoresProps) {
+export function DomainScores(props: DomainScoresProps) {
+  const [live, setLive] = useState<DomainScore[] | null>(null);
+
+  useEffect(() => {
+    if (props.scores) return;
+    fetch("/api/alignment")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasData) {
+          const domains = d.domains as Array<{ name: string; score: number; icon: string }>;
+          setLive(domains.map((x) => ({ name: x.name, score: x.score, change: 0, icon: x.icon })));
+        }
+      })
+      .catch(() => {});
+  }, [props.scores]);
+
+  const scores = props.scores ?? live ?? defaultScores;
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">

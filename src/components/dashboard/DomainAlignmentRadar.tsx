@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import dynamic from "next/dynamic";
 
@@ -57,7 +58,30 @@ const data = [
   { domain: "Sustainability", you: 74, ideal: 85 },
 ];
 
-export function DomainAlignmentRadar() {
+interface RadarDatum {
+  domain: string;
+  you: number;
+  ideal: number;
+}
+
+export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }) {
+  const [live, setLive] = useState<RadarDatum[] | null>(null);
+
+  useEffect(() => {
+    if (propData) return;
+    fetch("/api/alignment")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasData) {
+          const domains = d.domains as Array<{ name: string; score: number }>;
+          setLive(domains.map((x) => ({ domain: x.name, you: x.score, ideal: 90 })));
+        }
+      })
+      .catch(() => {});
+  }, [propData]);
+
+  const chartData = propData ?? live ?? data;
+
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
@@ -66,7 +90,7 @@ export function DomainAlignmentRadar() {
       <CardContent className="p-6">
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
               <PolarGrid
                 stroke="#e8e4f0"
                 strokeOpacity={0.3}

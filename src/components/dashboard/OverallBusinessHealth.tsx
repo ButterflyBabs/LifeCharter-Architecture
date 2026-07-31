@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
@@ -10,12 +11,32 @@ interface OverallBusinessHealthProps {
   description?: string;
 }
 
-export function OverallBusinessHealth({
-  score = 68,
-  status = "Growth",
-  focusAreas = ["Sales", "Finance", "Systems"],
-  description = "You're building momentum. Align your systems and cash flow to scale with ease and clarity.",
-}: OverallBusinessHealthProps) {
+export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
+  const [live, setLive] = useState<{
+    overall: number;
+    status: string;
+    focusAreas: string[];
+    description: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (props.score !== undefined) return;
+    fetch("/api/alignment")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasData) setLive(d);
+      })
+      .catch(() => {});
+  }, [props.score]);
+
+  const score = props.score ?? live?.overall ?? 68;
+  const status = props.status ?? live?.status ?? "Growth";
+  const focusAreas = props.focusAreas ?? live?.focusAreas ?? ["Sales", "Finance", "Systems"];
+  const description =
+    props.description ??
+    live?.description ??
+    "You're building momentum. Align your systems and cash flow to scale with ease and clarity.";
+
   // Calculate stroke dasharray for circular progress
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
