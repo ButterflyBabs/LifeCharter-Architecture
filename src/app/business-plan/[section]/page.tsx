@@ -109,7 +109,7 @@ export default function BusinessPlanSectionPage() {
       {/* Breadcrumb */}
       <Link 
         href="/business-plan"
-        className="inline-flex items-center text-sm text-[#B9A9A9] hover:text-[#1F315B] dark:hover:text-[#F6F1E8] mb-6"
+        className="inline-flex items-center text-sm text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-1" />
         Back to Business Plan
@@ -118,23 +118,23 @@ export default function BusinessPlanSectionPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-[#D4AF63]/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-[#c9a227]/10 flex items-center justify-center">
             {meta.icon}
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               {meta.title}
             </h1>
-            <p className="text-[#B9A9A9] mb-3">
+            <p className="text-[#b8a898] mb-3">
               {meta.description}
             </p>
             <div className="flex items-center gap-2 text-sm">
-              <Brain className="w-4 h-4 text-[#2E7C83]" />
-              <span className="text-[#B9A9A9]">Informed by:</span>
+              <Brain className="w-4 h-4 text-[#4a9b9b]" />
+              <span className="text-[#b8a898]">Informed by:</span>
               {meta.dataSources.map((source, i) => (
                 <span key={i}>
-                  <span className="text-[#1F315B] dark:text-[#F6F1E8]">{source}</span>
-                  {i < meta.dataSources.length - 1 && <span className="text-[#B9A9A9]">, </span>}
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{source}</span>
+                  {i < meta.dataSources.length - 1 && <span className="text-[#b8a898]">, </span>}
                 </span>
               ))}
             </div>
@@ -143,12 +143,12 @@ export default function BusinessPlanSectionPage() {
       </div>
 
       {/* Info Card */}
-      <Card className="mb-6 border-[#D4AF63]/20 bg-[#D4AF63]/5">
+      <Card className="mb-6 border-[#c9a227]/20 bg-[#c9a227]/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+            <Sparkles className="w-5 h-5 text-[#c9a227] mt-0.5" />
             <div>
-              <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                 <strong>How this works:</strong> Answer the targeted questions below. 
                 The AI uses your Brain, Soul, and Profit assessment results combined with 
                 your specific answers to generate a personalized business plan section. 

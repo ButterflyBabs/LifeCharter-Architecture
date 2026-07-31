@@ -23,11 +23,11 @@ const categories: IntegrationCategory[] = [
   { title: "AI Providers", items: [
     { id: "openai", name: "OpenAI", description: "GPT-4, GPT-3.5, DALL-E", icon: "🤖", color: "#10A37F" },
     { id: "anthropic", name: "Anthropic", description: "Claude AI models", icon: "🧠", color: "#D4A574" },
-    { id: "moonshot", name: "Moonshot AI", description: "Kimi K2.5 and other models", icon: "🌙", color: "#1F315B" },
+    { id: "moonshot", name: "Moonshot AI", description: "Kimi K2.5 and other models", icon: "🌙", color: "#1a2b4a" },
     { id: "googleai", name: "Google AI", description: "Gemini, PaLM models", icon: "🔮", color: "#4285F4" },
-    { id: "cohere", name: "Cohere", description: "Enterprise NLP models", icon: "📝", color: "#D4AF63" },
+    { id: "cohere", name: "Cohere", description: "Enterprise NLP models", icon: "📝", color: "#c9a227" },
     { id: "huggingface", name: "Hugging Face", description: "Open-source ML models", icon: "🤗", color: "#FFD21E" },
-    { id: "perplexity", name: "Perplexity", description: "AI search and answers", icon: "🔍", color: "#1F315B" },
+    { id: "perplexity", name: "Perplexity", description: "AI search and answers", icon: "🔍", color: "#1a2b4a" },
     { id: "deepseek", name: "DeepSeek", description: "Advanced reasoning models", icon: "🌊", color: "#4F46E5" },
     { id: "mistral", name: "Mistral AI", description: "Open-source LLMs", icon: "💨", color: "#FF6B35" },
     { id: "stability", name: "Stability AI", description: "Image generation models", icon: "🎨", color: "#7B2CBF" },
@@ -41,7 +41,7 @@ const categories: IntegrationCategory[] = [
     { id: "namecheap", name: "Namecheap", description: "Domain registration", icon: "🌐", color: "#DE3723" },
     { id: "godaddy", name: "GoDaddy", description: "Domain and hosting", icon: "🐶", color: "#00A63F" },
     { id: "hover", name: "Hover", description: "Domain registration", icon: "🎯", color: "#FF6B6B" },
-    { id: "dnsimple", name: "DNSimple", description: "DNS management", icon: "🔧", color: "#5E3B6C" },
+    { id: "dnsimple", name: "DNSimple", description: "DNS management", icon: "🔧", color: "#7b6b8d" },
     { id: "vercel", name: "Vercel", description: "Frontend deployment", icon: "▲", color: "#000000" },
     { id: "netlify", name: "Netlify", description: "Web hosting and CI/CD", icon: "🌐", color: "#00C7B7" },
     { id: "heroku", name: "Heroku", description: "Cloud platform", icon: "🟣", color: "#430098" },
@@ -61,7 +61,7 @@ const categories: IntegrationCategory[] = [
     { id: "ringcentral", name: "RingCentral", description: "Business communications", icon: "🔔", color: "#FF8800" },
     { id: "dialpad", name: "Dialpad", description: "AI-powered calling", icon: "📞", color: "#00B2A9" },
     { id: "justcall", name: "JustCall", description: "Business phone system", icon: "☎️", color: "#FF6B6B" },
-    { id: "krisp", name: "Krisp", description: "AI noise cancellation", icon: "🔇", color: "#1F315B" }
+    { id: "krisp", name: "Krisp", description: "AI noise cancellation", icon: "🔇", color: "#1a2b4a" }
   ]},
   { title: "CRM & Sales", items: [
     { id: "ghl", name: "GoHighLevel", description: "CRM, funnels, and automation", icon: "📊", color: "#3B82F6" },
@@ -490,11 +490,11 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
   return (
     <div className="space-y-4">
       {/* Integration Limit Header */}
-      <div className="p-4 bg-[#1F315B]/5 rounded-lg">
+      <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Integration Slots</h4>
-            <p className="text-sm text-[#B9A9A9]">
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Integration Slots</h4>
+            <p className="text-sm text-[#b8a898]">
               {isUnlimited ? "Unlimited integrations (VIP Plan)" : `${currentIntegrationCount} of ${limit} used`}
             </p>
           </div>
@@ -523,15 +523,15 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
           <Card key={category.title} className="overflow-hidden">
             <button
               onClick={() => toggleCategory(category.title)}
-              className="w-full p-4 flex items-center justify-between hover:bg-[#1F315B]/5 transition-colors"
+              className="w-full p-4 flex items-center justify-between hover:bg-[#1a2b4a]/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{category.title}</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{category.title}</span>
                 {connectedCount > 0 && (
                   <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">{connectedCount} connected</span>
                 )}
               </div>
-              {isExpanded ? <ChevronUp className="w-5 h-5 text-[#B9A9A9]" /> : <ChevronDown className="w-5 h-5 text-[#B9A9A9]" />}
+              {isExpanded ? <ChevronUp className="w-5 h-5 text-[#b8a898]" /> : <ChevronDown className="w-5 h-5 text-[#b8a898]" />}
             </button>
 
             {isExpanded && (
@@ -542,15 +542,15 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
                   const canConnect = isConnected || canConnectMore;
 
                   return (
-                    <div key={integration.id} className={`p-3 rounded-lg border transition-all ${isConnected ? "border-green-500/30 bg-green-500/5" : "border-[#1F315B]/10"} ${!canConnect ? "opacity-60" : ""}`}>
+                    <div key={integration.id} className={`p-3 rounded-lg border transition-all ${isConnected ? "border-green-500/30 bg-green-500/5" : "border-[#1a2b4a]/10"} ${!canConnect ? "opacity-60" : ""}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${integration.color}20` }}>
                             {integration.icon}
                           </div>
                           <div>
-                            <h5 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{integration.name}</h5>
-                            <p className="text-xs text-[#B9A9A9]">{integration.description}</p>
+                            <h5 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{integration.name}</h5>
+                            <p className="text-xs text-[#b8a898]">{integration.description}</p>
                           </div>
                         </div>
 
@@ -569,15 +569,15 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
 
                       {/* Settings Panel */}
                       {isConnected && isExpandedSettings && (
-                        <div className="mt-3 pt-3 border-t border-[#1F315B]/10 space-y-3">
+                        <div className="mt-3 pt-3 border-t border-[#1a2b4a]/10 space-y-3">
                           <div>
-                            <label className="block text-sm text-[#B9A9A9] mb-2">API Key / Token</label>
+                            <label className="block text-sm text-[#b8a898] mb-2">API Key / Token</label>
                             <div className="flex gap-2">
                               <Input type="password" placeholder="Enter your API key" value={apiKeys[integration.id] || ""} onChange={(e) => updateApiKey(integration.id, e.target.value)} className="flex-1" />
                               <Button variant="outline" size="sm">Save</Button>
                             </div>
                           </div>
-                          <p className="text-xs text-[#B9A9A9]">Your API key is encrypted and stored securely.</p>
+                          <p className="text-xs text-[#b8a898]">Your API key is encrypted and stored securely.</p>
                         </div>
                       )}
                     </div>

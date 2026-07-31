@@ -13,9 +13,9 @@ export function Card({ children, className, variant = "default", style }: CardPr
     <div
       className={cn(
         "rounded-[16px] overflow-hidden transition-all duration-200",
-        variant === "default" && "bg-card text-card-foreground shadow-[0_4px_20px_rgba(31,49,91,0.08)]",
+        variant === "default" && "bg-card text-card-foreground shadow-[0_4px_20px_rgba(26,43,74,0.08)]",
         variant === "glass" && "bg-card/80 backdrop-blur-sm text-card-foreground",
-        variant === "bordered" && "bg-card text-card-foreground border border-[#D4AF63]/30 shadow-[0_4px_20px_rgba(31,49,91,0.08)]",
+        variant === "bordered" && "bg-card text-card-foreground border border-[#c9a227]/30 shadow-[0_4px_20px_rgba(26,43,74,0.08)]",
         className
       )}
       style={style}

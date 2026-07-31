@@ -40,7 +40,7 @@ export default function HealthTrendHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>The trend is calculated by:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Recording your Overall Business Health score at regular intervals</li>
             <li>Plotting these scores on a timeline</li>
             <li>Calculating the moving average to smooth out short-term fluctuations</li>
@@ -56,7 +56,7 @@ export default function HealthTrendHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>You can view trends across multiple timeframes:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Weekly:</strong> Best for seeing immediate impact of recent actions</li>
             <li><strong>Monthly:</strong> Good for identifying short-term patterns</li>
             <li><strong>Quarterly:</strong> Ideal for strategic review and seasonal patterns</li>
@@ -83,7 +83,7 @@ export default function HealthTrendHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>To create a positive trend:</p>
-          <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Focus on your lowest-scoring domains first—they have the most upside</li>
             <li>Make consistent small improvements rather than sporadic big efforts</li>
             <li>Track leading indicators (actions) not just lagging indicators (scores)</li>
@@ -111,34 +111,34 @@ export default function HealthTrendHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Help Center
       </Link>
 
       {/* Hero Section */}
       <div className="text-center mb-10">
-        <div className="w-16 h-16 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center mx-auto mb-4">
-          <TrendingUp className="w-8 h-8 text-[#5E3B6C]" />
+        <div className="w-16 h-16 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center mx-auto mb-4">
+          <TrendingUp className="w-8 h-8 text-[#7b6b8d]" />
         </div>
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
           Business Health Trend
         </h1>
-        <p className="text-lg text-[#B9A9A9] max-w-2xl mx-auto">
+        <p className="text-lg text-[#b8a898] max-w-2xl mx-auto">
           Track your business trajectory over time
         </p>
       </div>
 
       {/* What is Health Trend */}
-      <Card className="mb-8 border-[#D4AF63]/30">
+      <Card className="mb-8 border-[#c9a227]/30">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <LineChart className="w-5 h-5 text-[#D4AF63]" />
+            <LineChart className="w-5 h-5 text-[#c9a227]" />
             What is the Business Health Trend?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Your <strong>Business Health Trend</strong> is the story your data tells over time. While a single 
             score shows where you are today, the trend reveals where you are heading—and how fast.
           </p>
@@ -167,19 +167,19 @@ export default function HealthTrendHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#D4AF63]" />
+            <Target className="w-5 h-5 text-[#c9a227]" />
             Why Trends Matter More Than Single Scores
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#2E7C83] font-bold">1</span>
+              <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#4a9b9b] font-bold">1</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Early Warning System</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Early Warning System</h4>
+                <p className="text-sm text-[#b8a898]">
                   A declining trend alerts you to problems before they become crises. You can intervene 
                   while issues are still manageable.
                 </p>
@@ -187,12 +187,12 @@ export default function HealthTrendHelpPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#5E3B6C] font-bold">2</span>
+              <div className="w-10 h-10 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#7b6b8d] font-bold">2</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Validation of Actions</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Validation of Actions</h4>
+                <p className="text-sm text-[#b8a898]">
                   When you invest time or money in improvements, the trend shows if those investments 
                   are paying off. No more guessing.
                 </p>
@@ -200,12 +200,12 @@ export default function HealthTrendHelpPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#D4AF63]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#D4AF63] font-bold">3</span>
+              <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#c9a227] font-bold">3</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Momentum Awareness</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Momentum Awareness</h4>
+                <p className="text-sm text-[#b8a898]">
                   Trends reveal momentum. A rising trend builds confidence and attracts opportunities. 
                   A falling trend signals the need for decisive action.
                 </p>
@@ -213,12 +213,12 @@ export default function HealthTrendHelpPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#2E7C83] font-bold">4</span>
+              <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#4a9b9b] font-bold">4</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Strategic Planning</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Strategic Planning</h4>
+                <p className="text-sm text-[#b8a898]">
                   Understanding your trajectory helps you set realistic goals and allocate resources 
                   where they will have the most impact.
                 </p>
@@ -232,38 +232,38 @@ export default function HealthTrendHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#D4AF63]" />
+            <Calendar className="w-5 h-5 text-[#c9a227]" />
             Reading Your Trend
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Short-Term (Weekly)</h4>
-              <p className="text-sm text-[#B9A9A9] mb-2">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Short-Term (Weekly)</h4>
+              <p className="text-sm text-[#b8a898] mb-2">
                 Shows immediate impact of recent actions. Useful for testing quick changes.
               </p>
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+              <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 <strong>Best for:</strong> Checking if a new tactic is working, spotting urgent issues
               </p>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Medium-Term (Monthly)</h4>
-              <p className="text-sm text-[#B9A9A9] mb-2">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Medium-Term (Monthly)</h4>
+              <p className="text-sm text-[#b8a898] mb-2">
                 Reveals patterns and the effectiveness of your monthly focus areas.
               </p>
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+              <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 <strong>Best for:</strong> Monthly reviews, adjusting priorities, tracking campaign results
               </p>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Long-Term (Quarterly/Yearly)</h4>
-              <p className="text-sm text-[#B9A9A9] mb-2">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Long-Term (Quarterly/Yearly)</h4>
+              <p className="text-sm text-[#b8a898] mb-2">
                 Shows your true trajectory and the cumulative effect of your strategy.
               </p>
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+              <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 <strong>Best for:</strong> Strategic planning, investor updates, annual reviews
               </p>
             </div>
@@ -275,7 +275,7 @@ export default function HealthTrendHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#D4AF63]" />
+            <HelpCircle className="w-5 h-5 text-[#c9a227]" />
             Frequently Asked Questions
           </CardTitle>
         </CardHeader>
@@ -284,26 +284,26 @@ export default function HealthTrendHelpPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="border border-[#1F315B]/10 rounded-lg overflow-hidden"
+                className="border border-[#1a2b4a]/10 rounded-lg overflow-hidden"
               >
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1F315B]/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a2b4a]/5 transition-colors"
                 >
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8] pr-4">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] pr-4">
                     {faq.question}
                   </span>
                   {openFAQ === index ? (
-                    <ChevronUp className="w-5 h-5 text-[#D4AF63] flex-shrink-0" />
+                    <ChevronUp className="w-5 h-5 text-[#c9a227] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   )}
                 </button>
                 {openFAQ === index && (
-                  <div className="px-4 pb-4 text-[#1F315B] dark:text-[#F6F1E8]">
-                    <div className="pt-2 border-t border-[#1F315B]/10">
+                  <div className="px-4 pb-4 text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <div className="pt-2 border-t border-[#1a2b4a]/10">
                       {typeof faq.answer === 'string' ? (
-                        <p className="text-[#5E3B6C] dark:text-[#CDBED6] leading-relaxed">
+                        <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
                           {faq.answer}
                         </p>
                       ) : (
@@ -322,7 +322,7 @@ export default function HealthTrendHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+            <Lightbulb className="w-5 h-5 text-[#c9a227]" />
             Making the Most of Your Trend
           </CardTitle>
         </CardHeader>
@@ -376,23 +376,23 @@ export default function HealthTrendHelpPage() {
       </Card>
 
       {/* CTA */}
-      <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-8 text-center">
-          <TrendingUp className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
+          <TrendingUp className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">See Your Trend</h2>
-          <p className="text-[#CDBED6] mb-6 max-w-lg mx-auto">
+          <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             View your Business Health Trend on the Dashboard. Track your progress, 
             identify patterns, and make data-driven decisions.
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/dashboard">
-              <Button className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90">
+              <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <LineChart className="w-4 h-4 mr-2" />
                 View My Trend
               </Button>
             </Link>
             <Link href="/help/overall-health">
-              <Button variant="outline" className="border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+              <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Learn About Health Scores
               </Button>
             </Link>
@@ -402,10 +402,10 @@ export default function HealthTrendHelpPage() {
 
       {/* Quote */}
       <div className="mt-8 text-center">
-        <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
+        <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;The trend is your friend—until it ends. Stay vigilant, stay adaptive, stay aligned.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
       </div>
     </div>
   );

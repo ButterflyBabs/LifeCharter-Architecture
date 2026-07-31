@@ -36,20 +36,20 @@ const defaultMoves: Move[] = [
 ];
 
 const impactColors = {
-  High: "bg-[#5E3B6C] text-[#F6F1E8]",
-  Medium: "bg-[#2E7C83] text-[#F6F1E8]",
-  Low: "bg-[#CDBED6] text-[#1F315B]",
+  High: "bg-[#7b6b8d] text-[#F8F5F0]",
+  Medium: "bg-[#4a9b9b] text-[#F8F5F0]",
+  Low: "bg-[#e8e4f0] text-[#1a2b4a]",
 };
 
 const numberColors = {
-  1: "bg-[#5E3B6C]",
-  2: "bg-[#2E7C83]",
-  3: "bg-[#CDBED6] text-[#1F315B]",
+  1: "bg-[#7b6b8d]",
+  2: "bg-[#4a9b9b]",
+  3: "bg-[#e8e4f0] text-[#1a2b4a]",
 };
 
 export function NextThreeMoves({ moves = defaultMoves }: NextThreeMovesProps) {
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
         <CardTitle>Next 3 Moves</CardTitle>
       </CardHeader>
@@ -58,12 +58,12 @@ export function NextThreeMoves({ moves = defaultMoves }: NextThreeMovesProps) {
           {moves.map((move) => (
             <div
               key={move.id}
-              className="flex items-center gap-4 p-3 rounded-xl bg-[#1F315B]/5 dark:bg-[#CDBED6]/5 hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors"
+              className="flex items-center gap-4 p-3 rounded-xl bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/5 hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10 transition-colors"
             >
               {/* Number badge */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ${
-                  numberColors[move.id as keyof typeof numberColors] || "bg-[#5E3B6C]"
+                  numberColors[move.id as keyof typeof numberColors] || "bg-[#7b6b8d]"
                 }`}
               >
                 {move.id}
@@ -71,10 +71,10 @@ export function NextThreeMoves({ moves = defaultMoves }: NextThreeMovesProps) {
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-[#1F315B] dark:text-[#F6F1E8] truncate">
+                <h3 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
                   {move.title}
                 </h3>
-                <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+                <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                   {move.subtitle}
                 </p>
               </div>

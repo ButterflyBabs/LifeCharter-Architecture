@@ -362,7 +362,7 @@ INVITATION:
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
-      <Link href="/daily-compass" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Compass
       </Link>
@@ -370,14 +370,14 @@ INVITATION:
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-[#2E7C83]" />
+            <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-[#4a9b9b]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Scripts & Templates
               </h1>
-              <p className="text-[#B9A9A9]">
+              <p className="text-[#b8a898]">
                 AI-powered sales scripts, emails, and objection handlers
               </p>
             </div>
@@ -397,16 +397,16 @@ INVITATION:
 
       {/* AI Generator Modal */}
       {showAIGenerator && (
-        <Card className="mb-6 border-[#D4AF63]/30">
+        <Card className="mb-6 border-[#c9a227]/30">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-[#D4AF63]" />
+              <Wand2 className="w-5 h-5 text-[#c9a227]" />
               Generate Custom Script with AI
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm text-[#B9A9A9] mb-2 block">
+              <label className="text-sm text-[#b8a898] mb-2 block">
                 Describe the situation or what you need
               </label>
               <Textarea
@@ -443,17 +443,17 @@ INVITATION:
 
       {/* Create New Script Modal */}
       {showCreateModal && (
-        <Card className="mb-6 border-[#2E7C83]/30">
+        <Card className="mb-6 border-[#4a9b9b]/30">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Plus className="w-5 h-5 text-[#2E7C83]" />
+              <Plus className="w-5 h-5 text-[#4a9b9b]" />
               Create New Script/Template
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-[#B9A9A9] mb-1 block">Title</label>
+                <label className="text-sm text-[#b8a898] mb-1 block">Title</label>
                 <Input
                   placeholder="e.g., Discovery Call Script"
                   value={newScriptTitle}
@@ -461,14 +461,14 @@ INVITATION:
                 />
               </div>
               <div>
-                <label className="text-sm text-[#B9A9A9] mb-1 block">Item Type</label>
+                <label className="text-sm text-[#b8a898] mb-1 block">Item Type</label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setNewScriptItemType("script")}
                     className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
                       newScriptItemType === "script"
-                        ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#2E7C83]"
-                        : "border-[#1F315B]/20 text-[#B9A9A9]"
+                        ? "border-[#4a9b9b] bg-[#4a9b9b]/10 text-[#4a9b9b]"
+                        : "border-[#1a2b4a]/20 text-[#b8a898]"
                     }`}
                   >
                     Script
@@ -477,8 +477,8 @@ INVITATION:
                     onClick={() => setNewScriptItemType("template")}
                     className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
                       newScriptItemType === "template"
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#D4AF63]"
-                        : "border-[#1F315B]/20 text-[#B9A9A9]"
+                        ? "border-[#c9a227] bg-[#c9a227]/10 text-[#c9a227]"
+                        : "border-[#1a2b4a]/20 text-[#b8a898]"
                     }`}
                   >
                     Template
@@ -488,13 +488,13 @@ INVITATION:
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
+                <label className="text-sm text-[#b8a898] mb-1 block">Category</label>
                 {!showNewCategoryInput ? (
                   <div className="flex gap-2">
                     <select
                       value={newScriptCategory}
                       onChange={(e) => setNewScriptCategory(e.target.value as Category)}
-                      className="flex-1 p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                      className="flex-1 p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                     >
                       {categories.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -537,11 +537,11 @@ INVITATION:
                 )}
               </div>
               <div>
-                <label className="text-sm text-[#B9A9A9] mb-1 block">Communication Type</label>
+                <label className="text-sm text-[#b8a898] mb-1 block">Communication Type</label>
                 <select
                   value={newScriptType}
                   onChange={(e) => setNewScriptType(e.target.value as ScriptType)}
-                  className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                  className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                 >
                   <option value="sales">Sales Call</option>
                   <option value="email">Email</option>
@@ -551,7 +551,7 @@ INVITATION:
               </div>
             </div>
             <div>
-              <label className="text-sm text-[#B9A9A9] mb-1 block">Description</label>
+              <label className="text-sm text-[#b8a898] mb-1 block">Description</label>
               <Input
                 placeholder="Brief description of when/why to use this..."
                 value={newScriptDescription}
@@ -570,8 +570,8 @@ INVITATION:
                 Get AI Help Writing This Script
               </Button>
             ) : (
-              <div className="p-4 bg-[#D4AF63]/10 rounded-lg space-y-3">
-                <label className="text-sm text-[#B9A9A9] block">
+              <div className="p-4 bg-[#c9a227]/10 rounded-lg space-y-3">
+                <label className="text-sm text-[#b8a898] block">
                   Describe what you want the script to accomplish
                 </label>
                 <Textarea
@@ -610,7 +610,7 @@ INVITATION:
             )}
             
             <div>
-              <label className="text-sm text-[#B9A9A9] mb-1 block">Script Content</label>
+              <label className="text-sm text-[#b8a898] mb-1 block">Script Content</label>
               <Textarea
                 placeholder="Paste or type your script here..."
                 value={newScriptContent}
@@ -619,7 +619,7 @@ INVITATION:
               />
             </div>
             <div>
-              <label className="text-sm text-[#B9A9A9] mb-1 block">Tags (comma separated)</label>
+              <label className="text-sm text-[#b8a898] mb-1 block">Tags (comma separated)</label>
               <Input
                 placeholder="e.g., discovery, sales, follow-up"
                 value={newScriptTags}
@@ -654,7 +654,7 @@ INVITATION:
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B9A9A9]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b8a898]" />
           <Input
             placeholder="Search scripts and templates..."
             value={searchQuery}
@@ -666,7 +666,7 @@ INVITATION:
           <select
             value={selectedItemType}
             onChange={(e) => setSelectedItemType(e.target.value as ItemType | "all")}
-            className="px-4 py-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+            className="px-4 py-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
           >
             <option value="all">All Items</option>
             <option value="script">Scripts</option>
@@ -675,7 +675,7 @@ INVITATION:
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value as Category | "All")}
-            className="px-4 py-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+            className="px-4 py-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
           >
             <option value="All">All Categories</option>
             {categories.map(cat => (
@@ -691,8 +691,8 @@ INVITATION:
           onClick={() => setSelectedType("all")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
             selectedType === "all"
-              ? "bg-[#1F315B] text-[#F6F1E8]"
-              : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/20"
+              ? "bg-[#1a2b4a] text-[#F8F5F0]"
+              : "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/20"
           }`}
         >
           <MessageSquare className="w-4 h-4" />
@@ -706,8 +706,8 @@ INVITATION:
               onClick={() => setSelectedType(type.id as ScriptType)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                 selectedType === type.id
-                  ? "bg-[#1F315B] text-[#F6F1E8]"
-                  : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/20"
+                  ? "bg-[#1a2b4a] text-[#F8F5F0]"
+                  : "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/20"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -722,7 +722,7 @@ INVITATION:
         {filteredScripts.map((script) => (
           <Card key={script.id} className="overflow-hidden">
             <div
-              className="p-4 cursor-pointer hover:bg-[#1F315B]/5 transition-colors"
+              className="p-4 cursor-pointer hover:bg-[#1a2b4a]/5 transition-colors"
               onClick={() => setExpandedScript(expandedScript === script.id ? null : script.id)}
             >
               <div className="flex items-start justify-between">
@@ -730,31 +730,31 @@ INVITATION:
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       script.itemType === "script" 
-                        ? "bg-[#2E7C83]/20 text-[#2E7C83]" 
-                        : "bg-[#D4AF63]/20 text-[#D4AF63]"
+                        ? "bg-[#4a9b9b]/20 text-[#4a9b9b]" 
+                        : "bg-[#c9a227]/20 text-[#c9a227]"
                     }`}>
                       {script.itemType === "script" ? "📜 Script" : "📋 Template"}
                     </span>
-                    <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full">
+                    <span className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full">
                       {script.category}
                     </span>
                     {script.isFavorite && (
-                      <Star className="w-4 h-4 text-[#D4AF63] fill-[#D4AF63]" />
+                      <Star className="w-4 h-4 text-[#c9a227] fill-[#c9a227]" />
                     )}
                   </div>
-                  <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                  <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                     {script.title}
                   </h3>
                   {script.description && (
-                    <p className="text-sm text-[#B9A9A9] mt-1">{script.description}</p>
+                    <p className="text-sm text-[#b8a898] mt-1">{script.description}</p>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-sm text-[#B9A9A9]">
+                  <div className="flex items-center gap-4 mt-2 text-sm text-[#b8a898]">
                     <span>Used {script.usageCount} times</span>
                     {script.lastUsed && <span>Last used: {script.lastUsed}</span>}
                     <span>Created: {script.createdAt}</span>
                     <div className="flex gap-1">
                       {script.tags.map(tag => (
-                        <span key={tag} className="text-xs px-2 py-0.5 bg-[#1F315B]/10 rounded-full">
+                        <span key={tag} className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 rounded-full">
                           #{tag}
                         </span>
                       ))}
@@ -767,23 +767,23 @@ INVITATION:
                       e.stopPropagation();
                       toggleFavorite(script.id);
                     }}
-                    className="p-2 hover:bg-[#1F315B]/10 rounded-lg"
+                    className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg"
                   >
-                    <Star className={`w-5 h-5 ${script.isFavorite ? "text-[#D4AF63] fill-[#D4AF63]" : "text-[#B9A9A9]"}`} />
+                    <Star className={`w-5 h-5 ${script.isFavorite ? "text-[#c9a227] fill-[#c9a227]" : "text-[#b8a898]"}`} />
                   </button>
                   {expandedScript === script.id ? (
-                    <ChevronUp className="w-5 h-5 text-[#B9A9A9]" />
+                    <ChevronUp className="w-5 h-5 text-[#b8a898]" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9]" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898]" />
                   )}
                 </div>
               </div>
             </div>
 
             {expandedScript === script.id && (
-              <CardContent className="border-t border-[#1F315B]/10 pt-4">
-                <div className="bg-[#1F315B]/5 p-4 rounded-lg mb-4">
-                  <pre className="text-sm text-[#1F315B] dark:text-[#F6F1E8] whitespace-pre-wrap font-sans">
+              <CardContent className="border-t border-[#1a2b4a]/10 pt-4">
+                <div className="bg-[#1a2b4a]/5 p-4 rounded-lg mb-4">
+                  <pre className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap font-sans">
                     {script.content}
                   </pre>
                 </div>
@@ -817,28 +817,28 @@ INVITATION:
         <CardContent className="p-6">
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {scripts.length}
               </p>
-              <p className="text-sm text-[#B9A9A9]">Total Scripts</p>
+              <p className="text-sm text-[#b8a898]">Total Scripts</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {scripts.filter(s => s.isFavorite).length}
               </p>
-              <p className="text-sm text-[#B9A9A9]">Favorites</p>
+              <p className="text-sm text-[#b8a898]">Favorites</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {scripts.reduce((acc, s) => acc + s.usageCount, 0)}
               </p>
-              <p className="text-sm text-[#B9A9A9]">Total Uses</p>
+              <p className="text-sm text-[#b8a898]">Total Uses</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {scripts.filter(s => s.lastUsed === new Date().toISOString().split("T")[0]).length}
               </p>
-              <p className="text-sm text-[#B9A9A9]">Used Today</p>
+              <p className="text-sm text-[#b8a898]">Used Today</p>
             </div>
           </div>
         </CardContent>

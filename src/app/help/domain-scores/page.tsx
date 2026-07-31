@@ -34,14 +34,14 @@ export default function DomainScoresHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What are Domain Scores?",
-      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
+      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter Architecture framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
     },
     {
       question: "How are Domain Scores calculated?",
       answer: (
         <div className="space-y-2">
           <p>Domain Scores are calculated based on multiple factors:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Assessment Responses:</strong> Your answers to domain-specific questions</li>
             <li><strong>Completion Status:</strong> How thoroughly you have documented each domain</li>
             <li><strong>Metrics Integration:</strong> Connected data from your business tools (if enabled)</li>
@@ -84,7 +84,7 @@ export default function DomainScoresHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Improvement speed depends on the domain and your resources:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Quick Wins (1-4 weeks):</strong> Documentation, basic processes, simple automations</li>
             <li><strong>Medium-term (1-3 months):</strong> Marketing systems, sales processes, customer support</li>
             <li><strong>Long-term (3-12 months):</strong> Brand reputation, team culture, market position</li>
@@ -106,7 +106,7 @@ export default function DomainScoresHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Not necessarily. Consider both score AND impact:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Fix Critical First:</strong> Domains that are both low-scoring AND critical to operations</li>
             <li><strong>Quick Wins Second:</strong> Domains where small effort yields big score improvements</li>
             <li><strong>Strengths Third:</strong> High-scoring domains that could become competitive advantages</li>
@@ -128,55 +128,55 @@ export default function DomainScoresHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Help Center
       </Link>
 
       {/* Hero Section */}
       <div className="text-center mb-10">
-        <div className="w-16 h-16 rounded-full bg-[#2E7C83]/20 flex items-center justify-center mx-auto mb-4">
-          <Activity className="w-8 h-8 text-[#2E7C83]" />
+        <div className="w-16 h-16 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-4">
+          <Activity className="w-8 h-8 text-[#4a9b9b]" />
         </div>
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
           Domain Scores
         </h1>
-        <p className="text-lg text-[#B9A9A9] max-w-2xl mx-auto">
+        <p className="text-lg text-[#b8a898] max-w-2xl mx-auto">
           Understanding your 12-domain business health metrics
         </p>
       </div>
 
       {/* What are Domain Scores */}
-      <Card className="mb-8 border-[#D4AF63]/30">
+      <Card className="mb-8 border-[#c9a227]/30">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#D4AF63]" />
+            <Target className="w-5 h-5 text-[#c9a227]" />
             What are Domain Scores?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             <strong>Domain Scores</strong> provide a numerical snapshot (0-100) of each of the 12 business domains 
-            in your LifeCharter. Think of them as vital signs for your business—each score tells you 
+            in your LifeCharter Architecture. Think of them as vital signs for your business—each score tells you 
             how healthy, mature, and aligned that specific area is.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-[#2E7C83]" />
-                <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Granular Insight</h3>
+                <BarChart3 className="w-5 h-5 text-[#4a9b9b]" />
+                <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Granular Insight</h3>
               </div>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 See exactly which areas need attention versus which are strengths
               </p>
             </div>
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-[#5E3B6C]" />
-                <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Track Progress</h3>
+                <TrendingUp className="w-5 h-5 text-[#7b6b8d]" />
+                <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Track Progress</h3>
               </div>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 Monitor improvement over time as you implement changes
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function DomainScoresHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Activity className="w-5 h-5 text-[#D4AF63]" />
+            <Activity className="w-5 h-5 text-[#c9a227]" />
             Understanding Score Ranges
           </CardTitle>
         </CardHeader>
@@ -253,7 +253,7 @@ export default function DomainScoresHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-[#D4AF63]" />
+            <BarChart3 className="w-5 h-5 text-[#c9a227]" />
             The 12 Business Domains
           </CardTitle>
         </CardHeader>
@@ -273,13 +273,13 @@ export default function DomainScoresHelpPage() {
               { name: "Legal & Compliance", focus: "Protection and risk management" },
               { name: "Technology & Tools", focus: "Infrastructure and automation" }
             ].map((domain, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-[#1F315B]/5 rounded-lg">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#D4AF63]/20 text-[#D4AF63] text-xs font-bold flex items-center justify-center">
+              <div key={index} className="flex items-start gap-3 p-3 bg-[#1a2b4a]/5 rounded-lg">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#c9a227]/20 text-[#c9a227] text-xs font-bold flex items-center justify-center">
                   {index + 1}
                 </span>
                 <div>
-                  <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{domain.name}</h4>
-                  <p className="text-xs text-[#B9A9A9]">{domain.focus}</p>
+                  <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{domain.name}</h4>
+                  <p className="text-xs text-[#b8a898]">{domain.focus}</p>
                 </div>
               </div>
             ))}
@@ -291,7 +291,7 @@ export default function DomainScoresHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#D4AF63]" />
+            <HelpCircle className="w-5 h-5 text-[#c9a227]" />
             Frequently Asked Questions
           </CardTitle>
         </CardHeader>
@@ -300,26 +300,26 @@ export default function DomainScoresHelpPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="border border-[#1F315B]/10 rounded-lg overflow-hidden"
+                className="border border-[#1a2b4a]/10 rounded-lg overflow-hidden"
               >
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1F315B]/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a2b4a]/5 transition-colors"
                 >
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8] pr-4">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] pr-4">
                     {faq.question}
                   </span>
                   {openFAQ === index ? (
-                    <ChevronUp className="w-5 h-5 text-[#D4AF63] flex-shrink-0" />
+                    <ChevronUp className="w-5 h-5 text-[#c9a227] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   )}
                 </button>
                 {openFAQ === index && (
-                  <div className="px-4 pb-4 text-[#1F315B] dark:text-[#F6F1E8]">
-                    <div className="pt-2 border-t border-[#1F315B]/10">
+                  <div className="px-4 pb-4 text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <div className="pt-2 border-t border-[#1a2b4a]/10">
                       {typeof faq.answer === 'string' ? (
-                        <p className="text-[#5E3B6C] dark:text-[#CDBED6] leading-relaxed">
+                        <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
                           {faq.answer}
                         </p>
                       ) : (
@@ -338,40 +338,40 @@ export default function DomainScoresHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+            <Lightbulb className="w-5 h-5 text-[#c9a227]" />
             Tips for Improving Domain Scores
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#D4AF63]" />
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#c9a227]" />
                 Start with Assessment
               </h4>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 Complete the full assessment for any domain with a low score. Often, simply documenting 
                 what you have reveals quick wins and improvement opportunities.
               </p>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#D4AF63]" />
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#c9a227]" />
                 Focus on Connections
               </h4>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 Domains don&apos;t exist in isolation. Improving Customer Experience often boosts Sales. 
                 Better Operations supports Finance. Look for synergies.
               </p>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#D4AF63]" />
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#c9a227]" />
                 Use the AI Guide
               </h4>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 Ask your AI Business Guide for domain-specific recommendations. It can analyze your 
                 scores and suggest prioritized action steps.
               </p>
@@ -381,23 +381,23 @@ export default function DomainScoresHelpPage() {
       </Card>
 
       {/* CTA */}
-      <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-8 text-center">
-          <Activity className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
+          <Activity className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Ready to Check Your Scores?</h2>
-          <p className="text-[#CDBED6] mb-6 max-w-lg mx-auto">
+          <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             View your current Domain Scores on the Dashboard, complete assessments to update them, 
             and track your progress over time.
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/dashboard">
-              <Button className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90">
+              <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 View My Scores
               </Button>
             </Link>
             <Link href="/assessments">
-              <Button variant="outline" className="border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+              <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Take Assessment
               </Button>
             </Link>
@@ -407,10 +407,10 @@ export default function DomainScoresHelpPage() {
 
       {/* Quote */}
       <div className="mt-8 text-center">
-        <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
+        <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;What gets measured gets managed. Domain Scores turn business intuition into actionable data.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
       </div>
     </div>
   );

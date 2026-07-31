@@ -11,13 +11,13 @@ const config: Config = {
     extend: {
       colors: {
         // LifeCharter Brand Palette (Light Mode)
-        "lc-indigo": "#1F315B",
-        "lc-plum": "#5E3B6C",
-        "lc-teal": "#2E7C83",
-        "lc-lavender": "#CDBED6",
-        "lc-gold": "#D4AF63",
-        "lc-ivory": "#F6F1E8",
-        "lc-taupe": "#B9A9A9",
+        "lc-indigo": "#1a2b4a",
+        "lc-plum": "#7b6b8d",
+        "lc-teal": "#4a9b9b",
+        "lc-lavender": "#e8e4f0",
+        "lc-gold": "#c9a227",
+        "lc-ivory": "#F8F5F0",
+        "lc-taupe": "#b8a898",
         
         // Dark Mode variants
         "lc-dark-bg": "#1A1A2E",
@@ -59,8 +59,11 @@ const config: Config = {
         "lc-xl": "24px",
       },
       boxShadow: {
-        "lc": "0 4px 20px rgba(31, 49, 91, 0.08)",
-        "lc-lg": "0 8px 40px rgba(31, 49, 91, 0.12)",
+        "lc": "0 4px 20px rgba(26, 43, 74, 0.08)",
+        "lc-lg": "0 8px 40px rgba(26, 43, 74, 0.12)",
+        "soft": "0 4px 20px rgba(26, 43, 74, 0.08)",
+        "soft-lg": "0 8px 30px rgba(26, 43, 74, 0.12)",
+        "glow": "0 0 20px rgba(201, 162, 39, 0.3)",
       },
     },
   },

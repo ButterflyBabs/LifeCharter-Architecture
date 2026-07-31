@@ -20,17 +20,17 @@ export function Progress({
   return (
     <div
       className={cn(
-        "h-2 w-full overflow-hidden rounded-full bg-[#CDBED6]/20 dark:bg-[#2D3561]",
+        "h-2 w-full overflow-hidden rounded-full bg-[#e8e4f0]/20 dark:bg-[#2D3561]",
         className
       )}
     >
       <div
         className={cn(
           "h-full transition-all duration-500 ease-out rounded-full",
-          variant === "default" && "bg-[#1F315B] dark:bg-[#CDBED6]",
-          variant === "gold" && "bg-[#D4AF63]",
-          variant === "teal" && "bg-[#2E7C83]",
-          variant === "lavender" && "bg-[#5E3B6C]",
+          variant === "default" && "bg-[#1a2b4a] dark:bg-[#e8e4f0]",
+          variant === "gold" && "bg-[#c9a227]",
+          variant === "teal" && "bg-[#4a9b9b]",
+          variant === "lavender" && "bg-[#7b6b8d]",
           barClassName
         )}
         style={{ width: `${percentage}%` }}

@@ -251,7 +251,7 @@ export default function SalesPage() {
     switch (type) {
       case "opportunity": return "border-green-500/30 bg-green-500/5";
       case "warning": return "border-red-500/30 bg-red-500/5";
-      case "suggestion": return "border-[#D4AF63]/30 bg-[#D4AF63]/5";
+      case "suggestion": return "border-[#c9a227]/30 bg-[#c9a227]/5";
       default: return "border-gray-500/30";
     }
   };
@@ -265,10 +265,10 @@ export default function SalesPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Sales System
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               AI-powered sales strategy • Last review: {lastAiReview}
             </p>
           </div>
@@ -291,65 +291,65 @@ export default function SalesPage() {
 
       {/* Executive Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Overall Health</span>
-              <BarChart3 className="w-5 h-5 text-[#D4AF63]" />
+              <span className="text-sm text-[#b8a898]">Overall Health</span>
+              <BarChart3 className="w-5 h-5 text-[#c9a227]" />
             </div>
-            <div className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <div className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               {salesHealth.overall}%
             </div>
             <Progress value={salesHealth.overall} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#5E3B6C]/20">
+        <Card className="border-[#7b6b8d]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Pipeline</span>
-              <Target className="w-5 h-5 text-[#5E3B6C]" />
+              <span className="text-sm text-[#b8a898]">Pipeline</span>
+              <Target className="w-5 h-5 text-[#7b6b8d]" />
             </div>
-            <div className="text-3xl font-bold text-[#5E3B6C] mb-2">
+            <div className="text-3xl font-bold text-[#7b6b8d] mb-2">
               {salesHealth.pipeline}%
             </div>
             <Progress value={salesHealth.pipeline} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#2E7C83]/20">
+        <Card className="border-[#4a9b9b]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Conversion</span>
-              <TrendingUp className="w-5 h-5 text-[#2E7C83]" />
+              <span className="text-sm text-[#b8a898]">Conversion</span>
+              <TrendingUp className="w-5 h-5 text-[#4a9b9b]" />
             </div>
-            <div className="text-3xl font-bold text-[#2E7C83] mb-2">
+            <div className="text-3xl font-bold text-[#4a9b9b] mb-2">
               {salesHealth.conversion}%
             </div>
             <Progress value={salesHealth.conversion} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Process</span>
-              <Phone className="w-5 h-5 text-[#D4AF63]" />
+              <span className="text-sm text-[#b8a898]">Process</span>
+              <Phone className="w-5 h-5 text-[#c9a227]" />
             </div>
-            <div className="text-3xl font-bold text-[#D4AF63] mb-2">
+            <div className="text-3xl font-bold text-[#c9a227] mb-2">
               {salesHealth.process}%
             </div>
             <Progress value={salesHealth.process} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#1F315B]/20">
+        <Card className="border-[#1a2b4a]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Follow-Up</span>
-              <Users className="w-5 h-5 text-[#1F315B]" />
+              <span className="text-sm text-[#b8a898]">Follow-Up</span>
+              <Users className="w-5 h-5 text-[#1a2b4a]" />
             </div>
-            <div className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <div className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               {salesHealth.followup}%
             </div>
             <Progress value={salesHealth.followup} className="h-2" />
@@ -363,10 +363,10 @@ export default function SalesPage() {
           {/* Plan Sections */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Plan Sections
               </h2>
-              <span className="text-sm text-[#B9A9A9]">
+              <span className="text-sm text-[#b8a898]">
                 {completedSections}/{sections.length} Complete • {inProgressSections} In Progress
               </span>
             </CardHeader>
@@ -376,7 +376,7 @@ export default function SalesPage() {
                   <Link 
                     key={section.id}
                     href={`/sales/${section.id}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/30 transition-colors cursor-pointer no-underline"
+                    className="flex items-center justify-between p-4 rounded-lg border border-[#1a2b4a]/10 hover:border-[#c9a227]/30 transition-colors cursor-pointer no-underline"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusBg(section.status)}`}>
@@ -390,19 +390,19 @@ export default function SalesPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                          <h3 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {section.title}
                           </h3>
                           {section.aiGenerated && (
-                            <Sparkles className="w-3 h-3 text-[#D4AF63]" />
+                            <Sparkles className="w-3 h-3 text-[#c9a227]" />
                           )}
                         </div>
-                        <p className="text-sm text-[#B9A9A9]">{section.description}</p>
+                        <p className="text-sm text-[#b8a898]">{section.description}</p>
                         <div className="flex items-center gap-4 mt-1">
                           <span className={`text-xs ${getStatusColor(section.status)}`}>
                             {getStatusLabel(section.status)}
                           </span>
-                          <span className="text-xs text-[#B9A9A9]">
+                          <span className="text-xs text-[#b8a898]">
                             {section.completionRate}% complete
                           </span>
                         </div>
@@ -412,7 +412,7 @@ export default function SalesPage() {
                       <div className="w-24">
                         <Progress value={section.completionRate} className="h-1.5" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-[#B9A9A9]" />
+                      <ChevronRight className="w-5 h-5 text-[#b8a898]" />
                     </div>
                   </Link>
                 ))}
@@ -423,8 +423,8 @@ export default function SalesPage() {
           {/* AI Insights */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-[#c9a227]" />
                 AI Insights
               </h2>
             </CardHeader>
@@ -437,10 +437,10 @@ export default function SalesPage() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-1">
-                        <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-1">
+                        <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-1">
                           {insight.message}
                         </p>
-                        <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+                        <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
                           Suggested action: {insight.action}
                         </p>
                       </div>
@@ -460,7 +460,7 @@ export default function SalesPage() {
           {/* Next Steps */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Next Steps
               </h2>
             </CardHeader>
@@ -469,24 +469,24 @@ export default function SalesPage() {
                 {nextSteps.map((step) => (
                   <div 
                     key={step.id}
-                    className={`p-4 rounded-lg border ${step.completed ? 'border-green-500/30 bg-green-500/5' : 'border-[#1F315B]/10'} transition-colors`}
+                    className={`p-4 rounded-lg border ${step.completed ? 'border-green-500/30 bg-green-500/5' : 'border-[#1a2b4a]/10'} transition-colors`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 ${step.completed ? 'text-green-500' : 'text-[#D4AF63]'}`}>
+                      <div className={`mt-0.5 ${step.completed ? 'text-green-500' : 'text-[#c9a227]'}`}>
                         {step.completed ? (
                           <CheckCircle className="w-5 h-5" />
                         ) : (
-                          <div className={`w-5 h-5 rounded-full border-2 ${step.priority === 'high' ? 'border-red-500' : 'border-[#D4AF63]'}`} />
+                          <div className={`w-5 h-5 rounded-full border-2 ${step.priority === 'high' ? 'border-red-500' : 'border-[#c9a227]'}`} />
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className={`font-medium ${step.completed ? 'line-through text-[#B9A9A9]' : 'text-[#1F315B] dark:text-[#F6F1E8]'}`}>
+                        <p className={`font-medium ${step.completed ? 'line-through text-[#b8a898]' : 'text-[#1a2b4a] dark:text-[#F8F5F0]'}`}>
                           {step.title}
                         </p>
-                        <p className="text-xs text-[#B9A9A9] mt-1">
+                        <p className="text-xs text-[#b8a898] mt-1">
                           From: {step.source}
                         </p>
-                        <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                        <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                           Impact: {step.impact}
                         </p>
                       </div>
@@ -503,7 +503,7 @@ export default function SalesPage() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Quick Actions
               </h2>
             </CardHeader>
@@ -530,16 +530,16 @@ export default function SalesPage() {
           </Card>
 
           {/* Help Card */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+                <Sparkles className="w-4 h-4 text-[#c9a227]" />
                 Need Help?
               </h3>
-              <p className="text-sm text-[#CDBED6] mb-4">
+              <p className="text-sm text-[#e8e4f0] mb-4">
                 Stuck on a sales challenge? Ask Brujula for guidance on closing more deals.
               </p>
-              <Button variant="outline" className="w-full border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63] hover:text-[#1F315B]">
+              <Button variant="outline" className="w-full border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227] hover:text-[#1a2b4a]">
                 <Phone className="w-4 h-4 mr-2" />
                 Ask Brujula
               </Button>

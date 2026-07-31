@@ -34,7 +34,7 @@ export default function MilestonesHelpPage() {
 
   const faqs: FAQItem[] = [
     {
-      question: "What are Milestones in LifeCharter?",
+      question: "What are Milestones in LifeCharter Architecture?",
       answer: "Milestones are significant achievements and markers of progress in your business journey. They represent key accomplishments, transitions, and growth moments that deserve recognition. Milestones help you track progress, celebrate wins, and maintain momentum as you build your business. They range from small victories (first customer) to major achievements (hitting revenue goals, launching new products)."
     },
     {
@@ -42,7 +42,7 @@ export default function MilestonesHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Milestones serve multiple important functions:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Progress Tracking:</strong> They show you how far you have come</li>
             <li><strong>Motivation:</strong> Celebrating wins keeps you energized</li>
             <li><strong>Team Alignment:</strong> Shared milestones build collective purpose</li>
@@ -57,7 +57,7 @@ export default function MilestonesHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Track milestones across all 12 business domains:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Launch Milestones:</strong> Product launches, website live, first sale</li>
             <li><strong>Revenue Milestones:</strong> First $1K, $10K, $100K months</li>
             <li><strong>Customer Milestones:</strong> First 10, 100, 1,000 customers</li>
@@ -73,7 +73,7 @@ export default function MilestonesHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Effective milestones are:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Specific:</strong> Clear and unambiguous</li>
             <li><strong>Measurable:</strong> You know when you have achieved it</li>
             <li><strong>Meaningful:</strong> It matters to your business journey</li>
@@ -92,7 +92,7 @@ export default function MilestonesHelpPage() {
       question: "How do I build and maintain Momentum?",
       answer: (
         <div className="space-y-2">
-          <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Set frequent small milestones:</strong> Weekly wins build momentum faster than quarterly goals</li>
             <li><strong>Celebrate immediately:</strong> Do not wait—acknowledge wins right away</li>
             <li><strong>Share progress:</strong> Tell your team, community, or accountability partner</li>
@@ -116,7 +116,7 @@ export default function MilestonesHelpPage() {
       answer: "Absolutely! Small milestones are the building blocks of big achievements. Celebrating them: Reinforces positive behavior, Keeps motivation high, Creates a culture of progress, Makes the journey enjoyable. Celebration does not have to be elaborate—a moment of acknowledgment, a team message, a small treat. The point is to pause and recognize progress."
     },
     {
-      question: "How do I track Milestones in LifeCharter?",
+      question: "How do I track Milestones in LifeCharter Architecture?",
       answer: "Use the Milestones section of your Dashboard to: Set and view upcoming milestones, Track progress toward each milestone, Record completion dates, Celebrate achievements, Review milestone history. Connect milestones to specific domains so you can see how they impact your business health scores. The AI Guide can also suggest milestones based on your current domain scores."
     }
   ];
@@ -124,54 +124,54 @@ export default function MilestonesHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Help Center
       </Link>
 
       {/* Hero Section */}
       <div className="text-center mb-10">
-        <div className="w-16 h-16 rounded-full bg-[#D4AF63]/20 flex items-center justify-center mx-auto mb-4">
-          <Flag className="w-8 h-8 text-[#D4AF63]" />
+        <div className="w-16 h-16 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-4">
+          <Flag className="w-8 h-8 text-[#c9a227]" />
         </div>
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
           Milestones & Momentum
         </h1>
-        <p className="text-lg text-[#B9A9A9] max-w-2xl mx-auto">
+        <p className="text-lg text-[#b8a898] max-w-2xl mx-auto">
           Mark your progress and ride the wave of achievement
         </p>
       </div>
 
       {/* What are Milestones */}
-      <Card className="mb-8 border-[#D4AF63]/30">
+      <Card className="mb-8 border-[#c9a227]/30">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#D4AF63]" />
+            <Trophy className="w-5 h-5 text-[#c9a227]" />
             What are Milestones?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             <strong>Milestones</strong> are the markers that show you are making progress. They are the proof 
             that your efforts are working, the checkpoints that validate your direction, and the celebrations 
             that fuel your journey.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Target className="w-8 h-8 text-[#2E7C83] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Focus</h3>
-              <p className="text-sm text-[#B9A9A9]">Clear targets to aim for</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Target className="w-8 h-8 text-[#4a9b9b] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Focus</h3>
+              <p className="text-sm text-[#b8a898]">Clear targets to aim for</p>
             </div>
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Rocket className="w-8 h-8 text-[#5E3B6C] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Momentum</h3>
-              <p className="text-sm text-[#B9A9A9]">Forward motion from wins</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Rocket className="w-8 h-8 text-[#7b6b8d] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Momentum</h3>
+              <p className="text-sm text-[#b8a898]">Forward motion from wins</p>
             </div>
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Star className="w-8 h-8 text-[#D4AF63] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Celebration</h3>
-              <p className="text-sm text-[#B9A9A9]">Acknowledge progress</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Star className="w-8 h-8 text-[#c9a227] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Celebration</h3>
+              <p className="text-sm text-[#b8a898]">Acknowledge progress</p>
             </div>
           </div>
         </CardContent>
@@ -181,13 +181,13 @@ export default function MilestonesHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Zap className="w-5 h-5 text-[#D4AF63]" />
+            <Zap className="w-5 h-5 text-[#c9a227]" />
             The Power of Momentum
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
               Momentum is the invisible force that makes success easier the closer you get to it. 
               Each milestone achieved makes the next one more attainable.
             </p>
@@ -229,15 +229,15 @@ export default function MilestonesHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-[#D4AF63]" />
+            <CheckCircle className="w-5 h-5 text-[#c9a227]" />
             Milestone Examples by Stage
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Early Stage (0-1 year)</h4>
-              <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Early Stage (0-1 year)</h4>
+              <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                 <li>• First customer or client</li>
                 <li>• First $1,000 in revenue</li>
                 <li>• Website launched</li>
@@ -246,9 +246,9 @@ export default function MilestonesHelpPage() {
               </ul>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Growth Stage (1-3 years)</h4>
-              <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Growth Stage (1-3 years)</h4>
+              <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                 <li>• Consistent $10K+ months</li>
                 <li>• First team member hired</li>
                 <li>• 1,000 customers served</li>
@@ -257,9 +257,9 @@ export default function MilestonesHelpPage() {
               </ul>
             </div>
 
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-2">Scale Stage (3+ years)</h4>
-              <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Scale Stage (3+ years)</h4>
+              <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                 <li>• Six or seven-figure revenue</li>
                 <li>• Team of 10+ people</li>
                 <li>• Multiple product lines</li>
@@ -275,7 +275,7 @@ export default function MilestonesHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#D4AF63]" />
+            <HelpCircle className="w-5 h-5 text-[#c9a227]" />
             Frequently Asked Questions
           </CardTitle>
         </CardHeader>
@@ -284,26 +284,26 @@ export default function MilestonesHelpPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="border border-[#1F315B]/10 rounded-lg overflow-hidden"
+                className="border border-[#1a2b4a]/10 rounded-lg overflow-hidden"
               >
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1F315B]/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a2b4a]/5 transition-colors"
                 >
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8] pr-4">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] pr-4">
                     {faq.question}
                   </span>
                   {openFAQ === index ? (
-                    <ChevronUp className="w-5 h-5 text-[#D4AF63] flex-shrink-0" />
+                    <ChevronUp className="w-5 h-5 text-[#c9a227] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   )}
                 </button>
                 {openFAQ === index && (
-                  <div className="px-4 pb-4 text-[#1F315B] dark:text-[#F6F1E8]">
-                    <div className="pt-2 border-t border-[#1F315B]/10">
+                  <div className="px-4 pb-4 text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <div className="pt-2 border-t border-[#1a2b4a]/10">
                       {typeof faq.answer === 'string' ? (
-                        <p className="text-[#5E3B6C] dark:text-[#CDBED6] leading-relaxed">
+                        <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
                           {faq.answer}
                         </p>
                       ) : (
@@ -322,47 +322,47 @@ export default function MilestonesHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+            <Lightbulb className="w-5 h-5 text-[#c9a227]" />
             Building Momentum: Quick Tips
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3 p-3 bg-[#1F315B]/5 rounded-lg">
-              <Zap className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+            <div className="flex items-start gap-3 p-3 bg-[#1a2b4a]/5 rounded-lg">
+              <Zap className="w-5 h-5 text-[#c9a227] mt-0.5" />
               <div>
-                <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Start Small</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Start Small</h4>
+                <p className="text-sm text-[#b8a898]">
                   Weekly milestones build momentum faster than big quarterly goals
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-[#1F315B]/5 rounded-lg">
-              <Trophy className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+            <div className="flex items-start gap-3 p-3 bg-[#1a2b4a]/5 rounded-lg">
+              <Trophy className="w-5 h-5 text-[#c9a227] mt-0.5" />
               <div>
-                <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Celebrate Fast</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Celebrate Fast</h4>
+                <p className="text-sm text-[#b8a898]">
                   Acknowledge wins immediately, not at the end of the quarter
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-[#1F315B]/5 rounded-lg">
-              <Target className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+            <div className="flex items-start gap-3 p-3 bg-[#1a2b4a]/5 rounded-lg">
+              <Target className="w-5 h-5 text-[#c9a227] mt-0.5" />
               <div>
-                <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Stack Wins</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Stack Wins</h4>
+                <p className="text-sm text-[#b8a898]">
                   Set up milestones so each one leads naturally to the next
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-[#1F315B]/5 rounded-lg">
-              <Rocket className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+            <div className="flex items-start gap-3 p-3 bg-[#1a2b4a]/5 rounded-lg">
+              <Rocket className="w-5 h-5 text-[#c9a227] mt-0.5" />
               <div>
-                <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Keep Moving</h4>
-                <p className="text-sm text-[#B9A9A9]">
+                <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Keep Moving</h4>
+                <p className="text-sm text-[#b8a898]">
                   After celebrating, immediately focus on the next milestone
                 </p>
               </div>
@@ -372,23 +372,23 @@ export default function MilestonesHelpPage() {
       </Card>
 
       {/* CTA */}
-      <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-8 text-center">
-          <Flag className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
+          <Flag className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Set Your Next Milestone</h2>
-          <p className="text-[#CDBED6] mb-6 max-w-lg mx-auto">
+          <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             What is the next milestone that will move your business forward? 
             Define it, pursue it, achieve it, celebrate it.
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/dashboard">
-              <Button className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90">
+              <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <Target className="w-4 h-4 mr-2" />
                 Set a Milestone
               </Button>
             </Link>
             <Link href="/help/domain-scores">
-              <Button variant="outline" className="border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+              <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Review Domain Scores
               </Button>
             </Link>
@@ -398,10 +398,10 @@ export default function MilestonesHelpPage() {
 
       {/* Quote */}
       <div className="mt-8 text-center">
-        <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
+        <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;Success is the sum of small efforts, repeated day in and day out. Milestones mark the path.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
       </div>
     </div>
   );

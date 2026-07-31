@@ -35,19 +35,49 @@ import {
   Wallet,
 } from "lucide-react";
 
-const navigationItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
-  { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
-  { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
-  { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
-  { id: "sales", label: "Sales", icon: TrendingUp, href: "/sales" },
-  { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-  { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
-  { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
-  { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
-  { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
+// Navigation grouped into labeled sections, matching the Executive
+// Dashboard's sidebar pattern (colored section dot + uppercase label) —
+// same shape as that app's DAILY OPERATIONS / STRATEGIC PLANNING groups,
+// built from this app's own eleven pages rather than copying its content.
+const navigationSections = [
+  {
+    title: "DAILY OPERATIONS",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/" },
+      { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
+    ],
+  },
+  {
+    title: "STRATEGIC PLANNING",
+    color: "text-[#4a9b9b]",
+    items: [
+      { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
+      { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
+      { id: "sales", label: "Sales", icon: TrendingUp, href: "/sales" },
+      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+    ],
+  },
+  {
+    title: "ALIGNMENT",
+    color: "text-[#7b6b8d]",
+    items: [
+      { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
+      { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
+    ],
+  },
+  {
+    title: "SYSTEMS",
+    color: "text-[#b8a898]",
+    items: [
+      { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
+      { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
+      { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
+    ],
+  },
 ];
+
+const navigationItems = navigationSections.flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -94,13 +124,13 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
 }
 
 // Tooltip component that renders outside the scrollable container
-function NavTooltip({ 
-  label, 
-  isVisible, 
-  targetRef 
-}: { 
-  label: string; 
-  isVisible: boolean; 
+function NavTooltip({
+  label,
+  isVisible,
+  targetRef,
+}: {
+  label: string;
+  isVisible: boolean;
   targetRef: React.RefObject<HTMLAnchorElement | null>;
 }) {
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -119,7 +149,7 @@ function NavTooltip({
 
   return (
     <div
-      className="fixed px-3 py-1.5 bg-[#1F315B] text-[#F6F1E8] text-sm font-medium rounded-lg whitespace-nowrap shadow-lg z-[9999] pointer-events-none"
+      className="fixed px-3 py-1.5 bg-[#1a2b4a] text-[#F8F5F0] text-sm font-medium rounded-lg whitespace-nowrap shadow-lg z-[9999] pointer-events-none"
       style={{
         top: position.top,
         left: position.left,
@@ -128,28 +158,30 @@ function NavTooltip({
     >
       {label}
       {/* Arrow */}
-      <div 
+      <div
         className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2"
         style={{
           width: 0,
           height: 0,
           borderTop: "6px solid transparent",
           borderBottom: "6px solid transparent",
-          borderRight: "6px solid #1F315B",
+          borderRight: "6px solid #1a2b4a",
         }}
       />
     </div>
   );
 }
 
-// Navigation item with tooltip
-function NavItem({ 
-  item, 
-  isActive, 
-  isCollapsed 
-}: { 
-  item: typeof navigationItems[0]; 
-  isActive: boolean; 
+// Navigation item with tooltip — left-border accent on the active item
+// (rather than a filled pill), matching the Executive Dashboard's
+// dark-sidebar nav treatment.
+function NavItem({
+  item,
+  isActive,
+  isCollapsed,
+}: {
+  item: typeof navigationItems[0];
+  isActive: boolean;
   isCollapsed: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -164,23 +196,23 @@ function NavItem({
         onMouseEnter={() => isCollapsed && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200",
+          "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-2",
           isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
           isActive
-            ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-            : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+            ? "bg-white/10 text-[#c9a227] border-[#c9a227]"
+            : "text-white/50 hover:bg-white/5 hover:text-white border-transparent"
         )}
       >
-        <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
-        {!isCollapsed && <span>{item.label}</span>}
+        <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
+        {!isCollapsed && <span className="tracking-wide">{item.label}</span>}
       </Link>
-      
+
       {/* Tooltip rendered via portal-like fixed positioning */}
       {isCollapsed && (
-        <NavTooltip 
-          label={item.label} 
-          isVisible={isHovered} 
-          targetRef={linkRef} 
+        <NavTooltip
+          label={item.label}
+          isVisible={isHovered}
+          targetRef={linkRef}
         />
       )}
     </>
@@ -195,10 +227,10 @@ export function CollapsibleSidebar() {
 
   // Get active item based on current path
   const getActiveItem = () => {
-    const item = navigationItems.find(item => pathname?.startsWith(item.href) && item.href !== "/");
+    const item = navigationItems.find((item) => item.href !== "/" && pathname?.startsWith(item.href));
     if (item) return item.id;
-    if (pathname === "/") return "overview";
-    return "overview";
+    if (pathname === "/") return "dashboard";
+    return "dashboard";
   };
 
   const activeItem = getActiveItem();
@@ -207,106 +239,133 @@ export function CollapsibleSidebar() {
   // SSR fallback
   if (!mounted) {
     return (
-      <aside className={cn(
-        "fixed left-0 top-0 h-full bg-[#F6F1E8] border-r border-[#D4AF63]/20 flex flex-col z-50 transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64"
-      )}>
-        <div className="border-b border-[#D4AF63]/20">
-          <img src="/logo.jpg" alt="LifeCharter" className="w-full h-auto object-cover" />
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300",
+          isCollapsed ? "w-16" : "w-64"
+        )}
+      >
+        <div className="p-4 border-b border-white/10">
+          <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center">
+            <span className="text-[#1a2b4a] font-bold text-sm">LC</span>
+          </div>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className={cn(
-      "fixed left-0 top-0 h-full bg-[#F6F1E8] dark:bg-[#1A1A2E] border-r border-[#D4AF63]/20 flex flex-col z-50 transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-64"
-    )}>
+    <aside
+      className={cn(
+        "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300 ease-in-out shadow-xl",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
       {/* Logo Area & Toggle */}
-      <div className={cn(
-        "flex flex-col",
-        isCollapsed ? "p-2" : "p-0"
-      )}>
-        {/* Logo - Full Width, Inherit Background */}
-        <div className={cn(
-          "w-full bg-inherit",
-          isCollapsed ? "p-1" : "p-0"
-        )}>
-          {!isCollapsed && (
-            <img 
-              src="/logo.jpg" 
-              alt="LifeCharter" 
-              className="w-full h-auto object-cover"
-            />
-          )}
-          {isCollapsed && (
-            <img 
-              src="/logo.jpg" 
-              alt="LifeCharter" 
-              className="w-full h-auto object-cover rounded-md"
-            />
-          )}
-        </div>
-        
+      <div
+        className={cn(
+          "border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#1a2b4a] z-10",
+          isCollapsed ? "p-2" : "p-4"
+        )}
+      >
+        {!isCollapsed && (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full border-2 border-[#c9a227] bg-[#1a2b4a] flex items-center justify-center flex-shrink-0">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5 text-[#c9a227]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2v20M2 12h20" />
+                <path d="M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
+              </svg>
+            </div>
+            <div className="overflow-hidden">
+              <h1 className="font-serif text-lg font-medium tracking-wide whitespace-nowrap text-white">
+                LifeCharter
+              </h1>
+              <p className="text-[10px] text-white/40 tracking-[0.15em] uppercase whitespace-nowrap">
+                Architecture
+              </p>
+            </div>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="w-10 h-10 rounded-full border-2 border-[#c9a227] bg-[#1a2b4a] flex items-center justify-center mx-auto">
+            <span className="text-[#c9a227] font-bold text-sm">LC</span>
+          </div>
+        )}
+
         {/* Collapse/Expand Button */}
         <button
           onClick={toggleSidebar}
           className={cn(
-            "p-1.5 rounded-lg text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors self-end",
-            isCollapsed && "mx-auto self-center mt-2"
+            "p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors",
+            isCollapsed && "mx-auto"
           )}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
+          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 overflow-y-auto">
-        <ul className="space-y-1">
-          {navigationItems.map((item) => (
-            <li key={item.id}>
-              <NavItem
-                item={item}
-                isActive={activeItem === item.id}
-                isCollapsed={isCollapsed}
-              />
-            </li>
-          ))}
-        </ul>
+      <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
+        {navigationSections.map((section, sectionIndex) => (
+          <div key={section.title} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
+            {/* Section Header */}
+            {!isCollapsed ? (
+              <div className="px-4 mb-3 flex items-center gap-2">
+                <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
+                <h3
+                  className={cn(
+                    "text-[10px] font-semibold tracking-[0.12em] uppercase whitespace-nowrap opacity-80",
+                    section.color
+                  )}
+                >
+                  {section.title}
+                </h3>
+              </div>
+            ) : (
+              <div className="px-2 mb-3 flex justify-center">
+                <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
+              </div>
+            )}
+
+            {/* Section Items */}
+            <div className="space-y-1">
+              {section.items.map((item) => (
+                <NavItem key={item.id} item={item} isActive={activeItem === item.id} isCollapsed={isCollapsed} />
+              ))}
+            </div>
+          </div>
+        ))}
 
         {/* Help Section */}
         {!isCollapsed && (
-          <div className="mt-6 pt-4 border-t border-[#D4AF63]/20">
+          <div className="mt-8 pt-4 border-t border-white/10">
             <button
               onClick={() => setHelpExpanded(!helpExpanded)}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                "w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 helpExpanded || isHelpActive
-                  ? "bg-[#D4AF63]/20 text-[#1F315B] dark:text-[#F6F1E8]"
-                  : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                  ? "bg-white/10 text-[#c9a227]"
+                  : "text-white/50 hover:bg-white/5 hover:text-white"
               )}
             >
               <span className="flex items-center gap-3">
-                <HelpCircle className="w-5 h-5" />
+                <HelpCircle className="w-4 h-4" />
                 Help
               </span>
-              <ChevronDown
-                className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  helpExpanded && "rotate-180"
-                )}
-              />
+              <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", helpExpanded && "rotate-180")} />
             </button>
 
             {/* Help Dropdown Items */}
             {helpExpanded && (
-              <ul className="mt-2 ml-4 space-y-1 border-l-2 border-[#D4AF63]/30 pl-3">
+              <ul className="mt-2 ml-4 space-y-1 border-l-2 border-white/10 pl-3">
                 {helpItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
@@ -316,9 +375,7 @@ export function CollapsibleSidebar() {
                         href={item.href}
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
-                          isActive
-                            ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-                            : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                          isActive ? "bg-white/10 text-[#c9a227]" : "text-white/50 hover:bg-white/5 hover:text-white"
                         )}
                       >
                         <Icon className="w-4 h-4" />
@@ -334,14 +391,12 @@ export function CollapsibleSidebar() {
 
         {/* Collapsed Help Icon */}
         {isCollapsed && (
-          <div className="mt-4 pt-4 border-t border-[#D4AF63]/20">
+          <div className="mt-4 pt-4 border-t border-white/10">
             <Link
               href="/help/12-domain-alignment"
               className={cn(
-                "flex items-center justify-center p-2 rounded-xl transition-all duration-200",
-                isHelpActive
-                  ? "bg-[#1F315B] text-[#F6F1E8]"
-                  : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                "flex items-center justify-center p-2 rounded-lg transition-all duration-200",
+                isHelpActive ? "bg-white/10 text-[#c9a227]" : "text-white/50 hover:bg-white/5 hover:text-white"
               )}
               title="Help"
             >
@@ -352,54 +407,34 @@ export function CollapsibleSidebar() {
       </nav>
 
       {/* User Profile & Theme Toggle */}
-      <div className={cn(
-        "border-t border-[#D4AF63]/20 space-y-2",
-        isCollapsed ? "p-2" : "p-4"
-      )}>
+      <div className={cn("border-t border-white/10 space-y-2", isCollapsed ? "p-2" : "p-4")}>
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
           className={cn(
-            "flex items-center rounded-xl text-sm font-medium text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/5 dark:hover:bg-[#CDBED6]/5 transition-colors",
+            "flex items-center rounded-lg text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors",
             isCollapsed ? "justify-center w-full p-2" : "justify-between w-full px-4 py-2.5"
           )}
           title={isCollapsed ? (theme === "light" ? "Light Mode" : "Dark Mode") : undefined}
         >
           <span className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
-            {theme === "light" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
+            {theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {!isCollapsed && (theme === "light" ? "Light Mode" : "Dark Mode")}
           </span>
-          {!isCollapsed && (
-            <span className="text-xs text-[#B9A9A9]">
-              {theme === "light" ? "☀️" : "🌙"}
-            </span>
-          )}
         </button>
 
         {/* User Profile */}
-        <div className={cn(
-          "rounded-xl bg-[#1F315B]/5 dark:bg-[#CDBED6]/5",
-          isCollapsed ? "p-2 flex justify-center" : "px-4 py-3"
-        )}>
-          <div className={cn(
-            "flex items-center",
-            isCollapsed ? "justify-center" : "gap-3"
-          )}>
-            <div className="w-10 h-10 rounded-full bg-[#5E3B6C] flex items-center justify-center text-[#F6F1E8] font-serif font-bold flex-shrink-0">
+        <div
+          className={cn("rounded-xl bg-white/5 border border-white/10", isCollapsed ? "p-2 flex justify-center" : "px-3 py-3")}
+        >
+          <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
               SR
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] truncate">
-                  Seraphina Rose
-                </p>
-                <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] truncate">
-                  Founder & CEO
-                </p>
+                <p className="text-sm font-medium text-white truncate">Seraphina Rose</p>
+                <p className="text-xs text-white/40 truncate">Founder &amp; CEO</p>
               </div>
             )}
           </div>
@@ -407,8 +442,8 @@ export function CollapsibleSidebar() {
 
         {/* Workspace Selector - only when expanded */}
         {!isCollapsed && (
-          <div className="px-4 py-2 text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
-            <span className="text-[#B9A9A9]">Workspace:</span> Soulful Solutions Co.
+          <div className="px-4 py-1 text-xs text-white/40">
+            <span className="text-white/30">Workspace:</span> Soulful Solutions Co.
           </div>
         )}
       </div>
@@ -419,11 +454,11 @@ export function CollapsibleSidebar() {
 // Mobile sidebar toggle button
 export function MobileSidebarToggle() {
   const { toggleSidebar } = useSidebar();
-  
+
   return (
     <button
       onClick={toggleSidebar}
-      className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#1F315B] text-[#F6F1E8] shadow-lg"
+      className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#1a2b4a] text-[#F8F5F0] shadow-lg"
       aria-label="Toggle sidebar"
     >
       <Menu className="w-5 h-5" />

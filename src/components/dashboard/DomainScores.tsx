@@ -30,26 +30,26 @@ const defaultScores: DomainScore[] = [
 ];
 
 const domainColors: Record<string, string> = {
-  Marketing: "#1F315B",
-  Sales: "#5E3B6C",
-  Operations: "#2E7C83",
-  Finance: "#CDBED6",
-  Team: "#D4AF63",
-  Systems: "#B9A9A9",
-  Leadership: "#1F315B",
-  Vision: "#5E3B6C",
-  Product: "#2E7C83",
-  "Client Exp": "#CDBED6",
-  Legal: "#D4AF63",
-  Sustainability: "#B9A9A9",
+  Marketing: "#1a2b4a",
+  Sales: "#7b6b8d",
+  Operations: "#4a9b9b",
+  Finance: "#e8e4f0",
+  Team: "#c9a227",
+  Systems: "#b8a898",
+  Leadership: "#1a2b4a",
+  Vision: "#7b6b8d",
+  Product: "#4a9b9b",
+  "Client Exp": "#e8e4f0",
+  Legal: "#c9a227",
+  Sustainability: "#b8a898",
 };
 
 export function DomainScores({ scores = defaultScores }: DomainScoresProps) {
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Domain Scores</CardTitle>
-        <button className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] hover:text-[#1F315B] dark:hover:text-[#F6F1E8] transition-colors">
+        <button className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] transition-colors">
           View All Domains →
         </button>
       </CardHeader>
@@ -58,30 +58,30 @@ export function DomainScores({ scores = defaultScores }: DomainScoresProps) {
           {scores.map((domain) => (
             <div
               key={domain.name}
-              className="p-3 rounded-xl bg-[#1F315B]/5 dark:bg-[#CDBED6]/5 hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors text-center"
+              className="p-3 rounded-xl bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/5 hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10 transition-colors text-center"
             >
               {/* Icon */}
               <div
                 className="w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: domainColors[domain.name] || "#1F315B" }}
+                style={{ backgroundColor: domainColors[domain.name] || "#1a2b4a" }}
               >
                 {domain.icon}
               </div>
 
               {/* Name */}
-              <p className="text-xs font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-1 truncate">
+              <p className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1 truncate">
                 {domain.name}
               </p>
 
               {/* Score */}
-              <p className="text-lg font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-lg font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {domain.score}
               </p>
 
               {/* Change */}
               <div
                 className={`flex items-center justify-center gap-0.5 text-xs ${
-                  domain.change >= 0 ? "text-[#2E7C83]" : "text-red-500"
+                  domain.change >= 0 ? "text-[#4a9b9b]" : "text-red-500"
                 }`}
               >
                 {domain.change >= 0 ? (

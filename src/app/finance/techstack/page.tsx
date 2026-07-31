@@ -303,21 +303,21 @@ export default function TechStackPage() {
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto">
       {/* Header */}
-      <Link href="/finance" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/finance" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Finance Center
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-            <Zap className="w-6 h-6 text-[#D4AF63]" />
+          <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+            <Zap className="w-6 h-6 text-[#c9a227]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Tech Stack Optimizer
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               Software inventory with AI-powered cost optimization
             </p>
           </div>
@@ -328,31 +328,31 @@ export default function TechStackPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Monthly Cost</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898] mb-1">Monthly Cost</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               ${totalMonthly.toFixed(0)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Annual Cost</p>
-            <p className="text-3xl font-bold text-[#2E7C83]">
+            <p className="text-sm text-[#b8a898] mb-1">Annual Cost</p>
+            <p className="text-3xl font-bold text-[#4a9b9b]">
               ${totalAnnual.toFixed(0)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Tools</p>
-            <p className="text-3xl font-bold text-[#D4AF63]">
+            <p className="text-sm text-[#b8a898] mb-1">Tools</p>
+            <p className="text-3xl font-bold text-[#c9a227]">
               {tools.length}
             </p>
           </CardContent>
         </Card>
         <Card className="border-green-500/30">
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Potential Savings</p>
+            <p className="text-sm text-[#b8a898] mb-1">Potential Savings</p>
             <p className="text-3xl font-bold text-green-600">
               ${potentialSavings.toFixed(0)}
             </p>
@@ -361,18 +361,18 @@ export default function TechStackPage() {
       </div>
 
       {/* AI Assessment Button */}
-      <Card className="mb-8 border-[#D4AF63]/30">
+      <Card className="mb-8 border-[#c9a227]/30">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-[#D4AF63]" />
+              <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-[#c9a227]" />
               </div>
               <div>
-                <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                   AI Tech Stack Assessment
                 </h3>
-                <p className="text-sm text-[#B9A9A9]">
+                <p className="text-sm text-[#b8a898]">
                   Scan for duplicates, underutilized tools, and savings opportunities
                 </p>
               </div>
@@ -408,7 +408,7 @@ export default function TechStackPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Add Tool Button */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Your Tech Stack
             </h2>
             <Button onClick={() => setShowAddForm(!showAddForm)}>
@@ -419,14 +419,14 @@ export default function TechStackPage() {
 
           {/* Add Tool Form */}
           {showAddForm && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader>
                 <CardTitle className="text-lg">Add New Tool</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Tool Name</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Tool Name</label>
                     <Input
                       placeholder="e.g., Slack, Notion..."
                       value={newTool.name}
@@ -434,9 +434,9 @@ export default function TechStackPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Category</label>
                     <select
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                       value={newTool.category}
                       onChange={(e) => setNewTool({...newTool, category: e.target.value})}
                     >
@@ -449,7 +449,7 @@ export default function TechStackPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Monthly Cost</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Monthly Cost</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -459,7 +459,7 @@ export default function TechStackPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Annual Cost</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Annual Cost</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -471,9 +471,9 @@ export default function TechStackPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Billing Cycle</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Billing Cycle</label>
                     <select
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                       value={newTool.billingCycle}
                       onChange={(e) => setNewTool({...newTool, billingCycle: e.target.value as "monthly" | "annual"})}
                     >
@@ -482,9 +482,9 @@ export default function TechStackPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Usage Level</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Usage Level</label>
                     <select
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                       value={newTool.usageLevel}
                       onChange={(e) => setNewTool({...newTool, usageLevel: e.target.value as "high" | "medium" | "low" | "none"})}
                     >
@@ -496,7 +496,7 @@ export default function TechStackPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Renewal Date</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Renewal Date</label>
                   <Input
                     type="date"
                     value={newTool.renewalDate}
@@ -504,7 +504,7 @@ export default function TechStackPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Website</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Website</label>
                   <Input
                     placeholder="e.g., slack.com"
                     value={newTool.website}
@@ -512,7 +512,7 @@ export default function TechStackPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Description</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Description</label>
                   <Input
                     placeholder="What do you use this tool for?"
                     value={newTool.description}
@@ -537,7 +537,7 @@ export default function TechStackPage() {
               {tools.map((tool, index) => (
                 <div
                   key={tool.id}
-                  className={`p-4 ${index !== tools.length - 1 ? 'border-b border-[#1F315B]/10' : ''}`}
+                  className={`p-4 ${index !== tools.length - 1 ? 'border-b border-[#1a2b4a]/10' : ''}`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
@@ -557,18 +557,18 @@ export default function TechStackPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                          <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {tool.name}
                           </p>
-                          <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 rounded-full text-[#B9A9A9]">
+                          <span className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 rounded-full text-[#b8a898]">
                             {tool.category}
                           </span>
                         </div>
-                        <p className="text-sm text-[#B9A9A9]">
+                        <p className="text-sm text-[#b8a898]">
                           ${tool.monthlyCost}/mo • Renews {tool.renewalDate}
                         </p>
                         {tool.description && (
-                          <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                          <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                             {tool.description}
                           </p>
                         )}
@@ -586,7 +586,7 @@ export default function TechStackPage() {
                               href={`https://${tool.website}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-[#D4AF63] hover:underline flex items-center gap-1"
+                              className="text-xs text-[#c9a227] hover:underline flex items-center gap-1"
                             >
                               <ExternalLink className="w-3 h-3" />
                               Visit
@@ -597,7 +597,7 @@ export default function TechStackPage() {
                     </div>
                     <button
                       onClick={() => handleRemoveTool(tool.id)}
-                      className="text-[#B9A9A9] hover:text-red-500"
+                      className="text-[#b8a898] hover:text-red-500"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -614,7 +614,7 @@ export default function TechStackPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#D4AF63]" />
+                <Sparkles className="w-5 h-5 text-[#c9a227]" />
                 AI Insights
               </CardTitle>
             </CardHeader>
@@ -640,10 +640,10 @@ export default function TechStackPage() {
                       <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
                     )}
                     <div>
-                      <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">
+                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">
                         {insight.title}
                       </p>
-                      <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                      <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                         {insight.description}
                       </p>
                     </div>
@@ -665,7 +665,7 @@ export default function TechStackPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="w-5 h-5 text-[#D4AF63]" />
+                <Tag className="w-5 h-5 text-[#c9a227]" />
                 Found Discounts
               </CardTitle>
             </CardHeader>
@@ -673,29 +673,29 @@ export default function TechStackPage() {
               {discounts.map((discount) => (
                 <div
                   key={discount.id}
-                  className="p-4 bg-[#D4AF63]/5 rounded-lg border border-[#D4AF63]/20"
+                  className="p-4 bg-[#c9a227]/5 rounded-lg border border-[#c9a227]/20"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {discount.toolName}
                     </p>
                     <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full">
                       Save ${(discount.currentPrice - discount.discountPrice).toFixed(0)}/mo
                     </span>
                   </div>
-                  <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mb-2">
+                  <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">
                     {discount.discountSource}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="text-sm">
-                      <span className="text-[#B9A9A9] line-through">${discount.currentPrice}</span>
+                      <span className="text-[#b8a898] line-through">${discount.currentPrice}</span>
                       <span className="text-green-600 font-medium ml-2">${discount.discountPrice}/mo</span>
                     </div>
                     <a
                       href={discount.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-[#D4AF63] hover:underline flex items-center gap-1"
+                      className="text-xs text-[#c9a227] hover:underline flex items-center gap-1"
                     >
                       Claim
                       <ExternalLink className="w-3 h-3" />
@@ -724,12 +724,12 @@ export default function TechStackPage() {
                   if (catCost === 0) return null;
                   return (
                     <div key={cat} className="flex items-center justify-between py-2">
-                      <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{cat}</span>
+                      <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{cat}</span>
                       <div className="text-right">
-                        <span className="text-sm font-medium text-[#B9A9A9]">
+                        <span className="text-sm font-medium text-[#b8a898]">
                           ${catCost.toFixed(0)}/mo
                         </span>
-                        <span className="text-xs text-[#B9A9A9] ml-2">
+                        <span className="text-xs text-[#b8a898] ml-2">
                           ({catTools.length} tools)
                         </span>
                       </div>

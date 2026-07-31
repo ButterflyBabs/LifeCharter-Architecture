@@ -193,7 +193,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
     <div className="flex items-center gap-6">
       {/* Avatar Preview */}
       <div className="relative">
-        <div className="w-24 h-24 rounded-full overflow-hidden bg-[#D4AF63]/20 flex items-center justify-center border-2 border-[#D4AF63]/30">
+        <div className="w-24 h-24 rounded-full overflow-hidden bg-[#c9a227]/20 flex items-center justify-center border-2 border-[#c9a227]/30">
           {previewUrl ? (
             <img
               src={previewUrl}
@@ -201,7 +201,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
               className="w-full h-full object-cover"
             />
           ) : (
-            <User className="w-10 h-10 text-[#D4AF63]" />
+            <User className="w-10 h-10 text-[#c9a227]" />
           )}
         </div>
         
@@ -246,7 +246,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
           </Button>
         </div>
 
-        <p className="text-xs text-[#B9A9A9] mt-2">
+        <p className="text-xs text-[#b8a898] mt-2">
           Recommended: 400x400px, JPG or PNG, max 5MB
         </p>
 
@@ -256,7 +256,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
           </p>
         )}
         {isDemoMode && (
-          <p className="text-xs text-[#D4AF63] mt-2">
+          <p className="text-xs text-[#c9a227] mt-2">
             Demo mode: Avatar stored locally
           </p>
         )}

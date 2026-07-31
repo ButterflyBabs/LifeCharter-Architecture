@@ -320,14 +320,14 @@ export default function TravelPartnerWidget() {
   if (showCelebration) {
     return (
       <div ref={widgetRef} style={getStyle()}>
-        <Card className="w-80 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+        <Card className="w-80 bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
           <CardContent className="p-6 text-center">
-            <Award className="w-12 h-12 text-[#D4AF63] mx-auto mb-3" />
+            <Award className="w-12 h-12 text-[#c9a227] mx-auto mb-3" />
             <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
-            <p className="text-sm text-[#CDBED6] mb-4">
+            <p className="text-sm text-[#e8e4f0] mb-4">
               You have set up your LifeCharter Architecture!
             </p>
-            <Button onClick={() => setShowCelebration(false)} className="bg-[#D4AF63] text-[#1F315B]">
+            <Button onClick={() => setShowCelebration(false)} className="bg-[#c9a227] text-[#1a2b4a]">
               Continue
             </Button>
           </CardContent>
@@ -341,18 +341,18 @@ export default function TravelPartnerWidget() {
       <div
         ref={widgetRef}
         style={getStyle()}
-        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
+        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
         onMouseDown={startDrag}
         onClick={() => {
           // Only open if user didn't drag
           if (!hasDragged) setIsOpen(true);
         }}
       >
-        <GripVertical data-drag className="w-5 h-5 text-[#CDBED6] opacity-60 cursor-grab active:cursor-grabbing" />
-        <Compass className="w-5 h-5 text-[#D4AF63]" />
+        <GripVertical data-drag className="w-5 h-5 text-[#e8e4f0] opacity-60 cursor-grab active:cursor-grabbing" />
+        <Compass className="w-5 h-5 text-[#c9a227]" />
         <span className="font-medium">Travel Partner</span>
         {progress > 0 && (
-          <span className="ml-2 text-xs bg-[#D4AF63] text-[#1F315B] px-2 py-0.5 rounded-full">{progress}%</span>
+          <span className="ml-2 text-xs bg-[#c9a227] text-[#1a2b4a] px-2 py-0.5 rounded-full">{progress}%</span>
         )}
       </div>
     );
@@ -365,57 +365,57 @@ export default function TravelPartnerWidget() {
         <div 
           data-drag
           onMouseDown={startDrag}
-          className="bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] p-4 cursor-move select-none"
+          className="bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] p-4 cursor-move select-none"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <GripVertical data-drag className="w-5 h-5 text-[#CDBED6] opacity-60" />
+              <GripVertical data-drag className="w-5 h-5 text-[#e8e4f0] opacity-60" />
               <CardTitle className="text-lg flex items-center gap-2">
-                <Compass className="w-5 h-5 text-[#D4AF63]" />
+                <Compass className="w-5 h-5 text-[#c9a227]" />
                 Travel Partner
               </CardTitle>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={resetPos} className="p-1.5 hover:bg-[#F6F1E8]/10 rounded text-xs text-[#CDBED6]">
+              <button onClick={resetPos} className="p-1.5 hover:bg-[#F8F5F0]/10 rounded text-xs text-[#e8e4f0]">
                 Reset
               </button>
-              <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-[#F6F1E8]/10 rounded">
+              <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-[#F8F5F0]/10 rounded">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
-          <p className="text-sm text-[#CDBED6] mt-1">Your guide to setting up LifeCharter Architecture</p>
+          <p className="text-sm text-[#e8e4f0] mt-1">Your guide to setting up LifeCharter Architecture</p>
           
           <div className="mt-3">
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-[#CDBED6]">Progress</span>
-              <span className="text-[#D4AF63] font-medium">{progress}%</span>
+              <span className="text-[#e8e4f0]">Progress</span>
+              <span className="text-[#c9a227] font-medium">{progress}%</span>
             </div>
-            <div className="w-full bg-[#F6F1E8]/20 rounded-full h-2">
-              <div className="bg-gradient-to-r from-[#2E7C83] to-[#D4AF63] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            <div className="w-full bg-[#F8F5F0]/20 rounded-full h-2">
+              <div className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
         </div>
 
         <CardContent className="p-0 overflow-y-auto flex-1">
           {currentStep && (
-            <div className="p-4 bg-[#D4AF63]/10 border-b border-[#D4AF63]/20">
+            <div className="p-4 bg-[#c9a227]/10 border-b border-[#c9a227]/20">
               <div className="flex items-center gap-2 mb-2">
-                <Flag className="w-4 h-4 text-[#D4AF63]" />
-                <span className="text-xs font-medium text-[#D4AF63]">Next Step</span>
+                <Flag className="w-4 h-4 text-[#c9a227]" />
+                <span className="text-xs font-medium text-[#c9a227]">Next Step</span>
               </div>
               <Link href={currentStep.path} onClick={() => setIsOpen(false)}>
-                <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/50 rounded-lg hover:shadow-md cursor-pointer">
-                  <div className="p-2 bg-[#2E7C83]/20 rounded-lg">{currentStep.icon}</div>
+                <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1a2b4a]/50 rounded-lg hover:shadow-md cursor-pointer">
+                  <div className="p-2 bg-[#4a9b9b]/20 rounded-lg">{currentStep.icon}</div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{currentStep.title}</h4>
-                    <p className="text-xs text-[#B9A9A9] mt-1">{currentStep.description}</p>
+                    <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{currentStep.title}</h4>
+                    <p className="text-xs text-[#b8a898] mt-1">{currentStep.description}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-[#2E7C83]">{currentStep.section === "business" ? "Business" : "Daily"}</span>
-                      <span className="text-xs text-[#B9A9A9]">• {currentStep.estimatedTime} min</span>
+                      <span className="text-xs text-[#4a9b9b]">{currentStep.section === "business" ? "Business" : "Daily"}</span>
+                      <span className="text-xs text-[#b8a898]">• {currentStep.estimatedTime} min</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />
+                  <ChevronRight className="w-4 h-4 text-[#b8a898]" />
                 </div>
               </Link>
             </div>
@@ -426,20 +426,20 @@ export default function TravelPartnerWidget() {
               <div key={stage.id}>
                 <button
                   onClick={() => setCurrentStage(currentStage === idx ? -1 : idx)}
-                  className="w-full flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors"
+                  className="w-full flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg hover:bg-[#1a2b4a]/10 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      stage.steps.every(s => completedSteps.includes(s.id)) ? "bg-green-500 text-white" : "bg-[#1F315B] text-[#F6F1E8]"
+                      stage.steps.every(s => completedSteps.includes(s.id)) ? "bg-green-500 text-white" : "bg-[#1a2b4a] text-[#F8F5F0]"
                     }`}>
                       {stage.steps.every(s => completedSteps.includes(s.id)) ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                     </div>
                     <div className="text-left">
-                      <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{stage.name}</h4>
-                      <p className="text-xs text-[#B9A9A9]">{stage.description}</p>
+                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{stage.name}</h4>
+                      <p className="text-xs text-[#b8a898]">{stage.description}</p>
                     </div>
                   </div>
-                  {currentStage === idx ? <ChevronUp className="w-4 h-4 text-[#B9A9A9]" /> : <ChevronRight className="w-4 h-4 text-[#B9A9A9]" />}
+                  {currentStage === idx ? <ChevronUp className="w-4 h-4 text-[#b8a898]" /> : <ChevronRight className="w-4 h-4 text-[#b8a898]" />}
                 </button>
 
                 {currentStage === idx && (
@@ -447,22 +447,22 @@ export default function TravelPartnerWidget() {
                     {stage.steps.map((step) => {
                       const isDone = completedSteps.includes(step.id);
                       return (
-                        <div key={step.id} className="flex items-start gap-3 p-3 bg-white dark:bg-[#1F315B]/30 rounded-lg border border-[#1F315B]/10">
+                        <div key={step.id} className="flex items-start gap-3 p-3 bg-white dark:bg-[#1a2b4a]/30 rounded-lg border border-[#1a2b4a]/10">
                           <button onClick={() => toggleStep(step.id)} className="mt-0.5">
-                            {isDone ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#2E7C83]" />}
+                            {isDone ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-[#b8a898] hover:text-[#4a9b9b]" />}
                           </button>
                           <div className="flex-1">
                             <Link href={step.path} onClick={() => setIsOpen(false)}>
-                              <h5 className={`font-medium ${isDone ? "line-through text-[#B9A9A9]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
+                              <h5 className={`font-medium ${isDone ? "line-through text-[#b8a898]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
                                 {step.title}
                               </h5>
                             </Link>
-                            <p className="text-xs text-[#B9A9A9] mt-1">{step.description}</p>
+                            <p className="text-xs text-[#b8a898] mt-1">{step.description}</p>
                             <div className="flex items-center gap-2 mt-2">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${step.section === "business" ? "bg-[#1F315B]/10 text-[#5E3B6C]" : "bg-[#2E7C83]/10 text-[#2E7C83]"}`}>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${step.section === "business" ? "bg-[#1a2b4a]/10 text-[#7b6b8d]" : "bg-[#4a9b9b]/10 text-[#4a9b9b]"}`}>
                                 {step.section === "business" ? "Business" : "Daily"}
                               </span>
-                              <span className="text-xs text-[#B9A9A9]">{step.estimatedTime} min</span>
+                              <span className="text-xs text-[#b8a898]">{step.estimatedTime} min</span>
                             </div>
                           </div>
                         </div>
@@ -474,10 +474,10 @@ export default function TravelPartnerWidget() {
             ))}
           </div>
 
-          <div className="p-4 bg-[#D4AF63]/10 border-t border-[#D4AF63]/20">
+          <div className="p-4 bg-[#c9a227]/10 border-t border-[#c9a227]/20">
             <div className="flex items-start gap-2">
-              <Lightbulb className="w-4 h-4 text-[#D4AF63] mt-0.5" />
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+              <Lightbulb className="w-4 h-4 text-[#c9a227] mt-0.5" />
+              <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 <strong>Tip:</strong> Drag the grip icon (≡) to move this widget anywhere!
               </p>
             </div>

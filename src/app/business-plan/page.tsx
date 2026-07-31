@@ -223,10 +223,10 @@ export default function BusinessPlanPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Business Plan
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               AI-powered living document • Last review: {lastAiReview}
             </p>
           </div>
@@ -249,39 +249,39 @@ export default function BusinessPlanPage() {
 
       {/* Executive Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Overall Health</span>
-              <BarChart3 className="w-5 h-5 text-[#D4AF63]" />
+              <span className="text-sm text-[#b8a898]">Overall Health</span>
+              <BarChart3 className="w-5 h-5 text-[#c9a227]" />
             </div>
-            <div className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <div className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               {planHealth.overall}%
             </div>
             <Progress value={planHealth.overall} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#5E3B6C]/20">
+        <Card className="border-[#7b6b8d]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Vision Alignment</span>
-              <Heart className="w-5 h-5 text-[#5E3B6C]" />
+              <span className="text-sm text-[#b8a898]">Vision Alignment</span>
+              <Heart className="w-5 h-5 text-[#7b6b8d]" />
             </div>
-            <div className="text-3xl font-bold text-[#5E3B6C] mb-2">
+            <div className="text-3xl font-bold text-[#7b6b8d] mb-2">
               {planHealth.vision}%
             </div>
             <Progress value={planHealth.vision} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Revenue Health</span>
-              <DollarSign className="w-5 h-5 text-[#D4AF63]" />
+              <span className="text-sm text-[#b8a898]">Revenue Health</span>
+              <DollarSign className="w-5 h-5 text-[#c9a227]" />
             </div>
-            <div className="text-3xl font-bold text-[#D4AF63] mb-2">
+            <div className="text-3xl font-bold text-[#c9a227] mb-2">
               {planHealth.revenue}%
             </div>
             <Progress value={planHealth.revenue} className="h-2" />
@@ -289,20 +289,20 @@ export default function BusinessPlanPage() {
               <span className={revenueVariance >= 0 ? 'text-green-500' : 'text-red-500'}>
                 {revenueVariance >= 0 ? '↑' : '↓'} {Math.abs(revenueVariance).toFixed(0)}% vs goal
               </span>
-              <span className="text-[#B9A9A9] ml-2">
+              <span className="text-[#b8a898] ml-2">
                 (${monthlyData.revenue.toLocaleString()} / ${monthlyData.revenue_goal.toLocaleString()})
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-[#2E7C83]/20">
+        <Card className="border-[#4a9b9b]/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#B9A9A9]">Systems Strength</span>
-              <Brain className="w-5 h-5 text-[#2E7C83]" />
+              <span className="text-sm text-[#b8a898]">Systems Strength</span>
+              <Brain className="w-5 h-5 text-[#4a9b9b]" />
             </div>
-            <div className="text-3xl font-bold text-[#2E7C83] mb-2">
+            <div className="text-3xl font-bold text-[#4a9b9b] mb-2">
               {planHealth.systems}%
             </div>
             <Progress value={planHealth.systems} className="h-2" />
@@ -321,10 +321,10 @@ export default function BusinessPlanPage() {
           {/* Plan Sections */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Plan Sections
               </h2>
-              <span className="text-sm text-[#B9A9A9]">
+              <span className="text-sm text-[#b8a898]">
                 {sections.filter(s => s.status === "complete").length}/{sections.length} Complete
               </span>
             </CardHeader>
@@ -334,7 +334,7 @@ export default function BusinessPlanPage() {
                   <Link 
                     key={section.id}
                     href={`/business-plan/${section.id}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/30 transition-colors cursor-pointer no-underline"
+                    className="flex items-center justify-between p-4 rounded-lg border border-[#1a2b4a]/10 hover:border-[#c9a227]/30 transition-colors cursor-pointer no-underline"
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusBg(section.status)}`}>
@@ -347,10 +347,10 @@ export default function BusinessPlanPage() {
                         )}
                       </div>
                       <div>
-                        <h3 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                        <h3 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                           {section.title}
                         </h3>
-                        <p className="text-sm text-[#B9A9A9]">
+                        <p className="text-sm text-[#b8a898]">
                           Updated {section.lastUpdated} • {section.aiGenerated ? "AI-generated" : "Manual"}
                         </p>
                       </div>
@@ -359,7 +359,7 @@ export default function BusinessPlanPage() {
                       <span className={`text-sm capitalize ${getStatusColor(section.status)}`}>
                         {section.status.replace("_", " ")}
                       </span>
-                      <ArrowRight className="w-4 h-4 text-[#B9A9A9]" />
+                      <ArrowRight className="w-4 h-4 text-[#b8a898]" />
                     </div>
                   </Link>
                 ))}
@@ -371,8 +371,8 @@ export default function BusinessPlanPage() {
           {pivotSignals.length > 0 && (
             <Card className="border-red-500/20">
               <CardHeader>
-                <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-[#c9a227]" />
                   Pivot Signals Detected
                 </h2>
               </CardHeader>
@@ -386,10 +386,10 @@ export default function BusinessPlanPage() {
                       <div className="flex items-start gap-3">
                         <AlertCircle className={`w-5 h-5 mt-0.5 ${signal.severity === "critical" ? "text-red-500" : "text-yellow-500"}`} />
                         <div className="flex-1">
-                          <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-1">
+                          <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
                             {signal.signal}
                           </p>
-                          <p className="text-sm text-[#B9A9A9] mb-3">
+                          <p className="text-sm text-[#b8a898] mb-3">
                             Suggested: {signal.suggestedAction}
                           </p>
                           <div className="flex gap-2">
@@ -415,8 +415,8 @@ export default function BusinessPlanPage() {
           {/* Review Cycles */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#2E7C83]" />
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#4a9b9b]" />
                 Review Cycles
               </h2>
             </CardHeader>
@@ -425,13 +425,13 @@ export default function BusinessPlanPage() {
                 {reviewCycles.map((cycle) => (
                   <div 
                     key={cycle.type}
-                    className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10"
+                    className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10"
                   >
                     <div>
-                      <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] capitalize">
+                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize">
                         {cycle.type.replace("_", " ")}
                       </p>
-                      <p className="text-sm text-[#B9A9A9]">
+                      <p className="text-sm text-[#b8a898]">
                         Due: {new Date(cycle.dueDate).toLocaleDateString()}
                       </p>
                     </div>
@@ -462,8 +462,8 @@ export default function BusinessPlanPage() {
           {/* Next Steps */}
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#D4AF63]" />
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+                <Target className="w-5 h-5 text-[#c9a227]" />
                 Three Steps Forward
               </h2>
             </CardHeader>
@@ -472,20 +472,20 @@ export default function BusinessPlanPage() {
                 {nextSteps.map((step, index) => (
                   <div 
                     key={step.id}
-                    className={`p-4 rounded-lg border ${step.completed ? "border-green-500/20 bg-green-500/5" : "border-[#1F315B]/10"}`}
+                    className={`p-4 rounded-lg border ${step.completed ? "border-green-500/20 bg-green-500/5" : "border-[#1a2b4a]/10"}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${step.completed ? "bg-green-500 text-white" : step.priority === "high" ? "bg-red-500 text-white" : "bg-[#D4AF63] text-white"}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${step.completed ? "bg-green-500 text-white" : step.priority === "high" ? "bg-red-500 text-white" : "bg-[#c9a227] text-white"}`}>
                         {step.completed ? "✓" : index + 1}
                       </div>
                       <div className="flex-1">
-                        <p className={`font-medium text-[#1F315B] dark:text-[#F6F1E8] ${step.completed ? "line-through opacity-50" : ""}`}>
+                        <p className={`font-medium text-[#1a2b4a] dark:text-[#F8F5F0] ${step.completed ? "line-through opacity-50" : ""}`}>
                           {step.title}
                         </p>
-                        <p className="text-xs text-[#B9A9A9] mt-1">
+                        <p className="text-xs text-[#b8a898] mt-1">
                           Source: {step.source}
                         </p>
-                        <p className="text-xs text-[#D4AF63] mt-1">
+                        <p className="text-xs text-[#c9a227] mt-1">
                           Impact: {step.impact}
                         </p>
                         {!step.completed && (
@@ -510,7 +510,7 @@ export default function BusinessPlanPage() {
           </Card>
 
           {/* Data Sources - Now includes Finance/Monthly Review */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-white">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-white">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Brain className="w-5 h-5" />
@@ -518,7 +518,7 @@ export default function BusinessPlanPage() {
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="border-b border-white/10 pb-2">
-                  <p className="text-[#D4AF63] font-medium mb-1">Revenue Health (Real Data)</p>
+                  <p className="text-[#c9a227] font-medium mb-1">Revenue Health (Real Data)</p>
                   <div className="flex justify-between text-xs opacity-80">
                     <span>Finance Page</span>
                     <span>Monthly Review</span>
@@ -530,7 +530,7 @@ export default function BusinessPlanPage() {
                   </div>
                 </div>
                 <div className="border-b border-white/10 pb-2">
-                  <p className="text-[#D4AF63] font-medium mb-1">Systems Strength (Real Data)</p>
+                  <p className="text-[#c9a227] font-medium mb-1">Systems Strength (Real Data)</p>
                   <div className="flex justify-between text-xs opacity-80">
                     <span>Operations</span>
                     <span>Monthly Review</span>
@@ -542,7 +542,7 @@ export default function BusinessPlanPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[#D4AF63] font-medium mb-1">Vision Alignment</p>
+                  <p className="text-[#c9a227] font-medium mb-1">Vision Alignment</p>
                   <div className="flex justify-between text-xs opacity-80">
                     <span>Soul Assessment</span>
                     <span>Last: 2 weeks ago</span>

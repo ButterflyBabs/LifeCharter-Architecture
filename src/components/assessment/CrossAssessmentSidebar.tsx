@@ -70,38 +70,38 @@ export function CrossAssessmentSidebar({
     <div className={`space-y-4 ${className}`}>
       {/* Overall Progress */}
       {masterPlan && (
-        <Card className="border-[#D4AF63]/30">
+        <Card className="border-[#c9a227]/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <TrendingUp className="w-4 h-4 text-[#D4AF63]" />
+              <TrendingUp className="w-4 h-4 text-[#c9a227]" />
               Your Progress
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-[#B9A9A9]">Overall Alignment</span>
-              <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              <span className="text-[#b8a898]">Overall Alignment</span>
+              <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {masterPlan.overall_alignment_score || 0}%
               </span>
             </div>
-            <div className="w-full h-2 bg-[#CDBED6]/20 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-[#e8e4f0]/20 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#D4AF63] transition-all duration-500"
+                className="h-full bg-[#c9a227] transition-all duration-500"
                 style={{ width: `${masterPlan.overall_alignment_score || 0}%` }}
               />
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div>
-                <div className="text-[#2E7C83] font-medium">{masterPlan.brain_score || 0}%</div>
-                <div className="text-[#B9A9A9]">Brain</div>
+                <div className="text-[#4a9b9b] font-medium">{masterPlan.brain_score || 0}%</div>
+                <div className="text-[#b8a898]">Brain</div>
               </div>
               <div>
-                <div className="text-[#5E3B6C] font-medium">{masterPlan.soul_score || 0}%</div>
-                <div className="text-[#B9A9A9]">Soul</div>
+                <div className="text-[#7b6b8d] font-medium">{masterPlan.soul_score || 0}%</div>
+                <div className="text-[#b8a898]">Soul</div>
               </div>
               <div>
-                <div className="text-[#D4AF63] font-medium">{masterPlan.profit_score || 0}%</div>
-                <div className="text-[#B9A9A9]">Profit</div>
+                <div className="text-[#c9a227] font-medium">{masterPlan.profit_score || 0}%</div>
+                <div className="text-[#b8a898]">Profit</div>
               </div>
             </div>
           </CardContent>
@@ -110,18 +110,18 @@ export function CrossAssessmentSidebar({
 
       {/* Brain Context */}
       {relatedBrainResponses.length > 0 && (
-        <Card className="border-[#2E7C83]/30">
+        <Card className="border-[#4a9b9b]/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Brain className="w-4 h-4 text-[#2E7C83]" />
+              <Brain className="w-4 h-4 text-[#4a9b9b]" />
               From Brain Assessment
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {relatedBrainResponses.slice(0, 2).map((response: UnifiedResponse) => (
               <div key={response.id} className="text-sm">
-                <p className="text-[#B9A9A9] text-xs mb-1 line-clamp-2">{response.question_text}</p>
-                <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                <p className="text-[#b8a898] text-xs mb-1 line-clamp-2">{response.question_text}</p>
+                <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                   {typeof response.answer_value === 'string' 
                     ? response.answer_value 
                     : JSON.stringify(response.answer_value)}
@@ -134,18 +134,18 @@ export function CrossAssessmentSidebar({
 
       {/* Soul Context */}
       {relatedSoulResponses.length > 0 && (
-        <Card className="border-[#5E3B6C]/30">
+        <Card className="border-[#7b6b8d]/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Heart className="w-4 h-4 text-[#5E3B6C]" />
+              <Heart className="w-4 h-4 text-[#7b6b8d]" />
               From Soul Assessment
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {relatedSoulResponses.slice(0, 2).map((response: UnifiedResponse) => (
               <div key={response.id} className="text-sm">
-                <p className="text-[#B9A9A9] text-xs mb-1 line-clamp-2">{response.question_text}</p>
-                <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                <p className="text-[#b8a898] text-xs mb-1 line-clamp-2">{response.question_text}</p>
+                <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                   {typeof response.answer_value === 'string'
                     ? response.answer_value
                     : JSON.stringify(response.answer_value)}
@@ -158,10 +158,10 @@ export function CrossAssessmentSidebar({
 
       {/* Key Insights */}
       {relevantInsights.length > 0 && (
-        <Card className="border-[#D4AF63]/30">
+        <Card className="border-[#c9a227]/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Lightbulb className="w-4 h-4 text-[#D4AF63]" />
+              <Lightbulb className="w-4 h-4 text-[#c9a227]" />
               Key Insights
             </CardTitle>
           </CardHeader>
@@ -172,11 +172,11 @@ export function CrossAssessmentSidebar({
                   {insight.priority === 'critical' || insight.priority === 'high' ? (
                     <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                   ) : (
-                    <Lightbulb className="w-4 h-4 text-[#D4AF63] flex-shrink-0 mt-0.5" />
+                    <Lightbulb className="w-4 h-4 text-[#c9a227] flex-shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{insight.title}</p>
-                    <p className="text-[#B9A9A9] text-xs line-clamp-2">{insight.description}</p>
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{insight.title}</p>
+                    <p className="text-[#b8a898] text-xs line-clamp-2">{insight.description}</p>
                   </div>
                 </div>
               </div>
@@ -187,10 +187,10 @@ export function CrossAssessmentSidebar({
 
       {/* Action Items */}
       {pendingActions.length > 0 && (
-        <Card className="border-[#2E7C83]/30">
+        <Card className="border-[#4a9b9b]/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="w-4 h-4 text-[#2E7C83]" />
+              <CheckCircle2 className="w-4 h-4 text-[#4a9b9b]" />
               Recommended Actions
             </CardTitle>
           </CardHeader>
@@ -205,9 +205,9 @@ export function CrossAssessmentSidebar({
                     'bg-green-500'
                   }`} />
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{action.title}</p>
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{action.title}</p>
                     {action.description && (
-                      <p className="text-[#B9A9A9] text-xs line-clamp-2">{action.description}</p>
+                      <p className="text-[#b8a898] text-xs line-clamp-2">{action.description}</p>
                     )}
                   </div>
                 </div>
@@ -219,15 +219,15 @@ export function CrossAssessmentSidebar({
 
       {/* Empty State */}
       {!relatedBrainResponses.length && !relatedSoulResponses.length && !relevantInsights.length && !pendingActions.length && (
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-[#D4AF63]/10 flex items-center justify-center mx-auto mb-3">
-              <TrendingUp className="w-6 h-6 text-[#D4AF63]" />
+            <div className="w-12 h-12 rounded-full bg-[#c9a227]/10 flex items-center justify-center mx-auto mb-3">
+              <TrendingUp className="w-6 h-6 text-[#c9a227]" />
             </div>
-            <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-1">
+            <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-1">
               Building Your Profile
             </p>
-            <p className="text-xs text-[#B9A9A9]">
+            <p className="text-xs text-[#b8a898]">
               As you complete assessments, insights from Brain and Soul will appear here to provide context.
             </p>
           </CardContent>

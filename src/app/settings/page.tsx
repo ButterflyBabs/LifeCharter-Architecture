@@ -572,7 +572,7 @@ For questions, please contact support@lifecharter.architecture
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Full Name
           </label>
           <Input
@@ -581,7 +581,7 @@ For questions, please contact support@lifecharter.architecture
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Email
           </label>
           <Input
@@ -591,7 +591,7 @@ For questions, please contact support@lifecharter.architecture
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Phone
           </label>
           <Input
@@ -602,13 +602,13 @@ For questions, please contact support@lifecharter.architecture
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Timezone
           </label>
           <select
             value={profile.timezone}
             onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-            className="w-full h-10 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]/20 px-3 text-[#1F315B] dark:text-[#F6F1E8]"
+            className="w-full h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-[#1a2b4a] dark:text-[#F8F5F0]"
           >
             <option value="America/Denver">Mountain Time (Denver)</option>
             <option value="America/Los_Angeles">Pacific Time</option>
@@ -619,7 +619,7 @@ For questions, please contact support@lifecharter.architecture
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+        <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
           Bio
         </label>
         <Textarea
@@ -670,12 +670,12 @@ For questions, please contact support@lifecharter.architecture
     return (
       <div className="space-y-6">
         {/* Workspace Selector */}
-        <div className="p-4 bg-[#1F315B]/5 rounded-lg">
+        <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
               Your Workspaces
             </h4>
-            <span className="text-sm text-[#B9A9A9]">
+            <span className="text-sm text-[#b8a898]">
               {workspaces.length} of {maxWorkspaces} used
             </span>
           </div>
@@ -686,25 +686,25 @@ For questions, please contact support@lifecharter.architecture
                 key={ws.id}
                 className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
                   activeWorkspaceId === ws.id
-                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                    ? "border-[#c9a227] bg-[#c9a227]/10"
+                    : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                 }`}
                 onClick={() => setActiveWorkspaceId(ws.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/20 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-[#D4AF63]" />
+                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-[#c9a227]" />
                   </div>
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {ws.name}
                       {ws.isDefault && (
-                        <span className="ml-2 text-xs bg-[#D4AF63]/20 text-[#D4AF63] px-2 py-0.5 rounded">
+                        <span className="ml-2 text-xs bg-[#c9a227]/20 text-[#c9a227] px-2 py-0.5 rounded">
                           Default
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-[#B9A9A9]">/{ws.slug}</p>
+                    <p className="text-xs text-[#b8a898]">/{ws.slug}</p>
                   </div>
                 </div>
                 {workspaces.length > 1 && (
@@ -746,24 +746,24 @@ For questions, please contact support@lifecharter.architecture
         </div>
 
         {/* Active Workspace Settings */}
-        <div className="border-t border-[#1F315B]/10 pt-6">
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+        <div className="border-t border-[#1a2b4a]/10 pt-6">
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
             Edit: {activeWorkspace.name}
           </h4>
 
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-24 h-24 rounded-xl bg-[#D4AF63]/20 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-xl bg-[#c9a227]/20 flex items-center justify-center">
               {activeWorkspace.logo ? (
                 <img src={activeWorkspace.logo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
               ) : (
-                <Building2 className="w-10 h-10 text-[#D4AF63]" />
+                <Building2 className="w-10 h-10 text-[#c9a227]" />
               )}
             </div>
             <div>
               <Button variant="outline" size="sm">
                 Upload Logo
               </Button>
-              <p className="text-xs text-[#B9A9A9] mt-2">
+              <p className="text-xs text-[#b8a898] mt-2">
                 Recommended: 400x400px transparent PNG
               </p>
             </div>
@@ -771,7 +771,7 @@ For questions, please contact support@lifecharter.architecture
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Workspace Name
               </label>
               <Input
@@ -780,11 +780,11 @@ For questions, please contact support@lifecharter.architecture
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 URL Slug
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">
                   lifecharter.architecture/
                 </span>
                 <Input
@@ -797,7 +797,7 @@ For questions, please contact support@lifecharter.architecture
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Description
             </label>
             <Textarea
@@ -808,7 +808,7 @@ For questions, please contact support@lifecharter.architecture
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Website
             </label>
             <Input
@@ -819,19 +819,19 @@ For questions, please contact support@lifecharter.architecture
           </div>
 
           {/* Social Profiles */}
-          <div className="mt-6 border-t border-[#1F315B]/10 pt-6">
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+          <div className="mt-6 border-t border-[#1a2b4a]/10 pt-6">
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
               <Globe className="w-4 h-4" />
               Social Profiles
             </h4>
-            <p className="text-sm text-[#B9A9A9] mb-4">
+            <p className="text-sm text-[#b8a898] mb-4">
               Connect your social media accounts for easy sharing and cross-posting
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {socialPlatforms.map((platform) => (
                 <div key={platform.id}>
-                  <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                  <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                     <span className="mr-2">{platform.icon}</span>
                     {platform.name}
                   </label>
@@ -849,7 +849,7 @@ For questions, please contact support@lifecharter.architecture
             </div>
           </div>
 
-          <div className="mt-6 border-t border-[#1F315B]/10 pt-6">
+          <div className="mt-6 border-t border-[#1a2b4a]/10 pt-6">
             <TeamManagement
               workspaceId={activeWorkspace.id}
               workspaceName={activeWorkspace.name}
@@ -877,7 +877,7 @@ For questions, please contact support@lifecharter.architecture
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
           <Mail className="w-4 h-4" />
           Email Notifications
         </h4>
@@ -891,9 +891,9 @@ For questions, please contact support@lifecharter.architecture
                   ...notifications,
                   email: { ...notifications.email, [key]: e.target.checked }
                 })}
-                className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+                className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
               />
-              <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+              <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
               </span>
             </label>
@@ -901,8 +901,8 @@ For questions, please contact support@lifecharter.architecture
         </div>
       </div>
 
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+      <div className="border-t border-[#1a2b4a]/10 pt-6">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
           <Smartphone className="w-4 h-4" />
           SMS Notifications
         </h4>
@@ -915,9 +915,9 @@ For questions, please contact support@lifecharter.architecture
                 ...notifications,
                 sms: { ...notifications.sms, enabled: e.target.checked }
               })}
-              className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+              className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
             />
-            <span className="text-[#1F315B] dark:text-[#F6F1E8]">Enable SMS notifications</span>
+            <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Enable SMS notifications</span>
           </label>
           {notifications.sms.enabled && (
             <div className="ml-7 space-y-3">
@@ -929,9 +929,9 @@ For questions, please contact support@lifecharter.architecture
                     ...notifications,
                     sms: { ...notifications.sms, monthlySummary: e.target.checked }
                   })}
-                  className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+                  className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">Monthly summary</span>
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly summary</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -941,9 +941,9 @@ For questions, please contact support@lifecharter.architecture
                     ...notifications,
                     sms: { ...notifications.sms, urgentAlerts: e.target.checked }
                   })}
-                  className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+                  className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">Urgent alerts only</span>
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Urgent alerts only</span>
               </label>
             </div>
           )}
@@ -957,7 +957,7 @@ For questions, please contact support@lifecharter.architecture
     return (
       <div className="space-y-6">
         <div>
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Theme</h4>
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Theme</h4>
           <div className="grid grid-cols-3 gap-4">
             {[
               { id: "light", label: "Light", icon: Sun },
@@ -969,23 +969,23 @@ For questions, please contact support@lifecharter.architecture
                 onClick={() => theme.setTheme(t.id as "light" | "dark" | "system")}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   theme.theme === t.id
-                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                    ? "border-[#c9a227] bg-[#c9a227]/10"
+                    : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                 }`}
               >
-                <t.icon className="w-6 h-6 mx-auto mb-2 text-[#1F315B] dark:text-[#F6F1E8]" />
-                <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{t.label}</span>
+                <t.icon className="w-6 h-6 mx-auto mb-2 text-[#1a2b4a] dark:text-[#F8F5F0]" />
+                <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{t.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="border-t border-[#1F315B]/10 pt-6">
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Color Scheme</h4>
+        <div className="border-t border-[#1a2b4a]/10 pt-6">
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Color Scheme</h4>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { id: "lifecharter", label: "LifeCharter", colors: "#1F315B, #D4AF63, #5E3B6C" },
-              { id: "sacred", label: "Sacred", colors: "#5E3B6C, #D4AF63, #2E7C83" },
+              { id: "lifecharter", label: "LifeCharter", colors: "#1a2b4a, #c9a227, #7b6b8d" },
+              { id: "sacred", label: "Sacred", colors: "#7b6b8d, #c9a227, #4a9b9b" },
               { id: "modern", label: "Modern", colors: "#0F172A, #3B82F6, #10B981" }
             ].map((scheme) => (
               <button
@@ -993,8 +993,8 @@ For questions, please contact support@lifecharter.architecture
                 onClick={() => theme.setColorScheme(scheme.id as "lifecharter" | "sacred" | "modern")}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   theme.colorScheme === scheme.id
-                    ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                    : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                    ? "border-[#c9a227] bg-[#c9a227]/10"
+                    : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                 }`}
               >
                 <div className="flex justify-center gap-1 mb-2">
@@ -1006,17 +1006,17 @@ For questions, please contact support@lifecharter.architecture
                     />
                   ))}
                 </div>
-                <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{scheme.label}</span>
+                <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{scheme.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="border-t border-[#1F315B]/10 pt-6">
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Display</h4>
+        <div className="border-t border-[#1a2b4a]/10 pt-6">
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Display</h4>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-[#B9A9A9] mb-2">Font Size</label>
+              <label className="block text-sm text-[#b8a898] mb-2">Font Size</label>
               <div className="flex gap-2">
                 {["small", "medium", "large"].map((size) => (
                   <button
@@ -1024,8 +1024,8 @@ For questions, please contact support@lifecharter.architecture
                     onClick={() => theme.setFontSize(size as "small" | "medium" | "large")}
                     className={`px-4 py-2 rounded-lg border transition-all ${
                       theme.fontSize === size
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10 text-[#1F315B] dark:text-[#F6F1E8]"
-                        : "border-[#1F315B]/10 text-[#B9A9A9]"
+                        ? "border-[#c9a227] bg-[#c9a227]/10 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                        : "border-[#1a2b4a]/10 text-[#b8a898]"
                     }`}
                   >
                     {size.charAt(0).toUpperCase() + size.slice(1)}
@@ -1038,9 +1038,9 @@ For questions, please contact support@lifecharter.architecture
                 type="checkbox"
                 checked={theme.compactMode}
                 onChange={(e) => theme.setCompactMode(e.target.checked)}
-                className="w-4 h-4 rounded border-[#1F315B]/20 text-[#D4AF63] focus:ring-[#D4AF63]"
+                className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
               />
-              <span className="text-[#1F315B] dark:text-[#F6F1E8]">Compact mode (less padding)</span>
+              <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Compact mode (less padding)</span>
             </label>
           </div>
         </div>
@@ -1069,7 +1069,7 @@ For questions, please contact support@lifecharter.architecture
         items: [
           { id: "openai", name: "OpenAI", description: "GPT-4, GPT-3.5, DALL-E", icon: "🤖", color: "#10A37F" },
           { id: "anthropic", name: "Anthropic", description: "Claude AI models", icon: "🧠", color: "#D4A574" },
-          { id: "moonshot", name: "Moonshot AI", description: "Kimi K2.5 and other models", icon: "🌙", color: "#1F315B" }
+          { id: "moonshot", name: "Moonshot AI", description: "Kimi K2.5 and other models", icon: "🌙", color: "#1a2b4a" }
         ]
       },
       {
@@ -1262,7 +1262,7 @@ For questions, please contact support@lifecharter.architecture
       <div className="space-y-8">
         {integrationCategories.map((category) => (
           <div key={category.title}>
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-3 flex items-center gap-2">
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-3 flex items-center gap-2">
               {category.title}
             </h4>
             <div className="space-y-3">
@@ -1282,10 +1282,10 @@ For questions, please contact support@lifecharter.architecture
                             {integration.icon}
                           </div>
                           <div>
-                            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                               {integration.name}
                             </h4>
-                            <p className="text-sm text-[#B9A9A9]">{integration.description}</p>
+                            <p className="text-sm text-[#b8a898]">{integration.description}</p>
                             {status.connected && (
                               <span className="inline-flex items-center gap-1 text-xs text-green-500 mt-1">
                                 <CheckCircle className="w-3 h-3" />
@@ -1316,9 +1316,9 @@ For questions, please contact support@lifecharter.architecture
                       
                       {/* Expandable API Key Section */}
                       {status.connected && isExpanded && (
-                        <div className="mt-4 pt-4 border-t border-[#1F315B]/10 space-y-3">
+                        <div className="mt-4 pt-4 border-t border-[#1a2b4a]/10 space-y-3">
                           <div>
-                            <label className="block text-sm text-[#B9A9A9] mb-2">
+                            <label className="block text-sm text-[#b8a898] mb-2">
                               API Key / Token
                             </label>
                             <div className="flex gap-2">
@@ -1341,7 +1341,7 @@ For questions, please contact support@lifecharter.architecture
                           
                           {integration.id === "telegram" && (
                             <div>
-                              <label className="block text-sm text-[#B9A9A9] mb-2">
+                              <label className="block text-sm text-[#b8a898] mb-2">
                                 Bot Token
                               </label>
                               <Input
@@ -1356,7 +1356,7 @@ For questions, please contact support@lifecharter.architecture
                             </div>
                           )}
                           
-                          <p className="text-xs text-[#B9A9A9]">
+                          <p className="text-xs text-[#b8a898]">
                             Your API key is encrypted and stored securely.
                           </p>
                         </div>
@@ -1476,34 +1476,34 @@ For questions, please contact support@lifecharter.architecture
       <div className="space-y-8">
         {/* Pricing Plans */}
         <div>
-          <h3 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-6">
+          <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-6">
             Choose Your Plan
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((plan) => (
               <Card 
                 key={plan.name}
-                className={`relative ${plan.popular ? 'border-[#D4AF63] border-2' : ''}`}
+                className={`relative ${plan.popular ? 'border-[#c9a227] border-2' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-[#D4AF63] text-[#1F315B] text-xs font-semibold px-3 py-1 rounded-full">
+                    <span className="bg-[#c9a227] text-[#1a2b4a] text-xs font-semibold px-3 py-1 rounded-full">
                       Most Popular
                     </span>
                   </div>
                 )}
                 <CardContent className="p-6">
-                  <h4 className="text-lg font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                  <h4 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                     {plan.name}
                   </h4>
                   <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                    <span className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {plan.price}
                     </span>
-                    <span className="text-[#B9A9A9] ml-1">{plan.period}</span>
+                    <span className="text-[#b8a898] ml-1">{plan.period}</span>
                   </div>
-                  <p className="text-sm text-[#B9A9A9] mt-1">{plan.onboarding}</p>
-                  <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] mt-3">
+                  <p className="text-sm text-[#b8a898] mt-1">{plan.onboarding}</p>
+                  <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] mt-3">
                     {plan.description}
                   </p>
                   
@@ -1511,7 +1511,7 @@ For questions, please contact support@lifecharter.architecture
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{feature}</span>
+                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -1531,15 +1531,15 @@ For questions, please contact support@lifecharter.architecture
         </div>
 
         {/* Current Plan Status */}
-        <Card className="bg-gradient-to-br from-[#D4AF63]/20 to-[#5E3B6C]/20 border-[#D4AF63]/30">
+        <Card className="bg-gradient-to-br from-[#c9a227]/20 to-[#7b6b8d]/20 border-[#c9a227]/30">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#B9A9A9]">Current Plan</p>
-                <h3 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                <p className="text-sm text-[#b8a898]">Current Plan</p>
+                <h3 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                 </h3>
-                <p className="text-sm text-[#B9A9A9] mt-1">
+                <p className="text-sm text-[#b8a898] mt-1">
                   ${planPrices[currentPlan]}/month • Renews {billingCycle.nextBillingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
@@ -1554,7 +1554,7 @@ For questions, please contact support@lifecharter.architecture
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                  <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                     Change Your Plan
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => setShowChangePlanModal(false)}>
@@ -1562,7 +1562,7 @@ For questions, please contact support@lifecharter.architecture
                   </Button>
                 </div>
 
-                <p className="text-sm text-[#B9A9A9] mb-4">
+                <p className="text-sm text-[#b8a898] mb-4">
                   Current plan: <strong>{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</strong> at ${planPrices[currentPlan]}/month
                 </p>
 
@@ -1579,14 +1579,14 @@ For questions, please contact support@lifecharter.architecture
                       disabled={plan.id === currentPlan}
                       className={`p-4 rounded-lg border-2 text-left transition-all ${
                         selectedNewPlan === plan.id
-                          ? "border-[#D4AF63] bg-[#D4AF63]/10"
+                          ? "border-[#c9a227] bg-[#c9a227]/10"
                           : plan.id === currentPlan
                           ? "border-gray-200 opacity-50 cursor-not-allowed"
-                          : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                          : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                       }`}
                     >
                       {plan.popular && (
-                        <span className="text-xs bg-[#D4AF63] text-[#1F315B] px-2 py-0.5 rounded-full mb-2 inline-block">
+                        <span className="text-xs bg-[#c9a227] text-[#1a2b4a] px-2 py-0.5 rounded-full mb-2 inline-block">
                           Popular
                         </span>
                       )}
@@ -1595,11 +1595,11 @@ For questions, please contact support@lifecharter.architecture
                           Current
                         </span>
                       )}
-                      <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{plan.name}</h4>
-                      <p className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">{plan.price}<span className="text-sm font-normal text-[#B9A9A9]">/mo</span></p>
+                      <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.name}</h4>
+                      <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.price}<span className="text-sm font-normal text-[#b8a898]">/mo</span></p>
                       <ul className="mt-2 space-y-1">
                         {plan.features.slice(0, 2).map((feature, i) => (
-                          <li key={i} className="text-xs text-[#B9A9A9]">• {feature}</li>
+                          <li key={i} className="text-xs text-[#b8a898]">• {feature}</li>
                         ))}
                       </ul>
                     </button>
@@ -1612,10 +1612,10 @@ For questions, please contact support@lifecharter.architecture
                     <div className="flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
                       <div>
-                        <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                        <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                           Downgrade Request
                         </p>
-                        <p className="text-sm text-[#B9A9A9] mt-1">
+                        <p className="text-sm text-[#b8a898] mt-1">
                           To downgrade from {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to {selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)}, please contact our support team. We&apos;ll help you transition smoothly.
                         </p>
                         <Button 
@@ -1634,28 +1634,28 @@ For questions, please contact support@lifecharter.architecture
                 {/* Upgrade Summary */}
                 {selectedNewPlan && isUpgrade(currentPlan, selectedNewPlan) && prorationAmount !== null && (
                   <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20 mb-6">
-                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">Upgrade Summary</h4>
+                    <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Upgrade Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-[#B9A9A9]">Current Plan</span>
-                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} (${planPrices[currentPlan]}/mo)</span>
+                        <span className="text-[#b8a898]">Current Plan</span>
+                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} (${planPrices[currentPlan]}/mo)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#B9A9A9]">New Plan</span>
-                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} (${planPrices[selectedNewPlan]}/mo)</span>
+                        <span className="text-[#b8a898]">New Plan</span>
+                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} (${planPrices[selectedNewPlan]}/mo)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#B9A9A9]">Days Remaining in Cycle</span>
-                        <span className="text-[#1F315B] dark:text-[#F6F1E8]">{Math.ceil((billingCycle.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</span>
+                        <span className="text-[#b8a898]">Days Remaining in Cycle</span>
+                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{Math.ceil((billingCycle.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</span>
                       </div>
-                      <div className="border-t border-[#1F315B]/10 pt-2 mt-2">
+                      <div className="border-t border-[#1a2b4a]/10 pt-2 mt-2">
                         <div className="flex justify-between font-semibold">
-                          <span className="text-[#1F315B] dark:text-[#F6F1E8]">Amount Due Today (Prorated)</span>
+                          <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Amount Due Today (Prorated)</span>
                           <span className="text-green-600">${prorationAmount.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
-                    <p className="text-xs text-[#B9A9A9] mt-3">
+                    <p className="text-xs text-[#b8a898] mt-3">
                       Your new billing cycle will start today. You&apos;ll be charged the prorated difference for the remaining days in your current cycle.
                     </p>
                   </div>
@@ -1682,19 +1682,19 @@ For questions, please contact support@lifecharter.architecture
 
         {/* Payment Method */}
         <div>
-          <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">Payment Method</h4>
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Payment Method</h4>
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-8 bg-[#1F315B]/10 rounded flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-[#1F315B] dark:text-[#F6F1E8]" />
+                  <div className="w-12 h-8 bg-[#1a2b4a]/10 rounded flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-[#1a2b4a] dark:text-[#F8F5F0]" />
                   </div>
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                       •••• •••• •••• 4242
                     </p>
-                    <p className="text-sm text-[#B9A9A9]">Expires 12/27</p>
+                    <p className="text-sm text-[#b8a898]">Expires 12/27</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm">
@@ -1708,7 +1708,7 @@ For questions, please contact support@lifecharter.architecture
         {/* Billing History */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Billing History</h4>
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Billing History</h4>
             <Button variant="outline" size="sm" onClick={() => downloadAllInvoices()}>
               <Download className="w-4 h-4 mr-2" />
               Download All
@@ -1726,20 +1726,20 @@ For questions, please contact support@lifecharter.architecture
             ].map((invoice, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10 hover:bg-[#1F315B]/5 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/10 flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-[#D4AF63]" />
+                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-[#c9a227]" />
                   </div>
                   <div>
-                    <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">{invoice.id}</p>
-                    <p className="text-sm text-[#B9A9A9]">{invoice.date} • {invoice.plan}</p>
+                    <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">{invoice.id}</p>
+                    <p className="text-sm text-[#b8a898]">{invoice.date} • {invoice.plan}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{invoice.amount}</p>
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{invoice.amount}</p>
                     <span className="text-xs text-green-500">{invoice.status}</span>
                   </div>
                   <Button 
@@ -1754,7 +1754,7 @@ For questions, please contact support@lifecharter.architecture
               </div>
             ))}
           </div>
-          <p className="text-xs text-[#B9A9A9] mt-4">
+          <p className="text-xs text-[#b8a898] mt-4">
             Invoices are generated automatically on your billing date. Click the download button to save a PDF copy.
           </p>
         </div>
@@ -1765,7 +1765,7 @@ For questions, please contact support@lifecharter.architecture
   const renderSecuritySettings = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
           <Lock className="w-4 h-4" />
           Change Password
         </h4>
@@ -1777,8 +1777,8 @@ For questions, please contact support@lifecharter.architecture
         </div>
       </div>
 
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4 flex items-center gap-2">
+      <div className="border-t border-[#1a2b4a]/10 pt-6">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
           <Shield className="w-4 h-4" />
           Two-Factor Authentication
         </h4>
@@ -1786,10 +1786,10 @@ For questions, please contact support@lifecharter.architecture
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
             <div>
-              <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                 2FA Not Enabled
               </p>
-              <p className="text-sm text-[#B9A9A9] mt-1">
+              <p className="text-sm text-[#b8a898] mt-1">
                 Add an extra layer of security to your account
               </p>
               <Button className="mt-3" size="sm">
@@ -1800,8 +1800,8 @@ For questions, please contact support@lifecharter.architecture
         </div>
       </div>
 
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+      <div className="border-t border-[#1a2b4a]/10 pt-6">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
           Active Sessions
         </h4>
         <div className="space-y-3">
@@ -1811,10 +1811,10 @@ For questions, please contact support@lifecharter.architecture
           ].map((session, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 rounded-lg border border-[#1F315B]/10"
+              className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10"
             >
               <div>
-                <p className="text-[#1F315B] dark:text-[#F6F1E8]">
+                <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {session.device}
                   {session.current && (
                     <span className="ml-2 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded">
@@ -1822,7 +1822,7 @@ For questions, please contact support@lifecharter.architecture
                     </span>
                   )}
                 </p>
-                <p className="text-sm text-[#B9A9A9]">{session.location}</p>
+                <p className="text-sm text-[#b8a898]">{session.location}</p>
               </div>
               {!session.current && (
                 <Button variant="ghost" size="sm" className="text-red-500">
@@ -1839,10 +1839,10 @@ For questions, please contact support@lifecharter.architecture
   const renderDataSettings = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
           Export Your Data
         </h4>
-        <p className="text-sm text-[#B9A9A9] mb-4">
+        <p className="text-sm text-[#b8a898] mb-4">
           Download all your assessments, business plan, and account data
         </p>
         <div className="space-y-3">
@@ -1861,8 +1861,8 @@ For questions, please contact support@lifecharter.architecture
         </div>
       </div>
 
-      <div className="border-t border-[#1F315B]/10 pt-6">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+      <div className="border-t border-[#1a2b4a]/10 pt-6">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
           Danger Zone
         </h4>
         <div className="space-y-3">
@@ -1871,7 +1871,7 @@ For questions, please contact support@lifecharter.architecture
               <div className="flex items-center justify-between">
                 <div>
                   <h5 className="font-medium text-red-500">Delete Account</h5>
-                  <p className="text-sm text-[#B9A9A9]">
+                  <p className="text-sm text-[#b8a898]">
                     Permanently delete your account and all data
                   </p>
                 </div>
@@ -1905,10 +1905,10 @@ For questions, please contact support@lifecharter.architecture
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
           Settings
         </h1>
-        <p className="text-[#B9A9A9]">
+        <p className="text-[#b8a898]">
           Manage your account, workspace, and preferences
         </p>
       </div>
@@ -1925,8 +1925,8 @@ For questions, please contact support@lifecharter.architecture
                     onClick={() => setActiveTab(section.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       activeTab === section.id
-                        ? "bg-[#D4AF63]/10 text-[#D4AF63]"
-                        : "text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/5"
+                        ? "bg-[#c9a227]/10 text-[#c9a227]"
+                        : "text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
                     }`}
                   >
                     {section.icon}
@@ -1943,10 +1943,10 @@ For questions, please contact support@lifecharter.architecture
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {settingsSections.find(s => s.id === activeTab)?.title}
                 </h2>
-                <p className="text-sm text-[#B9A9A9]">
+                <p className="text-sm text-[#b8a898]">
                   {settingsSections.find(s => s.id === activeTab)?.description}
                 </p>
               </div>

@@ -122,7 +122,7 @@ export default function ContentCalendarPage() {
 
     // Empty cells for days before the first of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 bg-[#1F315B]/5 rounded-lg" />);
+      days.push(<div key={`empty-${i}`} className="h-24 bg-[#1a2b4a]/5 rounded-lg" />);
     }
 
     // Days of the month
@@ -136,16 +136,16 @@ export default function ContentCalendarPage() {
           key={day}
           className={`h-24 p-2 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
             isToday
-              ? "border-[#D4AF63] bg-[#D4AF63]/10"
-              : "border-[#1F315B]/10 bg-white dark:bg-[#1F315B]/30"
+              ? "border-[#c9a227] bg-[#c9a227]/10"
+              : "border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30"
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className={`text-sm font-medium ${isToday ? "text-[#D4AF63]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
+            <span className={`text-sm font-medium ${isToday ? "text-[#c9a227]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
               {day}
             </span>
             {posts.length > 0 && (
-              <span className="text-xs bg-[#2E7C83] text-white px-1.5 py-0.5 rounded-full">
+              <span className="text-xs bg-[#4a9b9b] text-white px-1.5 py-0.5 rounded-full">
                 {posts.length}
               </span>
             )}
@@ -160,13 +160,13 @@ export default function ContentCalendarPage() {
                 {post.platforms.slice(0, 2).map((platform, pidx) => (
                   <span key={pidx} className={`w-2 h-2 rounded-full ${platformColors[platform]}`} />
                 ))}
-                <span className="text-xs text-[#B9A9A9] truncate flex-1">
+                <span className="text-xs text-[#b8a898] truncate flex-1">
                   {post.content.substring(0, 20)}...
                 </span>
               </div>
             ))}
             {posts.length > 2 && (
-              <p className="text-xs text-[#B9A9A9]">+{posts.length - 2} more</p>
+              <p className="text-xs text-[#b8a898]">+{posts.length - 2} more</p>
             )}
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function ContentCalendarPage() {
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
-      <Link href="/daily-compass" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Compass
       </Link>
@@ -187,28 +187,28 @@ export default function ContentCalendarPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-[#D4AF63]" />
+            <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-[#c9a227]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Content Calendar
               </h1>
-              <p className="text-[#B9A9A9]">
+              <p className="text-[#b8a898]">
                 Schedule and manage your social media posts
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex bg-[#1F315B]/10 rounded-lg p-1">
+            <div className="flex bg-[#1a2b4a]/10 rounded-lg p-1">
               {["day", "week", "month"].map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v as "day" | "week" | "month")}
                   className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                     view === v
-                      ? "bg-[#1F315B] text-[#F6F1E8]"
-                      : "text-[#1F315B] dark:text-[#F6F1E8]"
+                      ? "bg-[#1a2b4a] text-[#F8F5F0]"
+                      : "text-[#1a2b4a] dark:text-[#F8F5F0]"
                   }`}
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -228,16 +228,16 @@ export default function ContentCalendarPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-            className="p-2 hover:bg-[#1F315B]/10 rounded-lg"
+            className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+          <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
             {currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </h2>
           <button
             onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-            className="p-2 hover:bg-[#1F315B]/10 rounded-lg"
+            className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -253,7 +253,7 @@ export default function ContentCalendarPage() {
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-[#B9A9A9] py-2">
+              <div key={day} className="text-center text-sm font-medium text-[#b8a898] py-2">
                 {day}
               </div>
             ))}
@@ -269,7 +269,7 @@ export default function ContentCalendarPage() {
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#D4AF63]" />
+            <Clock className="w-5 h-5 text-[#c9a227]" />
             Upcoming Posts
           </CardTitle>
         </CardHeader>
@@ -281,19 +281,19 @@ export default function ContentCalendarPage() {
               .map((post) => (
                 <div
                   key={post.id}
-                  className="flex items-start gap-4 p-4 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors cursor-pointer"
+                  className="flex items-start gap-4 p-4 bg-[#1a2b4a]/5 rounded-lg hover:bg-[#1a2b4a]/10 transition-colors cursor-pointer"
                   onClick={() => setSelectedPost(post)}
                 >
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                    <span className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {new Date(post.scheduledDate).getDate()}
                     </span>
-                    <span className="text-xs text-[#B9A9A9]">
+                    <span className="text-xs text-[#b8a898]">
                       {new Date(post.scheduledDate).toLocaleDateString("en-US", { month: "short" })}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-[#1F315B] dark:text-[#F6F1E8] line-clamp-2">
+                    <p className="text-[#1a2b4a] dark:text-[#F8F5F0] line-clamp-2">
                       {post.content}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
@@ -307,7 +307,7 @@ export default function ContentCalendarPage() {
                           </span>
                         ))}
                       </div>
-                      <span className="text-sm text-[#B9A9A9] flex items-center gap-1">
+                      <span className="text-sm text-[#b8a898] flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {post.scheduledTime}
                       </span>
@@ -326,19 +326,19 @@ export default function ContentCalendarPage() {
       </Card>
 
       {/* PostStream Integration Note */}
-      <Card className="mt-8 bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="mt-8 bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-              <Share2 className="w-6 h-6 text-[#D4AF63]" />
+            <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+              <Share2 className="w-6 h-6 text-[#c9a227]" />
             </div>
             <div>
               <h3 className="font-semibold mb-2">PostStream Integration</h3>
-              <p className="text-sm text-[#CDBED6] mb-4">
+              <p className="text-sm text-[#e8e4f0] mb-4">
                 Connect your social media accounts to schedule posts directly from the Content Studio.
                 PostStream supports Instagram, LinkedIn, Twitter/X, Facebook, and more.
               </p>
-              <Button variant="outline" className="border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+              <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Connect Accounts
               </Button>
             </div>

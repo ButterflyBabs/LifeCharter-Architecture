@@ -224,7 +224,7 @@ export default function AIGuideWidget() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] shadow-lg hover:shadow-xl transition-all hover:scale-105 z-50 flex items-center justify-center"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] shadow-lg hover:shadow-xl transition-all hover:scale-105 z-50 flex items-center justify-center"
         >
           <Bot className="w-7 h-7" />
         </button>
@@ -233,21 +233,21 @@ export default function AIGuideWidget() {
       {/* Chat Widget */}
       {isOpen && (
         <div
-          className={`fixed right-6 bottom-6 bg-white dark:bg-[#1F315B] rounded-2xl shadow-2xl z-50 transition-all duration-300 overflow-hidden ${
+          className={`fixed right-6 bottom-6 bg-white dark:bg-[#1a2b4a] rounded-2xl shadow-2xl z-50 transition-all duration-300 overflow-hidden ${
             isExpanded
               ? "w-[500px] h-[600px]"
               : "w-[380px] h-[500px]"
           }`}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] p-4 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-[#D4AF63]" />
+              <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-[#c9a227]" />
               </div>
               <div>
                 <h3 className="font-semibold">AI Guide</h3>
-                <p className="text-xs text-[#CDBED6]">Context: {currentContext.label}</p>
+                <p className="text-xs text-[#e8e4f0]">Context: {currentContext.label}</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -272,15 +272,15 @@ export default function AIGuideWidget() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 h-[calc(100%-140px)] bg-[#F6F1E8]/50 dark:bg-[#1F315B]/50">
+          <div className="flex-1 overflow-y-auto p-4 h-[calc(100%-140px)] bg-[#F8F5F0]/50 dark:bg-[#1a2b4a]/50">
             {messages.length === 0 && showSuggestions && (
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#D4AF63]/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+                  <div className="w-8 h-8 rounded-full bg-[#c9a227]/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 text-[#c9a227]" />
                   </div>
                   <div className="bg-white dark:bg-[#2a3a5c] rounded-lg p-3 shadow-sm">
-                    <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                       Hi! I&apos;m your AI Guide. I can help you with {currentContext.label.toLowerCase()} questions. 
                       What would you like to explore?
                     </p>
@@ -290,12 +290,12 @@ export default function AIGuideWidget() {
                 {/* Quick Actions */}
                 {currentContext.suggestions.length > 0 && (
                   <div className="ml-11 space-y-2">
-                    <p className="text-xs text-[#B9A9A9] mb-2">Quick suggestions:</p>
+                    <p className="text-xs text-[#b8a898] mb-2">Quick suggestions:</p>
                     {currentContext.suggestions.map((action) => (
                       <button
                         key={action.id}
                         onClick={() => handleSend(action.prompt)}
-                        className="w-full text-left p-3 bg-white dark:bg-[#2a3a5c] rounded-lg border border-[#1F315B]/10 hover:border-[#D4AF63]/50 transition-colors text-sm text-[#1F315B] dark:text-[#F6F1E8]"
+                        className="w-full text-left p-3 bg-white dark:bg-[#2a3a5c] rounded-lg border border-[#1a2b4a]/10 hover:border-[#c9a227]/50 transition-colors text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"
                       >
                         {action.label}
                       </button>
@@ -315,21 +315,21 @@ export default function AIGuideWidget() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                     message.role === "user"
-                      ? "bg-[#2E7C83]/20"
-                      : "bg-[#D4AF63]/20"
+                      ? "bg-[#4a9b9b]/20"
+                      : "bg-[#c9a227]/20"
                   }`}
                 >
                   {message.role === "user" ? (
-                    <MessageSquare className="w-4 h-4 text-[#2E7C83]" />
+                    <MessageSquare className="w-4 h-4 text-[#4a9b9b]" />
                   ) : (
-                    <Bot className="w-4 h-4 text-[#D4AF63]" />
+                    <Bot className="w-4 h-4 text-[#c9a227]" />
                   )}
                 </div>
                 <div
                   className={`rounded-lg p-3 shadow-sm max-w-[80%] ${
                     message.role === "user"
-                      ? "bg-[#2E7C83] text-white"
-                      : "bg-white dark:bg-[#2a3a5c] text-[#1F315B] dark:text-[#F6F1E8]"
+                      ? "bg-[#4a9b9b] text-white"
+                      : "bg-white dark:bg-[#2a3a5c] text-[#1a2b4a] dark:text-[#F8F5F0]"
                   }`}
                 >
                   <p className="text-sm">{message.content}</p>
@@ -342,14 +342,14 @@ export default function AIGuideWidget() {
 
             {isLoading && (
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-[#D4AF63]" />
+                <div className="w-8 h-8 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-[#c9a227]" />
                 </div>
                 <div className="bg-white dark:bg-[#2a3a5c] rounded-lg p-3 shadow-sm">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-[#D4AF63] rounded-full animate-bounce" />
-                    <span className="w-2 h-2 bg-[#D4AF63] rounded-full animate-bounce delay-100" />
-                    <span className="w-2 h-2 bg-[#D4AF63] rounded-full animate-bounce delay-200" />
+                    <span className="w-2 h-2 bg-[#c9a227] rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-[#c9a227] rounded-full animate-bounce delay-100" />
+                    <span className="w-2 h-2 bg-[#c9a227] rounded-full animate-bounce delay-200" />
                   </div>
                 </div>
               </div>
@@ -359,17 +359,17 @@ export default function AIGuideWidget() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-white dark:bg-[#1F315B] border-t border-[#1F315B]/10">
+          <div className="p-4 bg-white dark:bg-[#1a2b4a] border-t border-[#1a2b4a]/10">
             {messages.length > 0 && (
               <div className="flex justify-between items-center mb-2">
                 <button
                   onClick={clearConversation}
-                  className="text-xs text-[#B9A9A9] hover:text-red-500 flex items-center gap-1"
+                  className="text-xs text-[#b8a898] hover:text-red-500 flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3 rotate-45" />
                   New conversation
                 </button>
-                <Link href="/ai-guide" className="text-xs text-[#D4AF63] hover:underline">
+                <Link href="/ai-guide" className="text-xs text-[#c9a227] hover:underline">
                   View all history
                 </Link>
               </div>
@@ -380,7 +380,7 @@ export default function AIGuideWidget() {
                 className={`p-3 rounded-lg transition-colors ${
                   isRecording
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-[#1F315B]/5 hover:bg-[#1F315B]/10 text-[#1F315B] dark:text-[#F6F1E8]"
+                    : "bg-[#1a2b4a]/5 hover:bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#F8F5F0]"
                 }`}
               >
                 {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}

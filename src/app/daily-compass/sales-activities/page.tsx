@@ -143,7 +143,7 @@ export default function SalesActivitiesPage() {
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
-      <Link href="/daily-compass" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Compass
       </Link>
@@ -151,14 +151,14 @@ export default function SalesActivitiesPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center">
-              <Phone className="w-6 h-6 text-[#5E3B6C]" />
+            <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center">
+              <Phone className="w-6 h-6 text-[#7b6b8d]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Sales Activities
               </h1>
-              <p className="text-[#B9A9A9]">
+              <p className="text-[#b8a898]">
                 Track calls, follow-ups, and proposals
               </p>
             </div>
@@ -174,13 +174,13 @@ export default function SalesActivitiesPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-[#B9A9A9]">Calls</p>
-            <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898]">Calls</p>
+            <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {stats.callsMade}/{stats.callsGoal}
             </p>
-            <div className="w-full bg-[#1F315B]/10 rounded-full h-1.5 mt-2">
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-1.5 mt-2">
               <div 
-                className="bg-[#5E3B6C] h-1.5 rounded-full"
+                className="bg-[#7b6b8d] h-1.5 rounded-full"
                 style={{ width: `${(stats.callsMade/stats.callsGoal)*100}%` }}
               />
             </div>
@@ -188,13 +188,13 @@ export default function SalesActivitiesPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-[#B9A9A9]">Follow-ups</p>
-            <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898]">Follow-ups</p>
+            <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {stats.followupsSent}/{stats.followupsGoal}
             </p>
-            <div className="w-full bg-[#1F315B]/10 rounded-full h-1.5 mt-2">
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-1.5 mt-2">
               <div 
-                className="bg-[#2E7C83] h-1.5 rounded-full"
+                className="bg-[#4a9b9b] h-1.5 rounded-full"
                 style={{ width: `${(stats.followupsSent/stats.followupsGoal)*100}%` }}
               />
             </div>
@@ -202,25 +202,25 @@ export default function SalesActivitiesPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-[#B9A9A9]">Proposals</p>
-            <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898]">Proposals</p>
+            <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {stats.proposalsSent}/{stats.proposalsGoal}
             </p>
-            <div className="w-full bg-[#1F315B]/10 rounded-full h-1.5 mt-2">
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-1.5 mt-2">
               <div 
-                className="bg-[#D4AF63] h-1.5 rounded-full"
+                className="bg-[#c9a227] h-1.5 rounded-full"
                 style={{ width: `${(stats.proposalsSent/stats.proposalsGoal)*100}%` }}
               />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C]">
+        <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d]">
           <CardContent className="p-4">
-            <p className="text-sm text-[#CDBED6]">Pipeline Value</p>
-            <p className="text-2xl font-bold text-[#F6F1E8]">
+            <p className="text-sm text-[#e8e4f0]">Pipeline Value</p>
+            <p className="text-2xl font-bold text-[#F8F5F0]">
               ${stats.revenueInPipeline.toLocaleString()}
             </p>
-            <p className="text-xs text-[#D4AF63] mt-1">Active opportunities</p>
+            <p className="text-xs text-[#c9a227] mt-1">Active opportunities</p>
           </CardContent>
         </Card>
       </div>
@@ -233,8 +233,8 @@ export default function SalesActivitiesPage() {
             onClick={() => setFilter(f as string)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? "bg-[#1F315B] text-[#F6F1E8]"
-                : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/20"
+                ? "bg-[#1a2b4a] text-[#F8F5F0]"
+                : "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/20"
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -251,8 +251,8 @@ export default function SalesActivitiesPage() {
               key={activity.id}
               className={`p-4 rounded-lg border transition-all ${
                 activity.completed
-                  ? "bg-[#1F315B]/5 border-[#1F315B]/10 opacity-60"
-                  : "bg-white dark:bg-[#1F315B]/50 border-[#1F315B]/20"
+                  ? "bg-[#1a2b4a]/5 border-[#1a2b4a]/10 opacity-60"
+                  : "bg-white dark:bg-[#1a2b4a]/50 border-[#1a2b4a]/20"
               }`}
             >
               <div className="flex items-start gap-4">
@@ -263,51 +263,51 @@ export default function SalesActivitiesPage() {
                   {activity.completed ? (
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-[#B9A9A9] hover:border-[#D4AF63]" />
+                    <div className="w-5 h-5 rounded-full border-2 border-[#b8a898] hover:border-[#c9a227]" />
                   )}
                 </button>
 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="p-1.5 bg-[#1F315B]/10 rounded">
-                      <TypeIcon className="w-4 h-4 text-[#5E3B6C]" />
+                    <span className="p-1.5 bg-[#1a2b4a]/10 rounded">
+                      <TypeIcon className="w-4 h-4 text-[#7b6b8d]" />
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColors[activity.priority]}`}>
                       {activity.priority}
                     </span>
-                    <span className="text-xs text-[#B9A9A9] flex items-center gap-1">
+                    <span className="text-xs text-[#b8a898] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {activity.dueDate}
                     </span>
                   </div>
 
-                  <h3 className={`font-medium ${activity.completed ? "line-through text-[#B9A9A9]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
+                  <h3 className={`font-medium ${activity.completed ? "line-through text-[#b8a898]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
                     {activity.title}
                   </h3>
 
                   <div className="flex items-center gap-2 mt-1">
-                    <User className="w-3 h-3 text-[#B9A9A9]" />
-                    <span className="text-sm text-[#B9A9A9]">
+                    <User className="w-3 h-3 text-[#b8a898]" />
+                    <span className="text-sm text-[#b8a898]">
                       {activity.contactName}
                       {activity.contactCompany && ` • ${activity.contactCompany}`}
                     </span>
                   </div>
 
                   {activity.notes && (
-                    <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] mt-2 bg-[#5E3B6C]/10 p-2 rounded">
+                    <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mt-2 bg-[#7b6b8d]/10 p-2 rounded">
                       {activity.notes}
                     </p>
                   )}
 
                   {activity.linkedTo && (
-                    <div className="flex items-center gap-2 mt-2 text-xs text-[#2E7C83]">
+                    <div className="flex items-center gap-2 mt-2 text-xs text-[#4a9b9b]">
                       <TrendingUp className="w-3 h-3" />
                       <span>Linked to: {activity.linkedTo}</span>
                     </div>
                   )}
 
                   {activity.estimatedValue && (
-                    <div className="flex items-center gap-2 mt-2 text-xs text-[#D4AF63]">
+                    <div className="flex items-center gap-2 mt-2 text-xs text-[#c9a227]">
                       <Star className="w-3 h-3" />
                       <span>Est. Value: ${activity.estimatedValue}</span>
                     </div>
@@ -327,16 +327,16 @@ export default function SalesActivitiesPage() {
       <Card className="mt-8">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Today&apos;s Progress
             </h3>
-            <span className="text-sm text-[#B9A9A9]">
+            <span className="text-sm text-[#b8a898]">
               {completedCount} of {totalCount} completed
             </span>
           </div>
-          <div className="w-full bg-[#1F315B]/10 rounded-full h-3">
+          <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
             <div 
-              className="bg-gradient-to-r from-[#5E3B6C] to-[#D4AF63] h-3 rounded-full transition-all"
+              className="bg-gradient-to-r from-[#7b6b8d] to-[#c9a227] h-3 rounded-full transition-all"
               style={{ width: `${(completedCount / totalCount) * 100}%` }}
             />
           </div>

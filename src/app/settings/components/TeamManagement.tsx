@@ -129,10 +129,10 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+          <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
             Team Members
           </h3>
-          <p className="text-sm text-[#B9A9A9]">
+          <p className="text-sm text-[#b8a898]">
             {activeMembers.length} of {maxMembers} members used • {workspaceName}
           </p>
         </div>
@@ -161,15 +161,15 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
 
       {/* Add Member Form */}
       {isAdding && (
-        <Card className="border-[#D4AF63]/30">
+        <Card className="border-[#c9a227]/30">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Invite Team Member
               </h4>
               <button
                 onClick={() => setIsAdding(false)}
-                className="text-[#B9A9A9] hover:text-[#1F315B]"
+                className="text-[#b8a898] hover:text-[#1a2b4a]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -177,7 +177,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                   Email Address *
                 </label>
                 <Input
@@ -188,7 +188,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                   Full Name (optional)
                 </label>
                 <Input
@@ -200,7 +200,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Role
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -210,14 +210,14 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                     onClick={() => setNewMember({ ...newMember, role })}
                     className={`p-3 rounded-lg border text-left transition-all ${
                       newMember.role === role
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                        : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                        ? "border-[#c9a227] bg-[#c9a227]/10"
+                        : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                     }`}
                   >
-                    <div className="font-medium text-[#1F315B] dark:text-[#F6F1E8] capitalize">
+                    <div className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize">
                       {roleLabels[role]}
                     </div>
-                    <div className="text-xs text-[#B9A9A9] mt-1">
+                    <div className="text-xs text-[#b8a898] mt-1">
                       {roleDescriptions[role]}
                     </div>
                   </button>
@@ -251,7 +251,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
                     {member.avatar ? (
                       <img
                         src={member.avatar}
@@ -259,16 +259,16 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
-                      <User className="w-6 h-6 text-[#D4AF63]" />
+                      <User className="w-6 h-6 text-[#c9a227]" />
                     )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                         {member.name}
                       </span>
                       {member.role === "owner" && (
-                        <Crown className="w-4 h-4 text-[#D4AF63]" />
+                        <Crown className="w-4 h-4 text-[#c9a227]" />
                       )}
                       {member.status === "pending" && (
                         <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded">
@@ -276,13 +276,13 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#B9A9A9]">{member.email}</p>
+                    <p className="text-sm text-[#b8a898]">{member.email}</p>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-[#B9A9A9] capitalize">
+                      <span className="text-xs text-[#b8a898] capitalize">
                         {roleLabels[member.role]}
                       </span>
                       {member.joinedAt && member.status === "active" && (
-                        <span className="text-xs text-[#B9A9A9]">
+                        <span className="text-xs text-[#b8a898]">
                           Joined {member.joinedAt}
                         </span>
                       )}
@@ -304,7 +304,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
                       <select
                         value={member.role}
                         onChange={(e) => handleChangeRole(member.id, e.target.value as TeamMember["role"])}
-                        className="text-sm rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]/20 px-3 py-1.5 text-[#1F315B] dark:text-[#F6F1E8]"
+                        className="text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-1.5 text-[#1a2b4a] dark:text-[#F8F5F0]"
                       >
                         <option value="admin">Admin</option>
                         <option value="editor">Editor</option>
@@ -331,31 +331,31 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
       </div>
 
       {/* Role Permissions Info */}
-      <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-        <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-3 flex items-center gap-2">
+      <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-3 flex items-center gap-2">
           <Shield className="w-4 h-4" />
           Role Permissions
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           {Object.entries(roleDescriptions).map(([role, desc]) => (
             <div key={role} className="flex items-start gap-2">
-              <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8] capitalize min-w-[60px]">
+              <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize min-w-[60px]">
                 {role}:
               </span>
-              <span className="text-[#B9A9A9]">{desc}</span>
+              <span className="text-[#b8a898]">{desc}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Plan Info */}
-      <div className="p-4 bg-[#D4AF63]/10 rounded-lg border border-[#D4AF63]/20">
+      <div className="p-4 bg-[#c9a227]/10 rounded-lg border border-[#c9a227]/20">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
               Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
             </h4>
-            <p className="text-sm text-[#B9A9A9]">
+            <p className="text-sm text-[#b8a898]">
               {maxMembers} team members included
             </p>
           </div>

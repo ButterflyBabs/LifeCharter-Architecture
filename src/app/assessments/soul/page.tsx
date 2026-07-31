@@ -394,15 +394,15 @@ export default function SoulAssessmentPage() {
     return (
       <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <Card className="border-[#5E3B6C]/30">
+          <Card className="border-[#7b6b8d]/30">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#5E3B6C]/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-[#5E3B6C]" />
+              <div className="w-16 h-16 rounded-full bg-[#7b6b8d]/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-[#7b6b8d]" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
                 Soul Assessment Complete!
               </h1>
-              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6">
+              <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mb-6">
                 Thank you for completing the Soul Assessment. Your responses have been
                 saved and will contribute to your overall LifeCharter Alignment Score.
               </p>
@@ -426,15 +426,15 @@ export default function SoulAssessmentPage() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-[#1F315B] text-white py-8 px-4">
+      <div className="bg-[#1a2b4a] text-white py-8 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-[#5E3B6C]/20 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-[#CDBED6]" />
+            <div className="w-10 h-10 rounded-lg bg-[#7b6b8d]/20 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-[#e8e4f0]" />
             </div>
             <div>
               <h1 className="text-xl font-bold">Soul Assessment</h1>
-              <p className="text-sm text-[#CDBED6]">Core Identity & Purpose</p>
+              <p className="text-sm text-[#e8e4f0]">Core Identity & Purpose</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -451,13 +451,13 @@ export default function SoulAssessmentPage() {
 
       {/* Question Card */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Card className="border-[#5E3B6C]/20">
+        <Card className="border-[#7b6b8d]/20">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#5E3B6C]">
+              <span className="text-sm font-medium text-[#7b6b8d]">
                 {currentQ.section}
               </span>
-              <div className="flex items-center gap-2 text-sm text-[#B9A9A9]">
+              <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
                 {isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
               </div>
@@ -475,7 +475,7 @@ export default function SoulAssessmentPage() {
                 </div>
               )}
             </div>
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {currentQ.text}
             </h2>
 
@@ -485,12 +485,12 @@ export default function SoulAssessmentPage() {
                 onChange={(e) => handleAnswer(e.target.value)}
                 placeholder="Type your answer here..."
                 rows={5}
-                className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#5E3B6C] focus:ring-2 focus:ring-[#5E3B6C]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1F315B] dark:text-[#F6F1E8]"
+                className="w-full p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#7b6b8d] focus:ring-2 focus:ring-[#7b6b8d]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-6 border-t border-[#D4AF63]/20">
+            <div className="flex items-center justify-between pt-6 border-t border-[#c9a227]/20">
               <Button
                 variant="ghost"
                 onClick={handlePrevious}
@@ -521,14 +521,14 @@ export default function SoulAssessmentPage() {
                 key={section}
                 className={`p-4 rounded-xl border-2 transition-all ${
                   isCurrent
-                    ? "border-[#5E3B6C] bg-[#5E3B6C]/5"
-                    : "border-[#D4AF63]/20"
+                    ? "border-[#7b6b8d] bg-[#7b6b8d]/5"
+                    : "border-[#c9a227]/20"
                 }`}
               >
-                <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {section}
                 </p>
-                <p className="text-xs text-[#B9A9A9] mt-1">
+                <p className="text-xs text-[#b8a898] mt-1">
                   {answeredQs} of {sectionQs.length} answered
                 </p>
                 <div className="mt-2">

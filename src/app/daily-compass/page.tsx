@@ -229,22 +229,22 @@ export default function DailyCompassPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF63] to-[#2E7C83] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c9a227] to-[#4a9b9b] flex items-center justify-center">
               <Compass className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Daily Compass
               </h1>
-              <p className="text-[#B9A9A9]">
+              <p className="text-[#b8a898]">
                 {greeting}, Babs • {currentDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#D4AF63]/10 rounded-full">
-              <Flame className="w-5 h-5 text-[#D4AF63]" />
-              <span className="font-semibold text-[#D4AF63]">{streak.current} day streak</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#c9a227]/10 rounded-full">
+              <Flame className="w-5 h-5 text-[#c9a227]" />
+              <span className="font-semibold text-[#c9a227]">{streak.current} day streak</span>
             </div>
             <Link href="/daily-compass/weekly">
               <Button variant="outline" size="sm">
@@ -256,18 +256,18 @@ export default function DailyCompassPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-white dark:bg-[#1F315B] rounded-xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-[#1a2b4a] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
               Today&apos;s Progress
             </span>
-            <span className="text-sm text-[#B9A9A9]">
+            <span className="text-sm text-[#b8a898]">
               {completedCount} of {totalCount} completed
             </span>
           </div>
-          <div className="w-full bg-[#1F315B]/10 rounded-full h-3">
+          <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
             <div 
-              className="bg-gradient-to-r from-[#2E7C83] to-[#D4AF63] h-3 rounded-full transition-all"
+              className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-3 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -279,13 +279,13 @@ export default function DailyCompassPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Action Bar */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Today&apos;s Focus
             </h2>
             <div className="flex gap-2">
               <div className="relative">
                 <select 
-                  className="text-sm p-2 pr-8 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                  className="text-sm p-2 pr-8 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                   value={energyLevel}
                   onChange={(e) => setEnergyLevel(Number(e.target.value))}
                 >
@@ -295,9 +295,9 @@ export default function DailyCompassPage() {
                 </select>
                 <button 
                   onClick={() => setShowEnergyInfo(true)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1F315B]/10 rounded"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1a2b4a]/10 rounded"
                 >
-                  <AlertCircle className="w-3 h-3 text-[#B9A9A9]" />
+                  <AlertCircle className="w-3 h-3 text-[#b8a898]" />
                 </button>
               </div>
               <Button size="sm" variant="outline" onClick={() => setShowAddTask(true)}>
@@ -309,14 +309,14 @@ export default function DailyCompassPage() {
 
           {/* Energy Level Info Modal */}
           {showEnergyInfo && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#D4AF63]" />
+                  <Zap className="w-4 h-4 text-[#c9a227]" />
                   Energy Levels Guide
                 </CardTitle>
                 <button onClick={() => setShowEnergyInfo(false)}>
-                  <X className="w-4 h-4 text-[#B9A9A9]" />
+                  <X className="w-4 h-4 text-[#b8a898]" />
                 </button>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -356,34 +356,34 @@ export default function DailyCompassPage() {
 
           {/* Add Task Modal */}
           {showAddTask && (
-            <Card className="border-[#2E7C83]/30">
+            <Card className="border-[#4a9b9b]/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-[#2E7C83]" />
+                  <Plus className="w-4 h-4 text-[#4a9b9b]" />
                   Add New Task
                 </CardTitle>
                 <button onClick={() => setShowAddTask(false)}>
-                  <X className="w-4 h-4 text-[#B9A9A9]" />
+                  <X className="w-4 h-4 text-[#b8a898]" />
                 </button>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Task Title</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Task Title</label>
                   <input
                     type="text"
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="What needs to be done?"
-                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B]"
+                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Type</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Type</label>
                     <select
                       value={newTaskType}
                       onChange={(e) => setNewTaskType(e.target.value as DailyFocus["type"])}
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
                     >
                       <option value="sales">Sales</option>
                       <option value="content">Content</option>
@@ -393,11 +393,11 @@ export default function DailyCompassPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Priority</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Priority</label>
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value as DailyFocus["priority"])}
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
                     >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -405,12 +405,12 @@ export default function DailyCompassPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Time (min)</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Time (min)</label>
                     <input
                       type="number"
                       value={newTaskTime}
                       onChange={(e) => setNewTaskTime(Number(e.target.value))}
-                      className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-sm"
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
                     />
                   </div>
                 </div>
@@ -428,8 +428,8 @@ export default function DailyCompassPage() {
                 key={item.id}
                 className={`p-4 rounded-lg border transition-all ${
                   item.completed 
-                    ? "bg-[#1F315B]/5 border-[#1F315B]/10 opacity-60" 
-                    : "bg-white dark:bg-[#1F315B]/50 border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                    ? "bg-[#1a2b4a]/5 border-[#1a2b4a]/10 opacity-60" 
+                    : "bg-white dark:bg-[#1a2b4a]/50 border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -440,7 +440,7 @@ export default function DailyCompassPage() {
                     {item.completed ? (
                       <CheckCircle2 className="w-5 h-5 text-green-500" />
                     ) : (
-                      <Circle className="w-5 h-5 text-[#B9A9A9] hover:text-[#D4AF63]" />
+                      <Circle className="w-5 h-5 text-[#b8a898] hover:text-[#c9a227]" />
                     )}
                   </button>
                   <div className="flex-1">
@@ -448,25 +448,25 @@ export default function DailyCompassPage() {
                       <span className={`p-1 rounded ${getPriorityColor(item.priority)}`}>
                         {getTypeIcon(item.type)}
                       </span>
-                      <span className={`font-medium ${item.completed ? "line-through text-[#B9A9A9]" : "text-[#1F315B] dark:text-[#F6F1E8]"}`}>
+                      <span className={`font-medium ${item.completed ? "line-through text-[#b8a898]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
                         {item.title}
                       </span>
                     </div>
-                    <p className="text-sm text-[#B9A9A9] mb-2">{item.description}</p>
+                    <p className="text-sm text-[#b8a898] mb-2">{item.description}</p>
                     
                     {item.linkedGoal && (
-                      <div className="flex items-center gap-2 text-xs text-[#5E3B6C] dark:text-[#CDBED6] bg-[#5E3B6C]/10 px-2 py-1 rounded w-fit">
+                      <div className="flex items-center gap-2 text-xs text-[#7b6b8d] dark:text-[#e8e4f0] bg-[#7b6b8d]/10 px-2 py-1 rounded w-fit">
                         <ArrowRight className="w-3 h-3" />
                         <span>Linked to: {item.linkedGoal}</span>
                       </div>
                     )}
 
                     <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-[#B9A9A9] flex items-center gap-1">
+                      <span className="text-xs text-[#b8a898] flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {item.estimatedTime} min
                       </span>
-                      <span className="text-xs px-2 py-0.5 bg-[#1F315B]/10 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full">
+                      <span className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full">
                         From: {getSourceLabel(item.source)}
                       </span>
                     </div>
@@ -484,44 +484,44 @@ export default function DailyCompassPage() {
             <Link href="/daily-compass/content-studio">
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#2E7C83]/20 flex items-center justify-center mx-auto mb-2">
-                    <Share2 className="w-5 h-5 text-[#2E7C83]" />
+                  <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
+                    <Share2 className="w-5 h-5 text-[#4a9b9b]" />
                   </div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">Create Content</p>
-                  <p className="text-xs text-[#B9A9A9]">Social post, script</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Create Content</p>
+                  <p className="text-xs text-[#b8a898]">Social post, script</p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/daily-compass/sales-activities">
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center mx-auto mb-2">
-                    <Phone className="w-5 h-5 text-[#5E3B6C]" />
+                  <div className="w-10 h-10 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center mx-auto mb-2">
+                    <Phone className="w-5 h-5 text-[#7b6b8d]" />
                   </div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">Sales Activities</p>
-                  <p className="text-xs text-[#B9A9A9]">Calls, follow-ups</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Sales Activities</p>
+                  <p className="text-xs text-[#b8a898]">Calls, follow-ups</p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/daily-compass/calendar">
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#D4AF63]/20 flex items-center justify-center mx-auto mb-2">
-                    <Calendar className="w-5 h-5 text-[#D4AF63]" />
+                  <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-2">
+                    <Calendar className="w-5 h-5 text-[#c9a227]" />
                   </div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">Content Calendar</p>
-                  <p className="text-xs text-[#B9A9A9]">Schedule posts</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
+                  <p className="text-xs text-[#b8a898]">Schedule posts</p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/daily-compass/scripts">
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#2E7C83]/20 flex items-center justify-center mx-auto mb-2">
-                    <MessageSquare className="w-5 h-5 text-[#2E7C83]" />
+                  <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
+                    <MessageSquare className="w-5 h-5 text-[#4a9b9b]" />
                   </div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">Scripts & Templates</p>
-                  <p className="text-xs text-[#B9A9A9]">Sales, emails</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Scripts & Templates</p>
+                  <p className="text-xs text-[#b8a898]">Sales, emails</p>
                 </CardContent>
               </Card>
             </Link>
@@ -534,76 +534,76 @@ export default function DailyCompassPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#D4AF63]" />
+                <TrendingUp className="w-5 h-5 text-[#c9a227]" />
                 Today&apos;s Activity
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#B9A9A9]">Sales Calls</span>
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{metrics.callsMade}/{metrics.callsGoal}</span>
+                  <span className="text-[#b8a898]">Sales Calls</span>
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.callsMade}/{metrics.callsGoal}</span>
                 </div>
-                <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
-                  <div className="bg-[#5E3B6C] h-2 rounded-full" style={{ width: `${(metrics.callsMade/metrics.callsGoal)*100}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#B9A9A9]">Content Posts</span>
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{metrics.postsCreated}/{metrics.postsGoal}</span>
-                </div>
-                <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
-                  <div className="bg-[#2E7C83] h-2 rounded-full" style={{ width: `${(metrics.postsCreated/metrics.postsGoal)*100}%` }} />
+                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
+                  <div className="bg-[#7b6b8d] h-2 rounded-full" style={{ width: `${(metrics.callsMade/metrics.callsGoal)*100}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#B9A9A9]">Follow-ups</span>
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{metrics.followupsSent}/{metrics.followupsGoal}</span>
+                  <span className="text-[#b8a898]">Content Posts</span>
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.postsCreated}/{metrics.postsGoal}</span>
                 </div>
-                <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
-                  <div className="bg-[#D4AF63] h-2 rounded-full" style={{ width: `${(metrics.followupsSent/metrics.followupsGoal)*100}%` }} />
+                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
+                  <div className="bg-[#4a9b9b] h-2 rounded-full" style={{ width: `${(metrics.postsCreated/metrics.postsGoal)*100}%` }} />
                 </div>
               </div>
-              <div className="pt-3 border-t border-[#1F315B]/10">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-[#b8a898]">Follow-ups</span>
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.followupsSent}/{metrics.followupsGoal}</span>
+                </div>
+                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
+                  <div className="bg-[#c9a227] h-2 rounded-full" style={{ width: `${(metrics.followupsSent/metrics.followupsGoal)*100}%` }} />
+                </div>
+              </div>
+              <div className="pt-3 border-t border-[#1a2b4a]/10">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#B9A9A9]">Engagement</span>
-                  <span className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{metrics.contentEngagement}</span>
+                  <span className="text-sm text-[#b8a898]">Engagement</span>
+                  <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.contentEngagement}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Insights from Business Management */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#D4AF63]" />
+                <Sparkles className="w-5 h-5 text-[#c9a227]" />
                 Insights
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#D4AF63] mt-0.5" />
-                  <p className="text-[#CDBED6]">
+                  <AlertCircle className="w-4 h-4 text-[#c9a227] mt-0.5" />
+                  <p className="text-[#e8e4f0]">
                     Your <strong>Sales domain</strong> score dropped 5 points. Focus on making 3 more calls today.
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-[#D4AF63] mt-0.5" />
-                  <p className="text-[#CDBED6]">
+                  <Zap className="w-4 h-4 text-[#c9a227] mt-0.5" />
+                  <p className="text-[#e8e4f0]">
                     Marketing Plan suggests posting about alignment - content idea ready in Studio.
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Trophy className="w-4 h-4 text-[#D4AF63] mt-0.5" />
-                  <p className="text-[#CDBED6]">
+                  <Trophy className="w-4 h-4 text-[#c9a227] mt-0.5" />
+                  <p className="text-[#e8e4f0]">
                     You are on track to hit your Q3 revenue goal! Keep the momentum.
                   </p>
                 </div>
               </div>
               <Link href="/dashboard">
-                <Button variant="outline" className="w-full mt-4 border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+                <Button variant="outline" className="w-full mt-4 border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                   View Business Health
                 </Button>
               </Link>
@@ -614,7 +614,7 @@ export default function DailyCompassPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#D4AF63]" />
+                <Zap className="w-5 h-5 text-[#c9a227]" />
                 Quick Wins
               </CardTitle>
             </CardHeader>
@@ -626,8 +626,8 @@ export default function DailyCompassPage() {
               >
                 <span className="text-2xl mr-3">💬</span>
                 <div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Send a testimonial request</p>
-                  <p className="text-xs text-[#B9A9A9]">To your best client from last week</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Send a testimonial request</p>
+                  <p className="text-xs text-[#b8a898]">To your best client from last week</p>
                 </div>
               </Button>
               <Button 
@@ -637,16 +637,16 @@ export default function DailyCompassPage() {
               >
                 <span className="text-2xl mr-3">📱</span>
                 <div>
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Share a client win</p>
-                  <p className="text-xs text-[#B9A9A9]">5-minute social post</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Share a client win</p>
+                  <p className="text-xs text-[#b8a898]">5-minute social post</p>
                 </div>
               </Button>
               <Link href="/dashboard">
                 <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
                   <span className="text-2xl mr-3">✅</span>
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Review your Domain Scores</p>
-                    <p className="text-xs text-[#B9A9A9]">2-minute check-in</p>
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Review your Domain Scores</p>
+                    <p className="text-xs text-[#b8a898]">2-minute check-in</p>
                   </div>
                 </Button>
               </Link>

@@ -163,21 +163,21 @@ export default function ExpensesPage() {
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto">
       {/* Header */}
-      <Link href="/finance" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/finance" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Finance Center
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center">
-            <TrendingDown className="w-6 h-6 text-[#2E7C83]" />
+          <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
+            <TrendingDown className="w-6 h-6 text-[#4a9b9b]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Expense Manager
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               Track and categorize all business expenses
             </p>
           </div>
@@ -188,24 +188,24 @@ export default function ExpensesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Total Expenses</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898] mb-1">Total Expenses</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               ${totalExpenses.toFixed(2)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">This Month</p>
-            <p className="text-3xl font-bold text-[#2E7C83]">
+            <p className="text-sm text-[#b8a898] mb-1">This Month</p>
+            <p className="text-3xl font-bold text-[#4a9b9b]">
               ${thisMonth.toFixed(2)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Transactions</p>
-            <p className="text-3xl font-bold text-[#D4AF63]">
+            <p className="text-sm text-[#b8a898] mb-1">Transactions</p>
+            <p className="text-3xl font-bold text-[#c9a227]">
               {expenses.length}
             </p>
           </CardContent>
@@ -217,7 +217,7 @@ export default function ExpensesPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Add Expense Button */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Recent Expenses
             </h2>
             <Button onClick={() => setShowAddForm(!showAddForm)}>
@@ -228,14 +228,14 @@ export default function ExpensesPage() {
 
           {/* Add Expense Form */}
           {showAddForm && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader>
                 <CardTitle className="text-lg">Add New Expense</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Date</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Date</label>
                     <Input
                       type="date"
                       value={newExpense.date}
@@ -243,7 +243,7 @@ export default function ExpensesPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Amount</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Amount</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -254,7 +254,7 @@ export default function ExpensesPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Vendor</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Vendor</label>
                   <Input
                     placeholder="e.g., Stripe, Notion, etc."
                     value={newExpense.vendor}
@@ -262,9 +262,9 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Category</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Category</label>
                   <select
-                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                     value={newExpense.category}
                     onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
                   >
@@ -275,7 +275,7 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Description</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Description</label>
                   <Textarea
                     placeholder="What was this expense for?"
                     value={newExpense.description}
@@ -300,27 +300,27 @@ export default function ExpensesPage() {
               {expenses.map((expense, index) => (
                 <div
                   key={expense.id}
-                  className={`p-4 flex items-center justify-between ${index !== expenses.length - 1 ? 'border-b border-[#1F315B]/10' : ''}`}
+                  className={`p-4 flex items-center justify-between ${index !== expenses.length - 1 ? 'border-b border-[#1a2b4a]/10' : ''}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#2E7C83]/10 flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-[#2E7C83]" />
+                    <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-[#4a9b9b]" />
                     </div>
                     <div>
-                      <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                         {expense.vendor}
                       </p>
-                      <p className="text-sm text-[#B9A9A9]">
+                      <p className="text-sm text-[#b8a898]">
                         {expense.date} • {expense.category}
                       </p>
                       {expense.description && (
-                        <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                        <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                           {expense.description}
                         </p>
                       )}
                     </div>
                   </div>
-                  <p className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                  <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                     -${expense.amount.toFixed(2)}
                   </p>
                 </div>
@@ -335,7 +335,7 @@ export default function ExpensesPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#D4AF63]" />
+                <Upload className="w-5 h-5 text-[#c9a227]" />
                 Upload Statements
               </CardTitle>
             </CardHeader>
@@ -347,15 +347,15 @@ export default function ExpensesPage() {
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                   isDragging
-                    ? 'border-[#D4AF63] bg-[#D4AF63]/5'
-                    : 'border-[#1F315B]/20 hover:border-[#D4AF63]/50'
+                    ? 'border-[#c9a227] bg-[#c9a227]/5'
+                    : 'border-[#1a2b4a]/20 hover:border-[#c9a227]/50'
                 }`}
               >
-                <Upload className="w-8 h-8 text-[#B9A9A9] mx-auto mb-2" />
-                <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                <Upload className="w-8 h-8 text-[#b8a898] mx-auto mb-2" />
+                <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                   Drop bank or credit card statements here
                 </p>
-                <p className="text-xs text-[#B9A9A9] mt-1">
+                <p className="text-xs text-[#b8a898] mt-1">
                   Supports PDF, CSV, OFX, QFX files
                 </p>
                 <input
@@ -371,21 +371,21 @@ export default function ExpensesPage() {
               {/* Uploaded Statements */}
               {statements.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                  <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                     Uploaded Statements
                   </p>
                   {statements.map((statement) => (
                     <div
                       key={statement.id}
-                      className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-[#B9A9A9]" />
+                        <FileText className="w-4 h-4 text-[#b8a898]" />
                         <div>
-                          <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                          <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {statement.filename}
                           </p>
-                          <p className="text-xs text-[#B9A9A9]">
+                          <p className="text-xs text-[#b8a898]">
                             {statement.type === 'credit_card' ? 'Credit Card' : 'Bank'} • {statement.uploadDate}
                           </p>
                         </div>
@@ -417,7 +417,7 @@ export default function ExpensesPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="w-5 h-5 text-[#D4AF63]" />
+                <Tag className="w-5 h-5 text-[#c9a227]" />
                 Categories
               </CardTitle>
             </CardHeader>
@@ -427,8 +427,8 @@ export default function ExpensesPage() {
                   const catTotal = expenses.filter(e => e.category === cat).reduce((sum, e) => sum + e.amount, 0);
                   return (
                     <div key={cat} className="flex items-center justify-between py-2">
-                      <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{cat}</span>
-                      <span className="text-sm font-medium text-[#B9A9A9]">
+                      <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{cat}</span>
+                      <span className="text-sm font-medium text-[#b8a898]">
                         ${catTotal.toFixed(2)}
                       </span>
                     </div>
@@ -439,16 +439,16 @@ export default function ExpensesPage() {
           </Card>
 
           {/* AI Insights */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+                <Sparkles className="w-4 h-4 text-[#c9a227]" />
                 AI Insights
               </h3>
-              <p className="text-sm text-[#CDBED6] mb-4">
+              <p className="text-sm text-[#e8e4f0] mb-4">
                 Your software expenses are 23% higher than last month. Consider reviewing subscriptions.
               </p>
-              <Button variant="outline" className="w-full border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63] hover:text-[#1F315B]">
+              <Button variant="outline" className="w-full border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227] hover:text-[#1a2b4a]">
                 Review Tech Stack
               </Button>
             </CardContent>

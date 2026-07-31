@@ -72,43 +72,43 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
   // SSR fallback - render a simplified version without theme-dependent classes
   if (!mounted) {
     return (
-      <aside className="fixed left-0 top-0 h-full w-64 bg-[#F6F1E8] border-r border-[#D4AF63]/20 flex flex-col z-50">
-        <div className="p-6 border-b border-[#D4AF63]/20">
+      <aside className="fixed left-0 top-0 h-full w-64 bg-[#F8F5F0] border-r border-[#c9a227]/20 flex flex-col z-50">
+        <div className="p-6 border-b border-[#c9a227]/20">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#1F315B] flex items-center justify-center">
-              <span className="text-[#D4AF63] font-bold">LC</span>
+            <div className="w-10 h-10 rounded-full bg-[#1a2b4a] flex items-center justify-center">
+              <span className="text-[#c9a227] font-bold">LC</span>
             </div>
             <div>
-              <h1 className="font-serif text-lg font-bold text-[#1F315B]">
+              <h1 className="font-serif text-lg font-bold text-[#1a2b4a]">
                 LifeCharter
               </h1>
-              <p className="text-xs text-[#5E3B6C]">Architecture</p>
+              <p className="text-xs text-[#7b6b8d]">Architecture</p>
             </div>
           </div>
         </div>
         <div className="flex-1 py-4 px-3">
           <div className="space-y-2">
             {navigationItems.map((item) => (
-              <div key={item.id} className="h-10 bg-[#1F315B]/5 rounded-xl" />
+              <div key={item.id} className="h-10 bg-[#1a2b4a]/5 rounded-xl" />
             ))}
           </div>
         </div>
-        <div className="p-4 border-t border-[#D4AF63]/20">
-          <div className="h-16 bg-[#1F315B]/5 rounded-xl" />
+        <div className="p-4 border-t border-[#c9a227]/20">
+          <div className="h-16 bg-[#1a2b4a]/5 rounded-xl" />
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-[#F6F1E8] dark:bg-[#1A1A2E] border-r border-[#D4AF63]/20 flex flex-col z-50">
+    <aside className="fixed left-0 top-0 h-full w-64 bg-[#F8F5F0] dark:bg-[#1A1A2E] border-r border-[#c9a227]/20 flex flex-col z-50">
       {/* Logo Area */}
-      <div className="p-6 border-b border-[#D4AF63]/20">
+      <div className="p-6 border-b border-[#c9a227]/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#1F315B] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-[#1a2b4a] flex items-center justify-center">
             <svg
               viewBox="0 0 24 24"
-              className="w-6 h-6 text-[#D4AF63]"
+              className="w-6 h-6 text-[#c9a227]"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
@@ -119,10 +119,10 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
             </svg>
           </div>
           <div>
-            <h1 className="font-serif text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="font-serif text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               LifeCharter
             </h1>
-            <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+            <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
               Architecture
             </p>
           </div>
@@ -131,7 +131,7 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
         <div className="absolute top-4 right-4 opacity-20">
           <svg
             viewBox="0 0 24 24"
-            className="w-8 h-8 text-[#5E3B6C] dark:text-[#CDBED6]"
+            className="w-8 h-8 text-[#7b6b8d] dark:text-[#e8e4f0]"
             fill="currentColor"
           >
             <path d="M12 2C12 2 11 4 11 6C11 8 12 10 12 10C12 10 13 8 13 6C13 4 12 2 12 2Z" />
@@ -162,8 +162,8 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-                        : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                        ? "bg-[#1a2b4a] text-[#F8F5F0] shadow-md"
+                        : "text-[#1a2b4a] dark:text-[#e8e4f0] hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10"
                     )}
                   >
                     {content}
@@ -174,8 +174,8 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-                        : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                        ? "bg-[#1a2b4a] text-[#F8F5F0] shadow-md"
+                        : "text-[#1a2b4a] dark:text-[#e8e4f0] hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10"
                     )}
                   >
                     {content}
@@ -187,14 +187,14 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
         </ul>
 
         {/* Help Section */}
-        <div className="mt-6 pt-6 border-t border-[#D4AF63]/20">
+        <div className="mt-6 pt-6 border-t border-[#c9a227]/20">
           <button
             onClick={() => setHelpExpanded(!helpExpanded)}
             className={cn(
               "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
               helpExpanded
-                ? "bg-[#D4AF63]/20 text-[#1F315B] dark:text-[#F6F1E8]"
-                : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                ? "bg-[#c9a227]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                : "text-[#1a2b4a] dark:text-[#e8e4f0] hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10"
             )}
           >
             <span className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
 
           {/* Help Dropdown Items */}
           {helpExpanded && (
-            <ul className="mt-2 ml-4 space-y-1 border-l-2 border-[#D4AF63]/30 pl-3">
+            <ul className="mt-2 ml-4 space-y-1 border-l-2 border-[#c9a227]/30 pl-3">
               {helpItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeItem === item.id;
@@ -222,8 +222,8 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                         isActive
-                          ? "bg-[#1F315B] text-[#F6F1E8] shadow-md"
-                          : "text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10"
+                          ? "bg-[#1a2b4a] text-[#F8F5F0] shadow-md"
+                          : "text-[#1a2b4a] dark:text-[#e8e4f0] hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10"
                       )}
                     >
                       <Icon className="w-4 h-4" />
@@ -238,11 +238,11 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
       </nav>
 
       {/* User Profile & Theme Toggle */}
-      <div className="p-4 border-t border-[#D4AF63]/20 space-y-3">
+      <div className="p-4 border-t border-[#c9a227]/20 space-y-3">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/5 dark:hover:bg-[#CDBED6]/5 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium text-[#1a2b4a] dark:text-[#e8e4f0] hover:bg-[#1a2b4a]/5 dark:hover:bg-[#e8e4f0]/5 transition-colors"
         >
           <span className="flex items-center gap-2">
             {theme === "light" ? (
@@ -252,7 +252,7 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
             )}
             {theme === "light" ? "Light Mode" : "Dark Mode"}
           </span>
-          <span className="text-xs text-[#B9A9A9]">
+          <span className="text-xs text-[#b8a898]">
             {theme === "light" ? "☀️" : "🌙"}
           </span>
         </button>
@@ -261,25 +261,25 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
         <div className="relative">
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1F315B]/5 dark:bg-[#CDBED6]/5 hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/5 hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/10 transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-[#5E3B6C] flex items-center justify-center text-[#F6F1E8] font-serif font-bold">
+            <div className="w-10 h-10 rounded-full bg-[#7b6b8d] flex items-center justify-center text-[#F8F5F0] font-serif font-bold">
               SR
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                 Seraphina Rose
               </p>
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
+              <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 Founder & CEO
               </p>
             </div>
-            <ChevronDown className="w-4 h-4 text-[#B9A9A9]" />
+            <ChevronDown className="w-4 h-4 text-[#b8a898]" />
           </button>
 
           {/* Workspace Selector */}
-          <div className="mt-2 px-4 py-2 text-xs text-[#5E3B6C] dark:text-[#CDBED6]">
-            <span className="text-[#B9A9A9]">Workspace:</span> Soulful Solutions Co.
+          <div className="mt-2 px-4 py-2 text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
+            <span className="text-[#b8a898]">Workspace:</span> Soulful Solutions Co.
           </div>
         </div>
       </div>

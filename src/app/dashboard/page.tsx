@@ -64,10 +64,10 @@ function SortableCard({ card }: { card: DashboardCard }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 right-2 z-50 p-1.5 rounded-md bg-[#1F315B]/10 hover:bg-[#1F315B]/20 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-[#1F315B]/10"
+        className="absolute top-2 right-2 z-50 p-1.5 rounded-md bg-[#1a2b4a]/10 hover:bg-[#1a2b4a]/20 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-[#1a2b4a]/10"
         title="Drag to reorder"
       >
-        <GripVertical className="w-4 h-4 text-[#1F315B] dark:text-[#F6F1E8]" />
+        <GripVertical className="w-4 h-4 text-[#1a2b4a] dark:text-[#F8F5F0]" />
       </div>
       {card.component}
     </div>
@@ -210,21 +210,21 @@ export default function DashboardPage() {
           <div className="relative" ref={workspaceDropdownRef}>
             <button
               onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#1F315B] dark:bg-[#5E3B6C] text-[#F6F1E8] hover:bg-[#1F315B]/90 dark:hover:bg-[#5E3B6C]/90 transition-all shadow-md hover:shadow-lg border border-[#D4AF63]/30"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] hover:bg-[#1a2b4a]/90 dark:hover:bg-[#7b6b8d]/90 transition-all shadow-md hover:shadow-lg border border-[#c9a227]/30"
             >
-              <Building2 className="w-5 h-5 text-[#D4AF63]" />
+              <Building2 className="w-5 h-5 text-[#c9a227]" />
               <div className="text-left">
-                <p className="text-xs text-[#D4AF63] uppercase tracking-wider">Current Workspace</p>
+                <p className="text-xs text-[#c9a227] uppercase tracking-wider">Current Workspace</p>
                 <p className="text-sm font-semibold">{currentWorkspace.name}</p>
               </div>
-              <ChevronDown className={`w-5 h-5 text-[#D4AF63] transition-transform ml-2 ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-5 h-5 text-[#c9a227] transition-transform ml-2 ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
             </button>
             
             {/* Dropdown Menu - Theme Coordinated */}
             {showWorkspaceDropdown && (
-              <Card className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 z-50 shadow-xl border-[#D4AF63]/20">
+              <Card className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 z-50 shadow-xl border-[#c9a227]/20">
                 <CardContent className="p-3">
-                  <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] uppercase tracking-wider px-3 py-2 font-semibold">
+                  <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] uppercase tracking-wider px-3 py-2 font-semibold">
                     Your Workspaces
                   </p>
                   {workspaces.map((workspace) => (
@@ -236,48 +236,48 @@ export default function DashboardPage() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all ${
                         currentWorkspace.id === workspace.id
-                          ? 'bg-[#1F315B] dark:bg-[#5E3B6C] text-[#F6F1E8] shadow-md'
-                          : 'hover:bg-[#1F315B]/5 dark:hover:bg-[#CDBED6]/10 text-[#1F315B] dark:text-[#F6F1E8]'
+                          ? 'bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] shadow-md'
+                          : 'hover:bg-[#1a2b4a]/5 dark:hover:bg-[#e8e4f0]/10 text-[#1a2b4a] dark:text-[#F8F5F0]'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                           currentWorkspace.id === workspace.id 
-                            ? 'bg-[#D4AF63]/20' 
-                            : 'bg-[#1F315B]/5 dark:bg-[#CDBED6]/10'
+                            ? 'bg-[#c9a227]/20' 
+                            : 'bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10'
                         }`}>
                           <Building2 className={`w-5 h-5 ${
                             currentWorkspace.id === workspace.id 
-                              ? 'text-[#D4AF63]' 
-                              : 'text-[#1F315B] dark:text-[#CDBED6]'
+                              ? 'text-[#c9a227]' 
+                              : 'text-[#1a2b4a] dark:text-[#e8e4f0]'
                           }`} />
                         </div>
                         <div>
                           <p className={`text-sm font-medium ${
-                            currentWorkspace.id === workspace.id ? 'text-[#F6F1E8]' : ''
+                            currentWorkspace.id === workspace.id ? 'text-[#F8F5F0]' : ''
                           }`}>{workspace.name}</p>
                           <p className={`text-xs ${
                             currentWorkspace.id === workspace.id 
-                              ? 'text-[#D4AF63]' 
-                              : 'text-[#B9A9A9]'
+                              ? 'text-[#c9a227]' 
+                              : 'text-[#b8a898]'
                           }`}>{workspace.role}</p>
                         </div>
                       </div>
                       {currentWorkspace.id === workspace.id && (
-                        <div className="w-3 h-3 rounded-full bg-[#D4AF63] shadow-sm" />
+                        <div className="w-3 h-3 rounded-full bg-[#c9a227] shadow-sm" />
                       )}
                     </button>
                   ))}
-                  <div className="border-t border-[#1F315B]/10 dark:border-[#CDBED6]/20 mt-2 pt-2">
+                  <div className="border-t border-[#1a2b4a]/10 dark:border-[#e8e4f0]/20 mt-2 pt-2">
                     <button
                       onClick={() => {
                         setShowWorkspaceDropdown(false);
                         alert("Create new workspace - coming soon!");
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#D4AF63]/10 transition-colors group"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10 transition-colors group"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/10 flex items-center justify-center group-hover:bg-[#D4AF63]/20">
-                        <Plus className="w-5 h-5 text-[#D4AF63]" />
+                      <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center group-hover:bg-[#c9a227]/20">
+                        <Plus className="w-5 h-5 text-[#c9a227]" />
                       </div>
                       <span className="text-sm font-medium">Create New Workspace</span>
                     </button>
@@ -291,14 +291,14 @@ export default function DashboardPage() {
         {/* Welcome Text - Left justified with drag hint on same line right justified */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
               Welcome back, Seraphina
             </h1>
-            <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
               Here&apos;s your business at a glance
             </p>
           </div>
-          <p className="text-sm text-[#B9A9A9]">
+          <p className="text-sm text-[#b8a898]">
             💡 Hover over cards and drag the handle to reorder
           </p>
         </div>

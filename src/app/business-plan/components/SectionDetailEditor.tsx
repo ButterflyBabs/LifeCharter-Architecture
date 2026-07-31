@@ -146,7 +146,7 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
       case "currency":
         return (
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">$</span>
             <Input
               type="number"
               value={value}
@@ -175,10 +175,10 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+              <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {sectionTitle}
               </h2>
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 {completedCount} of {questions.length} questions answered
               </p>
             </div>
@@ -197,9 +197,9 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
           </div>
           
           {/* Progress Bar */}
-          <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
+          <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
             <div 
-              className="bg-[#D4AF63] h-2 rounded-full transition-all"
+              className="bg-[#c9a227] h-2 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -207,15 +207,15 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
       </Card>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-[#1F315B]/10">
+      <div className="flex gap-2 border-b border-[#1a2b4a]/10">
         {["questions", "content", "metrics"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as "questions" | "content" | "metrics")}
             className={`px-4 py-2 text-sm font-medium capitalize ${
               activeTab === tab 
-                ? "text-[#D4AF63] border-b-2 border-[#D4AF63]" 
-                : "text-[#B9A9A9]"
+                ? "text-[#c9a227] border-b-2 border-[#c9a227]" 
+                : "text-[#b8a898]"
             }`}
           >
             {tab}
@@ -234,29 +234,29 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
                     {answers[question.id] ? (
                       <CheckCircle className="w-6 h-6 text-green-500" />
                     ) : (
-                      <Circle className="w-6 h-6 text-[#B9A9A9]" />
+                      <Circle className="w-6 h-6 text-[#b8a898]" />
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-[#B9A9A9]">Q{index + 1}</span>
+                      <span className="text-sm text-[#b8a898]">Q{index + 1}</span>
                       {question.required && (
                         <span className="text-xs text-red-500">*Required</span>
                       )}
                     </div>
-                    <label className="block text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-3">
+                    <label className="block text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-3">
                       {question.question}
                     </label>
                     {renderInput(question)}
                     
                     {/* AI Suggestion */}
                     {showAiSuggestions && question.aiSuggested && !answers[question.id] && (
-                      <div className="mt-3 p-3 bg-[#D4AF63]/10 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm text-[#D4AF63] mb-1">
+                      <div className="mt-3 p-3 bg-[#c9a227]/10 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-[#c9a227] mb-1">
                           <Sparkles className="w-4 h-4" />
                           <span>AI Suggestion (from your assessments)</span>
                         </div>
-                        <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                        <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                           {question.aiSuggested}
                         </p>
                         <Button 
@@ -281,13 +281,13 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
       {activeTab === "content" && (
         <Card>
           <CardHeader>
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               AI-Generated Content
             </h3>
           </CardHeader>
           <CardContent className="p-6">
             <div className="prose dark:prose-invert max-w-none">
-              <p className="text-[#B9A9A9] italic">
+              <p className="text-[#b8a898] italic">
                 Complete the questions above to generate personalized content for this section...
               </p>
             </div>
@@ -299,14 +299,14 @@ export function SectionDetailEditor({ sectionId, sectionTitle }: SectionDetailEd
       {activeTab === "metrics" && (
         <Card>
           <CardHeader>
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Key Metrics
             </h3>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
-              <div className="p-4 border border-[#1F315B]/10 rounded-lg">
-                <div className="flex items-center gap-2 text-[#B9A9A9] mb-2">
+              <div className="p-4 border border-[#1a2b4a]/10 rounded-lg">
+                <div className="flex items-center gap-2 text-[#b8a898] mb-2">
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-sm">Metrics will appear here once questions are answered</span>
                 </div>

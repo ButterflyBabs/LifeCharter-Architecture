@@ -204,10 +204,10 @@ export function AIBusinessGuide({
   // Collapsed view
   if (!isOpen) {
     return (
-      <Card className="h-full border-[#D4AF63]/30 relative overflow-hidden">
+      <Card className="h-full border-[#c9a227]/30 relative overflow-hidden">
         {/* Decorative watercolor background effect */}
         <div className="absolute top-0 right-0 w-48 h-48 opacity-10 pointer-events-none">
-          <svg viewBox="0 0 200 200" className="w-full h-full text-[#2E7C83]">
+          <svg viewBox="0 0 200 200" className="w-full h-full text-[#4a9b9b]">
             <path
               fill="currentColor"
               d="M44.5,-76.3C58.9,-69.3,72.4,-59.6,82.9,-47.2C93.4,-34.8,100.9,-19.7,100.3,-5.1C99.7,9.5,91,23.6,80.8,35.3C70.6,47,58.9,56.3,46.2,63.6C33.5,70.9,19.8,76.2,5.3,78.8C-9.2,81.4,-24.5,81.3,-38.3,76.3C-52.1,71.3,-64.4,61.4,-73.6,49.1C-82.8,36.8,-88.9,22.1,-89.4,7.2C-89.9,-7.7,-84.8,-22.8,-76.3,-35.8C-67.8,-48.8,-55.9,-59.7,-42.5,-67.2C-29.1,-74.7,-14.6,-78.8,0.7,-80.1C15.9,-81.4,31.8,-80,44.5,-76.3Z"
@@ -218,8 +218,8 @@ export function AIBusinessGuide({
 
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-[#D4AF63]" />
-            <h2 className="text-xs font-semibold tracking-wider uppercase text-[#5E3B6C] dark:text-[#CDBED6]">
+            <Sparkles className="w-5 h-5 text-[#c9a227]" />
+            <h2 className="text-xs font-semibold tracking-wider uppercase text-[#7b6b8d] dark:text-[#e8e4f0]">
               AI Business Guide
             </h2>
           </div>
@@ -228,7 +228,7 @@ export function AIBusinessGuide({
           <div className="absolute top-4 right-4">
             <svg
               viewBox="0 0 24 24"
-              className="w-10 h-10 text-[#D4AF63]/30"
+              className="w-10 h-10 text-[#c9a227]/30"
               fill="currentColor"
             >
               <circle
@@ -246,22 +246,22 @@ export function AIBusinessGuide({
             </svg>
           </div>
 
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-6 leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-6 leading-relaxed">
             {messages[0]?.content || getInitialMessage(overallScore)}
           </p>
 
           {messages[0]?.suggestions && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-[#5E3B6C] dark:text-[#CDBED6] mb-3">
+              <h3 className="text-sm font-semibold text-[#7b6b8d] dark:text-[#e8e4f0] mb-3">
                 Suggested Focus
               </h3>
               <ul className="space-y-2">
                 {messages[0].suggestions.map((suggestion, index) => (
                   <li
                     key={index}
-                    className="flex items-start gap-2 text-sm text-[#1F315B]/80 dark:text-[#F6F1E8]/80"
+                    className="flex items-start gap-2 text-sm text-[#1a2b4a]/80 dark:text-[#F8F5F0]/80"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#2E7C83] mt-2 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4a9b9b] mt-2 flex-shrink-0" />
                     {suggestion}
                   </li>
                 ))}
@@ -276,7 +276,7 @@ export function AIBusinessGuide({
             </Button>
             <button
               onClick={() => setIsOpen(true)}
-              className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] hover:text-[#1F315B] dark:hover:text-[#F6F1E8] flex items-center justify-center gap-1 transition-colors"
+              className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] flex items-center justify-center gap-1 transition-colors"
             >
               View full recommendations
               <ArrowRight className="w-4 h-4" />
@@ -286,7 +286,7 @@ export function AIBusinessGuide({
 
         {/* Decorative corner ornament */}
         <div className="absolute bottom-0 left-0 w-16 h-16 opacity-20 pointer-events-none">
-          <svg viewBox="0 0 100 100" className="w-full h-full text-[#D4AF63]">
+          <svg viewBox="0 0 100 100" className="w-full h-full text-[#c9a227]">
             <path
               fill="none"
               stroke="currentColor"
@@ -301,18 +301,18 @@ export function AIBusinessGuide({
 
   // Expanded chat view
   return (
-    <Card className="h-full border-[#D4AF63]/30 relative overflow-hidden flex flex-col">
+    <Card className="h-full border-[#c9a227]/30 relative overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-[#D4AF63]/20 flex items-center justify-between bg-[#F6F1E8]/30 dark:bg-[#1F315B]/20">
+      <div className="p-4 border-b border-[#c9a227]/20 flex items-center justify-between bg-[#F8F5F0]/30 dark:bg-[#1a2b4a]/20">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#D4AF63]" />
-          <h2 className="text-sm font-semibold text-[#5E3B6C] dark:text-[#CDBED6]">
+          <Sparkles className="w-5 h-5 text-[#c9a227]" />
+          <h2 className="text-sm font-semibold text-[#7b6b8d] dark:text-[#e8e4f0]">
             AI Business Guide
           </h2>
         </div>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-[#B9A9A9] hover:text-[#1F315B] dark:hover:text-[#F6F1E8] transition-colors"
+          className="text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -330,22 +330,22 @@ export function AIBusinessGuide({
             <div
               className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm ${
                 message.role === "user"
-                  ? "bg-[#2E7C83] text-white"
-                  : "bg-[#F6F1E8] dark:bg-[#1F315B]/40 text-[#1F315B] dark:text-[#F6F1E8]"
+                  ? "bg-[#4a9b9b] text-white"
+                  : "bg-[#F8F5F0] dark:bg-[#1a2b4a]/40 text-[#1a2b4a] dark:text-[#F8F5F0]"
               }`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
 
               {/* Suggestions */}
               {message.suggestions && message.suggestions.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-[#D4AF63]/20">
+                <div className="mt-3 pt-3 border-t border-[#c9a227]/20">
                   <p className="text-xs font-medium mb-2 opacity-70">Quick actions:</p>
                   <div className="flex flex-wrap gap-2">
                     {message.suggestions.map((suggestion, idx) => (
                       <button
                         key={idx}
                         onClick={() => quickAsk(`Tell me more about: ${suggestion}`)}
-                        className="text-xs px-2 py-1 rounded-full bg-[#D4AF63]/20 hover:bg-[#D4AF63]/30 transition-colors"
+                        className="text-xs px-2 py-1 rounded-full bg-[#c9a227]/20 hover:bg-[#c9a227]/30 transition-colors"
                       >
                         {suggestion}
                       </button>
@@ -358,8 +358,8 @@ export function AIBusinessGuide({
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-[#F6F1E8] dark:bg-[#1F315B]/40 rounded-lg px-4 py-3">
-              <Loader2 className="w-4 h-4 animate-spin text-[#2E7C83]" />
+            <div className="bg-[#F8F5F0] dark:bg-[#1a2b4a]/40 rounded-lg px-4 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-[#4a9b9b]" />
             </div>
           </div>
         )}
@@ -367,7 +367,7 @@ export function AIBusinessGuide({
       </CardContent>
 
       {/* Input */}
-      <div className="p-4 border-t border-[#D4AF63]/20 bg-white dark:bg-[#1F315B]/10">
+      <div className="p-4 border-t border-[#c9a227]/20 bg-white dark:bg-[#1a2b4a]/10">
         <div className="flex gap-2">
           <input
             type="text"
@@ -375,7 +375,7 @@ export function AIBusinessGuide({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask for guidance..."
-            className="flex-1 px-4 py-2 text-sm border border-[#D4AF63]/30 rounded-lg bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8] placeholder-[#B9A9A9] focus:outline-none focus:ring-2 focus:ring-[#2E7C83]"
+            className="flex-1 px-4 py-2 text-sm border border-[#c9a227]/30 rounded-lg bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] placeholder-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#4a9b9b]"
             disabled={loading}
           />
           <Button
@@ -391,7 +391,7 @@ export function AIBusinessGuide({
             )}
           </Button>
         </div>
-        <p className="text-xs text-[#B9A9A9] mt-2 text-center">
+        <p className="text-xs text-[#b8a898] mt-2 text-center">
           AI guidance is for informational purposes. Trust your own wisdom for final decisions.
         </p>
       </div>

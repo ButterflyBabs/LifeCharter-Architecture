@@ -171,8 +171,8 @@ export function UnifiedMemoryQuestion({
                 key={option.value}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   value === option.value
-                    ? 'border-[#D4AF63] bg-[#D4AF63]/5'
-                    : 'border-[#D4AF63]/20 hover:border-[#D4AF63]/40'
+                    ? 'border-[#c9a227] bg-[#c9a227]/5'
+                    : 'border-[#c9a227]/20 hover:border-[#c9a227]/40'
                 }`}
               >
                 <input
@@ -181,9 +181,9 @@ export function UnifiedMemoryQuestion({
                   value={option.value}
                   checked={value === option.value}
                   onChange={(e) => handleChange(e.target.value)}
-                  className="w-4 h-4 text-[#D4AF63] focus:ring-[#D4AF63]"
+                  className="w-4 h-4 text-[#c9a227] focus:ring-[#c9a227]"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {option.label}
                 </span>
               </label>
@@ -200,8 +200,8 @@ export function UnifiedMemoryQuestion({
                 key={option.value}
                 className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   value === option.value
-                    ? 'border-[#D4AF63] bg-[#D4AF63]/5'
-                    : 'border-[#D4AF63]/20 hover:border-[#D4AF63]/40'
+                    ? 'border-[#c9a227] bg-[#c9a227]/5'
+                    : 'border-[#c9a227]/20 hover:border-[#c9a227]/40'
                 }`}
               >
                 <input
@@ -210,9 +210,9 @@ export function UnifiedMemoryQuestion({
                   value={option.value}
                   checked={value === option.value}
                   onChange={(e) => handleChange(e.target.value)}
-                  className="mt-1 w-4 h-4 text-[#D4AF63] focus:ring-[#D4AF63]"
+                  className="mt-1 w-4 h-4 text-[#c9a227] focus:ring-[#c9a227]"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {option.label}
                 </span>
               </label>
@@ -228,8 +228,8 @@ export function UnifiedMemoryQuestion({
                 key={option.value}
                 className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   Array.isArray(value) && value.includes(option.value)
-                    ? 'border-[#D4AF63] bg-[#D4AF63]/5'
-                    : 'border-[#D4AF63]/20 hover:border-[#D4AF63]/40'
+                    ? 'border-[#c9a227] bg-[#c9a227]/5'
+                    : 'border-[#c9a227]/20 hover:border-[#c9a227]/40'
                 }`}
               >
                 <input
@@ -244,9 +244,9 @@ export function UnifiedMemoryQuestion({
                       handleChange(currentValue.filter(v => v !== option.value));
                     }
                   }}
-                  className="mt-1 w-4 h-4 text-[#D4AF63] focus:ring-[#D4AF63] rounded"
+                  className="mt-1 w-4 h-4 text-[#c9a227] focus:ring-[#c9a227] rounded"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {option.label}
                 </span>
               </label>
@@ -260,7 +260,7 @@ export function UnifiedMemoryQuestion({
             value={value as string}
             onChange={(e) => handleChange(e.target.value)}
             rows={4}
-            className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#D4AF63] focus:ring-[#D4AF63] bg-transparent text-[#1F315B] dark:text-[#F6F1E8] resize-none"
+            className="w-full p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#c9a227] focus:ring-[#c9a227] bg-transparent text-[#1a2b4a] dark:text-[#F8F5F0] resize-none"
             placeholder="Enter your response..."
           />
         );
@@ -276,8 +276,8 @@ export function UnifiedMemoryQuestion({
                 key={option.value}
                 className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   value === option.value
-                    ? 'border-[#D4AF63] bg-[#D4AF63]/5'
-                    : 'border-[#D4AF63]/20 hover:border-[#D4AF63]/40'
+                    ? 'border-[#c9a227] bg-[#c9a227]/5'
+                    : 'border-[#c9a227]/20 hover:border-[#c9a227]/40'
                 }`}
               >
                 <input
@@ -286,9 +286,9 @@ export function UnifiedMemoryQuestion({
                   value={option.value}
                   checked={value === option.value}
                   onChange={(e) => handleChange(e.target.value)}
-                  className="w-4 h-4 text-[#D4AF63] focus:ring-[#D4AF63]"
+                  className="w-4 h-4 text-[#c9a227] focus:ring-[#c9a227]"
                 />
-                <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {option.label}
                 </span>
               </label>
@@ -302,7 +302,7 @@ export function UnifiedMemoryQuestion({
             type="number"
             value={value as string}
             onChange={(e) => handleChange(e.target.value)}
-            className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#D4AF63] focus:ring-[#D4AF63] bg-transparent text-[#1F315B] dark:text-[#F6F1E8]"
+            className="w-full p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#c9a227] focus:ring-[#c9a227] bg-transparent text-[#1a2b4a] dark:text-[#F8F5F0]"
             placeholder="Enter a number..."
           />
         );
@@ -313,7 +313,7 @@ export function UnifiedMemoryQuestion({
             type="text"
             value={value as string}
             onChange={(e) => handleChange(e.target.value)}
-            className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#D4AF63] focus:ring-[#D4AF63] bg-transparent text-[#1F315B] dark:text-[#F6F1E8]"
+            className="w-full p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#c9a227] focus:ring-[#c9a227] bg-transparent text-[#1a2b4a] dark:text-[#F8F5F0]"
             placeholder="Enter your response..."
           />
         );
@@ -324,12 +324,12 @@ export function UnifiedMemoryQuestion({
     <div className={`space-y-4 ${className}`}>
       {/* Question Text */}
       <div>
-        <p className="text-lg font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+        <p className="text-lg font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
           {questionText}
           {required && <span className="text-red-500 ml-1">*</span>}
         </p>
         {helpText && (
-          <p className="text-sm text-[#B9A9A9] mt-1">{helpText}</p>
+          <p className="text-sm text-[#b8a898] mt-1">{helpText}</p>
         )}
       </div>
 
@@ -338,7 +338,7 @@ export function UnifiedMemoryQuestion({
 
       {/* Cross-Context Indicator */}
       {showCrossContext && hasPreviousResponse && (
-        <div className="flex items-center gap-2 text-sm text-[#2E7C83]">
+        <div className="flex items-center gap-2 text-sm text-[#4a9b9b]">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -349,7 +349,7 @@ export function UnifiedMemoryQuestion({
       {/* Sync Status */}
       <div className="flex items-center gap-2 text-xs">
         {syncStatus === 'syncing' && (
-          <span className="text-[#B9A9A9]">Syncing...</span>
+          <span className="text-[#b8a898]">Syncing...</span>
         )}
         {syncStatus === 'synced' && (
           <span className="text-green-600 flex items-center gap-1">

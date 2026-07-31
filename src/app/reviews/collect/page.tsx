@@ -63,8 +63,8 @@ export default function ReviewCollectionPage() {
             <Star
               className={`w-10 h-10 ${
                 star <= (interactive ? hoverRating || rating : count)
-                  ? "fill-[#D4AF63] text-[#D4AF63]"
-                  : "text-[#B9A9A9]"
+                  ? "fill-[#c9a227] text-[#c9a227]"
+                  : "text-[#b8a898]"
               }`}
             />
           </button>
@@ -75,21 +75,21 @@ export default function ReviewCollectionPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center p-8">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
             Thank You!
           </h1>
-          <p className="text-[#B9A9A9] mb-6">
+          <p className="text-[#b8a898] mb-6">
             Your testimonial has been submitted successfully. Your story will help 
             others discover the power of LifeCharter.
           </p>
-          <div className="bg-[#D4AF63]/10 rounded-lg p-4 mb-6">
-            <Heart className="w-6 h-6 text-[#D4AF63] mx-auto mb-2" />
-            <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+          <div className="bg-[#c9a227]/10 rounded-lg p-4 mb-6">
+            <Heart className="w-6 h-6 text-[#c9a227] mx-auto mb-2" />
+            <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
               We appreciate you taking the time to share your experience!
             </p>
           </div>
@@ -102,17 +102,17 @@ export default function ReviewCollectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F6F1E8] to-[#DAD2B9] dark:from-[#1A1A2E] dark:to-[#1F315B] py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#F8F5F0] to-[#DAD2B9] dark:from-[#1A1A2E] dark:to-[#1a2b4a] py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-[#D4AF63]/20 flex items-center justify-center mx-auto mb-4">
-            <Quote className="w-8 h-8 text-[#D4AF63]" />
+          <div className="w-16 h-16 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-4">
+            <Quote className="w-8 h-8 text-[#c9a227]" />
           </div>
-          <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Share Your Story
           </h1>
-          <p className="text-[#B9A9A9]">
+          <p className="text-[#b8a898]">
             Your testimonial helps others discover LifeCharter
           </p>
         </div>
@@ -126,8 +126,8 @@ export default function ReviewCollectionPage() {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
                       step >= s
-                        ? "bg-[#D4AF63] text-[#1F315B]"
-                        : "bg-[#1F315B]/10 text-[#B9A9A9]"
+                        ? "bg-[#c9a227] text-[#1a2b4a]"
+                        : "bg-[#1a2b4a]/10 text-[#b8a898]"
                     }`}
                   >
                     {s}
@@ -135,7 +135,7 @@ export default function ReviewCollectionPage() {
                   {s < 3 && (
                     <div
                       className={`w-16 h-1 mx-2 ${
-                        step > s ? "bg-[#D4AF63]" : "bg-[#1F315B]/10"
+                        step > s ? "bg-[#c9a227]" : "bg-[#1a2b4a]/10"
                       }`}
                     />
                   )}
@@ -146,7 +146,7 @@ export default function ReviewCollectionPage() {
             {/* Step 1: Choose Format */}
             {step === 1 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] text-center">
+                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
                   How would you like to share your experience?
                 </h2>
 
@@ -158,15 +158,15 @@ export default function ReviewCollectionPage() {
                     }}
                     className={`p-6 rounded-xl border-2 transition-all text-center ${
                       reviewType === "text"
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                        : "border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                        ? "border-[#c9a227] bg-[#c9a227]/10"
+                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
                     }`}
                   >
-                    <MessageSquare className="w-10 h-10 text-[#D4AF63] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-1">
+                    <MessageSquare className="w-10 h-10 text-[#c9a227] mx-auto mb-3" />
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
                       Written Review
                     </h3>
-                    <p className="text-sm text-[#B9A9A9]">
+                    <p className="text-sm text-[#b8a898]">
                       Share your thoughts in writing
                     </p>
                   </button>
@@ -178,15 +178,15 @@ export default function ReviewCollectionPage() {
                     }}
                     className={`p-6 rounded-xl border-2 transition-all text-center ${
                       reviewType === "video"
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                        : "border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                        ? "border-[#c9a227] bg-[#c9a227]/10"
+                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
                     }`}
                   >
-                    <Video className="w-10 h-10 text-[#2E7C83] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-1">
+                    <Video className="w-10 h-10 text-[#4a9b9b] mx-auto mb-3" />
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
                       Video Testimonial
                     </h3>
-                    <p className="text-sm text-[#B9A9A9]">
+                    <p className="text-sm text-[#b8a898]">
                       Record a video message
                     </p>
                   </button>
@@ -198,28 +198,28 @@ export default function ReviewCollectionPage() {
                     }}
                     className={`p-6 rounded-xl border-2 transition-all text-center ${
                       reviewType === "audio"
-                        ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                        : "border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                        ? "border-[#c9a227] bg-[#c9a227]/10"
+                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
                     }`}
                   >
-                    <Mic className="w-10 h-10 text-[#5E3B6C] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-1">
+                    <Mic className="w-10 h-10 text-[#7b6b8d] mx-auto mb-3" />
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
                       Audio Message
                     </h3>
-                    <p className="text-sm text-[#B9A9A9]">
+                    <p className="text-sm text-[#b8a898]">
                       Record your voice only
                     </p>
                   </button>
                 </div>
 
-                <div className="bg-[#1F315B]/5 rounded-lg p-4">
+                <div className="bg-[#1a2b4a]/5 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-[#D4AF63] mt-0.5" />
+                    <Sparkles className="w-5 h-5 text-[#c9a227] mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-1">
+                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
                         Tips for a great testimonial
                       </h4>
-                      <ul className="text-sm text-[#B9A9A9] space-y-1">
+                      <ul className="text-sm text-[#b8a898] space-y-1">
                         <li>• Be specific about your transformation</li>
                         <li>• Mention the program or service you used</li>
                         <li>• Share results you have achieved</li>
@@ -234,7 +234,7 @@ export default function ReviewCollectionPage() {
             {/* Step 2: Rating & Basic Info */}
             {step === 2 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] text-center">
+                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
                   How would you rate your experience?
                 </h2>
 
@@ -245,7 +245,7 @@ export default function ReviewCollectionPage() {
                 {rating > 0 && (
                   <div className="space-y-4 animate-in fade-in">
                     <div>
-                      <label className="text-sm text-[#B9A9A9] mb-2 block">Your Name</label>
+                      <label className="text-sm text-[#b8a898] mb-2 block">Your Name</label>
                       <Input
                         placeholder="e.g., Jane Smith"
                         value={formData.name}
@@ -254,7 +254,7 @@ export default function ReviewCollectionPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm text-[#B9A9A9] mb-2 block">Email</label>
+                      <label className="text-sm text-[#b8a898] mb-2 block">Email</label>
                       <Input
                         type="email"
                         placeholder="jane@example.com"
@@ -264,9 +264,9 @@ export default function ReviewCollectionPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm text-[#B9A9A9] mb-2 block">Which program did you participate in?</label>
+                      <label className="text-sm text-[#b8a898] mb-2 block">Which program did you participate in?</label>
                       <select
-                        className="w-full p-3 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                        className="w-full p-3 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                         value={formData.program}
                         onChange={(e) => setFormData({...formData, program: e.target.value})}
                       >
@@ -297,7 +297,7 @@ export default function ReviewCollectionPage() {
             {/* Step 3: Testimonial Content */}
             {step === 3 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] text-center">
+                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
                   Share your experience
                 </h2>
 
@@ -305,7 +305,7 @@ export default function ReviewCollectionPage() {
                 {reviewType === "text" && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-[#B9A9A9] mb-2 block">
+                      <label className="text-sm text-[#b8a898] mb-2 block">
                         Headline (Optional)
                       </label>
                       <Input
@@ -315,7 +315,7 @@ export default function ReviewCollectionPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-[#B9A9A9] mb-2 block">
+                      <label className="text-sm text-[#b8a898] mb-2 block">
                         Your Testimonial
                       </label>
                       <Textarea
@@ -331,7 +331,7 @@ export default function ReviewCollectionPage() {
                 {/* Video Review */}
                 {reviewType === "video" && (
                   <div className="space-y-4">
-                    <div className="border-2 border-dashed border-[#1F315B]/20 rounded-xl p-8 text-center">
+                    <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-xl p-8 text-center">
                       {isRecording ? (
                         <div className="space-y-4">
                           <div className="w-20 h-20 rounded-full bg-red-500 animate-pulse flex items-center justify-center mx-auto">
@@ -344,11 +344,11 @@ export default function ReviewCollectionPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <Camera className="w-16 h-16 text-[#B9A9A9] mx-auto" />
-                          <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                          <Camera className="w-16 h-16 text-[#b8a898] mx-auto" />
+                          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                             Record your video testimonial
                           </p>
-                          <p className="text-sm text-[#B9A9A9]">
+                          <p className="text-sm text-[#b8a898]">
                             2-3 minutes is perfect. Speak from the heart!
                           </p>
                           <div className="flex gap-2 justify-center">
@@ -364,11 +364,11 @@ export default function ReviewCollectionPage() {
                         </div>
                       )}
                     </div>
-                    <div className="bg-[#1F315B]/5 rounded-lg p-4">
-                      <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                    <div className="bg-[#1a2b4a]/5 rounded-lg p-4">
+                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                         Suggested talking points:
                       </h4>
-                      <ul className="text-sm text-[#B9A9A9] space-y-1">
+                      <ul className="text-sm text-[#b8a898] space-y-1">
                         <li>• What was your situation before LifeCharter?</li>
                         <li>• What specific results have you achieved?</li>
                         <li>• What would you tell someone considering LifeCharter?</li>
@@ -380,7 +380,7 @@ export default function ReviewCollectionPage() {
                 {/* Audio Review */}
                 {reviewType === "audio" && (
                   <div className="space-y-4">
-                    <div className="border-2 border-dashed border-[#1F315B]/20 rounded-xl p-8 text-center">
+                    <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-xl p-8 text-center">
                       {isRecording ? (
                         <div className="space-y-4">
                           <div className="w-20 h-20 rounded-full bg-red-500 animate-pulse flex items-center justify-center mx-auto">
@@ -393,11 +393,11 @@ export default function ReviewCollectionPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <Mic className="w-16 h-16 text-[#B9A9A9] mx-auto" />
-                          <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                          <Mic className="w-16 h-16 text-[#b8a898] mx-auto" />
+                          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                             Record your audio testimonial
                           </p>
-                          <p className="text-sm text-[#B9A9A9]">
+                          <p className="text-sm text-[#b8a898]">
                             1-2 minutes is perfect. Just speak naturally!
                           </p>
                           <Button onClick={() => setIsRecording(true)}>
@@ -411,7 +411,7 @@ export default function ReviewCollectionPage() {
                 )}
 
                 {/* Consent */}
-                <div className="flex items-start gap-3 p-4 bg-[#1F315B]/5 rounded-lg">
+                <div className="flex items-start gap-3 p-4 bg-[#1a2b4a]/5 rounded-lg">
                   <input
                     type="checkbox"
                     id="consent"
@@ -419,7 +419,7 @@ export default function ReviewCollectionPage() {
                     onChange={(e) => setFormData({...formData, consent: e.target.checked})}
                     className="mt-1"
                   />
-                  <label htmlFor="consent" className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+                  <label htmlFor="consent" className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
                     I give permission for LifeCharter to use my testimonial in marketing materials, 
                     including website, social media, and email campaigns. I understand my name and 
                     photo may be displayed alongside my testimonial.
@@ -444,7 +444,7 @@ export default function ReviewCollectionPage() {
         </Card>
 
         {/* Footer */}
-        <p className="text-center text-sm text-[#B9A9A9] mt-8">
+        <p className="text-center text-sm text-[#b8a898] mt-8">
           Questions? Contact us at support@lifecharter.architecture
         </p>
       </div>

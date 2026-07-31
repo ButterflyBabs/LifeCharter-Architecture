@@ -171,7 +171,7 @@ export default function PipelinePage() {
   if (isComplete) {
     return (
       <div className="py-8 px-4 max-w-4xl mx-auto">
-        <Link href="/sales" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+        <Link href="/sales" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back to Sales System
         </Link>
@@ -181,27 +181,27 @@ export default function PipelinePage() {
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Sales Pipeline Complete!
             </h2>
-            <p className="text-[#5E3B6C] dark:text-[#CDBED6] mb-6">
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0] mb-6">
               Your pipeline stages and conversion metrics are now defined.
             </p>
 
             <div className="text-left space-y-4 max-w-2xl mx-auto">
               {answers.map((answer, index) => (
-                <div key={answer.questionId} className="bg-[#1F315B]/5 rounded-lg p-4">
-                  <p className="text-sm text-[#B9A9A9] mb-1">
+                <div key={answer.questionId} className="bg-[#1a2b4a]/5 rounded-lg p-4">
+                  <p className="text-sm text-[#b8a898] mb-1">
                     {pipelineQuestions[index]?.question}
                   </p>
                   {Array.isArray(answer.answer) ? (
-                    <ul className="list-disc list-inside text-[#1F315B] dark:text-[#F6F1E8]">
+                    <ul className="list-disc list-inside text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {answer.answer.map((item, i) => (
                         <li key={i}>{item}</li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                    <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                       {answer.answer}
                     </p>
                   )}
@@ -227,33 +227,33 @@ export default function PipelinePage() {
 
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
-      <Link href="/sales" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/sales" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Sales System
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center">
-            <Target className="w-6 h-6 text-[#5E3B6C]" />
+          <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center">
+            <Target className="w-6 h-6 text-[#7b6b8d]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Sales Pipeline
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               Stages from lead to closed deal
             </p>
           </div>
         </div>
 
-        <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
+        <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
           <div 
-            className="bg-[#D4AF63] h-2 rounded-full transition-all duration-500"
+            className="bg-[#c9a227] h-2 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-xs text-[#B9A9A9] mt-1">
+        <p className="text-xs text-[#b8a898] mt-1">
           Question {currentQuestionIndex + 1} of {pipelineQuestions.length}
         </p>
       </div>
@@ -261,8 +261,8 @@ export default function PipelinePage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#D4AF63]" />
-            <CardTitle className="text-lg text-[#1F315B] dark:text-[#F6F1E8]">
+            <Sparkles className="w-5 h-5 text-[#c9a227]" />
+            <CardTitle className="text-lg text-[#1a2b4a] dark:text-[#F8F5F0]">
               {currentQuestion.question}
             </CardTitle>
           </div>
@@ -279,11 +279,11 @@ export default function PipelinePage() {
                   }}
                   className={`w-full p-4 text-left rounded-lg border transition-all ${
                     currentAnswer === option
-                      ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                      : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                      ? "border-[#c9a227] bg-[#c9a227]/10"
+                      : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                   }`}
                 >
-                  <span className="text-[#1F315B] dark:text-[#F6F1E8]">{option}</span>
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{option}</span>
                 </button>
               ))}
             </div>
@@ -311,7 +311,7 @@ export default function PipelinePage() {
                   {currentList.map((item, index) => (
                     <span 
                       key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#D4AF63]/20 text-[#1F315B] dark:text-[#F6F1E8] rounded-full text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#c9a227]/20 text-[#1a2b4a] dark:text-[#F8F5F0] rounded-full text-sm"
                     >
                       {item}
                       <button 
@@ -325,7 +325,7 @@ export default function PipelinePage() {
                 </div>
               )}
               
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 {currentList.length} items added
               </p>
             </div>
@@ -347,7 +347,7 @@ export default function PipelinePage() {
           {currentQuestion.hint && (
             <button
               onClick={() => setShowHint(!showHint)}
-              className="flex items-center gap-2 text-sm text-[#D4AF63] hover:underline"
+              className="flex items-center gap-2 text-sm text-[#c9a227] hover:underline"
             >
               <Lightbulb className="w-4 h-4" />
               {showHint ? "Hide hint" : "Need a hint?"}
@@ -355,7 +355,7 @@ export default function PipelinePage() {
           )}
 
           {showHint && currentQuestion.hint && (
-            <p className="text-sm text-[#B9A9A9] italic bg-[#1F315B]/5 p-3 rounded-lg">
+            <p className="text-sm text-[#b8a898] italic bg-[#1a2b4a]/5 p-3 rounded-lg">
               💡 {currentQuestion.hint}
             </p>
           )}

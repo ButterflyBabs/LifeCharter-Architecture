@@ -42,7 +42,7 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Without a clear operating rhythm:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Important tasks fall through the cracks</li>
             <li>Teams work in silos without alignment</li>
             <li>Problems fester until they become crises</li>
@@ -58,7 +58,7 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Operating Rhythm typically includes:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Daily:</strong> Stand-ups, priority setting, quick check-ins</li>
             <li><strong>Weekly:</strong> Team meetings, metric reviews, planning sessions</li>
             <li><strong>Monthly:</strong> Business reviews, goal tracking, strategy adjustments</li>
@@ -74,7 +74,7 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Start simple and build:</p>
-          <ol className="list-decimal pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Identify what matters most:</strong> What decisions or reviews happen repeatedly?</li>
             <li><strong>Choose your cadence:</strong> How often does each activity need to happen?</li>
             <li><strong>Calendar it:</strong> Block the time. Protect it.</li>
@@ -90,7 +90,7 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>A strong weekly rhythm typically includes:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Monday Kickoff:</strong> Set priorities for the week, align the team</li>
             <li><strong>Mid-week Check-in:</strong> Quick sync on progress, unblock issues</li>
             <li><strong>Friday Review:</strong> What got done? What did not? Why?</li>
@@ -105,14 +105,14 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p><strong>Monthly Rhythm:</strong></p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Review Domain Scores and Overall Health</li>
             <li>Assess progress on monthly goals</li>
             <li>Adjust tactics for the coming month</li>
             <li>Celebrate wins and learn from misses</li>
           </ul>
           <p><strong>Quarterly Rhythm:</strong></p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Deep strategic review</li>
             <li>Set or adjust quarterly objectives</li>
             <li>Resource allocation decisions</li>
@@ -126,7 +126,7 @@ export default function OperatingRhythmHelpPage() {
       answer: (
         <div className="space-y-2">
           <p>Alignment requires consistency and clarity:</p>
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Share the rhythm document with everyone</li>
             <li>Put all meetings on shared calendars</li>
             <li>Create standard agendas so people know what to expect</li>
@@ -149,7 +149,7 @@ export default function OperatingRhythmHelpPage() {
       question: "What are common Operating Rhythm mistakes?",
       answer: (
         <div className="space-y-2">
-          <ul className="list-disc pl-5 space-y-1 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Too many meetings:</strong> Rhythm should reduce chaos, not create it</li>
             <li><strong>No clear purpose:</strong> Every meeting needs a specific outcome</li>
             <li><strong>Inconsistent execution:</strong> Canceling rhythm meetings when busy (that is when you need them most)</li>
@@ -165,54 +165,54 @@ export default function OperatingRhythmHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Help Center
       </Link>
 
       {/* Hero Section */}
       <div className="text-center mb-10">
-        <div className="w-16 h-16 rounded-full bg-[#D4AF63]/20 flex items-center justify-center mx-auto mb-4">
-          <Timer className="w-8 h-8 text-[#D4AF63]" />
+        <div className="w-16 h-16 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-4">
+          <Timer className="w-8 h-8 text-[#c9a227]" />
         </div>
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
           Operating Rhythm
         </h1>
-        <p className="text-lg text-[#B9A9A9] max-w-2xl mx-auto">
+        <p className="text-lg text-[#b8a898] max-w-2xl mx-auto">
           The heartbeat that keeps your business aligned and moving forward
         </p>
       </div>
 
       {/* What is Operating Rhythm */}
-      <Card className="mb-8 border-[#D4AF63]/30">
+      <Card className="mb-8 border-[#c9a227]/30">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#D4AF63]" />
+            <Clock className="w-5 h-5 text-[#c9a227]" />
             What is Operating Rhythm?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             <strong>Operating Rhythm</strong> is the predictable pattern of meetings, reviews, and rituals 
             that keep your business running smoothly. It is the difference between reactive chaos and 
             proactive momentum.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Repeat className="w-8 h-8 text-[#2E7C83] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Consistent</h3>
-              <p className="text-sm text-[#B9A9A9]">Same meetings, same times, same agendas</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Repeat className="w-8 h-8 text-[#4a9b9b] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Consistent</h3>
+              <p className="text-sm text-[#b8a898]">Same meetings, same times, same agendas</p>
             </div>
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Target className="w-8 h-8 text-[#5E3B6C] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Purposeful</h3>
-              <p className="text-sm text-[#B9A9A9]">Every meeting has a clear outcome</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Target className="w-8 h-8 text-[#7b6b8d] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Purposeful</h3>
+              <p className="text-sm text-[#b8a898]">Every meeting has a clear outcome</p>
             </div>
-            <div className="p-4 bg-[#1F315B]/5 rounded-lg text-center">
-              <Zap className="w-8 h-8 text-[#D4AF63] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Efficient</h3>
-              <p className="text-sm text-[#B9A9A9]">Minimal time, maximum alignment</p>
+            <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+              <Zap className="w-8 h-8 text-[#c9a227] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Efficient</h3>
+              <p className="text-sm text-[#b8a898]">Minimal time, maximum alignment</p>
             </div>
           </div>
         </CardContent>
@@ -222,20 +222,20 @@ export default function OperatingRhythmHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#D4AF63]" />
+            <Calendar className="w-5 h-5 text-[#c9a227]" />
             The Rhythm Framework
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 bg-[#1F315B]/5 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#2E7C83] font-bold text-sm">Daily</span>
+            <div className="flex items-start gap-4 p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#4a9b9b] font-bold text-sm">Daily</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Daily Rhythm</h4>
-                <p className="text-sm text-[#B9A9A9] mb-2">15-30 minutes to set the tone</p>
-                <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Daily Rhythm</h4>
+                <p className="text-sm text-[#b8a898] mb-2">15-30 minutes to set the tone</p>
+                <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                   <li>• Morning priority setting</li>
                   <li>• Quick team standup (if applicable)</li>
                   <li>• End-of-day reflection</li>
@@ -243,14 +243,14 @@ export default function OperatingRhythmHelpPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 bg-[#1F315B]/5 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#5E3B6C] font-bold text-sm">Weekly</span>
+            <div className="flex items-start gap-4 p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#7b6b8d] font-bold text-sm">Weekly</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Weekly Rhythm</h4>
-                <p className="text-sm text-[#B9A9A9] mb-2">1-2 hours for alignment and execution</p>
-                <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Weekly Rhythm</h4>
+                <p className="text-sm text-[#b8a898] mb-2">1-2 hours for alignment and execution</p>
+                <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                   <li>• Monday kickoff meeting</li>
                   <li>• Mid-week progress check</li>
                   <li>• Friday review and celebration</li>
@@ -259,14 +259,14 @@ export default function OperatingRhythmHelpPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 bg-[#1F315B]/5 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#D4AF63] font-bold text-xs">Monthly</span>
+            <div className="flex items-start gap-4 p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#c9a227] font-bold text-xs">Monthly</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Monthly Rhythm</h4>
-                <p className="text-sm text-[#B9A9A9] mb-2">2-4 hours for review and adjustment</p>
-                <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly Rhythm</h4>
+                <p className="text-sm text-[#b8a898] mb-2">2-4 hours for review and adjustment</p>
+                <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                   <li>• Business health review</li>
                   <li>• Domain score assessment</li>
                   <li>• Goal progress evaluation</li>
@@ -275,14 +275,14 @@ export default function OperatingRhythmHelpPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 bg-[#1F315B]/5 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#2E7C83] font-bold text-xs">Quarterly</span>
+            <div className="flex items-start gap-4 p-4 bg-[#1a2b4a]/5 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#4a9b9b] font-bold text-xs">Quarterly</span>
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Quarterly Rhythm</h4>
-                <p className="text-sm text-[#B9A9A9] mb-2">Half to full day for strategy</p>
-                <ul className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] space-y-1">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Quarterly Rhythm</h4>
+                <p className="text-sm text-[#b8a898] mb-2">Half to full day for strategy</p>
+                <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                   <li>• Deep strategic review</li>
                   <li>• Quarterly objectives setting</li>
                   <li>• Resource allocation</li>
@@ -298,7 +298,7 @@ export default function OperatingRhythmHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#D4AF63]" />
+            <HelpCircle className="w-5 h-5 text-[#c9a227]" />
             Frequently Asked Questions
           </CardTitle>
         </CardHeader>
@@ -307,26 +307,26 @@ export default function OperatingRhythmHelpPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="border border-[#1F315B]/10 rounded-lg overflow-hidden"
+                className="border border-[#1a2b4a]/10 rounded-lg overflow-hidden"
               >
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1F315B]/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a2b4a]/5 transition-colors"
                 >
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8] pr-4">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] pr-4">
                     {faq.question}
                   </span>
                   {openFAQ === index ? (
-                    <ChevronUp className="w-5 h-5 text-[#D4AF63] flex-shrink-0" />
+                    <ChevronUp className="w-5 h-5 text-[#c9a227] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   )}
                 </button>
                 {openFAQ === index && (
-                  <div className="px-4 pb-4 text-[#1F315B] dark:text-[#F6F1E8]">
-                    <div className="pt-2 border-t border-[#1F315B]/10">
+                  <div className="px-4 pb-4 text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <div className="pt-2 border-t border-[#1a2b4a]/10">
                       {typeof faq.answer === 'string' ? (
-                        <p className="text-[#5E3B6C] dark:text-[#CDBED6] leading-relaxed">
+                        <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
                           {faq.answer}
                         </p>
                       ) : (
@@ -345,7 +345,7 @@ export default function OperatingRhythmHelpPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+            <Lightbulb className="w-5 h-5 text-[#c9a227]" />
             Operating Rhythm Best Practices
           </CardTitle>
         </CardHeader>
@@ -383,23 +383,23 @@ export default function OperatingRhythmHelpPage() {
       </Card>
 
       {/* CTA */}
-      <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-8 text-center">
-          <Timer className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
+          <Timer className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Find Your Rhythm</h2>
-          <p className="text-[#CDBED6] mb-6 max-w-lg mx-auto">
+          <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             Use the LifeCharter Architecture platform to support your operating rhythm. 
             Schedule reviews, track progress, and keep your business aligned.
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/dashboard">
-              <Button className="bg-[#D4AF63] text-[#1F315B] hover:bg-[#D4AF63]/90">
+              <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <Calendar className="w-4 h-4 mr-2" />
                 Start Your Rhythm
               </Button>
             </Link>
             <Link href="/help/overall-health">
-              <Button variant="outline" className="border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+              <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Review Business Health
               </Button>
             </Link>
@@ -409,10 +409,10 @@ export default function OperatingRhythmHelpPage() {
 
       {/* Quote */}
       <div className="mt-8 text-center">
-        <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
+        <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;Rhythm creates momentum. Momentum creates results. Results create confidence.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
       </div>
     </div>
   );

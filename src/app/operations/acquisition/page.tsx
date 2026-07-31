@@ -156,7 +156,7 @@ export default function AcquisitionPage() {
   if (isComplete) {
     return (
       <div className="py-8 px-4 max-w-3xl mx-auto">
-        <Link href="/operations" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+        <Link href="/operations" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back to Operations
         </Link>
@@ -165,30 +165,30 @@ export default function AcquisitionPage() {
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Section Complete!
           </h2>
-          <p className="text-[#B9A9A9] mb-6">
+          <p className="text-[#b8a898] mb-6">
             Your customer acquisition insights have been saved. Here&apos;s what we learned:
           </p>
 
-          <div className="text-left bg-[#1F315B]/5 rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-4">Summary</h3>
+          <div className="text-left bg-[#1a2b4a]/5 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Summary</h3>
             <div className="space-y-2 text-sm">
-              <p><span className="text-[#B9A9A9]">Primary Channels:</span> {Array.isArray(answers.primary_channels) ? answers.primary_channels.join(", ") : answers.primary_channels}</p>
-              <p><span className="text-[#B9A9A9]">Most Effective:</span> {answers.channel_effectiveness}</p>
-              <p><span className="text-[#B9A9A9]">Monthly Leads:</span> {answers.monthly_leads}</p>
-              <p><span className="text-[#B9A9A9]">Conversion Rate:</span> {answers.lead_to_customer}</p>
-              <p><span className="text-[#B9A9A9]">CAC Tracking:</span> {answers.customer_acquisition_cost}</p>
+              <p><span className="text-[#b8a898]">Primary Channels:</span> {Array.isArray(answers.primary_channels) ? answers.primary_channels.join(", ") : answers.primary_channels}</p>
+              <p><span className="text-[#b8a898]">Most Effective:</span> {answers.channel_effectiveness}</p>
+              <p><span className="text-[#b8a898]">Monthly Leads:</span> {answers.monthly_leads}</p>
+              <p><span className="text-[#b8a898]">Conversion Rate:</span> {answers.lead_to_customer}</p>
+              <p><span className="text-[#b8a898]">CAC Tracking:</span> {answers.customer_acquisition_cost}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-lg p-6 mb-6">
+          <div className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-lg p-6 mb-6">
             <h3 className="font-semibold mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+              <Sparkles className="w-4 h-4 text-[#c9a227]" />
               AI Recommendations
             </h3>
-            <ul className="text-sm text-left space-y-2 text-[#CDBED6]">
+            <ul className="text-sm text-left space-y-2 text-[#e8e4f0]">
               <li>• Focus 70% of effort on your top 2 performing channels</li>
               <li>• Implement lead scoring to improve conversion rates</li>
               <li>• Set up UTM tracking to measure true CAC by channel</li>
@@ -212,21 +212,21 @@ export default function AcquisitionPage() {
   return (
     <div className="py-8 px-4 max-w-3xl mx-auto">
       {/* Header */}
-      <Link href="/operations" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/operations" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Operations
       </Link>
 
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-full bg-[#2E7C83]/20 flex items-center justify-center">
-            <Users className="w-5 h-5 text-[#2E7C83]" />
+          <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
+            <Users className="w-5 h-5 text-[#4a9b9b]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Customer Acquisition
             </h1>
-            <p className="text-sm text-[#B9A9A9]">
+            <p className="text-sm text-[#b8a898]">
               Question {currentQuestion + 1} of {questions.length}
             </p>
           </div>
@@ -235,13 +235,13 @@ export default function AcquisitionPage() {
 
       {/* Progress Bar */}
       <div className="mb-8">
-        <div className="flex justify-between text-sm text-[#B9A9A9] mb-2">
+        <div className="flex justify-between text-sm text-[#b8a898] mb-2">
           <span>Progress</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
+        <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
           <div
-            className="bg-[#2E7C83] h-2 rounded-full transition-all"
+            className="bg-[#4a9b9b] h-2 rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -251,13 +251,13 @@ export default function AcquisitionPage() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-6">
-            <h2 className="text-lg font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-lg font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
               {question.question}
             </h2>
             {question.hint && (
               <button
                 onClick={() => setShowHint(!showHint)}
-                className="text-[#B9A9A9] hover:text-[#D4AF63]"
+                className="text-[#b8a898] hover:text-[#c9a227]"
               >
                 <HelpCircle className="w-5 h-5" />
               </button>
@@ -265,7 +265,7 @@ export default function AcquisitionPage() {
           </div>
 
           {showHint && question.hint && (
-            <div className="mb-4 p-3 bg-[#D4AF63]/10 rounded-lg text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+            <div className="mb-4 p-3 bg-[#c9a227]/10 rounded-lg text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
               <span className="font-medium">Hint:</span> {question.hint}
             </div>
           )}
@@ -279,11 +279,11 @@ export default function AcquisitionPage() {
                   onClick={() => handleAnswer(option)}
                   className={`w-full text-left p-4 rounded-lg border transition-all ${
                     answers[question.id] === option
-                      ? "border-[#2E7C83] bg-[#2E7C83]/10"
-                      : "border-[#1F315B]/20 hover:border-[#2E7C83]/50"
+                      ? "border-[#4a9b9b] bg-[#4a9b9b]/10"
+                      : "border-[#1a2b4a]/20 hover:border-[#4a9b9b]/50"
                   }`}
                 >
-                  <span className="text-[#1F315B] dark:text-[#F6F1E8]">{option}</span>
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{option}</span>
                 </button>
               ))}
             </div>
@@ -335,7 +335,7 @@ export default function AcquisitionPage() {
                 {((answers[question.id] as string[]) || []).map((item: string, index: number) => (
                   <span
                     key={index}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#2E7C83]/10 text-[#2E7C83] rounded-full text-sm"
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#4a9b9b]/10 text-[#4a9b9b] rounded-full text-sm"
                   >
                     {item}
                     <button

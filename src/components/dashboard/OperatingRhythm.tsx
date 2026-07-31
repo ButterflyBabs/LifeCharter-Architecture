@@ -25,9 +25,9 @@ interface RhythmSection {
 }
 
 const sectionColors = {
-  daily: "#2E7C83",
-  weekly: "#5E3B6C",
-  monthly: "#D4AF63",
+  daily: "#4a9b9b",
+  weekly: "#7b6b8d",
+  monthly: "#c9a227",
 };
 
 interface OperatingRhythmProps {
@@ -187,12 +187,12 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
 
   if (loading) {
     return (
-      <Card className="h-full border-[#D4AF63]/30">
+      <Card className="h-full border-[#c9a227]/30">
         <CardHeader>
           <CardTitle>Operating Rhythm</CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex items-center justify-center h-48">
-          <Loader2 className="w-6 h-6 animate-spin text-[#2E7C83]" />
+          <Loader2 className="w-6 h-6 animate-spin text-[#4a9b9b]" />
         </CardContent>
       </Card>
     );
@@ -200,7 +200,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
 
   if (error) {
     return (
-      <Card className="h-full border-[#D4AF63]/30">
+      <Card className="h-full border-[#c9a227]/30">
         <CardHeader>
           <CardTitle>Operating Rhythm</CardTitle>
         </CardHeader>
@@ -219,7 +219,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
   }
 
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
         <CardTitle>Operating Rhythm</CardTitle>
       </CardHeader>
@@ -239,7 +239,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
                 >
                   {section.title}
                 </h3>
-                <span className="text-xs text-[#B9A9A9]">
+                <span className="text-xs text-[#b8a898]">
                   ({section.items.filter(i => i.completed).length}/{section.items.length})
                 </span>
               </div>
@@ -247,7 +247,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
               {/* Items */}
               <div className="space-y-1.5 pl-6">
                 {section.items.length === 0 ? (
-                  <p className="text-xs text-[#B9A9A9] italic">No items yet</p>
+                  <p className="text-xs text-[#b8a898] italic">No items yet</p>
                 ) : (
                   section.items.map((item) => (
                     <div
@@ -259,23 +259,23 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
                         className="flex-shrink-0 transition-colors"
                       >
                         {item.completed ? (
-                          <CheckCircle2 className="w-4 h-4 text-[#2E7C83]" />
+                          <CheckCircle2 className="w-4 h-4 text-[#4a9b9b]" />
                         ) : (
-                          <Circle className="w-4 h-4 text-[#B9A9A9] hover:text-[#2E7C83]" />
+                          <Circle className="w-4 h-4 text-[#b8a898] hover:text-[#4a9b9b]" />
                         )}
                       </button>
                       <span
                         className={`flex-1 ${
                           item.completed
-                            ? "text-[#1F315B]/60 dark:text-[#F6F1E8]/60 line-through"
-                            : "text-[#1F315B] dark:text-[#F6F1E8]"
+                            ? "text-[#1a2b4a]/60 dark:text-[#F8F5F0]/60 line-through"
+                            : "text-[#1a2b4a] dark:text-[#F8F5F0]"
                         }`}
                       >
                         {item.title}
                       </span>
                       <button
                         onClick={() => deleteItem(item.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[#B9A9A9] hover:text-red-500"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[#b8a898] hover:text-red-500"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -289,13 +289,13 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
 
         {/* Add new item form */}
         {showAddForm ? (
-          <div className="mt-4 p-3 bg-[#F6F1E8]/50 dark:bg-[#1F315B]/20 rounded-lg">
+          <div className="mt-4 p-3 bg-[#F8F5F0]/50 dark:bg-[#1a2b4a]/20 rounded-lg">
             <input
               type="text"
               value={newItemTitle}
               onChange={(e) => setNewItemTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full px-3 py-2 text-sm border border-[#D4AF63]/30 rounded-md bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8] placeholder-[#B9A9A9] focus:outline-none focus:ring-2 focus:ring-[#2E7C83]"
+              className="w-full px-3 py-2 text-sm border border-[#c9a227]/30 rounded-md bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] placeholder-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#4a9b9b]"
               onKeyDown={(e) => e.key === 'Enter' && addItem()}
               autoFocus
             />
@@ -303,7 +303,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
               <select
                 value={newItemCategory}
                 onChange={(e) => setNewItemCategory(e.target.value as "daily" | "weekly" | "monthly")}
-                className="px-3 py-1.5 text-sm border border-[#D4AF63]/30 rounded-md bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                className="px-3 py-1.5 text-sm border border-[#c9a227]/30 rounded-md bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -332,7 +332,7 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
         ) : (
           <button
             onClick={() => setShowAddForm(true)}
-            className="mt-4 flex items-center gap-1 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors"
+            className="mt-4 flex items-center gap-1 text-sm text-[#4a9b9b] hover:text-[#4a9b9b]/80 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add item
@@ -340,21 +340,21 @@ export function OperatingRhythm({ workspaceId }: OperatingRhythmProps) {
         )}
 
         {/* Progress summary */}
-        <div className="mt-4 pt-4 border-t border-[#D4AF63]/20">
+        <div className="mt-4 pt-4 border-t border-[#c9a227]/20">
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-[#5E3B6C] dark:text-[#CDBED6]">
+            <span className="text-[#7b6b8d] dark:text-[#e8e4f0]">
               {completedItems} of {totalItems} completed ({completionRate}%)
             </span>
             {streak > 0 && (
-              <span className="text-[#D4AF63] font-medium">
+              <span className="text-[#c9a227] font-medium">
                 🔥 {streak} today
               </span>
             )}
           </div>
           {/* Progress bar */}
-          <div className="w-full h-1.5 bg-[#D4AF63]/20 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-[#c9a227]/20 rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#2E7C83] transition-all duration-300"
+              className="h-full bg-[#4a9b9b] transition-all duration-300"
               style={{ width: `${completionRate}%` }}
             />
           </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Alignment Profile | LifeCharter",
+  title: "Alignment Profile | LifeCharter Architecture",
   description: "Discover your business alignment across Brain (Systems), Soul (Purpose), and Profit (Financial Health) dimensions.",
 };
 
@@ -16,8 +16,8 @@ const alignmentProfiles = [
     subtitle: "Systems & Operations",
     description: "Evaluate how well your business runs without you. Assess documentation, automation, team capacity, and operational efficiency.",
     icon: Brain,
-    color: "#2E7C83",
-    bgColor: "bg-[#2E7C83]/10",
+    color: "#4a9b9b",
+    bgColor: "bg-[#4a9b9b]/10",
     questions: 325,
     timeEstimate: "60-75 min",
     sections: ["Business Identity", "Business Model", "Vision & Strategy", "Ideal Clients", "Offers & Products", "Messaging & Brand", "Sales Process", "Operations", "Team & Culture", "Financials", "Legal & Risk", "Growth & Scale"],
@@ -33,8 +33,8 @@ const alignmentProfiles = [
     subtitle: "Purpose & Alignment",
     description: "Measure alignment between your business and your deeper mission. Evaluate values, vision clarity, and meaningful work.",
     icon: Heart,
-    color: "#5E3B6C",
-    bgColor: "bg-[#5E3B6C]/10",
+    color: "#7b6b8d",
+    bgColor: "bg-[#7b6b8d]/10",
     questions: 264,
     timeEstimate: "50-60 min",
     sections: ["Core Identity", "Origin Story", "Calling & Purpose", "Values & Standards", "Beliefs & Worldview", "Shadow & Resistance", "Sacred Practices", "Body & Energy", "Integration"],
@@ -50,8 +50,8 @@ const alignmentProfiles = [
     subtitle: "Financial Health",
     description: "Analyze your financial sustainability. Review cash flow, pricing, revenue streams, and profitability across 12 business domains.",
     icon: TrendingUp,
-    color: "#D4AF63",
-    bgColor: "bg-[#D4AF63]/10",
+    color: "#c9a227",
+    bgColor: "bg-[#c9a227]/10",
     questions: 60,
     timeEstimate: "25-30 min",
     sections: ["12 Business Domains"],
@@ -67,16 +67,16 @@ export default function AssessmentsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-[#1F315B] text-white py-12 px-4">
+      <div className="bg-[#1a2b4a] text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-[#D4AF63]" />
-            <span className="text-sm font-medium text-[#CDBED6]">LifeCharter</span>
+            <Sparkles className="w-5 h-5 text-[#c9a227]" />
+            <span className="text-sm font-medium text-[#e8e4f0]">LifeCharter Architecture</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Alignment Profiles
           </h1>
-          <p className="text-lg text-[#CDBED6] max-w-2xl">
+          <p className="text-lg text-[#e8e4f0] max-w-2xl">
             Discover your business alignment across the three dimensions that matter: 
             Brain (Systems), Soul (Purpose), and Profit (Financial Health).
           </p>
@@ -89,7 +89,7 @@ export default function AssessmentsPage() {
           {alignmentProfiles.map((assessment) => (
             <Card
               key={assessment.id}
-              className="border-[#D4AF63]/20 hover:border-[#D4AF63]/50 transition-all duration-300 hover:shadow-lg flex flex-col"
+              className="border-[#c9a227]/20 hover:border-[#c9a227]/50 transition-all duration-300 hover:shadow-lg flex flex-col"
             >
               <CardHeader>
                 <div
@@ -106,7 +106,7 @@ export default function AssessmentsPage() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
-                <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 text-sm">
+                <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 text-sm">
                   {assessment.description}
                 </p>
 
@@ -115,7 +115,7 @@ export default function AssessmentsPage() {
                   {assessment.sections.map((section) => (
                     <span
                       key={section}
-                      className="text-xs px-2 py-1 rounded-full bg-[#1F315B]/10 text-[#1F315B] dark:text-[#CDBED6]"
+                      className="text-xs px-2 py-1 rounded-full bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#e8e4f0]"
                     >
                       {section}
                     </span>
@@ -123,7 +123,7 @@ export default function AssessmentsPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-[#B9A9A9]">
+                <div className="flex items-center gap-4 text-xs text-[#b8a898]">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
                     {assessment.questions} questions
@@ -140,7 +140,7 @@ export default function AssessmentsPage() {
                   {assessment.benefits.map((benefit, idx) => (
                     <li
                       key={idx}
-                      className="flex items-center gap-2 text-sm text-[#1F315B]/80 dark:text-[#F6F1E8]/80"
+                      className="flex items-center gap-2 text-sm text-[#1a2b4a]/80 dark:text-[#F8F5F0]/80"
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -164,22 +164,22 @@ export default function AssessmentsPage() {
 
         {/* Quick Pulse Check-in Option */}
         <div className="mt-12">
-          <Card className="border-[#D4AF63]/30 bg-gradient-to-br from-[#D4AF63]/5 to-transparent">
+          <Card className="border-[#c9a227]/30 bg-gradient-to-br from-[#c9a227]/5 to-transparent">
             <CardContent className="p-8">
               <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-[#D4AF63]/20 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-8 h-8 text-[#D4AF63]" />
+                <div className="w-16 h-16 rounded-full bg-[#c9a227]/20 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-8 h-8 text-[#c9a227]" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                  <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                     Quick Pulse Check-in
                   </h2>
-                  <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-4">
+                  <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mb-4">
                     Track your progress over time with this 18-question follow-up assessment.
                     Compare your results against your initial Brain, Soul, and Profit assessments
                     to see trends and get personalized action steps. Takes just 5 minutes.
                   </p>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-[#B9A9A9]">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-[#b8a898]">
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4" />
                       18 questions
@@ -207,17 +207,17 @@ export default function AssessmentsPage() {
 
         {/* Complete Assessment CTA */}
         <div className="mt-8">
-          <Card className="border-[#2E7C83]/30">
+          <Card className="border-[#4a9b9b]/30">
             <CardContent className="p-8">
               <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-[#2E7C83]/20 flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-8 h-8 text-[#2E7C83]" />
+                <div className="w-16 h-16 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
+                  <Brain className="w-8 h-8 text-[#4a9b9b]" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+                  <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                     Complete the Full Assessment
                   </h2>
-                  <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70">
+                  <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70">
                     Take all three assessments to get your complete Business Health Score 
                     and receive a personalized growth roadmap with detailed recommendations.
                   </p>
@@ -243,30 +243,30 @@ export default function AssessmentsPage() {
         {/* Info Section */}
         <div className="mt-12 grid md:grid-cols-2 gap-8">
           <div>
-            <h3 className="text-lg font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+            <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
               How It Works
             </h3>
-            <ul className="space-y-3 text-sm text-[#1F315B]/70 dark:text-[#F6F1E8]/70">
+            <ul className="space-y-3 text-sm text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70">
               <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#2E7C83] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-[#4a9b9b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                   1
                 </span>
                 Answer questions honestly about your current business state
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#2E7C83] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-[#4a9b9b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                   2
                 </span>
                 Receive your scores and detailed analysis
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#2E7C83] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-[#4a9b9b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                   3
                 </span>
                 Get personalized recommendations for improvement
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#2E7C83] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-[#4a9b9b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                   4
                 </span>
                 Track progress over time with re-assessments
@@ -274,29 +274,29 @@ export default function AssessmentsPage() {
             </ul>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-3">
+            <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
               Score Ranges
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">0-30: Survival Mode</span>
-                <span className="text-[#B9A9A9]">— Urgent attention needed</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">0-30: Survival Mode</span>
+                <span className="text-[#b8a898]">— Urgent attention needed</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">31-60: Building</span>
-                <span className="text-[#B9A9A9]">— Foundation in progress</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">31-60: Building</span>
+                <span className="text-[#b8a898]">— Foundation in progress</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">61-80: Growth</span>
-                <span className="text-[#B9A9A9]">— Scaling and optimizing</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">61-80: Growth</span>
+                <span className="text-[#b8a898]">— Scaling and optimizing</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">81-100: Thriving</span>
-                <span className="text-[#B9A9A9]">— Industry leader potential</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">81-100: Thriving</span>
+                <span className="text-[#b8a898]">— Industry leader potential</span>
               </div>
             </div>
           </div>
