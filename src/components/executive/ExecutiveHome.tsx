@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Mic,
   CheckSquare,
   DollarSign,
   Mail,
@@ -74,6 +73,8 @@ export default function ExecutiveHome() {
   const [replyingTo, setReplyingTo] = useState<Email | null>(null);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
+  const [aiReply, setAiReply] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Initialize time on client side only
   useEffect(() => {
@@ -173,6 +174,26 @@ export default function ExecutiveHome() {
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+  const askMariposa = async (q?: string) => {
+    const message = (q ?? aiInput).trim();
+    if (!message || aiLoading) return;
+    setAiLoading(true);
+    setAiReply(null);
+    try {
+      const res = await fetch("/api/mariposa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      setAiReply(data.reply ?? "Sorry, I couldn't respond right now.");
+    } catch {
+      setAiReply("Sorry, I couldn't respond right now.");
+    }
+    setAiLoading(false);
+    if (!q) setAiInput("");
+  };
 
   const fetchTasks = async () => {
     try {
@@ -710,60 +731,69 @@ export default function ExecutiveHome() {
         </div>
       </div>
 
-      {/* BOTTOM - AI Assistant Full Width */}
-      <Link href="/ai-guide" className="block">
-        <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="font-serif text-lg text-indigo-900">AI Assistant</h3>
+      {/* BOTTOM - AI Assistant Full Width (live Mariposa) */}
+      <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xs text-gray-400">Powered by Mariposa</span>
+            <h3 className="font-serif text-lg text-indigo-900">AI Assistant</h3>
+          </div>
+          <span className="text-xs text-gray-400">Powered by Mariposa</span>
+        </div>
+
+        <div className="px-6 pb-6">
+          {/* Input */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") askMariposa();
+                }}
+                placeholder="Ask Mariposa anything about your business..."
+                className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
+              />
+            </div>
+            <button
+              onClick={() => askMariposa()}
+              disabled={aiLoading || !aiInput.trim()}
+              className="w-11 h-11 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50"
+            >
+              <ArrowRight className="w-5 h-5 text-white" />
+            </button>
           </div>
 
-          <div className="px-6 pb-6">
-            {/* Input */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  placeholder="Ask me anything about your business..."
-                  className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
-                  onClick={(e) => e.preventDefault()}
-                />
-              </div>
-              <button className="w-11 h-11 rounded-xl bg-[#c9a227] flex items-center justify-center hover:bg-[#b8941f] transition-colors" onClick={(e) => e.preventDefault()}>
-                <Mic className="w-5 h-5 text-white" />
-              </button>
-              <button className="w-11 h-11 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors" onClick={(e) => e.preventDefault()}>
-                <ArrowRight className="w-5 h-5 text-white" />
-              </button>
+          {/* Reply */}
+          {(aiLoading || aiReply) && (
+            <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
+              {aiLoading ? "Mariposa is thinking…" : aiReply}
             </div>
+          )}
 
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                "What's my focus today?",
-                "Schedule focus time",
-                "Draft email to team",
-                "Review weekly goals",
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              "What's my focus today?",
+              "Schedule focus time",
+              "Draft email to team",
+              "Review weekly goals",
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => askMariposa(suggestion)}
+                disabled={aiLoading}
+                className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
         </div>
-      </Link>
+      </div>
 
       {/* Add Task Modal */}
       {showAddTask && (
