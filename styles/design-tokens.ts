@@ -5,13 +5,13 @@
 
 export const colors = {
   // Primary Brand Colors
-  deepIndigo: "#1F315B",
-  royalPlum: "#5E3B6C",
-  sacredTeal: "#2E7C83",
-  softLavender: "#CDBED6",
-  warmGold: "#D4AF63",
-  ivoryLight: "#F6F1E8",
-  softTaupe: "#B9A9A9",
+  deepIndigo: "#1a2b4a",
+  royalPlum: "#7b6b8d",
+  sacredTeal: "#4a9b9b",
+  softLavender: "#e8e4f0",
+  warmGold: "#c9a227",
+  ivoryLight: "#F8F5F0",
+  softTaupe: "#b8a898",
 
   // Dark Mode
   darkBg: "#1A1A2E",
@@ -19,10 +19,10 @@ export const colors = {
   darkBorder: "#2D3561",
 
   // Semantic
-  success: "#2E7C83",
-  warning: "#D4AF63",
+  success: "#4a9b9b",
+  warning: "#c9a227",
   error: "#DC2626",
-  info: "#1F315B",
+  info: "#1a2b4a",
 } as const;
 
 export const typography = {

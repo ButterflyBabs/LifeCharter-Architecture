@@ -98,13 +98,13 @@ export default function NextThreeMovesPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#D4AF63]/20 mb-4">
-          <ListChecks className="w-8 h-8 text-[#D4AF63]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#c9a227]/20 mb-4">
+          <ListChecks className="w-8 h-8 text-[#c9a227]" />
         </div>
-        <h1 className="text-3xl font-serif font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+        <h1 className="text-3xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
           Next 3 Moves
         </h1>
-        <p className="text-[#5E3B6C] dark:text-[#CDBED6] mt-2 max-w-2xl mx-auto">
+        <p className="text-[#7b6b8d] dark:text-[#e8e4f0] mt-2 max-w-2xl mx-auto">
           Your prioritized action plan for moving from insight to impact
         </p>
       </div>
@@ -112,18 +112,18 @@ export default function NextThreeMovesPage() {
       {/* Main Explanation */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             What are Next 3 Moves?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             In a world of infinite possibilities and limited time, the question is not <em>what could you do?</em> but <strong>what should you do next?</strong> Your Next 3 Moves answer that question with clarity and precision.
           </p>
-          <p className="text-[#5E3B6C] dark:text-[#CDBED6] leading-relaxed">
+          <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
             These are not arbitrary to-do items. They are intelligently curated actions drawn from your assessments, business plan, operating rhythm, and AI analysis of what will move the needle most for your business right now.
           </p>
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Think of your Next 3 Moves as your business&apos;s immediate priorities—the three actions that, if completed, will create the most positive momentum and bring you closer to your vision with the least wasted effort.
           </p>
         </CardContent>
@@ -132,41 +132,41 @@ export default function NextThreeMovesPage() {
       {/* How Moves Are Generated */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             How Your Moves Are Generated
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8]">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
             Your Next 3 Moves are synthesized from multiple data sources across the LifeCharter platform:
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {moveTypes.map((type) => (
-              <div key={type.title} className="border border-[#1F315B]/10 dark:border-[#CDBED6]/20 rounded-lg p-4">
+              <div key={type.title} className="border border-[#1a2b4a]/10 dark:border-[#e8e4f0]/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">{type.icon}</span>
-                  <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{type.title}</h4>
+                  <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{type.title}</h4>
                 </div>
-                <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6] mb-2">{type.description}</p>
-                <p className="text-xs text-[#B9A9A9] italic">Example: {type.example}</p>
+                <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">{type.description}</p>
+                <p className="text-xs text-[#b8a898] italic">Example: {type.example}</p>
               </div>
             ))}
           </div>
 
-          <div className="bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 rounded-lg p-4">
-            <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-3 flex items-center gap-2">
-              <Target className="w-5 h-5 text-[#D4AF63]" />
+          <div className="bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg p-4">
+            <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3 flex items-center gap-2">
+              <Target className="w-5 h-5 text-[#c9a227]" />
               The Prioritization Algorithm
             </h4>
             <div className="space-y-3">
               {prioritizationFramework.map((item) => (
                 <div key={item.factor} className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">{item.factor}</p>
-                    <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">{item.description}</p>
+                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{item.factor}</p>
+                    <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">{item.description}</p>
                   </div>
-                  <span className="text-[#D4AF63] font-semibold whitespace-nowrap">{item.weight}</span>
+                  <span className="text-[#c9a227] font-semibold whitespace-nowrap">{item.weight}</span>
                 </div>
               ))}
             </div>
@@ -177,55 +177,55 @@ export default function NextThreeMovesPage() {
       {/* Understanding Impact Levels */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             Understanding Impact Levels
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
             Each move is tagged with an Impact level to help you prioritize your energy and attention:
           </p>
           
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 bg-[#5E3B6C]/10 rounded-lg border-l-4 border-[#5E3B6C]">
-              <div className="w-10 h-10 rounded-full bg-[#5E3B6C] flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="flex items-start gap-4 p-4 bg-[#7b6b8d]/10 rounded-lg border-l-4 border-[#7b6b8d]">
+              <div className="w-10 h-10 rounded-full bg-[#7b6b8d] flex items-center justify-center text-white font-bold flex-shrink-0">
                 H
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">High Impact</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">High Impact</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   These moves significantly improve your business health score (10+ points), address critical gaps, or unlock major opportunities. They often require more effort but yield disproportionate results. Prioritize these when you have focused time and energy.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 bg-[#2E7C83]/10 rounded-lg border-l-4 border-[#2E7C83]">
-              <div className="w-10 h-10 rounded-full bg-[#2E7C83] flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="flex items-start gap-4 p-4 bg-[#4a9b9b]/10 rounded-lg border-l-4 border-[#4a9b9b]">
+              <div className="w-10 h-10 rounded-full bg-[#4a9b9b] flex items-center justify-center text-white font-bold flex-shrink-0">
                 M
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Medium Impact</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Medium Impact</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   These moves build important systems, capabilities, or relationships. They typically improve domain scores by 5-10 points. These are your bread-and-butter growth actions—steady progress that compounds over time.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 bg-[#CDBED6]/20 rounded-lg border-l-4 border-[#CDBED6]">
-              <div className="w-10 h-10 rounded-full bg-[#CDBED6] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+            <div className="flex items-start gap-4 p-4 bg-[#e8e4f0]/20 rounded-lg border-l-4 border-[#e8e4f0]">
+              <div className="w-10 h-10 rounded-full bg-[#e8e4f0] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 L
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Low Impact</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Low Impact</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   These are maintenance tasks, quick wins, or relationship-nurturing activities. While individually small, they keep momentum going and prevent backsliding. Perfect for low-energy days or when you need a sense of accomplishment.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-[#D4AF63]/10 rounded-lg border border-[#D4AF63]/30">
-            <p className="text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+          <div className="mt-4 p-4 bg-[#c9a227]/10 rounded-lg border border-[#c9a227]/30">
+            <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
               Strategy Tip: Aim for a mix of impact levels. Complete one High Impact move per week, steady progress on Medium moves, and sprinkle in Low Impact wins to maintain momentum.
             </p>
           </div>
@@ -235,55 +235,55 @@ export default function NextThreeMovesPage() {
       {/* Working Your Moves */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             Working Your Moves: Best Practices
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#1F315B] flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#1a2b4a] flex items-center justify-center text-white font-bold flex-shrink-0">
                 1
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Review Weekly</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Review Weekly</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   Set a recurring calendar block—Monday morning works well—to review your Next 3 Moves. Ask: Are these still the right priorities? What has changed in my business? Do I need to refresh the list?
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#1F315B] flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#1a2b4a] flex items-center justify-center text-white font-bold flex-shrink-0">
                 2
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Time-Block Deep Work</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Time-Block Deep Work</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   High Impact moves deserve uninterrupted focus. Block 2-4 hours on your calendar for deep work on your most important move. Turn off notifications, close unnecessary tabs, and give it your full attention.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#1F315B] flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#1a2b4a] flex items-center justify-center text-white font-bold flex-shrink-0">
                 3
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Break Down Big Moves</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Break Down Big Moves</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   If a move feels overwhelming, break it into smaller sub-tasks. &quot;Build cash flow forecast&quot; becomes: (1) Gather last 6 months data, (2) Create spreadsheet template, (3) Input projections, (4) Review with advisor.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#1F315B] flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#1a2b4a] flex items-center justify-center text-white font-bold flex-shrink-0">
                 4
               </div>
               <div>
-                <h4 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">Celebrate Completion</h4>
-                <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Celebrate Completion</h4>
+                <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                   When you complete a move, take a moment to acknowledge it. Check it off, reflect on what you learned, and notice how it feels to make progress. This positive reinforcement builds momentum.
                 </p>
               </div>
@@ -295,33 +295,33 @@ export default function NextThreeMovesPage() {
       {/* The Power of Three */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             Why Three Moves?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Three is the magic number for focus and productivity. Research in cognitive psychology shows that the human brain can effectively hold 3-5 items in working memory. By limiting your immediate priorities to three moves, we help you:
           </p>
-          <ul className="space-y-2 text-[#5E3B6C] dark:text-[#CDBED6]">
+          <ul className="space-y-2 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li className="flex items-start gap-2">
-              <ArrowRight className="w-5 h-5 text-[#D4AF63] mt-0.5 flex-shrink-0" />
-              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Avoid overwhelm</strong>—a long to-do list paralyzes; three moves energize</span>
+              <ArrowRight className="w-5 h-5 text-[#c9a227] mt-0.5 flex-shrink-0" />
+              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Avoid overwhelm</strong>—a long to-do list paralyzes; three moves energize</span>
             </li>
             <li className="flex items-start gap-2">
-              <ArrowRight className="w-5 h-5 text-[#D4AF63] mt-0.5 flex-shrink-0" />
-              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Maintain flexibility</strong>—business changes fast; three moves let you pivot</span>
+              <ArrowRight className="w-5 h-5 text-[#c9a227] mt-0.5 flex-shrink-0" />
+              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Maintain flexibility</strong>—business changes fast; three moves let you pivot</span>
             </li>
             <li className="flex items-start gap-2">
-              <ArrowRight className="w-5 h-5 text-[#D4AF63] mt-0.5 flex-shrink-0" />
-              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Create completion energy</strong>—finishing three things feels achievable</span>
+              <ArrowRight className="w-5 h-5 text-[#c9a227] mt-0.5 flex-shrink-0" />
+              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Create completion energy</strong>—finishing three things feels achievable</span>
             </li>
             <li className="flex items-start gap-2">
-              <ArrowRight className="w-5 h-5 text-[#D4AF63] mt-0.5 flex-shrink-0" />
-              <span><strong className="text-[#1F315B] dark:text-[#F6F1E8]">Force prioritization</strong>—if you only have three slots, you choose what matters</span>
+              <ArrowRight className="w-5 h-5 text-[#c9a227] mt-0.5 flex-shrink-0" />
+              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Force prioritization</strong>—if you only have three slots, you choose what matters</span>
             </li>
           </ul>
-          <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             You are not limited to only doing three things—you are focused on completing three <em>important</em> things. Other tasks and responsibilities continue, but these three moves get priority attention.
           </p>
         </CardContent>
@@ -330,7 +330,7 @@ export default function NextThreeMovesPage() {
       {/* FAQ Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-[#1F315B] dark:text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
             Frequently Asked Questions
           </CardTitle>
         </CardHeader>
@@ -339,24 +339,24 @@ export default function NextThreeMovesPage() {
             {faqs.map((faq) => (
               <div
                 key={faq.id}
-                className="border border-[#1F315B]/10 dark:border-[#CDBED6]/20 rounded-lg overflow-hidden"
+                className="border border-[#1a2b4a]/10 dark:border-[#e8e4f0]/20 rounded-lg overflow-hidden"
               >
                 <button
                   onClick={() => toggleFaq(faq.id)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1F315B]/5 dark:hover:bg-[#CDBED6]/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1a2b4a]/5 dark:hover:bg-[#e8e4f0]/5 transition-colors"
                 >
-                  <span className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                     {faq.question}
                   </span>
                   {openFaq === faq.id ? (
-                    <ChevronUp className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronUp className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#B9A9A9] flex-shrink-0" />
+                    <ChevronDown className="w-5 h-5 text-[#b8a898] flex-shrink-0" />
                   )}
                 </button>
                 {openFaq === faq.id && (
                   <div className="px-4 pb-4">
-                    <p className="text-[#5E3B6C] dark:text-[#CDBED6]">
+                    <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
                       {faq.answer}
                     </p>
                   </div>
@@ -368,16 +368,16 @@ export default function NextThreeMovesPage() {
       </Card>
 
       {/* Journey Section */}
-      <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+      <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardHeader>
-          <CardTitle className="text-xl text-[#F6F1E8]">
+          <CardTitle className="text-xl text-[#F8F5F0]">
             From Moves to Momentum
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#D4AF63] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 1
               </div>
               <div>
@@ -385,7 +385,7 @@ export default function NextThreeMovesPage() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#D4AF63] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 2
               </div>
               <div>
@@ -393,7 +393,7 @@ export default function NextThreeMovesPage() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#D4AF63] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 3
               </div>
               <div>
@@ -401,7 +401,7 @@ export default function NextThreeMovesPage() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#D4AF63] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 4
               </div>
               <div>
@@ -409,7 +409,7 @@ export default function NextThreeMovesPage() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#D4AF63] flex items-center justify-center text-[#1F315B] font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center text-[#1a2b4a] font-bold flex-shrink-0">
                 ∞
               </div>
               <div>
@@ -422,7 +422,7 @@ export default function NextThreeMovesPage() {
 
       {/* Closing Quote */}
       <div className="text-center py-8">
-        <p className="text-lg text-[#5E3B6C] dark:text-[#CDBED6] italic">
+        <p className="text-lg text-[#7b6b8d] dark:text-[#e8e4f0] italic">
           &quot;You don&apos;t need to do everything. You need to do the right things. Your Next 3 Moves show you what those are.&quot;
         </p>
       </div>

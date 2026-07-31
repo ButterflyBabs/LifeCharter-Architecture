@@ -168,7 +168,7 @@ export default function ReviewsPage() {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-4 h-4 ${i < rating ? "fill-[#D4AF63] text-[#D4AF63]" : "text-[#B9A9A9]"}`}
+            className={`w-4 h-4 ${i < rating ? "fill-[#c9a227] text-[#c9a227]" : "text-[#b8a898]"}`}
           />
         ))}
       </div>
@@ -180,14 +180,14 @@ export default function ReviewsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-            <Star className="w-6 h-6 text-[#D4AF63]" />
+          <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+            <Star className="w-6 h-6 text-[#c9a227]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Reviews & Testimonials
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               Collect, manage, and leverage client success stories
             </p>
           </div>
@@ -198,8 +198,8 @@ export default function ReviewsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Total Reviews</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">{stats.totalReviews}</p>
+            <p className="text-sm text-[#b8a898] mb-1">Total Reviews</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.totalReviews}</p>
             <div className="flex items-center gap-1 mt-2">
               <TrendingUp className="w-4 h-4 text-green-500" />
               <span className="text-xs text-green-600">+12 this month</span>
@@ -209,12 +209,12 @@ export default function ReviewsPage() {
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Average Rating</p>
+            <p className="text-sm text-[#b8a898] mb-1">Average Rating</p>
             <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">{stats.averageRating}</p>
+              <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.averageRating}</p>
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-[#D4AF63] text-[#D4AF63]" />
+                  <Star key={i} className="w-4 h-4 fill-[#c9a227] text-[#c9a227]" />
                 ))}
               </div>
             </div>
@@ -223,21 +223,21 @@ export default function ReviewsPage() {
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Response Rate</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">{stats.responseRate}%</p>
-            <div className="w-full bg-[#1F315B]/10 rounded-full h-2 mt-2">
-              <div className="bg-[#2E7C83] h-2 rounded-full" style={{ width: `${stats.responseRate}%` }} />
+            <p className="text-sm text-[#b8a898] mb-1">Response Rate</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.responseRate}%</p>
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2 mt-2">
+              <div className="bg-[#4a9b9b] h-2 rounded-full" style={{ width: `${stats.responseRate}%` }} />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Social Shares</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">{stats.socialShares}</p>
+            <p className="text-sm text-[#b8a898] mb-1">Social Shares</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.socialShares}</p>
             <div className="flex items-center gap-1 mt-2">
-              <Share2 className="w-4 h-4 text-[#D4AF63]" />
-              <span className="text-xs text-[#B9A9A9]">across platforms</span>
+              <Share2 className="w-4 h-4 text-[#c9a227]" />
+              <span className="text-xs text-[#b8a898]">across platforms</span>
             </div>
           </CardContent>
         </Card>
@@ -248,7 +248,7 @@ export default function ReviewsPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Action Bar */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Recent Reviews
             </h2>
             <div className="flex gap-2">
@@ -265,14 +265,14 @@ export default function ReviewsPage() {
 
           {/* Review Request Form */}
           {showRequestForm && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader>
                 <CardTitle className="text-lg">Request a Review</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Client Name</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Client Name</label>
                     <Input
                       placeholder="e.g., Jane Smith"
                       value={newRequest.clientName}
@@ -280,7 +280,7 @@ export default function ReviewsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Client Email</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Client Email</label>
                     <Input
                       type="email"
                       placeholder="jane@example.com"
@@ -290,9 +290,9 @@ export default function ReviewsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Program</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Program</label>
                   <select
-                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                     value={newRequest.program}
                     onChange={(e) => setNewRequest({...newRequest, program: e.target.value})}
                   >
@@ -304,7 +304,7 @@ export default function ReviewsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Personal Message (Optional)</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Personal Message (Optional)</label>
                   <Textarea
                     placeholder="Add a personal note to your review request..."
                     value={newRequest.message}
@@ -327,40 +327,40 @@ export default function ReviewsPage() {
           {/* Reviews List */}
           <div className="space-y-4">
             {reviews.map((review) => (
-              <Card key={review.id} className={review.status === "featured" ? "border-[#D4AF63]" : ""}>
+              <Card key={review.id} className={review.status === "featured" ? "border-[#c9a227]" : ""}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-[#1F315B]/10 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-[#1a2b4a]/10 flex items-center justify-center">
                         {review.type === "video" ? (
-                          <Video className="w-6 h-6 text-[#2E7C83]" />
+                          <Video className="w-6 h-6 text-[#4a9b9b]" />
                         ) : review.type === "audio" ? (
-                          <Mic className="w-6 h-6 text-[#5E3B6C]" />
+                          <Mic className="w-6 h-6 text-[#7b6b8d]" />
                         ) : (
-                          <MessageSquare className="w-6 h-6 text-[#D4AF63]" />
+                          <MessageSquare className="w-6 h-6 text-[#c9a227]" />
                         )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                          <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {review.clientName}
                           </h3>
                           {review.status === "featured" && (
-                            <span className="px-2 py-0.5 bg-[#D4AF63]/20 text-[#D4AF63] text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-[#c9a227]/20 text-[#c9a227] text-xs rounded-full">
                               Featured
                             </span>
                           )}
                         </div>
                         {renderStars(review.rating)}
-                        <p className="text-sm text-[#B9A9A9] mt-1">
+                        <p className="text-sm text-[#b8a898] mt-1">
                           {review.program} • {review.date}
                         </p>
-                        <p className="text-[#1F315B] dark:text-[#F6F1E8] mt-3">
+                        <p className="text-[#1a2b4a] dark:text-[#F8F5F0] mt-3">
                           &quot;{review.content}&quot;
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {review.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-1 bg-[#1F315B]/5 text-[#5E3B6C] dark:text-[#CDBED6] text-xs rounded-full">
+                            <span key={tag} className="px-2 py-1 bg-[#1a2b4a]/5 text-[#7b6b8d] dark:text-[#e8e4f0] text-xs rounded-full">
                               #{tag}
                             </span>
                           ))}
@@ -393,7 +393,7 @@ export default function ReviewsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Mail className="w-5 h-5 text-[#D4AF63]" />
+                <Mail className="w-5 h-5 text-[#c9a227]" />
                 Pending Review Requests
               </CardTitle>
             </CardHeader>
@@ -402,7 +402,7 @@ export default function ReviewsPage() {
                 {requests.map((request) => (
                   <div
                     key={request.id}
-                    className="flex items-center justify-between p-4 bg-[#1F315B]/5 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-[#1a2b4a]/5 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${
@@ -411,10 +411,10 @@ export default function ReviewsPage() {
                         "bg-blue-500"
                       }`} />
                       <div>
-                        <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                        <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                           {request.clientName}
                         </p>
-                        <p className="text-sm text-[#B9A9A9]">
+                        <p className="text-sm text-[#b8a898]">
                           {request.program} • Sent {request.sentDate}
                         </p>
                       </div>
@@ -443,22 +443,22 @@ export default function ReviewsPage() {
         {/* Right Column - Campaigns & Tools */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#D4AF63]" />
+                <Zap className="w-5 h-5 text-[#c9a227]" />
                 Quick Actions
               </h3>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+                <Button variant="outline" className="w-full justify-start border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Campaign
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+                <Button variant="outline" className="w-full justify-start border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                   <Users className="w-4 h-4 mr-2" />
                   Import Contacts
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-[#D4AF63] text-[#D4AF63] hover:bg-[#D4AF63]/10">
+                <Button variant="outline" className="w-full justify-start border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                   <Download className="w-4 h-4 mr-2" />
                   Export All Reviews
                 </Button>
@@ -470,15 +470,15 @@ export default function ReviewsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#D4AF63]" />
+                <Target className="w-5 h-5 text-[#c9a227]" />
                 Active Campaigns
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {campaigns.map((campaign) => (
-                <div key={campaign.id} className="p-4 bg-[#1F315B]/5 rounded-lg">
+                <div key={campaign.id} className="p-4 bg-[#1a2b4a]/5 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                    <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {campaign.name}
                     </h4>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -491,21 +491,21 @@ export default function ReviewsPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center mb-3">
                     <div>
-                      <p className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">{campaign.sent}</p>
-                      <p className="text-xs text-[#B9A9A9]">Sent</p>
+                      <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{campaign.sent}</p>
+                      <p className="text-xs text-[#b8a898]">Sent</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-[#2E7C83]">{campaign.received}</p>
-                      <p className="text-xs text-[#B9A9A9]">Received</p>
+                      <p className="text-lg font-bold text-[#4a9b9b]">{campaign.received}</p>
+                      <p className="text-xs text-[#b8a898]">Received</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-[#D4AF63]">{campaign.conversionRate}%</p>
-                      <p className="text-xs text-[#B9A9A9]">Rate</p>
+                      <p className="text-lg font-bold text-[#c9a227]">{campaign.conversionRate}%</p>
+                      <p className="text-xs text-[#b8a898]">Rate</p>
                     </div>
                   </div>
-                  <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
+                  <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
                     <div
-                      className="bg-[#2E7C83] h-2 rounded-full"
+                      className="bg-[#4a9b9b] h-2 rounded-full"
                       style={{ width: `${campaign.conversionRate}%` }}
                     />
                   </div>
@@ -524,26 +524,26 @@ export default function ReviewsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-[#D4AF63]" />
-                    <span className="text-[#1F315B] dark:text-[#F6F1E8]">Text Reviews</span>
+                    <MessageSquare className="w-5 h-5 text-[#c9a227]" />
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Text Reviews</span>
                   </div>
-                  <span className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{stats.textCount}</span>
+                  <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.textCount}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Video className="w-5 h-5 text-[#2E7C83]" />
-                    <span className="text-[#1F315B] dark:text-[#F6F1E8]">Video Testimonials</span>
+                    <Video className="w-5 h-5 text-[#4a9b9b]" />
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Video Testimonials</span>
                   </div>
-                  <span className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{stats.videoCount}</span>
+                  <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.videoCount}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Mic className="w-5 h-5 text-[#5E3B6C]" />
-                    <span className="text-[#1F315B] dark:text-[#F6F1E8]">Audio Reviews</span>
+                    <Mic className="w-5 h-5 text-[#7b6b8d]" />
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Audio Reviews</span>
                   </div>
-                  <span className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{stats.audioCount}</span>
+                  <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{stats.audioCount}</span>
                 </div>
               </div>
             </CardContent>
@@ -553,7 +553,7 @@ export default function ReviewsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-[#D4AF63]" />
+                <Share2 className="w-5 h-5 text-[#c9a227]" />
                 Share Reviews
               </CardTitle>
             </CardHeader>
@@ -576,27 +576,27 @@ export default function ReviewsPage() {
           </Card>
 
           {/* Tips */}
-          <Card className="bg-[#D4AF63]/10 border-[#D4AF63]/30">
+          <Card className="bg-[#c9a227]/10 border-[#c9a227]/30">
             <CardContent className="p-6">
-              <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#D4AF63]" />
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#c9a227]" />
                 Pro Tips
               </h3>
-              <ul className="space-y-2 text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+              <ul className="space-y-2 text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5" />
+                  <CheckCircle className="w-4 h-4 text-[#4a9b9b] mt-0.5" />
                   Request reviews within 48 hours of program completion
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5" />
+                  <CheckCircle className="w-4 h-4 text-[#4a9b9b] mt-0.5" />
                   Offer multiple formats: text, video, or audio
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5" />
+                  <CheckCircle className="w-4 h-4 text-[#4a9b9b] mt-0.5" />
                   Feature the best reviews on your website
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5" />
+                  <CheckCircle className="w-4 h-4 text-[#4a9b9b] mt-0.5" />
                   Share video testimonials on social media
                 </li>
               </ul>

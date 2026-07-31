@@ -169,7 +169,7 @@ export default function OnboardingPage() {
   if (isComplete) {
     return (
       <div className="py-8 px-4 max-w-3xl mx-auto">
-        <Link href="/operations" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+        <Link href="/operations" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back to Operations
         </Link>
@@ -178,30 +178,30 @@ export default function OnboardingPage() {
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+          <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Onboarding Assessment Complete!
           </h2>
-          <p className="text-[#B9A9A9] mb-6">
+          <p className="text-[#b8a898] mb-6">
             Your onboarding insights have been saved. Here&apos;s what we learned:
           </p>
 
-          <div className="text-left bg-[#1F315B]/5 rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8] mb-4">Summary</h3>
+          <div className="text-left bg-[#1a2b4a]/5 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Summary</h3>
             <div className="space-y-2 text-sm">
-              <p><span className="text-[#B9A9A9]">Key Steps:</span> {answers.onboarding_steps?.length} defined</p>
-              <p><span className="text-[#B9A9A9]">Duration:</span> {answers.onboarding_duration}</p>
-              <p><span className="text-[#B9A9A9]">Welcome Sequence:</span> {answers.welcome_sequence}</p>
-              <p><span className="text-[#B9A9A9]">Completion Rate:</span> {answers.completion_rate}</p>
-              <p><span className="text-[#B9A9A9]">Top Priority:</span> {answers.improvement_priority}</p>
+              <p><span className="text-[#b8a898]">Key Steps:</span> {answers.onboarding_steps?.length} defined</p>
+              <p><span className="text-[#b8a898]">Duration:</span> {answers.onboarding_duration}</p>
+              <p><span className="text-[#b8a898]">Welcome Sequence:</span> {answers.welcome_sequence}</p>
+              <p><span className="text-[#b8a898]">Completion Rate:</span> {answers.completion_rate}</p>
+              <p><span className="text-[#b8a898]">Top Priority:</span> {answers.improvement_priority}</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8] rounded-lg p-6 mb-6">
+          <div className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-lg p-6 mb-6">
             <h3 className="font-semibold mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#D4AF63]" />
+              <Sparkles className="w-4 h-4 text-[#c9a227]" />
               AI Recommendations for Onboarding
             </h3>
-            <ul className="text-sm text-left space-y-2 text-[#CDBED6]">
+            <ul className="text-sm text-left space-y-2 text-[#e8e4f0]">
               <li>• Add milestone check-ins at Day 3, Day 7, and Day 14</li>
               <li>• Create a &quot;quick win&quot; moment within first 48 hours</li>
               <li>• Send personalized video welcome from founder/lead</li>
@@ -226,7 +226,7 @@ export default function OnboardingPage() {
   return (
     <div className="py-8 px-4 max-w-3xl mx-auto">
       {/* Header */}
-      <Link href="/operations" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/operations" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Operations
       </Link>
@@ -237,10 +237,10 @@ export default function OnboardingPage() {
             <UserPlus className="w-5 h-5 text-orange-500" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Onboarding
             </h1>
-            <p className="text-sm text-[#B9A9A9]">
+            <p className="text-sm text-[#b8a898]">
               Question {currentQuestion + 1} of {questions.length}
             </p>
           </div>
@@ -249,11 +249,11 @@ export default function OnboardingPage() {
 
       {/* Progress Bar */}
       <div className="mb-8">
-        <div className="flex justify-between text-sm text-[#B9A9A9] mb-2">
+        <div className="flex justify-between text-sm text-[#b8a898] mb-2">
           <span>Progress</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-[#1F315B]/10 rounded-full h-2">
+        <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
           <div
             className="bg-orange-500 h-2 rounded-full transition-all"
             style={{ width: `${progress}%` }}
@@ -265,13 +265,13 @@ export default function OnboardingPage() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-6">
-            <h2 className="text-lg font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-lg font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
               {question.question}
             </h2>
             {question.hint && (
               <button
                 onClick={() => setShowHint(!showHint)}
-                className="text-[#B9A9A9] hover:text-[#D4AF63]"
+                className="text-[#b8a898] hover:text-[#c9a227]"
               >
                 <HelpCircle className="w-5 h-5" />
               </button>
@@ -279,7 +279,7 @@ export default function OnboardingPage() {
           </div>
 
           {showHint && question.hint && (
-            <div className="mb-4 p-3 bg-[#D4AF63]/10 rounded-lg text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+            <div className="mb-4 p-3 bg-[#c9a227]/10 rounded-lg text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
               <span className="font-medium">Hint:</span> {question.hint}
             </div>
           )}
@@ -294,10 +294,10 @@ export default function OnboardingPage() {
                   className={`w-full text-left p-4 rounded-lg border transition-all ${
                     answers[question.id] === option
                       ? "border-orange-500 bg-orange-500/10"
-                      : "border-[#1F315B]/20 hover:border-orange-500/50"
+                      : "border-[#1a2b4a]/20 hover:border-orange-500/50"
                   }`}
                 >
-                  <span className="text-[#1F315B] dark:text-[#F6F1E8]">{option}</span>
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{option}</span>
                 </button>
               ))}
             </div>

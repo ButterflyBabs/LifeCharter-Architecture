@@ -35,10 +35,10 @@ function ChartSkeleton() {
   return (
     <div className="h-[140px] flex items-center justify-center">
       <div className="flex gap-2">
-        <div className="w-8 h-24 bg-[#CDBED6]/30 rounded-t animate-pulse" />
-        <div className="w-8 h-32 bg-[#CDBED6]/30 rounded-t animate-pulse" />
-        <div className="w-8 h-28 bg-[#CDBED6]/30 rounded-t animate-pulse" />
-        <div className="w-8 h-36 bg-[#CDBED6]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-24 bg-[#e8e4f0]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-32 bg-[#e8e4f0]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-28 bg-[#e8e4f0]/30 rounded-t animate-pulse" />
+        <div className="w-8 h-36 bg-[#e8e4f0]/30 rounded-t animate-pulse" />
       </div>
     </div>
   );
@@ -84,7 +84,7 @@ const kpis = [
 
 export function RevenueSnapshot() {
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
         <CardTitle>Revenue Snapshot</CardTitle>
       </CardHeader>
@@ -97,14 +97,14 @@ export function RevenueSnapshot() {
             return (
               <div
                 key={kpi.label}
-                className="p-3 rounded-xl bg-[#1F315B]/5 dark:bg-[#CDBED6]/10"
+                className="p-3 rounded-xl bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-4 h-4 text-[#5E3B6C] dark:text-[#CDBED6]" />
-                  <span className="text-xs text-[#B9A9A9]">{kpi.label}</span>
+                  <Icon className="w-4 h-4 text-[#7b6b8d] dark:text-[#e8e4f0]" />
+                  <span className="text-xs text-[#b8a898]">{kpi.label}</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                  <span className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                     {kpi.value}
                   </span>
                   <span
@@ -129,29 +129,29 @@ export function RevenueSnapshot() {
             <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#5E3B6C", fontSize: 10 }}
+                tick={{ fill: "#7b6b8d", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: "#5E3B6C", fontSize: 10 }}
+                tick={{ fill: "#7b6b8d", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `$${value / 1000}k`}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#F6F1E8",
-                  border: "1px solid #D4AF63",
+                  backgroundColor: "#F8F5F0",
+                  border: "1px solid #c9a227",
                   borderRadius: "8px",
                 }}
-                labelStyle={{ color: "#1F315B" }}
-                itemStyle={{ color: "#5E3B6C" }}
+                labelStyle={{ color: "#1a2b4a" }}
+                itemStyle={{ color: "#7b6b8d" }}
                 formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
               />
               <Bar
                 dataKey="revenue"
-                fill="#5E3B6C"
+                fill="#7b6b8d"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>

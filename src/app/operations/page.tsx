@@ -243,7 +243,7 @@ export default function OperationsPage() {
       case "needs_attention":
         return <AlertCircle className="w-5 h-5 text-orange-500" />;
       default:
-        return <div className="w-5 h-5 rounded-full border-2 border-[#B9A9A9]" />;
+        return <div className="w-5 h-5 rounded-full border-2 border-[#b8a898]" />;
     }
   };
 
@@ -256,7 +256,7 @@ export default function OperationsPage() {
       case "needs_attention":
         return "bg-orange-500";
       default:
-        return "bg-[#B9A9A9]";
+        return "bg-[#b8a898]";
     }
   };
 
@@ -267,7 +267,7 @@ export default function OperationsPage() {
       case "medium":
         return "text-yellow-600 bg-yellow-50";
       default:
-        return "text-[#B9A9A9] bg-[#F6F1E8]";
+        return "text-[#b8a898] bg-[#F8F5F0]";
     }
   };
 
@@ -280,14 +280,14 @@ export default function OperationsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center">
-            <Settings className="w-6 h-6 text-[#2E7C83]" />
+          <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
+            <Settings className="w-6 h-6 text-[#4a9b9b]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Operations Center
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               End-to-end operational excellence across the customer lifecycle
             </p>
           </div>
@@ -299,15 +299,15 @@ export default function OperationsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-[#B9A9A9]">Overall Health</p>
-              <BarChart3 className="w-4 h-4 text-[#D4AF63]" />
+              <p className="text-sm text-[#b8a898]">Overall Health</p>
+              <BarChart3 className="w-4 h-4 text-[#c9a227]" />
             </div>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {overallHealth}%
             </p>
-            <div className="w-full bg-[#1F315B]/10 rounded-full h-2 mt-2">
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2 mt-2">
               <div
-                className="bg-[#2E7C83] h-2 rounded-full transition-all"
+                className="bg-[#4a9b9b] h-2 rounded-full transition-all"
                 style={{ width: `${overallHealth}%` }}
               />
             </div>
@@ -317,13 +317,13 @@ export default function OperationsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-[#B9A9A9]">Active Sections</p>
-              <Zap className="w-4 h-4 text-[#D4AF63]" />
+              <p className="text-sm text-[#b8a898]">Active Sections</p>
+              <Zap className="w-4 h-4 text-[#c9a227]" />
             </div>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {sections.filter(s => s.status !== "not_started").length}/{sections.length}
             </p>
-            <p className="text-xs text-[#B9A9A9] mt-1">
+            <p className="text-xs text-[#b8a898] mt-1">
               {sections.filter(s => s.status === "complete").length} complete
             </p>
           </CardContent>
@@ -332,13 +332,13 @@ export default function OperationsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-[#B9A9A9]">Need Attention</p>
+              <p className="text-sm text-[#b8a898]">Need Attention</p>
               <AlertCircle className="w-4 h-4 text-orange-500" />
             </div>
             <p className="text-3xl font-bold text-orange-500">
               {sections.filter(s => s.status === "needs_attention").length}
             </p>
-            <p className="text-xs text-[#B9A9A9] mt-1">
+            <p className="text-xs text-[#b8a898] mt-1">
               Requires immediate focus
             </p>
           </CardContent>
@@ -347,13 +347,13 @@ export default function OperationsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-[#B9A9A9]">Client Satisfaction</p>
-              <Heart className="w-4 h-4 text-[#D4AF63]" />
+              <p className="text-sm text-[#b8a898]">Client Satisfaction</p>
+              <Heart className="w-4 h-4 text-[#c9a227]" />
             </div>
-            <p className="text-3xl font-bold text-[#5E3B6C]">
+            <p className="text-3xl font-bold text-[#7b6b8d]">
               4.7/5
             </p>
-            <p className="text-xs text-[#B9A9A9] mt-1">
+            <p className="text-xs text-[#b8a898] mt-1">
               Across all touchpoints
             </p>
           </CardContent>
@@ -363,8 +363,8 @@ export default function OperationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content - Operations Sections */}
         <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8] flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#D4AF63]" />
+          <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+            <Target className="w-5 h-5 text-[#c9a227]" />
             Operational Pillars
           </h2>
 
@@ -374,17 +374,17 @@ export default function OperationsPage() {
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#1F315B]/5 flex items-center justify-center text-[#1F315B] dark:text-[#F6F1E8] group-hover:bg-[#D4AF63]/20 group-hover:text-[#D4AF63] transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-[#1a2b4a]/5 flex items-center justify-center text-[#1a2b4a] dark:text-[#F8F5F0] group-hover:bg-[#c9a227]/20 group-hover:text-[#c9a227] transition-colors">
                         {section.icon}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                          <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {section.name}
                           </h3>
                           {getStatusIcon(section.status)}
                         </div>
-                        <p className="text-sm text-[#B9A9A9] mb-3">
+                        <p className="text-sm text-[#b8a898] mb-3">
                           {section.description}
                         </p>
 
@@ -392,9 +392,9 @@ export default function OperationsPage() {
                         <div className="grid grid-cols-3 gap-4 mb-3">
                           {section.metrics.map((metric, idx) => (
                             <div key={idx}>
-                              <p className="text-xs text-[#B9A9A9]">{metric.label}</p>
+                              <p className="text-xs text-[#b8a898]">{metric.label}</p>
                               <div className="flex items-center gap-1">
-                                <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                                <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                                   {metric.value}
                                 </span>
                                 {metric.trend && (
@@ -404,7 +404,7 @@ export default function OperationsPage() {
                                         ? "text-green-500"
                                         : metric.trend === "down"
                                         ? "text-red-500 rotate-180"
-                                        : "text-[#B9A9A9]"
+                                        : "text-[#b8a898]"
                                     }`}
                                   />
                                 )}
@@ -415,18 +415,18 @@ export default function OperationsPage() {
 
                         {/* Progress Bar */}
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-[#1F315B]/10 rounded-full h-2">
+                          <div className="flex-1 bg-[#1a2b4a]/10 rounded-full h-2">
                             <div
                               className={`${getStatusColor(section.status)} h-2 rounded-full transition-all`}
                               style={{ width: `${section.completionRate}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                          <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {section.completionRate}%
                           </span>
                         </div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-[#B9A9A9] group-hover:text-[#D4AF63] transition-colors" />
+                      <ArrowRight className="w-5 h-5 text-[#b8a898] group-hover:text-[#c9a227] transition-colors" />
                     </div>
                   </CardContent>
                 </Card>
@@ -435,10 +435,10 @@ export default function OperationsPage() {
           </div>
 
           {/* AI Insights */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#D4AF63]" />
+                <Sparkles className="w-5 h-5 text-[#c9a227]" />
                 AI Operations Insights
               </CardTitle>
             </CardHeader>
@@ -451,7 +451,7 @@ export default function OperationsPage() {
                       ? "bg-green-500/20"
                       : insight.type === "warning"
                       ? "bg-orange-500/20"
-                      : "bg-[#D4AF63]/20"
+                      : "bg-[#c9a227]/20"
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -460,11 +460,11 @@ export default function OperationsPage() {
                     ) : insight.type === "warning" ? (
                       <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5" />
                     ) : (
-                      <Sparkles className="w-4 h-4 text-[#D4AF63] mt-0.5" />
+                      <Sparkles className="w-4 h-4 text-[#c9a227] mt-0.5" />
                     )}
                     <div>
                       <p className="text-sm">{insight.message}</p>
-                      <p className="text-xs text-[#CDBED6] mt-1">
+                      <p className="text-xs text-[#e8e4f0] mt-1">
                         {insight.section}
                       </p>
                     </div>
@@ -480,7 +480,7 @@ export default function OperationsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#D4AF63]" />
+                <Target className="w-5 h-5 text-[#c9a227]" />
                 Priority Actions
               </CardTitle>
             </CardHeader>
@@ -488,28 +488,28 @@ export default function OperationsPage() {
               {nextSteps.map((step, index) => (
                 <div
                   key={step.id}
-                  className="p-4 bg-[#1F315B]/5 rounded-lg"
+                  className="p-4 bg-[#1a2b4a]/5 rounded-lg"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#D4AF63] text-[#1F315B] text-xs font-bold flex items-center justify-center">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#c9a227] text-[#1a2b4a] text-xs font-bold flex items-center justify-center">
                       {index + 1}
                     </span>
                     <div className="flex-1">
-                      <h4 className="font-medium text-[#1F315B] dark:text-[#F6F1E8] text-sm">
+                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">
                         {step.title}
                       </h4>
-                      <p className="text-xs text-[#B9A9A9] mt-1">
+                      <p className="text-xs text-[#b8a898] mt-1">
                         {step.description}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`text-xs px-2 py-0.5 rounded ${getImpactColor(step.impact)}`}>
                           {step.impact} impact
                         </span>
-                        <span className="text-xs text-[#B9A9A9]">
+                        <span className="text-xs text-[#b8a898]">
                           {step.effort} effort
                         </span>
                       </div>
-                      <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                      <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                         {step.section}
                       </p>
                     </div>
@@ -545,7 +545,7 @@ export default function OperationsPage() {
           </Card>
 
           {/* Operations Lifecycle */}
-          <Card className="bg-gradient-to-br from-[#2E7C83]/20 to-[#5E3B6C]/20">
+          <Card className="bg-gradient-to-br from-[#4a9b9b]/20 to-[#7b6b8d]/20">
             <CardHeader>
               <CardTitle className="text-lg">Customer Lifecycle</CardTitle>
             </CardHeader>
@@ -567,7 +567,7 @@ export default function OperationsPage() {
                     }`}>
                       <item.icon className="w-4 h-4" />
                     </div>
-                    <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                    <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {item.stage}
                     </span>
                     {item.status === "active" && (

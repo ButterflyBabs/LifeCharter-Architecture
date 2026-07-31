@@ -37,8 +37,8 @@ const ResponsiveContainer = dynamic(
 function ChartSkeleton() {
   return (
     <div className="h-[200px] flex items-center justify-center">
-      <div className="w-full h-1 bg-[#CDBED6]/30 rounded-full overflow-hidden">
-        <div className="w-1/3 h-full bg-[#1F315B] animate-pulse" />
+      <div className="w-full h-1 bg-[#e8e4f0]/30 rounded-full overflow-hidden">
+        <div className="w-1/3 h-full bg-[#1a2b4a] animate-pulse" />
       </div>
     </div>
   );
@@ -60,10 +60,10 @@ interface BusinessHealthTrendProps {
 
 export function BusinessHealthTrend({ period = "90 Days" }: BusinessHealthTrendProps) {
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Business Health Trend</CardTitle>
-        <button className="px-3 py-1.5 rounded-lg bg-[#1F315B]/5 dark:bg-[#CDBED6]/10 text-xs font-medium text-[#1F315B] dark:text-[#F6F1E8] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/20 transition-colors">
+        <button className="px-3 py-1.5 rounded-lg bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
           {period}
         </button>
       </CardHeader>
@@ -73,38 +73,38 @@ export function BusinessHealthTrend({ period = "90 Days" }: BusinessHealthTrendP
             <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#CDBED6"
+                stroke="#e8e4f0"
                 strokeOpacity={0.3}
                 vertical={false}
               />
               <XAxis
                 dataKey="date"
-                tick={{ fill: "#5E3B6C", fontSize: 10 }}
+                tick={{ fill: "#7b6b8d", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={[50, 75]}
-                tick={{ fill: "#5E3B6C", fontSize: 10 }}
+                tick={{ fill: "#7b6b8d", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#F6F1E8",
-                  border: "1px solid #D4AF63",
+                  backgroundColor: "#F8F5F0",
+                  border: "1px solid #c9a227",
                   borderRadius: "8px",
                 }}
-                labelStyle={{ color: "#1F315B" }}
-                itemStyle={{ color: "#5E3B6C" }}
+                labelStyle={{ color: "#1a2b4a" }}
+                itemStyle={{ color: "#7b6b8d" }}
               />
               <Line
                 type="monotone"
                 dataKey="score"
-                stroke="#5E3B6C"
+                stroke="#7b6b8d"
                 strokeWidth={2}
-                dot={{ fill: "#5E3B6C", strokeWidth: 0, r: 4 }}
-                activeDot={{ r: 6, fill: "#D4AF63" }}
+                dot={{ fill: "#7b6b8d", strokeWidth: 0, r: 4 }}
+                activeDot={{ r: 6, fill: "#c9a227" }}
               />
             </LineChart>
           </ResponsiveContainer>

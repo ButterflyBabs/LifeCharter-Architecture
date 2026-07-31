@@ -22,17 +22,17 @@ export function Badge({
         size === "md" && "px-3 py-1 text-sm",
         // Variant styles
         variant === "default" &&
-          "bg-[#CDBED6]/30 text-[#5E3B6C] dark:bg-[#5E3B6C]/30 dark:text-[#CDBED6]",
+          "bg-[#e8e4f0]/30 text-[#7b6b8d] dark:bg-[#7b6b8d]/30 dark:text-[#e8e4f0]",
         variant === "success" &&
-          "bg-[#2E7C83]/20 text-[#2E7C83] dark:bg-[#2E7C83]/30 dark:text-[#2E7C83]",
+          "bg-[#4a9b9b]/20 text-[#4a9b9b] dark:bg-[#4a9b9b]/30 dark:text-[#4a9b9b]",
         variant === "warning" &&
-          "bg-[#D4AF63]/20 text-[#B8954F] dark:bg-[#D4AF63]/30 dark:text-[#D4AF63]",
+          "bg-[#c9a227]/20 text-[#B8954F] dark:bg-[#c9a227]/30 dark:text-[#c9a227]",
         variant === "error" &&
           "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
         variant === "info" &&
-          "bg-[#1F315B]/10 text-[#1F315B] dark:bg-[#1F315B]/30 dark:text-[#CDBED6]",
+          "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#e8e4f0]",
         variant === "gold" &&
-          "bg-[#D4AF63]/20 text-[#8B7355] dark:bg-[#D4AF63]/20 dark:text-[#D4AF63]",
+          "bg-[#c9a227]/20 text-[#8B7355] dark:bg-[#c9a227]/20 dark:text-[#c9a227]",
         className
       )}
     >

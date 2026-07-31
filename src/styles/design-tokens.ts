@@ -6,15 +6,15 @@
 // Color Palette
 export const colors = {
   // Primary Brand Colors
-  deepIndigo: "#1F315B",
-  royalPlum: "#5E3B6C",
-  sacredTeal: "#2E7C83",
+  deepIndigo: "#1a2b4a",
+  royalPlum: "#7b6b8d",
+  sacredTeal: "#4a9b9b",
   
   // Secondary Colors
-  softLavender: "#CDBED6",
-  warmGold: "#D4AF63",
-  ivoryLight: "#F6F1E8",
-  softTaupe: "#B9A9A9",
+  softLavender: "#e8e4f0",
+  warmGold: "#c9a227",
+  ivoryLight: "#F8F5F0",
+  softTaupe: "#b8a898",
   
   // Legacy Colors (still valid)
   paper: "#F5F1E8",
@@ -33,34 +33,34 @@ export const colors = {
 
 // Domain Colors for 12-Domain Architecture
 export const domainColors = {
-  qualityOfLife: "#1F315B",    // Deep Indigo
-  character: "#5E3B6C",        // Royal Plum
-  intellectual: "#2E7C83",     // Sacred Teal
-  emotional: "#CDBED6",        // Soft Lavender
-  health: "#D4AF63",           // Warm Gold
-  love: "#B9A9A9",             // Soft Taupe
-  parenting: "#1F315B",        // Deep Indigo
-  career: "#5E3B6C",           // Royal Plum
-  spiritual: "#2E7C83",        // Sacred Teal
-  social: "#CDBED6",           // Soft Lavender
-  financial: "#D4AF63",        // Warm Gold
-  lifeVision: "#B9A9A9",       // Soft Taupe
+  qualityOfLife: "#1a2b4a",    // Deep Indigo
+  character: "#7b6b8d",        // Royal Plum
+  intellectual: "#4a9b9b",     // Sacred Teal
+  emotional: "#e8e4f0",        // Soft Lavender
+  health: "#c9a227",           // Warm Gold
+  love: "#b8a898",             // Soft Taupe
+  parenting: "#1a2b4a",        // Deep Indigo
+  career: "#7b6b8d",           // Royal Plum
+  spiritual: "#4a9b9b",        // Sacred Teal
+  social: "#e8e4f0",           // Soft Lavender
+  financial: "#c9a227",        // Warm Gold
+  lifeVision: "#b8a898",       // Soft Taupe
 };
 
 // Business Domain Colors (for dashboard)
 export const businessDomainColors: Record<string, string> = {
-  Marketing: "#1F315B",
-  Sales: "#5E3B6C",
-  Operations: "#2E7C83",
-  Finance: "#CDBED6",
-  Team: "#D4AF63",
-  Systems: "#B9A9A9",
-  Leadership: "#1F315B",
-  Vision: "#5E3B6C",
-  Product: "#2E7C83",
-  "Client Exp": "#CDBED6",
-  Legal: "#D4AF63",
-  Sustainability: "#B9A9A9",
+  Marketing: "#1a2b4a",
+  Sales: "#7b6b8d",
+  Operations: "#4a9b9b",
+  Finance: "#e8e4f0",
+  Team: "#c9a227",
+  Systems: "#b8a898",
+  Leadership: "#1a2b4a",
+  Vision: "#7b6b8d",
+  Product: "#4a9b9b",
+  "Client Exp": "#e8e4f0",
+  Legal: "#c9a227",
+  Sustainability: "#b8a898",
 };
 
 // Typography

@@ -594,10 +594,10 @@ function QuickPulseCheckinContent() {
 
   const getDimensionColor = (dimension: string) => {
     switch (dimension) {
-      case "brain": return "#2E7C83";
-      case "soul": return "#5E3B6C";
-      case "profit": return "#D4AF63";
-      default: return "#1F315B";
+      case "brain": return "#4a9b9b";
+      case "soul": return "#7b6b8d";
+      case "profit": return "#c9a227";
+      default: return "#1a2b4a";
     }
   };
 
@@ -607,28 +607,28 @@ function QuickPulseCheckinContent() {
     return (
       <div className="py-12 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
-          <Card className="border-[#D4AF63]/30">
+          <Card className="border-[#c9a227]/30">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#D4AF63]/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-[#D4AF63]" />
+              <div className="w-16 h-16 rounded-full bg-[#c9a227]/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-[#c9a227]" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Quick Pulse Complete!
               </h1>
-              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70">
+              <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70">
                 Your check-in has been saved. Here&apos;s how you&apos;re doing:
               </p>
             </CardContent>
           </Card>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-[#2E7C83]/20">
+            <Card className="border-[#4a9b9b]/20">
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-[#2E7C83]/10 flex items-center justify-center mx-auto mb-3">
-                  <Brain className="w-6 h-6 text-[#2E7C83]" />
+                <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/10 flex items-center justify-center mx-auto mb-3">
+                  <Brain className="w-6 h-6 text-[#4a9b9b]" />
                 </div>
-                <p className="text-sm text-[#B9A9A9] mb-1">Brain</p>
-                <p className="text-3xl font-bold text-[#2E7C83]">{result.brainScore}<span className="text-lg text-[#B9A9A9]">/30</span></p>
+                <p className="text-sm text-[#b8a898] mb-1">Brain</p>
+                <p className="text-3xl font-bold text-[#4a9b9b]">{result.brainScore}<span className="text-lg text-[#b8a898]">/30</span></p>
                 {previous && (
                   <div className="flex items-center justify-center gap-1 mt-2 text-sm">
                     {result.brainScore > previous.brain_score ? (
@@ -638,19 +638,19 @@ function QuickPulseCheckinContent() {
                     ) : (
                       <><Minus className="w-4 h-4 text-gray-400" /><span className="text-gray-400">0</span></>
                     )}
-                    <span className="text-[#B9A9A9]">vs last</span>
+                    <span className="text-[#b8a898]">vs last</span>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="border-[#5E3B6C]/20">
+            <Card className="border-[#7b6b8d]/20">
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-[#5E3B6C]/10 flex items-center justify-center mx-auto mb-3">
-                  <Heart className="w-6 h-6 text-[#5E3B6C]" />
+                <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/10 flex items-center justify-center mx-auto mb-3">
+                  <Heart className="w-6 h-6 text-[#7b6b8d]" />
                 </div>
-                <p className="text-sm text-[#B9A9A9] mb-1">Soul</p>
-                <p className="text-3xl font-bold text-[#5E3B6C]">{result.soulScore}<span className="text-lg text-[#B9A9A9]">/30</span></p>
+                <p className="text-sm text-[#b8a898] mb-1">Soul</p>
+                <p className="text-3xl font-bold text-[#7b6b8d]">{result.soulScore}<span className="text-lg text-[#b8a898]">/30</span></p>
                 {previous && (
                   <div className="flex items-center justify-center gap-1 mt-2 text-sm">
                     {result.soulScore > previous.soul_score ? (
@@ -660,19 +660,19 @@ function QuickPulseCheckinContent() {
                     ) : (
                       <><Minus className="w-4 h-4 text-gray-400" /><span className="text-gray-400">0</span></>
                     )}
-                    <span className="text-[#B9A9A9]">vs last</span>
+                    <span className="text-[#b8a898]">vs last</span>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="border-[#D4AF63]/20">
+            <Card className="border-[#c9a227]/20">
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 rounded-full bg-[#D4AF63]/10 flex items-center justify-center mx-auto mb-3">
-                  <DollarSign className="w-6 h-6 text-[#D4AF63]" />
+                <div className="w-12 h-12 rounded-full bg-[#c9a227]/10 flex items-center justify-center mx-auto mb-3">
+                  <DollarSign className="w-6 h-6 text-[#c9a227]" />
                 </div>
-                <p className="text-sm text-[#B9A9A9] mb-1">Profit</p>
-                <p className="text-3xl font-bold text-[#D4AF63]">{result.profitScore}<span className="text-lg text-[#B9A9A9]">/30</span></p>
+                <p className="text-sm text-[#b8a898] mb-1">Profit</p>
+                <p className="text-3xl font-bold text-[#c9a227]">{result.profitScore}<span className="text-lg text-[#b8a898]">/30</span></p>
                 {previous && (
                   <div className="flex items-center justify-center gap-1 mt-2 text-sm">
                     {result.profitScore > previous.profit_score ? (
@@ -682,7 +682,7 @@ function QuickPulseCheckinContent() {
                     ) : (
                       <><Minus className="w-4 h-4 text-gray-400" /><span className="text-gray-400">0</span></>
                     )}
-                    <span className="text-[#B9A9A9]">vs last</span>
+                    <span className="text-[#b8a898]">vs last</span>
                   </div>
                 )}
               </CardContent>
@@ -693,36 +693,36 @@ function QuickPulseCheckinContent() {
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${result.healthColor}20` }}>
                   <Activity className="w-6 h-6" style={{ color: result.healthColor }} />
                 </div>
-                <p className="text-sm text-[#B9A9A9] mb-1">Total Score</p>
-                <p className="text-3xl font-bold" style={{ color: result.healthColor }}>{result.totalScore}<span className="text-lg text-[#B9A9A9]">/90</span></p>
+                <p className="text-sm text-[#b8a898] mb-1">Total Score</p>
+                <p className="text-3xl font-bold" style={{ color: result.healthColor }}>{result.totalScore}<span className="text-lg text-[#b8a898]">/90</span></p>
                 <p className="text-sm font-medium mt-1" style={{ color: result.healthColor }}>{result.healthLevel}</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Three Steps Forward */}
-          <Card className="border-[#D4AF63]/30">
+          <Card className="border-[#c9a227]/30">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#D4AF63]/20 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-[#D4AF63]" />
+                <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-[#c9a227]" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">Three Steps Forward</h2>
-                  <p className="text-sm text-[#B9A9A9]">Personalized actions based on your results</p>
+                  <h2 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Three Steps Forward</h2>
+                  <p className="text-sm text-[#b8a898]">Personalized actions based on your results</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {actionSteps.map((step, index) => (
-                  <div key={step.id} className="flex gap-4 p-4 rounded-lg bg-[#1F315B]/5 dark:bg-[#1F315B]/20">
-                    <div className="w-8 h-8 rounded-full bg-[#D4AF63] text-white flex items-center justify-center font-bold flex-shrink-0">
+                  <div key={step.id} className="flex gap-4 p-4 rounded-lg bg-[#1a2b4a]/5 dark:bg-[#1a2b4a]/20">
+                    <div className="w-8 h-8 rounded-full bg-[#c9a227] text-white flex items-center justify-center font-bold flex-shrink-0">
                       {index + 1}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">{step.title}</h3>
-                      <p className="text-sm text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mt-1">{step.description}</p>
+                      <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{step.title}</h3>
+                      <p className="text-sm text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mt-1">{step.description}</p>
                       <span className={`inline-block mt-2 text-xs px-2 py-1 rounded-full ${
                         step.priority === 'high' ? 'bg-red-100 text-red-700' :
                         step.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
@@ -739,19 +739,19 @@ function QuickPulseCheckinContent() {
 
           {/* History Chart Placeholder */}
           {previousCheckins.length > 0 && (
-            <Card className="border-[#1F315B]/20">
+            <Card className="border-[#1a2b4a]/20">
               <CardHeader>
-                <h2 className="text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">Your Progress Over Time</h2>
+                <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your Progress Over Time</h2>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {previousCheckins.slice(0, 5).map((checkin) => (
-                    <div key={checkin.id} className="flex items-center justify-between p-3 rounded-lg bg-[#1F315B]/5">
-                      <span className="text-sm text-[#B9A9A9]">{new Date(checkin.created_at).toLocaleDateString()}</span>
+                    <div key={checkin.id} className="flex items-center justify-between p-3 rounded-lg bg-[#1a2b4a]/5">
+                      <span className="text-sm text-[#b8a898]">{new Date(checkin.created_at).toLocaleDateString()}</span>
                       <div className="flex gap-4 text-sm">
-                        <span className="text-[#2E7C83]">Brain: {checkin.brain_score}</span>
-                        <span className="text-[#5E3B6C]">Soul: {checkin.soul_score}</span>
-                        <span className="text-[#D4AF63]">Profit: {checkin.profit_score}</span>
+                        <span className="text-[#4a9b9b]">Brain: {checkin.brain_score}</span>
+                        <span className="text-[#7b6b8d]">Soul: {checkin.soul_score}</span>
+                        <span className="text-[#c9a227]">Profit: {checkin.profit_score}</span>
                         <span className="font-bold">Total: {checkin.total_score}</span>
                       </div>
                     </div>
@@ -779,15 +779,15 @@ function QuickPulseCheckinContent() {
     <div className="py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="bg-[#1F315B] text-white py-8 px-4 -mx-4 mb-8 lg:rounded-lg lg:mx-0">
+        <div className="bg-[#1a2b4a] text-white py-8 px-4 -mx-4 mb-8 lg:rounded-lg lg:mx-0">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/20 flex items-center justify-center">
-                <Activity className="w-5 h-5 text-[#D4AF63]" />
+              <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center">
+                <Activity className="w-5 h-5 text-[#c9a227]" />
               </div>
               <div>
                 <h1 className="text-xl font-bold">Quick Pulse Check-in</h1>
-                <p className="text-sm text-[#CDBED6]">Track your progress across Brain, Soul, and Profit</p>
+                <p className="text-sm text-[#e8e4f0]">Track your progress across Brain, Soul, and Profit</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -797,7 +797,7 @@ function QuickPulseCheckinContent() {
                   <span style={{ color: getDimensionColor(currentQ.dimension) }}>
                     {currentQ.dimension === "brain" ? "Brain" : currentQ.dimension === "soul" ? "Soul" : "Profit"}
                   </span>
-                  <span className="text-[#CDBED6]">• {currentQ.dimensionLabel}</span>
+                  <span className="text-[#e8e4f0]">• {currentQ.dimensionLabel}</span>
                 </span>
                 <span>Question {currentQuestion + 1} of {questions.length}</span>
               </div>
@@ -807,20 +807,20 @@ function QuickPulseCheckinContent() {
         </div>
 
         {/* Question Card */}
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium" style={{ color: getDimensionColor(currentQ.dimension) }}>
                 {currentQ.dimensionLabel}
               </span>
-              <div className="flex items-center gap-2 text-sm text-[#B9A9A9]">
+              <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
                 {isSyncing ? "Syncing..." : isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {currentQ.text}
             </h2>
 
@@ -832,19 +832,19 @@ function QuickPulseCheckinContent() {
                   onClick={() => handleAnswer(option.value)}
                   className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                     answers[currentQ.id] === option.value
-                      ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                      : "border-[#1F315B]/10 hover:border-[#D4AF63]/50"
+                      ? "border-[#c9a227] bg-[#c9a227]/10"
+                      : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                       answers[currentQ.id] === option.value
-                        ? "bg-[#D4AF63] text-white"
-                        : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#CDBED6]"
+                        ? "bg-[#c9a227] text-white"
+                        : "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#e8e4f0]"
                     }`}>
                       {option.label}
                     </span>
-                    <span className="text-[#1F315B] dark:text-[#F6F1E8] pt-1">{option.description}</span>
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0] pt-1">{option.description}</span>
                   </div>
                 </button>
               ))}
@@ -862,7 +862,7 @@ function QuickPulseCheckinContent() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-[#D4AF63]/20">
+            <div className="flex items-center justify-between pt-6 border-t border-[#c9a227]/20">
               <Button
                 variant="ghost"
                 onClick={handlePrevious}
@@ -898,10 +898,10 @@ function QuickPulseCheckinContent() {
               <div 
                 key={dim} 
                 className={`p-3 rounded-xl border-2 text-center transition-all ${
-                  isActive ? "border-[#D4AF63] bg-[#D4AF63]/5" : "border-[#1F315B]/10"
+                  isActive ? "border-[#c9a227] bg-[#c9a227]/5" : "border-[#1a2b4a]/10"
                 }`}
               >
-                <p className="text-xs text-[#B9A9A9] capitalize">{dim}</p>
+                <p className="text-xs text-[#b8a898] capitalize">{dim}</p>
                 <p className="text-lg font-bold" style={{ color: getDimensionColor(dim) }}>
                   {answeredCount}/{dimQuestions.length}
                 </p>
@@ -1012,8 +1012,8 @@ export default function QuickPulseCheckinPage() {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#D4AF63] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-[#B9A9A9]">Loading check-in...</p>
+              <div className="w-12 h-12 border-4 border-[#c9a227] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[#b8a898]">Loading check-in...</p>
             </div>
           </div>
         </div>
@@ -1028,10 +1028,10 @@ export default function QuickPulseCheckinPage() {
           <Card className="border-red-200">
             <CardContent className="p-8 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Unable to Load Check-in
               </h1>
-              <p className="text-[#B9A9A9] mb-6">{error}</p>
+              <p className="text-[#b8a898] mb-6">{error}</p>
               <Link href="/assessments">
                 <Button variant="primary">Back to Assessments</Button>
               </Link>
@@ -1048,11 +1048,11 @@ export default function QuickPulseCheckinPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="p-8 text-center">
-              <Sparkles className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <Sparkles className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
+              <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Welcome to Quick Pulse Check-in
               </h1>
-              <p className="text-[#B9A9A9] mb-6">
+              <p className="text-[#b8a898] mb-6">
                 {isDemoMode 
                   ? "Demo Mode: Try the Quick Pulse Check-in without signing in. Your data won't be saved permanently."
                   : "Please sign in to start your check-in and track your progress across all dimensions."

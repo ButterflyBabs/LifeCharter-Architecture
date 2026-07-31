@@ -6,49 +6,49 @@
 
 :root {
   /* Light Mode - Default */
-  --background: #F6F1E8;
-  --foreground: #1F315B;
-  --primary: #1F315B;
-  --primary-foreground: #F6F1E8;
-  --secondary: #5E3B6C;
-  --secondary-foreground: #F6F1E8;
-  --muted: #CDBED6;
-  --muted-foreground: #5E3B6C;
-  --accent: #D4AF63;
-  --accent-foreground: #1F315B;
+  --background: #F8F5F0;
+  --foreground: #1a2b4a;
+  --primary: #1a2b4a;
+  --primary-foreground: #F8F5F0;
+  --secondary: #7b6b8d;
+  --secondary-foreground: #F8F5F0;
+  --muted: #e8e4f0;
+  --muted-foreground: #7b6b8d;
+  --accent: #c9a227;
+  --accent-foreground: #1a2b4a;
   --card: #FFFFFF;
-  --card-foreground: #1F315B;
-  --border: #B9A9A9;
+  --card-foreground: #1a2b4a;
+  --border: #b8a898;
   
   /* Domain Colors for 12-Domain Architecture */
-  --domain-1: #1F315B;  /* Quality of Life - Deep Indigo */
-  --domain-2: #5E3B6C;  /* Character - Royal Plum */
-  --domain-3: #2E7C83;  /* Intellectual - Sacred Teal */
-  --domain-4: #CDBED6;  /* Emotional - Soft Lavender */
-  --domain-5: #D4AF63;  /* Health - Warm Gold */
-  --domain-6: #B9A9A9;  /* Love - Soft Taupe */
-  --domain-7: #1F315B;  /* Parenting - Deep Indigo */
-  --domain-8: #5E3B6C;  /* Career - Royal Plum */
-  --domain-9: #2E7C83;  /* Spiritual - Sacred Teal */
-  --domain-10: #CDBED6; /* Social - Soft Lavender */
-  --domain-11: #D4AF63; /* Financial - Warm Gold */
-  --domain-12: #B9A9A9; /* Life Vision - Soft Taupe */
+  --domain-1: #1a2b4a;  /* Quality of Life - Deep Indigo */
+  --domain-2: #7b6b8d;  /* Character - Royal Plum */
+  --domain-3: #4a9b9b;  /* Intellectual - Sacred Teal */
+  --domain-4: #e8e4f0;  /* Emotional - Soft Lavender */
+  --domain-5: #c9a227;  /* Health - Warm Gold */
+  --domain-6: #b8a898;  /* Love - Soft Taupe */
+  --domain-7: #1a2b4a;  /* Parenting - Deep Indigo */
+  --domain-8: #7b6b8d;  /* Career - Royal Plum */
+  --domain-9: #4a9b9b;  /* Spiritual - Sacred Teal */
+  --domain-10: #e8e4f0; /* Social - Soft Lavender */
+  --domain-11: #c9a227; /* Financial - Warm Gold */
+  --domain-12: #b8a898; /* Life Vision - Soft Taupe */
 }
 
 .dark {
   /* Dark Mode */
   --background: #1A1A2E;
-  --foreground: #F6F1E8;
-  --primary: #CDBED6;
+  --foreground: #F8F5F0;
+  --primary: #e8e4f0;
   --primary-foreground: #1A1A2E;
-  --secondary: #D4AF63;
+  --secondary: #c9a227;
   --secondary-foreground: #1A1A2E;
   --muted: #2D3561;
-  --muted-foreground: #B9A9A9;
-  --accent: #D4AF63;
+  --muted-foreground: #b8a898;
+  --accent: #c9a227;
   --accent-foreground: #1A1A2E;
   --card: #16213E;
-  --card-foreground: #F6F1E8;
+  --card-foreground: #F8F5F0;
   --border: #2D3561;
 }
 

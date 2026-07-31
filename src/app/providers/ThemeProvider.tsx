@@ -85,16 +85,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Apply CSS variables based on color scheme
     const schemes = {
       lifecharter: {
-        "--primary": "#1F315B",
-        "--accent": "#D4AF63",
-        "--secondary": "#5E3B6C",
-        "--tertiary": "#2E7C83"
+        "--primary": "#1a2b4a",
+        "--accent": "#c9a227",
+        "--secondary": "#7b6b8d",
+        "--tertiary": "#4a9b9b"
       },
       sacred: {
-        "--primary": "#5E3B6C",
-        "--accent": "#D4AF63",
-        "--secondary": "#2E7C83",
-        "--tertiary": "#1F315B"
+        "--primary": "#7b6b8d",
+        "--accent": "#c9a227",
+        "--secondary": "#4a9b9b",
+        "--tertiary": "#1a2b4a"
       },
       modern: {
         "--primary": "#0F172A",

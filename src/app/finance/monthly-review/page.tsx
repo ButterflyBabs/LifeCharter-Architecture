@@ -148,7 +148,7 @@ export default function MonthlyReviewPage() {
       case "currency":
         return (
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">$</span>
             <Input
               type="number"
               value={value}
@@ -168,7 +168,7 @@ export default function MonthlyReviewPage() {
               placeholder="0"
               className="pr-8"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">%</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b8a898]">%</span>
           </div>
         );
       default:
@@ -194,10 +194,10 @@ export default function MonthlyReviewPage() {
             <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+            <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Monthly Review Complete!
             </h2>
-            <p className="text-[#B9A9A9] mb-6">
+            <p className="text-[#b8a898] mb-6">
               Your Business Plan health scores have been updated based on this month&apos;s data.
             </p>
             <div className="flex justify-center gap-3">
@@ -226,15 +226,15 @@ export default function MonthlyReviewPage() {
       <div className="mb-6">
         <Link 
           href="/finance"
-          className="inline-flex items-center text-sm text-[#B9A9A9] hover:text-[#1F315B] dark:hover:text-[#F6F1E8] mb-4"
+          className="inline-flex items-center text-sm text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back to Finance
         </Link>
-        <h1 className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
           Monthly Review
         </h1>
-        <p className="text-[#B9A9A9]">
+        <p className="text-[#b8a898]">
           July 2026 • Takes 5-10 minutes
         </p>
       </div>
@@ -243,10 +243,10 @@ export default function MonthlyReviewPage() {
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-[#B9A9A9]">
+            <span className="text-sm text-[#b8a898]">
               Section {currentSection + 1} of {reviewSections.length}
             </span>
-            <span className="text-sm font-medium text-[#D4AF63]">
+            <span className="text-sm font-medium text-[#c9a227]">
               {Math.round(progress)}% Complete
             </span>
           </div>
@@ -257,14 +257,14 @@ export default function MonthlyReviewPage() {
       {/* Current Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center">
             {section.icon}
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {section.title}
             </h2>
-            <p className="text-sm text-[#B9A9A9]">
+            <p className="text-sm text-[#b8a898]">
               {section.questions.length} questions
             </p>
           </div>
@@ -277,9 +277,9 @@ export default function MonthlyReviewPage() {
                   {answers[question.id] ? (
                     <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
                   ) : (
-                    <Circle className="w-5 h-5 text-[#B9A9A9] mt-0.5" />
+                    <Circle className="w-5 h-5 text-[#b8a898] mt-0.5" />
                   )}
-                  <label className="block text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+                  <label className="block text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                     {question.question}
                   </label>
                 </div>
@@ -291,7 +291,7 @@ export default function MonthlyReviewPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1F315B]/10">
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1a2b4a]/10">
             <Button 
               variant="ghost" 
               onClick={handlePrevious}
@@ -326,10 +326,10 @@ export default function MonthlyReviewPage() {
             onClick={() => setCurrentSection(idx)}
             className={`w-2 h-2 rounded-full transition-all ${
               idx === currentSection 
-                ? "bg-[#D4AF63] w-6" 
+                ? "bg-[#c9a227] w-6" 
                 : idx < currentSection 
                   ? "bg-green-500" 
-                  : "bg-[#1F315B]/20"
+                  : "bg-[#1a2b4a]/20"
             }`}
           />
         ))}

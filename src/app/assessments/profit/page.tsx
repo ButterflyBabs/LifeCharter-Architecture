@@ -421,15 +421,15 @@ function ProfitAssessmentContent() {
     return (
       <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <Card className="border-[#D4AF63]/30">
+          <Card className="border-[#c9a227]/30">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#D4AF63]/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-[#D4AF63]" />
+              <div className="w-16 h-16 rounded-full bg-[#c9a227]/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-[#c9a227]" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
                 Profit Assessment Complete!
               </h1>
-              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6">
+              <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mb-6">
                 Congratulations! You&apos;ve completed all 12 domains. Your comprehensive
                 Profit Architecture profile has been saved to your unified client plan.
               </p>
@@ -437,10 +437,10 @@ function ProfitAssessmentContent() {
                 {domains.map((domain) => (
                   <div
                     key={domain.id}
-                    className="p-2 rounded-lg bg-[#D4AF63]/10 text-center"
+                    className="p-2 rounded-lg bg-[#c9a227]/10 text-center"
                   >
-                    <p className="text-xs text-[#B9A9A9]">{domain.name}</p>
-                    <p className="text-lg font-bold text-[#D4AF63]">
+                    <p className="text-xs text-[#b8a898]">{domain.name}</p>
+                    <p className="text-lg font-bold text-[#c9a227]">
                       {domainScores[domain.id] || 0}%
                     </p>
                   </div>
@@ -466,15 +466,15 @@ function ProfitAssessmentContent() {
       {/* Main Content */}
       <div className="lg:col-span-2">
         {/* Header */}
-        <div className="bg-[#1F315B] text-white py-8 px-4 -mx-4 mb-8 lg:rounded-lg lg:mx-0">
+        <div className="bg-[#1a2b4a] text-white py-8 px-4 -mx-4 mb-8 lg:rounded-lg lg:mx-0">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#D4AF63]/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-[#D4AF63]" />
+              <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-[#c9a227]" />
               </div>
               <div>
                 <h1 className="text-xl font-bold">Profit Assessment</h1>
-                <p className="text-sm text-[#CDBED6]">Financial Health & Operations</p>
+                <p className="text-sm text-[#e8e4f0]">Financial Health & Operations</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -503,10 +503,10 @@ function ProfitAssessmentContent() {
                   onClick={() => handleDomainJump(index)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
-                      ? "bg-[#D4AF63] text-white"
+                      ? "bg-[#c9a227] text-white"
                       : isCompleted
-                      ? "bg-[#D4AF63]/20 text-[#D4AF63]"
-                      : "bg-[#1F315B]/10 text-[#1F315B] dark:text-[#CDBED6]"
+                      ? "bg-[#c9a227]/20 text-[#c9a227]"
+                      : "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#e8e4f0]"
                   }`}
                 >
                   {domain.name}
@@ -520,18 +520,18 @@ function ProfitAssessmentContent() {
         </div>
 
         {/* Question Card */}
-        <Card className="border-[#D4AF63]/20">
+        <Card className="border-[#c9a227]/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-[#D4AF63]">
+                <span className="text-sm font-medium text-[#c9a227]">
                   {currentDomain.name}
                 </span>
-                <p className="text-xs text-[#B9A9A9] mt-1">
+                <p className="text-xs text-[#b8a898] mt-1">
                   {currentDomain.description}
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#B9A9A9]">
+              <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
                 {isSyncing ? "Syncing..." : isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
               </div>
@@ -570,7 +570,7 @@ function ProfitAssessmentContent() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-[#D4AF63]/20">
+            <div className="flex items-center justify-between pt-6 border-t border-[#c9a227]/20">
               <Button
                 variant="ghost"
                 onClick={handlePrevious}
@@ -599,8 +599,8 @@ function ProfitAssessmentContent() {
         {/* Domain Progress Summary */}
         <div className="mt-6">
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-[#D4AF63]" />
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <BarChart3 className="w-5 h-5 text-[#c9a227]" />
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Domain Scores
             </h3>
           </div>
@@ -613,11 +613,11 @@ function ProfitAssessmentContent() {
                   key={domain.id}
                   className={`p-3 rounded-xl border-2 transition-all ${
                     domain.id === currentQ.domain
-                      ? "border-[#D4AF63] bg-[#D4AF63]/5"
-                      : "border-[#D4AF63]/20"
+                      ? "border-[#c9a227] bg-[#c9a227]/5"
+                      : "border-[#c9a227]/20"
                   }`}
                 >
-                  <p className="text-xs text-[#B9A9A9]">{domain.name}</p>
+                  <p className="text-xs text-[#b8a898]">{domain.name}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1">
                       <Progress
@@ -626,7 +626,7 @@ function ProfitAssessmentContent() {
                         className="h-2"
                       />
                     </div>
-                    <span className="text-sm font-bold text-[#D4AF63]">
+                    <span className="text-sm font-bold text-[#c9a227]">
                       {hasScore ? `${score}%` : "—"}
                     </span>
                   </div>
@@ -743,8 +743,8 @@ export default function ProfitAssessmentPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#D4AF63] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-[#B9A9A9]">Loading assessment...</p>
+              <div className="w-12 h-12 border-4 border-[#c9a227] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[#b8a898]">Loading assessment...</p>
             </div>
           </div>
         </div>
@@ -759,10 +759,10 @@ export default function ProfitAssessmentPage() {
           <Card className="border-red-200">
             <CardContent className="p-8 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Unable to Load Assessment
               </h1>
-              <p className="text-[#B9A9A9] mb-6">{error}</p>
+              <p className="text-[#b8a898] mb-6">{error}</p>
               <Link href="/assessments">
                 <Button variant="primary">Back to Assessments</Button>
               </Link>
@@ -779,11 +779,11 @@ export default function ProfitAssessmentPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="p-8 text-center">
-              <Sparkles className="w-12 h-12 text-[#D4AF63] mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-2">
+              <Sparkles className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
+              <h1 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                 Welcome to Profit Assessment
               </h1>
-              <p className="text-[#B9A9A9] mb-6">
+              <p className="text-[#b8a898] mb-6">
                 Please sign in to start your assessment and track your progress across all dimensions.
               </p>
               <Link href="/login">

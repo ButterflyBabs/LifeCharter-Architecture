@@ -37,7 +37,7 @@ const ResponsiveContainer = dynamic(
 function ChartSkeleton() {
   return (
     <div className="h-[320px] flex items-center justify-center">
-      <div className="w-48 h-48 rounded-full border-4 border-[#CDBED6]/30 border-t-[#1F315B] animate-spin" />
+      <div className="w-48 h-48 rounded-full border-4 border-[#e8e4f0]/30 border-t-[#1a2b4a] animate-spin" />
     </div>
   );
 }
@@ -59,7 +59,7 @@ const data = [
 
 export function DomainAlignmentRadar() {
   return (
-    <Card className="h-full border-[#D4AF63]/30">
+    <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
         <CardTitle>12-Domain Business Alignment</CardTitle>
       </CardHeader>
@@ -68,13 +68,13 @@ export function DomainAlignmentRadar() {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
               <PolarGrid
-                stroke="#CDBED6"
+                stroke="#e8e4f0"
                 strokeOpacity={0.3}
               />
               <PolarAngleAxis
                 dataKey="domain"
                 tick={{
-                  fill: "#5E3B6C",
+                  fill: "#7b6b8d",
                   fontSize: 10,
                   fontWeight: 500,
                 }}
@@ -88,18 +88,18 @@ export function DomainAlignmentRadar() {
               <Radar
                 name="You"
                 dataKey="you"
-                stroke="#5E3B6C"
+                stroke="#7b6b8d"
                 strokeWidth={2}
-                fill="#5E3B6C"
+                fill="#7b6b8d"
                 fillOpacity={0.3}
               />
               <Radar
                 name="Ideal"
                 dataKey="ideal"
-                stroke="#D4AF63"
+                stroke="#c9a227"
                 strokeWidth={2}
                 strokeDasharray="4 4"
-                fill="#D4AF63"
+                fill="#c9a227"
                 fillOpacity={0.1}
               />
               <Legend
@@ -108,7 +108,7 @@ export function DomainAlignmentRadar() {
                 iconType="circle"
                 wrapperStyle={{
                   fontSize: "12px",
-                  color: "#5E3B6C",
+                  color: "#7b6b8d",
                 }}
               />
             </RadarChart>

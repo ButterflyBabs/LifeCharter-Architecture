@@ -209,21 +209,21 @@ FOLLOW-UP:
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       {/* Header */}
-      <Link href="/daily-compass" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Compass
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#2E7C83]/20 flex items-center justify-center">
-            <Share2 className="w-6 h-6 text-[#2E7C83]" />
+          <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-[#4a9b9b]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Content Studio
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               AI-powered content creation for your business
             </p>
           </div>
@@ -244,41 +244,41 @@ FOLLOW-UP:
                   onClick={() => setSelectedType("social")}
                   className={`p-4 rounded-lg border-2 transition-all text-center ${
                     selectedType === "social"
-                      ? "border-[#2E7C83] bg-[#2E7C83]/10"
-                      : "border-[#1F315B]/20 hover:border-[#2E7C83]/50"
+                      ? "border-[#4a9b9b] bg-[#4a9b9b]/10"
+                      : "border-[#1a2b4a]/20 hover:border-[#4a9b9b]/50"
                   }`}
                 >
-                  <Share2 className="w-6 h-6 mx-auto mb-2 text-[#2E7C83]" />
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Social Post</p>
+                  <Share2 className="w-6 h-6 mx-auto mb-2 text-[#4a9b9b]" />
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Social Post</p>
                 </button>
                 <button
                   onClick={() => setSelectedType("email")}
                   className={`p-4 rounded-lg border-2 transition-all text-center ${
                     selectedType === "email"
-                      ? "border-[#5E3B6C] bg-[#5E3B6C]/10"
-                      : "border-[#1F315B]/20 hover:border-[#5E3B6C]/50"
+                      ? "border-[#7b6b8d] bg-[#7b6b8d]/10"
+                      : "border-[#1a2b4a]/20 hover:border-[#7b6b8d]/50"
                   }`}
                 >
-                  <MessageSquare className="w-6 h-6 mx-auto mb-2 text-[#5E3B6C]" />
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Email</p>
+                  <MessageSquare className="w-6 h-6 mx-auto mb-2 text-[#7b6b8d]" />
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Email</p>
                 </button>
                 <button
                   onClick={() => setSelectedType("script")}
                   className={`p-4 rounded-lg border-2 transition-all text-center ${
                     selectedType === "script"
-                      ? "border-[#D4AF63] bg-[#D4AF63]/10"
-                      : "border-[#1F315B]/20 hover:border-[#D4AF63]/50"
+                      ? "border-[#c9a227] bg-[#c9a227]/10"
+                      : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
                   }`}
                 >
-                  <Mic className="w-6 h-6 mx-auto mb-2 text-[#D4AF63]" />
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">Sales Script</p>
+                  <Mic className="w-6 h-6 mx-auto mb-2 text-[#c9a227]" />
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Sales Script</p>
                 </button>
               </div>
 
               {/* Platform Selector (for social) */}
               {selectedType === "social" && (
                 <div className="mb-6">
-                  <label className="text-sm text-[#B9A9A9] mb-2 block">Platform</label>
+                  <label className="text-sm text-[#b8a898] mb-2 block">Platform</label>
                   <div className="flex gap-2">
                     {["linkedin", "instagram", "twitter", "facebook"].map((platform) => (
                       <button
@@ -286,8 +286,8 @@ FOLLOW-UP:
                         onClick={() => setSelectedPlatform(platform)}
                         className={`px-4 py-2 rounded-lg border transition-all capitalize ${
                           selectedPlatform === platform
-                            ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#2E7C83]"
-                            : "border-[#1F315B]/20 text-[#B9A9A9]"
+                            ? "border-[#4a9b9b] bg-[#4a9b9b]/10 text-[#4a9b9b]"
+                            : "border-[#1a2b4a]/20 text-[#b8a898]"
                         }`}
                       >
                         {platform}
@@ -300,7 +300,7 @@ FOLLOW-UP:
               {/* AI Prompt */}
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-2 block">
+                  <label className="text-sm text-[#b8a898] mb-2 block">
                     Describe what you want to create
                   </label>
                   <Textarea
@@ -313,13 +313,13 @@ FOLLOW-UP:
 
                 {/* Quick Prompts */}
                 <div>
-                  <p className="text-sm text-[#B9A9A9] mb-2">Or try one of these:</p>
+                  <p className="text-sm text-[#b8a898] mb-2">Or try one of these:</p>
                   <div className="flex flex-wrap gap-2">
                     {aiPrompts.map((p, i) => (
                       <button
                         key={i}
                         onClick={() => setPrompt(p)}
-                        className="text-xs px-3 py-1.5 bg-[#1F315B]/5 text-[#5E3B6C] dark:text-[#CDBED6] rounded-full hover:bg-[#D4AF63]/20 transition-colors"
+                        className="text-xs px-3 py-1.5 bg-[#1a2b4a]/5 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full hover:bg-[#c9a227]/20 transition-colors"
                       >
                         {p}
                       </button>
@@ -350,28 +350,28 @@ FOLLOW-UP:
 
           {/* Generated Content */}
           {generatedContent && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#D4AF63]" />
+                  <Sparkles className="w-5 h-5 text-[#c9a227]" />
                   AI Generated Content
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-[#1F315B]/5 rounded-lg">
-                  <p className="text-[#1F315B] dark:text-[#F6F1E8] whitespace-pre-wrap">
+                <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+                  <p className="text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap">
                     {generatedContent.content}
                   </p>
                   {generatedContent.hashtags && (
-                    <p className="text-[#2E7C83] mt-3 text-sm">
+                    <p className="text-[#4a9b9b] mt-3 text-sm">
                       {generatedContent.hashtags.join(" ")}
                     </p>
                   )}
                 </div>
 
                 {generatedContent.imagePrompt && (
-                  <div className="p-3 bg-[#D4AF63]/10 rounded-lg">
-                    <p className="text-sm text-[#5E3B6C] dark:text-[#CDBED6]">
+                  <div className="p-3 bg-[#c9a227]/10 rounded-lg">
+                    <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
                       <strong>Image Suggestion:</strong> {generatedContent.imagePrompt}
                     </p>
                   </div>
@@ -402,7 +402,7 @@ FOLLOW-UP:
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-[#D4AF63]" />
+                <Lightbulb className="w-5 h-5 text-[#c9a227]" />
                 Templates
               </CardTitle>
             </CardHeader>
@@ -414,13 +414,13 @@ FOLLOW-UP:
                     setPrompt(`Create a ${template.name.toLowerCase()} post`);
                     setSelectedType("social");
                   }}
-                  className="w-full text-left p-3 bg-[#1F315B]/5 rounded-lg hover:bg-[#1F315B]/10 transition-colors"
+                  className="w-full text-left p-3 bg-[#1a2b4a]/5 rounded-lg hover:bg-[#1a2b4a]/10 transition-colors"
                 >
-                  <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                     {template.name}
                   </p>
-                  <p className="text-xs text-[#B9A9A9]">{template.description}</p>
-                  <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                  <p className="text-xs text-[#b8a898]">{template.description}</p>
+                  <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                     {template.platform}
                   </p>
                 </button>
@@ -439,10 +439,10 @@ FOLLOW-UP:
                   {savedContent.map((content) => (
                     <div
                       key={content.id}
-                      className="p-3 bg-[#1F315B]/5 rounded-lg"
+                      className="p-3 bg-[#1a2b4a]/5 rounded-lg"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-[#1F315B] dark:text-[#F6F1E8] capitalize">
+                        <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize">
                           {content.type}
                         </span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -453,14 +453,14 @@ FOLLOW-UP:
                           {content.status}
                         </span>
                       </div>
-                      <p className="text-sm text-[#B9A9A9] line-clamp-2">
+                      <p className="text-sm text-[#b8a898] line-clamp-2">
                         {content.content.substring(0, 100)}...
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#B9A9A9] text-center py-4">
+                <p className="text-sm text-[#b8a898] text-center py-4">
                   No saved content yet
                 </p>
               )}
@@ -468,13 +468,13 @@ FOLLOW-UP:
           </Card>
 
           {/* Tips */}
-          <Card className="bg-gradient-to-br from-[#1F315B] to-[#5E3B6C] text-[#F6F1E8]">
+          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#D4AF63]" />
+                <Zap className="w-5 h-5 text-[#c9a227]" />
                 Content Tips
               </h3>
-              <ul className="text-sm space-y-2 text-[#CDBED6]">
+              <ul className="text-sm space-y-2 text-[#e8e4f0]">
                 <li className="flex items-start gap-2">
                   <Target className="w-4 h-4 mt-0.5" />
                   Lead with value, not promotion

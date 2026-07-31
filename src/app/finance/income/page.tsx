@@ -179,21 +179,21 @@ export default function IncomePage() {
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto">
       {/* Header */}
-      <Link href="/finance" className="flex items-center gap-2 text-[#5E3B6C] hover:text-[#1F315B] mb-6">
+      <Link href="/finance" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Finance Center
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#5E3B6C]/20 flex items-center justify-center">
-            <TrendingUp className="w-6 h-6 text-[#5E3B6C]" />
+          <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-[#7b6b8d]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Income Tracker
             </h1>
-            <p className="text-[#B9A9A9]">
+            <p className="text-[#b8a898]">
               Revenue from all sources with payment processor connections
             </p>
           </div>
@@ -204,24 +204,24 @@ export default function IncomePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Total Received</p>
-            <p className="text-3xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+            <p className="text-sm text-[#b8a898] mb-1">Total Received</p>
+            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
               ${totalIncome.toFixed(2)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">This Month</p>
-            <p className="text-3xl font-bold text-[#5E3B6C]">
+            <p className="text-sm text-[#b8a898] mb-1">This Month</p>
+            <p className="text-3xl font-bold text-[#7b6b8d]">
               ${thisMonth.toFixed(2)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-[#B9A9A9] mb-1">Pending</p>
-            <p className="text-3xl font-bold text-[#D4AF63]">
+            <p className="text-sm text-[#b8a898] mb-1">Pending</p>
+            <p className="text-3xl font-bold text-[#c9a227]">
               ${pendingIncome.toFixed(2)}
             </p>
           </CardContent>
@@ -233,7 +233,7 @@ export default function IncomePage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Add Income Button */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               Recent Income
             </h2>
             <Button onClick={() => setShowAddForm(!showAddForm)}>
@@ -244,14 +244,14 @@ export default function IncomePage() {
 
           {/* Add Income Form */}
           {showAddForm && (
-            <Card className="border-[#D4AF63]/30">
+            <Card className="border-[#c9a227]/30">
               <CardHeader>
                 <CardTitle className="text-lg">Add New Income</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Date</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Date</label>
                     <Input
                       type="date"
                       value={newIncome.date}
@@ -259,7 +259,7 @@ export default function IncomePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#B9A9A9] mb-1 block">Amount</label>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Amount</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -270,7 +270,7 @@ export default function IncomePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Client/Customer</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Client/Customer</label>
                   <Input
                     placeholder="e.g., ABC Company, Jane Smith..."
                     value={newIncome.client}
@@ -278,9 +278,9 @@ export default function IncomePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Source</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Source</label>
                   <select
-                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                     value={newIncome.source}
                     onChange={(e) => setNewIncome({...newIncome, source: e.target.value})}
                   >
@@ -291,9 +291,9 @@ export default function IncomePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Status</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Status</label>
                   <select
-                    className="w-full p-2 rounded-lg border border-[#1F315B]/20 bg-white dark:bg-[#1F315B] text-[#1F315B] dark:text-[#F6F1E8]"
+                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
                     value={newIncome.status}
                     onChange={(e) => setNewIncome({...newIncome, status: e.target.value as "received" | "pending" | "scheduled"})}
                   >
@@ -303,7 +303,7 @@ export default function IncomePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#B9A9A9] mb-1 block">Description</label>
+                  <label className="text-sm text-[#b8a898] mb-1 block">Description</label>
                   <Textarea
                     placeholder="Details about this income..."
                     value={newIncome.description}
@@ -328,43 +328,43 @@ export default function IncomePage() {
               {income.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`p-4 flex items-center justify-between ${index !== income.length - 1 ? 'border-b border-[#1F315B]/10' : ''}`}
+                  className={`p-4 flex items-center justify-between ${index !== income.length - 1 ? 'border-b border-[#1a2b4a]/10' : ''}`}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       item.status === 'received' ? 'bg-green-500/10' : 
-                      item.status === 'pending' ? 'bg-yellow-500/10' : 'bg-[#5E3B6C]/10'
+                      item.status === 'pending' ? 'bg-yellow-500/10' : 'bg-[#7b6b8d]/10'
                     }`}>
                       {item.status === 'received' ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
                       ) : item.status === 'pending' ? (
                         <AlertCircle className="w-5 h-5 text-yellow-500" />
                       ) : (
-                        <Calendar className="w-5 h-5 text-[#5E3B6C]" />
+                        <Calendar className="w-5 h-5 text-[#7b6b8d]" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                         {item.client}
                       </p>
-                      <p className="text-sm text-[#B9A9A9]">
+                      <p className="text-sm text-[#b8a898]">
                         {item.date} • {item.source}
                       </p>
                       {item.description && (
-                        <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6] mt-1">
+                        <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
                           {item.description}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
                       +${item.amount.toFixed(2)}
                     </p>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       item.status === 'received' ? 'bg-green-500/10 text-green-600' :
                       item.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600' :
-                      'bg-[#5E3B6C]/10 text-[#5E3B6C]'
+                      'bg-[#7b6b8d]/10 text-[#7b6b8d]'
                     }`}>
                       {item.status}
                     </span>
@@ -381,28 +381,28 @@ export default function IncomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <LinkIcon className="w-5 h-5 text-[#D4AF63]" />
+                <LinkIcon className="w-5 h-5 text-[#c9a227]" />
                 Payment Processors
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-[#B9A9A9]">
+              <p className="text-sm text-[#b8a898]">
                 Connect your payment processors for automatic income tracking
               </p>
               
               {processors.map((processor) => (
                 <div
                   key={processor.id}
-                  className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard className="w-5 h-5 text-[#B9A9A9]" />
+                    <CreditCard className="w-5 h-5 text-[#b8a898]" />
                     <div>
-                      <p className="font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                         {processor.name}
                       </p>
                       {processor.connected && (
-                        <p className="text-xs text-[#B9A9A9]">
+                        <p className="text-xs text-[#b8a898]">
                           Last sync: {processor.lastSync} • {processor.transactionsCount} transactions
                         </p>
                       )}
@@ -427,17 +427,17 @@ export default function IncomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#D4AF63]" />
+                <Upload className="w-5 h-5 text-[#c9a227]" />
                 Upload Statements
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-[#1F315B]/20 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-[#B9A9A9] mx-auto mb-2" />
-                <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] font-medium">
+              <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-lg p-6 text-center">
+                <Upload className="w-8 h-8 text-[#b8a898] mx-auto mb-2" />
+                <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
                   Upload payment processor statements
                 </p>
-                <p className="text-xs text-[#B9A9A9] mt-1">
+                <p className="text-xs text-[#b8a898] mt-1">
                   Stripe, PayPal, Square exports (CSV, PDF)
                 </p>
                 <input
@@ -460,21 +460,21 @@ export default function IncomePage() {
               {/* Uploaded Statements */}
               {statements.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                  <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                     Uploaded Statements
                   </p>
                   {statements.map((statement) => (
                     <div
                       key={statement.id}
-                      className="flex items-center justify-between p-3 bg-[#1F315B]/5 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-[#B9A9A9]" />
+                        <FileText className="w-4 h-4 text-[#b8a898]" />
                         <div>
-                          <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                          <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                             {statement.filename}
                           </p>
-                          <p className="text-xs text-[#B9A9A9]">
+                          <p className="text-xs text-[#b8a898]">
                             {statement.processor} • {statement.uploadDate}
                           </p>
                         </div>
@@ -516,8 +516,8 @@ export default function IncomePage() {
                   if (sourceTotal === 0) return null;
                   return (
                     <div key={source} className="flex items-center justify-between py-2">
-                      <span className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">{source}</span>
-                      <span className="text-sm font-medium text-[#B9A9A9]">
+                      <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{source}</span>
+                      <span className="text-sm font-medium text-[#b8a898]">
                         ${sourceTotal.toFixed(2)}
                       </span>
                     </div>

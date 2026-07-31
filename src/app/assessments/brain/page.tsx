@@ -4071,15 +4071,15 @@ export default function BrainAssessmentPage() {
     return (
       <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <Card className="border-[#2E7C83]/30">
+          <Card className="border-[#4a9b9b]/30">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#2E7C83]/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-[#2E7C83]" />
+              <div className="w-16 h-16 rounded-full bg-[#4a9b9b]/10 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-[#4a9b9b]" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8] mb-4">
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
                 Brain Assessment Complete!
               </h1>
-              <p className="text-[#1F315B]/70 dark:text-[#F6F1E8]/70 mb-6">
+              <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mb-6">
                 Thank you for completing the Brain Assessment. Your responses have been
                 saved and will contribute to your overall Business Health Score.
               </p>
@@ -4103,15 +4103,15 @@ export default function BrainAssessmentPage() {
   return (
     <div>
       {/* Header */}
-      <div className="bg-[#1F315B] text-white py-8 px-4">
+      <div className="bg-[#1a2b4a] text-white py-8 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-[#2E7C83]/20 flex items-center justify-center">
-              <Brain className="w-5 h-5 text-[#2E7C83]" />
+            <div className="w-10 h-10 rounded-lg bg-[#4a9b9b]/20 flex items-center justify-center">
+              <Brain className="w-5 h-5 text-[#4a9b9b]" />
             </div>
             <div>
               <h1 className="text-xl font-bold">Brain Assessment</h1>
-              <p className="text-sm text-[#CDBED6]">Systems & Operations</p>
+              <p className="text-sm text-[#e8e4f0]">Systems & Operations</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -4128,13 +4128,13 @@ export default function BrainAssessmentPage() {
 
       {/* Question Card */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Card className="border-[#2E7C83]/20">
+        <Card className="border-[#4a9b9b]/20">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#2E7C83]">
+              <span className="text-sm font-medium text-[#4a9b9b]">
                 {currentQ.section}
               </span>
-              <div className="flex items-center gap-2 text-sm text-[#B9A9A9]">
+              <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
                 {isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
               </div>
@@ -4144,7 +4144,7 @@ export default function BrainAssessmentPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <h2 className="text-xl font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {currentQ.text}
             </h2>
 
@@ -4155,8 +4155,8 @@ export default function BrainAssessmentPage() {
                     key={option.value}
                     className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       answers[currentQ.id] === option.value
-                        ? "border-[#2E7C83] bg-[#2E7C83]/5"
-                        : "border-[#D4AF63]/20 hover:border-[#D4AF63]/40"
+                        ? "border-[#4a9b9b] bg-[#4a9b9b]/5"
+                        : "border-[#c9a227]/20 hover:border-[#c9a227]/40"
                     }`}
                   >
                     <input
@@ -4165,9 +4165,9 @@ export default function BrainAssessmentPage() {
                       value={option.value}
                       checked={answers[currentQ.id] === option.value}
                       onChange={(e) => handleAnswer(e.target.value)}
-                      className="mt-1 w-4 h-4 text-[#2E7C83] focus:ring-[#2E7C83]"
+                      className="mt-1 w-4 h-4 text-[#4a9b9b] focus:ring-[#4a9b9b]"
                     />
-                    <span className="text-[#1F315B] dark:text-[#F6F1E8]">
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {option.label}
                     </span>
                   </label>
@@ -4181,12 +4181,12 @@ export default function BrainAssessmentPage() {
                 onChange={(e) => handleAnswer(e.target.value)}
                 placeholder={currentQ.placeholder || "Type your answer here..."}
                 rows={5}
-                className="w-full p-4 rounded-xl border-2 border-[#D4AF63]/20 focus:border-[#2E7C83] focus:ring-2 focus:ring-[#2E7C83]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1F315B] dark:text-[#F6F1E8]"
+                className="w-full p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#4a9b9b] focus:ring-2 focus:ring-[#4a9b9b]/20 outline-none resize-none bg-white dark:bg-[#1a1a2e] text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-6 border-t border-[#D4AF63]/20">
+            <div className="flex items-center justify-between pt-6 border-t border-[#c9a227]/20">
               <Button
                 variant="ghost"
                 onClick={handlePrevious}
@@ -4218,14 +4218,14 @@ export default function BrainAssessmentPage() {
                 key={section}
                 className={`p-4 rounded-xl border-2 transition-all ${
                   isCurrent
-                    ? "border-[#2E7C83] bg-[#2E7C83]/5"
-                    : "border-[#D4AF63]/20"
+                    ? "border-[#4a9b9b] bg-[#4a9b9b]/5"
+                    : "border-[#c9a227]/20"
                 }`}
               >
-                <p className="text-sm font-medium text-[#1F315B] dark:text-[#F6F1E8]">
+                <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {section}
                 </p>
-                <p className="text-xs text-[#B9A9A9] mt-1">
+                <p className="text-xs text-[#b8a898] mt-1">
                   {answeredQs} of {sectionQs.length} answered
                 </p>
                 <div className="mt-2">

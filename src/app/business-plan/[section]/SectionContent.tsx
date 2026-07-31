@@ -237,7 +237,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
             value={value}
             onChange={(e) => handleAnswer(question.id, e.target.value)}
             placeholder={question.placeholder || "Enter your answer..."}
-            className="min-h-[100px] bg-white dark:bg-[#1F315B]/20"
+            className="min-h-[100px] bg-white dark:bg-[#1a2b4a]/20"
           />
         );
       case "number":
@@ -247,19 +247,19 @@ export function SectionContent({ sectionId }: SectionContentProps) {
             value={value}
             onChange={(e) => handleAnswer(question.id, e.target.value)}
             placeholder={question.placeholder || "0"}
-            className="bg-white dark:bg-[#1F315B]/20"
+            className="bg-white dark:bg-[#1a2b4a]/20"
           />
         );
       case "currency":
         return (
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">$</span>
             <Input
               type="number"
               value={value}
               onChange={(e) => handleAnswer(question.id, e.target.value)}
               placeholder="0"
-              className="pl-8 bg-white dark:bg-[#1F315B]/20"
+              className="pl-8 bg-white dark:bg-[#1a2b4a]/20"
             />
           </div>
         );
@@ -271,9 +271,9 @@ export function SectionContent({ sectionId }: SectionContentProps) {
               value={value}
               onChange={(e) => handleAnswer(question.id, e.target.value)}
               placeholder="0"
-              className="pr-8 bg-white dark:bg-[#1F315B]/20"
+              className="pr-8 bg-white dark:bg-[#1a2b4a]/20"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B9A9A9]">%</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b8a898]">%</span>
           </div>
         );
       default:
@@ -283,7 +283,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
             value={value}
             onChange={(e) => handleAnswer(question.id, e.target.value)}
             placeholder={question.placeholder || "Enter your answer..."}
-            className="bg-white dark:bg-[#1F315B]/20"
+            className="bg-white dark:bg-[#1a2b4a]/20"
           />
         );
     }
@@ -293,26 +293,26 @@ export function SectionContent({ sectionId }: SectionContentProps) {
     switch (trend) {
       case "up": return <TrendingUp className="w-4 h-4 text-green-500" />;
       case "down": return <TrendingDown className="w-4 h-4 text-red-500" />;
-      default: return <Minus className="w-4 h-4 text-[#B9A9A9]" />;
+      default: return <Minus className="w-4 h-4 text-[#b8a898]" />;
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Progress Header */}
-      <Card className="border-[#D4AF63]/20">
+      <Card className="border-[#c9a227]/20">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm text-[#B9A9A9] mb-1">
+              <p className="text-sm text-[#b8a898] mb-1">
                 {sectionId === "products" 
                   ? `${dynamicCompletedCount} of ${allQuestions.length} questions answered (including ${parseInt(answers["other_products_count"] || "0")} additional products)`
                   : `${completedCount} of ${config.questions.length} questions answered`
                 }
               </p>
-              <div className="w-48 bg-[#1F315B]/10 rounded-full h-2">
+              <div className="w-48 bg-[#1a2b4a]/10 rounded-full h-2">
                 <div 
-                  className="bg-[#D4AF63] h-2 rounded-full transition-all"
+                  className="bg-[#c9a227] h-2 rounded-full transition-all"
                   style={{ width: `${sectionId === "products" ? dynamicProgress : progress}%` }}
                 />
               </div>
@@ -328,7 +328,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
       </Card>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[#1F315B]/10">
+      <div className="flex gap-1 border-b border-[#1a2b4a]/10">
         {[
           { id: "questions", label: "Questions", count: sectionId === "products" ? dynamicCompletedCount : completedCount },
           { id: "plan", label: "Business Plan", count: null },
@@ -339,18 +339,18 @@ export function SectionContent({ sectionId }: SectionContentProps) {
             onClick={() => setActiveTab(tab.id as "questions" | "plan" | "metrics")}
             className={`px-4 py-2 text-sm font-medium relative ${
               activeTab === tab.id 
-                ? "text-[#D4AF63]" 
-                : "text-[#B9A9A9] hover:text-[#1F315B] dark:hover:text-[#F6F1E8]"
+                ? "text-[#c9a227]" 
+                : "text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0]"
             }`}
           >
             {tab.label}
             {tab.count !== null && tab.count > 0 && (
-              <span className="ml-2 text-xs bg-[#1F315B]/10 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs bg-[#1a2b4a]/10 px-2 py-0.5 rounded-full">
                 {tab.count}
               </span>
             )}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF63]" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#c9a227]" />
             )}
           </button>
         ))}
@@ -362,7 +362,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
           {(sectionId === "products" ? allQuestions : config.questions).map((question, index) => (
             <Card 
               key={question.id} 
-              className={answers[question.id] ? "border-green-500/30" : "border-[#1F315B]/10"}
+              className={answers[question.id] ? "border-green-500/30" : "border-[#1a2b4a]/10"}
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -370,23 +370,23 @@ export function SectionContent({ sectionId }: SectionContentProps) {
                     {answers[question.id] ? (
                       <CheckCircle className="w-5 h-5 text-green-500" />
                     ) : (
-                      <Circle className="w-5 h-5 text-[#B9A9A9]" />
+                      <Circle className="w-5 h-5 text-[#b8a898]" />
                     )}
                   </div>
                   <div className="flex-1">
                     {question.id.includes("divider") ? (
-                      <div className="py-4 border-t-2 border-[#D4AF63]/30 mt-4">
-                        <h3 className="text-lg font-bold text-[#D4AF63]">{question.question}</h3>
+                      <div className="py-4 border-t-2 border-[#c9a227]/30 mt-4">
+                        <h3 className="text-lg font-bold text-[#c9a227]">{question.question}</h3>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xs text-[#B9A9A9]">Q{index + 1}</span>
+                          <span className="text-xs text-[#b8a898]">Q{index + 1}</span>
                           {question.required && (
                             <span className="text-xs text-red-500">*Required</span>
                           )}
                         </div>
-                        <label className="block text-[#1F315B] dark:text-[#F6F1E8] font-medium mb-3">
+                        <label className="block text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-3">
                           {question.question}
                         </label>
                         {renderInput(question)}
@@ -394,18 +394,18 @@ export function SectionContent({ sectionId }: SectionContentProps) {
                     )}
                     
                     {question.aiSuggested && !answers[question.id] && (
-                      <div className="mt-3 p-3 bg-[#D4AF63]/10 rounded-lg border border-[#D4AF63]/20">
-                        <div className="flex items-center gap-2 text-sm text-[#D4AF63] mb-1">
+                      <div className="mt-3 p-3 bg-[#c9a227]/10 rounded-lg border border-[#c9a227]/20">
+                        <div className="flex items-center gap-2 text-sm text-[#c9a227] mb-1">
                           <Sparkles className="w-4 h-4" />
                           <span>AI Suggestion from your assessments</span>
                         </div>
-                        <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8]">
+                        <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                           {question.aiSuggested}
                         </p>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="mt-2 text-[#D4AF63]"
+                          className="mt-2 text-[#c9a227]"
                           onClick={() => handleAnswer(question.id, question.aiSuggested!)}
                         >
                           Use This Answer
@@ -424,7 +424,7 @@ export function SectionContent({ sectionId }: SectionContentProps) {
       {activeTab === "plan" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <h3 className="font-semibold text-[#1F315B] dark:text-[#F6F1E8]">
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               AI-Generated Business Plan Content
             </h3>
             <Button variant="outline" size="sm">
@@ -435,8 +435,8 @@ export function SectionContent({ sectionId }: SectionContentProps) {
           <CardContent className="p-6">
             {progress < 100 ? (
               <div className="text-center py-12">
-                <AlertCircle className="w-12 h-12 text-[#B9A9A9] mx-auto mb-4" />
-                <p className="text-[#B9A9A9]">
+                <AlertCircle className="w-12 h-12 text-[#b8a898] mx-auto mb-4" />
+                <p className="text-[#b8a898]">
                   Answer all questions to generate your personalized business plan section
                 </p>
                 <Button 
@@ -449,14 +449,14 @@ export function SectionContent({ sectionId }: SectionContentProps) {
               </div>
             ) : (
               <div className="prose dark:prose-invert max-w-none">
-                <div className="p-4 bg-[#D4AF63]/10 rounded-lg border border-[#D4AF63]/20 mb-6">
-                  <p className="text-sm text-[#1F315B] dark:text-[#F6F1E8] m-0">
+                <div className="p-4 bg-[#c9a227]/10 rounded-lg border border-[#c9a227]/20 mb-6">
+                  <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] m-0">
                     <strong>Generated based on your answers</strong> • 
                     This content is informed by your Brain, Soul, and Profit assessments, 
                     plus the specific details you provided above.
                   </p>
                 </div>
-                <p className="text-[#B9A9A9] italic">
+                <p className="text-[#b8a898] italic">
                   Your personalized business plan content will appear here once generated...
                 </p>
               </div>
@@ -471,13 +471,13 @@ export function SectionContent({ sectionId }: SectionContentProps) {
           {config.metrics.map((metric, index) => (
             <Card key={index}>
               <CardContent className="p-6">
-                <p className="text-sm text-[#B9A9A9] mb-2">{metric.label}</p>
+                <p className="text-sm text-[#b8a898] mb-2">{metric.label}</p>
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-[#1F315B] dark:text-[#F6F1E8]">
+                    <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {metric.current}
                     </p>
-                    <p className="text-xs text-[#B9A9A9]">
+                    <p className="text-xs text-[#b8a898]">
                       Target: {metric.target}
                     </p>
                   </div>
