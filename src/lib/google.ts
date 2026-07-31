@@ -17,8 +17,17 @@ const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
 ].join(" ");
 
+// Accept both SCREAMING_SNAKE_CASE and camelCase names, in case the env vars
+// were added as GoogleClientID / GoogleClientSecret.
+function clientId(): string {
+  return process.env.GOOGLE_CLIENT_ID || process.env.GoogleClientID || "";
+}
+function clientSecret(): string {
+  return process.env.GOOGLE_CLIENT_SECRET || process.env.GoogleClientSecret || "";
+}
+
 export function isGoogleConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  return Boolean(clientId() && clientSecret());
 }
 
 export function redirectUri(origin?: string): string {
@@ -30,7 +39,7 @@ export function redirectUri(origin?: string): string {
 
 export function getAuthUrl(origin?: string): string {
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID ?? "",
+    client_id: clientId(),
     redirect_uri: redirectUri(origin),
     response_type: "code",
     scope: SCOPES,
@@ -55,8 +64,8 @@ export async function exchangeCode(code: string, origin?: string): Promise<Token
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      client_id: clientId(),
+      client_secret: clientSecret(),
       redirect_uri: redirectUri(origin),
       grant_type: "authorization_code",
     }),
@@ -71,8 +80,8 @@ async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> 
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       refresh_token: refreshToken,
-      client_id: process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      client_id: clientId(),
+      client_secret: clientSecret(),
       grant_type: "refresh_token",
     }),
   });
