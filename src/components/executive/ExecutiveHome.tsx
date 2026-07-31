@@ -53,6 +53,12 @@ interface RealTask {
 export default function ExecutiveHome() {
   const [aiInput, setAiInput] = useState("");
   const [tasks, setTasks] = useState<RealTask[]>([]);
+  const [finance, setFinance] = useState<{
+    hasData: boolean;
+    thisMonth: number;
+    changePct: number | null;
+    weekly: number[];
+  } | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState("today");
@@ -86,6 +92,17 @@ export default function ExecutiveHome() {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  // Fetch live financial pulse
+  useEffect(() => {
+    fetch("/api/financial-pulse")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setFinance(d))
+      .catch(() => {});
+  }, []);
+
+  const currency = (n: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
   const fetchTasks = async () => {
     try {
@@ -245,7 +262,7 @@ export default function ExecutiveHome() {
                   <div className="w-11 h-11 rounded-full bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
                     <CheckSquare className="w-5 h-5 text-[#7B6B8D]" />
                   </div>
-                  <span className="text-sm text-[#3F4654]">12 tasks require attention</span>
+                  <span className="text-sm text-[#3F4654]">{tasks.length} {tasks.length === 1 ? "task requires" : "tasks require"} attention</span>
                 </div>
 
                 {/* Row 3 - Revenue */}
@@ -253,7 +270,11 @@ export default function ExecutiveHome() {
                   <div className="w-11 h-11 rounded-full bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
                     <DollarSign className="w-5 h-5 text-[#7B6B8D]" />
                   </div>
-                  <span className="text-sm text-[#3F4654]">$4,250 revenue received</span>
+                  <span className="text-sm text-[#3F4654]">
+                    {finance?.hasData
+                      ? `${currency(finance.thisMonth)} revenue this month`
+                      : "No revenue recorded yet"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -312,31 +333,55 @@ export default function ExecutiveHome() {
           </div>
 
           <div className="px-6 pb-6 space-y-4">
-            {/* Main Balance */}
+            {/* Main Balance (live) */}
             <div>
-              <p className="text-3xl font-serif text-[#c9a227]">$24,580</p>
+              <p className="text-3xl font-serif text-[#c9a227]">
+                {finance?.hasData ? currency(finance.thisMonth) : "$0"}
+              </p>
               <p className="text-sm text-gray-600 mt-1">
-                <span className="text-[#2E7C83] font-medium">+12%</span> from last month
+                {finance?.hasData && finance.changePct !== null ? (
+                  <>
+                    <span
+                      className={
+                        finance.changePct >= 0
+                          ? "text-[#2E7C83] font-medium"
+                          : "text-[#D83A34] font-medium"
+                      }
+                    >
+                      {finance.changePct >= 0 ? "+" : ""}
+                      {finance.changePct}%
+                    </span>{" "}
+                    from last month
+                  </>
+                ) : (
+                  "This month · no revenue recorded yet"
+                )}
               </p>
             </div>
 
-            {/* Bar Chart */}
+            {/* Bar Chart (weekly actuals) */}
             <div className="space-y-2">
               <div className="flex items-end gap-1 h-24">
-                {[40, 55, 45, 60, 50, 70, 55, 75, 60, 85, 70, 90].map((height, i) => (
-                  <div 
-                    key={i} 
-                    className="flex-1 bg-[#2E7C83] rounded-t"
-                    style={{ height: `${height}%`, opacity: 0.3 + (height / 200) }}
-                  />
-                ))}
+                {(() => {
+                  const weekly = finance?.weekly ?? [0, 0, 0, 0];
+                  const max = Math.max(1, ...weekly);
+                  return weekly.map((v, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-[#2E7C83] rounded-t"
+                      style={{
+                        height: `${Math.max(4, (v / max) * 100)}%`,
+                        opacity: finance?.hasData ? 0.4 + (v / max) * 0.5 : 0.15,
+                      }}
+                    />
+                  ));
+                })()}
               </div>
-              {/* X-axis labels */}
               <div className="flex justify-between text-xs text-gray-400 px-1">
-                <span>Jul 1</span>
-                <span>Jul 8</span>
-                <span>Jul 15</span>
-                <span>Jul 22</span>
+                <span>Week 1</span>
+                <span>Week 2</span>
+                <span>Week 3</span>
+                <span>Week 4</span>
               </div>
             </div>
 
@@ -344,7 +389,9 @@ export default function ExecutiveHome() {
             <Link href="/dashboard/money">
               <div className="flex items-center gap-3 p-3 bg-[#F8F5F0] rounded-xl border border-[#e8e4e0] hover:bg-[#f5f3ef] transition-colors cursor-pointer">
                 <Bell className="w-4 h-4 text-[#c9a227]" />
-                <span className="text-sm text-[#3F4654] flex-1">3 bills due this week</span>
+                <span className="text-sm text-[#3F4654] flex-1">
+                  {finance?.hasData ? "View revenue by segment" : "Add revenue to see your pulse"}
+                </span>
                 <ChevronRight className="w-4 h-4 text-[#c9a227]" />
               </div>
             </Link>

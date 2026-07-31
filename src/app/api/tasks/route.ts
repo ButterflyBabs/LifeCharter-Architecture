@@ -1,31 +1,77 @@
 import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
 
-// Phase-1 placeholder tasks API for the ported Executive Home.
-//
-// The Executive Dashboard's Priority Tasks card calls GET/POST /api/tasks.
-// In the original (Drizzle) app this hit a `tasks` table. In Architecture the
-// multi-business `tasks` table is introduced by the
-// `*_multi_business_model.sql` migration; until that is applied and seeded,
-// this route returns demo data so the merged dashboard renders fully in
-// preview without a database dependency.
-//
-// TODO(phase-1): replace the demo array with a real Supabase query against the
-// `tasks` table (createServerClient from "@/lib/supabase/server"), and persist
-// POSTed tasks. Tracked in the exec-into-architecture merge.
+// Always query live data per request.
+export const dynamic = "force-dynamic";
 
-const demoTasks = [
-  { id: 1, title: "Review LifeCharter Circle applications", status: "today", priority: "critical", segment: "Circle", dueTime: "10:00 AM" },
-  { id: 2, title: "Draft newsletter for subscribers", status: "in_progress", priority: "high", segment: "Conversations", dueTime: "11:30 AM" },
-  { id: 3, title: "Approve social media posts", status: "waiting", priority: "medium", segment: "AmiLynne Speaks" },
-];
+// Tasks API for the Executive Home Priority Tasks card.
+// Backed by the `tasks` table introduced in the multi_business_model migration.
+
+const DIMENSION_COLUMNS: Record<string, string> = {
+  marketing: "dimension_marketing",
+  sales: "dimension_sales",
+  operations: "dimension_operations",
+  finance: "dimension_finance",
+  team: "dimension_team",
+  systems: "dimension_systems",
+  leadership: "dimension_leadership",
+  vision: "dimension_vision",
+  product: "dimension_product",
+  customer_experience: "dimension_customer_experience",
+  legal: "dimension_legal",
+  sustainability: "dimension_sustainability",
+};
 
 export async function GET() {
-  return NextResponse.json({ tasks: demoTasks, source: "demo" });
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      "id, title, status, priority, business:businesses(name, color), segment:segments(name, color)"
+    )
+    .order("board_position", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("GET /api/tasks:", error.message);
+    return NextResponse.json({ tasks: [], error: error.message }, { status: 200 });
+  }
+  return NextResponse.json({ tasks: data ?? [] });
 }
 
 export async function POST(request: Request) {
-  // Not yet persisted — echo the task back so the UI can update optimistically.
+  const supabase = createServerClient();
   const body = await request.json().catch(() => ({}));
-  const task = { id: Date.now(), status: "today", priority: "medium", ...body };
-  return NextResponse.json({ task, persisted: false }, { status: 200 });
+
+  if (!body?.title) {
+    return NextResponse.json({ error: "title is required" }, { status: 400 });
+  }
+
+  const row: Record<string, unknown> = {
+    title: body.title,
+    description: body.description ?? null,
+    status: body.status ?? "today",
+    priority: body.priority ?? "medium",
+    business_id: body.businessId ?? null,
+    segment_id: body.segmentId ?? null,
+    due_date: body.dueDate ?? null,
+  };
+  for (const key of Array.isArray(body.dimensions) ? body.dimensions : []) {
+    const col = DIMENSION_COLUMNS[key];
+    if (col) row[col] = true;
+  }
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert(row)
+    .select(
+      "id, title, status, priority, business:businesses(name, color), segment:segments(name, color)"
+    )
+    .single();
+
+  if (error) {
+    console.error("POST /api/tasks:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ task: data, persisted: true });
 }
