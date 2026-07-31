@@ -20,6 +20,7 @@ import {
   Check,
   Sun,
 } from "lucide-react";
+import DimensionCards from "@/components/executive/DimensionCards";
 
 // Types
 interface Email {
@@ -75,6 +76,7 @@ export default function ExecutiveHome() {
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [firstName, setFirstName] = useState<string>("");
 
   // Initialize time on client side only
   useEffect(() => {
@@ -103,6 +105,14 @@ export default function ExecutiveHome() {
     fetch("/api/financial-pulse")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFinance(d))
+      .catch(() => {});
+  }, []);
+
+  // Fetch owner name for the greeting (from the profile)
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.firstName && setFirstName(d.firstName))
       .catch(() => {});
   }, []);
 
@@ -254,13 +264,13 @@ export default function ExecutiveHome() {
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
       {/* Header - EXACT from image */}
-      <header className="mb-8 flex items-start justify-between">
+      <header className="mb-6 flex items-start justify-between">
         {/* Left side - Text */}
         <div>
-          <h1 className="text-5xl font-serif font-bold text-indigo-900 mb-1">
-            Good morning, Babs
+          <h1 className="text-3xl font-serif font-bold text-indigo-900 mb-0.5">
+            {firstName ? `Good morning, ${firstName}` : "Good morning"}
           </h1>
-          <p className="text-xl text-gray-500 mb-1">
+          <p className="text-sm text-gray-500 mb-0.5">
             {currentTime ? new Intl.DateTimeFormat("en-US", {
               weekday: "long",
               month: "long",
@@ -268,7 +278,7 @@ export default function ExecutiveHome() {
               timeZone: userTimezone,
             }).format(currentTime) : "Loading..."}
           </p>
-          <p className="text-base text-gray-400">
+          <p className="text-sm text-gray-400">
             Here&apos;s your executive briefing for today
           </p>
         </div>
@@ -307,7 +317,7 @@ export default function ExecutiveHome() {
       </header>
 
       {/* TOP ROW - 3 Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
         {/* Your Morning Brief - EXACT from new image */}
         <Link href="/business-plan" className="block">
           <div className="relative h-full">
@@ -382,7 +392,7 @@ export default function ExecutiveHome() {
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3">
-            <h3 className="font-serif text-lg text-indigo-900">Today&apos;s Schedule</h3>
+            <h3 className="font-serif text-base text-indigo-900">Today&apos;s Schedule</h3>
           </div>
           
           {/* Schedule Items (live Google Calendar) */}
@@ -430,7 +440,7 @@ export default function ExecutiveHome() {
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
-            <h3 className="font-serif text-lg text-indigo-900">Financial Pulse</h3>
+            <h3 className="font-serif text-base text-indigo-900">Financial Pulse</h3>
             <Link href="/finance">
               <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
                 <MoreHorizontal className="w-5 h-5 text-gray-400" />
@@ -506,12 +516,12 @@ export default function ExecutiveHome() {
       </div>
 
       {/* SECOND ROW - 2 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
         {/* Priority Tasks - EXACT from image with real data */}
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header with lighter background */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0] bg-[#FFFFFF]">
-            <h3 className="font-serif text-lg text-indigo-900">Priority Tasks</h3>
+            <h3 className="font-serif text-base text-indigo-900">Priority Tasks</h3>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setShowAddTask(true)}
@@ -646,7 +656,7 @@ export default function ExecutiveHome() {
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0]">
             <div className="flex items-center gap-3">
-              <h3 className="font-serif text-lg text-indigo-900">Inbox</h3>
+              <h3 className="font-serif text-base text-indigo-900">Inbox</h3>
               {googleConnected && (
                 <span className="px-2.5 py-1 bg-[#6F4A7C] text-white text-xs font-medium rounded-full">
                   {unreadCount} unread
@@ -738,7 +748,7 @@ export default function ExecutiveHome() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <h3 className="font-serif text-lg text-indigo-900">AI Assistant</h3>
+            <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
           </div>
           <span className="text-xs text-gray-400">Powered by Mariposa</span>
         </div>
@@ -794,6 +804,9 @@ export default function ExecutiveHome() {
           </div>
         </div>
       </div>
+
+      {/* 12 Business Dimensions (draggable) */}
+      <DimensionCards />
 
       {/* Add Task Modal */}
       {showAddTask && (
@@ -910,7 +923,7 @@ export default function ExecutiveHome() {
               <div className="bg-[#F8F5F0] rounded-xl p-4 border border-[#E8E4E0]">
                 <p className="text-sm font-medium text-indigo-900">{replyingTo?.subject || "RE: Speaking opportunity - Denver Conference"}</p>
                 <p className="text-xs text-[#7C7C82] mt-1">From: {replyingTo?.from || "Sarah Johnson"}</p>
-                <p className="text-sm text-[#3F4654] mt-2">{replyingTo?.preview || "Hi Babs, I have a question about the upcoming session..."}</p>
+                <p className="text-sm text-[#3F4654] mt-2">{replyingTo?.preview || ""}</p>
               </div>
 
               {/* Reply Text Area */}
