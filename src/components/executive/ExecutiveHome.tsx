@@ -252,7 +252,7 @@ export default function ExecutiveHome() {
   const waitingTasks = tasks.filter(t => t.status === "waiting").slice(0, 1);
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px] mx-auto px-6 py-8">
       {/* Header - EXACT from image */}
       <header className="mb-8 flex items-start justify-between">
         {/* Left side - Text */}

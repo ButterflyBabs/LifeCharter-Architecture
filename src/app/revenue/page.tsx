@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 
 interface SegmentRow {
   id: number;
@@ -30,15 +30,65 @@ interface RevenueData {
 const currency = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
+interface SegmentOption {
+  id: number;
+  name: string;
+}
+
 export default function RevenuePage() {
   const [data, setData] = useState<RevenueData | null>(null);
+  const [segments, setSegments] = useState<SegmentOption[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [segmentId, setSegmentId] = useState("");
+  const [month, setMonth] = useState("");
+  const [actual, setActual] = useState("");
+  const [target, setTarget] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const loadData = () =>
     fetch("/api/revenue-by-segment")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setData(d ?? { thisMonthTotal: 0, lastMonthTotal: 0, changePct: null, businesses: [] }))
       .catch(() => setData({ thisMonthTotal: 0, lastMonthTotal: 0, changePct: null, businesses: [] }));
+
+  useEffect(() => {
+    loadData();
+    fetch("/api/segments")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const opts: SegmentOption[] = [];
+        for (const b of d?.businesses ?? []) {
+          for (const s of b.segments ?? []) opts.push({ id: s.id, name: `${b.name} — ${s.name}` });
+        }
+        setSegments(opts);
+      })
+      .catch(() => {});
   }, []);
+
+  const submitRevenue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!segmentId || !month) return;
+    setSaving(true);
+    const [y, m] = month.split("-").map(Number);
+    const periodStart = `${month}-01`;
+    const periodEnd = new Date(y, m, 0).toISOString().slice(0, 10); // last day of month
+    await fetch("/api/revenue-by-segment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        segmentId: Number(segmentId),
+        periodStart,
+        periodEnd,
+        revenueActual: actual ? Number(actual) : null,
+        revenueTarget: target ? Number(target) : null,
+      }),
+    }).catch(() => {});
+    setActual("");
+    setTarget("");
+    setSaving(false);
+    setShowForm(false);
+    loadData();
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -55,11 +105,89 @@ export default function RevenuePage() {
         </p>
       </div>
 
+      {/* Add revenue */}
+      <div className="mb-6">
+        {!showForm ? (
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1a2b4a] text-white rounded-lg text-sm hover:bg-[#1a2b4a]/90"
+          >
+            <Plus className="w-4 h-4" /> Record revenue
+          </button>
+        ) : (
+          <form
+            onSubmit={submitRevenue}
+            className="bg-white dark:bg-[#1A1A2E] rounded-2xl border border-gray-200/60 dark:border-[#c9a227]/20 shadow-sm p-5 flex flex-wrap items-end gap-3"
+          >
+            <label className="text-sm flex flex-col gap-1">
+              <span className="text-[#7b6b8d]">Segment</span>
+              <select
+                value={segmentId}
+                onChange={(e) => setSegmentId(e.target.value)}
+                required
+                className="px-3 py-2 bg-[#F8F5F0] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm min-w-[220px]"
+              >
+                <option value="">Select…</option>
+                {segments.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm flex flex-col gap-1">
+              <span className="text-[#7b6b8d]">Month</span>
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                required
+                className="px-3 py-2 bg-[#F8F5F0] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+              />
+            </label>
+            <label className="text-sm flex flex-col gap-1">
+              <span className="text-[#7b6b8d]">Actual ($)</span>
+              <input
+                type="number"
+                value={actual}
+                onChange={(e) => setActual(e.target.value)}
+                placeholder="0"
+                className="w-28 px-3 py-2 bg-[#F8F5F0] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+              />
+            </label>
+            <label className="text-sm flex flex-col gap-1">
+              <span className="text-[#7b6b8d]">Target ($)</span>
+              <input
+                type="number"
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                placeholder="0"
+                className="w-28 px-3 py-2 bg-[#F8F5F0] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={saving || !segmentId || !month}
+              className="px-4 py-2 bg-[#1a2b4a] text-white rounded-lg text-sm hover:bg-[#1a2b4a]/90 disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+      </div>
+
       {data === null ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : data.businesses.length === 0 ? (
         <p className="text-sm text-gray-400">
-          No revenue recorded yet. Add revenue in Finance and it will appear here.
+          No revenue recorded yet. Use &ldquo;Record revenue&rdquo; above to add your first entry.
         </p>
       ) : (
         <>

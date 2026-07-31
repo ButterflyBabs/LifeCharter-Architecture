@@ -1,7 +1,36 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
+
+// Record a revenue entry for a segment/period (feeds Financial Pulse + this page).
+export async function POST(request: Request) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
+  const supabase = createServerClient();
+  const body = await request.json().catch(() => ({}));
+  if (!body?.segmentId || !body?.periodStart || !body?.periodEnd) {
+    return NextResponse.json({ error: "segmentId, periodStart, periodEnd required" }, { status: 400 });
+  }
+  const { data, error } = await supabase
+    .from("segment_revenue")
+    .insert({
+      segment_id: body.segmentId,
+      period_start: body.periodStart,
+      period_end: body.periodEnd,
+      revenue_actual: body.revenueActual ?? null,
+      revenue_target: body.revenueTarget ?? null,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("POST /api/revenue-by-segment:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ id: data?.id, ok: true });
+}
 
 // Revenue drill-down: this-month actual vs target per business/segment,
 // with last-month totals for the month-over-month comparison.
