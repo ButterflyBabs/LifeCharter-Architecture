@@ -24,21 +24,20 @@ import {
 
 // Types
 interface Email {
-  id: number;
+  id: string;
   from: string;
   subject: string;
   preview: string;
   time: string;
   unread: boolean;
-  hasAttachment?: boolean;
-  tag?: "VIP" | "Action" | "FYI";
 }
 
-const initialEmails: Email[] = [
-  { id: 1, from: "Sarah Johnson", subject: "RE: Speaking opportunity - Denver Conference", preview: "Hi Babs, I have a question about the upcoming session...", time: "2 hours ago", unread: true, tag: "VIP" },
-  { id: 2, from: "Michael Chen", subject: "LifeCharter Incubator registration", preview: "I'd like to register for the Alignment Workshop on Friday...", time: "5 hours ago", unread: true, hasAttachment: true, tag: "Action" },
-  { id: 3, from: "Team Slack", subject: "Your weekly analytics report", preview: "Here are the notes from today's standup meeting...", time: "Yesterday", unread: false, tag: "FYI" },
-];
+interface ScheduleEvent {
+  id: string;
+  title: string;
+  time: string;
+  start: string | null;
+}
 
 // Real task from API
 interface RealTask {
@@ -65,11 +64,13 @@ export default function ExecutiveHome() {
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [userTimezone, setUserTimezone] = useState("America/Denver"); // Default to Babs' timezone
-  const [selectedEmail, setSelectedEmail] = useState<number | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [replyText, setReplyText] = useState("");
-  const [emails, setEmails] = useState<Email[]>(initialEmails);
+  const [emails, setEmails] = useState<Email[]>([]);
   const [replyingTo, setReplyingTo] = useState<Email | null>(null);
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
 
   // Initialize time on client side only
   useEffect(() => {
@@ -100,6 +101,28 @@ export default function ExecutiveHome() {
       .then((d) => d && setFinance(d))
       .catch(() => {});
   }, []);
+
+  // Fetch live Gmail inbox
+  useEffect(() => {
+    fetch("/api/inbox")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setGoogleConnected(Boolean(d.connected));
+        if (Array.isArray(d.emails)) setEmails(d.emails);
+      })
+      .catch(() => setGoogleConnected(false));
+  }, []);
+
+  // Fetch live Google Calendar (today)
+  useEffect(() => {
+    fetch("/api/schedule")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setSchedule(d))
+      .catch(() => {});
+  }, []);
+
+  const unreadCount = emails.filter((e) => e.unread).length;
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -254,7 +277,13 @@ export default function ExecutiveHome() {
                   <div className="w-11 h-11 rounded-full bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-[#7B6B8D]" />
                   </div>
-                  <span className="text-sm text-[#3F4654]">3 meetings today - first at 9:00 AM</span>
+                  <span className="text-sm text-[#3F4654]">
+                    {schedule?.connected
+                      ? schedule.events.length > 0
+                        ? `${schedule.events.length} ${schedule.events.length === 1 ? "meeting" : "meetings"} today — first at ${schedule.events[0].time}`
+                        : "No meetings today"
+                      : "Connect your calendar to see meetings"}
+                  </span>
                 </div>
 
                 {/* Row 2 - Tasks */}
@@ -288,24 +317,33 @@ export default function ExecutiveHome() {
             <h3 className="font-serif text-lg text-indigo-900">Today&apos;s Schedule</h3>
           </div>
           
-          {/* Schedule Items */}
+          {/* Schedule Items (live Google Calendar) */}
           <div className="px-6 pb-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#2E7C83] flex-shrink-0" />
-              <span className="text-sm text-[#3F4654]">9:00 AM - Team Standup</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#7B6B8D] flex-shrink-0" />
-              <span className="text-sm text-[#3F4654]">11:00 AM - Client Call</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#c9a227] flex-shrink-0" />
-              <span className="text-sm text-[#3F4654]">2:00 PM - Content Creation</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#1a2b4a] flex-shrink-0" />
-              <span className="text-sm text-[#3F4654]">4:00 PM - LifeCharter Circle</span>
-            </div>
+            {schedule && !schedule.connected ? (
+              <a
+                href="/api/google/auth"
+                className="flex items-center gap-2 text-sm text-[#2E7C83] hover:underline"
+              >
+                <Calendar className="w-4 h-4" /> Connect Google Calendar
+              </a>
+            ) : schedule && schedule.events.length === 0 ? (
+              <p className="text-sm text-gray-400">No meetings today</p>
+            ) : (
+              (schedule?.events ?? []).map((ev, i) => {
+                const dots = ["#2E7C83", "#7B6B8D", "#c9a227", "#1a2b4a"];
+                return (
+                  <div key={ev.id} className="flex items-center gap-3">
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: dots[i % dots.length] }}
+                    />
+                    <span className="text-sm text-[#3F4654]">
+                      {ev.time} - {ev.title}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* View Full Calendar Link */}
@@ -541,47 +579,60 @@ export default function ExecutiveHome() {
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0]">
             <div className="flex items-center gap-3">
               <h3 className="font-serif text-lg text-indigo-900">Inbox</h3>
-              <span className="px-2.5 py-1 bg-[#6F4A7C] text-white text-xs font-medium rounded-full">12 unread</span>
-              <span className="px-2.5 py-1 bg-[#2E7C83] text-white text-xs font-medium rounded-full">3 flagged</span>
+              {googleConnected && (
+                <span className="px-2.5 py-1 bg-[#6F4A7C] text-white text-xs font-medium rounded-full">
+                  {unreadCount} unread
+                </span>
+              )}
             </div>
             <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <MoreVertical className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
-          {/* Email List */}
+          {/* Email List (live Gmail) */}
           <div className="p-6 space-y-3">
-            {emails.map((email) => (
-              <div 
-                key={email.id}
-                onClick={() => setSelectedEmail(email.id)}
-                className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
-                  selectedEmail === email.id ? 'bg-white ring-2 ring-[#84AEB2]' : 'bg-[#F8F5F0] hover:bg-white'
-                }`}
+            {googleConnected === false ? (
+              <a
+                href="/api/google/auth"
+                className="flex flex-col items-center justify-center gap-2 py-8 text-center"
               >
-                <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-4 h-4 text-[#7A5D84]" />
+                <Mail className="w-6 h-6 text-[#7A5D84]" />
+                <span className="text-sm text-[#2E7C83] font-medium hover:underline">
+                  Connect Google to see your inbox
+                </span>
+              </a>
+            ) : emails.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">
+                {googleConnected ? "Inbox zero — nothing new" : "Loading…"}
+              </p>
+            ) : (
+              emails.map((email) => (
+                <div
+                  key={email.id}
+                  onClick={() => setSelectedEmail(email.id)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
+                    selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-4 h-4 text-[#7A5D84]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {email.unread && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 rounded-full bg-[#c9a227]" />
+                        <span className="text-[10px] text-[#7C7C82] font-medium">Unread</span>
+                      </div>
+                    )}
+                    <p className={`text-sm truncate ${email.unread ? "font-medium text-indigo-900" : "text-[#3F4654]"}`}>
+                      {email.subject}
+                    </p>
+                    <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  {email.tag && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                        email.tag === 'VIP' ? 'bg-[#EFE4F0] text-[#6E3F7A]' :
-                        email.tag === 'Action' ? 'bg-[#DCE9EE] text-[#6A9EA4]' :
-                        'bg-[#E7EAF0] text-[#7C7C82]'
-                      }`}>
-                        {email.tag}
-                      </span>
-                      {email.unread && <div className="w-2 h-2 rounded-full bg-[#c9a227]" />}
-                    </div>
-                  )}
-                  <p className={`text-sm truncate ${email.unread ? 'font-medium text-indigo-900' : 'text-[#3F4654]'}`}>
-                    {email.subject}
-                  </p>
-                  <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Action Buttons */}
