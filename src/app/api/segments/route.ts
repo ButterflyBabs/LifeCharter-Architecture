@@ -32,5 +32,5 @@ export async function GET() {
       return { ...b, segments };
     });
 
-  return NextResponse.json({ businesses });
+  return NextResponse.json({ businesses }, { headers: { "Cache-Control": "no-store" } });
 }

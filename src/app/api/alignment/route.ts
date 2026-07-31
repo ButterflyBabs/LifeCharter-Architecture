@@ -56,13 +56,16 @@ export async function GET() {
   const focusAreas = [...domains].sort((a, b) => a.score - b.score).slice(0, 3).map((d) => d.name);
   const status = phase(overall);
 
-  return NextResponse.json({
-    hasData: true,
-    overall,
-    status,
-    focusAreas,
-    description:
-      "Live from your segment dimension scores. Your lowest domains are where the next gains are — start there.",
-    domains,
-  });
+  return NextResponse.json(
+    {
+      hasData: true,
+      overall,
+      status,
+      focusAreas,
+      description:
+        "Live from your segment dimension scores. Your lowest domains are where the next gains are — start there.",
+      domains,
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

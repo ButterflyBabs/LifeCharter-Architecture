@@ -13,6 +13,10 @@ const PUBLIC_APIS = ["/api/google/callback"]; // Google redirects here without o
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
 
+  // API responses are live per-user data — never let the edge/browser cache them.
+  const isApi = request.nextUrl.pathname.startsWith("/api/");
+  if (isApi) response.headers.set("Cache-Control", "no-store, max-age=0");
+
   // Gate off → passthrough (safe default).
   if (process.env.AUTH_ENABLED !== "true") return response;
 
