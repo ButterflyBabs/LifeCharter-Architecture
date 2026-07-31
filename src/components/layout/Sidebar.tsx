@@ -32,9 +32,9 @@ import {
 } from "lucide-react";
 
 const navigationItems = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/" },
+  { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
+  { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
   { id: "assessments", label: "Assessments", icon: ClipboardList, href: "/assessments" },
-  { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
   { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
   { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
   { id: "sales", label: "Sales", icon: TrendingUp, href: "/sales" },
