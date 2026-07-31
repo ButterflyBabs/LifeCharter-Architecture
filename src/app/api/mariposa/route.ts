@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,16 @@ You help Babs (AmiLynne Carroll) run her day across her ventures under Sacred Ka
 Be warm, grounded, and concise. Prioritize one clear next action over long lists. Keep replies under 120 words unless asked for more. Sign off simply as "— Mariposa".`;
 
 export async function POST(request: Request) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
   const body = await request.json().catch(() => ({}));
   const message = body?.message;
-  if (!message) {
+  if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
+  }
+  if (message.length > 2000) {
+    return NextResponse.json({ error: "message too long" }, { status: 413 });
   }
 
   if (!process.env.OPENAI_API_KEY) {

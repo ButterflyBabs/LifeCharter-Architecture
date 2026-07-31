@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { getValidAccessToken, markRead } from "@/lib/google";
+import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
 // Removes the UNREAD label from a Gmail message (requires gmail.modify).
 export async function POST(request: Request) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
   const token = await getValidAccessToken();
   if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
 

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
 // Update a task's status/priority (used by the Tasks board).
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
   const supabase = createServerClient();
   const body = await request.json().catch(() => ({}));
 
@@ -29,7 +33,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   return NextResponse.json({ task: data });
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
   const supabase = createServerClient();
   const { error } = await supabase.from("tasks").delete().eq("id", params.id);
   if (error) {

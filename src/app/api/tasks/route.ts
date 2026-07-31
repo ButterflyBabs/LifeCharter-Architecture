@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { crossOriginBlocked } from "@/lib/security";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -40,6 +41,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
   const supabase = createServerClient();
   const body = await request.json().catch(() => ({}));
 
