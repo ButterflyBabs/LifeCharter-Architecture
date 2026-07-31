@@ -74,6 +74,7 @@ const navigationSections = [
     title: "SYSTEMS",
     color: "text-[#b8a898]",
     items: [
+      { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },

@@ -11,7 +11,9 @@ const SCOPES = [
   "openid",
   "email",
   "profile",
-  "https://www.googleapis.com/auth/gmail.readonly",
+  // modify covers reading + label changes (mark-read); send is needed for replies
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/calendar.readonly",
 ].join(" ");
 
@@ -131,7 +133,10 @@ export async function getValidAccessToken(): Promise<string | null> {
 // ---------------------------------------------------------------------------
 export type InboxEmail = {
   id: string;
+  threadId: string;
   from: string;
+  fromEmail: string;
+  messageId: string; // RFC822 Message-ID header, for threading replies
   subject: string;
   preview: string;
   time: string;
@@ -163,7 +168,7 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
   const results = await Promise.all(
     ids.map(async (id) => {
       const r = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=Message-ID`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (!r.ok) return null;
@@ -176,9 +181,13 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
       );
       const fromRaw = headers["from"] ?? "";
       const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
+      const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
       const email: InboxEmail = {
         id,
+        threadId: msg.threadId ?? "",
         from: fromName,
+        fromEmail,
+        messageId: headers["message-id"] ?? "",
         subject: headers["subject"] ?? "(no subject)",
         preview: msg.snippet ?? "",
         time: relativeTime(headers["date"]),
@@ -224,4 +233,48 @@ export async function fetchTodayEvents(accessToken: string): Promise<ScheduleEve
       start: e.start?.dateTime ?? e.start?.date ?? null,
     })
   );
+}
+
+// ---------------------------------------------------------------------------
+// Gmail writes (require gmail.modify / gmail.send scopes)
+// ---------------------------------------------------------------------------
+export async function markRead(accessToken: string, id: string): Promise<void> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ removeLabelIds: ["UNREAD"] }),
+    }
+  );
+  if (!r.ok) throw new Error(`gmail modify ${r.status}`);
+}
+
+function base64Url(str: string): string {
+  return Buffer.from(str, "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export async function sendReply(
+  accessToken: string,
+  opts: { threadId: string; to: string; subject: string; inReplyTo: string; body: string }
+): Promise<void> {
+  const subject = /^re:/i.test(opts.subject) ? opts.subject : `Re: ${opts.subject}`;
+  const headerLines = [
+    `To: ${opts.to}`,
+    `Subject: ${subject}`,
+    ...(opts.inReplyTo ? [`In-Reply-To: ${opts.inReplyTo}`, `References: ${opts.inReplyTo}`] : []),
+    "MIME-Version: 1.0",
+    'Content-Type: text/plain; charset="UTF-8"',
+  ].join("\r\n");
+  const raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw, threadId: opts.threadId || undefined }),
+  });
+  if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
 }

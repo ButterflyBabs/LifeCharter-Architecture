@@ -25,7 +25,10 @@ import {
 // Types
 interface Email {
   id: string;
+  threadId: string;
   from: string;
+  fromEmail: string;
+  messageId: string;
   subject: string;
   preview: string;
   time: string;
@@ -123,6 +126,50 @@ export default function ExecutiveHome() {
   }, []);
 
   const unreadCount = emails.filter((e) => e.unread).length;
+
+  const handleMarkRead = async () => {
+    const firstUnread = emails.find((e) => e.unread);
+    if (!firstUnread) {
+      alert("No unread emails!");
+      return;
+    }
+    setEmails((prev) => prev.map((e) => (e.id === firstUnread.id ? { ...e, unread: false } : e)));
+    try {
+      await fetch("/api/inbox/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: firstUnread.id }),
+      });
+    } catch {
+      /* optimistic — leave marked read locally */
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!replyingTo || !replyText.trim()) return;
+    try {
+      const res = await fetch("/api/inbox/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          threadId: replyingTo.threadId,
+          to: replyingTo.fromEmail,
+          subject: replyingTo.subject,
+          inReplyTo: replyingTo.messageId,
+          body: replyText,
+        }),
+      });
+      if (!res.ok) {
+        alert("Reply failed to send.");
+        return;
+      }
+      setEmails((prev) => prev.map((e) => (e.id === replyingTo.id ? { ...e, unread: false } : e)));
+      setReplyText("");
+      setShowReplyModal(false);
+    } catch {
+      alert("Reply failed to send.");
+    }
+  };
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -424,7 +471,7 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Notification Banner */}
-            <Link href="/dashboard/money">
+            <Link href="/revenue">
               <div className="flex items-center gap-3 p-3 bg-[#F8F5F0] rounded-xl border border-[#e8e4e0] hover:bg-[#f5f3ef] transition-colors cursor-pointer">
                 <Bell className="w-4 h-4 text-[#c9a227]" />
                 <span className="text-sm text-[#3F4654] flex-1">
@@ -653,16 +700,7 @@ export default function ExecutiveHome() {
               Quick Reply
             </button>
             <button 
-              onClick={() => {
-                const firstUnreadIndex = emails.findIndex(e => e.unread);
-                if (firstUnreadIndex >= 0) {
-                  const updatedEmails = [...emails];
-                  updatedEmails[firstUnreadIndex] = { ...updatedEmails[firstUnreadIndex], unread: false };
-                  setEmails(updatedEmails);
-                } else {
-                  alert("No unread emails!");
-                }
-              }}
+              onClick={handleMarkRead}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
             >
               <Check className="w-4 h-4" />
@@ -867,19 +905,7 @@ export default function ExecutiveHome() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    if (replyingTo) {
-                      // Mark as read when replying
-                      const updatedEmails = emails.map(e => 
-                        e.id === replyingTo.id ? { ...e, unread: false } : e
-                      );
-                      setEmails(updatedEmails);
-                    }
-                    alert("Reply sent!");
-                    setReplyText("");
-                    setReplyingTo(null);
-                    setShowReplyModal(false);
-                  }}
+                  onClick={handleSendReply}
                   disabled={!replyText.trim()}
                   className="flex-1 py-2.5 bg-indigo-900 text-white rounded-lg text-sm hover:bg-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
