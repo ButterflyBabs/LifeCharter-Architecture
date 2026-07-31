@@ -265,7 +265,7 @@ export default function ExecutiveHome() {
 
           {/* Create Content - Lavender */}
           <button 
-            onClick={() => window.location.href = "/dashboard/social"}
+            onClick={() => window.location.href = "/daily-compass/content-studio"}
             className="flex items-center gap-1 px-2 py-1.5 bg-[#f8f4fb] text-[#6b4b7c] border border-[#e8e0f0] rounded-md text-xs font-medium hover:bg-[#f0e8f8] transition-colors"
           >
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -288,7 +288,7 @@ export default function ExecutiveHome() {
       {/* TOP ROW - 3 Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Your Morning Brief - EXACT from new image */}
-        <Link href="/dashboard/planning" className="block">
+        <Link href="/business-plan" className="block">
           <div className="relative h-full">
             {/* Lavender sidebar panel with botanical art */}
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-[#E8E4F0]/60 rounded-l-2xl overflow-hidden">
@@ -396,7 +396,7 @@ export default function ExecutiveHome() {
           {/* View Full Calendar Link */}
           <div className="px-6 pb-5">
             <Link 
-              href="/dashboard/time"
+              href="/daily-compass/calendar"
               className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors font-medium"
             >
               View full calendar
@@ -410,7 +410,7 @@ export default function ExecutiveHome() {
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <h3 className="font-serif text-lg text-indigo-900">Financial Pulse</h3>
-            <Link href="/dashboard/money">
+            <Link href="/finance">
               <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
                 <MoreHorizontal className="w-5 h-5 text-gray-400" />
               </button>
@@ -500,7 +500,7 @@ export default function ExecutiveHome() {
                 Add Task
               </button>
               <Link 
-                href="/dashboard/tasks"
+                href="/tasks"
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <MoreVertical className="w-5 h-5 text-gray-400" />
@@ -515,7 +515,7 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#5E8C97] uppercase tracking-wider mb-4 text-center">TODAY</h4>
               {todayTasks.length > 0 ? (
                 todayTasks.map((task) => (
-                  <Link key={task.id} href={`/dashboard/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -530,7 +530,7 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/dashboard/tasks">
+                <Link href="/tasks">
                   <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start gap-2">
                       <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -551,7 +551,7 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#7C5D7A] uppercase tracking-wider mb-4 text-center">IN PROGRESS</h4>
               {inProgressTasks.length > 0 ? (
                 inProgressTasks.map((task) => (
-                  <Link key={task.id} href={`/dashboard/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -566,7 +566,7 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/dashboard/tasks">
+                <Link href="/tasks">
                   <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start gap-2">
                       <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -587,7 +587,7 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#8A8078] uppercase tracking-wider mb-4 text-center">WAITING</h4>
               {waitingTasks.length > 0 ? (
                 waitingTasks.map((task) => (
-                  <Link key={task.id} href={`/dashboard/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -602,7 +602,7 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/dashboard/tasks">
+                <Link href="/tasks">
                   <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start gap-2">
                       <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
@@ -711,7 +711,7 @@ export default function ExecutiveHome() {
       </div>
 
       {/* BOTTOM - AI Assistant Full Width */}
-      <Link href="/dashboard/ai" className="block">
+      <Link href="/ai-guide" className="block">
         <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
