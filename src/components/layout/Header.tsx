@@ -47,7 +47,7 @@ function titleForPath(pathname: string | null): string {
 
 export function Header({
   title,
-  workspace = "Soulful Solutions Co.",
+  workspace = "Sacred Kaleidoscope",
   notificationCount = 3,
 }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);

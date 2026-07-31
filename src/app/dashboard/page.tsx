@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   // Workspace state
   const [workspaces] = useState([
-    { id: "ws-1", name: "Soulful Solutions Co.", role: "Owner" },
+    { id: "ws-1", name: "Sacred Kaleidoscope", role: "Owner" },
     { id: "ws-2", name: "Sacred Kaleidoscope", role: "Admin" },
     { id: "ws-3", name: "LifeCharter Ventures", role: "Member" },
   ]);
@@ -292,10 +292,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-              Welcome back, Seraphina
+              12-Domain Business Alignment
             </h1>
             <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
-              Here&apos;s your business at a glance
+              Where your business is in and out of alignment — the strategic layer beneath your Executive Home.
             </p>
           </div>
           <p className="text-sm text-[#b8a898]">

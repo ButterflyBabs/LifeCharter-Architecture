@@ -268,7 +268,7 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                Seraphina Rose
+                AmiLynne Carroll
               </p>
               <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
                 Founder & CEO
@@ -279,7 +279,7 @@ export function Sidebar({ activeItem = "overview", onNavigate }: SidebarProps) {
 
           {/* Workspace Selector */}
           <div className="mt-2 px-4 py-2 text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <span className="text-[#b8a898]">Workspace:</span> Soulful Solutions Co.
+            <span className="text-[#b8a898]">Workspace:</span> Sacred Kaleidoscope
           </div>
         </div>
       </div>

@@ -33,6 +33,8 @@ import {
   Timer,
   Flag,
   Wallet,
+  Boxes,
+  BarChart3,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -44,7 +46,7 @@ const navigationSections = [
     title: "DAILY OPERATIONS",
     color: "text-[#c9a227]",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/" },
+      { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
     ],
   },
@@ -62,6 +64,8 @@ const navigationSections = [
     title: "ALIGNMENT",
     color: "text-[#7b6b8d]",
     items: [
+      { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
+      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
     ],
@@ -433,7 +437,7 @@ export function CollapsibleSidebar() {
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">Seraphina Rose</p>
+                <p className="text-sm font-medium text-white truncate">AmiLynne Carroll</p>
                 <p className="text-xs text-white/40 truncate">Founder &amp; CEO</p>
               </div>
             )}
@@ -443,7 +447,7 @@ export function CollapsibleSidebar() {
         {/* Workspace Selector - only when expanded */}
         {!isCollapsed && (
           <div className="px-4 py-1 text-xs text-white/40">
-            <span className="text-white/30">Workspace:</span> Soulful Solutions Co.
+            <span className="text-white/30">Workspace:</span> Sacred Kaleidoscope
           </div>
         )}
       </div>
