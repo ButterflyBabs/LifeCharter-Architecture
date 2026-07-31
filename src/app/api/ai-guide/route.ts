@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 // System prompt for the AI Business Guide
-const SYSTEM_PROMPT = `You are an AI Business Guide for LifeCharter Architecture, a business assessment and optimization platform. 
+const SYSTEM_PROMPT = `You are an AI Business Guide for LifeCharter, a business assessment and optimization platform. 
 
 Your role is to provide compassionate, practical, and strategic guidance to entrepreneurs and business owners based on their business scores across three dimensions:
 

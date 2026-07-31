@@ -34,7 +34,7 @@ export default function MilestonesHelpPage() {
 
   const faqs: FAQItem[] = [
     {
-      question: "What are Milestones in LifeCharter Architecture?",
+      question: "What are Milestones in LifeCharter?",
       answer: "Milestones are significant achievements and markers of progress in your business journey. They represent key accomplishments, transitions, and growth moments that deserve recognition. Milestones help you track progress, celebrate wins, and maintain momentum as you build your business. They range from small victories (first customer) to major achievements (hitting revenue goals, launching new products)."
     },
     {
@@ -116,7 +116,7 @@ export default function MilestonesHelpPage() {
       answer: "Absolutely! Small milestones are the building blocks of big achievements. Celebrating them: Reinforces positive behavior, Keeps motivation high, Creates a culture of progress, Makes the journey enjoyable. Celebration does not have to be elaborate—a moment of acknowledgment, a team message, a small treat. The point is to pause and recognize progress."
     },
     {
-      question: "How do I track Milestones in LifeCharter Architecture?",
+      question: "How do I track Milestones in LifeCharter?",
       answer: "Use the Milestones section of your Dashboard to: Set and view upcoming milestones, Track progress toward each milestone, Record completion dates, Celebrate achievements, Review milestone history. Connect milestones to specific domains so you can see how they impact your business health scores. The AI Guide can also suggest milestones based on your current domain scores."
     }
   ];
@@ -401,7 +401,7 @@ export default function MilestonesHelpPage() {
         <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
           &ldquo;Success is the sum of small efforts, repeated day in and day out. Milestones mark the path.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
       </div>
     </div>
   );

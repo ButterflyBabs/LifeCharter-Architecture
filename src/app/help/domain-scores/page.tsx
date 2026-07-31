@@ -34,7 +34,7 @@ export default function DomainScoresHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What are Domain Scores?",
-      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter Architecture framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
+      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
     },
     {
       question: "How are Domain Scores calculated?",
@@ -157,7 +157,7 @@ export default function DomainScoresHelpPage() {
         <CardContent className="space-y-4">
           <p className="text-[#1F315B] dark:text-[#F6F1E8] leading-relaxed">
             <strong>Domain Scores</strong> provide a numerical snapshot (0-100) of each of the 12 business domains 
-            in your LifeCharter Architecture. Think of them as vital signs for your business—each score tells you 
+            in your LifeCharter. Think of them as vital signs for your business—each score tells you 
             how healthy, mature, and aligned that specific area is.
           </p>
           
@@ -410,7 +410,7 @@ export default function DomainScoresHelpPage() {
         <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
           &ldquo;What gets measured gets managed. Domain Scores turn business intuition into actionable data.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
       </div>
     </div>
   );

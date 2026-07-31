@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget";
 
 export const metadata: Metadata = {
-  title: "LifeCharter Architecture",
+  title: "LifeCharter",
   description: "Align your business with your vision",
 };
 

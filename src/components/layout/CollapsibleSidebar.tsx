@@ -211,10 +211,8 @@ export function CollapsibleSidebar() {
         "fixed left-0 top-0 h-full bg-[#F6F1E8] border-r border-[#D4AF63]/20 flex flex-col z-50 transition-all duration-300",
         isCollapsed ? "w-16" : "w-64"
       )}>
-        <div className="p-4 border-b border-[#D4AF63]/20">
-          <div className="w-8 h-8 rounded-full bg-[#1F315B] flex items-center justify-center">
-            <span className="text-[#D4AF63] font-bold text-sm">LC</span>
-          </div>
+        <div className="border-b border-[#D4AF63]/20">
+          <img src="/logo.jpg" alt="LifeCharter" className="w-full h-auto object-cover" />
         </div>
       </aside>
     );
@@ -227,44 +225,36 @@ export function CollapsibleSidebar() {
     )}>
       {/* Logo Area & Toggle */}
       <div className={cn(
-        "border-b border-[#D4AF63]/20 flex items-center justify-between",
-        isCollapsed ? "p-2" : "p-4"
+        "flex flex-col",
+        isCollapsed ? "p-2" : "p-0"
       )}>
-        {!isCollapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#1F315B] flex items-center justify-center flex-shrink-0">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-6 h-6 text-[#D4AF63]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 2v20M2 12h20" />
-                <path d="M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="font-serif text-lg font-bold text-[#1F315B] dark:text-[#F6F1E8]">
-                LifeCharter
-              </h1>
-              <p className="text-xs text-[#5E3B6C] dark:text-[#CDBED6]">Architecture</p>
-            </div>
-          </div>
-        )}
-        {isCollapsed && (
-          <div className="w-10 h-10 rounded-full bg-[#1F315B] flex items-center justify-center mx-auto">
-            <span className="text-[#D4AF63] font-bold text-sm">LC</span>
-          </div>
-        )}
+        {/* Logo - Full Width, Inherit Background */}
+        <div className={cn(
+          "w-full bg-inherit",
+          isCollapsed ? "p-1" : "p-0"
+        )}>
+          {!isCollapsed && (
+            <img 
+              src="/logo.jpg" 
+              alt="LifeCharter" 
+              className="w-full h-auto object-cover"
+            />
+          )}
+          {isCollapsed && (
+            <img 
+              src="/logo.jpg" 
+              alt="LifeCharter" 
+              className="w-full h-auto object-cover rounded-md"
+            />
+          )}
+        </div>
         
         {/* Collapse/Expand Button */}
         <button
           onClick={toggleSidebar}
           className={cn(
-            "p-1.5 rounded-lg text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors",
-            isCollapsed && "mx-auto"
+            "p-1.5 rounded-lg text-[#1F315B] dark:text-[#CDBED6] hover:bg-[#1F315B]/10 dark:hover:bg-[#CDBED6]/10 transition-colors self-end",
+            isCollapsed && "mx-auto self-center mt-2"
           )}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

@@ -435,7 +435,7 @@ export default function RevenueSnapshotHelpPage() {
         <blockquote className="text-lg italic text-[#5E3B6C] dark:text-[#CDBED6] border-l-4 border-[#D4AF63] pl-4 inline-block">
           &ldquo;Revenue is the lifeblood of business. Visibility into revenue is the heartbeat of smart decisions.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#B9A9A9] mt-2">— LifeCharter Team</p>
       </div>
     </div>
   );
