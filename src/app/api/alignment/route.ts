@@ -56,6 +56,8 @@ export async function GET() {
   const focusAreas = [...domains].sort((a, b) => a.score - b.score).slice(0, 3).map((d) => d.name);
   const status = phase(overall);
 
+  console.log(`[alignment] overall=${overall} rows=${data.length} focus=${focusAreas.join(",")}`);
+
   return NextResponse.json(
     {
       hasData: true,

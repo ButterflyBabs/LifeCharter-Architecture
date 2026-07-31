@@ -53,7 +53,7 @@ export function NextThreeMoves({ moves: movesProp }: NextThreeMovesProps) {
 
   useEffect(() => {
     if (movesProp) return;
-    fetch("/api/next-moves", { cache: "no-store" })
+    fetch("/api/next-moves?ts=" + Date.now(), { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setFetched(d?.moves?.length ? d.moves : defaultMoves))
       .catch(() => setFetched(defaultMoves));

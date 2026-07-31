@@ -50,7 +50,7 @@ export function DomainScores(props: DomainScoresProps) {
 
   useEffect(() => {
     if (props.scores) return;
-    fetch("/api/alignment", { cache: "no-store" })
+    fetch("/api/alignment?ts=" + Date.now(), { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) {

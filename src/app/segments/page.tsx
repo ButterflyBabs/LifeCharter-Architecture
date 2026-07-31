@@ -58,7 +58,7 @@ export default function SegmentsPage() {
   const [saving, setSaving] = useState(false);
 
   const load = () =>
-    fetch("/api/segments", { cache: "no-store" })
+    fetch("/api/segments?ts=" + Date.now(), { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setBusinesses(d?.businesses ?? []))
       .catch(() => setBusinesses([]));
