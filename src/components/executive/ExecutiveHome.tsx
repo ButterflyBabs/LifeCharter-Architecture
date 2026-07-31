@@ -77,6 +77,14 @@ export default function ExecutiveHome() {
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
+  const [briefOrder, setBriefOrder] = useState<string[]>([
+    "brief",
+    "schedule",
+    "financial",
+    "tasks",
+    "inbox",
+  ]);
+  const [dragId, setDragId] = useState<string | null>(null);
 
   // Initialize time on client side only
   useEffect(() => {
@@ -115,6 +123,39 @@ export default function ExecutiveHome() {
       .then((d) => d?.firstName && setFirstName(d.firstName))
       .catch(() => {});
   }, []);
+
+  // Restore saved briefing-card order
+  useEffect(() => {
+    const saved = localStorage.getItem("exec-brief-order");
+    if (saved) {
+      try {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr)) setBriefOrder(arr);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const dropOn = (targetId: string) => {
+    if (!dragId || dragId === targetId) return;
+    setBriefOrder((order) => {
+      const next = order.filter((x) => x !== dragId);
+      const idx = next.indexOf(targetId);
+      next.splice(idx < 0 ? next.length : idx, 0, dragId);
+      localStorage.setItem("exec-brief-order", JSON.stringify(next));
+      return next;
+    });
+    setDragId(null);
+  };
+
+  // Wrapper props that make a briefing card a draggable, drop-target grid item.
+  const briefCardProps = (id: string) => ({
+    style: { order: briefOrder.indexOf(id) },
+    onDragOver: (e: React.DragEvent) => e.preventDefault(),
+    onDrop: () => dropOn(id),
+    className: "relative group",
+  });
 
   // Fetch live Gmail inbox
   useEffect(() => {
@@ -316,9 +357,11 @@ export default function ExecutiveHome() {
         </div>
       </header>
 
-      {/* TOP ROW - 3 Cards */}
+      {/* Executive Briefing — draggable cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
-        {/* Your Morning Brief - EXACT from new image */}
+        {/* Your Morning Brief */}
+        <div {...briefCardProps("brief")}>
+          <button draggable onDragStart={() => setDragId("brief")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <Link href="/business-plan" className="block">
           <div className="relative h-full">
             {/* Lavender sidebar panel with botanical art */}
@@ -387,8 +430,11 @@ export default function ExecutiveHome() {
             </div>
           </div>
         </Link>
+        </div>
 
-        {/* Today's Schedule - EXACT from image */}
+        {/* Today's Schedule */}
+        <div {...briefCardProps("schedule")}>
+          <button draggable onDragStart={() => setDragId("schedule")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3">
@@ -435,8 +481,11 @@ export default function ExecutiveHome() {
             </Link>
           </div>
         </div>
+        </div>
 
-        {/* Financial Pulse - EXACT from image */}
+        {/* Financial Pulse */}
+        <div {...briefCardProps("financial")}>
+          <button draggable onDragStart={() => setDragId("financial")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
@@ -513,11 +562,11 @@ export default function ExecutiveHome() {
             </Link>
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* SECOND ROW - 2 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-        {/* Priority Tasks - EXACT from image with real data */}
+        {/* Priority Tasks */}
+        <div {...briefCardProps("tasks")}>
+          <button draggable onDragStart={() => setDragId("tasks")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header with lighter background */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0] bg-[#FFFFFF]">
@@ -650,8 +699,11 @@ export default function ExecutiveHome() {
             </div>
           </div>
         </div>
+        </div>
 
-        {/* Inbox - EXACT from image */}
+        {/* Inbox */}
+        <div {...briefCardProps("inbox")}>
+          <button draggable onDragStart={() => setDragId("inbox")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0]">
@@ -738,6 +790,7 @@ export default function ExecutiveHome() {
               Mark Read
             </button>
           </div>
+        </div>
         </div>
       </div>
 
