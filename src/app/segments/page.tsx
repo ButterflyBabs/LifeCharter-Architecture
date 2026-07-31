@@ -47,13 +47,42 @@ function avg(dims: DimensionScore[]) {
 
 export default function SegmentsPage() {
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editScores, setEditScores] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const load = () =>
     fetch("/api/segments")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setBusinesses(d?.businesses ?? []))
       .catch(() => setBusinesses([]));
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const startEdit = (seg: Segment) => {
+    const byKey = new Map((seg.segment_dimensions ?? []).map((d) => [d.dimension_key, d.score]));
+    const scores: Record<string, number> = {};
+    for (const k of DIMENSION_ORDER) scores[k] = byKey.get(k) ?? 70;
+    setEditScores(scores);
+    setEditingId(seg.id);
+  };
+
+  const saveEdit = async (segId: number) => {
+    setSaving(true);
+    await fetch("/api/segments/dimensions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        segmentId: segId,
+        dimensions: DIMENSION_ORDER.map((k) => ({ key: k, score: editScores[k] ?? 70 })),
+      }),
+    }).catch(() => {});
+    setSaving(false);
+    setEditingId(null);
+    load();
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -111,24 +140,72 @@ export default function SegmentsPage() {
                         )}
                       </div>
 
-                      {/* 12-dimension strip */}
-                      <div className="grid grid-cols-12 gap-1">
-                        {DIMENSION_ORDER.map((key) => {
-                          const d = byKey.get(key);
-                          const color = d ? HEALTH_COLOR[d.health] ?? "#9DA890" : "#E8E4E0";
-                          return (
-                            <div
-                              key={key}
-                              title={d ? `${label(key)}: ${d.score}` : label(key)}
-                              className="h-6 rounded"
-                              style={{ backgroundColor: color, opacity: d ? 0.35 + (d.score / 100) * 0.65 : 0.3 }}
-                            />
-                          );
-                        })}
-                      </div>
-                      <p className="mt-2 text-[11px] text-[#7C7C82]">
-                        12 dimensions · hover a bar for its score
-                      </p>
+                      {editingId === seg.id ? (
+                        <div className="space-y-1.5">
+                          {DIMENSION_ORDER.map((key) => (
+                            <div key={key} className="flex items-center gap-2">
+                              <span className="text-[11px] text-[#3F4654] dark:text-[#e8e4f0] w-24 truncate">
+                                {label(key)}
+                              </span>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={editScores[key] ?? 70}
+                                onChange={(e) =>
+                                  setEditScores((p) => ({ ...p, [key]: Number(e.target.value) }))
+                                }
+                                className="flex-1 accent-[#2E7C83]"
+                              />
+                              <span className="text-[11px] text-[#1a2b4a] dark:text-[#F8F5F0] w-7 text-right">
+                                {editScores[key] ?? 70}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              onClick={() => saveEdit(seg.id)}
+                              disabled={saving}
+                              className="flex-1 py-1.5 bg-[#1a2b4a] text-white rounded-md text-xs hover:bg-[#1a2b4a]/90 disabled:opacity-50"
+                            >
+                              {saving ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="flex-1 py-1.5 border border-gray-200 text-gray-600 rounded-md text-xs hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* 12-dimension strip */}
+                          <div className="grid grid-cols-12 gap-1">
+                            {DIMENSION_ORDER.map((key) => {
+                              const d = byKey.get(key);
+                              const color = d ? HEALTH_COLOR[d.health] ?? "#9DA890" : "#E8E4E0";
+                              return (
+                                <div
+                                  key={key}
+                                  title={d ? `${label(key)}: ${d.score}` : label(key)}
+                                  className="h-6 rounded"
+                                  style={{ backgroundColor: color, opacity: d ? 0.35 + (d.score / 100) * 0.65 : 0.3 }}
+                                />
+                              );
+                            })}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <p className="text-[11px] text-[#7C7C82]">12 dimensions · hover a bar</p>
+                            <button
+                              onClick={() => startEdit(seg)}
+                              className="text-[11px] text-[#2E7C83] hover:underline"
+                            >
+                              Edit scores
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })}
