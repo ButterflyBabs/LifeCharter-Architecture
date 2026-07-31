@@ -21,7 +21,7 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
 
   useEffect(() => {
     if (props.score !== undefined) return;
-    fetch("/api/alignment")
+    fetch("/api/alignment", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) setLive(d);

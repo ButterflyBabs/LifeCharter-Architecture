@@ -45,6 +45,12 @@ function avg(dims: DimensionScore[]) {
   return Math.round(dims.reduce((s, d) => s + d.score, 0) / dims.length);
 }
 
+function healthFor(score: number): "healthy" | "attention" | "at_risk" {
+  if (score < 60) return "at_risk";
+  if (score < 80) return "attention";
+  return "healthy";
+}
+
 export default function SegmentsPage() {
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -52,7 +58,7 @@ export default function SegmentsPage() {
   const [saving, setSaving] = useState(false);
 
   const load = () =>
-    fetch("/api/segments")
+    fetch("/api/segments", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setBusinesses(d?.businesses ?? []))
       .catch(() => setBusinesses([]));
@@ -71,6 +77,11 @@ export default function SegmentsPage() {
 
   const saveEdit = async (segId: number) => {
     setSaving(true);
+    const newDims = DIMENSION_ORDER.map((k) => ({
+      dimension_key: k,
+      score: editScores[k] ?? 70,
+      health: healthFor(editScores[k] ?? 70),
+    }));
     await fetch("/api/segments/dimensions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,6 +90,15 @@ export default function SegmentsPage() {
         dimensions: DIMENSION_ORDER.map((k) => ({ key: k, score: editScores[k] ?? 70 })),
       }),
     }).catch(() => {});
+    // Reflect the change immediately, then reconcile with a fresh fetch.
+    setBusinesses((prev) =>
+      prev?.map((b) => ({
+        ...b,
+        segments: b.segments.map((s) =>
+          s.id === segId ? { ...s, segment_dimensions: newDims } : s
+        ),
+      })) ?? null
+    );
     setSaving(false);
     setEditingId(null);
     load();

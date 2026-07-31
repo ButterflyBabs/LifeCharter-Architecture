@@ -92,7 +92,7 @@ export default function DimensionCards() {
         /* ignore */
       }
     }
-    fetch("/api/alignment")
+    fetch("/api/alignment", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) {

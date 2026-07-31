@@ -69,7 +69,7 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
 
   useEffect(() => {
     if (propData) return;
-    fetch("/api/alignment")
+    fetch("/api/alignment", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) {
