@@ -55,6 +55,13 @@ export async function resolveMasterPlanId(): Promise<string | null> {
 
   const supabase = createServerClient();
 
+  // A master plan's user_id references profiles(id), so the profile row must
+  // exist before we can claim/create a plan for this user. Ensure it (there's
+  // no signup trigger creating it).
+  await supabase
+    .from("profiles")
+    .upsert({ id: user.id, email: user.email ?? "" }, { onConflict: "id" });
+
   // 1. Their own plan.
   const { data: mine } = await supabase
     .from("client_master_plans")
@@ -75,10 +82,11 @@ export async function resolveMasterPlanId(): Promise<string | null> {
       .limit(1)
       .maybeSingle();
     if (primary?.id) {
-      await supabase
+      const { error: claimErr } = await supabase
         .from("client_master_plans")
         .update({ user_id: user.id, client_email: user.email })
         .eq("id", primary.id);
+      if (claimErr) console.error("resolveMasterPlanId claim:", claimErr.message);
       return primary.id as string;
     }
   }
