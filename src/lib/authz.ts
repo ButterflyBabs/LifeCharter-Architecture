@@ -12,20 +12,19 @@ export function authEnabled(): boolean {
   return process.env.AUTH_ENABLED === "true";
 }
 
-function superAdminEmails(): string[] {
+export function superAdminEmails(): string[] {
   return (process.env.SUPER_ADMIN_EMAILS || process.env.ALLOWED_EMAIL || "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 }
 
-export async function isSuperAdmin(): Promise<boolean> {
-  if (!authEnabled()) return true; // single-user owner context
-
+// The signed-in user (id + email) from the request cookies, or null. Null when
+// auth is off, misconfigured, or nobody is signed in.
+export async function sessionUser(): Promise<{ id: string; email: string | null } | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return false;
-
+  if (!url || !key) return null;
   try {
     const cookieStore = cookies();
     const supabase = createServerClient(url, key, {
@@ -38,13 +37,22 @@ export async function isSuperAdmin(): Promise<boolean> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const email = user?.email?.toLowerCase();
-    if (!email) return false;
-    const admins = superAdminEmails();
-    // No list configured → any authenticated user (dev convenience). With a list,
-    // only listed emails qualify.
-    return admins.length === 0 ? true : admins.includes(email);
+    if (!user) return null;
+    return { id: user.id, email: user.email ?? null };
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function isOwnerEmail(email: string | null | undefined): boolean {
+  const admins = superAdminEmails();
+  if (admins.length === 0) return true; // no list configured → treat as owner (dev convenience)
+  return Boolean(email && admins.includes(email.toLowerCase()));
+}
+
+export async function isSuperAdmin(): Promise<boolean> {
+  if (!authEnabled()) return true; // single-user owner context
+  const user = await sessionUser();
+  if (!user?.email) return false;
+  return isOwnerEmail(user.email);
 }

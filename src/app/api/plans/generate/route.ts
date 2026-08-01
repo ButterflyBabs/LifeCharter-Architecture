@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
-import { getOrCreatePrimaryMasterPlan } from "@/lib/scoring/masterPlan";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
 import { generatePlan, PlanType } from "@/lib/plans/generatePlan";
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "planType must be business, marketing, or sales" }, { status: 400 });
   }
 
-  const planId = await getOrCreatePrimaryMasterPlan();
+  const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "no master plan" }, { status: 500 });
 
   const supabase = createServerClient();
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   }
 
   // Current 12-dimension scores (weakest-first steering happens in the generator).
-  const computed = await gatherAndCompute();
+  const computed = await gatherAndCompute(planId);
   const scores = computed.domains.map((d) => ({ key: d.key, label: d.label, score: d.score }));
 
   const generated = await generatePlan({ planType, scores, answers });

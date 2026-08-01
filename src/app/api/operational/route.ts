@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { getOrCreatePrimaryMasterPlan } from "@/lib/scoring/masterPlan";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "no numeric metrics provided" }, { status: 400 });
     }
 
-    const planId = await getOrCreatePrimaryMasterPlan();
+    const planId = await resolveMasterPlanId();
     if (!planId) return NextResponse.json({ error: "no master plan" }, { status: 500 });
 
     const supabase = createServerClient();

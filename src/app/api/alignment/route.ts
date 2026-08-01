@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,8 @@ export async function GET() {
   // Scores come only from completed assessments — no manual-slider fallback.
   // When nothing has been assessed, the UI shows an "assessments required" state.
   try {
-    const computed = await gatherAndCompute();
+    const planId = await resolveMasterPlanId();
+    const computed = await gatherAndCompute(planId);
     if (computed.hasData && computed.overall !== null) {
       const domains = computed.domains
         .filter((d) => d.score !== null)

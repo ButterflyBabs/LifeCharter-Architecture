@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { getOrCreatePrimaryMasterPlan } from "@/lib/scoring/masterPlan";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { captureSnapshot } from "@/lib/scoring/snapshot";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
@@ -17,13 +17,13 @@ type GoalStatus = "not_started" | "in_progress" | "met" | "slipped";
 const STATUSES: GoalStatus[] = ["not_started", "in_progress", "met", "slipped"];
 
 export async function GET() {
-  const planId = await getOrCreatePrimaryMasterPlan();
+  const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "no master plan" }, { status: 500 });
 
   const supabase = createServerClient();
 
   // Current (live) scores.
-  const computed = await gatherAndCompute();
+  const computed = await gatherAndCompute(planId);
   const latestDomains: Record<string, number> = {};
   for (const d of computed.domains) {
     if (d.score !== null && Number.isFinite(d.score)) latestDomains[d.key] = Math.round(d.score);

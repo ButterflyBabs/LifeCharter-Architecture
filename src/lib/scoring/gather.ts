@@ -29,13 +29,16 @@ const NUM_TO_PROFIT: Record<number, string> = {
 
 type Supa = ReturnType<typeof createServerClient>;
 
-async function latestMasterPlan(supabase: Supa) {
-  const { data } = await supabase
+async function latestMasterPlan(supabase: Supa, planId?: string | null) {
+  let query = supabase
     .from("client_master_plans")
-    .select("id, domain_scores, metadata, last_assessment_at, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select("id, domain_scores, metadata, last_assessment_at, updated_at");
+  // Scope to a specific plan when given (per-user); otherwise fall back to the
+  // most-recently-updated plan (single-user / auth-off).
+  query = planId
+    ? query.eq("id", planId)
+    : query.order("updated_at", { ascending: false }).limit(1);
+  const { data } = await query.maybeSingle();
   return data as
     | {
         id: string;
@@ -80,14 +83,15 @@ function profitFromMasterPlan(mp: Awaited<ReturnType<typeof latestMasterPlan>>):
   return out;
 }
 
-async function pulseAnswers(supabase: Supa): Promise<ScoringInputs["pulse"]> {
+async function pulseAnswers(supabase: Supa, planId?: string | null): Promise<ScoringInputs["pulse"]> {
   // Best-effort: read the latest check-in's per-item responses if present.
-  const { data } = await supabase
+  let q = supabase
     .from("quick_pulse_checkins")
     .select("responses, created_at")
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  if (planId) q = q.eq("master_plan_id", planId);
+  const { data } = await q.maybeSingle();
   const row = data as { responses: unknown; created_at: string } | null;
   if (!row?.responses) return [];
   const out: ScoringInputs["pulse"] = [];
@@ -108,11 +112,13 @@ async function pulseAnswers(supabase: Supa): Promise<ScoringInputs["pulse"]> {
   return out;
 }
 
-async function brainAnswers(supabase: Supa): Promise<ScoringInputs["brain"]> {
-  const { data } = await supabase
+async function brainAnswers(supabase: Supa, planId?: string | null): Promise<ScoringInputs["brain"]> {
+  let q = supabase
     .from("unified_client_responses")
     .select("section_name, score, max_score, answered_at")
     .eq("assessment_type", "brain");
+  if (planId) q = q.eq("master_plan_id", planId);
+  const { data } = await q;
   const rows = (data ?? []) as Array<{
     section_name: string | null;
     score: number | null;
@@ -131,10 +137,16 @@ async function brainAnswers(supabase: Supa): Promise<ScoringInputs["brain"]> {
     }));
 }
 
-export async function gatherAndCompute(): Promise<ScoringOutput & { masterPlanId: string | null }> {
+export async function gatherAndCompute(
+  planId?: string | null
+): Promise<ScoringOutput & { masterPlanId: string | null }> {
   const supabase = createServerClient();
-  const mp = await latestMasterPlan(supabase);
-  const [pulse, brain] = await Promise.all([pulseAnswers(supabase), brainAnswers(supabase)]);
+  const mp = await latestMasterPlan(supabase, planId);
+  const scopeId = mp?.id ?? planId ?? null;
+  const [pulse, brain] = await Promise.all([
+    pulseAnswers(supabase, scopeId),
+    brainAnswers(supabase, scopeId),
+  ]);
 
   const inputs: ScoringInputs = {
     profitDomains: profitFromMasterPlan(mp),
