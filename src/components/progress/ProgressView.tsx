@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, Target, Sparkles } from "lucide-react";
+import ProgressTrend from "./ProgressTrend";
 
 interface Dim {
   key: string;
@@ -16,6 +17,12 @@ interface PlanExec {
   version: number;
   goals: { total: number; not_started: number; in_progress: number; met: number; slipped: number };
 }
+interface HistoryPoint {
+  at: string;
+  type: string;
+  overall: number | null;
+  domains: Record<string, number>;
+}
 interface Progress {
   hasBaseline: boolean;
   baselineAt: string | null;
@@ -25,6 +32,7 @@ interface Progress {
     totals: { total: number; not_started: number; in_progress: number; met: number; slipped: number };
     plans: PlanExec[];
   };
+  history: HistoryPoint[];
 }
 
 function DeltaBadge({ delta }: { delta: number | null }) {
@@ -128,6 +136,9 @@ export default function ProgressView() {
               <div>Now: {data.overall.latest ?? "—"}</div>
             </div>
           </div>
+
+          {/* Trend line over recorded check-ins */}
+          <ProgressTrend history={data.history ?? []} />
 
           {/* Per-dimension */}
           <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7C7C82] mb-3">

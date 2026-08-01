@@ -51,6 +51,24 @@ export async function GET() {
   const baseDomains = (baseline?.domains ?? {}) as Record<string, number>;
   const hasBaseline = Boolean(baseline);
 
+  // Full dated history for the trend line (baseline + every check-in/recompute).
+  const { data: snaps } = await supabase
+    .from("client_score_snapshots")
+    .select("snapshot_type, overall, domains, created_at")
+    .eq("master_plan_id", planId)
+    .order("created_at", { ascending: true });
+  const history = ((snaps ?? []) as Array<{
+    snapshot_type: string;
+    overall: number | null;
+    domains: Record<string, number>;
+    created_at: string;
+  }>).map((s) => ({
+    at: s.created_at,
+    type: s.snapshot_type,
+    overall: s.overall,
+    domains: s.domains ?? {},
+  }));
+
   // Per-dimension change since baseline (only dimensions with a current score).
   const dimensions = computed.domains
     .filter((d) => d.score !== null)
@@ -118,6 +136,7 @@ export async function GET() {
       overall: { baseline: overallBase, latest: overallLatest, delta: overallBase === null || overallLatest === null ? null : overallLatest - overallBase },
       dimensions,
       execution,
+      history,
     },
     { headers: { "Cache-Control": "no-store" } }
   );
