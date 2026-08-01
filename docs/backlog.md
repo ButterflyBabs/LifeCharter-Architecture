@@ -2,6 +2,21 @@
 
 Captured before deploy so nothing is lost. Not in scope for the current PR.
 
+## Done since this doc was written
+- **Brain AI scoring** — shipped (composite `dimension:kind` keys; recompute scores Soul + Brain).
+- **Operational data entry** — shipped (`/api/operational` → Finance/Systems/Sales from real metrics).
+- **Slider retirement** — shipped (assessments required; AI mirrors into segments; sticky coach override).
+- **Zero-temperature scoring** — shipped (`SCORING_TEMPERATURE` env toggle, defaults to 0 → stable run-to-run).
+- **Super-admin coach override** — shipped (`isSuperAdmin`; only super admins can override; control hidden otherwise).
+- **Phase 2A recurring check-in loop** — shipped (`cadence.ts`, `/api/checkins`, "Your Check-in Rhythm" card on /assessments: monthly pulse, quarterly profit, semi-annual brain, annual soul).
+
+## Phase 2B — adaptive AI assessments (next)
+Turn the static 264-Q Soul / 325-Q Brain forms into AI-guided conversations that
+adapt to the client's answers (skip irrelevant branches, ask follow-ups, keep the
+same per-dimension scoring). Design decision still open — see the assistant's note
+(conversational rewrite vs. adaptive branching over the existing bank vs. an AI
+follow-up layer on top of the current forms).
+
 ## Multi-account / multi-provider email & calendar
 Today the integration connects exactly ONE Google account (google_credentials
 keyed account_key='primary') and reads Gmail + Google Calendar only. Planned:
