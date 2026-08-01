@@ -47,6 +47,26 @@ const PLAN_BRIEF: Record<PlanType, string> = {
     "a sales plan: the offer ladder and pricing, a predictable pipeline and qualification process, conversion, and follow-up — concrete enough to act on this quarter.",
 };
 
+// Map a model-supplied dimension name to one of the allowed dimension keys.
+// The model often returns a label ("Team & Culture") or a near-key
+// ("team_culture") instead of the exact key ("team"); normalize and match by
+// key, then by dimension label, so goals reliably tie to a dimension.
+function resolveDimension(raw: unknown, focus: DimensionKey[]): string | null {
+  if (typeof raw !== "string") return null;
+  const s = raw.trim().toLowerCase().replace(/[\s&/]+/g, "_");
+  if (!s) return null;
+  for (const k of focus) {
+    if (s === k || s.startsWith(k) || s.includes(k)) return k;
+  }
+  for (const k of focus) {
+    const lbl = (DIMENSION_LABEL as Record<string, string>)[k]?.toLowerCase();
+    if (lbl && (s.includes(lbl.replace(/\s+/g, "_")) || lbl.includes(raw.trim().toLowerCase()))) {
+      return k;
+    }
+  }
+  return null;
+}
+
 export interface PlanInputs {
   planType: PlanType;
   scores: Array<{ key: string; label: string; score: number | null }>;
@@ -110,13 +130,10 @@ ${evidence}`;
       goals?: unknown;
     };
 
-    const allowed = new Set<string>(focus);
     const goals: GeneratedGoal[] = Array.isArray(parsed.goals)
       ? (parsed.goals as Array<Record<string, unknown>>)
           .map((g) => {
-            const dk = typeof g.dimension_key === "string" && allowed.has(g.dimension_key)
-              ? g.dimension_key
-              : null;
+            const dk = resolveDimension(g.dimension_key, focus);
             const title = typeof g.title === "string" ? g.title.trim().slice(0, 120) : "";
             if (!title) return null;
             return {
