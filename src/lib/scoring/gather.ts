@@ -10,6 +10,7 @@
 
 import { createServerClient } from "@/lib/supabase/server";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
+import { DimensionKey } from "./dimensionModel";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -32,7 +33,7 @@ type Supa = ReturnType<typeof createServerClient>;
 async function latestMasterPlan(supabase: Supa) {
   const { data } = await supabase
     .from("client_master_plans")
-    .select("id, domain_scores, last_assessment_at, updated_at")
+    .select("id, domain_scores, metadata, last_assessment_at, updated_at")
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -40,10 +41,25 @@ async function latestMasterPlan(supabase: Supa) {
     | {
         id: string;
         domain_scores: Record<string, { name?: string; score?: number }> | null;
+        metadata: { ai_scores?: Record<string, { score: number; rationale?: string; answeredAt?: string }> } | null;
         last_assessment_at: string | null;
         updated_at: string | null;
       }
     | null;
+}
+
+function aiScoresFromMasterPlan(
+  mp: Awaited<ReturnType<typeof latestMasterPlan>>
+): ScoringInputs["aiScores"] {
+  const raw = mp?.metadata?.ai_scores;
+  if (!raw) return undefined;
+  const out: NonNullable<ScoringInputs["aiScores"]> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (v && typeof v.score === "number") {
+      out[k as DimensionKey] = { score: v.score, rationale: v.rationale, answeredAt: v.answeredAt };
+    }
+  }
+  return out;
 }
 
 function profitFromMasterPlan(mp: Awaited<ReturnType<typeof latestMasterPlan>>): ScoringInputs["profitDomains"] {
@@ -123,7 +139,7 @@ export async function gatherAndCompute(): Promise<ScoringOutput & { masterPlanId
     operational: null, // wired when monthly-review entry lands
     operationalAt: null,
     businessPlanCompleteness: null,
-    aiScores: undefined, // Phase 2
+    aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
     now: new Date().toISOString(),
   };
 
