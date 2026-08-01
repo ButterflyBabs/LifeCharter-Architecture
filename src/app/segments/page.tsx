@@ -56,6 +56,14 @@ export default function SegmentsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editScores, setEditScores] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setIsSuperAdmin(Boolean(d?.superAdmin)))
+      .catch(() => {});
+  }, []);
 
   const load = () =>
     fetch("/api/segments?ts=" + Date.now(), { cache: "no-store" })
@@ -226,12 +234,14 @@ export default function SegmentsPage() {
                           </div>
                           <div className="mt-2 flex items-center justify-between">
                             <p className="text-[11px] text-[#7C7C82]">12 dimensions · hover a bar</p>
-                            <button
-                              onClick={() => startEdit(seg)}
-                              className="text-[11px] text-[#2E7C83] hover:underline"
-                            >
-                              Coach override
-                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => startEdit(seg)}
+                                className="text-[11px] text-[#2E7C83] hover:underline"
+                              >
+                                Coach override
+                              </button>
+                            )}
                           </div>
                         </>
                       )}

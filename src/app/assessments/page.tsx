@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
+import CheckinSchedule from "@/components/assessments/CheckinSchedule";
 
 export const metadata: Metadata = {
   title: "Alignment Profile | LifeCharter Architecture",
@@ -85,7 +86,10 @@ export default function AssessmentsPage() {
 
       {/* Assessment Cards */}
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* Recurring check-in rhythm */}
+        <CheckinSchedule />
+
+        <div className="grid md:grid-cols-3 gap-6 mt-12">
           {alignmentProfiles.map((assessment) => (
             <Card
               key={assessment.id}

@@ -83,7 +83,9 @@ Base the score only on the evidence in the answers. If the answers are thin or a
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.2,
+      // Pinned to 0 for stable, repeatable scores (same answers → same score).
+      // Toggle by setting SCORING_TEMPERATURE (e.g. 0.2) in the environment.
+      temperature: Number(process.env.SCORING_TEMPERATURE ?? "0"),
       max_tokens: 220,
       response_format: { type: "json_object" },
       messages: [

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { isSuperAdmin } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +11,14 @@ function healthFor(score: number): "healthy" | "attention" | "at_risk" {
   return "healthy";
 }
 
-// Update the 12 dimension scores for a segment (update-or-insert per dimension).
+// Coach override: manually set a segment's 12 dimension scores. Restricted to
+// super admins — clients cannot override their own AI-derived scores.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
+  if (!(await isSuperAdmin())) {
+    return NextResponse.json({ error: "coach override is restricted to super admins" }, { status: 403 });
   }
   const supabase = createServerClient();
   const body = await request.json().catch(() => ({}));
