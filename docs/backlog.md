@@ -9,6 +9,12 @@ Captured before deploy so nothing is lost. Not in scope for the current PR.
 - **Zero-temperature scoring** — shipped (`SCORING_TEMPERATURE` env toggle, defaults to 0 → stable run-to-run).
 - **Super-admin coach override** — shipped (`isSuperAdmin`; only super admins can override; control hidden otherwise).
 - **Phase 2A recurring check-in loop** — shipped (`cadence.ts`, `/api/checkins`, "Your Check-in Rhythm" card on /assessments: monthly pulse, quarterly profit, semi-annual brain, annual soul).
+- **AI-driven per-client Business/Marketing/Sales plans** — shipped (`client_plans` + `client_plan_goals`, versioned; `generatePlan.ts`; `/api/plans` + `/api/plans/generate`; PlanView on the three plan pages, replacing the static mockups). Grounded in the client's own scores + answers; sensitive dropped; zero-temp.
+- **Baseline snapshot + progress tracking** — shipped (`client_score_snapshots`, first = immutable baseline, captured on recompute; `/api/progress` two axes: score-delta vs baseline + plan-goal execution; `/progress` page). Verified deltas render real movement.
+
+## Remaining Phase 2 work
+- **Goal status updates / check-in scoring (Slice 3 completion)** — plan goals currently start at not_started; build the flow that moves them to in_progress/met/slipped (via check-ins or coach), captures a snapshot each check-in, and surfaces the delta. The progress plumbing is in; this feeds it.
+- **Client-respective foundation** — auth on (Preview first), per-user master plan (swap the `"Primary"` lookup), RLS owner policies, migrate existing data to the account. The one piece needing the user's hands (password). Makes all of the above truly per-client.
 
 ## Phase 2B — adaptive AI assessments (next)
 Turn the static 264-Q Soul / 325-Q Brain forms into AI-guided conversations that
