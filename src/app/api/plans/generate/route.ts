@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
 import { generatePlan, PlanType } from "@/lib/plans/generatePlan";
+import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,11 @@ export async function POST(request: Request) {
   const planType = body?.planType as PlanType;
   if (!VALID.includes(planType)) {
     return NextResponse.json({ error: "planType must be business, marketing, or sales" }, { status: 400 });
+  }
+
+  // Metered heavy AI action — enforce the plan's monthly cap (owner = unlimited).
+  if (!(await aiActionAllowed())) {
+    return NextResponse.json(AI_LIMIT_BODY, { status: 402 });
   }
 
   const planId = await resolveMasterPlanId();
@@ -128,6 +134,8 @@ export async function POST(request: Request) {
   if (goalErr) {
     console.error("plan goals insert:", goalErr.message);
   }
+
+  await recordAiAction(); // count this plan build against the monthly cap
 
   return NextResponse.json(
     { ok: true, plan: created, goals: goals ?? [] },

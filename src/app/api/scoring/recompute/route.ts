@@ -5,6 +5,7 @@ import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 import { scoreDimensionFromProse, isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { captureSnapshot } from "@/lib/scoring/snapshot";
+import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,11 @@ async function run() {
       { error: "OpenAI is not configured (missing openai_api_key / OPENAI_API_KEY).", configured: false },
       { status: 400 }
     );
+  }
+
+  // Metered heavy AI action — enforce the plan's monthly cap (owner = unlimited).
+  if (!(await aiActionAllowed())) {
+    return NextResponse.json(AI_LIMIT_BODY, { status: 402 });
   }
 
   const planId = await resolveMasterPlanId();
@@ -139,6 +145,8 @@ async function run() {
   } catch (e) {
     console.error("recompute segment sync / snapshot:", e);
   }
+
+  await recordAiAction(); // count this re-score against the monthly cap
 
   return NextResponse.json({
     ok: true,
