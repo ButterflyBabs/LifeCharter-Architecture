@@ -40,7 +40,11 @@ async function latestMasterPlan(supabase: Supa) {
     | {
         id: string;
         domain_scores: Record<string, { name?: string; score?: number }> | null;
-        metadata: { ai_scores?: Record<string, { score: number; rationale?: string; answeredAt?: string }> } | null;
+        metadata: {
+          ai_scores?: Record<string, { score: number; rationale?: string; answeredAt?: string }>;
+          operational?: Record<string, number>;
+          operational_at?: string;
+        } | null;
         last_assessment_at: string | null;
         updated_at: string | null;
       }
@@ -136,8 +140,8 @@ export async function gatherAndCompute(): Promise<ScoringOutput & { masterPlanId
     profitDomains: profitFromMasterPlan(mp),
     brain,
     pulse,
-    operational: null, // wired when monthly-review entry lands
-    operationalAt: null,
+    operational: mp?.metadata?.operational ?? null, // from the monthly review
+    operationalAt: mp?.metadata?.operational_at ?? null,
     businessPlanCompleteness: null,
     aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
     now: new Date().toISOString(),

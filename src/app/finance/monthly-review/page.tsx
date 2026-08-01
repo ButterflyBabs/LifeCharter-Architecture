@@ -114,13 +114,19 @@ export default function MonthlyReviewPage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsComplete(true);
-      // This data would feed into Business Plan health scores
-      console.log("Monthly Review Submitted:", answers);
-    }, 1500);
+    try {
+      // Persist the metrics so Finance / Systems / Sales score from real data.
+      // (Read live by the scoring engine — no AI recompute needed.)
+      await fetch("/api/operational", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metrics: answers }),
+      });
+    } catch (err) {
+      console.error("monthly review save failed:", err);
+    }
+    setIsSubmitting(false);
+    setIsComplete(true);
   };
 
   const renderInput = (question: ReviewSection["questions"][0]) => {
