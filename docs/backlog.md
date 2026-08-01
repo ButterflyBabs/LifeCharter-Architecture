@@ -13,6 +13,15 @@ Captured before deploy so nothing is lost. Not in scope for the current PR.
 - **Baseline snapshot + progress tracking** — shipped (`client_score_snapshots`, first = immutable baseline, captured on recompute; `/api/progress` two axes: score-delta vs baseline + plan-goal execution; `/progress` page). Verified deltas render real movement.
 
 - **Goal status + check-in flow** — shipped (`/api/plans/goals` status updates with per-goal selector in PlanView; `/api/checkins/snapshot` records a dated 'checkin' point, wired into quick-pulse completion). Execution axis now live on /progress.
+- **Subscription tiers + catalog** — shipped (plans/subscriptions/capability_usage tables + functions applied; catalog set to Starter/Growth/VIP with AI caps 10/50/unlimited, businesses 1/5/unlimited, seats 1/5/unlimited, automations dropped, workspaces=1/roadmap; prices are draft placeholders). Owner granted VIP (unlimited, free, no expiry).
+- **AI-action gating** — shipped (`lib/capabilities.ts`; `/api/plans/generate` and `/api/scoring/recompute` enforce the monthly ai_actions cap: 402 over-cap, usage recorded on success; AI guide unmetered; owner/unlimited always pass; fails open on errors). Verified: VIP allowed, no-subscription denied, usage tracked.
+
+## Before selling Starter/Growth to real clients
+- **Seat & business gating** — the catalog defines seats (1/5/∞) and businesses (1/5/∞) but only AI actions are enforced so far. Wire capability checks into the create-business and invite-user flows when those exist.
+- **Payments (Stripe)** — plans/subscriptions tables exist and there are stripe checkout/webhook routes, but the paid-signup → active-subscription flow needs verifying/finishing before real money changes hands. (Owner is comped, so this doesn't block internal use.)
+- **Auto-recompute vs. cap (UX)** — the post-assessment auto re-score now counts as an AI action; a capped client who's at their limit would complete an assessment without a score refresh. Decide whether to exempt the auto-recompute or only meter user-initiated builds. (No impact on the owner — unlimited.)
+- **Tier pricing** — dollar figures ($297/$497/$997 + onboarding) are still draft placeholders pending final confirmation.
+- **Not-yet-built tier features** (roadmap, keep as "coming soon" in copy): branded client portal, white-label, custom AI agents, operations/review center, true separate workspaces, automations.
 
 ## Auth cutover — DONE on Preview (2026-08-01)
 - Owner Supabase auth user created + confirmed; `AUTH_ENABLED`, `ALLOWED_EMAIL`,
