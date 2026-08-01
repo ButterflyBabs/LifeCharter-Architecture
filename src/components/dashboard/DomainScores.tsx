@@ -47,6 +47,7 @@ const domainColors: Record<string, string> = {
 
 export function DomainScores(props: DomainScoresProps) {
   const [live, setLive] = useState<DomainScore[] | null>(null);
+  const [needsAssessment, setNeedsAssessment] = useState(false);
 
   useEffect(() => {
     if (props.scores) return;
@@ -56,12 +57,13 @@ export function DomainScores(props: DomainScoresProps) {
         if (d?.hasData) {
           const domains = d.domains as Array<{ name: string; score: number; icon: string }>;
           setLive(domains.map((x) => ({ name: x.name, score: x.score, change: 0, icon: x.icon })));
-        }
+        } else setNeedsAssessment(true);
       })
       .catch(() => {});
   }, [props.scores]);
 
-  const scores = props.scores ?? live ?? defaultScores;
+  // No thin-air fallback: empty until assessments produce real scores.
+  const scores = props.scores ?? live ?? (needsAssessment ? [] : defaultScores);
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">

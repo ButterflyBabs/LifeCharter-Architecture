@@ -119,6 +119,8 @@ export default function SegmentsPage() {
         </h1>
         <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
           Your businesses and segments, each scored across the 12 dimensions.
+          Scores reflect your assessments; use <span className="font-medium">Coach override</span> to adjust a
+          segment by hand — overrides stick and aren&apos;t replaced by the AI.
         </p>
       </div>
 
@@ -228,7 +230,7 @@ export default function SegmentsPage() {
                               onClick={() => startEdit(seg)}
                               className="text-[11px] text-[#2E7C83] hover:underline"
                             >
-                              Edit scores
+                              Coach override
                             </button>
                           </div>
                         </>

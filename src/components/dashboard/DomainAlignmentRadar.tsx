@@ -66,6 +66,7 @@ interface RadarDatum {
 
 export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }) {
   const [live, setLive] = useState<RadarDatum[] | null>(null);
+  const [needsAssessment, setNeedsAssessment] = useState(false);
 
   useEffect(() => {
     if (propData) return;
@@ -75,12 +76,13 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
         if (d?.hasData) {
           const domains = d.domains as Array<{ name: string; score: number }>;
           setLive(domains.map((x) => ({ domain: x.name, you: x.score, ideal: 90 })));
-        }
+        } else setNeedsAssessment(true);
       })
       .catch(() => {});
   }, [propData]);
 
-  const chartData = propData ?? live ?? data;
+  // No thin-air fallback: empty radar until assessments produce real scores.
+  const chartData = propData ?? live ?? (needsAssessment ? [] : data);
 
   return (
     <Card className="h-full border-[#c9a227]/30">

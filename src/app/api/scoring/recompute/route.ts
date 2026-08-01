@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { getOrCreatePrimaryMasterPlan } from "@/lib/scoring/masterPlan";
 import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 import { scoreDimensionFromProse, isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
+import { gatherAndCompute } from "@/lib/scoring/gather";
 
 export const dynamic = "force-dynamic";
 
@@ -124,13 +125,77 @@ async function run() {
     return NextResponse.json({ error: "failed to store ai scores" }, { status: 500 });
   }
 
+  // Mirror the AI-computed dimension scores into segment_dimensions so the
+  // Segments view reflects the AI. Coach overrides (updated_by='coach') are
+  // preserved; everything else is refreshed from the AI.
+  let segmentsSynced = 0;
+  try {
+    const computed = await gatherAndCompute();
+    segmentsSynced = await syncSegments(supabase, computed.domains);
+  } catch (e) {
+    console.error("recompute segment sync:", e);
+  }
+
   return NextResponse.json({
     ok: true,
     scoredSources: Object.keys(aiScores).length,
+    segmentsSynced,
     aiScores,
     usableAnswers: usable.length,
     droppedSensitive: rows.length - usable.length,
   });
+}
+
+function healthFor(score: number): "healthy" | "attention" | "at_risk" {
+  if (score < 60) return "at_risk";
+  if (score < 80) return "attention";
+  return "healthy";
+}
+
+// Writes the AI-computed 12-domain scores into every segment's dimensions,
+// leaving coach-overridden rows untouched. Returns rows written.
+async function syncSegments(
+  supabase: ReturnType<typeof createServerClient>,
+  domains: Array<{ key: string; score: number | null }>
+): Promise<number> {
+  const { data: segs } = await supabase.from("segments").select("id");
+  const segIds = (segs ?? []).map((s: { id: number }) => s.id);
+  if (segIds.length === 0) return 0;
+
+  const scored = domains.filter((d) => d.score !== null) as Array<{ key: string; score: number }>;
+
+  const { data: existing } = await supabase
+    .from("segment_dimensions")
+    .select("segment_id, dimension_key, updated_by");
+  const coach = new Set(
+    ((existing ?? []) as Array<{ segment_id: number; dimension_key: string; updated_by: string | null }>)
+      .filter((r) => r.updated_by === "coach")
+      .map((r) => `${r.segment_id}:${r.dimension_key}`)
+  );
+
+  let written = 0;
+  for (const segId of segIds) {
+    // Clear this segment's non-coach rows, then write fresh AI values.
+    await supabase
+      .from("segment_dimensions")
+      .delete()
+      .eq("segment_id", segId)
+      .or("updated_by.is.null,updated_by.neq.coach");
+    const rows = scored
+      .filter((d) => !coach.has(`${segId}:${d.key}`))
+      .map((d) => ({
+        segment_id: segId,
+        dimension_key: d.key,
+        score: d.score,
+        health: healthFor(d.score),
+        updated_by: "ai",
+      }));
+    if (rows.length) {
+      await supabase.from("segment_dimensions").insert(rows);
+      written += rows.length;
+    }
+  }
+  return written;
 }
 
 function overallOf(scores: Array<{ score: number }>): number | null {

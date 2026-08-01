@@ -28,16 +28,17 @@ export async function POST(request: Request) {
       const score = Math.max(0, Math.min(100, Math.round(Number(d.score))));
       if (!d.key || Number.isNaN(score)) return;
       const health = healthFor(score);
+      // Mark as a coach override so the AI sync won't overwrite it.
       const { data: updated } = await supabase
         .from("segment_dimensions")
-        .update({ score, health, updated_at: new Date().toISOString() })
+        .update({ score, health, updated_by: "coach", updated_at: new Date().toISOString() })
         .eq("segment_id", segmentId)
         .eq("dimension_key", d.key)
         .select("id");
       if (!updated || updated.length === 0) {
         await supabase
           .from("segment_dimensions")
-          .insert({ segment_id: segmentId, dimension_key: d.key, score, health });
+          .insert({ segment_id: segmentId, dimension_key: d.key, score, health, updated_by: "coach" });
       }
     })
   );

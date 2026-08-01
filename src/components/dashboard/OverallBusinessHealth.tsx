@@ -18,6 +18,7 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
     focusAreas: string[];
     description: string;
   } | null>(null);
+  const [needsAssessment, setNeedsAssessment] = useState(false);
 
   useEffect(() => {
     if (props.score !== undefined) return;
@@ -25,9 +26,37 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) setLive(d);
+        else setNeedsAssessment(true);
       })
       .catch(() => {});
   }, [props.score]);
+
+  // No manual fallback: until the client completes assessments, prompt them.
+  if (props.score === undefined && needsAssessment) {
+    return (
+      <Card className="h-full border-[#c9a227]/30">
+        <CardContent className="p-6 flex flex-col items-start justify-center h-full">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">
+            Overall Business Health
+          </h2>
+          <p className="text-lg font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
+            Complete your assessments
+          </p>
+          <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-4 leading-relaxed">
+            Your health scores are built from your Soul, Brain, and Profit
+            assessments — real data, no guesswork. Take them to see where your
+            business actually stands.
+          </p>
+          <a
+            href="/assessments"
+            className="inline-block px-4 py-2 bg-[#1a2b4a] text-white rounded-md text-sm hover:bg-[#1a2b4a]/90"
+          >
+            Start assessments
+          </a>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const score = props.score ?? live?.overall ?? 68;
   const status = props.status ?? live?.status ?? "Growth";
