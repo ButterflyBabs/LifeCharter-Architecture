@@ -14,8 +14,18 @@ Captured before deploy so nothing is lost. Not in scope for the current PR.
 
 - **Goal status + check-in flow** — shipped (`/api/plans/goals` status updates with per-goal selector in PlanView; `/api/checkins/snapshot` records a dated 'checkin' point, wired into quick-pulse completion). Execution axis now live on /progress.
 
+## Auth cutover — DONE on Preview (2026-08-01)
+- Owner Supabase auth user created + confirmed; `AUTH_ENABLED`, `ALLOWED_EMAIL`,
+  `SUPER_ADMIN_EMAILS` set on **Preview only** (Production untouched). Owner
+  signed in; auth gate verified (unauth → /login). The 'Primary' master plan is
+  claimed by the owner's account (profile row created; user_id set), so all
+  existing data — assessments, plans, goals, baseline, trend — is owned by the
+  owner. resolveMasterPlanId now upserts the profile on sign-in for future
+  clients. TO DO on Production when ready: set the same three env vars on the
+  Production env and merge the PR.
+
 ## Remaining Phase 2 work
-- **Client-respective foundation — code shipped, cutover pending.** `resolveMasterPlanId` (per-user plan with owner-claim), gather scoped per-plan, owner RLS policies applied. All backward-compatible: no change while `AUTH_ENABLED` is off. CUTOVER (with the owner, on Preview first): 1) create the Supabase auth user (email + password) in the Supabase dashboard; 2) set `AUTH_ENABLED=true`, `ALLOWED_EMAIL=<owner email>`, `SUPER_ADMIN_EMAILS=<owner email>` on the Preview env; 3) redeploy Preview; 4) sign in at /login — first sign-in auto-claims the 'Primary' plan so all existing data becomes the owner's; 5) verify, then repeat on Production.
+- **Client-respective foundation — shipped; Production cutover pending (see above).** `resolveMasterPlanId` (per-user plan with owner-claim), gather scoped per-plan, owner RLS policies applied. All backward-compatible: no change while `AUTH_ENABLED` is off. CUTOVER (with the owner, on Preview first): 1) create the Supabase auth user (email + password) in the Supabase dashboard; 2) set `AUTH_ENABLED=true`, `ALLOWED_EMAIL=<owner email>`, `SUPER_ADMIN_EMAILS=<owner email>` on the Preview env; 3) redeploy Preview; 4) sign in at /login — first sign-in auto-claims the 'Primary' plan so all existing data becomes the owner's; 5) verify, then repeat on Production.
 - **Quick-pulse client-side writes** — the quick-pulse page writes to Supabase with the browser (anon) client; with RLS enabled + no anon policy those writes are denied. Move them to a service-role API route (like /api/assessments/save) so pulse check-ins persist under auth. (Pre-existing; surfaced during the RLS work.)
 - **Progress deltas over time** — snapshots now accumulate; a "since last check-in" view (not just since baseline) and a trend line are a natural follow-on once there are several dated points.
 
