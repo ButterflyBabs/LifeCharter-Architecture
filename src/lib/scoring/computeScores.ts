@@ -45,11 +45,13 @@ export interface ScoringInputs {
   /** 0-100 business-plan completeness, or null. */
   businessPlanCompleteness: number | null;
   /**
-   * Phase 2: AI-derived 0-100 per dimension for `soul`/`ai` sources, keyed by
-   * dimension key. Absent in Phase 1 — those sources then contribute nothing and
-   * their weight redistributes.
+   * AI-derived 0-100 sub-scores for `method: "ai"` sources (Soul and Brain),
+   * keyed by `${dimensionKey}:${sourceKind}` (e.g. "leadership:soul",
+   * "leadership:brain") so Soul and Brain can each score the same dimension
+   * without colliding. Absent keys contribute nothing and their weight
+   * redistributes.
    */
-  aiScores?: Partial<Record<DimensionKey, { score: number; rationale?: string; answeredAt?: string }>>;
+  aiScores?: Record<string, { score: number; rationale?: string; answeredAt?: string }>;
   /** Reference "now" for staleness (ISO). Defaults to runtime now in the route. */
   now?: string;
 }
@@ -108,6 +110,12 @@ function subScoreFor(
   key: DimensionKey,
   inputs: ScoringInputs
 ): { subScore: number | null; answeredAt: string | null } {
+  // AI-scored sources (Soul prose, open Brain answers) read a cached sub-score
+  // keyed by dimension + source kind.
+  if (source.method === "ai") {
+    const ai = inputs.aiScores?.[`${key}:${source.kind}`];
+    return { subScore: ai ? ai.score : null, answeredAt: ai?.answeredAt ?? null };
+  }
   switch (source.kind) {
     case "profit": {
       const d = source.profitDomain ? inputs.profitDomains[source.profitDomain] : undefined;
@@ -137,12 +145,8 @@ function subScoreFor(
     case "business_plan": {
       return { subScore: inputs.businessPlanCompleteness, answeredAt: null };
     }
-    case "soul": {
-      // Phase 2: AI score for this dimension. Phase 1: null → weight redistributes.
-      const ai = inputs.aiScores?.[key];
-      return { subScore: ai ? ai.score : null, answeredAt: ai?.answeredAt ?? null };
-    }
     default:
+      // soul + any AI-scored source are handled above via method === "ai".
       return { subScore: null, answeredAt: null };
   }
 }
@@ -175,7 +179,7 @@ export function computeDimensionScores(inputs: ScoringInputs): ScoringOutput {
       if (r.subScore === null) {
         note =
           r.source.method === "ai"
-            ? "AI scoring pending (Phase 2)"
+            ? "AI scoring pending"
             : r.source.kind === "operational"
               ? "no operational data yet"
               : "not answered yet";

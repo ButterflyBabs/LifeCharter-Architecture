@@ -10,7 +10,6 @@
 
 import { createServerClient } from "@/lib/supabase/server";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
-import { DimensionKey } from "./dimensionModel";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -53,10 +52,11 @@ function aiScoresFromMasterPlan(
 ): ScoringInputs["aiScores"] {
   const raw = mp?.metadata?.ai_scores;
   if (!raw) return undefined;
+  // Keys are composite ("${dimension}:${kind}") — pass through as-is.
   const out: NonNullable<ScoringInputs["aiScores"]> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (v && typeof v.score === "number") {
-      out[k as DimensionKey] = { score: v.score, rationale: v.rationale, answeredAt: v.answeredAt };
+      out[k] = { score: v.score, rationale: v.rationale, answeredAt: v.answeredAt };
     }
   }
   return out;

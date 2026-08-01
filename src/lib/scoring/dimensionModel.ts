@@ -105,7 +105,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       { kind: "profit", method: "scale", weight: 40, profitDomain: "marketing" },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 35,
         brainSections: [
           "8. Marketing System",
@@ -122,7 +122,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
     staleDays: STALE,
     sources: [
       { kind: "profit", method: "scale", weight: 35, profitDomain: "sales" },
-      { kind: "brain", method: "scale", weight: 25, brainSections: ["7. Sales System"] },
+      { kind: "brain", method: "ai", weight: 25, brainSections: ["7. Sales System"] },
       {
         kind: "operational",
         method: "formula",
@@ -145,7 +145,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       { kind: "profit", method: "scale", weight: 40, profitDomain: "operations" },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 35,
         brainSections: ["10. Operations and Internal Systems"],
       },
@@ -178,7 +178,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
     staleDays: STALE,
     sources: [
       { kind: "profit", method: "scale", weight: 45, profitDomain: "team" },
-      { kind: "brain", method: "scale", weight: 35, brainSections: ["11. Team and Roles"] },
+      { kind: "brain", method: "ai", weight: 35, brainSections: ["11. Team and Roles"] },
       { kind: "pulse", method: "scale", weight: 20, pulseLabels: ["Team Capacity"] },
     ],
   },
@@ -195,7 +195,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 30,
         brainSections: ["12. Tech Stack and Access Map", "10. Operations and Internal Systems"],
       },
@@ -216,7 +216,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 25,
         brainSections: ["3. Vision, Strategy, and Priorities"],
       },
@@ -258,7 +258,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       { kind: "profit", method: "scale", weight: 50, profitDomain: "product" },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 50,
         brainSections: ["5. Offers, Products, and Services"],
       },
@@ -272,7 +272,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
       { kind: "profit", method: "scale", weight: 40, profitDomain: "client" },
       {
         kind: "brain",
-        method: "scale",
+        method: "ai",
         weight: 30,
         brainSections: ["9. Customer Journey and Client Experience"],
       },
