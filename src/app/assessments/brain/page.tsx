@@ -4058,6 +4058,8 @@ export default function BrainAssessmentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "brain", responses: payload }),
       });
+      // Kick off scoring so the dashboard updates without a manual trigger.
+      await fetch("/api/scoring/recompute", { method: "POST" }).catch(() => {});
     } catch (err) {
       console.error("brain save failed:", err);
     }

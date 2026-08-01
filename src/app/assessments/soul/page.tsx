@@ -382,6 +382,8 @@ export default function SoulAssessmentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "soul", responses: payload }),
       });
+      // Kick off AI scoring so the dashboard updates without a manual trigger.
+      await fetch("/api/scoring/recompute", { method: "POST" }).catch(() => {});
     } catch (err) {
       console.error("soul save failed:", err);
     }
