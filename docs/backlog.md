@@ -15,7 +15,8 @@ Captured before deploy so nothing is lost. Not in scope for the current PR.
 - **Goal status + check-in flow** — shipped (`/api/plans/goals` status updates with per-goal selector in PlanView; `/api/checkins/snapshot` records a dated 'checkin' point, wired into quick-pulse completion). Execution axis now live on /progress.
 
 ## Remaining Phase 2 work
-- **Client-respective foundation** — auth on (Preview first), per-user master plan (swap the `"Primary"` lookup), RLS owner policies, migrate existing data to the account. The one piece needing the user's hands (password). Makes all of the above truly per-client.
+- **Client-respective foundation — code shipped, cutover pending.** `resolveMasterPlanId` (per-user plan with owner-claim), gather scoped per-plan, owner RLS policies applied. All backward-compatible: no change while `AUTH_ENABLED` is off. CUTOVER (with the owner, on Preview first): 1) create the Supabase auth user (email + password) in the Supabase dashboard; 2) set `AUTH_ENABLED=true`, `ALLOWED_EMAIL=<owner email>`, `SUPER_ADMIN_EMAILS=<owner email>` on the Preview env; 3) redeploy Preview; 4) sign in at /login — first sign-in auto-claims the 'Primary' plan so all existing data becomes the owner's; 5) verify, then repeat on Production.
+- **Quick-pulse client-side writes** — the quick-pulse page writes to Supabase with the browser (anon) client; with RLS enabled + no anon policy those writes are denied. Move them to a service-role API route (like /api/assessments/save) so pulse check-ins persist under auth. (Pre-existing; surfaced during the RLS work.)
 - **Progress deltas over time** — snapshots now accumulate; a "since last check-in" view (not just since baseline) and a trend line are a natural follow-on once there are several dated points.
 
 ## Phase 2B — adaptive AI assessments (next)
