@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, useSidebar } from "./CollapsibleSidebar";
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,9 @@ import AIGuideWidget from "@/components/ai-guide/AIGuideWidget";
 interface AppLayoutProps {
   children: ReactNode;
 }
+
+// Routes that render full-screen without the app chrome (sidebar/header/widgets).
+const BARE_ROUTES = ["/login", "/logout"];
 
 function AppLayoutContent({ children }: AppLayoutProps) {
   const { isCollapsed } = useSidebar();
@@ -34,6 +38,11 @@ function AppLayoutContent({ children }: AppLayoutProps) {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const pathname = usePathname();
+  // Login / logout render standalone (no sidebar, header, or widgets).
+  if (pathname && BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+    return <>{children}</>;
+  }
   return (
     <CollapsibleSidebarProvider>
       <AppLayoutContent>
