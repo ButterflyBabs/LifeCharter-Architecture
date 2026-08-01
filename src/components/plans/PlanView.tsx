@@ -37,6 +37,7 @@ const GOAL_STATUS: Record<Goal["status"], { label: string; chip: string; dot: st
   met: { label: "Met", chip: "bg-[#2E7C83]/15 text-[#2E7C83]", dot: "#2E7C83" },
   slipped: { label: "Slipped", chip: "bg-[#D83A34]/12 text-[#D83A34]", dot: "#D83A34" },
 };
+const STATUS_ORDER: Goal["status"][] = ["not_started", "in_progress", "met", "slipped"];
 
 const TITLE: Record<PlanType, string> = {
   business: "Business Plan",
@@ -60,6 +61,7 @@ export default function PlanView({ planType }: { planType: PlanType }) {
   const [data, setData] = useState<PlanResponse | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingGoal, setSavingGoal] = useState<string | null>(null);
 
   const load = () =>
     fetch(`/api/plans?type=${planType}&ts=${Date.now()}`, { cache: "no-store" })
@@ -96,6 +98,26 @@ export default function PlanView({ planType }: { planType: PlanType }) {
       setError("Couldn't reach the plan generator.");
     }
     setGenerating(false);
+  };
+
+  const setGoalStatus = async (goalId: string, status: Goal["status"]) => {
+    setSavingGoal(goalId);
+    // Optimistic local update.
+    setData((prev) =>
+      prev && prev.goals
+        ? { ...prev, goals: prev.goals.map((g) => (g.id === goalId ? { ...g, status } : g)) }
+        : prev
+    );
+    try {
+      await fetch("/api/plans/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goalId, status }),
+      });
+    } catch {
+      /* keep optimistic value */
+    }
+    setSavingGoal(null);
   };
 
   const hasPlan = data?.hasPlan && data.plan;
@@ -184,12 +206,33 @@ export default function PlanView({ planType }: { planType: PlanType }) {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{g.title}</h4>
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${s.chip}`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.dot }} />
-                      {s.label}
-                    </span>
+                    <div className={`relative flex-shrink-0 ${savingGoal === g.id ? "opacity-60" : ""}`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-[11px] font-medium pl-2.5 pr-6 py-1 rounded-full ${s.chip}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.dot }} />
+                        {s.label}
+                      </span>
+                      <select
+                        aria-label="Goal status"
+                        value={g.status}
+                        disabled={savingGoal === g.id}
+                        onChange={(e) => setGoalStatus(g.id, e.target.value as Goal["status"])}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      >
+                        {STATUS_ORDER.map((st) => (
+                          <option key={st} value={st}>
+                            {GOAL_STATUS[st].label}
+                          </option>
+                        ))}
+                      </select>
+                      <svg
+                        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-current opacity-60"
+                        viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      >
+                        <path d="M1 1l4 4 4-4" />
+                      </svg>
+                    </div>
                   </div>
                   {g.detail && (
                     <p className="text-sm text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mt-1.5">{g.detail}</p>

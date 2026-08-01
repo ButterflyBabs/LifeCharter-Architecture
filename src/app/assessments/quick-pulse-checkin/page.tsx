@@ -569,6 +569,14 @@ function QuickPulseCheckinContent() {
 
       await Promise.all(actionPromises);
 
+      // Record a dated progress point for the trajectory (best-effort; never
+      // block completion on it).
+      try {
+        await fetch("/api/checkins/snapshot", { method: "POST" });
+      } catch {
+        /* non-blocking */
+      }
+
       localStorage.removeItem("quick-pulse-checkin");
 
       setIsComplete(true);
