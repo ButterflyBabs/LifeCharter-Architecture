@@ -65,6 +65,7 @@ const navigationSections = [
     color: "text-[#7b6b8d]",
     items: [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
+      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },

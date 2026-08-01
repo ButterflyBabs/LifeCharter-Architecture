@@ -4,6 +4,7 @@ import { getOrCreatePrimaryMasterPlan } from "@/lib/scoring/masterPlan";
 import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 import { scoreDimensionFromProse, isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
 import { gatherAndCompute } from "@/lib/scoring/gather";
+import { captureSnapshot } from "@/lib/scoring/snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -129,17 +130,21 @@ async function run() {
   // Segments view reflects the AI. Coach overrides (updated_by='coach') are
   // preserved; everything else is refreshed from the AI.
   let segmentsSynced = 0;
+  let snapshot: { type: string } | null = null;
   try {
     const computed = await gatherAndCompute();
     segmentsSynced = await syncSegments(supabase, computed.domains);
+    // Record a dated score point (first one becomes the baseline).
+    snapshot = await captureSnapshot(supabase, planId, computed.domains, computed.overall);
   } catch (e) {
-    console.error("recompute segment sync:", e);
+    console.error("recompute segment sync / snapshot:", e);
   }
 
   return NextResponse.json({
     ok: true,
     scoredSources: Object.keys(aiScores).length,
     segmentsSynced,
+    snapshot,
     aiScores,
     usableAnswers: usable.length,
     droppedSensitive: rows.length - usable.length,
