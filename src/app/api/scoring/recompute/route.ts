@@ -21,7 +21,16 @@ type SoulRow = {
   answered_at: string | null;
 };
 
+// GET is a convenience so the scoring run can be triggered from a browser
+// (single-user admin tool). POST is the real programmatic trigger.
+export async function GET() {
+  return run();
+}
 export async function POST() {
+  return run();
+}
+
+async function run() {
   if (!isAiConfigured()) {
     return NextResponse.json(
       { error: "OpenAI is not configured (missing openai_api_key / OPENAI_API_KEY).", configured: false },
