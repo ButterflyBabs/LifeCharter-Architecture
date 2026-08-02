@@ -115,6 +115,16 @@ export async function isConnected(): Promise<boolean> {
   return Boolean(data);
 }
 
+export async function connectedEmail(): Promise<string | null> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("email")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  return (data?.email as string) ?? null;
+}
+
 export async function getValidAccessToken(): Promise<string | null> {
   const supabase = createServerClient();
   const { data } = await supabase

@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // ALLOWED_EMAIL may sign in.
 
 const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password"];
-const PUBLIC_APIS = ["/api/google/callback", "/auth/callback"]; // external redirects land here without our session
+const PUBLIC_APIS = ["/api/google/callback", "/api/microsoft/callback", "/auth/callback"]; // external redirects land here without our session
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });

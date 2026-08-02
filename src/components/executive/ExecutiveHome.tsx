@@ -23,6 +23,8 @@ import {
 import DimensionCards from "@/components/executive/DimensionCards";
 
 // Types
+type Provider = "google" | "microsoft";
+
 interface Email {
   id: string;
   threadId: string;
@@ -33,6 +35,14 @@ interface Email {
   preview: string;
   time: string;
   unread: boolean;
+  provider?: Provider;
+  account?: string;
+}
+
+interface MailAccount {
+  provider: Provider;
+  email: string;
+  label: string;
 }
 
 interface ScheduleEvent {
@@ -40,6 +50,7 @@ interface ScheduleEvent {
   title: string;
   time: string;
   start: string | null;
+  account?: string;
 }
 
 // Real task from API
@@ -78,6 +89,12 @@ export default function ExecutiveHome() {
   const [composeBody, setComposeBody] = useState("");
   const [sending, setSending] = useState(false);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [providers, setProviders] = useState<{ google: boolean; microsoft: boolean }>({
+    google: false,
+    microsoft: false,
+  });
+  const [accounts, setAccounts] = useState<MailAccount[]>([]);
+  const [composeProvider, setComposeProvider] = useState<Provider>("google");
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -162,13 +179,19 @@ export default function ExecutiveHome() {
     className: `relative group ${extra}`.trim(),
   });
 
-  // Fetch live Gmail inbox
+  // Fetch live inbox merged across every connected mail account (Gmail + M365)
   useEffect(() => {
     fetch("/api/inbox")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
         setGoogleConnected(Boolean(d.connected));
+        if (d.providers) setProviders(d.providers);
+        if (Array.isArray(d.accounts)) {
+          setAccounts(d.accounts);
+          // Default the compose "From" to the first connected account.
+          if (d.accounts[0]?.provider) setComposeProvider(d.accounts[0].provider);
+        }
         if (Array.isArray(d.emails)) setEmails(d.emails);
       })
       .catch(() => setGoogleConnected(false));
@@ -195,7 +218,7 @@ export default function ExecutiveHome() {
       await fetch("/api/inbox/mark-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: firstUnread.id }),
+        body: JSON.stringify({ provider: firstUnread.provider ?? "google", id: firstUnread.id }),
       });
     } catch {
       /* optimistic — leave marked read locally */
@@ -209,6 +232,8 @@ export default function ExecutiveHome() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          provider: replyingTo.provider ?? "google",
+          id: replyingTo.id,
           threadId: replyingTo.threadId,
           to: replyingTo.fromEmail,
           subject: replyingTo.subject,
@@ -249,6 +274,7 @@ export default function ExecutiveHome() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          provider: composeProvider,
           to: composeTo.trim(),
           subject: composeSubject.trim() || "(no subject)",
           body: composeBody,
@@ -256,7 +282,7 @@ export default function ExecutiveHome() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err?.error === "not connected" ? "Connect Google first to send email." : "Message failed to send.");
+        alert(err?.error === "not connected" ? "Connect an email account first to send." : "Message failed to send.");
         setSending(false);
         return;
       }
@@ -491,12 +517,20 @@ export default function ExecutiveHome() {
           {/* Schedule Items (live Google Calendar) */}
           <div className="px-6 pb-4 space-y-4">
             {schedule && !schedule.connected ? (
-              <a
-                href="/api/google/auth"
-                className="flex items-center gap-2 text-sm text-[#2E7C83] hover:underline"
-              >
-                <Calendar className="w-4 h-4" /> Connect Google Calendar
-              </a>
+              <div className="space-y-2">
+                <a
+                  href="/api/google/auth"
+                  className="flex items-center gap-2 text-sm text-[#2E7C83] hover:underline"
+                >
+                  <Calendar className="w-4 h-4" /> Connect Google Calendar
+                </a>
+                <a
+                  href="/api/microsoft/auth"
+                  className="flex items-center gap-2 text-sm text-[#2E7C83] hover:underline"
+                >
+                  <Calendar className="w-4 h-4" /> Connect Microsoft 365 Calendar
+                </a>
+              </div>
             ) : schedule && schedule.events.length === 0 ? (
               <p className="text-sm text-gray-400">No meetings today</p>
             ) : (
@@ -775,18 +809,49 @@ export default function ExecutiveHome() {
             )}
           </div>
 
-          {/* Email List (live Gmail) */}
+          {/* Add-another-account chips (shown when at least one account is connected) */}
+          {googleConnected && (!providers.google || !providers.microsoft) && (
+            <div className="px-6 pt-4 flex flex-wrap gap-2">
+              {!providers.google && (
+                <a
+                  href="/api/google/auth"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" /> Connect Gmail
+                </a>
+              )}
+              {!providers.microsoft && (
+                <a
+                  href="/api/microsoft/auth"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" /> Connect Microsoft 365
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Email List (live Gmail + Microsoft 365) */}
           <div className="p-6 space-y-3">
             {googleConnected === false ? (
-              <a
-                href="/api/google/auth"
-                className="flex flex-col items-center justify-center gap-2 py-8 text-center"
-              >
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                 <Mail className="w-6 h-6 text-[#7A5D84]" />
-                <span className="text-sm text-[#2E7C83] font-medium hover:underline">
-                  Connect Google to see your inbox
-                </span>
-              </a>
+                <span className="text-sm text-[#7C7C82]">Connect an account to see your inbox</span>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <a
+                    href="/api/google/auth"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs font-medium hover:bg-[#84AEB2]/5 transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Connect Gmail
+                  </a>
+                  <a
+                    href="/api/microsoft/auth"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs font-medium hover:bg-[#84AEB2]/5 transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Connect Microsoft 365
+                  </a>
+                </div>
+              </div>
             ) : emails.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">
                 {googleConnected ? "Inbox zero — nothing new" : "Loading…"}
@@ -814,6 +879,17 @@ export default function ExecutiveHome() {
                       {email.subject}
                     </p>
                     <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
+                    {accounts.length > 1 && email.account && (
+                      <span
+                        className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          email.provider === "microsoft"
+                            ? "bg-[#E5EEF6] text-[#1a56a8]"
+                            : "bg-[#FCE8E6] text-[#b23b32]"
+                        }`}
+                      >
+                        {email.account}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))
@@ -1081,6 +1157,22 @@ export default function ExecutiveHome() {
             </div>
 
             <div className="space-y-3">
+              {accounts.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">From</label>
+                  <select
+                    value={composeProvider}
+                    onChange={(e) => setComposeProvider(e.target.value as Provider)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.provider} value={a.provider}>
+                        {a.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">To</label>
                 <input
