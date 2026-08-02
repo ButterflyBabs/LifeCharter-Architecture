@@ -287,3 +287,23 @@ export async function sendReply(
   });
   if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
 }
+
+// Compose and send a brand-new email (not a reply — no thread, subject as-is).
+export async function sendEmail(
+  accessToken: string,
+  opts: { to: string; subject: string; body: string }
+): Promise<void> {
+  const headerLines = [
+    `To: ${opts.to}`,
+    `Subject: ${opts.subject}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/plain; charset="UTF-8"',
+  ].join("\r\n");
+  const raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw }),
+  });
+  if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
+}

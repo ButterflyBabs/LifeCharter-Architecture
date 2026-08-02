@@ -72,6 +72,11 @@ export default function ExecutiveHome() {
   const [replyText, setReplyText] = useState("");
   const [emails, setEmails] = useState<Email[]>([]);
   const [replyingTo, setReplyingTo] = useState<Email | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [sending, setSending] = useState(false);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
@@ -223,6 +228,48 @@ export default function ExecutiveHome() {
     }
   };
 
+  // Open the reply modal for a specific email (the one the user opened, else the
+  // first unread).
+  const openReply = () => {
+    const target = emails.find((e) => e.id === selectedEmail) ?? emails.find((e) => e.unread) ?? emails[0];
+    if (!target) {
+      alert("No emails to reply to yet.");
+      return;
+    }
+    setReplyingTo(target);
+    setReplyText("");
+    setShowReplyModal(true);
+  };
+
+  const handleSendCompose = async () => {
+    if (!composeTo.trim() || !composeBody.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/inbox/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: composeTo.trim(),
+          subject: composeSubject.trim() || "(no subject)",
+          body: composeBody,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err?.error === "not connected" ? "Connect Google first to send email." : "Message failed to send.");
+        setSending(false);
+        return;
+      }
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeBody("");
+      setShowCompose(false);
+    } catch {
+      alert("Message failed to send.");
+    }
+    setSending(false);
+  };
+
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
@@ -298,9 +345,9 @@ export default function ExecutiveHome() {
   };
 
   // Get tasks for each column
-  const todayTasks = tasks.filter(t => t.status === "today").slice(0, 1);
-  const inProgressTasks = tasks.filter(t => t.status === "in_progress").slice(0, 1);
-  const waitingTasks = tasks.filter(t => t.status === "waiting").slice(0, 1);
+  const todayTasks = tasks.filter(t => t.status === "today").slice(0, 3);
+  const inProgressTasks = tasks.filter(t => t.status === "in_progress").slice(0, 3);
+  const waitingTasks = tasks.filter(t => t.status === "waiting").slice(0, 3);
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -470,15 +517,17 @@ export default function ExecutiveHome() {
             )}
           </div>
 
-          {/* View Full Calendar Link */}
+          {/* View Full Calendar Link — opens the user's real Google Calendar */}
           <div className="px-6 pb-5">
-            <Link 
-              href="/daily-compass/calendar"
+            <a
+              href="https://calendar.google.com/calendar/r"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors font-medium"
             >
-              View full calendar
+              Open Google Calendar
               <ChevronRight className="w-4 h-4" />
-            </Link>
+            </a>
           </div>
         </div>
         </div>
@@ -595,15 +644,15 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#5E8C97] uppercase tracking-wider mb-4 text-center">TODAY</h4>
               {todayTasks.length > 0 ? (
                 todayTasks.map((task) => (
-                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`} className="block mb-2.5 last:mb-0">
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
-                          <p className="text-sm text-[#3F4654] leading-snug">{task.title}</p>
+                          <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
                         </div>
                       </div>
                     </div>
@@ -631,15 +680,15 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#7C5D7A] uppercase tracking-wider mb-4 text-center">IN PROGRESS</h4>
               {inProgressTasks.length > 0 ? (
                 inProgressTasks.map((task) => (
-                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`} className="block mb-2.5 last:mb-0">
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
-                          <p className="text-sm text-[#3F4654] leading-snug">{task.title}</p>
+                          <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
                         </div>
                       </div>
                     </div>
@@ -667,15 +716,15 @@ export default function ExecutiveHome() {
               <h4 className="text-xs font-medium text-[#8A8078] uppercase tracking-wider mb-4 text-center">WAITING</h4>
               {waitingTasks.length > 0 ? (
                 waitingTasks.map((task) => (
-                  <Link key={task.id} href={`/tasks?edit=${task.id}`}>
+                  <Link key={task.id} href={`/tasks?edit=${task.id}`} className="block mb-2.5 last:mb-0">
                     <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
-                          <p className="text-sm text-[#3F4654] leading-snug">{task.title}</p>
+                          <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
                         </div>
                       </div>
                     </div>
@@ -715,9 +764,15 @@ export default function ExecutiveHome() {
                 </span>
               )}
             </div>
-            <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-gray-400" />
-            </button>
+            {googleConnected && (
+              <button
+                onClick={() => setShowCompose(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                Compose
+              </button>
+            )}
           </div>
 
           {/* Email List (live Gmail) */}
@@ -767,20 +822,12 @@ export default function ExecutiveHome() {
 
           {/* Action Buttons */}
           <div className="px-6 pb-6 flex gap-3">
-            <button 
-              onClick={() => {
-                const firstUnread = emails.find(e => e.unread);
-                if (firstUnread) {
-                  setReplyingTo(firstUnread);
-                  setShowReplyModal(true);
-                } else {
-                  alert("No unread emails to reply to!");
-                }
-              }}
+            <button
+              onClick={openReply}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-[#84AEB2] text-[#6A9EA4] rounded-lg text-sm hover:bg-[#84AEB2]/5 transition-colors bg-[#F8F5F0]"
             >
               <CornerUpLeft className="w-4 h-4" />
-              Quick Reply
+              Reply
             </button>
             <button 
               onClick={handleMarkRead}
@@ -1006,6 +1053,79 @@ export default function ExecutiveHome() {
                   className="flex-1 py-2.5 bg-indigo-900 text-white rounded-lg text-sm hover:bg-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Send Reply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compose Modal */}
+      {showCompose && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+          onClick={() => setShowCompose(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-serif text-indigo-900">New message</h3>
+              <button
+                onClick={() => setShowCompose(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">To</label>
+                <input
+                  type="email"
+                  value={composeTo}
+                  onChange={(e) => setComposeTo(e.target.value)}
+                  placeholder="recipient@example.com"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
+                <input
+                  type="text"
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="Subject"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Message</label>
+                <textarea
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  placeholder="Write your message…"
+                  rows={6}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2] resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setShowCompose(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendCompose}
+                  disabled={sending || !composeTo.trim() || !composeBody.trim()}
+                  className="flex-1 py-2.5 bg-indigo-900 text-white rounded-lg text-sm hover:bg-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sending ? "Sending…" : "Send"}
                 </button>
               </div>
             </div>
