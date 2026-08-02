@@ -87,3 +87,7 @@ implementations, replacing the single-tenant google_credentials.
 ## Auth (scoped earlier, not yet on)
 - Turn on Supabase Auth + middleware gating (AUTH_ENABLED, ALLOWED_EMAIL) once
   ready; create the user, flip flags on Preview before Production.
+
+## Auth pages shipped (2026-08-02)
+- **Branded login** — two-panel /login (quote carousel + email/password), brand fonts scoped, chrome-free via AppLayout BARE_ROUTES. SSO button hidden until a Supabase OAuth provider is configured.
+- **Password reset flow** — /forgot-password (resetPasswordForEmail) → /auth/callback (exchangeCodeForSession) → /reset-password (updateUser). Public routes in middleware; branded AuthShell. Supabase redirect allow-list: added `https://lifecharter-architecture-git-47bff9-amilynne-carrolls-projects.vercel.app/**` (Preview). TO DO for Production: add the prod domain `/auth/callback` (or `/**`) to the same allow-list, and set Site URL off localhost. Consider custom SMTP + branded reset-email template for real volume (default Supabase email is rate-limited / may land in spam).
