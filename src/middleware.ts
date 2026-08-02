@@ -49,6 +49,19 @@ export async function middleware(request: NextRequest) {
   const allowed = process.env.ALLOWED_EMAIL?.toLowerCase();
   const authed = Boolean(user) && (!allowed || user!.email?.toLowerCase() === allowed);
 
+  // 2FA enforcement: a user who has 2FA enrolled but has only completed the
+  // password step is at assurance level aal1 with a pending aal2 — they must
+  // finish the code step before reaching anything protected.
+  let needsMfa = false;
+  if (authed) {
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      needsMfa = aal?.nextLevel === "aal2" && aal.currentLevel === "aal1";
+    } catch {
+      /* if the check fails, don't lock the user out */
+    }
+  }
+
   const path = request.nextUrl.pathname;
   const isPublicApi = PUBLIC_APIS.some((p) => path.startsWith(p));
   const isPublicPage = PUBLIC_PAGES.some((p) => path === p || path.startsWith(p + "/"));
@@ -56,15 +69,19 @@ export async function middleware(request: NextRequest) {
   if (isPublicApi) return response;
 
   if (path.startsWith("/api/")) {
-    return authed ? response : NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  if (isPublicPage) {
-    if (authed && path === "/login") return NextResponse.redirect(new URL("/", request.url));
+    if (!authed) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (needsMfa) return NextResponse.json({ error: "2fa required" }, { status: 401 });
     return response;
   }
 
-  if (!authed) {
+  if (isPublicPage) {
+    // Don't bounce a signed-in user off /login while their 2FA is still pending —
+    // that's where they enter the code.
+    if (authed && !needsMfa && path === "/login") return NextResponse.redirect(new URL("/", request.url));
+    return response;
+  }
+
+  if (!authed || needsMfa) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   return response;
