@@ -14,6 +14,7 @@ import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
 import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import BillingPanel from "./components/BillingPanel";
+import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -26,7 +27,6 @@ import {
   Globe,
   Save,
   CheckCircle,
-  AlertCircle,
   Moon,
   Sun,
   Mail,
@@ -1252,62 +1252,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="border-t border-[#1a2b4a]/10 pt-6">
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
-          <Shield className="w-4 h-4" />
-          Two-Factor Authentication
-        </h4>
-        <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-            <div>
-              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                2FA Not Enabled
-              </p>
-              <p className="text-sm text-[#b8a898] mt-1">
-                Add an extra layer of security to your account
-              </p>
-              <Button className="mt-3" size="sm">
-                Enable 2FA
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-[#1a2b4a]/10 pt-6">
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
-          Active Sessions
-        </h4>
-        <div className="space-y-3">
-          {[
-            { device: "Chrome on MacOS", location: "Denver, CO", current: true },
-            { device: "Safari on iPhone", location: "Denver, CO", current: false }
-          ].map((session, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10"
-            >
-              <div>
-                <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-                  {session.device}
-                  {session.current && (
-                    <span className="ml-2 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded">
-                      Current
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-[#b8a898]">{session.location}</p>
-              </div>
-              {!session.current && (
-                <Button variant="ghost" size="sm" className="text-red-500">
-                  Revoke
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <SecurityPanel />
     </div>
   );
 

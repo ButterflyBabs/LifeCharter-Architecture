@@ -155,11 +155,11 @@ export default function ExecutiveHome() {
   };
 
   // Wrapper props that make a briefing card a draggable, drop-target grid item.
-  const briefCardProps = (id: string) => ({
+  const briefCardProps = (id: string, extra = "") => ({
     style: { order: briefOrder.indexOf(id) },
     onDragOver: (e: React.DragEvent) => e.preventDefault(),
     onDrop: () => dropOn(id),
-    className: "relative group",
+    className: `relative group ${extra}`.trim(),
   });
 
   // Fetch live Gmail inbox
@@ -614,7 +614,7 @@ export default function ExecutiveHome() {
         </div>
 
         {/* Priority Tasks */}
-        <div {...briefCardProps("tasks")}>
+        <div {...briefCardProps("tasks", "lg:col-span-3")}>
           <button draggable onDragStart={() => setDragId("tasks")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header with lighter background */}
