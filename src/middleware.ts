@@ -7,8 +7,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout"];
-const PUBLIC_APIS = ["/api/google/callback"]; // Google redirects here without our session
+const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password"];
+const PUBLIC_APIS = ["/api/google/callback", "/auth/callback"]; // external redirects land here without our session
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });

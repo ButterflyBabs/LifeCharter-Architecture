@@ -153,7 +153,7 @@ export function LoginView() {
                 Keep me signed in
               </label>
               <a
-                href={`${SUPPORT_MAILTO}?subject=Password%20help`}
+                href="/forgot-password"
                 className="border-b border-transparent text-brand-lavender transition hover:border-brand-gold hover:text-brand-gold-soft"
               >
                 Forgot password?
