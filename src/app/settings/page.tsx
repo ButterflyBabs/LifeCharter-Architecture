@@ -103,7 +103,50 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
   const supabase = createClient();
-  
+
+  // Change-password state
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleUpdatePassword = async () => {
+    setPwMsg(null);
+    if (pwNew.length < 8) {
+      setPwMsg({ ok: false, text: "New password must be at least 8 characters." });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ ok: false, text: "New passwords don't match." });
+      return;
+    }
+    const email = profile.email;
+    if (!email) {
+      setPwMsg({ ok: false, text: "Couldn't determine your account email — try reloading." });
+      return;
+    }
+    setPwSaving(true);
+    // Verify the current password by re-authenticating before changing it.
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pwCurrent });
+    if (signInErr) {
+      setPwSaving(false);
+      setPwMsg({ ok: false, text: "Current password is incorrect." });
+      return;
+    }
+    const { error: updErr } = await supabase.auth.updateUser({ password: pwNew });
+    setPwSaving(false);
+    if (updErr) {
+      setPwMsg({ ok: false, text: updErr.message });
+      return;
+    }
+    setPwCurrent("");
+    setPwNew("");
+    setPwConfirm("");
+    setPwMsg({ ok: true, text: "Password updated." });
+  };
+
+
   // Theme context for appearance settings
   const theme = useTheme();
 
@@ -1176,10 +1219,36 @@ export default function SettingsPage() {
           Change Password
         </h4>
         <div className="space-y-4">
-          <Input type="password" placeholder="Current password" />
-          <Input type="password" placeholder="New password" />
-          <Input type="password" placeholder="Confirm new password" />
-          <Button>Update Password</Button>
+          <Input
+            type="password"
+            placeholder="Current password"
+            autoComplete="current-password"
+            value={pwCurrent}
+            onChange={(e) => setPwCurrent(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="New password"
+            autoComplete="new-password"
+            value={pwNew}
+            onChange={(e) => setPwNew(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Confirm new password"
+            autoComplete="new-password"
+            value={pwConfirm}
+            onChange={(e) => setPwConfirm(e.target.value)}
+          />
+          {pwMsg && (
+            <p className={`text-sm ${pwMsg.ok ? "text-green-600" : "text-red-600"}`}>{pwMsg.text}</p>
+          )}
+          <Button
+            onClick={handleUpdatePassword}
+            disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}
+          >
+            {pwSaving ? "Updating…" : "Update Password"}
+          </Button>
         </div>
       </div>
 
