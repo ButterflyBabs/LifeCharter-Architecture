@@ -118,21 +118,22 @@ export default function BillingPanel() {
             const copy = COPY[plan.id] ?? { tagline: plan.description ?? "", onboarding: "", features: [] };
             const isCurrent = current?.planId === plan.id;
             return (
-              <Card key={plan.id} className={`relative ${copy.popular ? "border-[#c9a227] border-2" : ""}`}>
+              <div key={plan.id} className="relative pt-3">
                 {copy.popular && !isCurrent && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-[#c9a227] text-[#1a2b4a] text-xs font-semibold px-3 py-1 rounded-full">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+                    <span className="bg-[#c9a227] text-[#1a2b4a] text-xs font-semibold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
                       Most popular
                     </span>
                   </div>
                 )}
                 {isCurrent && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-[#2E7C83] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+                    <span className="bg-[#2E7C83] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
                       Your plan
                     </span>
                   </div>
                 )}
+                <Card className={`relative h-full ${copy.popular ? "border-[#c9a227] border-2" : ""}`}>
                 <CardContent className="p-6">
                   <h4 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.name}</h4>
                   <p className="text-sm text-[#b8a898] mt-0.5">{copy.tagline}</p>
@@ -168,7 +169,8 @@ export default function BillingPanel() {
                     </a>
                   )}
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
             );
           })}
         </div>
