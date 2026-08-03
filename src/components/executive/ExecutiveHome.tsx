@@ -197,9 +197,15 @@ export default function ExecutiveHome() {
       .catch(() => setGoogleConnected(false));
   }, []);
 
-  // Fetch live Google Calendar (today)
+  // Fetch live calendars (today), merged across providers. Anchor "today" and
+  // the times to the viewer's timezone: their saved choice, else auto-detected.
   useEffect(() => {
-    fetch("/api/schedule")
+    const tz =
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("userTimezone") ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+      "UTC";
+    fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setSchedule(d))
       .catch(() => {});

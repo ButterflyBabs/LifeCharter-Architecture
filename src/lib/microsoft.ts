@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import type { InboxEmail, ScheduleEvent } from "@/lib/google";
+import { dayWindowUtc } from "@/lib/tz";
 
 // Microsoft 365 (Graph) OAuth + Mail/Calendar helpers — the Microsoft twin of
 // lib/google.ts (raw fetch, no SDK). Single stored credential keyed by
@@ -208,27 +209,37 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
   }));
 }
 
-export async function fetchTodayEvents(accessToken: string): Promise<ScheduleEvent[]> {
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
+  const { startISO, endISO } = dayWindowUtc(timeZone);
+  // No Prefer:outlook.timezone header, so Graph interprets the window as UTC
+  // and returns start.dateTime in UTC (naive, no offset) — we append "Z".
   const url =
-    `${GRAPH}/me/calendarView?startDateTime=${encodeURIComponent(dayStart)}` +
-    `&endDateTime=${encodeURIComponent(dayEnd)}` +
-    `&$select=subject,start&$orderby=start/dateTime&$top=10`;
+    `${GRAPH}/me/calendarView?startDateTime=${encodeURIComponent(startISO)}` +
+    `&endDateTime=${encodeURIComponent(endISO)}` +
+    `&$select=subject,start,isAllDay&$orderby=start/dateTime&$top=15`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!r.ok) throw new Error(`graph calendar ${r.status}`);
   const data = await r.json();
-  return ((data.value ?? []) as Array<{ id: string; subject?: string; start?: { dateTime?: string } }>).map(
-    (e) => ({
+  return (
+    (data.value ?? []) as Array<{
+      id: string;
+      subject?: string;
+      isAllDay?: boolean;
+      start?: { dateTime?: string };
+    }>
+  ).map((e) => {
+    const iso = e.start?.dateTime ? e.start.dateTime + "Z" : null;
+    return {
       id: e.id,
       title: e.subject ?? "(busy)",
-      time: e.start?.dateTime
-        ? new Date(e.start.dateTime + "Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-        : "All day",
-      start: e.start?.dateTime ?? null,
-    })
-  );
+      time: e.isAllDay
+        ? "All day"
+        : iso
+          ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone })
+          : "All day",
+      start: iso ? new Date(iso).toISOString() : null,
+    };
+  });
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {

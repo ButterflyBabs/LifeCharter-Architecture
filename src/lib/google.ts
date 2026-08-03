@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { dayWindowUtc } from "@/lib/tz";
 
 // Google OAuth + Gmail/Calendar helpers (no external dependency — raw fetch).
 // Single-tenant: one stored credential keyed by ACCOUNT_KEY.
@@ -225,16 +226,15 @@ export type ScheduleEvent = {
   start: string | null;
 };
 
-export async function fetchTodayEvents(accessToken: string): Promise<ScheduleEvent[]> {
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
+  const { startISO, endISO } = dayWindowUtc(timeZone);
   const params = new URLSearchParams({
-    timeMin: dayStart,
-    timeMax: dayEnd,
+    timeMin: startISO,
+    timeMax: endISO,
     singleEvents: "true",
     orderBy: "startTime",
-    maxResults: "10",
+    maxResults: "15",
+    timeZone,
   });
   const r = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
@@ -246,8 +246,13 @@ export async function fetchTodayEvents(accessToken: string): Promise<ScheduleEve
     (e: { id: string; summary?: string; start?: { dateTime?: string; date?: string } }) => ({
       id: e.id,
       title: e.summary ?? "(busy)",
+      // dateTime => timed event (format in the viewer's tz); bare date => all-day.
       time: e.start?.dateTime
-        ? new Date(e.start.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+        ? new Date(e.start.dateTime).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone,
+          })
         : "All day",
       start: e.start?.dateTime ?? e.start?.date ?? null,
     })

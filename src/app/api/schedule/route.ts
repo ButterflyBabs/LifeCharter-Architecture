@@ -2,13 +2,28 @@ import { NextResponse } from "next/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import type { ScheduleEvent } from "@/lib/google";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 type MergedEvent = ScheduleEvent & { account: string };
 
 // Today's events merged across every connected calendar (Google + Microsoft 365).
-export async function GET() {
+export async function GET(request: Request) {
+  // Anchor "today" and displayed times to the viewer's timezone. Priority:
+  // their saved Settings choice (profiles.timezone), then the auto-detected
+  // tz the client sends (?tz=), then UTC.
+  const queryTz = new URL(request.url).searchParams.get("tz") || "";
+  let timeZone = queryTz || "UTC";
+  try {
+    const supabase = createServerClient();
+    const { data: prof } = await supabase.from("profiles").select("timezone").limit(1).maybeSingle();
+    const profileTz = (prof?.timezone as string | null)?.trim();
+    if (profileTz) timeZone = profileTz;
+  } catch {
+    /* fall back to the query tz */
+  }
+
   const [gToken, mToken] = await Promise.all([
     google.getValidAccessToken(),
     microsoft.getValidAccessToken(),
@@ -20,7 +35,7 @@ export async function GET() {
   if (gToken) {
     connected = true;
     try {
-      const g = await google.fetchTodayEvents(gToken);
+      const g = await google.fetchTodayEvents(gToken, timeZone);
       events.push(...g.map((e) => ({ ...e, account: "Gmail" })));
     } catch (e) {
       console.error("schedule google:", e);
@@ -30,7 +45,7 @@ export async function GET() {
     connected = true;
     const mEmail = (await microsoft.connectedEmail()) ?? "Microsoft 365";
     try {
-      const m = await microsoft.fetchTodayEvents(mToken);
+      const m = await microsoft.fetchTodayEvents(mToken, timeZone);
       events.push(...m.map((e) => ({ ...e, account: mEmail })));
     } catch (e) {
       console.error("schedule microsoft:", e);
