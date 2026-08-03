@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { InboxEmail, ScheduleEvent, MessageDetail } from "@/lib/google";
+import type { InboxEmail, ScheduleEvent, MessageDetail, OutgoingAttachment } from "@/lib/google";
 import { dayWindowUtc } from "@/lib/tz";
 
 // Microsoft 365 (Graph) OAuth + Mail/Calendar helpers — the Microsoft twin of
@@ -410,8 +410,14 @@ export async function forwardMessage(
 
 export async function sendEmail(
   accessToken: string,
-  opts: { to: string; subject: string; body: string }
+  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
 ): Promise<void> {
+  const attachments = (opts.attachments ?? []).map((a) => ({
+    "@odata.type": "#microsoft.graph.fileAttachment",
+    name: a.name,
+    contentType: a.mimeType || "application/octet-stream",
+    contentBytes: a.contentBase64.replace(/\r?\n/g, ""),
+  }));
   const r = await fetch(`${GRAPH}/me/sendMail`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -420,6 +426,7 @@ export async function sendEmail(
         subject: opts.subject,
         body: { contentType: "Text", content: opts.body },
         toRecipients: [{ emailAddress: { address: opts.to } }],
+        ...(attachments.length ? { attachments } : {}),
       },
       saveToSentItems: true,
     }),

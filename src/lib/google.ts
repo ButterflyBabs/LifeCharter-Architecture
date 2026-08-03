@@ -470,18 +470,50 @@ export async function sendReply(
   if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
 }
 
+export type OutgoingAttachment = { name: string; mimeType: string; contentBase64: string };
+
 // Compose and send a brand-new email (not a reply — no thread, subject as-is).
 export async function sendEmail(
   accessToken: string,
-  opts: { to: string; subject: string; body: string }
+  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
 ): Promise<void> {
-  const headerLines = [
-    `To: ${opts.to}`,
-    `Subject: ${opts.subject}`,
-    "MIME-Version: 1.0",
-    'Content-Type: text/plain; charset="UTF-8"',
-  ].join("\r\n");
-  const raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
+  const attachments = opts.attachments ?? [];
+  let raw: string;
+  if (attachments.length === 0) {
+    const headerLines = [
+      `To: ${opts.to}`,
+      `Subject: ${opts.subject}`,
+      "MIME-Version: 1.0",
+      'Content-Type: text/plain; charset="UTF-8"',
+    ].join("\r\n");
+    raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
+  } else {
+    const boundary = `----=_lc_${Date.now().toString(36)}`;
+    const parts = [
+      `To: ${opts.to}`,
+      `Subject: ${opts.subject}`,
+      "MIME-Version: 1.0",
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      'Content-Type: text/plain; charset="UTF-8"',
+      "",
+      opts.body,
+    ];
+    for (const a of attachments) {
+      const safe = a.name.replace(/"/g, "");
+      parts.push(
+        `--${boundary}`,
+        `Content-Type: ${a.mimeType || "application/octet-stream"}; name="${safe}"`,
+        "Content-Transfer-Encoding: base64",
+        `Content-Disposition: attachment; filename="${safe}"`,
+        "",
+        a.contentBase64.replace(/\r?\n/g, "")
+      );
+    }
+    parts.push(`--${boundary}--`, "");
+    raw = base64Url(parts.join("\r\n"));
+  }
   const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },

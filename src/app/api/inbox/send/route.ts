@@ -16,7 +16,24 @@ export async function POST(request: Request) {
   }
 
   const provider = body?.provider === "microsoft" ? "microsoft" : "google";
-  const opts = { to: String(body.to), subject: String(body.subject), body: String(body.body) };
+  const attachments = Array.isArray(body?.attachments)
+    ? body.attachments
+        .filter((a: unknown): a is { name?: string; mimeType?: string; contentBase64?: string } =>
+          Boolean(a && typeof a === "object")
+        )
+        .map((a: { name?: string; mimeType?: string; contentBase64?: string }) => ({
+          name: String(a.name ?? "attachment"),
+          mimeType: String(a.mimeType ?? "application/octet-stream"),
+          contentBase64: String(a.contentBase64 ?? ""),
+        }))
+        .filter((a: { contentBase64: string }) => a.contentBase64.length > 0)
+    : [];
+  const opts = {
+    to: String(body.to),
+    subject: String(body.subject),
+    body: String(body.body),
+    attachments,
+  };
 
   try {
     if (provider === "microsoft") {

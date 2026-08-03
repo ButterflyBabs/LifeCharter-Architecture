@@ -118,6 +118,9 @@ export default function ExecutiveHome() {
   });
   const [accounts, setAccounts] = useState<MailAccount[]>([]);
   const [composeProvider, setComposeProvider] = useState<Provider>("google");
+  const [composeFiles, setComposeFiles] = useState<
+    { name: string; mimeType: string; contentBase64: string; size: number }[]
+  >([]);
   const [readingSource, setReadingSource] = useState<Email | null>(null);
   const [thread, setThread] = useState<MsgDetail[] | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -540,6 +543,33 @@ export default function ExecutiveHome() {
     setShowReplyModal(true);
   };
 
+  // Read a File into base64 (no data-URL prefix), for sending as an attachment.
+  const readFileBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const onComposeFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const added: { name: string; mimeType: string; contentBase64: string; size: number }[] = [];
+    for (const f of Array.from(files)) {
+      const contentBase64 = await readFileBase64(f);
+      added.push({ name: f.name, mimeType: f.type || "application/octet-stream", contentBase64, size: f.size });
+    }
+    setComposeFiles((prev) => {
+      const next = [...prev, ...added];
+      const total = next.reduce((s, a) => s + a.size, 0);
+      if (total > 4_300_000) {
+        alert("Attachments are too large — keep the total under about 4 MB for now.");
+        return prev;
+      }
+      return next;
+    });
+  };
+
   const handleSendCompose = async () => {
     if (!composeTo.trim() || !composeBody.trim()) return;
     setSending(true);
@@ -552,6 +582,11 @@ export default function ExecutiveHome() {
           to: composeTo.trim(),
           subject: composeSubject.trim() || "(no subject)",
           body: composeBody,
+          attachments: composeFiles.map(({ name, mimeType, contentBase64 }) => ({
+            name,
+            mimeType,
+            contentBase64,
+          })),
         }),
       });
       if (!res.ok) {
@@ -563,6 +598,7 @@ export default function ExecutiveHome() {
       setComposeTo("");
       setComposeSubject("");
       setComposeBody("");
+      setComposeFiles([]);
       setShowCompose(false);
     } catch {
       alert("Message failed to send.");
@@ -1074,7 +1110,10 @@ export default function ExecutiveHome() {
             </div>
             {googleConnected && (
               <button
-                onClick={() => setShowCompose(true)}
+                onClick={() => {
+                  setComposeFiles([]);
+                  setShowCompose(true);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
               >
                 <Mail className="w-4 h-4" />
@@ -1763,6 +1802,44 @@ export default function ExecutiveHome() {
                   rows={6}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2] resize-none"
                 />
+              </div>
+
+              {/* Attachments */}
+              <div>
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#84AEB2] text-[#2E7C83] text-sm cursor-pointer hover:bg-[#84AEB2]/5 transition-colors">
+                  <Paperclip className="w-4 h-4" />
+                  Attach files
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      onComposeFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {composeFiles.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {composeFiles.map((f, i) => (
+                      <span
+                        key={`${f.name}-${i}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E8E4E0] bg-gray-50 text-xs text-[#3F4654]"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-[#7A5D84]" />
+                        <span className="max-w-[160px] truncate">{f.name}</span>
+                        {f.size ? <span className="text-gray-400">{formatBytes(f.size)}</span> : null}
+                        <button
+                          onClick={() => setComposeFiles((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-gray-400 hover:text-red-600"
+                          aria-label="Remove attachment"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-1">
