@@ -27,6 +27,7 @@ import {
   Link2,
 } from "lucide-react";
 import Link from "next/link";
+import { GlobalControlContacts } from "./GlobalControlContacts";
 
 // A task as returned by /api/tasks.
 interface RealTask {
@@ -685,6 +686,11 @@ export default function DailyCompassPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Global Control contacts — full-width, editable */}
+      <div className="mt-6">
+        <GlobalControlContacts />
       </div>
     </div>
   );

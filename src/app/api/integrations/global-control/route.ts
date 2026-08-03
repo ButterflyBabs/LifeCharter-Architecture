@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { validateKey, GcError } from "@/lib/globalControl";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,18 @@ export async function POST(request: Request) {
   const accountId = typeof body.accountId === "string" ? body.accountId.trim() : "";
   if (!apiKey) {
     return NextResponse.json({ error: "An API key is required." }, { status: 400 });
+  }
+
+  // Validate the key against Global Control before saving, so the client gets
+  // immediate feedback instead of a silent bad connection.
+  try {
+    await validateKey(apiKey);
+  } catch (e) {
+    const msg =
+      e instanceof GcError && e.status === 401
+        ? "Global Control rejected that key — please double-check it."
+        : "Couldn't verify the key with Global Control. Check the key and try again.";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
   // Upsert on (master_plan_id, provider). We look up the existing row first so
