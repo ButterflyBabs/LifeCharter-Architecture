@@ -841,6 +841,7 @@ export default function ExecutiveHome() {
   };
 
   // Get tasks for each column
+  const openTaskCount = tasks.filter(t => t.status !== "done").length;
   const todayTasks = tasks.filter(t => t.status === "today").slice(0, 3);
   const inProgressTasks = tasks.filter(t => t.status === "in_progress").slice(0, 3);
   const waitingTasks = tasks.filter(t => t.status === "waiting").slice(0, 3);
@@ -957,7 +958,7 @@ export default function ExecutiveHome() {
                   <div className="w-11 h-11 rounded-full bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
                     <CheckSquare className="w-5 h-5 text-[#7B6B8D]" />
                   </div>
-                  <span className="text-sm text-[#3F4654]">{tasks.length} {tasks.length === 1 ? "task requires" : "tasks require"} attention</span>
+                  <span className="text-sm text-[#3F4654]">{openTaskCount} {openTaskCount === 1 ? "task requires" : "tasks require"} attention</span>
                 </div>
 
                 {/* Row 3 - Revenue */}

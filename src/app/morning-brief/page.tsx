@@ -87,14 +87,55 @@ export default function MorningBriefPage() {
       .finally(() => setDataReady(true));
   }, []);
 
-  const topTasks = [...tasks]
-    .sort((a, b) => {
-      const aToday = a.status === "today" ? 0 : 1;
-      const bToday = b.status === "today" ? 0 : 1;
-      if (aToday !== bToday) return aToday - bToday;
-      return (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
-    })
-    .slice(0, 5);
+  const byPriority = (a: RealTask, b: RealTask) =>
+    (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
+
+  // Active = not done. Today's focus vs anything carried over (still open from
+  // earlier). Completed tasks drop off entirely.
+  const activeTasks = tasks.filter((t) => t.status !== "done");
+  const todayFocus = activeTasks.filter((t) => t.status === "today").sort(byPriority).slice(0, 6);
+  const overflow = activeTasks.filter((t) => t.status !== "today").sort(byPriority).slice(0, 6);
+
+  // Check a task done: stamp it complete and drop it from the day.
+  const completeTask = async (id: number) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" }),
+      });
+    } catch {
+      /* optimistic */
+    }
+  };
+
+  const dotFor = (p: string) =>
+    p === "critical" ? "#D83A34" : p === "high" ? "#F0B400" : p === "medium" ? "#54A33B" : "#9CA3AF";
+
+  // A checkable task row — checking it marks the task done.
+  const taskRow = (t: RealTask) => (
+    <div key={t.id} className="flex items-start gap-3">
+      <button
+        onClick={() => completeTask(t.id)}
+        title="Mark done"
+        className="mt-0.5 w-4 h-4 rounded-full border-2 border-gray-300 hover:border-[#54A33B] hover:bg-[#54A33B]/10 transition-colors flex-shrink-0"
+        aria-label={`Mark "${t.title}" done`}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: dotFor(t.priority) }}
+          />
+          <p className="text-sm text-[#3F4654] leading-snug break-words">{t.title}</p>
+        </div>
+        {t.business?.name && (
+          <span className="text-[11px] text-gray-400 ml-4">{t.business.name}</span>
+        )}
+      </div>
+    </div>
+  );
 
   const nextEvent = schedule?.events?.[0] ?? null;
 
@@ -119,16 +160,23 @@ export default function MorningBriefPage() {
         ? `${schedule.events.length} meeting(s), next "${schedule.events[0].title}" at ${schedule.events[0].time}`
         : "no meetings today"
       : "calendar not connected";
-    const taskLine = tasks.length
-      ? `${tasks.length} open task(s); top: ${topTasks.map((t) => t.title).slice(0, 3).join("; ")}`
-      : "no open tasks";
+    const active = tasks.filter((t) => t.status !== "done");
+    const todayList = active.filter((t) => t.status === "today").map((t) => t.title);
+    const overflowList = active.filter((t) => t.status !== "today").map((t) => t.title);
+    const todayLine = todayList.length ? todayList.slice(0, 6).join("; ") : "none flagged for today";
+    const overflowLine = overflowList.length ? overflowList.slice(0, 6).join("; ") : "";
     const revLine = finance?.hasData
       ? `${currency(finance.thisMonth)} revenue this month`
       : "no revenue recorded yet";
     const message =
-      `Give me my morning briefing in 2-3 warm, focused sentences (speak to me directly as ${firstName || "the founder"}). ` +
-      `Today: ${meetings}. Tasks: ${taskLine}. Finance: ${revLine}. ` +
-      `End with one clear suggestion for where to focus first. Keep it encouraging, not fluffy.`;
+      `Give me my morning briefing in 3-4 warm, focused sentences (speak to me directly as ${firstName || "the founder"}). ` +
+      `Today's meetings: ${meetings}. Today's tasks: ${todayLine}. Finance: ${revLine}. ` +
+      (overflowLine ? `Still open from earlier (carried over, not yet done): ${overflowLine}. ` : "") +
+      `Structure it: lead with today's meetings and today's tasks and where to focus first. ` +
+      (overflowLine
+        ? `Then, at the END, add one short line surfacing the carried-over items as still open from earlier. `
+        : "") +
+      `Keep it encouraging, not fluffy.`;
     try {
       const res = await fetch("/api/mariposa", {
         method: "POST",
@@ -141,7 +189,7 @@ export default function MorningBriefPage() {
       setAiSummary("I couldn't put your briefing together right now.");
     }
     setAiLoading(false);
-  }, [schedule, tasks, finance, firstName, topTasks]);
+  }, [schedule, tasks, finance, firstName]);
 
   // Generate the AI summary once the day's data has loaded (needs a key).
   useEffect(() => {
@@ -252,9 +300,10 @@ export default function MorningBriefPage() {
             <CheckSquare className="w-5 h-5" />
             <span className="text-sm font-medium">Tasks</span>
           </div>
-          <p className="text-2xl font-serif text-indigo-900">{tasks.length}</p>
+          <p className="text-2xl font-serif text-indigo-900">{activeTasks.length}</p>
           <p className="text-sm text-[#7C7C82] mt-1">
-            {tasks.length === 1 ? "task needs attention" : "tasks need attention"}
+            {activeTasks.length === 1 ? "task open" : "tasks open"}
+            {overflow.length ? ` · ${overflow.length} carried over` : ""}
           </p>
         </Link>
 
@@ -317,46 +366,39 @@ export default function MorningBriefPage() {
           )}
         </div>
 
-        {/* Top tasks */}
+        {/* Where to focus — today's tasks, checkable */}
         <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-serif text-base text-indigo-900">Where to focus</h3>
+            <h3 className="font-serif text-base text-indigo-900">Where to focus today</h3>
             <Link href="/tasks" className="text-xs text-[#2E7C83] hover:underline">
               All tasks
             </Link>
           </div>
-          {topTasks.length === 0 ? (
-            <p className="text-sm text-gray-400">No open tasks — nicely done.</p>
+          {todayFocus.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              Nothing flagged for today. {overflow.length ? "See what's carried over below." : "Clear slate."}
+            </p>
           ) : (
-            <div className="space-y-2.5">
-              {topTasks.map((t) => {
-                const dot =
-                  t.priority === "critical"
-                    ? "#D83A34"
-                    : t.priority === "high"
-                      ? "#F0B400"
-                      : t.priority === "medium"
-                        ? "#54A33B"
-                        : "#9CA3AF";
-                return (
-                  <div key={t.id} className="flex items-start gap-3">
-                    <div
-                      className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-                      style={{ backgroundColor: dot }}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm text-[#3F4654] leading-snug break-words">{t.title}</p>
-                      {t.business?.name && (
-                        <span className="text-[11px] text-gray-400">{t.business.name}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <div className="space-y-2.5">{todayFocus.map(taskRow)}</div>
           )}
         </div>
       </div>
+
+      {/* Carried over — anything still open from earlier */}
+      {overflow.length > 0 && (
+        <div className="mt-4 bg-[#FBF6EE] rounded-2xl border border-[#EADFC9] shadow-sm p-6">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-serif text-base text-indigo-900">Carried over from earlier</h3>
+            <Link href="/tasks" className="text-xs text-[#2E7C83] hover:underline">
+              All tasks
+            </Link>
+          </div>
+          <p className="text-xs text-[#9a8c73] mb-4">
+            Still open, not yet checked done — rolled forward to today. Check any off as you finish.
+          </p>
+          <div className="space-y-2.5">{overflow.map(taskRow)}</div>
+        </div>
+      )}
 
       {/* Mobile CTA */}
       <Link

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Check } from "lucide-react";
 
 interface Task {
   id: number;
@@ -130,12 +130,31 @@ export default function TasksPage() {
                       className="bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-white/10 p-3 shadow-sm"
                     >
                       <div className="flex items-start gap-2">
+                        <button
+                          onClick={() => setStatus(t.id, t.status === "done" ? "today" : "done")}
+                          title={t.status === "done" ? "Reopen" : "Mark done"}
+                          className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                            t.status === "done"
+                              ? "bg-[#54A33B] border-[#54A33B] text-white"
+                              : "border-gray-300 hover:border-[#54A33B]"
+                          }`}
+                        >
+                          {t.status === "done" && <Check className="w-2.5 h-2.5" />}
+                        </button>
                         <div
                           className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                           style={{ backgroundColor: PRIORITY_COLOR[t.priority] ?? "#9CA3AF" }}
                           title={t.priority}
                         />
-                        <p className="text-sm text-[#3F4654] dark:text-[#e8e4f0] leading-snug flex-1">{t.title}</p>
+                        <p
+                          className={`text-sm leading-snug flex-1 ${
+                            t.status === "done"
+                              ? "line-through text-gray-400"
+                              : "text-[#3F4654] dark:text-[#e8e4f0]"
+                          }`}
+                        >
+                          {t.title}
+                        </p>
                         <button
                           onClick={() => remove(t.id)}
                           className="text-gray-300 hover:text-[#D83A34] transition-colors"
