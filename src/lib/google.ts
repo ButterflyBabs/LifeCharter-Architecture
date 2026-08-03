@@ -162,6 +162,7 @@ export type InboxEmail = {
   time: string;
   ts: number; // epoch ms of the message date, for cross-account sorting
   unread: boolean;
+  labels: MailLabel[];
 };
 
 function relativeTime(dateStr?: string): string {
@@ -178,7 +179,11 @@ function relativeTime(dateStr?: string): string {
 }
 
 // Hydrate a list of Gmail message ids into InboxEmail rows (metadata only).
-async function hydrateInboxIds(accessToken: string, ids: string[]): Promise<InboxEmail[]> {
+async function hydrateInboxIds(
+  accessToken: string,
+  ids: string[],
+  labelMap: Map<string, string>
+): Promise<InboxEmail[]> {
   const results = await Promise.all(
     ids.map(async (id) => {
       const r = await fetch(
@@ -207,6 +212,9 @@ async function hydrateInboxIds(accessToken: string, ids: string[]): Promise<Inbo
         time: relativeTime(headers["date"]),
         ts: headers["date"] ? new Date(headers["date"]).getTime() || 0 : 0,
         unread: (msg.labelIds ?? []).includes("UNREAD"),
+        labels: ((msg.labelIds ?? []) as string[])
+          .filter((lid) => labelMap.has(lid))
+          .map((lid) => ({ id: lid, name: labelMap.get(lid) as string })),
       };
       return email;
     })
@@ -215,26 +223,31 @@ async function hydrateInboxIds(accessToken: string, ids: string[]): Promise<Inbo
 }
 
 export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
-  const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&labelIds=INBOX`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const [listRes, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&labelIds=INBOX`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
   if (!listRes.ok) throw new Error(`gmail list ${listRes.status}`);
   const list = await listRes.json();
   const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
-  return hydrateInboxIds(accessToken, ids);
+  return hydrateInboxIds(accessToken, ids, labelMap);
 }
 
 // Full-text search across the mailbox (Gmail search syntax).
 export async function searchInbox(accessToken: string, query: string, max = 20): Promise<InboxEmail[]> {
-  const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(query)}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const [listRes, labelMap] = await Promise.all([
+    fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(query)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    ),
+    userLabelMap(accessToken),
+  ]);
   if (!listRes.ok) throw new Error(`gmail search ${listRes.status}`);
   const list = await listRes.json();
   const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
-  return hydrateInboxIds(accessToken, ids);
+  return hydrateInboxIds(accessToken, ids, labelMap);
 }
 
 export type AttachmentMeta = { id: string; name: string; mimeType: string; size: number };
@@ -350,6 +363,22 @@ export async function listLabels(accessToken: string): Promise<MailLabel[]> {
 async function userLabelMap(accessToken: string): Promise<Map<string, string>> {
   const labels = await listLabels(accessToken);
   return new Map(labels.map((l) => [l.id, l.name]));
+}
+
+// Create a new Gmail label, returning it.
+export async function createLabel(accessToken: string, name: string): Promise<MailLabel> {
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    }),
+  });
+  if (!r.ok) throw new Error(`gmail create label ${r.status} ${await r.text()}`);
+  const l = (await r.json()) as { id: string; name: string };
+  return { id: l.id, name: l.name };
 }
 
 // Add/remove labels on a message (by label id).

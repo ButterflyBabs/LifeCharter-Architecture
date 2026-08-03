@@ -191,18 +191,12 @@ interface GraphMessage {
   bodyPreview?: string;
   receivedDateTime?: string;
   isRead?: boolean;
+  categories?: string[];
   from?: { emailAddress?: { name?: string; address?: string } };
 }
 
-export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
-  const url =
-    `${GRAPH}/me/mailFolders/inbox/messages?$top=${max}` +
-    `&$select=id,conversationId,internetMessageId,subject,bodyPreview,from,receivedDateTime,isRead` +
-    `&$orderby=receivedDateTime%20desc`;
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!r.ok) throw new Error(`graph messages ${r.status}`);
-  const data = await r.json();
-  return ((data.value ?? []) as GraphMessage[]).map((m) => ({
+function graphInboxRow(m: GraphMessage): InboxEmail {
+  return {
     id: m.id,
     threadId: m.conversationId ?? "",
     from: m.from?.emailAddress?.name ?? m.from?.emailAddress?.address ?? "",
@@ -213,29 +207,32 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
     time: relativeTime(m.receivedDateTime),
     ts: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() || 0 : 0,
     unread: m.isRead === false,
-  }));
+    labels: (m.categories ?? []).map((c) => ({ id: c, name: c })),
+  };
+}
+
+const INBOX_SELECT =
+  "id,conversationId,internetMessageId,subject,bodyPreview,from,receivedDateTime,isRead,categories";
+
+export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
+  const url =
+    `${GRAPH}/me/mailFolders/inbox/messages?$top=${max}` +
+    `&$select=${INBOX_SELECT}&$orderby=receivedDateTime%20desc`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!r.ok) throw new Error(`graph messages ${r.status}`);
+  const data = await r.json();
+  return ((data.value ?? []) as GraphMessage[]).map(graphInboxRow);
 }
 
 // Full-text search across the mailbox ($search).
 export async function searchInbox(accessToken: string, query: string, max = 20): Promise<InboxEmail[]> {
   const url =
     `${GRAPH}/me/messages?$search="${encodeURIComponent(query)}"` +
-    `&$select=id,conversationId,internetMessageId,subject,bodyPreview,from,receivedDateTime,isRead&$top=${max}`;
+    `&$select=${INBOX_SELECT}&$top=${max}`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!r.ok) throw new Error(`graph search ${r.status}`);
   const data = await r.json();
-  return ((data.value ?? []) as GraphMessage[]).map((m) => ({
-    id: m.id,
-    threadId: m.conversationId ?? "",
-    from: m.from?.emailAddress?.name ?? m.from?.emailAddress?.address ?? "",
-    fromEmail: m.from?.emailAddress?.address ?? "",
-    messageId: m.internetMessageId ?? "",
-    subject: m.subject || "(no subject)",
-    preview: m.bodyPreview ?? "",
-    time: relativeTime(m.receivedDateTime),
-    ts: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() || 0 : 0,
-    unread: m.isRead === false,
-  }));
+  return ((data.value ?? []) as GraphMessage[]).map(graphInboxRow);
 }
 
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
@@ -363,6 +360,18 @@ export async function listLabels(accessToken: string): Promise<MailLabel[]> {
   return ((data.value ?? []) as Array<{ displayName?: string; color?: string }>)
     .filter((c) => c.displayName)
     .map((c) => ({ id: c.displayName as string, name: c.displayName as string, color: c.color }));
+}
+
+// Create a new Outlook master category, returning it.
+export async function createLabel(accessToken: string, name: string): Promise<MailLabel> {
+  const r = await fetch(`${GRAPH}/me/outlook/masterCategories`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName: name, color: "preset0" }),
+  });
+  if (!r.ok) throw new Error(`graph create category ${r.status} ${await r.text()}`);
+  const c = (await r.json()) as { displayName?: string; color?: string };
+  return { id: c.displayName ?? name, name: c.displayName ?? name, color: c.color };
 }
 
 // Add/remove categories (by display name) on a message — set the full array.

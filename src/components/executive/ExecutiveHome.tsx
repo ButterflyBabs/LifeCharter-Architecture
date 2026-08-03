@@ -43,6 +43,7 @@ interface Email {
   unread: boolean;
   provider?: Provider;
   account?: string;
+  labels?: MailLabel[];
 }
 
 interface MailAccount {
@@ -148,6 +149,9 @@ export default function ExecutiveHome() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [accountFilter, setAccountFilter] = useState<Provider | null>(null);
+  const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const [newLabelFor, setNewLabelFor] = useState<string | null>(null);
+  const [newLabelName, setNewLabelName] = useState("");
   const [forwarding, setForwarding] = useState(false);
   const [forwardSource, setForwardSource] = useState<Email | null>(null);
   const [forwardTo, setForwardTo] = useState("");
@@ -287,7 +291,14 @@ export default function ExecutiveHome() {
 
   const unreadCount = emails.filter((e) => e.unread).length;
   const visibleEmails = emails.filter(
-    (e) => (!unreadOnly || e.unread) && (!accountFilter || (e.provider ?? "google") === accountFilter)
+    (e) =>
+      (!unreadOnly || e.unread) &&
+      (!accountFilter || (e.provider ?? "google") === accountFilter) &&
+      (!labelFilter || (e.labels ?? []).some((l) => l.id === labelFilter))
+  );
+  // Distinct labels present across the loaded inbox, for the label filter.
+  const inboxLabels = Array.from(
+    new Map(emails.flatMap((e) => e.labels ?? []).map((l) => [l.id, l])).values()
   );
   const chipCls = (active: boolean) =>
     `px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
@@ -423,6 +434,32 @@ export default function ExecutiveHome() {
       });
     } catch {
       /* optimistic — leave the local change */
+    }
+  };
+
+  // Create a new label/category, then apply it to the message.
+  const createAndApplyLabel = async (msg: MsgDetail, rawName: string) => {
+    const name = rawName.trim();
+    if (!name) return;
+    const provider = readingSource?.provider ?? "google";
+    setNewLabelFor(null);
+    setNewLabelName("");
+    try {
+      const res = await fetch("/api/inbox/labels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, name }),
+      });
+      if (!res.ok) {
+        alert("Couldn't create that label.");
+        return;
+      }
+      const label = (await res.json())?.label as MailLabel | undefined;
+      if (!label) return;
+      setAvailableLabels((prev) => (prev.some((l) => l.id === label.id) ? prev : [...prev, label]));
+      changeLabel(msg, label, "add");
+    } catch {
+      alert("Couldn't create that label.");
     }
   };
 
@@ -1302,8 +1339,9 @@ export default function ExecutiveHome() {
                 onClick={() => {
                   setUnreadOnly(false);
                   setAccountFilter(null);
+                  setLabelFilter(null);
                 }}
-                className={chipCls(!unreadOnly && !accountFilter)}
+                className={chipCls(!unreadOnly && !accountFilter && !labelFilter)}
               >
                 All
               </button>
@@ -1320,6 +1358,24 @@ export default function ExecutiveHome() {
                     {a.label}
                   </button>
                 ))}
+              {inboxLabels.length > 0 && (
+                <select
+                  value={labelFilter ?? ""}
+                  onChange={(e) => setLabelFilter(e.target.value || null)}
+                  className={`text-xs font-medium border rounded-full px-3 py-1 outline-none ${
+                    labelFilter
+                      ? "bg-[#6F4A7C] text-white border-[#6F4A7C]"
+                      : "bg-white text-[#6b7280] border-gray-200"
+                  }`}
+                >
+                  <option value="">Label: all</option>
+                  {inboxLabels.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -1369,7 +1425,7 @@ export default function ExecutiveHome() {
             ) : (
               <>
                 {visibleEmails.map((email) => emailRow(email))}
-                {!unreadOnly && !accountFilter && emails.length >= inboxLimit && (
+                {!unreadOnly && !accountFilter && !labelFilter && emails.length >= inboxLimit && (
                   <button
                     onClick={loadMore}
                     disabled={loadingMore}
@@ -1761,6 +1817,40 @@ export default function ExecutiveHome() {
                                       </option>
                                     ))}
                                 </select>
+                              )}
+                              {newLabelFor === m.id ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <input
+                                    value={newLabelName}
+                                    onChange={(e) => setNewLabelName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") createAndApplyLabel(m, newLabelName);
+                                      if (e.key === "Escape") {
+                                        setNewLabelFor(null);
+                                        setNewLabelName("");
+                                      }
+                                    }}
+                                    placeholder="New label…"
+                                    autoFocus
+                                    className="text-[11px] border border-gray-200 rounded-full px-2 py-1 outline-none focus:border-[#84AEB2]"
+                                  />
+                                  <button
+                                    onClick={() => createAndApplyLabel(m, newLabelName)}
+                                    className="text-[11px] text-[#2E7C83] hover:underline"
+                                  >
+                                    Add
+                                  </button>
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setNewLabelFor(m.id);
+                                    setNewLabelName("");
+                                  }}
+                                  className="text-[11px] text-gray-500 border border-dashed border-gray-300 rounded-full px-2 py-1 hover:border-[#84AEB2] hover:text-[#2E7C83] transition-colors"
+                                >
+                                  + New
+                                </button>
                               )}
                             </div>
                           )}
