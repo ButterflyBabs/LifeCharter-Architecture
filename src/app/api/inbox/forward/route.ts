@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { crossOriginBlocked } from "@/lib/security";
+import { normalizeAttachments } from "@/lib/mailAttachments";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +19,12 @@ export async function POST(request: Request) {
 
   const provider = body?.provider === "microsoft" ? "microsoft" : "google";
   const lib = provider === "microsoft" ? microsoft : google;
+  const attachments = normalizeAttachments(body?.attachments);
 
   try {
     const token = await lib.getValidAccessToken();
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
-    await lib.forwardMessage(token, id, to, comment);
+    await lib.forwardMessage(token, id, to, comment, attachments);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("POST /api/inbox/forward:", e);

@@ -424,32 +424,104 @@ export async function trashMessage(accessToken: string, id: string): Promise<voi
   await moveMessage(accessToken, id, "deleteditems");
 }
 
-// Reply in-thread to a Graph message (Graph addresses + subjects it for us).
-export async function replyToMessage(accessToken: string, messageId: string, body: string): Promise<void> {
-  const r = await fetch(`${GRAPH}/me/messages/${messageId}/reply`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ comment: body }),
-  });
-  if (!r.ok) throw new Error(`graph reply ${r.status} ${await r.text()}`);
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
 }
 
-// Native Graph forward — carries the original body and attachments.
+async function graphPost(accessToken: string, path: string, body: unknown): Promise<unknown> {
+  const r = await fetch(`${GRAPH}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`graph ${path} ${r.status} ${await r.text()}`);
+  return r.status === 204 ? null : r.json().catch(() => null);
+}
+
+// Add file attachments to a draft, prepend the comment into its body, then send it.
+async function finishDraftWithAttachments(
+  accessToken: string,
+  draftId: string,
+  comment: string,
+  attachments: OutgoingAttachment[]
+): Promise<void> {
+  if (comment) {
+    const g = await fetch(`${GRAPH}/me/messages/${draftId}?$select=body`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (g.ok) {
+      const { body } = (await g.json()) as { body?: { contentType?: string; content?: string } };
+      const isHtml = (body?.contentType ?? "").toLowerCase() === "html";
+      const lead = isHtml ? `<div>${escapeHtml(comment)}</div><br>` : `${comment}\n\n`;
+      await fetch(`${GRAPH}/me/messages/${draftId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          body: { contentType: body?.contentType ?? "HTML", content: lead + (body?.content ?? "") },
+        }),
+      });
+    }
+  }
+  for (const a of attachments) {
+    await graphPost(accessToken, `/me/messages/${draftId}/attachments`, {
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: a.name,
+      contentType: a.mimeType || "application/octet-stream",
+      contentBytes: a.contentBase64.replace(/\r?\n/g, ""),
+    });
+  }
+  await graphPost(accessToken, `/me/messages/${draftId}/send`, {});
+}
+
+// Reply in-thread. Without attachments, the simple reply action; with
+// attachments, create a reply draft, attach, and send.
+export async function replyToMessage(
+  accessToken: string,
+  messageId: string,
+  body: string,
+  attachments?: OutgoingAttachment[]
+): Promise<void> {
+  if (!attachments || attachments.length === 0) {
+    await graphPost(accessToken, `/me/messages/${messageId}/reply`, { comment: body });
+    return;
+  }
+  const draft = (await graphPost(accessToken, `/me/messages/${messageId}/createReply`, {})) as {
+    id?: string;
+  };
+  if (!draft?.id) throw new Error("graph createReply: no draft id");
+  await finishDraftWithAttachments(accessToken, draft.id, body, attachments);
+}
+
+// Forward. Without new attachments, the native forward (keeps original
+// attachments); with new attachments, a forward draft + attach + send.
 export async function forwardMessage(
   accessToken: string,
   id: string,
   to: string,
-  comment: string
+  comment: string,
+  attachments?: OutgoingAttachment[]
 ): Promise<void> {
-  const r = await fetch(`${GRAPH}/me/messages/${id}/forward`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
+  if (!attachments || attachments.length === 0) {
+    await graphPost(accessToken, `/me/messages/${id}/forward`, {
       comment: comment ?? "",
       toRecipients: [{ emailAddress: { address: to } }],
-    }),
+    });
+    return;
+  }
+  const draft = (await graphPost(accessToken, `/me/messages/${id}/createForward`, {})) as {
+    id?: string;
+  };
+  if (!draft?.id) throw new Error("graph createForward: no draft id");
+  await fetch(`${GRAPH}/me/messages/${draft.id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ toRecipients: [{ emailAddress: { address: to } }] }),
   });
-  if (!r.ok) throw new Error(`graph forward ${r.status} ${await r.text()}`);
+  await finishDraftWithAttachments(accessToken, draft.id, comment, attachments);
 }
 
 export async function sendEmail(

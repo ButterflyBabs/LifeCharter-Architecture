@@ -490,19 +490,72 @@ function base64Url(str: string): string {
     .replace(/=+$/, "");
 }
 
+export type OutgoingAttachment = { name: string; mimeType: string; contentBase64: string };
+
+// Build a base64url raw message — plain when no attachments, multipart/mixed when there are.
+function buildRawMessage(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  attachments?: OutgoingAttachment[];
+  extraHeaders?: string[];
+}): string {
+  const attachments = opts.attachments ?? [];
+  const baseHeaders = [`To: ${opts.to}`, `Subject: ${opts.subject}`, ...(opts.extraHeaders ?? [])];
+  if (attachments.length === 0) {
+    return base64Url(
+      [...baseHeaders, "MIME-Version: 1.0", 'Content-Type: text/plain; charset="UTF-8"', "", opts.body].join(
+        "\r\n"
+      )
+    );
+  }
+  const boundary = `----=_lc_${Date.now().toString(36)}`;
+  const parts = [
+    ...baseHeaders,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    "",
+    opts.body,
+  ];
+  for (const a of attachments) {
+    const safe = a.name.replace(/"/g, "");
+    parts.push(
+      `--${boundary}`,
+      `Content-Type: ${a.mimeType || "application/octet-stream"}; name="${safe}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${safe}"`,
+      "",
+      a.contentBase64.replace(/\r?\n/g, "")
+    );
+  }
+  parts.push(`--${boundary}--`, "");
+  return base64Url(parts.join("\r\n"));
+}
+
 export async function sendReply(
   accessToken: string,
-  opts: { threadId: string; to: string; subject: string; inReplyTo: string; body: string }
+  opts: {
+    threadId: string;
+    to: string;
+    subject: string;
+    inReplyTo: string;
+    body: string;
+    attachments?: OutgoingAttachment[];
+  }
 ): Promise<void> {
   const subject = /^re:/i.test(opts.subject) ? opts.subject : `Re: ${opts.subject}`;
-  const headerLines = [
-    `To: ${opts.to}`,
-    `Subject: ${subject}`,
-    ...(opts.inReplyTo ? [`In-Reply-To: ${opts.inReplyTo}`, `References: ${opts.inReplyTo}`] : []),
-    "MIME-Version: 1.0",
-    'Content-Type: text/plain; charset="UTF-8"',
-  ].join("\r\n");
-  const raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
+  const raw = buildRawMessage({
+    to: opts.to,
+    subject,
+    body: opts.body,
+    attachments: opts.attachments,
+    extraHeaders: opts.inReplyTo
+      ? [`In-Reply-To: ${opts.inReplyTo}`, `References: ${opts.inReplyTo}`]
+      : [],
+  });
   const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -511,50 +564,17 @@ export async function sendReply(
   if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
 }
 
-export type OutgoingAttachment = { name: string; mimeType: string; contentBase64: string };
-
 // Compose and send a brand-new email (not a reply — no thread, subject as-is).
 export async function sendEmail(
   accessToken: string,
   opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
 ): Promise<void> {
-  const attachments = opts.attachments ?? [];
-  let raw: string;
-  if (attachments.length === 0) {
-    const headerLines = [
-      `To: ${opts.to}`,
-      `Subject: ${opts.subject}`,
-      "MIME-Version: 1.0",
-      'Content-Type: text/plain; charset="UTF-8"',
-    ].join("\r\n");
-    raw = base64Url(`${headerLines}\r\n\r\n${opts.body}`);
-  } else {
-    const boundary = `----=_lc_${Date.now().toString(36)}`;
-    const parts = [
-      `To: ${opts.to}`,
-      `Subject: ${opts.subject}`,
-      "MIME-Version: 1.0",
-      `Content-Type: multipart/mixed; boundary="${boundary}"`,
-      "",
-      `--${boundary}`,
-      'Content-Type: text/plain; charset="UTF-8"',
-      "",
-      opts.body,
-    ];
-    for (const a of attachments) {
-      const safe = a.name.replace(/"/g, "");
-      parts.push(
-        `--${boundary}`,
-        `Content-Type: ${a.mimeType || "application/octet-stream"}; name="${safe}"`,
-        "Content-Transfer-Encoding: base64",
-        `Content-Disposition: attachment; filename="${safe}"`,
-        "",
-        a.contentBase64.replace(/\r?\n/g, "")
-      );
-    }
-    parts.push(`--${boundary}--`, "");
-    raw = base64Url(parts.join("\r\n"));
-  }
+  const raw = buildRawMessage({
+    to: opts.to,
+    subject: opts.subject,
+    body: opts.body,
+    attachments: opts.attachments,
+  });
   const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -580,12 +600,14 @@ function htmlToText(html: string): string {
 }
 
 // Forward a message: quote the original body into a new plain-text email.
-// (Attachments aren't carried yet — that arrives with the attachments work.)
+// The original's own attachments aren't re-attached, but the sender can add
+// their own via `attachments`.
 export async function forwardMessage(
   accessToken: string,
   id: string,
   to: string,
-  comment: string
+  comment: string,
+  attachments?: OutgoingAttachment[]
 ): Promise<void> {
   const msg = await fetchMessage(accessToken, id);
   const original = msg.bodyText || (msg.bodyHtml ? htmlToText(msg.bodyHtml) : msg.subject);
@@ -597,5 +619,5 @@ export async function forwardMessage(
     (msg.date ? `Date: ${msg.date}\n` : "") +
     `Subject: ${msg.subject}\n\n` +
     original;
-  await sendEmail(accessToken, { to, subject, body });
+  await sendEmail(accessToken, { to, subject, body, attachments });
 }

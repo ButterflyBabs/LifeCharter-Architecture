@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { crossOriginBlocked } from "@/lib/security";
+import { normalizeAttachments } from "@/lib/mailAttachments";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +15,14 @@ export async function POST(request: Request) {
   if (!body?.body) return NextResponse.json({ error: "body is required" }, { status: 400 });
 
   const provider = body?.provider === "microsoft" ? "microsoft" : "google";
+  const attachments = normalizeAttachments(body?.attachments);
 
   try {
     if (provider === "microsoft") {
       const token = await microsoft.getValidAccessToken();
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       if (!body?.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-      await microsoft.replyToMessage(token, String(body.id), String(body.body));
+      await microsoft.replyToMessage(token, String(body.id), String(body.body), attachments);
     } else {
       const token = await google.getValidAccessToken();
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
         subject: String(body.subject ?? ""),
         inReplyTo: String(body.inReplyTo ?? ""),
         body: String(body.body),
+        attachments,
       });
     }
     return NextResponse.json({ ok: true });

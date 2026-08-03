@@ -64,6 +64,13 @@ interface MailLabel {
   color?: string;
 }
 
+interface FileDraft {
+  name: string;
+  mimeType: string;
+  contentBase64: string;
+  size: number;
+}
+
 interface MsgDetail {
   id: string;
   from: string;
@@ -126,9 +133,9 @@ export default function ExecutiveHome() {
   });
   const [accounts, setAccounts] = useState<MailAccount[]>([]);
   const [composeProvider, setComposeProvider] = useState<Provider>("google");
-  const [composeFiles, setComposeFiles] = useState<
-    { name: string; mimeType: string; contentBase64: string; size: number }[]
-  >([]);
+  const [composeFiles, setComposeFiles] = useState<FileDraft[]>([]);
+  const [replyFiles, setReplyFiles] = useState<FileDraft[]>([]);
+  const [forwardFiles, setForwardFiles] = useState<FileDraft[]>([]);
   const [readingSource, setReadingSource] = useState<Email | null>(null);
   const [thread, setThread] = useState<MsgDetail[] | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -458,6 +465,7 @@ export default function ExecutiveHome() {
     if (!readingSource) return;
     setReplyingTo(readingSource);
     setReplyText("");
+    setReplyFiles([]);
     closeReader();
     setShowReplyModal(true);
   };
@@ -468,6 +476,7 @@ export default function ExecutiveHome() {
     setForwardSource(readingSource);
     setForwardTo("");
     setForwardNote("");
+    setForwardFiles([]);
     closeReader();
     setForwarding(true);
   };
@@ -484,6 +493,11 @@ export default function ExecutiveHome() {
           id: forwardSource.id,
           to: forwardTo.trim(),
           comment: forwardNote,
+          attachments: forwardFiles.map(({ name, mimeType, contentBase64 }) => ({
+            name,
+            mimeType,
+            contentBase64,
+          })),
         }),
       });
       if (!res.ok) {
@@ -494,6 +508,7 @@ export default function ExecutiveHome() {
       }
       setForwarding(false);
       setForwardSource(null);
+      setForwardFiles([]);
     } catch {
       alert("Forward failed to send.");
     }
@@ -562,6 +577,11 @@ export default function ExecutiveHome() {
           subject: replyingTo.subject,
           inReplyTo: replyingTo.messageId,
           body: replyText,
+          attachments: replyFiles.map(({ name, mimeType, contentBase64 }) => ({
+            name,
+            mimeType,
+            contentBase64,
+          })),
         }),
       });
       if (!res.ok) {
@@ -570,6 +590,7 @@ export default function ExecutiveHome() {
       }
       setEmails((prev) => prev.map((e) => (e.id === replyingTo.id ? { ...e, unread: false } : e)));
       setReplyText("");
+      setReplyFiles([]);
       setShowReplyModal(false);
     } catch {
       alert("Reply failed to send.");
@@ -586,6 +607,7 @@ export default function ExecutiveHome() {
     }
     setReplyingTo(target);
     setReplyText("");
+    setReplyFiles([]);
     setShowReplyModal(true);
   };
 
@@ -598,23 +620,74 @@ export default function ExecutiveHome() {
       reader.readAsDataURL(file);
     });
 
-  const onComposeFiles = async (files: FileList | null) => {
+  // Read picked files into base64 and append into the given attachment state.
+  const readFilesInto = async (
+    files: FileList | null,
+    setter: React.Dispatch<React.SetStateAction<FileDraft[]>>
+  ) => {
     if (!files || files.length === 0) return;
-    const added: { name: string; mimeType: string; contentBase64: string; size: number }[] = [];
+    const added: FileDraft[] = [];
     for (const f of Array.from(files)) {
       const contentBase64 = await readFileBase64(f);
       added.push({ name: f.name, mimeType: f.type || "application/octet-stream", contentBase64, size: f.size });
     }
-    setComposeFiles((prev) => {
+    setter((prev) => {
       const next = [...prev, ...added];
-      const total = next.reduce((s, a) => s + a.size, 0);
-      if (total > 4_300_000) {
+      if (next.reduce((s, a) => s + a.size, 0) > 4_300_000) {
         alert("Attachments are too large — keep the total under about 4 MB for now.");
         return prev;
       }
       return next;
     });
   };
+
+  // Small reusable attachment picker + chips for the send modals.
+  const AttachmentPicker = ({
+    files,
+    setter,
+  }: {
+    files: FileDraft[];
+    setter: React.Dispatch<React.SetStateAction<FileDraft[]>>;
+  }) => (
+    <div>
+      <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#84AEB2] text-[#2E7C83] text-sm cursor-pointer hover:bg-[#84AEB2]/5 transition-colors">
+        <Paperclip className="w-4 h-4" />
+        Attach files
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            readFilesInto(e.target.files, setter);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {files.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {files.map((f, i) => (
+            <span
+              key={`${f.name}-${i}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E8E4E0] bg-gray-50 text-xs text-[#3F4654]"
+            >
+              <Paperclip className="w-3.5 h-3.5 text-[#7A5D84]" />
+              <span className="max-w-[160px] truncate">{f.name}</span>
+              {f.size ? <span className="text-gray-400">{formatBytes(f.size)}</span> : null}
+              <button
+                onClick={() => setter((prev) => prev.filter((_, j) => j !== i))}
+                className="text-gray-400 hover:text-red-600"
+                aria-label="Remove attachment"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const onComposeFiles = (files: FileList | null) => readFilesInto(files, setComposeFiles);
 
   const handleSendCompose = async () => {
     if (!composeTo.trim() || !composeBody.trim()) return;
@@ -1528,6 +1601,8 @@ export default function ExecutiveHome() {
                 />
               </div>
 
+              <AttachmentPicker files={replyFiles} setter={setReplyFiles} />
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
@@ -1802,6 +1877,8 @@ export default function ExecutiveHome() {
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2] resize-none"
                 />
               </div>
+
+              <AttachmentPicker files={forwardFiles} setter={setForwardFiles} />
 
               <div className="flex gap-3 pt-1">
                 <button
