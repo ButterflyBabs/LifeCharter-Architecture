@@ -10,12 +10,13 @@ export async function GET() {
   const supabase = createServerClient();
   const { data } = await supabase
     .from("profiles")
-    .select("full_name, assistant_name, openai_api_key")
+    .select("full_name, assistant_name, openai_api_key, avatar_url")
     .limit(1)
     .maybeSingle();
   const fullName = ((data?.full_name as string) || "").trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : "";
   const assistantName = ((data?.assistant_name as string) || "").trim() || "Mariposa";
   const hasOpenAiKey = Boolean(((data?.openai_api_key as string) || "").trim());
-  return NextResponse.json({ fullName, firstName, assistantName, hasOpenAiKey });
+  const avatarUrl = ((data?.avatar_url as string) || "").trim() || null;
+  return NextResponse.json({ fullName, firstName, assistantName, hasOpenAiKey, avatarUrl });
 }

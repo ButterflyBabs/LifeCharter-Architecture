@@ -230,6 +230,29 @@ export function CollapsibleSidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   const [helpExpanded, setHelpExpanded] = useState(false);
+  const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null }>({
+    fullName: "",
+    avatarUrl: null,
+  });
+
+  // Load the profile name + headshot for the footer block.
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setProfile({ fullName: (d.fullName || "").trim(), avatarUrl: d.avatarUrl ?? null });
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayName = profile.fullName || "AmiLynne Carroll";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "LC";
 
   // Get active item based on current path
   const getActiveItem = () => {
@@ -434,12 +457,17 @@ export function CollapsibleSidebar() {
           className={cn("rounded-xl bg-white/5 border border-white/10", isCollapsed ? "p-2 flex justify-center" : "px-3 py-3")}
         >
           <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
-              SR
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">AmiLynne Carroll</p>
+                <p className="text-sm font-medium text-white truncate">{displayName}</p>
                 <p className="text-xs text-white/40 truncate">Founder &amp; CEO</p>
               </div>
             )}
