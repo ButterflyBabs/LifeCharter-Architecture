@@ -219,6 +219,75 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
   return results.filter((e): e is InboxEmail => e !== null);
 }
 
+// Full message body for the reading view.
+export type MessageDetail = {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  fromEmail: string;
+  messageId: string;
+  date: string;
+  bodyHtml: string | null;
+  bodyText: string | null;
+};
+
+type GmailPart = { mimeType?: string; body?: { data?: string }; parts?: GmailPart[] };
+
+function decodeBody(data?: string): string {
+  if (!data) return "";
+  try {
+    return Buffer.from(data, "base64url").toString("utf-8");
+  } catch {
+    return "";
+  }
+}
+
+// Walk the MIME tree and pull out the first html and first plain-text parts.
+function extractBody(payload?: GmailPart): { html: string | null; text: string | null } {
+  let html: string | null = null;
+  let text: string | null = null;
+  const visit = (part?: GmailPart) => {
+    if (!part) return;
+    const mime = part.mimeType ?? "";
+    if (mime === "text/html" && part.body?.data && html === null) html = decodeBody(part.body.data);
+    else if (mime === "text/plain" && part.body?.data && text === null) text = decodeBody(part.body.data);
+    (part.parts ?? []).forEach(visit);
+  };
+  visit(payload);
+  return { html, text };
+}
+
+export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`gmail message ${r.status}`);
+  const msg = await r.json();
+  const headers: Record<string, string> = Object.fromEntries(
+    (msg.payload?.headers ?? []).map((h: { name: string; value: string }) => [
+      h.name.toLowerCase(),
+      h.value,
+    ])
+  );
+  const fromRaw = headers["from"] ?? "";
+  const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
+  const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
+  const { html, text } = extractBody(msg.payload as GmailPart);
+  return {
+    id,
+    threadId: msg.threadId ?? "",
+    subject: headers["subject"] ?? "(no subject)",
+    from: fromName,
+    fromEmail,
+    messageId: headers["message-id"] ?? "",
+    date: headers["date"] ?? "",
+    bodyHtml: html,
+    bodyText: text || (html ? null : (msg.snippet ?? "")),
+  };
+}
+
 export type ScheduleEvent = {
   id: string;
   title: string;

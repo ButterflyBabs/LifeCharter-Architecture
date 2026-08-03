@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { InboxEmail, ScheduleEvent } from "@/lib/google";
+import type { InboxEmail, ScheduleEvent, MessageDetail } from "@/lib/google";
 import { dayWindowUtc } from "@/lib/tz";
 
 // Microsoft 365 (Graph) OAuth + Mail/Calendar helpers — the Microsoft twin of
@@ -240,6 +240,34 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
       start: iso ? new Date(iso).toISOString() : null,
     };
   });
+}
+
+export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
+  const r = await fetch(
+    `${GRAPH}/me/messages/${id}?$select=subject,from,receivedDateTime,body,internetMessageId,conversationId`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`graph message ${r.status}`);
+  const m = (await r.json()) as {
+    subject?: string;
+    from?: { emailAddress?: { name?: string; address?: string } };
+    receivedDateTime?: string;
+    body?: { contentType?: string; content?: string };
+    internetMessageId?: string;
+    conversationId?: string;
+  };
+  const isHtml = (m.body?.contentType ?? "").toLowerCase() === "html";
+  return {
+    id,
+    threadId: m.conversationId ?? "",
+    subject: m.subject || "(no subject)",
+    from: m.from?.emailAddress?.name ?? m.from?.emailAddress?.address ?? "",
+    fromEmail: m.from?.emailAddress?.address ?? "",
+    messageId: m.internetMessageId ?? "",
+    date: m.receivedDateTime ?? "",
+    bodyHtml: isHtml ? (m.body?.content ?? null) : null,
+    bodyText: isHtml ? null : (m.body?.content ?? null),
+  };
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {

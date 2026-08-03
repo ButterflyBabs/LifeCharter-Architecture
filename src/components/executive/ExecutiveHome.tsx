@@ -95,6 +95,16 @@ export default function ExecutiveHome() {
   });
   const [accounts, setAccounts] = useState<MailAccount[]>([]);
   const [composeProvider, setComposeProvider] = useState<Provider>("google");
+  const [readingSource, setReadingSource] = useState<Email | null>(null);
+  const [reading, setReading] = useState<{
+    subject: string;
+    from: string;
+    fromEmail: string;
+    date: string;
+    bodyHtml: string | null;
+    bodyText: string | null;
+  } | null>(null);
+  const [readingLoading, setReadingLoading] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -229,6 +239,59 @@ export default function ExecutiveHome() {
     } catch {
       /* optimistic — leave marked read locally */
     }
+  };
+
+  // Open a message in the reader: fetch its full body, and mark it read.
+  const openEmail = async (email: Email) => {
+    setSelectedEmail(email.id);
+    setReadingSource(email);
+    setReading(null);
+    setReadingLoading(true);
+    if (email.unread) {
+      setEmails((prev) => prev.map((e) => (e.id === email.id ? { ...e, unread: false } : e)));
+      fetch("/api/inbox/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: email.provider ?? "google", id: email.id }),
+      }).catch(() => {});
+    }
+    try {
+      const res = await fetch(
+        `/api/inbox/message?provider=${email.provider ?? "google"}&id=${encodeURIComponent(email.id)}`
+      );
+      if (res.ok) setReading(await res.json());
+    } catch {
+      /* leave reading null — the modal shows a fallback */
+    }
+    setReadingLoading(false);
+  };
+
+  const closeReader = () => {
+    setReadingSource(null);
+    setReading(null);
+  };
+
+  // Reply to the message currently open in the reader.
+  const replyFromReader = () => {
+    if (!readingSource) return;
+    setReplyingTo(readingSource);
+    setReplyText("");
+    closeReader();
+    setShowReplyModal(true);
+  };
+
+  // Build a sandboxed HTML document for the reader iframe (scripts disabled).
+  const readerSrcDoc = (r: { bodyHtml: string | null; bodyText: string | null }) => {
+    const base =
+      "<style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2430;font-size:14px;line-height:1.55;margin:0;padding:16px;}img{max-width:100%;height:auto;}a{color:#2E7C83;}blockquote{border-left:3px solid #E8E4E0;margin:0;padding-left:12px;color:#6b7280;}</style>";
+    if (r.bodyHtml) {
+      return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${base}</head><body>${r.bodyHtml}</body></html>`;
+    }
+    const escaped = (r.bodyText ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    return `<!doctype html><html><head><meta charset="utf-8">${base}</head><body><pre style="white-space:pre-wrap;font-family:inherit;margin:0;">${escaped}</pre></body></html>`;
   };
 
   const handleSendReply = async () => {
@@ -866,7 +929,7 @@ export default function ExecutiveHome() {
               emails.map((email) => (
                 <div
                   key={email.id}
-                  onClick={() => setSelectedEmail(email.id)}
+                  onClick={() => openEmail(email)}
                   className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
                     selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
                   }`}
@@ -1137,6 +1200,86 @@ export default function ExecutiveHome() {
                   Send Reply
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Reader Modal */}
+      {readingSource && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+          onClick={closeReader}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-[#E8E4E0] flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className="font-serif text-lg text-indigo-900 break-words">
+                  {reading?.subject ?? readingSource.subject}
+                </h3>
+                <p className="text-xs text-[#7C7C82] mt-1 break-words">
+                  {reading?.from ?? readingSource.from}
+                  {(reading?.fromEmail ?? readingSource.fromEmail)
+                    ? ` <${reading?.fromEmail ?? readingSource.fromEmail}>`
+                    : ""}
+                </p>
+                {readingSource.account && (
+                  <span
+                    className={`inline-flex items-center mt-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                      readingSource.provider === "microsoft"
+                        ? "bg-[#E5EEF6] text-[#1a56a8]"
+                        : "bg-[#FCE8E6] text-[#b23b32]"
+                    }`}
+                  >
+                    {readingSource.account}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={closeReader}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 min-h-[280px] overflow-hidden bg-white">
+              {readingLoading ? (
+                <p className="p-6 text-sm text-gray-400">Loading message…</p>
+              ) : reading ? (
+                <iframe
+                  title="Email body"
+                  sandbox=""
+                  className="w-full h-full min-h-[280px] border-0"
+                  srcDoc={readerSrcDoc(reading)}
+                />
+              ) : (
+                <p className="p-6 text-sm text-gray-500">
+                  Couldn&apos;t load the full message. Preview: {readingSource.preview}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-[#E8E4E0] flex gap-3">
+              <button
+                onClick={replyFromReader}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
+              >
+                <CornerUpLeft className="w-4 h-4" />
+                Reply
+              </button>
+              <button
+                onClick={closeReader}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
