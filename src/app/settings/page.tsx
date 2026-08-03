@@ -125,6 +125,72 @@ export default function SettingsPage() {
   const [aiSaving, setAiSaving] = useState(false);
   const [aiMsg, setAiMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Global Control (Titanium Suite) connection — per client, key stored server-side.
+  const [gcConnected, setGcConnected] = useState(false);
+  const [gcAccountId, setGcAccountId] = useState("");
+  const [gcKeyInput, setGcKeyInput] = useState("");
+  const [gcAccountInput, setGcAccountInput] = useState("");
+  const [gcSaving, setGcSaving] = useState(false);
+  const [gcMsg, setGcMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/global-control")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setGcConnected(Boolean(d.connected));
+        setGcAccountId(d.accountId || "");
+        setGcAccountInput(d.accountId || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveGlobalControl = async () => {
+    if (!gcKeyInput.trim()) {
+      setGcMsg({ ok: false, text: "Paste your Global Control API key first." });
+      return;
+    }
+    setGcMsg(null);
+    setGcSaving(true);
+    try {
+      const res = await fetch("/api/integrations/global-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: gcKeyInput.trim(), accountId: gcAccountInput.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGcMsg({ ok: false, text: d?.error || "Couldn't save — please try again." });
+      } else {
+        setGcConnected(true);
+        setGcAccountId(gcAccountInput.trim());
+        setGcKeyInput("");
+        setGcMsg({ ok: true, text: "Global Control connected — your key is stored securely." });
+      }
+    } catch {
+      setGcMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setGcSaving(false);
+  };
+
+  const handleDisconnectGlobalControl = async () => {
+    setGcMsg(null);
+    setGcSaving(true);
+    try {
+      const res = await fetch("/api/integrations/global-control", { method: "DELETE" });
+      if (res.ok) {
+        setGcConnected(false);
+        setGcAccountId("");
+        setGcMsg({ ok: true, text: "Global Control disconnected." });
+      } else {
+        setGcMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+      }
+    } catch {
+      setGcMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+    }
+    setGcSaving(false);
+  };
+
   useEffect(() => {
     fetch("/api/ai-settings")
       .then((r) => (r.ok ? r.json() : null))
@@ -1215,10 +1281,100 @@ export default function SettingsPage() {
     const connectedCount = 0; // This would be calculated from actual connected integrations
     
     return (
-      <IntegrationsPanel 
-        planId={currentPlanId}
-        currentIntegrationCount={connectedCount}
-      />
+      <div className="space-y-6">
+        {/* Global Control (Titanium Suite) — per-client connection */}
+        <Card className="border-[#4a9b9b]/30">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-lg bg-[#4a9b9b]/15 flex items-center justify-center text-2xl">
+                  📊
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Global Control</h3>
+                    {gcConnected ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle className="w-3.5 h-3.5" /> Connected
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#b8a898]">Not connected</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-[#b8a898] mt-0.5">
+                    Connect your Global Control (Titanium Suite) account to bring your contacts, calls, and
+                    follow-ups into the Daily Compass. Your API key is exclusive to your account and stored
+                    securely — it&apos;s never shown again after you save it.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Global Control API key
+                </label>
+                <Input
+                  type="password"
+                  value={gcKeyInput}
+                  onChange={(e) => setGcKeyInput(e.target.value)}
+                  placeholder={gcConnected ? "•••••••••• (a key is saved)" : "Paste your API key"}
+                  className="max-w-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Account / Location ID <span className="text-[#b8a898] font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={gcAccountInput}
+                  onChange={(e) => setGcAccountInput(e.target.value)}
+                  placeholder="If your account requires a sub-account / location ID"
+                  className="max-w-lg"
+                />
+              </div>
+
+              {gcMsg && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                    gcMsg.ok
+                      ? "bg-green-50 border border-green-200 text-green-700"
+                      : "bg-red-50 border border-red-200 text-red-600"
+                  }`}
+                >
+                  {gcMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+                  <span>{gcMsg.text}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={handleSaveGlobalControl} disabled={gcSaving}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {gcSaving ? "Saving…" : gcConnected ? "Update key" : "Save & Connect"}
+                </Button>
+                {gcConnected && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDisconnectGlobalControl}
+                    disabled={gcSaving}
+                  >
+                    Disconnect
+                  </Button>
+                )}
+              </div>
+              {gcConnected && gcAccountId && (
+                <p className="text-xs text-[#b8a898]">Account/Location ID: {gcAccountId}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <IntegrationsPanel planId={currentPlanId} currentIntegrationCount={connectedCount} />
+      </div>
     );
   };
 
