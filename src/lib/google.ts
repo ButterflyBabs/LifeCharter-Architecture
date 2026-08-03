@@ -177,15 +177,8 @@ function relativeTime(dateStr?: string): string {
   return days === 1 ? "Yesterday" : `${days}d ago`;
 }
 
-export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
-  const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&labelIds=INBOX`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-  if (!listRes.ok) throw new Error(`gmail list ${listRes.status}`);
-  const list = await listRes.json();
-  const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
-
+// Hydrate a list of Gmail message ids into InboxEmail rows (metadata only).
+async function hydrateInboxIds(accessToken: string, ids: string[]): Promise<InboxEmail[]> {
   const results = await Promise.all(
     ids.map(async (id) => {
       const r = await fetch(
@@ -219,6 +212,29 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
     })
   );
   return results.filter((e): e is InboxEmail => e !== null);
+}
+
+export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
+  const listRes = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&labelIds=INBOX`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!listRes.ok) throw new Error(`gmail list ${listRes.status}`);
+  const list = await listRes.json();
+  const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
+  return hydrateInboxIds(accessToken, ids);
+}
+
+// Full-text search across the mailbox (Gmail search syntax).
+export async function searchInbox(accessToken: string, query: string, max = 20): Promise<InboxEmail[]> {
+  const listRes = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(query)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!listRes.ok) throw new Error(`gmail search ${listRes.status}`);
+  const list = await listRes.json();
+  const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
+  return hydrateInboxIds(accessToken, ids);
 }
 
 // Full message body for the reading view.
@@ -260,25 +276,23 @@ function extractBody(payload?: GmailPart): { html: string | null; text: string |
   return { html, text };
 }
 
-export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
-  const r = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-  if (!r.ok) throw new Error(`gmail message ${r.status}`);
-  const msg = await r.json();
+type GmailFullMessage = {
+  id: string;
+  threadId?: string;
+  snippet?: string;
+  payload?: GmailPart & { headers?: { name: string; value: string }[] };
+};
+
+function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
   const headers: Record<string, string> = Object.fromEntries(
-    (msg.payload?.headers ?? []).map((h: { name: string; value: string }) => [
-      h.name.toLowerCase(),
-      h.value,
-    ])
+    (msg.payload?.headers ?? []).map((h) => [h.name.toLowerCase(), h.value])
   );
   const fromRaw = headers["from"] ?? "";
   const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
   const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
   const { html, text } = extractBody(msg.payload as GmailPart);
   return {
-    id,
+    id: msg.id,
     threadId: msg.threadId ?? "",
     subject: headers["subject"] ?? "(no subject)",
     from: fromName,
@@ -288,6 +302,26 @@ export async function fetchMessage(accessToken: string, id: string): Promise<Mes
     bodyHtml: html,
     bodyText: text || (html ? null : (msg.snippet ?? "")),
   };
+}
+
+export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`gmail message ${r.status}`);
+  return gmailMessageToDetail(await r.json());
+}
+
+// All messages in a Gmail thread, oldest → newest.
+export async function fetchThread(accessToken: string, threadId: string): Promise<MessageDetail[]> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`gmail thread ${r.status}`);
+  const data = await r.json();
+  return ((data.messages ?? []) as GmailFullMessage[]).map(gmailMessageToDetail);
 }
 
 export type ScheduleEvent = {

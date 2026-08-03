@@ -48,6 +48,16 @@ interface MailAccount {
   label: string;
 }
 
+interface MsgDetail {
+  id: string;
+  from: string;
+  fromEmail: string;
+  date: string;
+  subject: string;
+  bodyHtml: string | null;
+  bodyText: string | null;
+}
+
 interface ScheduleEvent {
   id: string;
   title: string;
@@ -99,15 +109,12 @@ export default function ExecutiveHome() {
   const [accounts, setAccounts] = useState<MailAccount[]>([]);
   const [composeProvider, setComposeProvider] = useState<Provider>("google");
   const [readingSource, setReadingSource] = useState<Email | null>(null);
-  const [reading, setReading] = useState<{
-    subject: string;
-    from: string;
-    fromEmail: string;
-    date: string;
-    bodyHtml: string | null;
-    bodyText: string | null;
-  } | null>(null);
+  const [thread, setThread] = useState<MsgDetail[] | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [readingLoading, setReadingLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Email[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const [inboxLimit, setInboxLimit] = useState(12);
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -260,6 +267,43 @@ export default function ExecutiveHome() {
         : "bg-white text-[#6b7280] border-gray-200 hover:border-[#84AEB2]"
     }`;
 
+  const emailRow = (email: Email) => (
+    <div
+      key={`${email.provider ?? "google"}-${email.id}`}
+      onClick={() => openEmail(email)}
+      className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
+        selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
+      }`}
+    >
+      <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
+        <Mail className="w-4 h-4 text-[#7A5D84]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        {email.unread && (
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-[#c9a227]" />
+            <span className="text-[10px] text-[#7C7C82] font-medium">Unread</span>
+          </div>
+        )}
+        <p className={`text-sm truncate ${email.unread ? "font-medium text-indigo-900" : "text-[#3F4654]"}`}>
+          {email.subject}
+        </p>
+        <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
+        {accounts.length > 1 && email.account && (
+          <span
+            className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+              email.provider === "microsoft"
+                ? "bg-[#E5EEF6] text-[#1a56a8]"
+                : "bg-[#FCE8E6] text-[#b23b32]"
+            }`}
+          >
+            {email.account}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
   const handleMarkRead = async () => {
     const firstUnread = emails.find((e) => e.unread);
     if (!firstUnread) {
@@ -278,34 +322,76 @@ export default function ExecutiveHome() {
     }
   };
 
-  // Open a message in the reader: fetch its full body, and mark it read.
+  // Open a message in the reader: fetch its whole thread, and mark it read.
   const openEmail = async (email: Email) => {
+    const prov = email.provider ?? "google";
     setSelectedEmail(email.id);
     setReadingSource(email);
-    setReading(null);
+    setThread(null);
+    setExpandedIds(new Set());
     setReadingLoading(true);
     if (email.unread) {
       setEmails((prev) => prev.map((e) => (e.id === email.id ? { ...e, unread: false } : e)));
       fetch("/api/inbox/mark-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: email.provider ?? "google", id: email.id }),
+        body: JSON.stringify({ provider: prov, id: email.id }),
       }).catch(() => {});
     }
     try {
-      const res = await fetch(
-        `/api/inbox/message?provider=${email.provider ?? "google"}&id=${encodeURIComponent(email.id)}`
-      );
-      if (res.ok) setReading(await res.json());
+      let msgs: MsgDetail[] = [];
+      if (email.threadId) {
+        const res = await fetch(
+          `/api/inbox/thread?provider=${prov}&id=${encodeURIComponent(email.threadId)}`
+        );
+        if (res.ok) msgs = (await res.json()).messages ?? [];
+      }
+      if (msgs.length === 0) {
+        const res = await fetch(
+          `/api/inbox/message?provider=${prov}&id=${encodeURIComponent(email.id)}`
+        );
+        if (res.ok) msgs = [await res.json()];
+      }
+      setThread(msgs);
+      if (msgs.length) setExpandedIds(new Set([msgs[msgs.length - 1].id])); // latest open
     } catch {
-      /* leave reading null — the modal shows a fallback */
+      setThread([]);
     }
     setReadingLoading(false);
   };
 
+  const toggleMsg = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const closeReader = () => {
     setReadingSource(null);
-    setReading(null);
+    setThread(null);
+  };
+
+  const runSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/inbox/search?q=${encodeURIComponent(q)}`);
+      setSearchResults(res.ok ? ((await res.json()).emails ?? []) : []);
+    } catch {
+      setSearchResults([]);
+    }
+    setSearching(false);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults(null);
   };
 
   // Reply to the message currently open in the reader.
@@ -997,8 +1083,40 @@ export default function ExecutiveHome() {
             </div>
           )}
 
-          {/* Filters */}
-          {googleConnected && emails.length > 0 && (
+          {/* Search */}
+          {googleConnected && (
+            <div className="px-6 pt-3 flex items-center gap-2">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") runSearch();
+                  if (e.key === "Escape") clearSearch();
+                }}
+                placeholder="Search mail across all accounts…"
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+              />
+              {searchResults !== null ? (
+                <button
+                  onClick={clearSearch}
+                  className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Clear
+                </button>
+              ) : (
+                <button
+                  onClick={runSearch}
+                  disabled={!searchQuery.trim()}
+                  className="px-3 py-2 text-sm text-[#2E7C83] hover:bg-[#84AEB2]/5 rounded-lg transition-colors disabled:opacity-40"
+                >
+                  Search
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Filters (hidden while searching) */}
+          {googleConnected && searchResults === null && emails.length > 0 && (
             <div className="px-6 pt-3 flex flex-wrap items-center gap-2">
               <button
                 onClick={() => {
@@ -1046,6 +1164,22 @@ export default function ExecutiveHome() {
                   </a>
                 </div>
               </div>
+            ) : searching ? (
+              <p className="text-sm text-gray-400 py-6 text-center">Searching…</p>
+            ) : searchResults !== null ? (
+              searchResults.length === 0 ? (
+                <p className="text-sm text-gray-400 py-6 text-center">
+                  No matches for “{searchQuery.trim()}”.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-400 px-1">
+                    {searchResults.length} result{searchResults.length === 1 ? "" : "s"} for “
+                    {searchQuery.trim()}”
+                  </p>
+                  {searchResults.map((email) => emailRow(email))}
+                </>
+              )
             ) : emails.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">
                 {googleConnected ? "Inbox zero — nothing new" : "Loading…"}
@@ -1054,42 +1188,7 @@ export default function ExecutiveHome() {
               <p className="text-sm text-gray-400 py-6 text-center">No messages match this filter.</p>
             ) : (
               <>
-                {visibleEmails.map((email) => (
-                  <div
-                    key={`${email.provider ?? "google"}-${email.id}`}
-                    onClick={() => openEmail(email)}
-                    className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
-                      selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-4 h-4 text-[#7A5D84]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {email.unread && (
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 rounded-full bg-[#c9a227]" />
-                          <span className="text-[10px] text-[#7C7C82] font-medium">Unread</span>
-                        </div>
-                      )}
-                      <p className={`text-sm truncate ${email.unread ? "font-medium text-indigo-900" : "text-[#3F4654]"}`}>
-                        {email.subject}
-                      </p>
-                      <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
-                      {accounts.length > 1 && email.account && (
-                        <span
-                          className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            email.provider === "microsoft"
-                              ? "bg-[#E5EEF6] text-[#1a56a8]"
-                              : "bg-[#FCE8E6] text-[#b23b32]"
-                          }`}
-                        >
-                          {email.account}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {visibleEmails.map((email) => emailRow(email))}
                 {!unreadOnly && !accountFilter && emails.length >= inboxLimit && (
                   <button
                     onClick={loadMore}
@@ -1357,13 +1456,16 @@ export default function ExecutiveHome() {
             <div className="px-6 py-4 border-b border-[#E8E4E0] flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h3 className="font-serif text-lg text-indigo-900 break-words">
-                  {reading?.subject ?? readingSource.subject}
+                  {thread?.[0]?.subject ?? readingSource.subject}
                 </h3>
                 <p className="text-xs text-[#7C7C82] mt-1 break-words">
-                  {reading?.from ?? readingSource.from}
-                  {(reading?.fromEmail ?? readingSource.fromEmail)
-                    ? ` <${reading?.fromEmail ?? readingSource.fromEmail}>`
-                    : ""}
+                  {thread && thread.length > 1
+                    ? `${thread.length} messages in this conversation`
+                    : `${thread?.[0]?.from ?? readingSource.from}${
+                        thread?.[0]?.fromEmail ?? readingSource.fromEmail
+                          ? ` <${thread?.[0]?.fromEmail ?? readingSource.fromEmail}>`
+                          : ""
+                      }`}
                 </p>
                 {readingSource.account && (
                   <span
@@ -1385,20 +1487,48 @@ export default function ExecutiveHome() {
               </button>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 min-h-[280px] overflow-hidden bg-white">
+            {/* Body — full thread, latest expanded */}
+            <div className="flex-1 min-h-[280px] overflow-y-auto bg-white">
               {readingLoading ? (
-                <p className="p-6 text-sm text-gray-400">Loading message…</p>
-              ) : reading ? (
-                <iframe
-                  title="Email body"
-                  sandbox=""
-                  className="w-full h-full min-h-[280px] border-0"
-                  srcDoc={readerSrcDoc(reading)}
-                />
+                <p className="p-6 text-sm text-gray-400">Loading conversation…</p>
+              ) : thread && thread.length > 0 ? (
+                thread.map((m, i) => {
+                  const expanded = expandedIds.has(m.id);
+                  const single = thread.length === 1;
+                  return (
+                    <div key={m.id || i} className="border-b border-[#E8E4E0] last:border-b-0">
+                      {!single && (
+                        <button
+                          onClick={() => toggleMsg(m.id)}
+                          className="w-full text-left px-5 py-3 hover:bg-gray-50 flex items-start justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-indigo-900 truncate">
+                              {m.from || m.fromEmail || "(unknown sender)"}
+                            </p>
+                            <p className="text-[11px] text-gray-400">
+                              {m.date ? new Date(m.date).toLocaleString() : ""}
+                            </p>
+                          </div>
+                          <span className="text-xs text-gray-400 flex-shrink-0 mt-1">
+                            {expanded ? "▾" : "▸"}
+                          </span>
+                        </button>
+                      )}
+                      {(expanded || single) && (
+                        <iframe
+                          title={`Message ${i + 1}`}
+                          sandbox=""
+                          className="w-full h-[48vh] border-0"
+                          srcDoc={readerSrcDoc(m)}
+                        />
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <p className="p-6 text-sm text-gray-500">
-                  Couldn&apos;t load the full message. Preview: {readingSource.preview}
+                  Couldn&apos;t load the message. Preview: {readingSource.preview}
                 </p>
               )}
             </div>

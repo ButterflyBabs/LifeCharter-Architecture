@@ -210,6 +210,28 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
   }));
 }
 
+// Full-text search across the mailbox ($search).
+export async function searchInbox(accessToken: string, query: string, max = 20): Promise<InboxEmail[]> {
+  const url =
+    `${GRAPH}/me/messages?$search="${encodeURIComponent(query)}"` +
+    `&$select=id,conversationId,internetMessageId,subject,bodyPreview,from,receivedDateTime,isRead&$top=${max}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!r.ok) throw new Error(`graph search ${r.status}`);
+  const data = await r.json();
+  return ((data.value ?? []) as GraphMessage[]).map((m) => ({
+    id: m.id,
+    threadId: m.conversationId ?? "",
+    from: m.from?.emailAddress?.name ?? m.from?.emailAddress?.address ?? "",
+    fromEmail: m.from?.emailAddress?.address ?? "",
+    messageId: m.internetMessageId ?? "",
+    subject: m.subject || "(no subject)",
+    preview: m.bodyPreview ?? "",
+    time: relativeTime(m.receivedDateTime),
+    ts: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() || 0 : 0,
+    unread: m.isRead === false,
+  }));
+}
+
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
   const { startISO, endISO } = dayWindowUtc(timeZone);
   // No Prefer:outlook.timezone header, so Graph interprets the window as UTC
@@ -243,23 +265,20 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
   });
 }
 
-export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
-  const r = await fetch(
-    `${GRAPH}/me/messages/${id}?$select=subject,from,receivedDateTime,body,internetMessageId,conversationId`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-  if (!r.ok) throw new Error(`graph message ${r.status}`);
-  const m = (await r.json()) as {
-    subject?: string;
-    from?: { emailAddress?: { name?: string; address?: string } };
-    receivedDateTime?: string;
-    body?: { contentType?: string; content?: string };
-    internetMessageId?: string;
-    conversationId?: string;
-  };
+type GraphFullMessage = {
+  id?: string;
+  subject?: string;
+  from?: { emailAddress?: { name?: string; address?: string } };
+  receivedDateTime?: string;
+  body?: { contentType?: string; content?: string };
+  internetMessageId?: string;
+  conversationId?: string;
+};
+
+function graphMessageToDetail(m: GraphFullMessage, fallbackId = ""): MessageDetail {
   const isHtml = (m.body?.contentType ?? "").toLowerCase() === "html";
   return {
-    id,
+    id: m.id ?? fallbackId,
     threadId: m.conversationId ?? "",
     subject: m.subject || "(no subject)",
     from: m.from?.emailAddress?.name ?? m.from?.emailAddress?.address ?? "",
@@ -269,6 +288,30 @@ export async function fetchMessage(accessToken: string, id: string): Promise<Mes
     bodyHtml: isHtml ? (m.body?.content ?? null) : null,
     bodyText: isHtml ? null : (m.body?.content ?? null),
   };
+}
+
+const MSG_SELECT = "id,subject,from,receivedDateTime,body,internetMessageId,conversationId";
+
+export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
+  const r = await fetch(`${GRAPH}/me/messages/${id}?$select=${MSG_SELECT}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`graph message ${r.status}`);
+  return graphMessageToDetail((await r.json()) as GraphFullMessage, id);
+}
+
+// All messages in a Microsoft conversation, oldest → newest.
+export async function fetchThread(accessToken: string, conversationId: string): Promise<MessageDetail[]> {
+  const filter = `conversationId eq '${conversationId.replace(/'/g, "''")}'`;
+  const url =
+    `${GRAPH}/me/messages?$filter=${encodeURIComponent(filter)}` +
+    `&$select=${MSG_SELECT}&$top=25`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!r.ok) throw new Error(`graph thread ${r.status}`);
+  const data = await r.json();
+  const items = ((data.value ?? []) as GraphFullMessage[]).map((m) => graphMessageToDetail(m));
+  items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return items;
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {
