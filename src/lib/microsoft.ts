@@ -20,6 +20,7 @@ const SCOPES = [
   "Mail.Send",
   "Mail.ReadWrite", // mark-as-read
   "Calendars.ReadWrite",
+  "User.Read", // lets /me return the account's email for labeling
 ].join(" ");
 
 function clientId(): string {
