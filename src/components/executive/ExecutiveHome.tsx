@@ -866,8 +866,10 @@ export default function ExecutiveHome() {
         {/* Right side - Action Buttons */}
         <div className="flex items-center gap-2 mt-2">
           {/* Start My Day - Gold */}
-          <button 
-            onClick={() => alert("Starting your day! 🌅")}
+          <button
+            onClick={() => {
+              window.location.href = "/daily-compass";
+            }}
             className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-[#d8a63f] to-[#e0b24d] text-white rounded-md text-xs font-medium shadow-sm hover:shadow-md transition-all"
           >
             <Sun className="w-3 h-3" />
