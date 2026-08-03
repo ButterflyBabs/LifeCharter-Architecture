@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -274,21 +274,51 @@ export default function SettingsPage() {
     { id: "threads", name: "Threads", placeholder: "https://threads.net/@yourhandle", icon: "🧵" }
   ];
 
-  // Workspace settings
-  const [workspaces, setWorkspaces] = useState([
-    {
-      id: "ws-1",
-      name: "Sacred Kaleidoscope Community",
-      slug: "sacred-kaleidoscope",
-      description: "Spiritually grounded personal transformation ecosystem",
-      website: "https://lifecharter.architecture",
-      logo: null as string | null,
-      isDefault: true,
-      socials: {} as Record<string, string>
-    }
-  ]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState("ws-1");
-  
+  // Workspace settings (loaded live from /api/workspaces)
+  type Workspace = {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    website: string;
+    logo: string | null;
+    isDefault: boolean;
+    sortOrder: number;
+    socials: Record<string, string>;
+  };
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
+  const [wsLoading, setWsLoading] = useState(true);
+  const [wsError, setWsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/workspaces");
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(data.workspaces)) {
+          setWsError("Couldn't load your workspaces.");
+        } else {
+          setWorkspaces(data.workspaces);
+          setActiveWorkspaceId((prev) =>
+            prev && data.workspaces.some((w: Workspace) => w.id === prev)
+              ? prev
+              : (data.workspaces.find((w: Workspace) => w.isDefault) || data.workspaces[0])?.id || ""
+          );
+        }
+      } catch {
+        if (!cancelled) setWsError("Couldn't load your workspaces.");
+      } finally {
+        if (!cancelled) setWsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Plan limits
   const planLimits = {
     starter: 1,
@@ -298,6 +328,12 @@ export default function SettingsPage() {
   const workspacePlan = "pro" as keyof typeof planLimits;
   const maxWorkspaces = planLimits[workspacePlan];
   const canCreateMore = workspaces.length < maxWorkspaces;
+
+  // Workspace save/upload UI state.
+  const [wsSaving, setWsSaving] = useState(false);
+  const [wsBusy, setWsBusy] = useState(false);
+  const [wsMsg, setWsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Notification settings
   const [notifications, setNotifications] = useState({
@@ -533,42 +569,196 @@ export default function SettingsPage() {
 
   const renderWorkspaceSettings = () => {
     const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
-    
-    const handleCreateWorkspace = () => {
-      if (!canCreateMore) return;
-      const newId = `ws-${workspaces.length + 1}`;
-      const newWorkspace = {
-        id: newId,
-        name: `New Workspace ${workspaces.length + 1}`,
-        slug: `workspace-${workspaces.length + 1}`,
-        description: "",
-        website: "",
-        logo: null as string | null,
-        isDefault: false,
-        socials: {} as Record<string, string>
-      };
-      setWorkspaces([...workspaces, newWorkspace]);
-      setActiveWorkspaceId(newId);
+
+    // Ensure a link has a protocol so it opens correctly in a new tab.
+    const hrefFor = (url: string) => {
+      const v = (url || "").trim();
+      if (!v) return "";
+      return /^https?:\/\//i.test(v) ? v : `https://${v}`;
     };
 
-    const handleDeleteWorkspace = (id: string) => {
+    const patchLocal = (id: string, updates: Partial<Workspace>) =>
+      setWorkspaces(prev => prev.map(w => (w.id === id ? { ...w, ...updates } : w)));
+    const updateWorkspace = patchLocal;
+
+    const handleCreateWorkspace = async () => {
+      if (!canCreateMore || wsBusy) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch("/api/workspaces", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: `New Workspace ${workspaces.length + 1}` }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.workspace) throw new Error();
+        setWorkspaces(prev => [...prev, data.workspace as Workspace]);
+        setActiveWorkspaceId(data.workspace.id);
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't create the workspace." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    const handleDeleteWorkspace = async (id: string) => {
       if (workspaces.length <= 1) {
-        alert("You must have at least one workspace");
+        setWsMsg({ ok: false, text: "You must keep at least one workspace." });
         return;
       }
-      const updated = workspaces.filter(w => w.id !== id);
-      setWorkspaces(updated);
-      if (activeWorkspaceId === id) {
-        setActiveWorkspaceId(updated[0].id);
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error);
+        const wasDefault = workspaces.find(w => w.id === id)?.isDefault;
+        let remaining = workspaces.filter(w => w.id !== id);
+        if (wasDefault && remaining[0]) {
+          remaining = remaining.map((w, i) => (i === 0 ? { ...w, isDefault: true } : w));
+        }
+        setWorkspaces(remaining);
+        if (activeWorkspaceId === id) setActiveWorkspaceId(remaining[0]?.id || "");
+      } catch (e) {
+        setWsMsg({ ok: false, text: (e as Error)?.message || "Couldn't delete the workspace." });
+      } finally {
+        setWsBusy(false);
       }
     };
 
-    const updateWorkspace = (id: string, updates: Partial<typeof workspaces[0]>) => {
-      setWorkspaces(workspaces.map(w => w.id === id ? { ...w, ...updates } : w));
+    const handleSaveWorkspace = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsSaving(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: activeWorkspace.name,
+            slug: activeWorkspace.slug,
+            description: activeWorkspace.description,
+            website: activeWorkspace.website,
+            socials: activeWorkspace.socials,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setWsMsg({ ok: false, text: data?.error || "Couldn't save — please try again." });
+          setWsSaving(false);
+          return;
+        }
+        // Reflect any server normalization (e.g. cleaned slug).
+        patchLocal(activeWorkspace.id, data.workspace as Partial<Workspace>);
+        setWsMsg({ ok: true, text: "Workspace saved." });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't save — please try again." });
+      }
+      setWsSaving(false);
     };
+
+    const handleSetDefault = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isDefault: true }),
+        });
+        if (!res.ok) throw new Error();
+        setWorkspaces(prev => prev.map(w => ({ ...w, isDefault: w.id === activeWorkspace.id })));
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't set the default workspace." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("folder", "logos");
+        const up = await fetch("/api/uploads/image", { method: "POST", body: form });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok || !upData.url) throw new Error();
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logo: upData.url }),
+        });
+        if (!res.ok) throw new Error();
+        patchLocal(activeWorkspace.id, { logo: upData.url });
+        setWsMsg({ ok: true, text: "Logo updated." });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't upload the logo." });
+      } finally {
+        setWsBusy(false);
+        if (logoInputRef.current) logoInputRef.current.value = "";
+      }
+    };
+
+    const handleRemoveLogo = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logo: null }),
+        });
+        if (!res.ok) throw new Error();
+        patchLocal(activeWorkspace.id, { logo: null });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't remove the logo." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    if (wsLoading) {
+      return <p className="text-sm text-[#b8a898]">Loading your workspaces…</p>;
+    }
+    if (wsError && workspaces.length === 0) {
+      return (
+        <div className="space-y-3">
+          <p className="text-sm text-red-600">{wsError}</p>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      );
+    }
+    if (!activeWorkspace) {
+      return <p className="text-sm text-[#b8a898]">No workspace yet.</p>;
+    }
 
     return (
       <div className="space-y-6">
+        {/* Save / status banner */}
+        {wsMsg && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+              wsMsg.ok
+                ? "bg-green-50 border border-green-200 text-green-700"
+                : "bg-red-50 border border-red-200 text-red-600"
+            }`}
+          >
+            {wsMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+            <span>{wsMsg.text}</span>
+          </div>
+        )}
+
         {/* Workspace Selector */}
         <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
           <div className="flex items-center justify-between mb-3">
@@ -579,7 +769,7 @@ export default function SettingsPage() {
               {workspaces.length} of {maxWorkspaces} used
             </span>
           </div>
-          
+
           <div className="space-y-2 mb-4">
             {workspaces.map((ws) => (
               <div
@@ -592,8 +782,12 @@ export default function SettingsPage() {
                 onClick={() => setActiveWorkspaceId(ws.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-[#c9a227]" />
+                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
+                    {ws.logo ? (
+                      <img src={ws.logo} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-5 h-5 text-[#c9a227]" />
+                    )}
                   </div>
                   <div>
                     <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -604,7 +798,7 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-[#b8a898]">/{ws.slug}</p>
+                    <p className="text-xs text-[#b8a898]">/{ws.slug || "—"}</p>
                   </div>
                 </div>
                 {workspaces.length > 1 && (
@@ -612,6 +806,7 @@ export default function SettingsPage() {
                     variant="ghost"
                     size="sm"
                     className="text-red-500 hover:text-red-600"
+                    disabled={wsBusy}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteWorkspace(ws.id);
@@ -628,6 +823,7 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               className="w-full"
+              disabled={wsBusy}
               onClick={handleCreateWorkspace}
             >
               <Building2 className="w-4 h-4 mr-2" />
@@ -638,7 +834,12 @@ export default function SettingsPage() {
               <p className="text-sm text-yellow-600">
                 Workspace limit reached. Upgrade your plan to create more workspaces.
               </p>
-              <Button variant="outline" size="sm" className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setActiveTab("billing")}
+              >
                 Upgrade Plan
               </Button>
             </div>
@@ -652,7 +853,7 @@ export default function SettingsPage() {
           </h4>
 
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-24 h-24 rounded-xl bg-[#c9a227]/20 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-xl bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
               {activeWorkspace.logo ? (
                 <img src={activeWorkspace.logo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
               ) : (
@@ -660,11 +861,36 @@ export default function SettingsPage() {
               )}
             </div>
             <div>
-              <Button variant="outline" size="sm">
-                Upload Logo
-              </Button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoSelect}
+                className="hidden"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={wsBusy}
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  {activeWorkspace.logo ? "Change Logo" : "Upload Logo"}
+                </Button>
+                {activeWorkspace.logo && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#7b6b8d]"
+                    disabled={wsBusy}
+                    onClick={handleRemoveLogo}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
               <p className="text-xs text-[#b8a898] mt-2">
-                Recommended: 400x400px transparent PNG
+                Recommended: 400x400px transparent PNG. This is separate from your profile photo.
               </p>
             </div>
           </div>
@@ -693,6 +919,9 @@ export default function SettingsPage() {
                   className="pl-44"
                 />
               </div>
+              <p className="text-xs text-[#b8a898] mt-1.5">
+                Lowercase letters, numbers and hyphens. Must be unique across all workspaces.
+              </p>
             </div>
           </div>
 
@@ -711,11 +940,25 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Website
             </label>
-            <Input
-              type="url"
-              value={activeWorkspace.website}
-              onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="url"
+                className="flex-1"
+                placeholder="https://yourdomain.com"
+                value={activeWorkspace.website}
+                onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
+              />
+              {activeWorkspace.website.trim() && (
+                <a
+                  href={hrefFor(activeWorkspace.website)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline whitespace-nowrap"
+                >
+                  Open <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Social Profiles */}
@@ -725,50 +968,68 @@ export default function SettingsPage() {
               Social Profiles
             </h4>
             <p className="text-sm text-[#b8a898] mb-4">
-              Connect your social media accounts for easy sharing and cross-posting
+              Add your profile links. Saved links become clickable here and can be surfaced on your public page.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => (
-                <div key={platform.id}>
-                  <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-                    <span className="mr-2">{platform.icon}</span>
-                    {platform.name}
-                  </label>
-                  <Input
-                    type="url"
-                    placeholder={platform.placeholder}
-                    value={activeWorkspace.socials?.[platform.id] || ""}
-                    onChange={(e) => {
-                      const newSocials = { ...activeWorkspace.socials, [platform.id]: e.target.value };
-                      updateWorkspace(activeWorkspace.id, { socials: newSocials });
-                    }}
-                  />
-                </div>
-              ))}
+              {socialPlatforms.map((platform) => {
+                const val = activeWorkspace.socials?.[platform.id] || "";
+                return (
+                  <div key={platform.id}>
+                    <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                      <span className="mr-2">{platform.icon}</span>
+                      {platform.name}
+                      {val.trim() && (
+                        <a
+                          href={hrefFor(val)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline align-middle"
+                        >
+                          Open <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder={platform.placeholder}
+                      value={val}
+                      onChange={(e) => {
+                        const newSocials = { ...activeWorkspace.socials, [platform.id]: e.target.value };
+                        updateWorkspace(activeWorkspace.id, { socials: newSocials });
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Save the active workspace's details */}
+          <div className="mt-6 flex items-center gap-3">
+            <Button type="button" onClick={handleSaveWorkspace} disabled={wsSaving || wsBusy}>
+              <Save className="w-4 h-4 mr-1.5" />
+              {wsSaving ? "Saving…" : "Save Workspace"}
+            </Button>
+            {!activeWorkspace.isDefault && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={wsBusy}
+                onClick={handleSetDefault}
+              >
+                Set as Default Workspace
+              </Button>
+            )}
           </div>
 
           <div className="mt-6 border-t border-[#1a2b4a]/10 pt-6">
             <TeamManagement
               workspaceId={activeWorkspace.id}
               workspaceName={activeWorkspace.name}
+              onChangePlan={() => setActiveTab("billing")}
             />
           </div>
-
-          {!activeWorkspace.isDefault && (
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setWorkspaces(workspaces.map(w => ({ ...w, isDefault: w.id === activeWorkspace.id })));
-                }}
-              >
-                Set as Default Workspace
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );

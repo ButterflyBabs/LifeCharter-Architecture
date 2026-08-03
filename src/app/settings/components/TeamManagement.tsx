@@ -33,6 +33,7 @@ interface TeamMember {
 interface TeamManagementProps {
   workspaceId: string;
   workspaceName: string;
+  onChangePlan?: () => void;
 }
 
 // Plan-based team member limits
@@ -57,7 +58,7 @@ const roleDescriptions = {
   viewer: "View-only access to reports and dashboards"
 };
 
-export function TeamManagement({ workspaceName }: TeamManagementProps) {
+export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementProps) {
   // Demo: Pro plan (5 members)
   const currentPlan: keyof typeof planLimits = "pro";
   const maxMembers = planLimits[currentPlan];
@@ -144,7 +145,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
         ) : (
           <div className="text-right">
             <p className="text-sm text-yellow-600 mb-1">Team limit reached</p>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={onChangePlan}>
               Upgrade Plan
             </Button>
           </div>
@@ -359,7 +360,7 @@ export function TeamManagement({ workspaceName }: TeamManagementProps) {
               {maxMembers} team members included
             </p>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={onChangePlan}>
             Change Plan
           </Button>
         </div>
