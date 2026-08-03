@@ -317,6 +317,24 @@ export async function replyToMessage(accessToken: string, messageId: string, bod
   if (!r.ok) throw new Error(`graph reply ${r.status} ${await r.text()}`);
 }
 
+// Native Graph forward — carries the original body and attachments.
+export async function forwardMessage(
+  accessToken: string,
+  id: string,
+  to: string,
+  comment: string
+): Promise<void> {
+  const r = await fetch(`${GRAPH}/me/messages/${id}/forward`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      comment: comment ?? "",
+      toRecipients: [{ emailAddress: { address: to } }],
+    }),
+  });
+  if (!r.ok) throw new Error(`graph forward ${r.status} ${await r.text()}`);
+}
+
 export async function sendEmail(
   accessToken: string,
   opts: { to: string; subject: string; body: string }

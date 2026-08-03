@@ -21,6 +21,7 @@ import {
   Sun,
   Archive,
   Trash2,
+  Forward,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 
@@ -111,6 +112,11 @@ export default function ExecutiveHome() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [accountFilter, setAccountFilter] = useState<Provider | null>(null);
+  const [forwarding, setForwarding] = useState(false);
+  const [forwardSource, setForwardSource] = useState<Email | null>(null);
+  const [forwardTo, setForwardTo] = useState("");
+  const [forwardNote, setForwardNote] = useState("");
+  const [sendingForward, setSendingForward] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -309,6 +315,44 @@ export default function ExecutiveHome() {
     setReplyText("");
     closeReader();
     setShowReplyModal(true);
+  };
+
+  // Open the forward composer for the message currently in the reader.
+  const openForward = () => {
+    if (!readingSource) return;
+    setForwardSource(readingSource);
+    setForwardTo("");
+    setForwardNote("");
+    closeReader();
+    setForwarding(true);
+  };
+
+  const handleSendForward = async () => {
+    if (!forwardSource || !forwardTo.trim()) return;
+    setSendingForward(true);
+    try {
+      const res = await fetch("/api/inbox/forward", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: forwardSource.provider ?? "google",
+          id: forwardSource.id,
+          to: forwardTo.trim(),
+          comment: forwardNote,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err?.error === "not connected" ? "That account isn't connected." : "Forward failed to send.");
+        setSendingForward(false);
+        return;
+      }
+      setForwarding(false);
+      setForwardSource(null);
+    } catch {
+      alert("Forward failed to send.");
+    }
+    setSendingForward(false);
   };
 
   // Archive / trash (reversible) / mark-unread / mark-read on a message.
@@ -1387,16 +1431,93 @@ export default function ExecutiveHome() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={replyFromReader}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
                 >
                   <CornerUpLeft className="w-4 h-4" />
                   Reply
                 </button>
                 <button
+                  onClick={openForward}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#84AEB2] text-[#2E7C83] rounded-lg text-sm hover:bg-[#84AEB2]/5 transition-colors"
+                >
+                  <Forward className="w-4 h-4" />
+                  Forward
+                </button>
+                <button
                   onClick={closeReader}
-                  className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward Modal */}
+      {forwarding && forwardSource && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+          onClick={() => setForwarding(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-serif text-indigo-900">Forward</h3>
+              <button
+                onClick={() => setForwarding(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#7C7C82] mb-4 truncate">
+              Forwarding: <span className="text-[#3F4654]">{forwardSource.subject}</span>
+              {forwardSource.account ? ` · from ${forwardSource.account}` : ""}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">To</label>
+                <input
+                  type="email"
+                  value={forwardTo}
+                  onChange={(e) => setForwardTo(e.target.value)}
+                  placeholder="recipient@example.com"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Add a note (optional)
+                </label>
+                <textarea
+                  value={forwardNote}
+                  onChange={(e) => setForwardNote(e.target.value)}
+                  placeholder="Say something before the forwarded message…"
+                  rows={4}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2] resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setForwarding(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendForward}
+                  disabled={sendingForward || !forwardTo.trim()}
+                  className="flex-1 py-2.5 bg-indigo-900 text-white rounded-lg text-sm hover:bg-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingForward ? "Sending…" : "Forward"}
                 </button>
               </div>
             </div>

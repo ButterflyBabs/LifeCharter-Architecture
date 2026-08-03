@@ -416,3 +416,40 @@ export async function sendEmail(
   });
   if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
 }
+
+// Rough HTML → text, for quoting an html-only message into a plain-text forward.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Forward a message: quote the original body into a new plain-text email.
+// (Attachments aren't carried yet — that arrives with the attachments work.)
+export async function forwardMessage(
+  accessToken: string,
+  id: string,
+  to: string,
+  comment: string
+): Promise<void> {
+  const msg = await fetchMessage(accessToken, id);
+  const original = msg.bodyText || (msg.bodyHtml ? htmlToText(msg.bodyHtml) : msg.subject);
+  const subject = /^fwd:/i.test(msg.subject) ? msg.subject : `Fwd: ${msg.subject}`;
+  const body =
+    (comment ? `${comment}\n\n` : "") +
+    "---------- Forwarded message ----------\n" +
+    `From: ${msg.from}${msg.fromEmail ? ` <${msg.fromEmail}>` : ""}\n` +
+    (msg.date ? `Date: ${msg.date}\n` : "") +
+    `Subject: ${msg.subject}\n\n` +
+    original;
+  await sendEmail(accessToken, { to, subject, body });
+}
