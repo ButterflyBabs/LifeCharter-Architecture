@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   CheckSquare,
@@ -19,6 +19,8 @@ import {
   CornerUpLeft,
   Check,
   Sun,
+  Archive,
+  Trash2,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 
@@ -105,6 +107,10 @@ export default function ExecutiveHome() {
     bodyText: string | null;
   } | null>(null);
   const [readingLoading, setReadingLoading] = useState(false);
+  const [inboxLimit, setInboxLimit] = useState(12);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [accountFilter, setAccountFilter] = useState<Provider | null>(null);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -189,9 +195,9 @@ export default function ExecutiveHome() {
     className: `relative group ${extra}`.trim(),
   });
 
-  // Fetch live inbox merged across every connected mail account (Gmail + M365)
-  useEffect(() => {
-    fetch("/api/inbox")
+  // Load the merged inbox (Gmail + M365) at a given size.
+  const loadInbox = useCallback((limit: number) => {
+    return fetch(`/api/inbox?limit=${limit}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
@@ -199,13 +205,29 @@ export default function ExecutiveHome() {
         if (d.providers) setProviders(d.providers);
         if (Array.isArray(d.accounts)) {
           setAccounts(d.accounts);
-          // Default the compose "From" to the first connected account.
-          if (d.accounts[0]?.provider) setComposeProvider(d.accounts[0].provider);
+          // Default the compose "From" to the first connected account, but keep
+          // the user's pick if it's still a connected account.
+          setComposeProvider((prev) =>
+            d.accounts.some((a: MailAccount) => a.provider === prev)
+              ? prev
+              : (d.accounts[0]?.provider ?? prev)
+          );
         }
         if (Array.isArray(d.emails)) setEmails(d.emails);
       })
       .catch(() => setGoogleConnected(false));
   }, []);
+
+  useEffect(() => {
+    loadInbox(inboxLimit);
+  }, [loadInbox, inboxLimit]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    const next = inboxLimit + 12;
+    setInboxLimit(next); // triggers the effect to refetch
+    setLoadingMore(false);
+  };
 
   // Fetch live calendars (today), merged across providers. Anchor "today" and
   // the times to the viewer's timezone: their saved choice, else auto-detected.
@@ -222,6 +244,15 @@ export default function ExecutiveHome() {
   }, []);
 
   const unreadCount = emails.filter((e) => e.unread).length;
+  const visibleEmails = emails.filter(
+    (e) => (!unreadOnly || e.unread) && (!accountFilter || (e.provider ?? "google") === accountFilter)
+  );
+  const chipCls = (active: boolean) =>
+    `px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+      active
+        ? "bg-[#6F4A7C] text-white border-[#6F4A7C]"
+        : "bg-white text-[#6b7280] border-gray-200 hover:border-[#84AEB2]"
+    }`;
 
   const handleMarkRead = async () => {
     const firstUnread = emails.find((e) => e.unread);
@@ -278,6 +309,28 @@ export default function ExecutiveHome() {
     setReplyText("");
     closeReader();
     setShowReplyModal(true);
+  };
+
+  // Archive / trash (reversible) / mark-unread / mark-read on a message.
+  const mailAction = async (email: Email, action: "archive" | "trash" | "unread" | "read") => {
+    if (action === "archive" || action === "trash") {
+      setEmails((prev) => prev.filter((e) => e.id !== email.id));
+      closeReader();
+    } else {
+      setEmails((prev) =>
+        prev.map((e) => (e.id === email.id ? { ...e, unread: action === "unread" } : e))
+      );
+      if (action === "unread") closeReader();
+    }
+    try {
+      await fetch("/api/inbox/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: email.provider ?? "google", id: email.id, action }),
+      });
+    } catch {
+      /* optimistic — leave the local change in place */
+    }
   };
 
   // Build a sandboxed HTML document for the reader iframe (scripts disabled).
@@ -900,8 +953,36 @@ export default function ExecutiveHome() {
             </div>
           )}
 
+          {/* Filters */}
+          {googleConnected && emails.length > 0 && (
+            <div className="px-6 pt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setUnreadOnly(false);
+                  setAccountFilter(null);
+                }}
+                className={chipCls(!unreadOnly && !accountFilter)}
+              >
+                All
+              </button>
+              <button onClick={() => setUnreadOnly((v) => !v)} className={chipCls(unreadOnly)}>
+                Unread{unreadCount ? ` (${unreadCount})` : ""}
+              </button>
+              {accounts.length > 1 &&
+                accounts.map((a) => (
+                  <button
+                    key={a.provider}
+                    onClick={() => setAccountFilter((p) => (p === a.provider ? null : a.provider))}
+                    className={chipCls(accountFilter === a.provider)}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+            </div>
+          )}
+
           {/* Email List (live Gmail + Microsoft 365) */}
-          <div className="p-6 space-y-3">
+          <div className="px-6 py-4 space-y-3 max-h-[420px] overflow-y-auto">
             {googleConnected === false ? (
               <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                 <Mail className="w-6 h-6 text-[#7A5D84]" />
@@ -925,43 +1006,56 @@ export default function ExecutiveHome() {
               <p className="text-sm text-gray-400 py-6 text-center">
                 {googleConnected ? "Inbox zero — nothing new" : "Loading…"}
               </p>
+            ) : visibleEmails.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">No messages match this filter.</p>
             ) : (
-              emails.map((email) => (
-                <div
-                  key={email.id}
-                  onClick={() => openEmail(email)}
-                  className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
-                    selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-4 h-4 text-[#7A5D84]" />
+              <>
+                {visibleEmails.map((email) => (
+                  <div
+                    key={`${email.provider ?? "google"}-${email.id}`}
+                    onClick={() => openEmail(email)}
+                    className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
+                      selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#EDE5F1] flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-4 h-4 text-[#7A5D84]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {email.unread && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-[#c9a227]" />
+                          <span className="text-[10px] text-[#7C7C82] font-medium">Unread</span>
+                        </div>
+                      )}
+                      <p className={`text-sm truncate ${email.unread ? "font-medium text-indigo-900" : "text-[#3F4654]"}`}>
+                        {email.subject}
+                      </p>
+                      <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
+                      {accounts.length > 1 && email.account && (
+                        <span
+                          className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            email.provider === "microsoft"
+                              ? "bg-[#E5EEF6] text-[#1a56a8]"
+                              : "bg-[#FCE8E6] text-[#b23b32]"
+                          }`}
+                        >
+                          {email.account}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    {email.unread && (
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-[#c9a227]" />
-                        <span className="text-[10px] text-[#7C7C82] font-medium">Unread</span>
-                      </div>
-                    )}
-                    <p className={`text-sm truncate ${email.unread ? "font-medium text-indigo-900" : "text-[#3F4654]"}`}>
-                      {email.subject}
-                    </p>
-                    <p className="text-xs text-[#7C7C82] mt-0.5">From: {email.from} • {email.time}</p>
-                    {accounts.length > 1 && email.account && (
-                      <span
-                        className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          email.provider === "microsoft"
-                            ? "bg-[#E5EEF6] text-[#1a56a8]"
-                            : "bg-[#FCE8E6] text-[#b23b32]"
-                        }`}
-                      >
-                        {email.account}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+                ))}
+                {!unreadOnly && !accountFilter && emails.length >= inboxLimit && (
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="w-full py-2 text-sm text-[#2E7C83] hover:bg-[#84AEB2]/5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading…" : "Load more"}
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -1266,20 +1360,45 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-[#E8E4E0] flex gap-3">
-              <button
-                onClick={replyFromReader}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
-              >
-                <CornerUpLeft className="w-4 h-4" />
-                Reply
-              </button>
-              <button
-                onClick={closeReader}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-              >
-                Close
-              </button>
+            <div className="px-6 py-4 border-t border-[#E8E4E0] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => readingSource && mailAction(readingSource, "unread")}
+                  title="Mark as unread"
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => readingSource && mailAction(readingSource, "archive")}
+                  title="Archive"
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => readingSource && mailAction(readingSource, "trash")}
+                  title="Move to Trash"
+                  className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={replyFromReader}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#6F4A7C] text-white rounded-lg text-sm hover:bg-[#6F4A7C]/90 transition-colors"
+                >
+                  <CornerUpLeft className="w-4 h-4" />
+                  Reply
+                </button>
+                <button
+                  onClick={closeReader}
+                  className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

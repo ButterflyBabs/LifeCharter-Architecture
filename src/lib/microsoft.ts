@@ -205,6 +205,7 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
     subject: m.subject || "(no subject)",
     preview: m.bodyPreview ?? "",
     time: relativeTime(m.receivedDateTime),
+    ts: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() || 0 : 0,
     unread: m.isRead === false,
   }));
 }
@@ -271,12 +272,39 @@ export async function fetchMessage(accessToken: string, id: string): Promise<Mes
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {
+  await setReadState(accessToken, id, true);
+}
+
+export async function setUnread(accessToken: string, id: string): Promise<void> {
+  await setReadState(accessToken, id, false);
+}
+
+async function setReadState(accessToken: string, id: string, isRead: boolean): Promise<void> {
   const r = await fetch(`${GRAPH}/me/messages/${id}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ isRead: true }),
+    body: JSON.stringify({ isRead }),
   });
-  if (!r.ok) throw new Error(`graph mark-read ${r.status}`);
+  if (!r.ok) throw new Error(`graph set-read ${r.status}`);
+}
+
+async function moveMessage(accessToken: string, id: string, destinationId: string): Promise<void> {
+  const r = await fetch(`${GRAPH}/me/messages/${id}/move`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ destinationId }),
+  });
+  if (!r.ok) throw new Error(`graph move ${r.status} ${await r.text()}`);
+}
+
+// Move to the Archive well-known folder.
+export async function archiveMessage(accessToken: string, id: string): Promise<void> {
+  await moveMessage(accessToken, id, "archive");
+}
+
+// Move to Deleted Items — reversible, not a hard delete.
+export async function trashMessage(accessToken: string, id: string): Promise<void> {
+  await moveMessage(accessToken, id, "deleteditems");
 }
 
 // Reply in-thread to a Graph message (Graph addresses + subjects it for us).

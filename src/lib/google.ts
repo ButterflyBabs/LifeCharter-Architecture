@@ -160,6 +160,7 @@ export type InboxEmail = {
   subject: string;
   preview: string;
   time: string;
+  ts: number; // epoch ms of the message date, for cross-account sorting
   unread: boolean;
 };
 
@@ -211,6 +212,7 @@ export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEma
         subject: headers["subject"] ?? "(no subject)",
         preview: msg.snippet ?? "",
         time: relativeTime(headers["date"]),
+        ts: headers["date"] ? new Date(headers["date"]).getTime() || 0 : 0,
         unread: (msg.labelIds ?? []).includes("UNREAD"),
       };
       return email;
@@ -331,16 +333,39 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
 // ---------------------------------------------------------------------------
 // Gmail writes (require gmail.modify / gmail.send scopes)
 // ---------------------------------------------------------------------------
-export async function markRead(accessToken: string, id: string): Promise<void> {
-  const r = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ removeLabelIds: ["UNREAD"] }),
-    }
-  );
+async function gmailModify(
+  accessToken: string,
+  id: string,
+  body: { addLabelIds?: string[]; removeLabelIds?: string[] }
+): Promise<void> {
+  const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   if (!r.ok) throw new Error(`gmail modify ${r.status}`);
+}
+
+export async function markRead(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { removeLabelIds: ["UNREAD"] });
+}
+
+export async function setUnread(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { addLabelIds: ["UNREAD"] });
+}
+
+// Remove from Inbox (Gmail "archive"). Still searchable / in All Mail.
+export async function archiveMessage(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { removeLabelIds: ["INBOX"] });
+}
+
+// Move to Trash — reversible (Gmail keeps it ~30 days), not a hard delete.
+export async function trashMessage(accessToken: string, id: string): Promise<void> {
+  const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`gmail trash ${r.status}`);
 }
 
 function base64Url(str: string): string {
