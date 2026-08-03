@@ -36,7 +36,8 @@ import {
   ExternalLink,
   Trash2,
   Lock,
-  FileText
+  FileText,
+  Sparkles
 } from "lucide-react";
 
 interface SettingsSection {
@@ -72,6 +73,12 @@ const settingsSections: SettingsSection[] = [
     description: "Theme, colors, and display preferences"
   },
   {
+    id: "ai",
+    title: "AI Assistant",
+    icon: <Sparkles className="w-5 h-5" />,
+    description: "Name your assistant and connect your OpenAI key"
+  },
+  {
     id: "integrations",
     title: "Integrations",
     icon: <ExternalLink className="w-5 h-5" />,
@@ -103,6 +110,60 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
   const supabase = createClient();
+
+  // Deep-link to a section via ?tab=… (e.g. /settings?tab=ai).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab && settingsSections.some((s) => s.id === tab)) setActiveTab(tab);
+  }, []);
+
+  // AI Assistant state
+  const [aiName, setAiName] = useState("");
+  const [aiKey, setAiKey] = useState("");
+  const [aiHasKey, setAiHasKey] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [aiMsg, setAiMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ai-settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setAiName(d.assistantName === "Mariposa" ? "" : d.assistantName || "");
+        setAiHasKey(Boolean(d.hasOpenAiKey));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveAi = async () => {
+    setAiMsg(null);
+    setAiSaving(true);
+    try {
+      const payload: { assistantName: string; openaiApiKey?: string } = {
+        assistantName: aiName.trim(),
+      };
+      // Only send the key if the user typed a new one (blank keeps the existing).
+      if (aiKey.trim()) payload.openaiApiKey = aiKey.trim();
+      const res = await fetch("/api/ai-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        setAiMsg({ ok: false, text: "Couldn't save — please try again." });
+        setAiSaving(false);
+        return;
+      }
+      const d = await res.json();
+      setAiHasKey(Boolean(d.hasOpenAiKey));
+      setAiKey("");
+      setAiMsg({ ok: true, text: "Saved. Your assistant is updated." });
+    } catch {
+      setAiMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setAiSaving(false);
+  };
 
   // Change-password state
   const [pwCurrent, setPwCurrent] = useState("");
@@ -1307,12 +1368,99 @@ export default function SettingsPage() {
     </div>
   );
 
+  const renderAiSettings = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">AI Assistant</h3>
+              <p className="text-sm text-[#b8a898]">
+                Name your assistant and connect your OpenAI key so it comes online.
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Assistant name */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              Assistant name
+            </label>
+            <Input
+              value={aiName}
+              onChange={(e) => setAiName(e.target.value)}
+              placeholder="Mariposa"
+              className="max-w-sm"
+            />
+            <p className="text-xs text-[#b8a898] mt-1.5">
+              What your assistant is called across the app (e.g. on your Morning Brief). Leave blank to
+              use the default, Mariposa.
+            </p>
+          </div>
+
+          {/* OpenAI key */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              OpenAI API key
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2 max-w-lg">
+              <Input
+                type="password"
+                value={aiKey}
+                onChange={(e) => setAiKey(e.target.value)}
+                placeholder={aiHasKey ? "•••••••••• (a key is saved)" : "sk-…"}
+                className="flex-1"
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              {aiHasKey ? (
+                <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                  <CheckCircle className="w-3.5 h-3.5" /> Key configured
+                </span>
+              ) : (
+                <span className="text-xs text-[#b8a898]">No key yet — the assistant stays offline until one is added.</span>
+              )}
+              <a
+                href="https://platform.openai.com/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline"
+              >
+                Get an OpenAI key <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-xs text-[#b8a898] mt-2">
+              Your key is stored securely and used only to power your assistant. Paste a new key to
+              replace an existing one.
+            </p>
+          </div>
+
+          {aiMsg && (
+            <p className={`text-sm ${aiMsg.ok ? "text-green-600" : "text-red-500"}`}>{aiMsg.text}</p>
+          )}
+
+          <div>
+            <Button onClick={handleSaveAi} disabled={aiSaving}>
+              <Save className="w-4 h-4 mr-1.5" />
+              {aiSaving ? "Saving…" : "Save AI settings"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case "profile": return renderProfileSettings();
       case "workspace": return renderWorkspaceSettings();
       case "notifications": return renderNotificationSettings();
       case "appearance": return renderAppearanceSettings();
+      case "ai": return renderAiSettings();
       case "integrations": return renderIntegrationSettings();
       case "billing": return renderBillingSettings();
       case "security": return renderSecuritySettings();

@@ -48,6 +48,8 @@ const currency = (n: number) =>
 
 export default function MorningBriefPage() {
   const [firstName, setFirstName] = useState("");
+  const [assistantName, setAssistantName] = useState("Mariposa");
+  const [hasAiKey, setHasAiKey] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [tasks, setTasks] = useState<RealTask[]>([]);
   const [finance, setFinance] = useState<Finance | null>(null);
@@ -75,6 +77,8 @@ export default function MorningBriefPage() {
     ])
       .then(([p, s, t, f]) => {
         if (p?.firstName) setFirstName(p.firstName);
+        if (p?.assistantName) setAssistantName(p.assistantName);
+        setHasAiKey(Boolean(p?.hasOpenAiKey));
         if (s) setSchedule(s);
         if (t?.tasks) setTasks(t.tasks);
         if (f) setFinance(f);
@@ -139,13 +143,13 @@ export default function MorningBriefPage() {
     setAiLoading(false);
   }, [schedule, tasks, finance, firstName, topTasks]);
 
-  // Generate the AI summary once the day's data has loaded.
+  // Generate the AI summary once the day's data has loaded (needs a key).
   useEffect(() => {
-    if (dataReady && aiSummary === null && !aiLoading) {
+    if (dataReady && hasAiKey && aiSummary === null && !aiLoading) {
       buildAiSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataReady]);
+  }, [dataReady, hasAiKey]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -178,22 +182,40 @@ export default function MorningBriefPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <h2 className="font-serif text-lg text-indigo-900">Your briefing from Mariposa</h2>
+            <h2 className="font-serif text-lg text-indigo-900">Your briefing from {assistantName}</h2>
           </div>
-          <button
-            onClick={buildAiSummary}
-            disabled={aiLoading}
-            className="inline-flex items-center gap-1.5 text-xs text-[#2E7C83] hover:text-[#2E7C83]/80 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${aiLoading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          {dataReady && hasAiKey && (
+            <button
+              onClick={buildAiSummary}
+              disabled={aiLoading}
+              className="inline-flex items-center gap-1.5 text-xs text-[#2E7C83] hover:text-[#2E7C83]/80 disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${aiLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          )}
         </div>
-        <p className="text-[#3F4654] leading-relaxed whitespace-pre-wrap min-h-[3rem]">
-          {aiLoading || !dataReady
-            ? "Putting your briefing together…"
-            : aiSummary || "No briefing yet."}
-        </p>
+        {dataReady && !hasAiKey ? (
+          <div>
+            <p className="text-[#3F4654] leading-relaxed mb-3">
+              Add your OpenAI key to bring {assistantName} online — then this briefing writes itself
+              from your day.
+            </p>
+            <Link
+              href="/settings?tab=ai"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-900 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors"
+            >
+              Set up your AI assistant
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        ) : (
+          <p className="text-[#3F4654] leading-relaxed whitespace-pre-wrap min-h-[3rem]">
+            {aiLoading || !dataReady
+              ? "Putting your briefing together…"
+              : aiSummary || "No briefing yet."}
+          </p>
+        )}
       </div>
 
       {/* At a glance */}

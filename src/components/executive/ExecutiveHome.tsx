@@ -161,6 +161,7 @@ export default function ExecutiveHome() {
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
+  const [assistantName, setAssistantName] = useState<string>("Mariposa");
   const [briefOrder, setBriefOrder] = useState<string[]>([
     "brief",
     "schedule",
@@ -200,11 +201,14 @@ export default function ExecutiveHome() {
       .catch(() => {});
   }, []);
 
-  // Fetch owner name for the greeting (from the profile)
+  // Fetch owner name + assistant name for the greeting/AI card (from the profile)
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d?.firstName && setFirstName(d.firstName))
+      .then((d) => {
+        if (d?.firstName) setFirstName(d.firstName);
+        if (d?.assistantName) setAssistantName(d.assistantName);
+      })
       .catch(() => {});
   }, []);
 
@@ -1470,7 +1474,7 @@ export default function ExecutiveHome() {
             </div>
             <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
           </div>
-          <span className="text-xs text-gray-400">Powered by Mariposa</span>
+          <span className="text-xs text-gray-400">Powered by {assistantName}</span>
         </div>
 
         <div className="px-6 pb-6">
@@ -1484,7 +1488,7 @@ export default function ExecutiveHome() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") askMariposa();
                 }}
-                placeholder="Ask Mariposa anything about your business..."
+                placeholder={`Ask ${assistantName} anything about your business...`}
                 className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
               />
             </div>
@@ -1500,7 +1504,7 @@ export default function ExecutiveHome() {
           {/* Reply */}
           {(aiLoading || aiReply) && (
             <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
-              {aiLoading ? "Mariposa is thinking…" : aiReply}
+              {aiLoading ? `${assistantName} is thinking…` : aiReply}
             </div>
           )}
 

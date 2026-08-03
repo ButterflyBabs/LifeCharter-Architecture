@@ -1,18 +1,35 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { crossOriginBlocked } from "@/lib/security";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// Mariposa — the execution half of the LifeCharter AI team (Brújula is the
-// strategic compass; Mariposa is the butterfly: daily action). Unlike the older
-// /api/ai-guide route, this is not auth-gated, so it works in the current
-// single-user app.
-const SYSTEM_PROMPT = `You are Mariposa, the executive-assistant half of the LifeCharter AI team. Brújula is the strategic compass; you are the butterfly — daily execution and momentum.
+// The assistant persona — {name} is the account's configured assistant name.
+function systemPrompt(name: string): string {
+  return `You are ${name}, the executive-assistant AI in the LifeCharter Command Suite — the butterfly to Brújula's strategic compass: daily execution and momentum.
 
-You help Babs (AmiLynne Carroll) run her day across her ventures under Sacred Kaleidoscope: LifeCharter, the LifeCharter Command Suite, AmiLynne Speaks, Business in a Bot, and Carroll Media.
+You help the founder run their day across their ventures.
 
-Be warm, grounded, and concise. Prioritize one clear next action over long lists. Keep replies under 120 words unless asked for more. Sign off simply as "— Mariposa".`;
+Be warm, grounded, and concise. Prioritize one clear next action over long lists. Keep replies under 120 words unless asked for more. Sign off simply as "— ${name}".`;
+}
+
+// Reads the account's assistant name + OpenAI key (single-user: first profile).
+async function aiConfig(): Promise<{ name: string; key: string }> {
+  try {
+    const supabase = createServerClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("assistant_name, openai_api_key")
+      .limit(1)
+      .maybeSingle();
+    const name = ((data?.assistant_name as string) || "").trim() || "Mariposa";
+    const key = ((data?.openai_api_key as string) || "").trim() || process.env.OPENAI_API_KEY || "";
+    return { name, key };
+  } catch {
+    return { name: "Mariposa", key: process.env.OPENAI_API_KEY || "" };
+  }
+}
 
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
@@ -27,19 +44,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "message too long" }, { status: 413 });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const { name, key } = await aiConfig();
+
+  if (!key) {
     return NextResponse.json({
-      reply:
-        "I'm Mariposa — add an OPENAI_API_KEY and I'll come fully online. For now: what's the single most important thing you could move forward today? — Mariposa",
+      needsKey: true,
+      reply: `I'm ${name} — add your OpenAI API key in Settings → AI Assistant and I'll come fully online. For now: what's the single most important thing you could move forward today? — ${name}`,
     });
   }
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: key });
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt(name) },
         { role: "user", content: String(message) },
       ],
       max_tokens: 320,
@@ -50,7 +69,7 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error("POST /api/mariposa:", e);
     return NextResponse.json({
-      reply: "I hit a snag reaching my brain just now — give me a moment and try again. — Mariposa",
+      reply: `I hit a snag reaching my brain just now — give me a moment and try again. — ${name}`,
     });
   }
 }
