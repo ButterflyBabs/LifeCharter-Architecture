@@ -12,7 +12,10 @@ export async function GET(request: Request) {
   const error = url.searchParams.get("error");
 
   if (error || !code) {
-    return NextResponse.redirect(`${origin}/?microsoft=error`);
+    const desc = url.searchParams.get("error_description") ?? error ?? "no code returned";
+    return NextResponse.redirect(
+      `${origin}/?microsoft=error&reason=${encodeURIComponent(String(desc).slice(0, 400))}`
+    );
   }
   try {
     const tokens = await exchangeCode(code, origin);
@@ -21,6 +24,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?microsoft=connected`);
   } catch (e) {
     console.error("microsoft callback:", e);
-    return NextResponse.redirect(`${origin}/?microsoft=error`);
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.redirect(
+      `${origin}/?microsoft=error&reason=${encodeURIComponent(msg.slice(0, 400))}`
+    );
   }
 }
