@@ -1,11 +1,11 @@
 /**
  * Team Management Component
- * Manage team members with plan-based limits
+ * Manage team members with plan-based limits — persisted to the workspace.
  */
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -17,17 +17,21 @@ import {
   Shield,
   CheckCircle,
   X,
-  Crown
+  Crown,
+  Camera,
+  Loader2,
 } from "lucide-react";
+
+type Role = "admin" | "editor" | "viewer";
 
 interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "owner" | "admin" | "editor" | "viewer";
+  role: Role;
   status: "active" | "pending" | "inactive";
   avatar?: string | null;
-  joinedAt?: string;
+  joinedAt?: string | null;
 }
 
 interface TeamManagementProps {
@@ -36,97 +40,192 @@ interface TeamManagementProps {
   onChangePlan?: () => void;
 }
 
-// Plan-based team member limits
+// Plan-based team member limits (owner counts toward the total).
 const planLimits = {
-  starter: 2,      // Owner + 1 member
-  pro: 5,          // Owner + 4 members
-  enterprise: 10,  // Owner + 9 members
-  unlimited: 999   // For future
+  starter: 2,
+  pro: 5,
+  enterprise: 10,
+  unlimited: 999,
 };
 
-const roleLabels = {
-  owner: "Owner",
+const roleLabels: Record<Role, string> = {
   admin: "Admin",
   editor: "Editor",
-  viewer: "Viewer"
+  viewer: "Viewer",
 };
 
-const roleDescriptions = {
+const roleDescriptions: Record<string, string> = {
   owner: "Full access including billing and workspace deletion",
   admin: "Can manage team, settings, and all content",
   editor: "Can create and edit content, view analytics",
-  viewer: "View-only access to reports and dashboards"
+  viewer: "View-only access to reports and dashboards",
 };
 
-export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementProps) {
-  // Demo: Pro plan (5 members)
+export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: TeamManagementProps) {
   const currentPlan: keyof typeof planLimits = "pro";
   const maxMembers = planLimits[currentPlan];
-  
-  const [members, setMembers] = useState<TeamMember[]>([
-    {
-      id: "1",
-      name: "AmiLynne Carroll",
-      email: "babs@lifecharter.architecture",
-      role: "owner",
-      status: "active",
-      joinedAt: "2024-01-15"
-    }
-  ]);
-  
-  const [isAdding, setIsAdding] = useState(false);
-  const [newMember, setNewMember] = useState({
-    email: "",
-    name: "",
-    role: "editor" as TeamMember["role"]
+
+  // The workspace owner (the account holder) is rendered from the profile and
+  // isn't a stored member row.
+  const [owner, setOwner] = useState<{ name: string; avatar: string | null }>({
+    name: "Owner",
+    avatar: null,
   });
-  const [inviteSent, setInviteSent] = useState(false);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const activeMembers = members.filter(m => m.status === "active" || m.status === "pending");
-  const canAddMore = activeMembers.length < maxMembers;
+  const [isAdding, setIsAdding] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newMember, setNewMember] = useState({ email: "", name: "", role: "editor" as Role });
 
-  const handleAddMember = () => {
-    if (!newMember.email || !canAddMore) return;
-    
-    const member: TeamMember = {
-      id: `member-${Date.now()}`,
-      name: newMember.name || newMember.email.split("@")[0],
-      email: newMember.email,
-      role: newMember.role,
-      status: "pending",
-      joinedAt: new Date().toISOString().split("T")[0]
-    };
-    
-    setMembers([...members, member]);
-    setNewMember({ email: "", name: "", role: "editor" });
-    setIsAdding(false);
-    setInviteSent(true);
-    setTimeout(() => setInviteSent(false), 3000);
-  };
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarTargetId = useRef<string | null>(null);
 
-  const handleRemoveMember = (id: string) => {
-    if (members.find(m => m.id === id)?.role === "owner") {
-      alert("Cannot remove workspace owner");
-      return;
+  // Load the owner (once) and this workspace's members (on workspace change).
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setOwner({ name: (d.fullName as string) || "Owner", avatar: d.avatarUrl || null });
+      })
+      .catch(() => {});
+  }, []);
+
+  const loadMembers = useCallback(async () => {
+    if (!workspaceId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members`);
+      const data = await res.json().catch(() => ({}));
+      setMembers(res.ok && Array.isArray(data.members) ? data.members : []);
+    } catch {
+      setMembers([]);
+    } finally {
+      setLoading(false);
     }
-    setMembers(members.filter(m => m.id !== id));
+  }, [workspaceId]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  const activeCount = members.length + 1; // + owner
+  const canAddMore = activeCount < maxMembers;
+
+  const flash = (ok: boolean, text: string) => {
+    setMsg({ ok, text });
+    if (ok) setTimeout(() => setMsg(null), 3000);
   };
 
-  const handleChangeRole = (id: string, newRole: TeamMember["role"]) => {
-    if (members.find(m => m.id === id)?.role === "owner") {
-      alert("Cannot change owner role");
-      return;
+  const handleAddMember = async () => {
+    if (!newMember.email || !canAddMore || adding) return;
+    setAdding(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMember),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.member) throw new Error(data?.error);
+      setMembers((prev) => [...prev, data.member]);
+      setNewMember({ email: "", name: "", role: "editor" });
+      setIsAdding(false);
+      flash(true, "Team member added.");
+    } catch (e) {
+      flash(false, (e as Error)?.message || "Couldn't add the member.");
+    } finally {
+      setAdding(false);
     }
-    setMembers(members.map(m => m.id === id ? { ...m, role: newRole } : m));
   };
 
-  const handleResendInvite = () => {
-    setInviteSent(true);
-    setTimeout(() => setInviteSent(false), 3000);
+  const handleRemoveMember = async (id: string) => {
+    setBusyId(id);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+    } catch {
+      flash(false, "Couldn't remove the member.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Persist a single field on a member and reflect the server's response.
+  const patchMember = async (id: string, patch: Partial<TeamMember>) => {
+    setBusyId(id);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.member) throw new Error();
+      setMembers((prev) => prev.map((m) => (m.id === id ? data.member : m)));
+    } catch {
+      flash(false, "Couldn't save the change.");
+      // Reload to discard the optimistic edit.
+      loadMembers();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleChangeRole = (id: string, role: Role) => patchMember(id, { role });
+
+  const handleNameBlur = (id: string, name: string) => {
+    const member = members.find((m) => m.id === id);
+    if (member && name.trim() && name.trim() !== member.name) {
+      patchMember(id, { name: name.trim() });
+    }
+  };
+
+  const openAvatarPicker = (id: string) => {
+    avatarTargetId.current = id;
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const id = avatarTargetId.current;
+    if (!file || !id) return;
+    setBusyId(id);
+    setMsg(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "members");
+      const up = await fetch("/api/uploads/image", { method: "POST", body: form });
+      const upData = await up.json().catch(() => ({}));
+      if (!up.ok || !upData.url) throw new Error();
+      await patchMember(id, { avatar: upData.url });
+    } catch {
+      flash(false, "Couldn't upload the photo.");
+      setBusyId(null);
+    } finally {
+      avatarTargetId.current = null;
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Hidden avatar picker shared by all member rows */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarSelect}
+        className="hidden"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -134,7 +233,7 @@ export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementPr
             Team Members
           </h3>
           <p className="text-sm text-[#b8a898]">
-            {activeMembers.length} of {maxMembers} members used • {workspaceName}
+            {activeCount} of {maxMembers} members used • {workspaceName}
           </p>
         </div>
         {canAddMore ? (
@@ -152,11 +251,19 @@ export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementPr
         )}
       </div>
 
-      {/* Success Message */}
-      {inviteSent && (
-        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2 text-green-600">
-          <CheckCircle className="w-4 h-4" />
-          <span className="text-sm">Invitation sent successfully</span>
+      {/* Status message */}
+      {msg && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
+            msg.ok
+              ? "bg-green-500/10 border border-green-500/20 text-green-600"
+              : "bg-red-500/10 border border-red-500/20 text-red-600"
+          }`}
+        >
+          {msg.ok ? <CheckCircle className="w-4 h-4" /> : null}
+          <span>{msg.text}</span>
         </div>
       )}
 
@@ -175,7 +282,7 @@ export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementPr
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
@@ -230,12 +337,9 @@ export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementPr
               <Button variant="outline" onClick={() => setIsAdding(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleAddMember}
-                disabled={!newMember.email}
-              >
+              <Button onClick={handleAddMember} disabled={!newMember.email || adding}>
                 <Mail className="w-4 h-4 mr-2" />
-                Send Invitation
+                {adding ? "Adding…" : "Send Invitation"}
               </Button>
             </div>
           </CardContent>
@@ -244,91 +348,122 @@ export function TeamManagement({ workspaceName, onChangePlan }: TeamManagementPr
 
       {/* Team Members List */}
       <div className="space-y-3">
-        {members.map((member) => (
-          <Card
-            key={member.id}
-            className={member.status === "pending" ? "border-yellow-500/30" : ""}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-6 h-6 text-[#c9a227]" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                        {member.name}
-                      </span>
-                      {member.role === "owner" && (
-                        <Crown className="w-4 h-4 text-[#c9a227]" />
-                      )}
-                      {member.status === "pending" && (
-                        <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded">
-                          Pending
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-[#b8a898]">{member.email}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-[#b8a898] capitalize">
-                        {roleLabels[member.role]}
-                      </span>
-                      {member.joinedAt && member.status === "active" && (
-                        <span className="text-xs text-[#b8a898]">
-                          Joined {member.joinedAt}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {member.status === "pending" ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleResendInvite()}
-                    >
-                      Resend Invite
-                    </Button>
+        {/* Owner (from the account profile) */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
+                  {owner.avatar ? (
+                    <img src={owner.avatar} alt={owner.name} className="w-full h-full rounded-full object-cover" />
                   ) : (
-                    member.role !== "owner" && (
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleChangeRole(member.id, e.target.value as TeamMember["role"])}
-                        className="text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-1.5 text-[#1a2b4a] dark:text-[#F8F5F0]"
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="editor">Editor</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
-                    )
+                    <User className="w-6 h-6 text-[#c9a227]" />
                   )}
-                  
-                  {member.role !== "owner" && (
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{owner.name}</span>
+                    <Crown className="w-4 h-4 text-[#c9a227]" />
+                  </div>
+                  <span className="text-xs text-[#b8a898]">Owner</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {loading && (
+          <p className="text-sm text-[#b8a898] px-1">Loading team…</p>
+        )}
+
+        {!loading && members.length === 0 && (
+          <p className="text-sm text-[#b8a898] px-1">
+            No team members yet. Use “Add Member” to invite someone.
+          </p>
+        )}
+
+        {members.map((member) => {
+          const isBusy = busyId === member.id;
+          return (
+            <Card
+              key={member.id}
+              className={member.status === "pending" ? "border-yellow-500/30" : ""}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-4 min-w-0">
+                    {/* Avatar with upload button */}
+                    <div className="relative flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
+                        {member.avatar ? (
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-6 h-6 text-[#c9a227]" />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openAvatarPicker(member.id)}
+                        disabled={isBusy}
+                        title="Change photo"
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#7b6b8d] text-white flex items-center justify-center hover:bg-[#6a5b7c] shadow-sm border border-white transition-colors"
+                      >
+                        {isBusy ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Camera className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          defaultValue={member.name}
+                          onBlur={(e) => handleNameBlur(member.id, e.target.value)}
+                          className="h-8 py-1 max-w-[200px]"
+                        />
+                        {member.status === "pending" && (
+                          <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded whitespace-nowrap">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#b8a898] mt-1 truncate">{member.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <select
+                      value={member.role}
+                      disabled={isBusy}
+                      onChange={(e) => handleChangeRole(member.id, e.target.value as Role)}
+                      className="text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-1.5 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-red-500 hover:text-red-600"
+                      disabled={isBusy}
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <UserX className="w-4 h-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Role Permissions Info */}
