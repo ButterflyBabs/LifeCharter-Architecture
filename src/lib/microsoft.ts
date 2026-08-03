@@ -1,5 +1,11 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { InboxEmail, ScheduleEvent, MessageDetail, OutgoingAttachment } from "@/lib/google";
+import type {
+  InboxEmail,
+  ScheduleEvent,
+  MessageDetail,
+  OutgoingAttachment,
+  MailLabel,
+} from "@/lib/google";
 import { dayWindowUtc } from "@/lib/tz";
 
 // Microsoft 365 (Graph) OAuth + Mail/Calendar helpers — the Microsoft twin of
@@ -273,6 +279,7 @@ type GraphFullMessage = {
   body?: { contentType?: string; content?: string };
   internetMessageId?: string;
   conversationId?: string;
+  categories?: string[];
   attachments?: Array<{
     id?: string;
     name?: string;
@@ -302,10 +309,12 @@ function graphMessageToDetail(m: GraphFullMessage, fallbackId = ""): MessageDeta
         mimeType: a.contentType || "application/octet-stream",
         size: a.size ?? 0,
       })),
+    // Outlook categories are stored by display name — that's their id here.
+    labels: (m.categories ?? []).map((c) => ({ id: c, name: c })),
   };
 }
 
-const MSG_SELECT = "id,subject,from,receivedDateTime,body,internetMessageId,conversationId";
+const MSG_SELECT = "id,subject,from,receivedDateTime,body,internetMessageId,conversationId,categories";
 const MSG_EXPAND = "attachments($select=id,name,contentType,size,isInline)";
 
 export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
@@ -342,6 +351,41 @@ export async function getAttachmentBytes(
   if (!r.ok) throw new Error(`graph attachment ${r.status}`);
   const a = (await r.json()) as { contentBytes?: string };
   return Buffer.from(a.contentBytes ?? "", "base64");
+}
+
+// Outlook master categories (the mailbox's category list).
+export async function listLabels(accessToken: string): Promise<MailLabel[]> {
+  const r = await fetch(`${GRAPH}/me/outlook/masterCategories`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`graph categories ${r.status}`);
+  const data = await r.json();
+  return ((data.value ?? []) as Array<{ displayName?: string; color?: string }>)
+    .filter((c) => c.displayName)
+    .map((c) => ({ id: c.displayName as string, name: c.displayName as string, color: c.color }));
+}
+
+// Add/remove categories (by display name) on a message — set the full array.
+export async function modifyLabels(
+  accessToken: string,
+  id: string,
+  add: string[],
+  remove: string[]
+): Promise<void> {
+  const cur = await fetch(`${GRAPH}/me/messages/${id}?$select=categories`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!cur.ok) throw new Error(`graph categories read ${cur.status}`);
+  const data = (await cur.json()) as { categories?: string[] };
+  const set = new Set(data.categories ?? []);
+  add.forEach((a) => set.add(a));
+  remove.forEach((r) => set.delete(r));
+  const patch = await fetch(`${GRAPH}/me/messages/${id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ categories: Array.from(set) }),
+  });
+  if (!patch.ok) throw new Error(`graph categories write ${patch.status}`);
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {

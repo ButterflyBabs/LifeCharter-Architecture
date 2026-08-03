@@ -238,6 +238,7 @@ export async function searchInbox(accessToken: string, query: string, max = 20):
 }
 
 export type AttachmentMeta = { id: string; name: string; mimeType: string; size: number };
+export type MailLabel = { id: string; name: string; color?: string };
 
 // Full message body for the reading view.
 export type MessageDetail = {
@@ -251,6 +252,7 @@ export type MessageDetail = {
   bodyHtml: string | null;
   bodyText: string | null;
   attachments: AttachmentMeta[];
+  labels: MailLabel[];
 };
 
 type GmailPart = {
@@ -303,10 +305,11 @@ type GmailFullMessage = {
   id: string;
   threadId?: string;
   snippet?: string;
+  labelIds?: string[];
   payload?: GmailPart & { headers?: { name: string; value: string }[] };
 };
 
-function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
+function gmailMessageToDetail(msg: GmailFullMessage, labelMap: Map<string, string>): MessageDetail {
   const headers: Record<string, string> = Object.fromEntries(
     (msg.payload?.headers ?? []).map((h) => [h.name.toLowerCase(), h.value])
   );
@@ -314,6 +317,9 @@ function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
   const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
   const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
   const { html, text, attachments } = extractBody(msg.payload as GmailPart);
+  const labels: MailLabel[] = (msg.labelIds ?? [])
+    .filter((id) => labelMap.has(id))
+    .map((id) => ({ id, name: labelMap.get(id) as string }));
   return {
     id: msg.id,
     threadId: msg.threadId ?? "",
@@ -325,7 +331,38 @@ function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
     bodyHtml: html,
     bodyText: text || (html ? null : (msg.snippet ?? "")),
     attachments,
+    labels,
   };
+}
+
+// User-created Gmail labels only (system labels like INBOX/SENT excluded).
+export async function listLabels(accessToken: string): Promise<MailLabel[]> {
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`gmail labels ${r.status}`);
+  const data = await r.json();
+  return ((data.labels ?? []) as Array<{ id: string; name: string; type?: string }>)
+    .filter((l) => l.type === "user")
+    .map((l) => ({ id: l.id, name: l.name }));
+}
+
+async function userLabelMap(accessToken: string): Promise<Map<string, string>> {
+  const labels = await listLabels(accessToken);
+  return new Map(labels.map((l) => [l.id, l.name]));
+}
+
+// Add/remove labels on a message (by label id).
+export async function modifyLabels(
+  accessToken: string,
+  id: string,
+  add: string[],
+  remove: string[]
+): Promise<void> {
+  await gmailModify(accessToken, id, {
+    ...(add.length ? { addLabelIds: add } : {}),
+    ...(remove.length ? { removeLabelIds: remove } : {}),
+  });
 }
 
 // Download one attachment's raw bytes.
@@ -344,23 +381,27 @@ export async function getAttachmentBytes(
 }
 
 export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
-  const r = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const [r, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
   if (!r.ok) throw new Error(`gmail message ${r.status}`);
-  return gmailMessageToDetail(await r.json());
+  return gmailMessageToDetail(await r.json(), labelMap);
 }
 
 // All messages in a Gmail thread, oldest → newest.
 export async function fetchThread(accessToken: string, threadId: string): Promise<MessageDetail[]> {
-  const r = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const [r, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
   if (!r.ok) throw new Error(`gmail thread ${r.status}`);
   const data = await r.json();
-  return ((data.messages ?? []) as GmailFullMessage[]).map(gmailMessageToDetail);
+  return ((data.messages ?? []) as GmailFullMessage[]).map((m) => gmailMessageToDetail(m, labelMap));
 }
 
 export type ScheduleEvent = {

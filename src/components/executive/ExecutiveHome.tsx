@@ -24,6 +24,7 @@ import {
   Forward,
   Paperclip,
   Download,
+  Tag,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 
@@ -57,6 +58,12 @@ interface AttachmentMeta {
   size: number;
 }
 
+interface MailLabel {
+  id: string;
+  name: string;
+  color?: string;
+}
+
 interface MsgDetail {
   id: string;
   from: string;
@@ -66,6 +73,7 @@ interface MsgDetail {
   bodyHtml: string | null;
   bodyText: string | null;
   attachments?: AttachmentMeta[];
+  labels?: MailLabel[];
 }
 
 interface ScheduleEvent {
@@ -125,6 +133,7 @@ export default function ExecutiveHome() {
   const [thread, setThread] = useState<MsgDetail[] | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [readingLoading, setReadingLoading] = useState(false);
+  const [availableLabels, setAvailableLabels] = useState<MailLabel[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Email[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -371,6 +380,43 @@ export default function ExecutiveHome() {
       setThread([]);
     }
     setReadingLoading(false);
+    // Load this provider's labels/categories for the add-label menu.
+    fetch(`/api/inbox/labels?provider=${prov}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && Array.isArray(d.labels) && setAvailableLabels(d.labels))
+      .catch(() => {});
+  };
+
+  // Add or remove a label/category on a message, updating the reader in place.
+  const changeLabel = async (msg: MsgDetail, label: MailLabel, action: "add" | "remove") => {
+    const provider = readingSource?.provider ?? "google";
+    setThread((prev) =>
+      (prev ?? []).map((m) =>
+        m.id === msg.id
+          ? {
+              ...m,
+              labels:
+                action === "add"
+                  ? [...(m.labels ?? []).filter((l) => l.id !== label.id), label]
+                  : (m.labels ?? []).filter((l) => l.id !== label.id),
+            }
+          : m
+      )
+    );
+    try {
+      await fetch("/api/inbox/label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          id: msg.id,
+          add: action === "add" ? [label.id] : [],
+          remove: action === "remove" ? [label.id] : [],
+        }),
+      });
+    } catch {
+      /* optimistic — leave the local change */
+    }
   };
 
   const toggleMsg = (id: string) =>
@@ -1599,6 +1645,48 @@ export default function ExecutiveHome() {
                                   <Download className="w-3.5 h-3.5 text-[#2E7C83]" />
                                 </a>
                               ))}
+                            </div>
+                          )}
+                          {((m.labels && m.labels.length > 0) || availableLabels.length > 0) && (
+                            <div className="px-5 py-3 border-t border-[#E8E4E0] flex flex-wrap items-center gap-2">
+                              <Tag className="w-4 h-4 text-[#7A5D84]" />
+                              {(m.labels ?? []).map((l) => (
+                                <span
+                                  key={l.id}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#EDE5F1] text-[#5E3B6C] text-[11px]"
+                                >
+                                  {l.name}
+                                  <button
+                                    onClick={() => changeLabel(m, l, "remove")}
+                                    className="hover:text-red-600"
+                                    aria-label={`Remove ${l.name}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              {availableLabels.filter(
+                                (l) => !(m.labels ?? []).some((ml) => ml.id === l.id)
+                              ).length > 0 && (
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const lbl = availableLabels.find((l) => l.id === e.target.value);
+                                    if (lbl) changeLabel(m, lbl, "add");
+                                    e.currentTarget.value = "";
+                                  }}
+                                  className="text-[11px] border border-gray-200 rounded-full px-2 py-1 text-gray-500 bg-white outline-none"
+                                >
+                                  <option value="">+ Label</option>
+                                  {availableLabels
+                                    .filter((l) => !(m.labels ?? []).some((ml) => ml.id === l.id))
+                                    .map((l) => (
+                                      <option key={l.id} value={l.id}>
+                                        {l.name}
+                                      </option>
+                                    ))}
+                                </select>
+                              )}
                             </div>
                           )}
                         </>
