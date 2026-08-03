@@ -63,12 +63,14 @@ export interface ProseAnswer {
 export async function scoreDimensionFromProse(
   dimensionKey: DimensionKey,
   dimensionLabel: string,
-  answers: ProseAnswer[]
+  answers: ProseAnswer[],
+  apiKey?: string
 ): Promise<AiDimensionScore | null> {
-  if (!isAiConfigured() || answers.length === 0) return null;
+  const key = apiKey || openaiKey();
+  if (!key || answers.length === 0) return null;
 
   const rubric = RUBRIC[dimensionKey] ?? `Overall strength of the "${dimensionLabel}" dimension.`;
-  const openai = new OpenAI({ apiKey: openaiKey() });
+  const openai = new OpenAI({ apiKey: key });
 
   const content = answers
     .map((a, i) => `Q${i + 1}: ${a.question}\nA${i + 1}: ${a.answer}`)

@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { resolveAiConfig } from "@/lib/ai/config";
 
-// System prompt for the AI Business Guide
-const SYSTEM_PROMPT = `You are an AI Business Guide for LifeCharter, a business assessment and optimization platform. 
+// System prompt for the AI Business Guide ({name} = the account's assistant).
+const systemPrompt = (name: string) => `You are ${name}, the AI business guide in the LifeCharter Command Suite, a business assessment and optimization platform.
 
 Your role is to provide compassionate, practical, and strategic guidance to entrepreneurs and business owners based on their business scores across three dimensions:
 
@@ -25,14 +26,15 @@ Provide guidance that is:
 - Focused on one priority at a time
 - Celebratory of progress made
 
-Always sign off as "Your AI Business Guide".`;
+Always sign off simply as "— ${name}".`;
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    const { name, key } = await resolveAiConfig();
+    // Check if an OpenAI API key is configured (per-account or env)
+    if (!key) {
       return NextResponse.json({
-        reply: "I'm here to help you align your business with your vision. To get personalized AI guidance, please configure the OPENAI_API_KEY environment variable. In the meantime, focus on one priority: What's the single most important action you could take this week to move your business forward?"
+        reply: `I'm ${name} — add your OpenAI key in Settings → AI Assistant to get personalized guidance. In the meantime, focus on one priority: What's the single most important action you could take this week to move your business forward?`
       });
     }
 
@@ -57,10 +59,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // Initialize OpenAI client with the resolved key
+    const openai = new OpenAI({ apiKey: key });
 
     // Prepare context about the user's business
     let contextPrompt = "";
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT + contextPrompt },
+        { role: "system", content: systemPrompt(name) + contextPrompt },
         { role: "user", content: message },
       ],
       temperature: 0.7,

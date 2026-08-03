@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { openaiKey, isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
+import { openaiKey, ProseAnswer } from "@/lib/scoring/aiScore";
 import { DIMENSION_LABEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 
 /**
@@ -73,8 +73,9 @@ export interface PlanInputs {
   answers: ProseAnswer[];
 }
 
-export async function generatePlan(inputs: PlanInputs): Promise<GeneratedPlan | null> {
-  if (!isAiConfigured()) return null;
+export async function generatePlan(inputs: PlanInputs, apiKey?: string): Promise<GeneratedPlan | null> {
+  const key = apiKey || openaiKey();
+  if (!key) return null;
 
   const focus = PLAN_FOCUS[inputs.planType];
   const focusLabels = focus.map((k) => `${k} (${DIMENSION_LABEL[k]})`).join(", ");
@@ -92,7 +93,7 @@ export async function generatePlan(inputs: PlanInputs): Promise<GeneratedPlan | 
     ? inputs.answers.map((a, i) => `Q${i + 1}: ${a.question}\nA${i + 1}: ${a.answer}`).join("\n\n")
     : "(no open-ended answers available)";
 
-  const openai = new OpenAI({ apiKey: openaiKey() });
+  const openai = new OpenAI({ apiKey: key });
 
   const system = `You are a seasoned business coach writing ${PLAN_BRIEF[inputs.planType]}
 You write FOR this specific founder, grounded ONLY in the evidence provided (their dimension scores and their own answers). Be specific and practical, never generic. Prioritize their weakest relevant dimensions.

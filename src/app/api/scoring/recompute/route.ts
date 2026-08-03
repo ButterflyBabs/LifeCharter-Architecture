@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
-import { scoreDimensionFromProse, isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
+import { scoreDimensionFromProse, ProseAnswer } from "@/lib/scoring/aiScore";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { captureSnapshot } from "@/lib/scoring/snapshot";
+import { resolveOpenAiKey } from "@/lib/ai/config";
 import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
@@ -41,9 +42,10 @@ export async function POST() {
 }
 
 async function run() {
-  if (!isAiConfigured()) {
+  const openAiKey = await resolveOpenAiKey();
+  if (!openAiKey) {
     return NextResponse.json(
-      { error: "OpenAI is not configured (missing openai_api_key / OPENAI_API_KEY).", configured: false },
+      { error: "Add your OpenAI key in Settings → AI Assistant to run scoring.", configured: false },
       { status: 400 }
     );
   }
@@ -100,7 +102,8 @@ async function run() {
       const result = await scoreDimensionFromProse(
         def.key as DimensionKey,
         def.label,
-        answers.slice(0, MAX_ANSWERS_PER_SOURCE)
+        answers.slice(0, MAX_ANSWERS_PER_SOURCE),
+        openAiKey
       );
       if (result) {
         aiScores[`${def.key}:${source.kind}`] = {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { crossOriginBlocked } from "@/lib/security";
-import { createServerClient } from "@/lib/supabase/server";
+import { resolveAiConfig } from "@/lib/ai/config";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +12,6 @@ function systemPrompt(name: string): string {
 You help the founder run their day across their ventures.
 
 Be warm, grounded, and concise. Prioritize one clear next action over long lists. Keep replies under 120 words unless asked for more. Sign off simply as "— ${name}".`;
-}
-
-// Reads the account's assistant name + OpenAI key (single-user: first profile).
-async function aiConfig(): Promise<{ name: string; key: string }> {
-  try {
-    const supabase = createServerClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("assistant_name, openai_api_key")
-      .limit(1)
-      .maybeSingle();
-    const name = ((data?.assistant_name as string) || "").trim() || "Mariposa";
-    const key = ((data?.openai_api_key as string) || "").trim() || process.env.OPENAI_API_KEY || "";
-    return { name, key };
-  } catch {
-    return { name: "Mariposa", key: process.env.OPENAI_API_KEY || "" };
-  }
 }
 
 export async function POST(request: Request) {
@@ -44,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "message too long" }, { status: 413 });
   }
 
-  const { name, key } = await aiConfig();
+  const { name, key } = await resolveAiConfig();
 
   if (!key) {
     return NextResponse.json({

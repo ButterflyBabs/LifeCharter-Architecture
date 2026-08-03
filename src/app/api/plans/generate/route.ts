@@ -3,8 +3,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { gatherAndCompute } from "@/lib/scoring/gather";
-import { isAiConfigured, ProseAnswer } from "@/lib/scoring/aiScore";
+import { ProseAnswer } from "@/lib/scoring/aiScore";
 import { generatePlan, PlanType } from "@/lib/plans/generatePlan";
+import { resolveOpenAiKey } from "@/lib/ai/config";
 import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,10 @@ export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
-  if (!isAiConfigured()) {
+  const openAiKey = await resolveOpenAiKey();
+  if (!openAiKey) {
     return NextResponse.json(
-      { error: "OpenAI is not configured (missing openai_api_key / OPENAI_API_KEY).", configured: false },
+      { error: "Add your OpenAI key in Settings → AI Assistant to generate plans.", configured: false },
       { status: 400 }
     );
   }
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
   const computed = await gatherAndCompute(planId);
   const scores = computed.domains.map((d) => ({ key: d.key, label: d.label, score: d.score }));
 
-  const generated = await generatePlan({ planType, scores, answers });
+  const generated = await generatePlan({ planType, scores, answers }, openAiKey);
   if (!generated) {
     return NextResponse.json(
       { error: "generation produced no plan (insufficient evidence or model error)" },
