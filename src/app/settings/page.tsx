@@ -158,7 +158,10 @@ export default function SettingsPage() {
       const d = await res.json();
       setAiHasKey(Boolean(d.hasOpenAiKey));
       setAiKey("");
-      setAiMsg({ ok: true, text: "Saved. Your assistant is updated." });
+      setAiMsg({
+        ok: true,
+        text: `Saved — your AI bot${d.assistantName ? ` (${d.assistantName})` : ""} has been updated.`,
+      });
     } catch {
       setAiMsg({ ok: false, text: "Couldn't save — please try again." });
     }
@@ -1440,11 +1443,22 @@ export default function SettingsPage() {
           </div>
 
           {aiMsg && (
-            <p className={`text-sm ${aiMsg.ok ? "text-green-600" : "text-red-500"}`}>{aiMsg.text}</p>
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                aiMsg.ok
+                  ? "bg-green-50 border border-green-200 text-green-700"
+                  : "bg-red-50 border border-red-200 text-red-600"
+              }`}
+            >
+              {aiMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+              <span>{aiMsg.text}</span>
+            </div>
           )}
 
           <div>
-            <Button onClick={handleSaveAi} disabled={aiSaving}>
+            <Button type="button" onClick={handleSaveAi} disabled={aiSaving}>
               <Save className="w-4 h-4 mr-1.5" />
               {aiSaving ? "Saving…" : "Save AI settings"}
             </Button>
