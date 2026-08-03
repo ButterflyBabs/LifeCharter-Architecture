@@ -903,7 +903,7 @@ export default function ExecutiveHome() {
         {/* Your Morning Brief */}
         <div {...briefCardProps("brief")}>
           <button draggable onDragStart={() => setDragId("brief")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
-        <Link href="/business-plan" className="block">
+        <Link href="/morning-brief" className="block">
           <div className="relative h-full">
             {/* Lavender sidebar panel with botanical art */}
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-[#E8E4F0]/60 rounded-l-2xl overflow-hidden">

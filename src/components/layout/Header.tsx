@@ -24,6 +24,7 @@ interface HeaderProps {
 // the shared AppLayout doesn't require touching every route.
 const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
+  "/morning-brief": "Morning Brief",
   "/daily-compass": "Daily Compass",
   "/assessments": "Alignment Profile",
   "/business-plan": "Business Plan",
