@@ -237,6 +237,8 @@ export async function searchInbox(accessToken: string, query: string, max = 20):
   return hydrateInboxIds(accessToken, ids);
 }
 
+export type AttachmentMeta = { id: string; name: string; mimeType: string; size: number };
+
 // Full message body for the reading view.
 export type MessageDetail = {
   id: string;
@@ -248,9 +250,15 @@ export type MessageDetail = {
   date: string;
   bodyHtml: string | null;
   bodyText: string | null;
+  attachments: AttachmentMeta[];
 };
 
-type GmailPart = { mimeType?: string; body?: { data?: string }; parts?: GmailPart[] };
+type GmailPart = {
+  mimeType?: string;
+  filename?: string;
+  body?: { data?: string; attachmentId?: string; size?: number };
+  parts?: GmailPart[];
+};
 
 function decodeBody(data?: string): string {
   if (!data) return "";
@@ -261,19 +269,34 @@ function decodeBody(data?: string): string {
   }
 }
 
-// Walk the MIME tree and pull out the first html and first plain-text parts.
-function extractBody(payload?: GmailPart): { html: string | null; text: string | null } {
+// Walk the MIME tree: first html + plain-text parts, and any real attachments.
+function extractBody(payload?: GmailPart): {
+  html: string | null;
+  text: string | null;
+  attachments: AttachmentMeta[];
+} {
   let html: string | null = null;
   let text: string | null = null;
+  const attachments: AttachmentMeta[] = [];
   const visit = (part?: GmailPart) => {
     if (!part) return;
     const mime = part.mimeType ?? "";
-    if (mime === "text/html" && part.body?.data && html === null) html = decodeBody(part.body.data);
-    else if (mime === "text/plain" && part.body?.data && text === null) text = decodeBody(part.body.data);
+    if (part.filename && part.body?.attachmentId) {
+      attachments.push({
+        id: part.body.attachmentId,
+        name: part.filename,
+        mimeType: mime || "application/octet-stream",
+        size: part.body.size ?? 0,
+      });
+    } else if (mime === "text/html" && part.body?.data && html === null) {
+      html = decodeBody(part.body.data);
+    } else if (mime === "text/plain" && part.body?.data && text === null) {
+      text = decodeBody(part.body.data);
+    }
     (part.parts ?? []).forEach(visit);
   };
   visit(payload);
-  return { html, text };
+  return { html, text, attachments };
 }
 
 type GmailFullMessage = {
@@ -290,7 +313,7 @@ function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
   const fromRaw = headers["from"] ?? "";
   const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
   const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
-  const { html, text } = extractBody(msg.payload as GmailPart);
+  const { html, text, attachments } = extractBody(msg.payload as GmailPart);
   return {
     id: msg.id,
     threadId: msg.threadId ?? "",
@@ -301,7 +324,23 @@ function gmailMessageToDetail(msg: GmailFullMessage): MessageDetail {
     date: headers["date"] ?? "",
     bodyHtml: html,
     bodyText: text || (html ? null : (msg.snippet ?? "")),
+    attachments,
   };
+}
+
+// Download one attachment's raw bytes.
+export async function getAttachmentBytes(
+  accessToken: string,
+  messageId: string,
+  attachmentId: string
+): Promise<Buffer> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`gmail attachment ${r.status}`);
+  const data = await r.json();
+  return Buffer.from(data.data ?? "", "base64url");
 }
 
 export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {

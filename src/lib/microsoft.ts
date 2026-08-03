@@ -273,6 +273,13 @@ type GraphFullMessage = {
   body?: { contentType?: string; content?: string };
   internetMessageId?: string;
   conversationId?: string;
+  attachments?: Array<{
+    id?: string;
+    name?: string;
+    contentType?: string;
+    size?: number;
+    isInline?: boolean;
+  }>;
 };
 
 function graphMessageToDetail(m: GraphFullMessage, fallbackId = ""): MessageDetail {
@@ -287,13 +294,22 @@ function graphMessageToDetail(m: GraphFullMessage, fallbackId = ""): MessageDeta
     date: m.receivedDateTime ?? "",
     bodyHtml: isHtml ? (m.body?.content ?? null) : null,
     bodyText: isHtml ? null : (m.body?.content ?? null),
+    attachments: (m.attachments ?? [])
+      .filter((a) => a.id && a.name && !a.isInline)
+      .map((a) => ({
+        id: a.id as string,
+        name: a.name as string,
+        mimeType: a.contentType || "application/octet-stream",
+        size: a.size ?? 0,
+      })),
   };
 }
 
 const MSG_SELECT = "id,subject,from,receivedDateTime,body,internetMessageId,conversationId";
+const MSG_EXPAND = "attachments($select=id,name,contentType,size,isInline)";
 
 export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
-  const r = await fetch(`${GRAPH}/me/messages/${id}?$select=${MSG_SELECT}`, {
+  const r = await fetch(`${GRAPH}/me/messages/${id}?$select=${MSG_SELECT}&$expand=${MSG_EXPAND}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!r.ok) throw new Error(`graph message ${r.status}`);
@@ -305,13 +321,27 @@ export async function fetchThread(accessToken: string, conversationId: string): 
   const filter = `conversationId eq '${conversationId.replace(/'/g, "''")}'`;
   const url =
     `${GRAPH}/me/messages?$filter=${encodeURIComponent(filter)}` +
-    `&$select=${MSG_SELECT}&$top=25`;
+    `&$select=${MSG_SELECT}&$expand=${MSG_EXPAND}&$top=25`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!r.ok) throw new Error(`graph thread ${r.status}`);
   const data = await r.json();
   const items = ((data.value ?? []) as GraphFullMessage[]).map((m) => graphMessageToDetail(m));
   items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return items;
+}
+
+// Download one attachment's raw bytes (decodes the fileAttachment contentBytes).
+export async function getAttachmentBytes(
+  accessToken: string,
+  messageId: string,
+  attachmentId: string
+): Promise<Buffer> {
+  const r = await fetch(`${GRAPH}/me/messages/${messageId}/attachments/${attachmentId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`graph attachment ${r.status}`);
+  const a = (await r.json()) as { contentBytes?: string };
+  return Buffer.from(a.contentBytes ?? "", "base64");
 }
 
 export async function markRead(accessToken: string, id: string): Promise<void> {

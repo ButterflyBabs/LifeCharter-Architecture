@@ -22,6 +22,8 @@ import {
   Archive,
   Trash2,
   Forward,
+  Paperclip,
+  Download,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 
@@ -48,6 +50,13 @@ interface MailAccount {
   label: string;
 }
 
+interface AttachmentMeta {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
 interface MsgDetail {
   id: string;
   from: string;
@@ -56,6 +65,7 @@ interface MsgDetail {
   subject: string;
   bodyHtml: string | null;
   bodyText: string | null;
+  attachments?: AttachmentMeta[];
 }
 
 interface ScheduleEvent {
@@ -476,6 +486,18 @@ export default function ExecutiveHome() {
       .replace(/>/g, "&gt;");
     return `<!doctype html><html><head><meta charset="utf-8">${base}</head><body><pre style="white-space:pre-wrap;font-family:inherit;margin:0;">${escaped}</pre></body></html>`;
   };
+
+  const formatBytes = (n: number) => {
+    if (!n) return "";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const attachmentHref = (provider: Provider, messageId: string, a: AttachmentMeta) =>
+    `/api/inbox/attachment?provider=${provider}&messageId=${encodeURIComponent(messageId)}` +
+    `&attachmentId=${encodeURIComponent(a.id)}&name=${encodeURIComponent(a.name)}` +
+    `&mime=${encodeURIComponent(a.mimeType)}`;
 
   const handleSendReply = async () => {
     if (!replyingTo || !replyText.trim()) return;
@@ -1516,12 +1538,31 @@ export default function ExecutiveHome() {
                         </button>
                       )}
                       {(expanded || single) && (
-                        <iframe
-                          title={`Message ${i + 1}`}
-                          sandbox=""
-                          className="w-full h-[48vh] border-0"
-                          srcDoc={readerSrcDoc(m)}
-                        />
+                        <>
+                          <iframe
+                            title={`Message ${i + 1}`}
+                            sandbox=""
+                            className="w-full h-[48vh] border-0"
+                            srcDoc={readerSrcDoc(m)}
+                          />
+                          {m.attachments && m.attachments.length > 0 && (
+                            <div className="px-5 py-3 border-t border-[#E8E4E0] flex flex-wrap items-center gap-2 bg-[#F8F5F0]">
+                              <Paperclip className="w-4 h-4 text-[#7A5D84]" />
+                              {m.attachments.map((a) => (
+                                <a
+                                  key={a.id}
+                                  href={attachmentHref(readingSource?.provider ?? "google", m.id, a)}
+                                  download={a.name}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E8E4E0] bg-white text-xs text-[#3F4654] hover:border-[#84AEB2] transition-colors"
+                                >
+                                  <span className="max-w-[180px] truncate">{a.name}</span>
+                                  {a.size ? <span className="text-gray-400">{formatBytes(a.size)}</span> : null}
+                                  <Download className="w-3.5 h-3.5 text-[#2E7C83]" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   );
