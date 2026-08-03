@@ -28,7 +28,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, title, status, priority, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, due_date, completed_at, business:businesses(name, color), segment:segments(name, color)"
     )
     .order("board_position", { ascending: true })
     .order("created_at", { ascending: true });
