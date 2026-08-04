@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import QuickWins from "@/components/QuickWins";
 import {
   Sun,
   Calendar,
@@ -410,6 +411,14 @@ export default function MorningBriefPage() {
           <div className="space-y-2.5">{overflow.map(taskRow)}</div>
         </div>
       )}
+
+      {/* Quick Wins — one-tap actions that become real tasks */}
+      <div className="mt-4 bg-[#FBF6EE] rounded-2xl border border-[#EADFC9] shadow-sm p-6">
+        <QuickWins mode="compact" compactLimit={4} />
+        <Link href="/daily-compass" className="mt-3 inline-block text-xs text-[#2E7C83] hover:underline">
+          Manage your quick wins in Daily Compass →
+        </Link>
+      </div>
 
       {/* Mobile CTA */}
       <Link

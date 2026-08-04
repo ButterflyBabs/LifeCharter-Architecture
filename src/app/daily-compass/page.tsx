@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { GlobalControlContacts } from "./GlobalControlContacts";
 import { TodaysActivity } from "./TodaysActivity";
+import QuickWins from "@/components/QuickWins";
 
 // A task as returned by /api/tasks.
 interface RealTask {
@@ -852,48 +853,10 @@ export default function DailyCompassPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Wins — create real tasks */}
+          {/* Quick Wins — pick one, it becomes a real task. Editable + AI. */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#c9a227]" />
-                Quick Wins
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-                disabled={saving}
-                onClick={() => addTask("Send a testimonial request to your best client", "high")}
-              >
-                <span className="text-2xl mr-3">💬</span>
-                <div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Send a testimonial request</p>
-                  <p className="text-xs text-[#b8a898]">Adds a task for today</p>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-                disabled={saving}
-                onClick={() => addTask("Share a client win on social media", "medium")}
-              >
-                <span className="text-2xl mr-3">📱</span>
-                <div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Share a client win</p>
-                  <p className="text-xs text-[#b8a898]">Adds a 5-minute task</p>
-                </div>
-              </Button>
-              <Link href="/dashboard">
-                <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
-                  <span className="text-2xl mr-3">✅</span>
-                  <div>
-                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Review your Domain Scores</p>
-                    <p className="text-xs text-[#b8a898]">2-minute check-in</p>
-                  </div>
-                </Button>
-              </Link>
+            <CardContent className="pt-6">
+              <QuickWins mode="full" />
             </CardContent>
           </Card>
         </div>
