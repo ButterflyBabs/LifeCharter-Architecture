@@ -3,17 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Printer, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ArrowLeft, Printer, ChevronLeft, ChevronRight, FileText, Download, FileDown } from "lucide-react";
 import Link from "next/link";
 
+type Period = "week" | "month" | "quarter" | "year";
 interface Line {
   category: string;
   amount: number;
 }
 interface PnL {
-  period: "month" | "quarter" | "year";
+  period: Period;
   year: number;
   index: number;
+  weekStart: string | null;
   label: string;
   income: { total: number; lines: Line[] };
   expense: { total: number; lines: Line[] };
@@ -28,27 +30,29 @@ function tz(): string {
   return localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
+// Shift a YYYY-MM-DD by n days (UTC).
+function shiftDays(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function PnLPage() {
-  const [period, setPeriod] = useState<"month" | "quarter" | "year">("month");
-  const [year, setYear] = useState<number | null>(null);
-  const [index, setIndex] = useState<number | null>(null);
+  const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<PnL | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(
-    async (p: "month" | "quarter" | "year", y?: number, i?: number) => {
+    async (p: Period, opts: { year?: number; index?: number; start?: string } = {}) => {
       setLoading(true);
       try {
         const params = new URLSearchParams({ period: p, tz: tz() });
-        if (y) params.set("year", String(y));
-        if (i) params.set("index", String(i));
+        if (opts.year) params.set("year", String(opts.year));
+        if (opts.index) params.set("index", String(opts.index));
+        if (opts.start) params.set("start", opts.start);
         const res = await fetch(`/api/finance/pnl?${params.toString()}`);
         const d = await res.json().catch(() => null);
-        if (d && !d.error) {
-          setData(d);
-          setYear(d.year);
-          setIndex(d.index);
-        }
+        if (d && !d.error) setData(d);
       } finally {
         setLoading(false);
       }
@@ -61,30 +65,95 @@ export default function PnLPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changePeriod = (p: "month" | "quarter" | "year") => {
+  const changePeriod = (p: Period) => {
     setPeriod(p);
-    setYear(null);
-    setIndex(null);
     load(p);
   };
 
-  // Step to the previous/next period of the same type.
   const step = (dir: -1 | 1) => {
-    if (year == null || index == null) return;
-    let y = year;
-    let i = index;
+    if (!data) return;
+    if (period === "week") {
+      load("week", { start: shiftDays(data.weekStart || new Date().toISOString().slice(0, 10), dir * 7) });
+      return;
+    }
+    let y = data.year;
+    let i = data.index + dir;
     if (period === "year") {
       y += dir;
-    } else if (period === "quarter") {
-      i += dir;
-      if (i < 1) { i = 4; y -= 1; }
-      if (i > 4) { i = 1; y += 1; }
-    } else {
-      i += dir;
-      if (i < 1) { i = 12; y -= 1; }
-      if (i > 12) { i = 1; y += 1; }
+      load("year", { year: y });
+      return;
     }
-    load(period, y, i);
+    const max = period === "quarter" ? 4 : 12;
+    if (i < 1) { i = max; y -= 1; }
+    if (i > max) { i = 1; y += 1; }
+    load(period, { year: y, index: i });
+  };
+
+  // Current export params → query string.
+  const exportParams = () => {
+    const params = new URLSearchParams({ period, tz: tz() });
+    if (data) {
+      if (period === "week" && data.weekStart) params.set("start", data.weekStart);
+      else {
+        params.set("year", String(data.year));
+        if (period === "month" || period === "quarter") params.set("index", String(data.index));
+      }
+    }
+    return params.toString();
+  };
+
+  const downloadCsv = () => {
+    window.location.href = `/api/finance/export?${exportParams()}`;
+  };
+
+  const downloadPdf = async () => {
+    if (!data) return;
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const left = 56;
+    const right = 556;
+    let y = 70;
+    doc.setFontSize(16);
+    doc.text("Profit & Loss Statement", left, y);
+    doc.setFontSize(11);
+    doc.setTextColor(120);
+    y += 18;
+    doc.text(data.label, left, y);
+    doc.setTextColor(0);
+
+    const sectionHeader = (title: string, total: number) => {
+      y += 26;
+      doc.setFontSize(12);
+      doc.text(title, left, y);
+      doc.text(usd(total), right, y, { align: "right" });
+      y += 6;
+      doc.setDrawColor(200);
+      doc.line(left, y, right, y);
+      doc.setFontSize(10);
+    };
+    const line = (label: string, amount: number) => {
+      y += 16;
+      doc.text(label, left + 8, y);
+      doc.text(usd(amount), right, y, { align: "right" });
+    };
+
+    sectionHeader("Income", data.income.total);
+    if (data.income.lines.length === 0) line("None recorded", 0);
+    else data.income.lines.forEach((l) => line(l.category, l.amount));
+
+    sectionHeader("Expenses", data.expense.total);
+    if (data.expense.lines.length === 0) line("None recorded", 0);
+    else data.expense.lines.forEach((l) => line(l.category, l.amount));
+
+    y += 26;
+    doc.setDrawColor(80);
+    doc.line(left, y, right, y);
+    y += 18;
+    doc.setFontSize(12);
+    doc.text("Net Profit", left, y);
+    doc.text(usd(data.net), right, y, { align: "right" });
+
+    doc.save(`finance-${data.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`);
   };
 
   const section = (title: string, lines: Line[], total: number) => (
@@ -110,7 +179,6 @@ export default function PnLPage() {
 
   return (
     <div className="py-6 px-4 max-w-3xl mx-auto">
-      {/* Controls (hidden when printing) */}
       <div className="print:hidden">
         <Link href="/finance/pulse" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-3">
           <ArrowLeft className="w-4 h-4" /> Financial Pulse
@@ -120,14 +188,22 @@ export default function PnLPage() {
             <FileText className="w-5 h-5 text-[#c9a227]" />
             <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Profit &amp; Loss</h1>
           </div>
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-1.5" /> Print / Save PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={downloadCsv}>
+              <Download className="w-4 h-4 mr-1.5" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadPdf}>
+              <FileDown className="w-4 h-4 mr-1.5" /> PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-1.5" /> Print
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
           <div className="inline-flex rounded-lg border border-[#1a2b4a]/15 overflow-hidden">
-            {(["month", "quarter", "year"] as const).map((p) => (
+            {(["week", "month", "quarter", "year"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => changePeriod(p)}
@@ -143,7 +219,7 @@ export default function PnLPage() {
             <Button variant="ghost" size="sm" onClick={() => step(-1)}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[90px] text-center">
+            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[130px] text-center">
               {data?.label ?? "…"}
             </span>
             <Button variant="ghost" size="sm" onClick={() => step(1)}>
@@ -153,7 +229,6 @@ export default function PnLPage() {
         </div>
       </div>
 
-      {/* Statement */}
       <Card>
         <CardContent className="p-6">
           <div className="text-center mb-6">
@@ -171,10 +246,7 @@ export default function PnLPage() {
               {section("Expenses", data.expense.lines, data.expense.total)}
               <div className="flex items-center justify-between border-t-2 border-[#1a2b4a]/25 pt-2 mt-2">
                 <span className="font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Net Profit</span>
-                <span
-                  className="font-bold tabular-nums"
-                  style={{ color: data.net >= 0 ? "#2c6b3f" : "#b06a5a" }}
-                >
+                <span className="font-bold tabular-nums" style={{ color: data.net >= 0 ? "#2c6b3f" : "#b06a5a" }}>
                   {data.net >= 0 ? "" : "−"}
                   {usd(Math.abs(data.net))}
                 </span>

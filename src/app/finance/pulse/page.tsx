@@ -70,6 +70,7 @@ export default function FinancialPulsePage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [mtd, setMtd] = useState<Totals>({ income: 0, expense: 0, net: 0 });
   const [ytd, setYtd] = useState<Totals>({ income: 0, expense: 0, net: 0 });
+  const [wtd, setWtd] = useState<Totals>({ income: 0, expense: 0, net: 0 });
   const [monthly, setMonthly] = useState<MonthPoint[]>([]);
   const [label, setLabel] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -99,6 +100,7 @@ export default function FinancialPulsePage() {
       setEntries(Array.isArray(d.entries) ? d.entries : []);
       if (d.mtd) setMtd(d.mtd);
       if (d.ytd) setYtd(d.ytd);
+      if (d.wtd) setWtd(d.wtd);
       if (Array.isArray(d.monthly)) setMonthly(d.monthly);
       if (d.year && d.month) setLabel(`${MONTHS[d.month - 1]} ${d.year}`);
       if (d.budgetSummary) {
@@ -445,6 +447,14 @@ export default function FinancialPulsePage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* This week */}
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">This week</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {tile("Income (WTD)", wtd.income, "income", <TrendingUp className="w-4 h-4" />)}
+        {tile("Expenses (WTD)", wtd.expense, "expense", <TrendingDown className="w-4 h-4" />)}
+        {tile("Net (WTD)", wtd.net, "net", <Wallet className="w-4 h-4" />)}
+      </div>
 
       {/* This month */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">

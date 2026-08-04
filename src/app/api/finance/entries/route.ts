@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { periodRange } from "@/lib/finance/period";
 
 export const dynamic = "force-dynamic";
 
@@ -74,9 +75,11 @@ export async function GET(request: Request) {
 
   const mtd = zero();
   const ytd = zero();
+  const wtd = zero();
   const monthly = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, income: 0, expense: 0 }));
   const catMtd: Record<string, number> = {};
   const catYtd: Record<string, number> = {};
+  const week = periodRange("week", { tz });
 
   for (const e of entries) {
     const bucket = e.type === "income" ? "income" : "expense";
@@ -85,12 +88,14 @@ export async function GET(request: Request) {
     if (m >= 1 && m <= 12) monthly[m - 1][bucket] += e.amount;
     const inMonth = e.occurredOn.startsWith(monthPrefix);
     if (inMonth) mtd[bucket] += e.amount;
+    if (e.occurredOn >= week.startStr && e.occurredOn < week.endStr) wtd[bucket] += e.amount;
     const key = `${bucket}:${(e.category || "").toLowerCase()}`;
     catYtd[key] = (catYtd[key] || 0) + e.amount;
     if (inMonth) catMtd[key] = (catMtd[key] || 0) + e.amount;
   }
   mtd.net = mtd.income - mtd.expense;
   ytd.net = ytd.income - ytd.expense;
+  wtd.net = wtd.income - wtd.expense;
 
   // Budgets + budget-vs-actual + a simple, honest health score.
   const { data: bdata } = await supabase
@@ -157,6 +162,8 @@ export async function GET(request: Request) {
     entries: entries.slice(0, 100),
     mtd,
     ytd,
+    wtd,
+    weekLabel: week.label,
     monthly,
     year,
     month,

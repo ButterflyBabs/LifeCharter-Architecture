@@ -287,10 +287,12 @@ export default function FinancePage() {
               <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               {isRefreshing ? "Refreshing..." : "AI Refresh"}
             </Button>
-            <Button>
-              <FileText className="w-4 h-4 mr-2" />
-              Export Report
-            </Button>
+            <Link href="/finance/pnl">
+              <Button>
+                <FileText className="w-4 h-4 mr-2" />
+                Export Report
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
