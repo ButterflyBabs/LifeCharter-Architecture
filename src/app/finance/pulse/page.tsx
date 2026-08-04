@@ -13,6 +13,7 @@ import {
   X,
   Trash2,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -238,10 +239,18 @@ export default function FinancialPulsePage() {
               <p className="text-[#b8a898]">{label ? `Live through ${label}` : "Your money at a glance"}</p>
             </div>
           </div>
-          <Button onClick={() => setShowAdd((v) => !v)}>
-            {showAdd ? <X className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
-            {showAdd ? "Close" : "Add entry"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/finance/pnl">
+              <Button variant="outline">
+                <FileText className="w-4 h-4 mr-1.5" />
+                P&amp;L
+              </Button>
+            </Link>
+            <Button onClick={() => setShowAdd((v) => !v)}>
+              {showAdd ? <X className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
+              {showAdd ? "Close" : "Add entry"}
+            </Button>
+          </div>
         </div>
       </div>
 

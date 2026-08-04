@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -53,13 +53,36 @@ interface Insight {
 }
 
 export default function FinancePage() {
-  const [financeHealth] = useState({
-    overall: 58,
-    income: 65,
-    expenses: 55,
+  const [financeHealth, setFinanceHealth] = useState({
+    overall: 0,
+    income: 0,
+    expenses: 0,
     techstack: 45,
     cashflow: 60,
   });
+
+  // Pull the real health score + this-month income/expense from the ledger.
+  useEffect(() => {
+    const tz =
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+      "UTC";
+    fetch(`/api/finance/entries?tz=${encodeURIComponent(tz)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const score = d.health?.score ?? 0;
+        const inc = d.mtd?.income ?? 0;
+        const exp = d.mtd?.expense ?? 0;
+        setFinanceHealth((h) => ({
+          ...h,
+          overall: score,
+          income: inc > 0 ? Math.min(100, Math.round((inc / Math.max(inc, exp)) * 100)) : 0,
+          expenses: exp > 0 ? Math.min(100, Math.round((1 - Math.min(1, exp / Math.max(inc, 1))) * 100)) : 0,
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   const [sections] = useState<FinanceSection[]>([
     { 
