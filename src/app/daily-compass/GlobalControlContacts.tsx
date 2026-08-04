@@ -42,6 +42,7 @@ export function GlobalControlContacts() {
   const [fuDate, setFuDate] = useState("");
   const [fuTime, setFuTime] = useState("");
   const [fuNote, setFuNote] = useState("");
+  const [fuAiDraft, setFuAiDraft] = useState(true);
   const [scheduling, setScheduling] = useState(false);
   const [fuMsg, setFuMsg] = useState<string | null>(null);
 
@@ -79,6 +80,7 @@ export function GlobalControlContacts() {
     setFuDate("");
     setFuTime("");
     setFuNote("");
+    setFuAiDraft(true);
     setFuMsg(null);
   };
 
@@ -94,6 +96,38 @@ export function GlobalControlContacts() {
     setFuMsg(null);
     const dueAt = new Date(`${fuDate}T${fuTime || "09:00"}`).toISOString();
     const label = fuChannel === "call" ? "Follow-up call" : "Follow-up email";
+
+    // For an email follow-up with AI drafting on, ask the bot to compose it now
+    // and store the draft on the task so it's ready to send when due.
+    const followup: Record<string, unknown> = {
+      channel: fuChannel,
+      contactId: selected.id,
+      contactName: selected.name,
+      contactEmail: selected.email || "",
+      aiMode: "none",
+    };
+    let draftedNote = "";
+    if (fuChannel === "email" && fuAiDraft) {
+      try {
+        const dr = await fetch("/api/followups/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contactName: selected.name, guidance: fuNote.trim() }),
+        });
+        const dd = await dr.json().catch(() => ({}));
+        if (dd.needsKey) {
+          draftedNote = " (AI is offline — add your OpenAI key to draft emails; scheduled as a reminder)";
+        } else if (dd.subject && dd.body) {
+          followup.aiMode = "draft";
+          followup.aiSubject = dd.subject;
+          followup.aiBody = dd.body;
+          draftedNote = " with an AI-drafted email ready to send";
+        }
+      } catch {
+        draftedNote = " (couldn't draft the email — scheduled as a reminder)";
+      }
+    }
+
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -104,11 +138,11 @@ export function GlobalControlContacts() {
           status: "backlog",
           priority: "high",
           dueAt,
-          followup: { channel: fuChannel, contactId: selected.id, contactName: selected.name },
+          followup,
         }),
       });
       if (!res.ok) throw new Error();
-      setFuMsg(`Scheduled — appears in Today's Focus on ${new Date(dueAt).toLocaleDateString()}.`);
+      setFuMsg(`Scheduled${draftedNote} — appears in Today's Focus on ${new Date(dueAt).toLocaleDateString()}.`);
       setFuDate("");
       setFuTime("");
       setFuNote("");
@@ -424,9 +458,24 @@ export function GlobalControlContacts() {
                     type="text"
                     value={fuNote}
                     onChange={(e) => setFuNote(e.target.value)}
-                    placeholder="What's this follow-up about? (optional)"
+                    placeholder={
+                      fuChannel === "email"
+                        ? "What should the email be about? (guides the AI draft)"
+                        : "What's this follow-up about? (optional)"
+                    }
                     className="w-full mt-2 p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                   />
+                  {fuChannel === "email" && (
+                    <label className="flex items-center gap-2 mt-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={fuAiDraft}
+                        onChange={(e) => setFuAiDraft(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#1a2b4a]/30 text-[#c9a227] focus:ring-[#c9a227]"
+                      />
+                      Have AI draft the email now (ready to review &amp; send when it&apos;s due)
+                    </label>
+                  )}
                   <div className="flex items-center gap-2 mt-2">
                     <Button size="sm" disabled={scheduling || !fuDate} onClick={scheduleFollowup}>
                       {scheduling ? "Scheduling…" : "Schedule follow-up"}
@@ -434,8 +483,8 @@ export function GlobalControlContacts() {
                     {fuMsg && <span className="text-xs text-[#2E7C83]">{fuMsg}</span>}
                   </div>
                   <p className="text-xs text-[#b8a898] mt-2">
-                    Lands in Today&apos;s Focus on its date (overdue rolls forward). AI drafting, auto-send, GC
-                    workflow tags, and a calendar hold are coming next.
+                    Lands in Today&apos;s Focus on its date (overdue rolls forward). For emails, AI can draft it
+                    now. Auto-send, GC workflow tags, and a calendar hold are coming next.
                   </p>
                 </div>
               </div>

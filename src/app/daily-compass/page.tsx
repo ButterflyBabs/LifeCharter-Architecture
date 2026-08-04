@@ -38,7 +38,15 @@ interface RealTask {
   priority: string;
   due_date: string | null;
   due_at: string | null;
-  followup: { channel?: string; contactId?: string; contactName?: string } | null;
+  followup: {
+    channel?: string;
+    contactId?: string;
+    contactName?: string;
+    contactEmail?: string;
+    aiMode?: string;
+    aiSubject?: string;
+    aiBody?: string;
+  } | null;
   completed_at: string | null;
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
@@ -85,6 +93,11 @@ export default function DailyCompassPage() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<string>("medium");
   const [saving, setSaving] = useState(false);
+
+  // AI-draft email view/send state (per focus item).
+  const [openDraftId, setOpenDraftId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendMsg, setSendMsg] = useState<{ id: number; text: string } | null>(null);
 
   useEffect(() => {
     const d = new Date();
@@ -195,6 +208,37 @@ export default function DailyCompassPage() {
       });
     } catch {
       /* optimistic */
+    }
+  };
+
+  // Send an AI-drafted follow-up email, then mark the follow-up done. Tries the
+  // Microsoft account first, falls back to Google.
+  const sendDraft = async (t: RealTask) => {
+    const fu = t.followup;
+    if (!fu?.aiBody || !fu.contactEmail) {
+      setSendMsg({ id: t.id, text: "No email on file for this contact — add it on the contact first." });
+      return;
+    }
+    setSendingId(t.id);
+    setSendMsg(null);
+    const payload = { to: fu.contactEmail, subject: fu.aiSubject || "Following up", body: fu.aiBody };
+    const trySend = (provider: string) =>
+      fetch("/api/inbox/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, provider }),
+      });
+    try {
+      let res = await trySend("microsoft");
+      if (res.status === 401) res = await trySend("google");
+      if (!res.ok) throw new Error();
+      setSendMsg({ id: t.id, text: "Sent ✓" });
+      setOpenDraftId(null);
+      toggleComplete(t); // sending completes the follow-up
+    } catch {
+      setSendMsg({ id: t.id, text: "Couldn't send — open your inbox to send it manually." });
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -530,6 +574,48 @@ export default function DailyCompassPage() {
                             </span>
                           )}
                         </div>
+
+                        {/* AI-drafted follow-up email: review + send */}
+                        {!done && item.followup?.channel === "email" && item.followup?.aiBody && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs inline-flex items-center gap-1 text-[#2E7C83] bg-[#4a9b9b]/12 px-2 py-0.5 rounded-full">
+                                <Mail className="w-3 h-3" /> AI draft ready
+                              </span>
+                              <button
+                                onClick={() => setOpenDraftId(openDraftId === item.id ? null : item.id)}
+                                className="text-xs text-[#2E7C83] hover:underline"
+                              >
+                                {openDraftId === item.id ? "Hide" : "Review"}
+                              </button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={sendingId === item.id}
+                                onClick={() => sendDraft(item)}
+                              >
+                                {sendingId === item.id ? "Sending…" : "Send"}
+                              </Button>
+                              {sendMsg?.id === item.id && (
+                                <span className="text-xs text-[#2E7C83]">{sendMsg.text}</span>
+                              )}
+                            </div>
+                            {openDraftId === item.id && (
+                              <div className="mt-2 p-3 rounded-lg bg-[#1a2b4a]/5 border border-[#1a2b4a]/10 text-sm">
+                                <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                                  {item.followup.aiSubject}
+                                </p>
+                                <p className="text-[#3F4654] dark:text-[#e8e4f0] whitespace-pre-wrap mt-1">
+                                  {item.followup.aiBody}
+                                </p>
+                                <p className="text-xs text-[#b8a898] mt-2">
+                                  To: {item.followup.contactEmail || "—"} · edit or send from your inbox if you
+                                  prefer.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <Link href="/tasks">
                         <Button variant="ghost" size="sm">
