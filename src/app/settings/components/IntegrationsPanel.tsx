@@ -641,18 +641,34 @@ function CalendarConnections() {
     const connected = status?.connected;
     const canWrite = status?.canWriteCalendar;
     return (
-      <div className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10">
+      <div
+        className={`flex items-center justify-between p-3 rounded-lg border ${
+          loaded && connected ? "border-green-500/30 bg-green-500/5" : "border-[#1a2b4a]/10"
+        }`}
+      >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${color}20` }}>
             {icon}
           </div>
           <div>
-            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{name}</p>
+              {loaded && connected && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-700 dark:text-green-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Connected
+                </span>
+              )}
+              {loaded && !connected && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7a8a99]">
+                  Not connected
+                </span>
+              )}
+            </div>
             <p className="text-xs text-[#b8a898]">
               {!loaded
                 ? "Checking…"
                 : connected
-                ? `Connected${status?.email ? ` · ${status.email}` : ""}`
+                ? status?.email || "Email + calendar"
                 : "Email + calendar (read & write)"}
             </p>
             {loaded && connected && writeNote && !canWrite && (
@@ -663,12 +679,21 @@ function CalendarConnections() {
             )}
           </div>
         </div>
-        <a
-          href={authHref}
-          className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
-        >
-          {connected ? "Reconnect" : "Connect"}
-        </a>
+        {loaded && connected ? (
+          <a
+            href={authHref}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#1a2b4a]/20 text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+          >
+            Reconnect
+          </a>
+        ) : (
+          <a
+            href={authHref}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
+          >
+            Connect
+          </a>
+        )}
       </div>
     );
   };
