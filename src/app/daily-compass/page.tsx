@@ -300,11 +300,23 @@ export default function DailyCompassPage() {
     let health = "";
     let focus = "";
     let moves = "";
+    let pillarLine = `My 8 operational pillars: ${OPERATIONAL_PILLARS.join(", ")}. `;
     try {
-      const [al, nm] = await Promise.all([
+      const [al, nm, ops] = await Promise.all([
         fetch("/api/alignment").then((r) => (r.ok ? r.json() : null)).catch(() => null),
         fetch("/api/next-moves").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/operations").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       ]);
+      if (ops && Array.isArray(ops.pillars)) {
+        const attn = ops.pillars.filter((p: { status: string }) => p.status === "needs_attention").map((p: { name: string }) => p.name);
+        const notStarted = ops.pillars.filter((p: { status: string }) => p.status === "not_started").map((p: { name: string }) => p.name);
+        const solid = ops.pillars.filter((p: { status: string }) => p.status === "complete").length;
+        pillarLine =
+          `Operational pillars (of 8): ${solid} solid` +
+          (attn.length ? `; needing attention: ${attn.join(", ")}` : "") +
+          (notStarted.length ? `; not started: ${notStarted.join(", ")}` : "") +
+          `. `;
+      }
       if (al && typeof al.overall === "number") {
         health = `overall business health ${al.overall}/100${al.status ? ` (${al.status} phase)` : ""}`;
         if (Array.isArray(al.domains)) {
@@ -340,7 +352,7 @@ export default function DailyCompassPage() {
       (health ? `My ${health}. ` : "") +
       (focus ? `My weakest business dimensions (where gains matter most right now): ${focus}. ` : "") +
       (moves ? `Recommended strategic moves derived from those dimensions: ${moves}. ` : "") +
-      `My 8 operational pillars: ${OPERATIONAL_PILLARS.join(", ")}. ` +
+      pillarLine +
       `Today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
       (openOther.length ? `Other open tasks: ${openOther.slice(0, 6).join("; ")}. ` : "") +
       `Meetings: ${meetings}. ` +
