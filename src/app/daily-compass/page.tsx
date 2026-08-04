@@ -280,6 +280,36 @@ export default function DailyCompassPage() {
   const buildInsights = useCallback(async () => {
     setAiLoading(true);
     setAiInsights(null);
+
+    // Strategic context: 12-dimension business health + the dimension-driven
+    // "next moves", so insights are goal- and benchmark-based, not just a
+    // reaction to today's task list.
+    let health = "";
+    let focus = "";
+    let moves = "";
+    try {
+      const [al, nm] = await Promise.all([
+        fetch("/api/alignment").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/next-moves").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]);
+      if (al && typeof al.overall === "number") {
+        health = `overall business health ${al.overall}/100${al.status ? ` (${al.status} phase)` : ""}`;
+        if (Array.isArray(al.domains)) {
+          const weakest = [...al.domains]
+            .filter((d: { score?: number }) => typeof d.score === "number")
+            .sort((a: { score: number }, b: { score: number }) => a.score - b.score)
+            .slice(0, 3)
+            .map((d: { name: string; score: number }) => `${d.name} ${d.score}/100`);
+          if (weakest.length) focus = weakest.join(", ");
+        }
+      }
+      if (nm && Array.isArray(nm.moves)) {
+        moves = nm.moves.map((m: { title: string }) => m.title).slice(0, 3).join("; ");
+      }
+    } catch {
+      /* insights still work without strategic context */
+    }
+
     const todayList = tasks
       .filter((t) => t.status === "today" || t.status === "in_progress")
       .map((t) => t.title);
@@ -292,12 +322,17 @@ export default function DailyCompassPage() {
         : "no meetings today"
       : "calendar not connected";
     const message =
-      `Give me exactly 3 short coaching insights for today, one per line, no preamble or numbering. ` +
-      `Speak directly to me${firstName ? ` (${firstName})` : ""}. Start each line with a single relevant emoji. ` +
-      `Base them on: today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
+      `Give me exactly 3 short, STRATEGIC coaching insights for today, one per line, no preamble or numbering. ` +
+      `Speak directly to me${firstName ? ` (${firstName})` : ""}. Start each line with a single relevant emoji. Keep each under 24 words. ` +
+      (health ? `My ${health}. ` : "") +
+      (focus ? `My weakest business dimensions (where gains matter most right now): ${focus}. ` : "") +
+      (moves ? `Recommended strategic moves derived from those dimensions: ${moves}. ` : "") +
+      `Today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
       (openOther.length ? `Other open tasks: ${openOther.slice(0, 6).join("; ")}. ` : "") +
       `Meetings: ${meetings}. ` +
-      `Make one about where to focus first, one about a risk or something slipping, and one encouraging. Keep each under 20 words.`;
+      `Ground the insights in my weakest dimensions and recommended moves: connect today's work to strengthening those dimensions and advancing my goals. ` +
+      `Make one about where to focus first (tie it to a weak dimension or a recommended move), one flagging a strategic gap or risk (an important dimension I'm not touching today), and one encouraging about momentum. ` +
+      `If today's tasks don't advance my weakest dimensions, gently say so and suggest one goal-driven action that would.`;
     try {
       const res = await fetch("/api/mariposa", {
         method: "POST",
