@@ -558,3 +558,25 @@ export async function sendEmail(
   });
   if (!r.ok) throw new Error(`graph sendMail ${r.status} ${await r.text()}`);
 }
+
+// Create a calendar event (used for follow-up "time blocks"). start/end are UTC
+// ISO instants; we hand Graph the wall-clock plus timeZone UTC. Returns the id.
+export async function createEvent(
+  accessToken: string,
+  opts: { subject: string; startISO: string; endISO: string; body?: string }
+): Promise<string> {
+  const toGraph = (iso: string) => iso.replace(/\.\d+Z$/, "Z").replace(/Z$/, "");
+  const r = await fetch(`${GRAPH}/me/events`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subject: opts.subject,
+      body: { contentType: "Text", content: opts.body || "" },
+      start: { dateTime: toGraph(opts.startISO), timeZone: "UTC" },
+      end: { dateTime: toGraph(opts.endISO), timeZone: "UTC" },
+    }),
+  });
+  if (!r.ok) throw new Error(`graph createEvent ${r.status} ${await r.text()}`);
+  const j = await r.json().catch(() => ({}));
+  return String(j.id ?? "");
+}

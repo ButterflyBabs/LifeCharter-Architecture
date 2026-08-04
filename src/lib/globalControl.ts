@@ -167,3 +167,46 @@ export async function updateContact(
   });
   return normalize(data || {});
 }
+
+export interface GcTag {
+  id: string;
+  name: string;
+  group: string;
+}
+
+// List tags (for the workflow picker). Defensive about array wrapping.
+export async function listTags(key: string): Promise<GcTag[]> {
+  const data = await gc<unknown>(key, "/tags");
+  let rows: Record<string, unknown>[] = [];
+  if (Array.isArray(data)) rows = data as Record<string, unknown>[];
+  else if (data && typeof data === "object") {
+    const d = data as Record<string, unknown>;
+    const candidate = d.tags ?? d.results ?? d.items ?? d.data;
+    if (Array.isArray(candidate)) rows = candidate as Record<string, unknown>[];
+  }
+  return rows
+    .map((r) => ({
+      id: String(r._id ?? r.id ?? ""),
+      name: String(r.name ?? "Untitled tag"),
+      group: String(r.group_name ?? r.groupName ?? ""),
+    }))
+    .filter((t) => t.id);
+}
+
+// Fire a tag on a contact (by email) — assigns the tag and triggers any
+// Global Control workflows attached to it.
+export async function fireTag(
+  key: string,
+  tagId: string,
+  contact: { email: string; firstName?: string; lastName?: string; phone?: string }
+): Promise<void> {
+  await gc(key, `/tags/fire-tag/${encodeURIComponent(tagId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      email: contact.email,
+      firstName: contact.firstName || undefined,
+      lastName: contact.lastName || undefined,
+      phone: contact.phone || undefined,
+    }),
+  });
+}

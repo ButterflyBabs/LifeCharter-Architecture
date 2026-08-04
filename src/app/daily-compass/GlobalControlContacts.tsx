@@ -43,8 +43,25 @@ export function GlobalControlContacts() {
   const [fuTime, setFuTime] = useState("");
   const [fuNote, setFuNote] = useState("");
   const [fuEmailMode, setFuEmailMode] = useState<"none" | "draft" | "auto">("draft");
+  const [fuTagId, setFuTagId] = useState("");
+  const [fuCalendar, setFuCalendar] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [fuMsg, setFuMsg] = useState<string | null>(null);
+
+  // Global Control tags (workflow drop).
+  const [tags, setTags] = useState<{ id: string; name: string; group: string }[]>([]);
+  const [fireTagId, setFireTagId] = useState("");
+  const [firing, setFiring] = useState(false);
+  const [tagMsg, setTagMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/global-control/tags")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.tags) setTags(d.tags);
+      })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -81,7 +98,42 @@ export function GlobalControlContacts() {
     setFuTime("");
     setFuNote("");
     setFuEmailMode("draft");
+    setFuTagId("");
+    setFuCalendar(false);
     setFuMsg(null);
+    setFireTagId("");
+    setTagMsg(null);
+  };
+
+  // Fire a tag on the selected contact right now (drop into a GC workflow).
+  const fireWorkflowTag = async () => {
+    if (!selected || !fireTagId) return;
+    setFiring(true);
+    setTagMsg(null);
+    try {
+      const res = await fetch("/api/global-control/tags/fire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tagId: fireTagId,
+          email: selected.email,
+          firstName: selected.firstName,
+          lastName: selected.lastName,
+          phone: selected.phone,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTagMsg(d?.error || "Couldn't fire that tag.");
+      } else {
+        const t = tags.find((x) => x.id === fireTagId);
+        setTagMsg(`Dropped into workflow: ${t?.name || "tag fired"}.`);
+      }
+    } catch {
+      setTagMsg("Couldn't fire that tag.");
+    } finally {
+      setFiring(false);
+    }
   };
 
   // Schedule a follow-up: creates a task with a due time + follow-up metadata so
@@ -152,10 +204,62 @@ export function GlobalControlContacts() {
         }),
       });
       if (!res.ok) throw new Error();
-      setFuMsg(`Scheduled${draftedNote} — appears in Today's Focus on ${new Date(dueAt).toLocaleDateString()}.`);
+
+      // Optional: drop the contact into a GC workflow via a tag.
+      let extra = "";
+      if (fuTagId && selected.email) {
+        try {
+          const tr = await fetch("/api/global-control/tags/fire", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tagId: fuTagId,
+              email: selected.email,
+              firstName: selected.firstName,
+              lastName: selected.lastName,
+              phone: selected.phone,
+            }),
+          });
+          if (tr.ok) {
+            const t = tags.find((x) => x.id === fuTagId);
+            extra += ` · dropped into ${t?.name || "workflow"}`;
+          }
+        } catch {
+          /* non-fatal */
+        }
+      }
+
+      // Optional: add a calendar time-block for a timed call.
+      if (fuCalendar && fuChannel === "call" && fuTime) {
+        try {
+          const cr = await fetch("/api/calendar/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subject: `Follow-up call: ${selected.name}`,
+              startISO: dueAt,
+              durationMin: 30,
+              note: fuNote.trim(),
+            }),
+          });
+          if (cr.ok) extra += " · added to calendar";
+          else {
+            const cd = await cr.json().catch(() => ({}));
+            if (cd?.needsScope) extra += " · (reconnect Google to add to calendar)";
+          }
+        } catch {
+          /* non-fatal */
+        }
+      }
+
+      setFuMsg(
+        `Scheduled${draftedNote}${extra} — appears in Today's Focus on ${new Date(dueAt).toLocaleDateString()}.`
+      );
       setFuDate("");
       setFuTime("");
       setFuNote("");
+      setFuTagId("");
+      setFuCalendar(false);
       if (typeof window !== "undefined") window.dispatchEvent(new Event("tasks-changed"));
     } catch {
       setFuMsg("Couldn't schedule that — please try again.");
@@ -489,6 +593,37 @@ export function GlobalControlContacts() {
                       </select>
                     </div>
                   )}
+                  {tags.length > 0 && (
+                    <div className="mt-2">
+                      <label className="block text-xs font-medium text-[#b8a898] mb-1">
+                        Also drop into a Global Control workflow (optional)
+                      </label>
+                      <select
+                        value={fuTagId}
+                        onChange={(e) => setFuTagId(e.target.value)}
+                        className="w-full p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                      >
+                        <option value="">— none —</option>
+                        {tags.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.group ? `${t.group} · ` : ""}
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {fuChannel === "call" && fuTime && (
+                    <label className="flex items-center gap-2 mt-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={fuCalendar}
+                        onChange={(e) => setFuCalendar(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#1a2b4a]/30 text-[#c9a227] focus:ring-[#c9a227]"
+                      />
+                      Add to my calendar as a time block
+                    </label>
+                  )}
                   <div className="flex items-center gap-2 mt-2">
                     <Button size="sm" disabled={scheduling || !fuDate} onClick={scheduleFollowup}>
                       {scheduling ? "Scheduling…" : "Schedule follow-up"}
@@ -496,10 +631,47 @@ export function GlobalControlContacts() {
                     {fuMsg && <span className="text-xs text-[#2E7C83]">{fuMsg}</span>}
                   </div>
                   <p className="text-xs text-[#b8a898] mt-2">
-                    Lands in Today&apos;s Focus on its date (overdue rolls forward). For emails, AI can draft it
-                    now. Auto-send, GC workflow tags, and a calendar hold are coming next.
+                    Lands in Today&apos;s Focus on its date (overdue rolls forward). Emails can be AI-drafted or
+                    auto-sent; calls can be time-blocked on your calendar.
                   </p>
                 </div>
+
+                {/* Drop into a Global Control workflow right now */}
+                {tags.length > 0 && (
+                  <div className="mt-2 pt-4 border-t border-[#1a2b4a]/10">
+                    <label className="block text-xs font-medium text-[#b8a898] mb-1.5">
+                      Drop into a Global Control workflow now
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={fireTagId}
+                        onChange={(e) => setFireTagId(e.target.value)}
+                        className="p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] max-w-[240px]"
+                      >
+                        <option value="">Choose a tag…</option>
+                        {tags.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.group ? `${t.group} · ` : ""}
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={firing || !fireTagId}
+                        onClick={fireWorkflowTag}
+                      >
+                        {firing ? "Firing…" : "Fire tag"}
+                      </Button>
+                      {tagMsg && <span className="text-xs text-[#2E7C83]">{tagMsg}</span>}
+                    </div>
+                    <p className="text-xs text-[#b8a898] mt-2">
+                      Assigns the tag to this contact in Global Control and triggers its workflow. Needs the
+                      contact to have an email on file.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
