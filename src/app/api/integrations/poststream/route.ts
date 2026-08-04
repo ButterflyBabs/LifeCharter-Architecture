@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { validateKey } from "@/lib/postStream";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,15 @@ export async function POST(request: Request) {
   const accountId = typeof body.accountId === "string" ? body.accountId.trim() : "";
   if (!apiKey) {
     return NextResponse.json({ error: "An API key is required." }, { status: 400 });
+  }
+
+  // Verify the key actually works against PostStream before storing it.
+  const ok = await validateKey(apiKey);
+  if (!ok) {
+    return NextResponse.json(
+      { error: "That key didn't validate with PostStream. Double-check it and try again." },
+      { status: 400 }
+    );
   }
 
   const { data: existing } = await supabase
