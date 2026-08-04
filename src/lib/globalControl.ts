@@ -33,8 +33,13 @@ export interface GcContact {
   isDead: boolean;
 }
 
-function authHeaders(key: string): Record<string, string> {
-  return { "X-API-KEY": key, "Content-Type": "application/json", Accept: "application/json" };
+// Only attach Content-Type: application/json when there's actually a JSON body.
+// Sending it on a bodyless GET makes Global Control try to parse an empty body
+// and fail with "Invalid Json Format" (HTTP 400).
+function authHeaders(key: string, hasBody: boolean): Record<string, string> {
+  const h: Record<string, string> = { "X-API-KEY": key, Accept: "application/json" };
+  if (hasBody) h["Content-Type"] = "application/json";
+  return h;
 }
 
 // Low-level call. Unwraps the { type, data } envelope and throws GcError on
@@ -48,7 +53,7 @@ async function gc<T = unknown>(
   try {
     res = await fetch(`${BASE}${path}`, {
       ...init,
-      headers: { ...authHeaders(key), ...(init?.headers || {}) },
+      headers: { ...authHeaders(key, init?.body != null), ...(init?.headers || {}) },
       cache: "no-store",
     });
   } catch {
