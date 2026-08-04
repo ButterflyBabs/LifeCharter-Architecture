@@ -31,6 +31,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/marketing-plan": "Marketing Plan",
   "/sales": "Sales",
   "/finance": "Finance",
+  "/planning": "Planning Hub",
+  "/planning/forecast": "Forecasting",
   "/operations": "Operations",
   "/reviews": "Reviews",
   "/ai-guide": "AI Guide",

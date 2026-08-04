@@ -35,6 +35,7 @@ import {
   Wallet,
   Boxes,
   BarChart3,
+  LineChart,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -54,9 +55,11 @@ const navigationSections = [
     title: "STRATEGIC PLANNING",
     color: "text-[#4a9b9b]",
     items: [
+      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
-      { id: "sales", label: "Sales", icon: TrendingUp, href: "/sales" },
+      { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
+      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
     ],
   },
