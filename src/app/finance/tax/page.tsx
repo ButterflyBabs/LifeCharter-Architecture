@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft, Receipt, Download, PiggyBank } from "lucide-react";
+import { ArrowLeft, Receipt, Download, PiggyBank, AlertTriangle, CheckCircle, CalendarClock } from "lucide-react";
 import Link from "next/link";
 
 interface Line {
@@ -25,16 +25,41 @@ const tz = () =>
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
   "UTC";
 
+// Next US estimated-tax deadline on/after today (Apr 15, Jun 15, Sep 15, Jan 15).
+function nextDeadline(): { iso: string; label: string } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const candidates = [
+    new Date(Date.UTC(y, 3, 15)),
+    new Date(Date.UTC(y, 5, 15)),
+    new Date(Date.UTC(y, 8, 15)),
+    new Date(Date.UTC(y + 1, 0, 15)),
+  ];
+  const pick = candidates.find((d) => d.getTime() >= Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) || candidates[3];
+  return {
+    iso: pick.toISOString(),
+    label: pick.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }),
+  };
+}
+
 export default function TaxPrepPage() {
   const [data, setData] = useState<YearPnL | null>(null);
+  const [uncategorized, setUncategorized] = useState(0);
   const [rate, setRate] = useState(25);
   const [loading, setLoading] = useState(true);
 
+  const [confirmUncat, setConfirmUncat] = useState(false);
+  const [addingTask, setAddingTask] = useState(false);
+  const [taskMsg, setTaskMsg] = useState<string | null>(null);
+
   useEffect(() => {
-    fetch(`/api/finance/pnl?period=year&tz=${encodeURIComponent(tz())}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d && !d.error) setData(d);
+    Promise.all([
+      fetch(`/api/finance/pnl?period=year&tz=${encodeURIComponent(tz())}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/finance/entries?tz=${encodeURIComponent(tz())}`).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([p, e]) => {
+        if (p && !p.error) setData(p);
+        if (e) setUncategorized(e.uncategorizedExpenses ?? 0);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -43,6 +68,37 @@ export default function TaxPrepPage() {
   const taxable = Math.max(0, net);
   const setAside = Math.round((taxable * rate) / 100);
   const perQuarter = Math.round(setAside / 4);
+  const deadline = nextDeadline();
+
+  const addTask = async () => {
+    // Always caution about uncategorized expenses before calculating/committing.
+    if (uncategorized > 0 && !confirmUncat) {
+      setConfirmUncat(true);
+      return;
+    }
+    setAddingTask(true);
+    setTaskMsg(null);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Pay estimated quarterly taxes — ${usd(perQuarter)}`,
+          description: `Estimated federal quarterly payment (${rate}% of taxable net, due ${deadline.label}). Review uncategorized expenses first for accuracy.`,
+          status: "today",
+          priority: "high",
+          dueAt: deadline.iso,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setTaskMsg(`Added to your task list — pay ${usd(perQuarter)} by ${deadline.label}.`);
+      setConfirmUncat(false);
+    } catch {
+      setTaskMsg("Couldn't add the task — please try again.");
+    } finally {
+      setAddingTask(false);
+    }
+  };
 
   return (
     <div className="py-6 px-4 max-w-4xl mx-auto">
@@ -70,6 +126,25 @@ export default function TaxPrepPage() {
         <p className="text-sm text-[#b8a898]">Loading…</p>
       ) : (
         <>
+          {/* Uncategorized alert — always shown before relying on the estimate */}
+          {uncategorized > 0 && (
+            <div className="mb-6 flex items-start gap-2 rounded-lg px-4 py-3 text-sm bg-yellow-50 border border-yellow-200 text-yellow-800">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">
+                  {uncategorized} expense{uncategorized === 1 ? " is" : "s are"} uncategorized.
+                </p>
+                <p>
+                  Categorize {uncategorized === 1 ? "it" : "them"} for the most accurate deduction total and tax
+                  estimate.{" "}
+                  <Link href="/finance/expenses" className="underline">
+                    Review expenses →
+                  </Link>
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Set-aside estimate */}
           <Card className="mb-6">
             <CardHeader>
@@ -97,7 +172,7 @@ export default function TaxPrepPage() {
                   <p className="text-lg font-bold text-[#c9a227]">{usd(setAside)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <label className="text-sm text-[#b8a898]">Estimated tax rate</label>
                 <Input
                   type="number"
@@ -107,8 +182,39 @@ export default function TaxPrepPage() {
                   onChange={(e) => setRate(Math.max(0, Math.min(60, Number(e.target.value) || 0)))}
                   className="w-20"
                 />
-                <span className="text-sm text-[#b8a898]">% · about {usd(perQuarter)} per quarter</span>
+                <span className="text-sm text-[#b8a898]">
+                  % · about <strong>{usd(perQuarter)}</strong> per quarter
+                </span>
               </div>
+
+              {/* Quarterly payment → task */}
+              <div className="mt-4 pt-4 border-t border-[#1a2b4a]/10">
+                <div className="flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  <CalendarClock className="w-4 h-4 text-[#7b6b8d]" />
+                  Next estimated payment: <strong>{usd(perQuarter)}</strong> due {deadline.label}
+                </div>
+                {confirmUncat && uncategorized > 0 && (
+                  <p className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-2">
+                    Heads up: {uncategorized} expense{uncategorized === 1 ? "" : "s"} still uncategorized, so this
+                    amount may change. Add the task anyway?
+                  </p>
+                )}
+                <div className="flex items-center gap-3">
+                  <Button onClick={addTask} disabled={addingTask || taxable <= 0}>
+                    {addingTask
+                      ? "Adding…"
+                      : confirmUncat && uncategorized > 0
+                      ? "Add task anyway"
+                      : "Add quarterly payment to my tasks"}
+                  </Button>
+                  {taskMsg && (
+                    <span className="text-xs text-[#2E7C83] inline-flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5" /> {taskMsg}
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <p className="text-xs text-[#b8a898] mt-3">
                 A planning estimate only — not tax advice. Confirm your rate and obligations with your accountant.
               </p>

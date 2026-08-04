@@ -17,6 +17,8 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
+import { FinanceAI } from "../FinanceAI";
+import { fetchSegmentOptions, type SegmentOption } from "../segments";
 
 interface Entry {
   id: string;
@@ -81,8 +83,18 @@ export default function FinancialPulsePage() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
+  const [segmentId, setSegmentId] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const [segments, setSegments] = useState<SegmentOption[]>([]);
+  const [bySegment, setBySegment] = useState<
+    { segmentId: string | null; name: string; income: number; expense: number; net: number }[]
+  >([]);
+
+  useEffect(() => {
+    fetchSegmentOptions().then(setSegments).catch(() => {});
+  }, []);
 
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
@@ -102,6 +114,7 @@ export default function FinancialPulsePage() {
       if (d.ytd) setYtd(d.ytd);
       if (d.wtd) setWtd(d.wtd);
       if (Array.isArray(d.monthly)) setMonthly(d.monthly);
+      if (Array.isArray(d.bySegment)) setBySegment(d.bySegment);
       if (d.year && d.month) setLabel(`${MONTHS[d.month - 1]} ${d.year}`);
       if (d.budgetSummary) {
         setBudgetSummary(d.budgetSummary);
@@ -138,6 +151,7 @@ export default function FinancialPulsePage() {
           category: category.trim(),
           description: description.trim(),
           occurredOn: occurredOn || undefined,
+          segmentId: segmentId || undefined,
         }),
       });
       if (!res.ok) {
@@ -148,6 +162,7 @@ export default function FinancialPulsePage() {
         setCategory("");
         setDescription("");
         setOccurredOn("");
+        setSegmentId("");
         await load();
       }
     } catch {
@@ -315,14 +330,36 @@ export default function FinancialPulsePage() {
                 </Button>
               </div>
             </div>
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-[#b8a898] mb-1">Note (optional)</label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Note (optional)</label>
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" />
+              </div>
+              {segments.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Business segment (optional)</label>
+                  <select
+                    value={segmentId}
+                    onChange={(e) => setSegmentId(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                  >
+                    <option value="">— none —</option>
+                    {segments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
         </Card>
       )}
+
+      {/* AI health assessment */}
+      <FinanceAI />
 
       {/* Health & budget */}
       <Card className="mb-6">
@@ -485,6 +522,46 @@ export default function FinancialPulsePage() {
         })}
         {tile("Net (YTD)", ytd.net, "net", <Wallet className="w-4 h-4" />)}
       </div>
+
+      {/* Profit by business segment */}
+      {bySegment.some((s) => s.income || s.expense) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Profit by business segment (YTD)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2.5">
+              {bySegment.map((s, i) => (
+                <div key={s.segmentId ?? "unassigned"} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {i === 0 && s.net > 0 && (
+                      <span className="text-[10px] font-semibold text-[#2c6b3f] bg-[#d8efdd] px-1.5 py-0.5 rounded">
+                        Most profitable
+                      </span>
+                    )}
+                    <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{s.name}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm flex-shrink-0">
+                    <span className="text-[#2E7C83] tabular-nums hidden sm:inline">{usd(s.income)}</span>
+                    <span className="text-[#b06a5a] tabular-nums hidden sm:inline">−{usd(s.expense)}</span>
+                    <span
+                      className="font-semibold tabular-nums w-24 text-right"
+                      style={{ color: s.net >= 0 ? "#2c6b3f" : "#b06a5a" }}
+                    >
+                      {s.net >= 0 ? "+" : "−"}
+                      {usd(Math.abs(s.net))}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[#b8a898] mt-3">
+              Tag income &amp; expenses with a segment (in the add form) to see which parts of the business
+              carry their weight.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly trend */}

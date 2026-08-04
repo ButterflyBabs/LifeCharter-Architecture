@@ -14,6 +14,7 @@ type Row = {
   description: string | null;
   occurred_on: string;
   source: string | null;
+  segment_id: string | null;
 };
 
 function serialize(r: Row) {
@@ -25,6 +26,7 @@ function serialize(r: Row) {
     description: r.description || "",
     occurredOn: r.occurred_on,
     source: r.source || "manual",
+    segmentId: r.segment_id || null,
   };
 }
 
@@ -57,7 +59,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("finance_entries")
-    .select("id, type, amount, category, description, occurred_on, source")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart)
     .order("occurred_on", { ascending: false })
@@ -158,6 +160,34 @@ export async function GET(request: Request) {
     : profitSignal;
   const health = { score, profitSignal, budgetSignal, hasBudget: monthlyExpenseBudget > 0 };
 
+  // Profit by business segment (YTD).
+  const segAgg: Record<string, { income: number; expense: number }> = {};
+  for (const e of entries) {
+    const sid = e.segmentId || "unassigned";
+    if (!segAgg[sid]) segAgg[sid] = { income: 0, expense: 0 };
+    segAgg[sid][e.type === "income" ? "income" : "expense"] += e.amount;
+  }
+  const segIds = Object.keys(segAgg).filter((id) => id !== "unassigned");
+  const nameMap: Record<string, string> = {};
+  if (segIds.length) {
+    const { data: segRows } = await supabase.from("segments").select("id, name").in("id", segIds);
+    for (const s of (segRows || []) as { id: string; name: string }[]) nameMap[s.id] = s.name;
+  }
+  const bySegment = Object.entries(segAgg)
+    .map(([sid, v]) => ({
+      segmentId: sid === "unassigned" ? null : sid,
+      name: sid === "unassigned" ? "Unassigned" : nameMap[sid] || "Segment",
+      income: v.income,
+      expense: v.expense,
+      net: v.income - v.expense,
+    }))
+    .sort((a, b) => b.net - a.net);
+
+  // Uncategorized expenses this year (for tax accuracy alerts).
+  const uncategorizedExpenses = entries.filter(
+    (e) => e.type === "expense" && !(e.category || "").trim()
+  ).length;
+
   return NextResponse.json({
     entries: entries.slice(0, 100),
     mtd,
@@ -170,6 +200,8 @@ export async function GET(request: Request) {
     budgets,
     budgetSummary,
     health,
+    bySegment,
+    uncategorizedExpenses,
   });
 }
 
@@ -206,8 +238,9 @@ export async function POST(request: Request) {
       description: typeof body.description === "string" ? body.description.trim() : null,
       occurred_on: occurredOn,
       source: "manual",
+      segment_id: typeof body.segmentId === "string" && body.segmentId ? body.segmentId : null,
     })
-    .select("id, type, amount, category, description, occurred_on, source")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id")
     .single();
 
   if (error) {

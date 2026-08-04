@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ArrowLeft, TrendingUp, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { fetchSegmentOptions, type SegmentOption } from "../segments";
 
 interface Entry {
   id: string;
@@ -35,8 +36,14 @@ export default function IncomePage() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
+  const [segmentId, setSegmentId] = useState("");
+  const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSegmentOptions().then(setSegments).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +83,7 @@ export default function IncomePage() {
           category: category.trim(),
           description: description.trim(),
           occurredOn: occurredOn || undefined,
+          segmentId: segmentId || undefined,
         }),
       });
       if (!res.ok) {
@@ -86,6 +94,7 @@ export default function IncomePage() {
         setCategory("");
         setDescription("");
         setOccurredOn("");
+        setSegmentId("");
         await load();
       }
     } finally {
@@ -154,9 +163,28 @@ export default function IncomePage() {
                 </Button>
               </div>
             </div>
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-[#b8a898] mb-1">Note (optional)</label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Note (optional)</label>
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" />
+              </div>
+              {segments.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Business segment (optional)</label>
+                  <select
+                    value={segmentId}
+                    onChange={(e) => setSegmentId(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                  >
+                    <option value="">— none —</option>
+                    {segments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
