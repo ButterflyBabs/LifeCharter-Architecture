@@ -10,6 +10,7 @@ create table if not exists public.planning_reviews (
   status text default 'upcoming',        -- upcoming | completed
   notes text default '',
   completed_at timestamptz,
+  calendar_event_id text,                -- id of the created calendar event, if any
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

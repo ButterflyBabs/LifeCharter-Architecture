@@ -59,6 +59,7 @@ interface Review {
   scheduledFor: string | null;
   status: string;
   completedAt: string | null;
+  calendarEventId?: string | null;
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -86,8 +87,9 @@ export default function PlanningHubPage() {
 
   const [sessionOpen, setSessionOpen] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
-  const [draft, setDraft] = useState({ title: "", sectionKey: "general", scheduledFor: "", notes: "" });
+  const [draft, setDraft] = useState({ title: "", sectionKey: "general", scheduledFor: "", scheduledTime: "09:00", notes: "" });
   const [saving, setSaving] = useState(false);
+  const [calMsg, setCalMsg] = useState<{ kind: "ok" | "warn"; text: string } | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -110,20 +112,51 @@ export default function PlanningHubPage() {
   const saveSession = async () => {
     if (!draft.title.trim()) return;
     setSaving(true);
+    setCalMsg(null);
     try {
       const res = await fetch("/api/planning/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
+        body: JSON.stringify({ title: draft.title, sectionKey: draft.sectionKey, scheduledFor: draft.scheduledFor, notes: draft.notes }),
       });
       const d = await res.json().catch(() => ({}));
-      if (d.review) {
-        setUpcoming((prev) =>
-          [...prev, d.review].sort((a, b) => (a.scheduledFor || "9999").localeCompare(b.scheduledFor || "9999"))
-        );
-        setDraft({ title: "", sectionKey: "general", scheduledFor: "", notes: "" });
-        setSessionOpen(false);
+      if (!d.review) return;
+
+      let review: Review = d.review;
+
+      // Put it on the connected calendar on the chosen day (if a date was set).
+      if (draft.scheduledFor) {
+        try {
+          const startISO = new Date(`${draft.scheduledFor}T${draft.scheduledTime || "09:00"}:00`).toISOString();
+          const calRes = await fetch("/api/calendar/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject: draft.title.trim(), startISO, durationMin: 60, note: draft.notes || "Planning session" }),
+          });
+          const cal = await calRes.json().catch(() => ({}));
+          if (cal.ok && cal.eventId) {
+            review = { ...review, calendarEventId: cal.eventId };
+            fetch("/api/planning/reviews", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: review.id, calendarEventId: cal.eventId }),
+            });
+            setCalMsg({ kind: "ok", text: "Added to your calendar." });
+          } else if (cal.needsScope) {
+            setCalMsg({ kind: "warn", text: "Scheduled here. To add it to Google Calendar, reconnect Google with calendar access in Settings." });
+          } else {
+            setCalMsg({ kind: "warn", text: "Scheduled here. Connect a calendar (Settings) to auto-add these events." });
+          }
+        } catch {
+          setCalMsg({ kind: "warn", text: "Scheduled here, but couldn't reach your calendar just now." });
+        }
       }
+
+      setUpcoming((prev) =>
+        [...prev, review].sort((a, b) => (a.scheduledFor || "9999").localeCompare(b.scheduledFor || "9999"))
+      );
+      setDraft({ title: "", sectionKey: "general", scheduledFor: "", scheduledTime: "09:00", notes: "" });
+      setSessionOpen(false);
     } finally {
       setSaving(false);
     }
@@ -279,6 +312,10 @@ export default function PlanningHubPage() {
           </button>
         </div>
 
+        {calMsg && (
+          <p className={`text-xs mb-2 ${calMsg.kind === "ok" ? "text-[#2c6b3f]" : "text-[#8a6a15]"}`}>{calMsg.text}</p>
+        )}
+
         {!loaded ? (
           <p className="text-sm text-[#b8a898]">Loading…</p>
         ) : upcoming.length === 0 ? (
@@ -292,8 +329,13 @@ export default function PlanningHubPage() {
                 <Clock className="w-4 h-4 text-[#2E7C83] flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{r.title}</p>
-                  <p className="text-xs text-[#b8a898]">
-                    {r.scheduledFor || "No date"} · {SECTIONS.find((s) => s.id === r.sectionKey)?.label || "General"}
+                  <p className="text-xs text-[#b8a898] flex items-center gap-1.5">
+                    <span>{r.scheduledFor || "No date"} · {SECTIONS.find((s) => s.id === r.sectionKey)?.label || "General"}</span>
+                    {r.calendarEventId && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[#2E7C83]/12 text-[#2E7C83]">
+                        <Calendar className="w-2.5 h-2.5" /> On calendar
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
@@ -358,7 +400,7 @@ export default function PlanningHubPage() {
                 placeholder="e.g. Q3 Marketing Review"
                 className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <select
                   value={draft.sectionKey}
                   onChange={(e) => setDraft({ ...draft, sectionKey: e.target.value })}
@@ -374,7 +416,17 @@ export default function PlanningHubPage() {
                   onChange={(e) => setDraft({ ...draft, scheduledFor: e.target.value })}
                   className="h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                 />
+                <input
+                  type="time"
+                  value={draft.scheduledTime}
+                  onChange={(e) => setDraft({ ...draft, scheduledTime: e.target.value })}
+                  title="Time for the calendar event"
+                  className="h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                />
               </div>
+              <p className="text-[11px] text-[#b8a898]">
+                With a date set, this is added to your connected calendar on that day.
+              </p>
               <textarea
                 value={draft.notes}
                 onChange={(e) => setDraft({ ...draft, notes: e.target.value })}

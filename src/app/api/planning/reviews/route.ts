@@ -15,6 +15,7 @@ interface Row {
   status: string | null;
   notes: string | null;
   completed_at: string | null;
+  calendar_event_id: string | null;
 }
 
 function shape(r: Row) {
@@ -26,6 +27,7 @@ function shape(r: Row) {
     status: r.status || "upcoming",
     notes: r.notes || "",
     completedAt: r.completed_at,
+    calendarEventId: r.calendar_event_id || null,
   };
 }
 
@@ -37,7 +39,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from("planning_reviews")
-    .select("id, title, section_key, scheduled_for, status, notes, completed_at")
+    .select("id, title, section_key, scheduled_for, status, notes, completed_at, calendar_event_id")
     .eq("master_plan_id", masterPlanId);
 
   const rows = ((data || []) as Row[]).map(shape);
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
           : null,
       notes: typeof body.notes === "string" ? body.notes.trim() : "",
     })
-    .select("id, title, section_key, scheduled_for, status, notes, completed_at")
+    .select("id, title, section_key, scheduled_for, status, notes, completed_at, calendar_event_id")
     .single();
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   return NextResponse.json({ review: shape(data as Row) });
@@ -106,6 +108,7 @@ export async function PATCH(request: Request) {
     if (typeof body.scheduledFor === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.scheduledFor))
       update.scheduled_for = body.scheduledFor;
     if (typeof body.notes === "string") update.notes = body.notes.trim();
+    if (typeof body.calendarEventId === "string") update.calendar_event_id = body.calendarEventId;
   }
 
   const { error } = await supabase
