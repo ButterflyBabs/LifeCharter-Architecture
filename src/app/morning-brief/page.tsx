@@ -137,7 +137,16 @@ export default function MorningBriefPage() {
     </div>
   );
 
-  const nextEvent = schedule?.events?.[0] ?? null;
+  // The next meeting is the first event still ahead of the current time — so it
+  // advances through the day as meetings pass, and shows "done" once they're over.
+  const nowMs = now ? now.getTime() : Date.now();
+  const upcomingEvents = (schedule?.events ?? []).filter((ev) =>
+    ev.start ? new Date(ev.start).getTime() >= nowMs : true
+  );
+  const nextEvent = upcomingEvents[0] ?? null;
+  const allMeetingsDone = Boolean(
+    schedule?.connected && (schedule.events?.length ?? 0) > 0 && upcomingEvents.length === 0
+  );
 
   const greeting = (() => {
     if (!now) return "Hello";
@@ -286,6 +295,8 @@ export default function MorningBriefPage() {
                 <Clock className="w-3.5 h-3.5" /> {nextEvent.time}
               </p>
             </div>
+          ) : allMeetingsDone ? (
+            <p className="text-sm text-gray-400">All meetings done for today — nice work.</p>
           ) : (
             <p className="text-sm text-gray-400">No meetings today — open runway.</p>
           )}

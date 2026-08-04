@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Settings, CheckCircle2, Clock, AlertTriangle, Circle } from "lucide-react";
+import { Settings, CheckCircle2, Clock, AlertTriangle, Circle, Sparkles, Loader2 } from "lucide-react";
 import { STATUS_LABEL } from "@/lib/operations";
 
 interface Pillar {
@@ -12,6 +12,18 @@ interface Pillar {
   status: "not_started" | "in_progress" | "needs_attention" | "complete";
   notes: string;
 }
+
+interface OpInsight {
+  pillar: string;
+  priority: "high" | "medium" | "low";
+  detail: string;
+}
+
+const PRIORITY_META: Record<string, { color: string; bg: string }> = {
+  high: { color: "#8a2f2f", bg: "#f6dcdc" },
+  medium: { color: "#8a6a15", bg: "#f4e6c9" },
+  low: { color: "#1c5a60", bg: "#d3ebee" },
+};
 
 const STATUS_META: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
   complete: { color: "#2c6b3f", bg: "#d8efdd", icon: <CheckCircle2 className="w-4 h-4" /> },
@@ -25,6 +37,11 @@ export default function OperationsPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loaded, setLoaded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [insights, setInsights] = useState<OpInsight[]>([]);
+  const [headline, setHeadline] = useState<string>("");
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState<string>("");
+  const [needsKey, setNeedsKey] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +57,28 @@ export default function OperationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const runInsights = useCallback(async () => {
+    setInsightsLoading(true);
+    setInsightsError("");
+    setNeedsKey(false);
+    try {
+      const res = await fetch("/api/operations/insights", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (d.needsKey) {
+        setNeedsKey(true);
+      } else if (d.error) {
+        setInsightsError(d.error);
+      } else {
+        setHeadline(typeof d.headline === "string" ? d.headline : "");
+        setInsights(Array.isArray(d.insights) ? d.insights : []);
+      }
+    } catch {
+      setInsightsError("Couldn't reach the insights service — try again in a moment.");
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, []);
 
   const save = async (key: string, patch: Partial<Pillar>) => {
     setPillars((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
@@ -93,6 +132,66 @@ export default function OperationsPage() {
           insights and overall business health.
         </p>
       )}
+
+      {/* AI Operations Insights */}
+      <div className="mb-8 rounded-2xl border border-[#2E7C83]/25 bg-gradient-to-br from-[#F1F7F7] to-[#EFE9F1] dark:from-[#12303a] dark:to-[#241d33] p-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#2E7C83]" />
+            <h2 className="text-lg font-semibold text-[#12303a] dark:text-[#F8F5F0]">AI Operations Insights</h2>
+          </div>
+          <button
+            onClick={runInsights}
+            disabled={insightsLoading}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
+          >
+            {insightsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {insights.length || headline ? "Refresh" : "Generate insights"}
+          </button>
+        </div>
+
+        {needsKey ? (
+          <p className="text-sm text-[#5a5148] dark:text-[#d8d2c8]">
+            Connect your AI key in settings to get insights on your operational pillars.
+          </p>
+        ) : insightsError ? (
+          <p className="text-sm text-[#8a2f2f] dark:text-[#f0b8b8]">{insightsError}</p>
+        ) : insightsLoading ? (
+          <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8]">Reading your pillars…</p>
+        ) : !headline && insights.length === 0 ? (
+          <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8]">
+            Set your pillar statuses below, then generate insights to see where to focus next.
+          </p>
+        ) : (
+          <>
+            {headline && (
+              <p className="text-[15px] font-medium text-[#12303a] dark:text-[#F8F5F0] mb-3">{headline}</p>
+            )}
+            <div className="space-y-2">
+              {insights.map((ins, i) => {
+                const pm = PRIORITY_META[ins.priority] || PRIORITY_META.low;
+                return (
+                  <div
+                    key={i}
+                    className="rounded-xl bg-white dark:bg-[#0f2530] border border-[#1a2b4a]/10 p-3"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className="text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{ color: pm.color, backgroundColor: pm.bg }}
+                      >
+                        {ins.priority}
+                      </span>
+                      <span className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{ins.pillar}</span>
+                    </div>
+                    <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8] leading-relaxed">{ins.detail}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Pillars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
