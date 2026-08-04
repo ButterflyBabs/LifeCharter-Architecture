@@ -1,11 +1,11 @@
 import { Metadata } from "next";
-import PlanView from "@/components/plans/PlanView";
+import PlanWorkspace from "@/components/plans/PlanWorkspace";
 
 export const metadata: Metadata = {
   title: "Sales Plan | LifeCharter Architecture",
-  description: "Your AI-generated, living sales plan — built from your assessments.",
+  description: "Your living sales plan — built from your assessments with AI.",
 };
 
 export default function SalesPlanPage() {
-  return <PlanView planType="sales" />;
+  return <PlanWorkspace planType="sales" />;
 }

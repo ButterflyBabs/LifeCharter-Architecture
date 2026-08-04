@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, LineChart, Loader2, RefreshCw, Sliders, TrendingUp } from "lucide-react";
+import PlanBuilder from "@/components/plans/PlanBuilder";
+import ReviewsPanel from "@/components/plans/ReviewsPanel";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
@@ -214,6 +216,19 @@ export default function ForecastPage() {
           )}
         </>
       )}
+
+      {/* The forecast narrative — assumptions, drivers, targets, and risks */}
+      <div className="mt-10 pt-6 border-t border-[#1a2b4a]/10">
+        <h2 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Forecast Plan</h2>
+        <p className="text-sm text-[#b8a898] mb-5">
+          The reasoning behind the numbers — revenue drivers, assumptions, targets, and the levers you&apos;ll pull.
+        </p>
+        <PlanBuilder planType="forecasting" />
+      </div>
+
+      <div className="mt-8">
+        <ReviewsPanel planType="forecasting" />
+      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@
 
 import { createServerClient } from "@/lib/supabase/server";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
+import { baselineCompleteness } from "@/lib/plans/blueprints";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -137,15 +138,41 @@ async function brainAnswers(supabase: Supa, planId?: string | null): Promise<Sco
     }));
 }
 
+// Business-plan completeness feeds the `business_plan` scoring source. Neutral
+// (null) until the founder starts writing their plan, then reflects how much of
+// the required baseline is filled — so business health "starts with the plan."
+async function businessPlanCompletenessFor(
+  supabase: ReturnType<typeof createServerClient>,
+  scopeId: string | null
+): Promise<number | null> {
+  if (!scopeId) return null;
+  try {
+    const { data } = await supabase
+      .from("plan_sections")
+      .select("section_key, content")
+      .eq("master_plan_id", scopeId)
+      .eq("plan_type", "business");
+    const filled = new Set<string>();
+    for (const r of (data || []) as { section_key: string; content: string | null }[]) {
+      if ((r.content || "").trim()) filled.add(r.section_key);
+    }
+    if (filled.size === 0) return null; // not started — don't penalize
+    return baselineCompleteness("business", filled);
+  } catch {
+    return null;
+  }
+}
+
 export async function gatherAndCompute(
   planId?: string | null
 ): Promise<ScoringOutput & { masterPlanId: string | null }> {
   const supabase = createServerClient();
   const mp = await latestMasterPlan(supabase, planId);
   const scopeId = mp?.id ?? planId ?? null;
-  const [pulse, brain] = await Promise.all([
+  const [pulse, brain, businessPlanCompleteness] = await Promise.all([
     pulseAnswers(supabase, scopeId),
     brainAnswers(supabase, scopeId),
+    businessPlanCompletenessFor(supabase, scopeId),
   ]);
 
   const inputs: ScoringInputs = {
@@ -154,7 +181,7 @@ export async function gatherAndCompute(
     pulse,
     operational: mp?.metadata?.operational ?? null, // from the monthly review
     operationalAt: mp?.metadata?.operational_at ?? null,
-    businessPlanCompleteness: null,
+    businessPlanCompleteness,
     aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
     now: new Date().toISOString(),
   };

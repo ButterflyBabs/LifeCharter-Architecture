@@ -19,7 +19,9 @@ import {
   Loader2,
   X,
   Trash2,
+  FileSignature,
 } from "lucide-react";
+import ProposalModal from "@/components/plans/ProposalModal";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
@@ -83,6 +85,7 @@ export default function PlanningHubPage() {
   const [showHistory, setShowHistory] = useState(false);
 
   const [sessionOpen, setSessionOpen] = useState(false);
+  const [proposalOpen, setProposalOpen] = useState(false);
   const [draft, setDraft] = useState({ title: "", sectionKey: "general", scheduledFor: "", notes: "" });
   const [saving, setSaving] = useState(false);
 
@@ -170,8 +173,16 @@ export default function PlanningHubPage() {
           >
             <Download className="w-4 h-4" /> Export All Plans
           </a>
+          <button
+            onClick={() => setProposalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2.5 rounded-xl bg-[#7b6b8d] text-white hover:bg-[#6a5c7b]"
+          >
+            <FileSignature className="w-4 h-4" /> Create Proposal
+          </button>
         </div>
       </div>
+
+      {proposalOpen && <ProposalModal onClose={() => setProposalOpen(false)} />}
 
       {/* Rollup cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
