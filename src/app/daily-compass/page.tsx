@@ -580,7 +580,8 @@ export default function DailyCompassPage() {
                           <div className="mt-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs inline-flex items-center gap-1 text-[#2E7C83] bg-[#4a9b9b]/12 px-2 py-0.5 rounded-full">
-                                <Mail className="w-3 h-3" /> AI draft ready
+                                <Mail className="w-3 h-3" />
+                                {item.followup.aiMode === "auto" ? "Auto-send set" : "AI draft ready"}
                               </span>
                               <button
                                 onClick={() => setOpenDraftId(openDraftId === item.id ? null : item.id)}

@@ -42,7 +42,7 @@ export function GlobalControlContacts() {
   const [fuDate, setFuDate] = useState("");
   const [fuTime, setFuTime] = useState("");
   const [fuNote, setFuNote] = useState("");
-  const [fuAiDraft, setFuAiDraft] = useState(true);
+  const [fuEmailMode, setFuEmailMode] = useState<"none" | "draft" | "auto">("draft");
   const [scheduling, setScheduling] = useState(false);
   const [fuMsg, setFuMsg] = useState<string | null>(null);
 
@@ -80,7 +80,7 @@ export function GlobalControlContacts() {
     setFuDate("");
     setFuTime("");
     setFuNote("");
-    setFuAiDraft(true);
+    setFuEmailMode("draft");
     setFuMsg(null);
   };
 
@@ -99,15 +99,16 @@ export function GlobalControlContacts() {
 
     // For an email follow-up with AI drafting on, ask the bot to compose it now
     // and store the draft on the task so it's ready to send when due.
+    const emailMode = fuChannel === "email" ? fuEmailMode : "none";
     const followup: Record<string, unknown> = {
       channel: fuChannel,
       contactId: selected.id,
       contactName: selected.name,
       contactEmail: selected.email || "",
-      aiMode: "none",
+      aiMode: emailMode,
     };
     let draftedNote = "";
-    if (fuChannel === "email" && fuAiDraft) {
+    if (fuChannel === "email" && (emailMode === "draft" || emailMode === "auto")) {
       try {
         const dr = await fetch("/api/followups/draft", {
           method: "POST",
@@ -116,17 +117,26 @@ export function GlobalControlContacts() {
         });
         const dd = await dr.json().catch(() => ({}));
         if (dd.needsKey) {
-          draftedNote = " (AI is offline — add your OpenAI key to draft emails; scheduled as a reminder)";
+          followup.aiMode = "none";
+          draftedNote = " (AI is offline — add your OpenAI key; scheduled as a reminder)";
         } else if (dd.subject && dd.body) {
-          followup.aiMode = "draft";
           followup.aiSubject = dd.subject;
           followup.aiBody = dd.body;
-          draftedNote = " with an AI-drafted email ready to send";
+          draftedNote =
+            emailMode === "auto"
+              ? " — AI drafted it; it will auto-send at the scheduled time"
+              : " with an AI-drafted email ready to review & send";
+        } else {
+          followup.aiMode = "none";
+          draftedNote = " (couldn't draft the email — scheduled as a reminder)";
         }
       } catch {
+        followup.aiMode = "none";
         draftedNote = " (couldn't draft the email — scheduled as a reminder)";
       }
     }
+    // No auto-send without a draft.
+    if (followup.aiMode === "auto" && !followup.aiBody) followup.aiMode = "none";
 
     try {
       const res = await fetch("/api/tasks", {
@@ -466,15 +476,18 @@ export function GlobalControlContacts() {
                     className="w-full mt-2 p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                   />
                   {fuChannel === "email" && (
-                    <label className="flex items-center gap-2 mt-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={fuAiDraft}
-                        onChange={(e) => setFuAiDraft(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#1a2b4a]/30 text-[#c9a227] focus:ring-[#c9a227]"
-                      />
-                      Have AI draft the email now (ready to review &amp; send when it&apos;s due)
-                    </label>
+                    <div className="mt-2">
+                      <label className="block text-xs font-medium text-[#b8a898] mb-1">Email handling</label>
+                      <select
+                        value={fuEmailMode}
+                        onChange={(e) => setFuEmailMode(e.target.value as "none" | "draft" | "auto")}
+                        className="w-full p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                      >
+                        <option value="none">Just remind me to write it</option>
+                        <option value="draft">AI drafts it — I&apos;ll review &amp; send</option>
+                        <option value="auto">AI drafts it — send automatically at the time</option>
+                      </select>
+                    </div>
                   )}
                   <div className="flex items-center gap-2 mt-2">
                     <Button size="sm" disabled={scheduling || !fuDate} onClick={scheduleFollowup}>
