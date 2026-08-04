@@ -37,6 +37,14 @@ export function GlobalControlContacts() {
   const [logging, setLogging] = useState<null | "call" | "followup">(null);
   const [logMsg, setLogMsg] = useState<string | null>(null);
 
+  // Schedule a follow-up (unified into Tasks so it surfaces in Today's Focus).
+  const [fuChannel, setFuChannel] = useState<"call" | "email">("call");
+  const [fuDate, setFuDate] = useState("");
+  const [fuTime, setFuTime] = useState("");
+  const [fuNote, setFuNote] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [fuMsg, setFuMsg] = useState<string | null>(null);
+
   const load = useCallback(async (q?: string) => {
     setLoading(true);
     setLoadError(null);
@@ -67,6 +75,49 @@ export function GlobalControlContacts() {
     setMsg(null);
     setLogNote("");
     setLogMsg(null);
+    setFuChannel("call");
+    setFuDate("");
+    setFuTime("");
+    setFuNote("");
+    setFuMsg(null);
+  };
+
+  // Schedule a follow-up: creates a task with a due time + follow-up metadata so
+  // it appears in Today's Focus when due.
+  const scheduleFollowup = async () => {
+    if (!selected) return;
+    if (!fuDate) {
+      setFuMsg("Pick a date first.");
+      return;
+    }
+    setScheduling(true);
+    setFuMsg(null);
+    const dueAt = new Date(`${fuDate}T${fuTime || "09:00"}`).toISOString();
+    const label = fuChannel === "call" ? "Follow-up call" : "Follow-up email";
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${label}: ${selected.name}`,
+          description: fuNote.trim() || null,
+          status: "backlog",
+          priority: "high",
+          dueAt,
+          followup: { channel: fuChannel, contactId: selected.id, contactName: selected.name },
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setFuMsg(`Scheduled — appears in Today's Focus on ${new Date(dueAt).toLocaleDateString()}.`);
+      setFuDate("");
+      setFuTime("");
+      setFuNote("");
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("tasks-changed"));
+    } catch {
+      setFuMsg("Couldn't schedule that — please try again.");
+    } finally {
+      setScheduling(false);
+    }
   };
 
   // Log a call or follow-up (with the optional note) against the selected
@@ -327,6 +378,64 @@ export function GlobalControlContacts() {
                   <p className="text-xs text-[#b8a898] mt-2">
                     Recorded for today and counted in Today&apos;s Activity. Notes are stored here (Global
                     Control&apos;s API doesn&apos;t accept notes yet).
+                  </p>
+                </div>
+
+                {/* Schedule a follow-up for later */}
+                <div className="mt-2 pt-4 border-t border-[#1a2b4a]/10">
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1.5">
+                    Schedule a follow-up
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex rounded-lg border border-[#1a2b4a]/20 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setFuChannel("call")}
+                        className={`px-3 py-1.5 text-sm flex items-center gap-1.5 ${
+                          fuChannel === "call" ? "bg-[#c9a227]/15 text-[#1a2b4a]" : "text-[#b8a898]"
+                        }`}
+                      >
+                        <Phone className="w-3.5 h-3.5" /> Call
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFuChannel("email")}
+                        className={`px-3 py-1.5 text-sm flex items-center gap-1.5 border-l border-[#1a2b4a]/20 ${
+                          fuChannel === "email" ? "bg-[#c9a227]/15 text-[#1a2b4a]" : "text-[#b8a898]"
+                        }`}
+                      >
+                        <Mail className="w-3.5 h-3.5" /> Email
+                      </button>
+                    </div>
+                    <input
+                      type="date"
+                      value={fuDate}
+                      onChange={(e) => setFuDate(e.target.value)}
+                      className="p-1.5 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                    />
+                    <input
+                      type="time"
+                      value={fuTime}
+                      onChange={(e) => setFuTime(e.target.value)}
+                      className="p-1.5 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={fuNote}
+                    onChange={(e) => setFuNote(e.target.value)}
+                    placeholder="What's this follow-up about? (optional)"
+                    className="w-full mt-2 p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                  />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button size="sm" disabled={scheduling || !fuDate} onClick={scheduleFollowup}>
+                      {scheduling ? "Scheduling…" : "Schedule follow-up"}
+                    </Button>
+                    {fuMsg && <span className="text-xs text-[#2E7C83]">{fuMsg}</span>}
+                  </div>
+                  <p className="text-xs text-[#b8a898] mt-2">
+                    Lands in Today&apos;s Focus on its date (overdue rolls forward). AI drafting, auto-send, GC
+                    workflow tags, and a calendar hold are coming next.
                   </p>
                 </div>
               </div>

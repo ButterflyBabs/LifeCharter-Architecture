@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Mail,
   MessageSquare,
   Phone,
   Share2,
@@ -36,6 +37,8 @@ interface RealTask {
   status: string;
   priority: string;
   due_date: string | null;
+  due_at: string | null;
+  followup: { channel?: string; contactId?: string; contactName?: string } | null;
   completed_at: string | null;
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
@@ -114,16 +117,61 @@ export default function DailyCompassPage() {
       .finally(() => setDataReady(true));
   }, []);
 
+  // Refetch tasks when something schedules/changes one (e.g. a follow-up).
+  useEffect(() => {
+    const refetch = () =>
+      fetch("/api/tasks")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.tasks) setTasks(d.tasks as RealTask[]);
+        })
+        .catch(() => {});
+    window.addEventListener("tasks-changed", refetch);
+    return () => window.removeEventListener("tasks-changed", refetch);
+  }, []);
+
   const byPriority = (a: RealTask, b: RealTask) =>
     (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
 
-  // Today's focus = tasks flagged today or in progress, plus anything completed
-  // today (so it stays visible, checked, and counts toward progress).
-  const openFocus = tasks
-    .filter((t) => t.status === "today" || t.status === "in_progress")
+  // When a task is "due" (precise time wins over date-only).
+  const dueBy = (t: RealTask): Date | null => {
+    if (t.due_at) return new Date(t.due_at);
+    if (t.due_date) return new Date(`${t.due_date}T23:59:59`);
+    return null;
+  };
+  const clock = new Date();
+  const endOfToday = new Date(
+    clock.getFullYear(),
+    clock.getMonth(),
+    clock.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+
+  // Today's focus = tasks flagged today/in-progress OR due today-or-overdue
+  // (scheduled follow-ups surface on their date and roll forward if missed),
+  // plus anything completed today (so it stays visible and counts).
+  const openTasks = tasks.filter((t) => t.status !== "done");
+  const openFocus = openTasks
+    .filter((t) => {
+      if (t.status === "today" || t.status === "in_progress") return true;
+      const d = dueBy(t);
+      return d ? d.getTime() <= endOfToday : false;
+    })
     .sort(byPriority);
   const doneToday = tasks.filter((t) => t.status === "done" && isToday(t.completed_at));
   const focusItems = [...openFocus, ...doneToday];
+
+  // Upcoming scheduled follow-ups (future-dated, next 7 days).
+  const upcoming = openTasks
+    .filter((t) => {
+      const d = dueBy(t);
+      return Boolean(d && d.getTime() > endOfToday && (t.followup?.channel || t.due_at));
+    })
+    .sort((a, b) => (dueBy(a)?.getTime() ?? 0) - (dueBy(b)?.getTime() ?? 0))
+    .slice(0, 6);
 
   const completedCount = doneToday.length;
   const totalCount = focusItems.length;
@@ -176,6 +224,8 @@ export default function DailyCompassPage() {
   };
 
   const getTypeIcon = (t: RealTask) => {
+    if (t.followup?.channel === "call") return <Phone className="w-4 h-4" />;
+    if (t.followup?.channel === "email") return <Mail className="w-4 h-4" />;
     const label = (t.business?.name || t.segment?.name || "").toLowerCase();
     if (label.includes("sale")) return <Phone className="w-4 h-4" />;
     if (label.includes("content") || label.includes("market")) return <Share2 className="w-4 h-4" />;
@@ -546,6 +596,51 @@ export default function DailyCompassPage() {
         <div className="space-y-6">
           {/* Today's Activity — live from the in-app ledger */}
           <TodaysActivity />
+
+          {/* Upcoming scheduled follow-ups */}
+          {upcoming.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#7b6b8d]" />
+                  Upcoming follow-ups
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {upcoming.map((t) => {
+                  const d = dueBy(t);
+                  return (
+                    <div key={t.id} className="flex items-start gap-2">
+                      <span className="text-[#7b6b8d] mt-0.5 flex-shrink-0">
+                        {t.followup?.channel === "email" ? (
+                          <Mail className="w-4 h-4" />
+                        ) : (
+                          <Phone className="w-4 h-4" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                          {t.followup?.contactName || t.title}
+                        </p>
+                        <p className="text-xs text-[#b8a898]">
+                          {d
+                            ? d.toLocaleDateString(undefined, {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              }) +
+                              (t.due_at
+                                ? ` · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
+                                : "")
+                            : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
           {/* AI Insights */}
           <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
