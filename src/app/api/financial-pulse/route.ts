@@ -16,16 +16,21 @@ type RevenueRow = { revenue_actual: number | string | null; period_start: string
 
 export async function GET() {
   const supabase = createServerClient();
+  // Revenue = income entries from the finance ledger, so the Home card and
+  // Morning Brief agree with the Financial Pulse dashboard.
   const { data, error } = await supabase
-    .from("segment_revenue")
-    .select("revenue_actual, period_start");
+    .from("finance_entries")
+    .select("amount, occurred_on")
+    .eq("type", "income");
 
   if (error) {
     console.error("GET /api/financial-pulse:", error.message);
     return NextResponse.json({ hasData: false, error: error.message }, { status: 200 });
   }
 
-  const rows = (data ?? []) as RevenueRow[];
+  const rows = ((data ?? []) as { amount: number | string | null; occurred_on: string }[]).map(
+    (r) => ({ revenue_actual: r.amount, period_start: r.occurred_on })
+  ) as RevenueRow[];
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);

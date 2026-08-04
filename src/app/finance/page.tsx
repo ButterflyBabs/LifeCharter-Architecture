@@ -250,8 +250,14 @@ export default function FinancePage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
+            <Link href="/finance/pulse">
+              <Button>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Financial Pulse
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
               onClick={handleRefreshPlan}
               disabled={isRefreshing}
             >
