@@ -54,6 +54,19 @@ interface RealTask {
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
+// The 8 operational pillars (from the Operations page) — the operational
+// framework the insights weigh alongside the 12 business dimensions.
+const OPERATIONAL_PILLARS = [
+  "Customer Acquisition",
+  "Sales Journey",
+  "Onboarding",
+  "Support / Customer Service",
+  "Communication",
+  "Fulfillment",
+  "Internal Process & Culture",
+  "Referral Process",
+];
+
 const priorityColor = (p: string) => {
   switch (p) {
     case "critical":
@@ -327,12 +340,13 @@ export default function DailyCompassPage() {
       (health ? `My ${health}. ` : "") +
       (focus ? `My weakest business dimensions (where gains matter most right now): ${focus}. ` : "") +
       (moves ? `Recommended strategic moves derived from those dimensions: ${moves}. ` : "") +
+      `My 8 operational pillars: ${OPERATIONAL_PILLARS.join(", ")}. ` +
       `Today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
       (openOther.length ? `Other open tasks: ${openOther.slice(0, 6).join("; ")}. ` : "") +
       `Meetings: ${meetings}. ` +
-      `Ground the insights in my weakest dimensions and recommended moves: connect today's work to strengthening those dimensions and advancing my goals. ` +
-      `Make one about where to focus first (tie it to a weak dimension or a recommended move), one flagging a strategic gap or risk (an important dimension I'm not touching today), and one encouraging about momentum. ` +
-      `If today's tasks don't advance my weakest dimensions, gently say so and suggest one goal-driven action that would.`;
+      `Ground the insights in my weakest business dimensions, my recommended moves, and my 8 operational pillars: connect today's work to strengthening those dimensions/pillars and advancing my goals. ` +
+      `Make one about where to focus first (tie it to a weak dimension, a recommended move, or an operational pillar), one flagging a strategic gap or risk (a key dimension or pillar I'm not touching today), and one encouraging about momentum. ` +
+      `If today's tasks don't advance my weakest dimensions or a pillar, gently say so and suggest one goal-driven action that would.`;
     try {
       const res = await fetch("/api/mariposa", {
         method: "POST",
