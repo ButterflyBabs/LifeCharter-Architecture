@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "./NotificationsBell";
+import Link from "next/link";
 
 interface HeaderProps {
   title?: string;
@@ -129,10 +130,14 @@ export function Header({
         {/* Notifications — live feed */}
         <NotificationsBell />
 
-        {/* Help */}
-        <button className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
+        {/* Help — opens the comprehensive Q&A knowledge base */}
+        <Link
+          href="/help/qa"
+          aria-label="Help and Q&A"
+          className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors"
+        >
           <HelpCircle className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
-        </button>
+        </Link>
 
         {/* Decorative Compass */}
         <div className="hidden lg:flex w-9 h-9 rounded-full border border-[#c9a227]/30 items-center justify-center">
