@@ -36,17 +36,29 @@ export async function POST(request: Request) {
     }
   }
 
-  // No Microsoft mailbox: Google is read-only under the current scope.
+  // Google: write if the connection granted the calendar.events scope; otherwise
+  // ask the user to reconnect to add it.
   const gToken = await google.getValidAccessToken().catch(() => null);
   if (gToken) {
-    return NextResponse.json(
-      {
-        error:
-          "Calendar writing needs Google Calendar access — reconnect Google to enable adding events (Microsoft works today).",
-        needsScope: true,
-      },
-      { status: 400 }
-    );
+    const canWrite = await google.hasCalendarWriteScope().catch(() => false);
+    if (!canWrite) {
+      return NextResponse.json(
+        {
+          error:
+            "Reconnect Google to grant calendar access — then events will be added automatically.",
+          needsScope: true,
+        },
+        { status: 400 }
+      );
+    }
+    try {
+      const tz = typeof body.timeZone === "string" && body.timeZone ? body.timeZone : "UTC";
+      const id = await google.createEvent(gToken, { subject, startISO, endISO, note: body.note || "", timeZone: tz });
+      return NextResponse.json({ ok: true, provider: "google", eventId: id });
+    } catch (e) {
+      console.error("calendar event (google):", e);
+      return NextResponse.json({ error: "Couldn't create the Google Calendar event." }, { status: 502 });
+    }
   }
 
   return NextResponse.json({ error: "No calendar connected." }, { status: 400 });

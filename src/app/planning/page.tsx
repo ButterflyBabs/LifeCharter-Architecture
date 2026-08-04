@@ -128,10 +128,11 @@ export default function PlanningHubPage() {
       if (draft.scheduledFor) {
         try {
           const startISO = new Date(`${draft.scheduledFor}T${draft.scheduledTime || "09:00"}:00`).toISOString();
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
           const calRes = await fetch("/api/calendar/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ subject: draft.title.trim(), startISO, durationMin: 60, note: draft.notes || "Planning session" }),
+            body: JSON.stringify({ subject: draft.title.trim(), startISO, durationMin: 60, note: draft.notes || "Planning session", timeZone: tz }),
           });
           const cal = await calRes.json().catch(() => ({}));
           if (cal.ok && cal.eventId) {

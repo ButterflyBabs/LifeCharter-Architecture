@@ -16,6 +16,8 @@ const SCOPES = [
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/calendar.readonly",
+  // calendar.events adds write access (create/update events on the primary calendar)
+  "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
 // Accept both SCREAMING_SNAKE_CASE and camelCase names, in case the env vars
@@ -439,6 +441,43 @@ export type ScheduleEvent = {
   time: string;
   start: string | null;
 };
+
+// Does the stored Google credential include calendar write access? (Older
+// connections only granted calendar.readonly and must reconnect to write.)
+export async function hasCalendarWriteScope(): Promise<boolean> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("scope")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  const scope = (data?.scope as string) || "";
+  return scope.includes("calendar.events") || scope.includes("auth/calendar");
+}
+
+// Create an event on the primary calendar. Requires the calendar.events scope.
+export async function createEvent(
+  accessToken: string,
+  ev: { subject: string; startISO: string; endISO: string; note?: string; timeZone?: string }
+): Promise<string> {
+  const body = {
+    summary: ev.subject,
+    description: ev.note || "",
+    start: { dateTime: ev.startISO, timeZone: ev.timeZone || "UTC" },
+    end: { dateTime: ev.endISO, timeZone: ev.timeZone || "UTC" },
+  };
+  const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    throw new Error(`google calendar create ${r.status} ${text.slice(0, 200)}`);
+  }
+  const data = await r.json();
+  return (data.id as string) || "";
+}
 
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
   const { startISO, endISO } = dayWindowUtc(timeZone);
