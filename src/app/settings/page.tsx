@@ -191,6 +191,72 @@ export default function SettingsPage() {
     setGcSaving(false);
   };
 
+  // PostStream (social post creation + scheduling) — per client, key server-side.
+  const [psConnected, setPsConnected] = useState(false);
+  const [psAccountId, setPsAccountId] = useState("");
+  const [psKeyInput, setPsKeyInput] = useState("");
+  const [psAccountInput, setPsAccountInput] = useState("");
+  const [psSaving, setPsSaving] = useState(false);
+  const [psMsg, setPsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/poststream")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setPsConnected(Boolean(d.connected));
+        setPsAccountId(d.accountId || "");
+        setPsAccountInput(d.accountId || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSavePostStream = async () => {
+    if (!psKeyInput.trim()) {
+      setPsMsg({ ok: false, text: "Paste your PostStream API key first." });
+      return;
+    }
+    setPsMsg(null);
+    setPsSaving(true);
+    try {
+      const res = await fetch("/api/integrations/poststream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: psKeyInput.trim(), accountId: psAccountInput.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPsMsg({ ok: false, text: d?.error || "Couldn't save — please try again." });
+      } else {
+        setPsConnected(true);
+        setPsAccountId(psAccountInput.trim());
+        setPsKeyInput("");
+        setPsMsg({ ok: true, text: "PostStream connected — your key is stored securely." });
+      }
+    } catch {
+      setPsMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setPsSaving(false);
+  };
+
+  const handleDisconnectPostStream = async () => {
+    setPsMsg(null);
+    setPsSaving(true);
+    try {
+      const res = await fetch("/api/integrations/poststream", { method: "DELETE" });
+      if (res.ok) {
+        setPsConnected(false);
+        setPsAccountId("");
+        setPsMsg({ ok: true, text: "PostStream disconnected." });
+      } else {
+        setPsMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+      }
+    } catch {
+      setPsMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+    }
+    setPsSaving(false);
+  };
+
   useEffect(() => {
     fetch("/api/ai-settings")
       .then((r) => (r.ok ? r.json() : null))
@@ -1369,6 +1435,98 @@ export default function SettingsPage() {
               {gcConnected && gcAccountId && (
                 <p className="text-xs text-[#b8a898]">Account/Location ID: {gcAccountId}</p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PostStream (Titanium Suite) — per-client connection */}
+        <Card className="border-[#7b6b8d]/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-lg bg-[#7b6b8d]/15 flex items-center justify-center text-2xl">
+                📣
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">PostStream</h3>
+                  {psConnected ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                      <CheckCircle className="w-3.5 h-3.5" /> Connected
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#b8a898]">Not connected</span>
+                  )}
+                </div>
+                <p className="text-sm text-[#b8a898] mt-0.5">
+                  Connect PostStream to create and schedule social posts from the Suite. Your API key is
+                  exclusive to your account and stored securely — never shown again after you save it.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  PostStream API key
+                </label>
+                <Input
+                  type="password"
+                  value={psKeyInput}
+                  onChange={(e) => setPsKeyInput(e.target.value)}
+                  placeholder={psConnected ? "•••••••••• (a key is saved)" : "Paste your API key"}
+                  className="max-w-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Account / Workspace ID <span className="text-[#b8a898] font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={psAccountInput}
+                  onChange={(e) => setPsAccountInput(e.target.value)}
+                  placeholder="If your PostStream account requires an id"
+                  className="max-w-lg"
+                />
+              </div>
+
+              {psMsg && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                    psMsg.ok
+                      ? "bg-green-50 border border-green-200 text-green-700"
+                      : "bg-red-50 border border-red-200 text-red-600"
+                  }`}
+                >
+                  {psMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+                  <span>{psMsg.text}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={handleSavePostStream} disabled={psSaving}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {psSaving ? "Saving…" : psConnected ? "Update key" : "Save & Connect"}
+                </Button>
+                {psConnected && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDisconnectPostStream}
+                    disabled={psSaving}
+                  >
+                    Disconnect
+                  </Button>
+                )}
+              </div>
+              {psConnected && psAccountId && (
+                <p className="text-xs text-[#b8a898]">Account/Workspace ID: {psAccountId}</p>
+              )}
+              <p className="text-xs text-[#b8a898]">
+                Saving stores your key now. Live validation and post creation/scheduling turn on once the
+                PostStream API details are wired.
+              </p>
             </div>
           </CardContent>
         </Card>
