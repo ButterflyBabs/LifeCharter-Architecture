@@ -14,6 +14,7 @@ import {
   Trash2,
   ArrowLeft,
   FileText,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -240,6 +241,12 @@ export default function FinancialPulsePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/finance/import">
+              <Button variant="outline">
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import
+              </Button>
+            </Link>
             <Link href="/finance/pnl">
               <Button variant="outline">
                 <FileText className="w-4 h-4 mr-1.5" />
