@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
-import { Users, Search, Save, CheckCircle, Mail, Phone, Circle, Link2 } from "lucide-react";
+import { Users, Search, Save, CheckCircle, Mail, Phone, Circle, Link2, MessageSquare } from "lucide-react";
+import { ACTIVITY_EVENT } from "./TodaysActivity";
 
 interface GcContact {
   id: string;
@@ -30,6 +31,11 @@ export function GlobalControlContacts() {
   const [draft, setDraft] = useState<Partial<GcContact>>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Activity logging (call / follow-up + optional note).
+  const [logNote, setLogNote] = useState("");
+  const [logging, setLogging] = useState<null | "call" | "followup">(null);
+  const [logMsg, setLogMsg] = useState<string | null>(null);
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -59,6 +65,36 @@ export function GlobalControlContacts() {
     setSelectedId(c.id);
     setDraft({ firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone });
     setMsg(null);
+    setLogNote("");
+    setLogMsg(null);
+  };
+
+  // Log a call or follow-up (with the optional note) against the selected
+  // contact. Stored in the app ledger and reflected in Today's Activity.
+  const logActivity = async (type: "call" | "followup") => {
+    if (!selectedId || !selected) return;
+    setLogging(type);
+    setLogMsg(null);
+    try {
+      const res = await fetch("/api/global-control/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          contactId: selected.id,
+          contactName: selected.name,
+          note: logNote.trim(),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setLogNote("");
+      setLogMsg(type === "call" ? "Call logged for today." : "Follow-up logged for today.");
+      if (typeof window !== "undefined") window.dispatchEvent(new Event(ACTIVITY_EVENT));
+    } catch {
+      setLogMsg("Couldn't log that — please try again.");
+    } finally {
+      setLogging(null);
+    }
   };
 
   const save = async () => {
@@ -253,6 +289,45 @@ export function GlobalControlContacts() {
                       Last active {new Date(selected.lastActiveAt).toLocaleDateString()}
                     </span>
                   )}
+                </div>
+
+                {/* Log today's activity against this contact */}
+                <div className="mt-2 pt-4 border-t border-[#1a2b4a]/10">
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1.5">
+                    Log a call or follow-up
+                  </label>
+                  <textarea
+                    value={logNote}
+                    onChange={(e) => setLogNote(e.target.value)}
+                    placeholder="Optional note (e.g. left voicemail, booked a call for Thursday)…"
+                    rows={2}
+                    className="w-full p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                  />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={logging !== null}
+                      onClick={() => logActivity("call")}
+                    >
+                      <Phone className="w-4 h-4 mr-1.5" />
+                      {logging === "call" ? "Logging…" : "Log call"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={logging !== null}
+                      onClick={() => logActivity("followup")}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1.5" />
+                      {logging === "followup" ? "Logging…" : "Log follow-up"}
+                    </Button>
+                    {logMsg && <span className="text-xs text-[#2E7C83]">{logMsg}</span>}
+                  </div>
+                  <p className="text-xs text-[#b8a898] mt-2">
+                    Recorded for today and counted in Today&apos;s Activity. Notes are stored here (Global
+                    Control&apos;s API doesn&apos;t accept notes yet).
+                  </p>
                 </div>
               </div>
             )}

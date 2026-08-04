@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  TrendingUp,
   MessageSquare,
   Phone,
   Share2,
@@ -24,10 +23,10 @@ import {
   BatteryLow,
   X,
   RefreshCw,
-  Link2,
 } from "lucide-react";
 import Link from "next/link";
 import { GlobalControlContacts } from "./GlobalControlContacts";
+import { TodaysActivity } from "./TodaysActivity";
 
 // A task as returned by /api/tasks.
 interface RealTask {
@@ -545,39 +544,8 @@ export default function DailyCompassPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Today's Activity — sourced from Global Control & PostStream */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#c9a227]" />
-                Today&apos;s Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { label: "Sales Calls", source: "Global Control", icon: <Phone className="w-3.5 h-3.5" /> },
-                { label: "Follow-ups", source: "Global Control", icon: <MessageSquare className="w-3.5 h-3.5" /> },
-                { label: "Posts", source: "PostStream", icon: <Share2 className="w-3.5 h-3.5" /> },
-              ].map((row) => (
-                <div key={row.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#7b6b8d]">{row.icon}</span>
-                    <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{row.label}</span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#8a7f74] bg-[#1a2b4a]/5 px-2 py-1 rounded-full">
-                    <Link2 className="w-3 h-3" />
-                    {row.source}
-                  </span>
-                </div>
-              ))}
-              <p className="text-xs text-[#b8a898] pt-3 border-t border-[#1a2b4a]/10">
-                Once <strong>Global Control</strong> is connected, this client&apos;s contact records appear
-                here — log a call or follow-up with a checkbox and add notes right on the Compass (no need to
-                open Global Control), and these counts calculate automatically. Posts sync the same way from{" "}
-                <strong>PostStream</strong>.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Today's Activity — live from the in-app ledger */}
+          <TodaysActivity />
 
           {/* AI Insights */}
           <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
