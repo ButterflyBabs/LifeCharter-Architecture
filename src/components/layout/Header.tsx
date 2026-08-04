@@ -7,16 +7,15 @@ import { useTheme } from "@/components/theme-provider";
 import {
   Search,
   Plus,
-  Bell,
   HelpCircle,
   Sparkles,
   ChevronDown,
 } from "lucide-react";
+import { NotificationsBell } from "./NotificationsBell";
 
 interface HeaderProps {
   title?: string;
   workspace?: string;
-  notificationCount?: number;
 }
 
 // Page title per route, mirroring the sidebar's own nav labels — kept here
@@ -49,7 +48,6 @@ function titleForPath(pathname: string | null): string {
 export function Header({
   title,
   workspace = "Sacred Kaleidoscope",
-  notificationCount = 3,
 }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
   const { mounted } = useTheme();
@@ -128,15 +126,8 @@ export function Header({
           <Plus className="w-5 h-5" />
         </button>
 
-        {/* Notifications */}
-        <button className="relative w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
-          <Bell className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#c9a227] text-[#1a2b4a] text-xs font-bold flex items-center justify-center">
-              {notificationCount}
-            </span>
-          )}
-        </button>
+        {/* Notifications — live feed */}
+        <NotificationsBell />
 
         {/* Help */}
         <button className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
