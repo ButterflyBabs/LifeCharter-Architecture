@@ -121,6 +121,14 @@ export default function SalesActivitiesPage() {
     load();
   }, [load]);
 
+  // Open the log modal directly when arriving from the quick-add menu (?add=1).
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("add") === "1") {
+      setForm({ ...EMPTY, occurredOn: todayStr() });
+      setEditorOpen(true);
+    }
+  }, []);
+
   const filtered = activities.filter((a) => {
     if (filter === "open") return a.status !== "completed";
     if (filter === "completed") return a.status === "completed";

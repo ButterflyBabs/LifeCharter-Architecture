@@ -109,6 +109,13 @@ export default function PlanningHubPage() {
     loadAll();
   }, [loadAll]);
 
+  // Open the New Planning Session modal directly from the quick-add menu (?session=1).
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("session") === "1") {
+      setSessionOpen(true);
+    }
+  }, []);
+
   const saveSession = async () => {
     if (!draft.title.trim()) return;
     setSaving(true);

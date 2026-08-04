@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
   Search,
-  Plus,
   HelpCircle,
   Sparkles,
   ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "./NotificationsBell";
+import { QuickAddMenu } from "./QuickAddMenu";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -124,10 +124,8 @@ export function Header({
           />
         </div>
 
-        {/* Add Button */}
-        <button className="w-9 h-9 rounded-full bg-[#1a2b4a] text-[#F8F5F0] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors shadow-md">
-          <Plus className="w-5 h-5" />
-        </button>
+        {/* Quick add menu */}
+        <QuickAddMenu />
 
         {/* Notifications — live feed */}
         <NotificationsBell />
@@ -141,20 +139,6 @@ export function Header({
           <HelpCircle className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
         </Link>
 
-        {/* Decorative Compass */}
-        <div className="hidden lg:flex w-9 h-9 rounded-full border border-[#c9a227]/30 items-center justify-center">
-          <svg
-            viewBox="0 0 24 24"
-            className="w-5 h-5 text-[#c9a227]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2v20M2 12h20" />
-            <path d="M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
-          </svg>
-        </div>
       </div>
     </header>
   );
