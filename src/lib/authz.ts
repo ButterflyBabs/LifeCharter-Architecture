@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { createServerClient as createServiceClient } from "@/lib/supabase/server";
 
 // Super-admin gate for privileged actions (e.g. coach overrides).
 //
@@ -55,4 +56,77 @@ export async function isSuperAdmin(): Promise<boolean> {
   const user = await sessionUser();
   if (!user?.email) return false;
   return isOwnerEmail(user.email);
+}
+
+// Who is making this request, and what may they do?
+//   - owner  : the account owner (or single-user mode) — full access
+//   - member : an invited team member — scoped to the owner's data, limited by
+//              their per-area permissions
+//   - none   : signed out, or a signed-in user who is neither owner nor member
+//
+// This is the seam permission enforcement (Stage 3C) reads. Data scoping still
+// flows through resolveMasterPlanId, which mirrors the member lookup below.
+export type ActorKind = "owner" | "member" | "none";
+export interface Actor {
+  kind: ActorKind;
+  userId: string | null;
+  email: string | null;
+  memberId: string | null;
+  workspaceId: string | null;
+  permissions: Record<string, string>;
+}
+
+export async function resolveActor(): Promise<Actor> {
+  const none: Actor = {
+    kind: "none",
+    userId: null,
+    email: null,
+    memberId: null,
+    workspaceId: null,
+    permissions: {},
+  };
+
+  // Single-user mode: the one user is the owner.
+  if (!authEnabled()) {
+    return { ...none, kind: "owner" };
+  }
+
+  const user = await sessionUser();
+  if (!user) return none;
+
+  if (isOwnerEmail(user.email)) {
+    return { ...none, kind: "owner", userId: user.id, email: user.email };
+  }
+
+  const email = (user.email || "").toLowerCase();
+  if (!email) return none;
+
+  try {
+    const supabase = createServiceClient();
+    const { data: m } = await supabase
+      .from("workspace_members")
+      .select("id, workspace_id, permissions, status")
+      .ilike("email", email)
+      .in("status", ["active", "pending"])
+      .maybeSingle();
+    if (m?.id) {
+      // First time we see them signed in: bind the login identity + activate.
+      await supabase
+        .from("workspace_members")
+        .update({ user_id: user.id, status: "active" })
+        .eq("id", m.id);
+      return {
+        kind: "member",
+        userId: user.id,
+        email: user.email,
+        memberId: m.id as string,
+        workspaceId: (m.workspace_id as string) ?? null,
+        permissions: (m.permissions as Record<string, string>) || {},
+      };
+    }
+  } catch (e) {
+    console.error("resolveActor member lookup:", e);
+  }
+
+  return none;
 }

@@ -91,6 +91,28 @@ export async function resolveMasterPlanId(): Promise<string | null> {
     }
   }
 
+  // 2.5 Team member: scope them to the OWNER's master plan (they work inside the
+  // owner's data, limited later by their role). A member has no plan of their own.
+  {
+    const email = (user.email ?? "").toLowerCase();
+    if (email) {
+      const { data: member } = await supabase
+        .from("workspace_members")
+        .select("workspace_id, status")
+        .ilike("email", email)
+        .in("status", ["active", "pending"])
+        .maybeSingle();
+      if (member?.workspace_id) {
+        const { data: ws } = await supabase
+          .from("workspaces")
+          .select("master_plan_id")
+          .eq("id", member.workspace_id)
+          .maybeSingle();
+        if (ws?.master_plan_id) return ws.master_plan_id as string;
+      }
+    }
+  }
+
   // 3. A fresh plan for this client.
   const { data: created, error } = await supabase
     .from("client_master_plans")
