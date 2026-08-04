@@ -75,18 +75,95 @@ export async function GET(request: Request) {
   const mtd = zero();
   const ytd = zero();
   const monthly = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, income: 0, expense: 0 }));
+  const catMtd: Record<string, number> = {};
+  const catYtd: Record<string, number> = {};
 
   for (const e of entries) {
     const bucket = e.type === "income" ? "income" : "expense";
     ytd[bucket] += e.amount;
     const m = Number(e.occurredOn.slice(5, 7));
     if (m >= 1 && m <= 12) monthly[m - 1][bucket] += e.amount;
-    if (e.occurredOn.startsWith(monthPrefix)) mtd[bucket] += e.amount;
+    const inMonth = e.occurredOn.startsWith(monthPrefix);
+    if (inMonth) mtd[bucket] += e.amount;
+    const key = `${bucket}:${(e.category || "").toLowerCase()}`;
+    catYtd[key] = (catYtd[key] || 0) + e.amount;
+    if (inMonth) catMtd[key] = (catMtd[key] || 0) + e.amount;
   }
   mtd.net = mtd.income - mtd.expense;
   ytd.net = ytd.income - ytd.expense;
 
-  return NextResponse.json({ entries: entries.slice(0, 100), mtd, ytd, monthly, year, month });
+  // Budgets + budget-vs-actual + a simple, honest health score.
+  const { data: bdata } = await supabase
+    .from("finance_budgets")
+    .select("type, category, amount")
+    .eq("master_plan_id", masterPlanId);
+  const budgets = ((bdata || []) as { type: string; category: string | null; amount: number | string | null }[]).map(
+    (b) => ({
+      type: b.type === "income" ? "income" : "expense",
+      category: b.category || "",
+      amount: Number(b.amount ?? 0),
+    })
+  );
+  const overall = (t: string) => budgets.find((b) => b.type === t && b.category === "")?.amount ?? null;
+  const cats = (t: string) => budgets.filter((b) => b.type === t && b.category !== "");
+  const sumCats = (t: string) => cats(t).reduce((s, b) => s + b.amount, 0);
+  const monthlyExpenseBudget = overall("expense") ?? (cats("expense").length ? sumCats("expense") : 0);
+  const monthlyIncomeTarget = overall("income") ?? (cats("income").length ? sumCats("income") : 0);
+
+  const byCategory = cats("expense").map((b) => ({
+    category: b.category,
+    monthly: b.amount,
+    mtdActual: catMtd[`expense:${b.category.toLowerCase()}`] || 0,
+    ytdActual: catYtd[`expense:${b.category.toLowerCase()}`] || 0,
+  }));
+
+  const budgetSummary = {
+    expense: {
+      monthly: monthlyExpenseBudget,
+      mtdBudget: monthlyExpenseBudget,
+      mtdActual: mtd.expense,
+      ytdBudget: monthlyExpenseBudget * month,
+      ytdActual: ytd.expense,
+    },
+    income: {
+      monthly: monthlyIncomeTarget,
+      mtdBudget: monthlyIncomeTarget,
+      mtdActual: mtd.income,
+      ytdBudget: monthlyIncomeTarget * month,
+      ytdActual: ytd.income,
+    },
+    byCategory,
+  };
+
+  const margin = ytd.income > 0 ? ytd.net / ytd.income : 0;
+  const profitSignal = Math.max(0, Math.min(100, Math.round(60 + margin * 100)));
+  let budgetSignal: number | null = null;
+  if (monthlyExpenseBudget > 0) {
+    const ytdBudget = monthlyExpenseBudget * month;
+    budgetSignal =
+      ytd.expense <= ytdBudget
+        ? 100
+        : Math.max(0, Math.round(100 - ((ytd.expense - ytdBudget) / ytdBudget) * 100));
+  }
+  const hasData = entries.length > 0;
+  const score = !hasData
+    ? null
+    : budgetSignal !== null
+    ? Math.round((profitSignal + budgetSignal) / 2)
+    : profitSignal;
+  const health = { score, profitSignal, budgetSignal, hasBudget: monthlyExpenseBudget > 0 };
+
+  return NextResponse.json({
+    entries: entries.slice(0, 100),
+    mtd,
+    ytd,
+    monthly,
+    year,
+    month,
+    budgets,
+    budgetSummary,
+    health,
+  });
 }
 
 function zero() {

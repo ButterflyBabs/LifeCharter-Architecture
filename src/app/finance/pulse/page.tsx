@@ -35,6 +35,24 @@ interface MonthPoint {
   income: number;
   expense: number;
 }
+interface BudgetSide {
+  monthly: number;
+  mtdBudget: number;
+  mtdActual: number;
+  ytdBudget: number;
+  ytdActual: number;
+}
+interface BudgetSummary {
+  expense: BudgetSide;
+  income: BudgetSide;
+  byCategory: { category: string; monthly: number; mtdActual: number; ytdActual: number }[];
+}
+interface Health {
+  score: number | null;
+  profitSignal: number;
+  budgetSignal: number | null;
+  hasBudget: boolean;
+}
 
 const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -63,6 +81,15 @@ export default function FinancialPulsePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [expBudgetInput, setExpBudgetInput] = useState("");
+  const [incTargetInput, setIncTargetInput] = useState("");
+  const [newCat, setNewCat] = useState("");
+  const [newCatAmt, setNewCatAmt] = useState("");
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const [showBudget, setShowBudget] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/finance/entries?tz=${encodeURIComponent(tz())}`);
@@ -72,6 +99,12 @@ export default function FinancialPulsePage() {
       if (d.ytd) setYtd(d.ytd);
       if (Array.isArray(d.monthly)) setMonthly(d.monthly);
       if (d.year && d.month) setLabel(`${MONTHS[d.month - 1]} ${d.year}`);
+      if (d.budgetSummary) {
+        setBudgetSummary(d.budgetSummary);
+        setExpBudgetInput(d.budgetSummary.expense.monthly ? String(d.budgetSummary.expense.monthly) : "");
+        setIncTargetInput(d.budgetSummary.income.monthly ? String(d.budgetSummary.income.monthly) : "");
+      }
+      if (d.health) setHealth(d.health);
     } catch {
       /* ignore */
     } finally {
@@ -130,11 +163,39 @@ export default function FinancialPulsePage() {
     }
   };
 
+  const saveBudget = async (bType: "income" | "expense", cat: string, amt: number) => {
+    setBudgetSaving(true);
+    try {
+      await fetch("/api/finance/budgets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: bType, category: cat, amount: amt }),
+      });
+      await load();
+    } finally {
+      setBudgetSaving(false);
+    }
+  };
+
   const maxBar = Math.max(1, ...monthly.map((m) => Math.max(m.income, m.expense)));
 
-  const tile = (title: string, value: number, tone: "income" | "expense" | "net", icon: React.ReactNode) => {
+  const healthColor = (s: number | null) =>
+    s == null ? "#8a7f74" : s >= 70 ? "#2c6b3f" : s >= 45 ? "#8a6a15" : "#b06a5a";
+
+  const tile = (
+    title: string,
+    value: number,
+    tone: "income" | "expense" | "net",
+    icon: React.ReactNode,
+    budget?: { target: number; isCap: boolean }
+  ) => {
     const color =
       tone === "income" ? "#2E7C83" : tone === "expense" ? "#b06a5a" : value >= 0 ? "#2c6b3f" : "#b06a5a";
+    const target = budget?.target ?? 0;
+    const pct = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0;
+    // For an expense cap, over budget is bad (red). For an income target, at/over is good (green).
+    const over = target > 0 && value > target;
+    const barColor = budget?.isCap ? (over ? "#b06a5a" : "#2c6b3f") : "#2E7C83";
     return (
       <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
         <div className="flex items-center gap-2 text-[#7b6b8d] mb-2">
@@ -145,6 +206,17 @@ export default function FinancialPulsePage() {
           {tone === "net" && value >= 0 ? "+" : ""}
           {usd(value)}
         </p>
+        {target > 0 && (
+          <div className="mt-2">
+            <div className="h-1.5 rounded-full bg-[#1a2b4a]/10 overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+            </div>
+            <p className="text-[11px] text-[#b8a898] mt-1">
+              {budget?.isCap ? "of" : "toward"} {usd(target)} {budget?.isCap ? "budget" : "target"}
+              {over && budget?.isCap ? ` · ${usd(value - target)} over` : ""}
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -234,21 +306,157 @@ export default function FinancialPulsePage() {
         </Card>
       )}
 
+      {/* Health & budget */}
+      <Card className="mb-6">
+        <CardContent className="p-5">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="text-center min-w-[110px]">
+              <div className="text-4xl font-bold" style={{ color: healthColor(health?.score ?? null) }}>
+                {health?.score ?? "—"}
+              </div>
+              <div className="text-xs text-[#b8a898]">Financial health</div>
+            </div>
+            <div className="flex-1 min-w-[280px] grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly expense budget</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={expBudgetInput}
+                    onChange={(e) => setExpBudgetInput(e.target.value)}
+                    placeholder="Overall cap"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={budgetSaving}
+                    onClick={() => saveBudget("expense", "", Number(expBudgetInput) || 0)}
+                  >
+                    Set
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly income target</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={incTargetInput}
+                    onChange={(e) => setIncTargetInput(e.target.value)}
+                    placeholder="Revenue goal"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={budgetSaving}
+                    onClick={() => saveBudget("income", "", Number(incTargetInput) || 0)}
+                  >
+                    Set
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowBudget((v) => !v)}
+            className="mt-3 text-xs text-[#2E7C83] hover:underline"
+          >
+            {showBudget ? "Hide category budgets" : "Set budgets by category (optional detail)"}
+          </button>
+
+          {showBudget && (
+            <div className="mt-3 pt-3 border-t border-[#1a2b4a]/10 space-y-2">
+              {(budgetSummary?.byCategory ?? []).map((c) => {
+                const over = c.mtdActual > c.monthly;
+                const pct = c.monthly > 0 ? Math.min(100, Math.round((c.mtdActual / c.monthly) * 100)) : 0;
+                return (
+                  <div key={c.category} className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{c.category}</span>
+                        <span className="text-[#b8a898]">
+                          {usd(c.mtdActual)} / {usd(c.monthly)} mo
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#1a2b4a]/10 overflow-hidden mt-1">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, backgroundColor: over ? "#b06a5a" : "#2c6b3f" }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => saveBudget("expense", c.category, 0)}
+                      className="text-[#b8a898] hover:text-red-500"
+                      title="Clear budget"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+              <div className="flex items-end gap-2 pt-1">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
+                  <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g. Software" />
+                </div>
+                <div className="w-32">
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly $</label>
+                  <Input type="number" min="0" value={newCatAmt} onChange={(e) => setNewCatAmt(e.target.value)} />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={budgetSaving || !newCat.trim() || !newCatAmt}
+                  onClick={async () => {
+                    await saveBudget("expense", newCat.trim(), Number(newCatAmt) || 0);
+                    setNewCat("");
+                    setNewCatAmt("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-[#b8a898] mt-3">
+            Health blends profitability with how spending tracks to budget. Set one overall budget for the
+            simple view, or add categories for detail — as much or as little as you like.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* This month */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">
         This month{label ? ` · ${label}` : ""}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {tile("Income (MTD)", mtd.income, "income", <TrendingUp className="w-4 h-4" />)}
-        {tile("Expenses (MTD)", mtd.expense, "expense", <TrendingDown className="w-4 h-4" />)}
+        {tile("Income (MTD)", mtd.income, "income", <TrendingUp className="w-4 h-4" />, {
+          target: budgetSummary?.income.mtdBudget ?? 0,
+          isCap: false,
+        })}
+        {tile("Expenses (MTD)", mtd.expense, "expense", <TrendingDown className="w-4 h-4" />, {
+          target: budgetSummary?.expense.mtdBudget ?? 0,
+          isCap: true,
+        })}
         {tile("Net (MTD)", mtd.net, "net", <Wallet className="w-4 h-4" />)}
       </div>
 
       {/* Year to date */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">Year to date</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {tile("Income (YTD)", ytd.income, "income", <TrendingUp className="w-4 h-4" />)}
-        {tile("Expenses (YTD)", ytd.expense, "expense", <TrendingDown className="w-4 h-4" />)}
+        {tile("Income (YTD)", ytd.income, "income", <TrendingUp className="w-4 h-4" />, {
+          target: budgetSummary?.income.ytdBudget ?? 0,
+          isCap: false,
+        })}
+        {tile("Expenses (YTD)", ytd.expense, "expense", <TrendingDown className="w-4 h-4" />, {
+          target: budgetSummary?.expense.ytdBudget ?? 0,
+          isCap: true,
+        })}
         {tile("Net (YTD)", ytd.net, "net", <Wallet className="w-4 h-4" />)}
       </div>
 
