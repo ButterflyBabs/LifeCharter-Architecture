@@ -3,7 +3,7 @@ export const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export type Period = "week" | "month" | "quarter" | "year";
+export type Period = "week" | "month" | "quarter" | "year" | "custom";
 
 export function nowParts(tz: string): { year: number; month: number; day: number } {
   try {
@@ -40,7 +40,7 @@ export interface Range {
 // which one; for year, `year` selects it.
 export function periodRange(
   period: Period,
-  opts: { tz: string; year?: number; index?: number; start?: string }
+  opts: { tz: string; year?: number; index?: number; start?: string; end?: string }
 ): Range {
   const cur = nowParts(opts.tz);
   const year = opts.year || cur.year;
@@ -51,7 +51,31 @@ export function periodRange(
   let index = 0;
   let weekStart: string | null = null;
 
-  if (period === "week") {
+  if (period === "custom") {
+    const s =
+      opts.start && /^\d{4}-\d{2}-\d{2}$/.test(opts.start)
+        ? new Date(`${opts.start}T00:00:00Z`)
+        : new Date(Date.UTC(cur.year, cur.month - 1, 1));
+    const eIncl =
+      opts.end && /^\d{4}-\d{2}-\d{2}$/.test(opts.end)
+        ? new Date(`${opts.end}T00:00:00Z`)
+        : new Date(Date.UTC(cur.year, cur.month - 1, cur.day));
+    start = s;
+    end = new Date(eIncl);
+    end.setUTCDate(eIncl.getUTCDate() + 1); // make end exclusive
+    label = `${MONTHS[s.getUTCMonth()]} ${s.getUTCDate()} – ${MONTHS[eIncl.getUTCMonth()]} ${eIncl.getUTCDate()}, ${eIncl.getUTCFullYear()}`;
+    return {
+      start,
+      end,
+      startStr: fmt(start),
+      endStr: fmt(end),
+      label,
+      period,
+      year: s.getUTCFullYear(),
+      index: 0,
+      weekStart: null,
+    };
+  } else if (period === "week") {
     const anchor =
       opts.start && /^\d{4}-\d{2}-\d{2}$/.test(opts.start)
         ? new Date(`${opts.start}T00:00:00Z`)

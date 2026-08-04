@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     year: Number(url.searchParams.get("year")) || undefined,
     index: Number(url.searchParams.get("index")) || undefined,
     start: url.searchParams.get("start") || undefined,
+    end: url.searchParams.get("end") || undefined,
   });
 
   const { data, error } = await supabase

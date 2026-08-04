@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Printer, ChevronLeft, ChevronRight, FileText, Download, FileDown } from "lucide-react";
 import Link from "next/link";
 
-type Period = "week" | "month" | "quarter" | "year";
+type Period = "week" | "month" | "quarter" | "year" | "custom";
 interface Line {
   category: string;
   amount: number;
@@ -41,15 +41,18 @@ export default function PnLPage() {
   const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<PnL | null>(null);
   const [loading, setLoading] = useState(true);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
   const load = useCallback(
-    async (p: Period, opts: { year?: number; index?: number; start?: string } = {}) => {
+    async (p: Period, opts: { year?: number; index?: number; start?: string; end?: string } = {}) => {
       setLoading(true);
       try {
         const params = new URLSearchParams({ period: p, tz: tz() });
         if (opts.year) params.set("year", String(opts.year));
         if (opts.index) params.set("index", String(opts.index));
         if (opts.start) params.set("start", opts.start);
+        if (opts.end) params.set("end", opts.end);
         const res = await fetch(`/api/finance/pnl?${params.toString()}`);
         const d = await res.json().catch(() => null);
         if (d && !d.error) setData(d);
@@ -67,7 +70,11 @@ export default function PnLPage() {
 
   const changePeriod = (p: Period) => {
     setPeriod(p);
-    load(p);
+    if (p !== "custom") load(p);
+  };
+
+  const applyCustom = () => {
+    if (customStart && customEnd) load("custom", { start: customStart, end: customEnd });
   };
 
   const step = (dir: -1 | 1) => {
@@ -92,7 +99,10 @@ export default function PnLPage() {
   // Current export params → query string.
   const exportParams = () => {
     const params = new URLSearchParams({ period, tz: tz() });
-    if (data) {
+    if (period === "custom") {
+      if (customStart) params.set("start", customStart);
+      if (customEnd) params.set("end", customEnd);
+    } else if (data) {
       if (period === "week" && data.weekStart) params.set("start", data.weekStart);
       else {
         params.set("year", String(data.year));
@@ -203,7 +213,7 @@ export default function PnLPage() {
 
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
           <div className="inline-flex rounded-lg border border-[#1a2b4a]/15 overflow-hidden">
-            {(["week", "month", "quarter", "year"] as const).map((p) => (
+            {(["week", "month", "quarter", "year", "custom"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => changePeriod(p)}
@@ -215,17 +225,38 @@ export default function PnLPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => step(-1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[130px] text-center">
-              {data?.label ?? "…"}
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => step(1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+          {period === "custom" ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="text-sm p-1.5 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20"
+              />
+              <span className="text-[#b8a898] text-sm">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="text-sm p-1.5 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20"
+              />
+              <Button size="sm" onClick={applyCustom} disabled={!customStart || !customEnd}>
+                Apply
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => step(-1)}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[130px] text-center">
+                {data?.label ?? "…"}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => step(1)}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
