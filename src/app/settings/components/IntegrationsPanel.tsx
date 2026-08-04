@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -489,6 +489,9 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
 
   return (
     <div className="space-y-4">
+      {/* Real calendar & email connections (Google / Microsoft OAuth) */}
+      <CalendarConnections />
+
       {/* Integration Limit Header */}
       <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
         <div className="flex items-center justify-between">
@@ -588,6 +591,98 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+// Real Google / Microsoft calendar + email connections (actual OAuth, not the
+// mock directory below). Shows live status and a Connect / Reconnect action.
+interface ProviderStatus {
+  connected: boolean;
+  email: string | null;
+  canWriteCalendar: boolean;
+}
+
+function CalendarConnections() {
+  const [google, setGoogle] = useState<ProviderStatus | null>(null);
+  const [microsoft, setMicrosoft] = useState<ProviderStatus | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/calendar/status");
+      const d = await res.json().catch(() => ({}));
+      if (d.google) setGoogle(d.google);
+      if (d.microsoft) setMicrosoft(d.microsoft);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const Row = ({
+    name,
+    icon,
+    color,
+    authHref,
+    status,
+    writeNote,
+  }: {
+    name: string;
+    icon: string;
+    color: string;
+    authHref: string;
+    status: ProviderStatus | null;
+    writeNote?: boolean;
+  }) => {
+    const connected = status?.connected;
+    const canWrite = status?.canWriteCalendar;
+    return (
+      <div className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${color}20` }}>
+            {icon}
+          </div>
+          <div>
+            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{name}</p>
+            <p className="text-xs text-[#b8a898]">
+              {!loaded
+                ? "Checking…"
+                : connected
+                ? `Connected${status?.email ? ` · ${status.email}` : ""}`
+                : "Email + calendar (read & write)"}
+            </p>
+            {loaded && connected && writeNote && !canWrite && (
+              <p className="text-xs text-[#8a6a15] mt-0.5">Calendar is read-only — reconnect to add write access.</p>
+            )}
+            {loaded && connected && canWrite && (
+              <p className="text-xs text-[#2c6b3f] mt-0.5">Calendar write enabled ✓</p>
+            )}
+          </div>
+        </div>
+        <a
+          href={authHref}
+          className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
+        >
+          {connected ? "Reconnect" : "Connect"}
+        </a>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
+      <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Calendar &amp; Email</h3>
+      <p className="text-xs text-[#b8a898] mb-3">
+        Connect Google or Microsoft to read your inbox &amp; calendar and let the app add events (like planning sessions).
+      </p>
+      <div className="space-y-2">
+        <Row name="Google Workspace" icon="📧" color="#4285F4" authHref="/api/google/auth" status={google} writeNote />
+        <Row name="Microsoft 365" icon="🏢" color="#D83B01" authHref="/api/microsoft/auth" status={microsoft} />
+      </div>
     </div>
   );
 }
