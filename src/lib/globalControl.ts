@@ -62,8 +62,19 @@ async function gc<T = unknown>(
     json = null;
   }
   if (!res.ok) {
-    const j = json as { message?: string; error?: string } | null;
-    throw new GcError(j?.message || j?.error || `Global Control error (${res.status}).`, res.status);
+    const j = (json || {}) as Record<string, unknown>;
+    const nested =
+      j.error && typeof j.error === "object"
+        ? ((j.error as Record<string, unknown>).message as string)
+        : typeof j.error === "string"
+        ? (j.error as string)
+        : "";
+    const msg =
+      (j.message as string) ||
+      nested ||
+      (text ? text.replace(/<[^>]*>/g, "").trim().slice(0, 160) : "") ||
+      `HTTP ${res.status}`;
+    throw new GcError(msg, res.status);
   }
   const envelope = json as { data?: T } | T;
   return (envelope && typeof envelope === "object" && "data" in (envelope as object)

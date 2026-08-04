@@ -48,15 +48,27 @@ export async function POST(request: Request) {
   }
 
   // Validate the key against Global Control before saving, so the client gets
-  // immediate feedback instead of a silent bad connection.
+  // immediate feedback instead of a silent bad connection. Surface the real
+  // status + message so a failure is diagnosable rather than generic.
   try {
     await validateKey(apiKey);
   } catch (e) {
-    const msg =
-      e instanceof GcError && e.status === 401
-        ? "Global Control rejected that key — please double-check it."
-        : "Couldn't verify the key with Global Control. Check the key and try again.";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    if (e instanceof GcError) {
+      if (e.status === 401 || e.status === 403) {
+        return NextResponse.json(
+          { error: `Global Control rejected that key (HTTP ${e.status}). Double-check you copied the full key.` },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { error: `Global Control couldn't verify the key — ${e.message} (HTTP ${e.status}).` },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Couldn't reach Global Control at all. Please try again in a moment." },
+      { status: 400 }
+    );
   }
 
   // Upsert on (master_plan_id, provider). We look up the existing row first so
