@@ -193,6 +193,59 @@ export async function listTags(key: string): Promise<GcTag[]> {
     .filter((t) => t.id);
 }
 
+export interface GcTagGroup {
+  id: string;
+  name: string;
+}
+
+export async function listTagGroups(key: string): Promise<GcTagGroup[]> {
+  const data = await gc<unknown>(key, "/tag-groups");
+  let rows: Record<string, unknown>[] = [];
+  if (Array.isArray(data)) rows = data as Record<string, unknown>[];
+  else if (data && typeof data === "object") {
+    const d = data as Record<string, unknown>;
+    const candidate = d.groups ?? d.tagGroups ?? d.results ?? d.items ?? d.data;
+    if (Array.isArray(candidate)) rows = candidate as Record<string, unknown>[];
+  }
+  return rows
+    .map((r) => ({ id: String(r._id ?? r.id ?? ""), name: String(r.name ?? "Untitled group") }))
+    .filter((g) => g.id);
+}
+
+export async function createTagGroup(key: string, name: string): Promise<GcTagGroup> {
+  const data = await gc<Record<string, unknown>>(key, "/tag-groups", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  const g = (data || {}) as Record<string, unknown>;
+  return { id: String(g._id ?? g.id ?? ""), name: String(g.name ?? name) };
+}
+
+// Create a tag (optionally in a group, optionally wired to trigger existing
+// workflows by id).
+export async function createTag(
+  key: string,
+  input: { name: string; groupId: string; description?: string; workflows?: string[] }
+): Promise<GcTag> {
+  const payload: Record<string, unknown> = {
+    name: input.name,
+    groupId: input.groupId,
+    description: input.description || "",
+    isHot: false,
+  };
+  if (input.workflows && input.workflows.length) payload.workflows = input.workflows;
+  const data = await gc<Record<string, unknown>>(key, "/tags", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  const r = (data || {}) as Record<string, unknown>;
+  return {
+    id: String(r._id ?? r.id ?? ""),
+    name: String(r.name ?? input.name),
+    group: String(r.group_name ?? r.groupName ?? ""),
+  };
+}
+
 // Fire a tag on a contact (by email) — assigns the tag and triggers any
 // Global Control workflows attached to it.
 export async function fireTag(

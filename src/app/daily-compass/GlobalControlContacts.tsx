@@ -48,20 +48,91 @@ export function GlobalControlContacts() {
   const [scheduling, setScheduling] = useState(false);
   const [fuMsg, setFuMsg] = useState<string | null>(null);
 
-  // Global Control tags (workflow drop).
+  // Global Control tags (workflow drop) + groups (for creating tags).
   const [tags, setTags] = useState<{ id: string; name: string; group: string }[]>([]);
+  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
   const [fireTagId, setFireTagId] = useState("");
   const [firing, setFiring] = useState(false);
   const [tagMsg, setTagMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/global-control/tags")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.tags) setTags(d.tags);
-      })
-      .catch(() => {});
+  // Create-tag form state.
+  const [showNewTag, setShowNewTag] = useState(false);
+  const [ntName, setNtName] = useState("");
+  const [ntGroupId, setNtGroupId] = useState("");
+  const [ntNewGroup, setNtNewGroup] = useState("");
+  const [ntDesc, setNtDesc] = useState("");
+  const [ntWorkflows, setNtWorkflows] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
+  const [ntMsg, setNtMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const loadTagsAndGroups = useCallback(async () => {
+    try {
+      const [tr, gr] = await Promise.all([
+        fetch("/api/global-control/tags").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/global-control/tag-groups").then((r) => (r.ok ? r.json() : null)),
+      ]);
+      if (tr?.tags) setTags(tr.tags);
+      if (gr?.groups) setGroups(gr.groups);
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  useEffect(() => {
+    loadTagsAndGroups();
+  }, [loadTagsAndGroups]);
+
+  const handleCreateTag = async () => {
+    if (!ntName.trim()) {
+      setNtMsg({ ok: false, text: "Name the tag first." });
+      return;
+    }
+    setCreatingTag(true);
+    setNtMsg(null);
+    try {
+      // Create the group first if a new one was typed.
+      let groupId = ntGroupId;
+      if (ntNewGroup.trim()) {
+        const gr = await fetch("/api/global-control/tag-groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: ntNewGroup.trim() }),
+        });
+        const gd = await gr.json().catch(() => ({}));
+        if (!gr.ok || !gd.group?.id) throw new Error(gd?.error || "Couldn't create the group.");
+        groupId = gd.group.id;
+      }
+      if (!groupId) {
+        setNtMsg({ ok: false, text: "Pick a group or create a new one." });
+        setCreatingTag(false);
+        return;
+      }
+      const workflows = ntWorkflows
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const res = await fetch("/api/global-control/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: ntName.trim(), groupId, description: ntDesc.trim(), workflows }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.tag) {
+        setNtMsg({ ok: false, text: d?.error || "Couldn't create the tag." });
+      } else {
+        setNtMsg({ ok: true, text: `Created "${d.tag.name}" — it's now in your tag pickers.` });
+        setNtName("");
+        setNtDesc("");
+        setNtWorkflows("");
+        setNtNewGroup("");
+        await loadTagsAndGroups();
+      }
+    } catch (e) {
+      setNtMsg({ ok: false, text: (e as Error)?.message || "Couldn't create the tag." });
+    } finally {
+      setCreatingTag(false);
+    }
+  };
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -354,23 +425,104 @@ export function GlobalControlContacts() {
           <Users className="w-5 h-5 text-[#4a9b9b]" />
           Global Control Contacts
         </CardTitle>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            load(search.trim());
-          }}
-          className="relative"
-        >
-          <Search className="w-4 h-4 text-[#b8a898] absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search contacts…"
-            className="pl-8 h-9 w-48"
-          />
-        </form>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowNewTag((v) => !v)}>
+            {showNewTag ? "Close" : "+ New tag"}
+          </Button>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              load(search.trim());
+            }}
+            className="relative"
+          >
+            <Search className="w-4 h-4 text-[#b8a898] absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search contacts…"
+              className="pl-8 h-9 w-40"
+            />
+          </form>
+        </div>
       </CardHeader>
       <CardContent>
+        {/* Create a new tag (optionally wired to existing workflows) */}
+        {showNewTag && (
+          <div className="mb-5 p-4 rounded-lg border border-[#4a9b9b]/30 bg-[#4a9b9b]/5">
+            <h4 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
+              New Global Control tag
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Tag name</label>
+                <Input value={ntName} onChange={(e) => setNtName(e.target.value)} placeholder="e.g. AmiLynne Speaks – Follow-up Call" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Group</label>
+                <select
+                  value={ntGroupId}
+                  onChange={(e) => setNtGroupId(e.target.value)}
+                  disabled={Boolean(ntNewGroup.trim())}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] disabled:opacity-50"
+                >
+                  <option value="">Choose a group…</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">…or new group</label>
+                <Input
+                  value={ntNewGroup}
+                  onChange={(e) => setNtNewGroup(e.target.value)}
+                  placeholder="Create a group instead"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">
+                  Workflow ID(s) — optional
+                </label>
+                <Input
+                  value={ntWorkflows}
+                  onChange={(e) => setNtWorkflows(e.target.value)}
+                  placeholder="Paste GC workflow id(s), comma-separated"
+                />
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className="block text-xs font-medium text-[#b8a898] mb-1">Description — optional</label>
+              <Input value={ntDesc} onChange={(e) => setNtDesc(e.target.value)} placeholder="What this tag is for" />
+            </div>
+            {ntMsg && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
+                  ntMsg.ok
+                    ? "bg-green-50 border border-green-200 text-green-700"
+                    : "bg-red-50 border border-red-200 text-red-600"
+                }`}
+              >
+                {ntMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+                <span>{ntMsg.text}</span>
+              </div>
+            )}
+            <div className="mt-3 flex items-center gap-3">
+              <Button size="sm" onClick={handleCreateTag} disabled={creatingTag}>
+                {creatingTag ? "Creating…" : "Create tag"}
+              </Button>
+              <span className="text-xs text-[#b8a898]">
+                Attach workflows by pasting their IDs from Global Control — new automations are built in GC.
+              </span>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* List */}
           <div className="md:col-span-2 border border-[#1a2b4a]/10 rounded-lg divide-y divide-[#1a2b4a]/8 max-h-[420px] overflow-y-auto">
