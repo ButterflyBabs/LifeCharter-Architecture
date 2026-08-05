@@ -118,8 +118,8 @@ export function TodaysActivity() {
         </div>
 
         <p className="text-xs text-[#b8a898]">
-          Calls &amp; follow-ups you log against Global Control contacts appear here for today. Posts sync from
-          PostStream once connected.
+          Calls &amp; follow-ups you log against Global Control contacts appear here for today. Social posts are
+          created and scheduled through PostStream in Create Content &amp; the Content Calendar.
         </p>
       </CardContent>
     </Card>

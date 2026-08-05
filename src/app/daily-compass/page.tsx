@@ -113,6 +113,16 @@ export default function DailyCompassPage() {
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sendMsg, setSendMsg] = useState<{ id: number; text: string } | null>(null);
 
+  // Is PostStream connected? Drives where the Create Content / Content Calendar
+  // quick actions route (to the feature when connected, to Settings otherwise).
+  const [psConnected, setPsConnected] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/integrations/poststream")
+      .then((r) => r.json())
+      .then((d) => setPsConnected(Boolean(d?.connected)))
+      .catch(() => setPsConnected(false));
+  }, []);
+
   useEffect(() => {
     const d = new Date();
     setNow(d);
@@ -694,14 +704,16 @@ export default function DailyCompassPage() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href="/daily-compass/content-studio">
+            <Link href={psConnected === false ? "/settings" : "/daily-compass/content-studio"}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
                     <Share2 className="w-5 h-5 text-[#4a9b9b]" />
                   </div>
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Create Content</p>
-                  <p className="text-xs text-[#b8a898]">Social post, script</p>
+                  <p className="text-xs text-[#b8a898]">
+                    {psConnected === false ? "Connect PostStream" : "Social post via PostStream"}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
@@ -716,14 +728,16 @@ export default function DailyCompassPage() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/daily-compass/calendar">
+            <Link href={psConnected === false ? "/settings" : "/daily-compass/calendar"}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-2">
                     <Calendar className="w-5 h-5 text-[#c9a227]" />
                   </div>
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
-                  <p className="text-xs text-[#b8a898]">Schedule posts</p>
+                  <p className="text-xs text-[#b8a898]">
+                    {psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
