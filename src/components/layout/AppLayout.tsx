@@ -6,6 +6,7 @@ import { CollapsibleSidebarProvider, CollapsibleSidebar, useSidebar } from "./Co
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
 import AIGuideWidget from "@/components/ai-guide/AIGuideWidget";
+import DemoBanner from "./DemoBanner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
         "min-h-screen transition-all duration-300 ease-in-out flex flex-col",
         isCollapsed ? "ml-16" : "ml-64"
       )}>
+        <DemoBanner />
         <Header />
         <div className="flex-1">{children}</div>
       </main>

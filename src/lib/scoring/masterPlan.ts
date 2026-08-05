@@ -1,5 +1,26 @@
+import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 import { authEnabled, sessionUser, isOwnerEmail } from "@/lib/authz";
+
+// The seeded demo workspace. When the lc_demo cookie is set, every data route
+// resolves to this plan so the whole app shows sample data for sales/training.
+export const DEMO_PLAN_NAME = "Demo — Brand Alchemy Studio";
+
+async function demoMasterPlanId(): Promise<string | null> {
+  try {
+    const store = cookies();
+    if (store.get("lc_demo")?.value !== "1") return null;
+  } catch {
+    return null; // cookies() unavailable outside a request scope
+  }
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("client_master_plans")
+    .select("id")
+    .eq("client_name", DEMO_PLAN_NAME)
+    .maybeSingle();
+  return (data?.id as string) ?? null;
+}
 
 /**
  * Single-user helper: fetch the one active client master plan, creating it if
@@ -48,6 +69,10 @@ export async function getOrCreatePrimaryMasterPlan(): Promise<string | null> {
  * blocked the request already; this is defense in depth).
  */
 export async function resolveMasterPlanId(): Promise<string | null> {
+  // Demo mode overrides everything — the whole app shows the seeded demo data.
+  const demo = await demoMasterPlanId();
+  if (demo) return demo;
+
   if (!authEnabled()) return getOrCreatePrimaryMasterPlan();
 
   const user = await sessionUser();
