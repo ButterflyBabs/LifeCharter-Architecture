@@ -54,6 +54,15 @@ export function calculateSystemsHealthLike(m: Metrics): number | null {
   return Math.round(Math.max(0, Math.min(100, health)));
 }
 
+/** Operations: how many of the 8 pillars are solid (in-progress counts half). */
+export function calculateOperationsHealthLike(m: Metrics): number | null {
+  if (!has(m, "pillars_total") || m.pillars_total <= 0) return null;
+  const complete = typeof m.pillars_complete === "number" ? m.pillars_complete : 0;
+  const inProgress = typeof m.pillars_inprogress === "number" ? m.pillars_inprogress : 0;
+  const health = ((complete + inProgress * 0.5) / m.pillars_total) * 100;
+  return Math.round(Math.max(0, Math.min(100, health)));
+}
+
 /** Sales: lead volume and conversion rate, lightly. */
 export function calculateSalesOpsLike(m: Metrics): number | null {
   if (!has(m, "conversion_rate") && !has(m, "leads")) return null;

@@ -70,6 +70,8 @@ export interface DimensionSource {
   invert?: boolean; // e.g. "Operational Stress" — high answer = low health
   /** Soul only: sensitivity tier gate for this source. */
   soulTier?: "scoreable" | "private"; // flagged-sensitive answers always excluded upstream
+  /** business_plan only: which plan's completeness feeds this (defaults to business). */
+  planType?: "business" | "marketing" | "sales" | "forecasting";
 }
 
 export interface DimensionDefinition {
@@ -114,6 +116,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
         ],
       },
       { kind: "pulse", method: "scale", weight: 25, pulseLabels: ["Marketing Effectiveness"] },
+      { kind: "business_plan", method: "completeness", weight: 15, planType: "marketing" },
     ],
   },
   {
@@ -121,20 +124,21 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
     label: "Sales",
     staleDays: STALE,
     sources: [
-      { kind: "profit", method: "scale", weight: 35, profitDomain: "sales" },
-      { kind: "brain", method: "ai", weight: 25, brainSections: ["7. Sales System"] },
+      { kind: "profit", method: "scale", weight: 30, profitDomain: "sales" },
+      { kind: "brain", method: "ai", weight: 20, brainSections: ["7. Sales System"] },
       {
         kind: "operational",
         method: "formula",
-        weight: 20,
+        weight: 25,
         operationalMetrics: ["leads", "conversion_rate"],
       },
       {
         kind: "pulse",
         method: "scale",
-        weight: 20,
+        weight: 15,
         pulseLabels: ["Sales Confidence", "Pricing Power"],
       },
+      { kind: "business_plan", method: "completeness", weight: 10, planType: "sales" },
     ],
   },
   {
@@ -142,14 +146,20 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
     label: "Operations",
     staleDays: STALE,
     sources: [
-      { kind: "profit", method: "scale", weight: 40, profitDomain: "operations" },
+      { kind: "profit", method: "scale", weight: 35, profitDomain: "operations" },
       {
         kind: "brain",
         method: "ai",
-        weight: 35,
+        weight: 25,
         brainSections: ["10. Operations and Internal Systems"],
       },
-      { kind: "pulse", method: "scale", weight: 25, pulseLabels: ["Operational Stress"], invert: true },
+      {
+        kind: "operational",
+        method: "formula",
+        weight: 25,
+        operationalMetrics: ["pillars_complete", "pillars_inprogress", "pillars_total"],
+      },
+      { kind: "pulse", method: "scale", weight: 15, pulseLabels: ["Operational Stress"], invert: true },
     ],
   },
   {

@@ -138,29 +138,117 @@ async function brainAnswers(supabase: Supa, planId?: string | null): Promise<Sco
     }));
 }
 
-// Business-plan completeness feeds the `business_plan` scoring source. Neutral
-// (null) until the founder starts writing their plan, then reflects how much of
-// the required baseline is filled — so business health "starts with the plan."
-async function businessPlanCompletenessFor(
+
+// Operational metrics derived LIVE from the app's own data (finance ledger,
+// sales pipeline, operational pillars) — so the dimensions reflect the whole
+// app, not just the monthly-review blob. Only keys with real data are set.
+async function liveOperationalMetrics(
   supabase: ReturnType<typeof createServerClient>,
   scopeId: string | null
-): Promise<number | null> {
-  if (!scopeId) return null;
+): Promise<Record<string, number>> {
+  const m: Record<string, number> = {};
+  if (!scopeId) return m;
+  const now = new Date();
+  const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
+
+  // Finance — this month's revenue & expenses from the ledger.
+  try {
+    const { data } = await supabase
+      .from("finance_entries")
+      .select("type, amount, occurred_on")
+      .eq("master_plan_id", scopeId)
+      .gte("occurred_on", monthStart);
+    const rows = (data || []) as { type: string; amount: number | string | null }[];
+    if (rows.length) {
+      let income = 0;
+      let expense = 0;
+      for (const e of rows) {
+        const a = Number(e.amount ?? 0);
+        if (e.type === "income") income += a;
+        else expense += a;
+      }
+      m.revenue = income;
+      m.expenses = expense;
+    }
+  } catch {
+    /* optional */
+  }
+  // Monthly income target from budgets → revenue_goal.
+  try {
+    const { data } = await supabase
+      .from("finance_budgets")
+      .select("amount")
+      .eq("master_plan_id", scopeId)
+      .eq("type", "income")
+      .eq("category", "")
+      .maybeSingle();
+    if (data?.amount != null) m.revenue_goal = Number(data.amount);
+  } catch {
+    /* optional */
+  }
+
+  // Sales — conversion (won vs decided) + recent activity volume.
+  try {
+    const { data } = await supabase
+      .from("sales_activities")
+      .select("outcome, occurred_on")
+      .eq("master_plan_id", scopeId);
+    const rows = (data || []) as { outcome: string | null; occurred_on: string | null }[];
+    if (rows.length) {
+      const won = rows.filter((r) => r.outcome === "won").length;
+      const lost = rows.filter((r) => r.outcome === "lost").length;
+      if (won + lost > 0) m.conversion_rate = Math.round((won / (won + lost)) * 100);
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+      m.leads = rows.filter((r) => (r.occurred_on || "") >= cutoff).length;
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Operations — how many of the 8 pillars are solid / in progress.
+  try {
+    const { data } = await supabase
+      .from("operations_pillars")
+      .select("status")
+      .eq("master_plan_id", scopeId);
+    const rows = (data || []) as { status: string | null }[];
+    if (rows.length) {
+      m.pillars_total = 8;
+      m.pillars_complete = rows.filter((r) => r.status === "complete").length;
+      m.pillars_inprogress = rows.filter((r) => r.status === "in_progress").length;
+    }
+  } catch {
+    /* optional */
+  }
+
+  return m;
+}
+
+// Baseline completeness per plan type (business/marketing/sales/forecasting),
+// so each plan feeds its matching dimension. Null = not started (neutral).
+async function planCompletenessFor(
+  supabase: ReturnType<typeof createServerClient>,
+  scopeId: string | null
+): Promise<Record<string, number | null>> {
+  const out: Record<string, number | null> = { business: null, marketing: null, sales: null, forecasting: null };
+  if (!scopeId) return out;
   try {
     const { data } = await supabase
       .from("plan_sections")
-      .select("section_key, content")
-      .eq("master_plan_id", scopeId)
-      .eq("plan_type", "business");
-    const filled = new Set<string>();
-    for (const r of (data || []) as { section_key: string; content: string | null }[]) {
-      if ((r.content || "").trim()) filled.add(r.section_key);
+      .select("plan_type, section_key, content")
+      .eq("master_plan_id", scopeId);
+    const bySet: Record<string, Set<string>> = {};
+    for (const r of (data || []) as { plan_type: string; section_key: string; content: string | null }[]) {
+      if (!(r.content || "").trim()) continue;
+      (bySet[r.plan_type] ||= new Set<string>()).add(r.section_key);
     }
-    if (filled.size === 0) return null; // not started — don't penalize
-    return baselineCompleteness("business", filled);
+    for (const t of ["business", "marketing", "sales", "forecasting"]) {
+      out[t] = bySet[t] ? baselineCompleteness(t, bySet[t]) : null;
+    }
   } catch {
-    return null;
+    /* optional */
   }
+  return out;
 }
 
 export async function gatherAndCompute(
@@ -169,19 +257,26 @@ export async function gatherAndCompute(
   const supabase = createServerClient();
   const mp = await latestMasterPlan(supabase, planId);
   const scopeId = mp?.id ?? planId ?? null;
-  const [pulse, brain, businessPlanCompleteness] = await Promise.all([
+  const [pulse, brain, planCompleteness, live] = await Promise.all([
     pulseAnswers(supabase, scopeId),
     brainAnswers(supabase, scopeId),
-    businessPlanCompletenessFor(supabase, scopeId),
+    planCompletenessFor(supabase, scopeId),
+    liveOperationalMetrics(supabase, scopeId),
   ]);
+
+  // Merge live metrics over the manual monthly-review blob (live wins where present).
+  const metaOp = (mp?.metadata?.operational ?? null) as Record<string, number> | null;
+  const hasLive = Object.keys(live).length > 0;
+  const operational = hasLive || metaOp ? { ...(metaOp || {}), ...live } : null;
 
   const inputs: ScoringInputs = {
     profitDomains: profitFromMasterPlan(mp),
     brain,
     pulse,
-    operational: mp?.metadata?.operational ?? null, // from the monthly review
-    operationalAt: mp?.metadata?.operational_at ?? null,
-    businessPlanCompleteness,
+    operational,
+    operationalAt: hasLive ? new Date().toISOString() : mp?.metadata?.operational_at ?? null,
+    businessPlanCompleteness: planCompleteness.business,
+    planCompleteness,
     aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
     now: new Date().toISOString(),
   };

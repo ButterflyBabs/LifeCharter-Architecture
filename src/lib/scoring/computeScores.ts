@@ -12,6 +12,7 @@ import {
   calculateRevenueHealthLike,
   calculateSystemsHealthLike,
   calculateSalesOpsLike,
+  calculateOperationsHealthLike,
 } from "./operational";
 
 // ---- Normalized inputs -----------------------------------------------------
@@ -42,8 +43,10 @@ export interface ScoringInputs {
   operational: Record<string, number> | null;
   /** When the operational metrics were recorded (ISO), for freshness. */
   operationalAt?: string | null;
-  /** 0-100 business-plan completeness, or null. */
+  /** 0-100 business-plan completeness, or null. (Feeds the business/vision source.) */
   businessPlanCompleteness: number | null;
+  /** 0-100 completeness per plan type (business|marketing|sales|forecasting). */
+  planCompleteness?: Record<string, number | null>;
   /**
    * AI-derived 0-100 sub-scores for `method: "ai"` sources (Soul and Brain),
    * keyed by `${dimensionKey}:${sourceKind}` (e.g. "leadership:soul",
@@ -140,10 +143,15 @@ function subScoreFor(
       if (key === "finance") s = calculateRevenueHealthLike(inputs.operational);
       else if (key === "systems") s = calculateSystemsHealthLike(inputs.operational);
       else if (key === "sales") s = calculateSalesOpsLike(inputs.operational);
+      else if (key === "operations") s = calculateOperationsHealthLike(inputs.operational);
       return { subScore: s, answeredAt: inputs.operationalAt ?? null };
     }
     case "business_plan": {
-      return { subScore: inputs.businessPlanCompleteness, answeredAt: null };
+      // Which plan feeds this source (defaults to the business plan / vision).
+      const planType = source.planType ?? "business";
+      const fromMap = inputs.planCompleteness?.[planType];
+      const sub = fromMap !== undefined ? fromMap : planType === "business" ? inputs.businessPlanCompleteness : null;
+      return { subScore: sub ?? null, answeredAt: null };
     }
     default:
       // soul + any AI-scored source are handled above via method === "ai".

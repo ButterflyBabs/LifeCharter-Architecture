@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import Link from "next/link";
 
 const DIMENSIONS: { key: string; name: string }[] = [
   { key: "marketing", name: "Marketing" },
@@ -48,28 +49,31 @@ function SortableDimension({ id, name, score }: { id: string; name: string; scor
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-[#c9a227]/20 shadow-sm p-3 group"
+      className="relative bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-[#c9a227]/20 shadow-sm p-3 group hover:border-[#2E7C83]/50 transition-colors"
     >
-      <div className="flex items-start justify-between gap-1">
-        <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] leading-tight">{name}</span>
-        <button
-          {...attributes}
-          {...listeners}
-          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-300 flex-shrink-0"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <p className="text-xl font-serif mt-1" style={{ color: score !== null ? healthColor(score) : "#9CA3AF" }}>
-        {score ?? "—"}
-      </p>
-      <div className="mt-1.5 h-1 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${score ?? 0}%`, backgroundColor: score !== null ? healthColor(score) : "#E8E4E0" }}
-        />
-      </div>
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-300 flex-shrink-0 z-10"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+      <Link href={`/dimensions/${id}`} className="block" title={`Why is ${name} ${score ?? "—"}?`}>
+        <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] leading-tight pr-4 block">{name}</span>
+        <p className="text-xl font-serif mt-1" style={{ color: score !== null ? healthColor(score) : "#9CA3AF" }}>
+          {score ?? "—"}
+        </p>
+        <div className="mt-1.5 h-1 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${score ?? 0}%`, backgroundColor: score !== null ? healthColor(score) : "#E8E4E0" }}
+          />
+        </div>
+        <span className="mt-1.5 block text-[10px] text-[#2E7C83] opacity-0 group-hover:opacity-100 transition-opacity">
+          Why this score →
+        </span>
+      </Link>
     </div>
   );
 }
