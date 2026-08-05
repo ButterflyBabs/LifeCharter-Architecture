@@ -36,6 +36,7 @@ import {
   Boxes,
   BarChart3,
   LineChart,
+  Rocket,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -49,6 +50,7 @@ const navigationSections = [
     items: [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
+      { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
     ],
   },
   {

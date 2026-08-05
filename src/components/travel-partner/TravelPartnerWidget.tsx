@@ -208,6 +208,21 @@ export default function TravelPartnerWidget() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Live setup progress (foundation: 3 assessments + AI), from the same source
+  // the /setup wizard uses — so the widget reflects real status.
+  const [setupStatus, setSetupStatus] = useState<{ done: number; total: number; complete: boolean } | null>(null);
+  useEffect(() => {
+    fetch("/api/setup/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d) return;
+        const a = d.assessments || {};
+        const done = [a.brain, a.soul, a.profit, d.ai?.connected].filter(Boolean).length;
+        setSetupStatus({ done, total: 4, complete: Boolean(d.requiredComplete) });
+      })
+      .catch(() => {});
+  }, []);
+
   // Ask mode — answers questions from the LifeCharter knowledge base.
   const [mode, setMode] = useState<"journey" | "ask">("journey");
   const [askInput, setAskInput] = useState("");
@@ -473,6 +488,28 @@ export default function TravelPartnerWidget() {
             </button>
           </div>
         </div>
+
+        {/* Live setup progress — foundation (assessments + AI) */}
+        {setupStatus && !setupStatus.complete && (
+          <Link
+            href="/setup"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2.5 bg-[#c9a227]/10 border-b border-[#c9a227]/20 hover:bg-[#c9a227]/15"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                Finish setup — foundation {setupStatus.done}/{setupStatus.total}
+              </span>
+              <span className="text-xs text-[#2E7C83] font-medium">Continue →</span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-[#1a2b4a]/10 overflow-hidden">
+              <div
+                className="h-1.5 rounded-full bg-gradient-to-r from-[#4a9b9b] to-[#c9a227]"
+                style={{ width: `${Math.round((setupStatus.done / setupStatus.total) * 100)}%` }}
+              />
+            </div>
+          </Link>
+        )}
 
         {mode === "ask" ? (
           <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
