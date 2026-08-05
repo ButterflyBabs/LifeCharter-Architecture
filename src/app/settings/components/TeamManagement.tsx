@@ -20,6 +20,9 @@ import {
   Crown,
   Camera,
   Loader2,
+  KeyRound,
+  Copy,
+  Check,
 } from "lucide-react";
 
 type Role = "admin" | "editor" | "viewer";
@@ -79,6 +82,11 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   const [isAdding, setIsAdding] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", name: "", role: "editor" as Role });
+
+  // Invite-link ("Create login") state.
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<{ id: string; url: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const avatarTargetId = useRef<string | null>(null);
@@ -179,6 +187,39 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   };
 
   const handleChangeRole = (id: string, role: Role) => patchMember(id, { role });
+
+  // Mint (or re-issue) a login link the owner delivers themselves — no email sent.
+  const handleCreateLogin = async (id: string) => {
+    setInvitingId(id);
+    setInviteLink(null);
+    setCopied(false);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data?.error);
+      setInviteLink({ id, url: data.url });
+    } catch (e) {
+      flash(false, (e as Error)?.message || "Couldn't create the login link.");
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      flash(false, "Couldn't copy — select the link and copy it manually.");
+    }
+  };
 
   const handleNameBlur = (id: string, name: string) => {
     const member = members.find((m) => m.id === id);
@@ -450,6 +491,21 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                     </select>
 
                     <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isBusy || invitingId === member.id}
+                      onClick={() => handleCreateLogin(member.id)}
+                      title="Create a login link to send this member"
+                    >
+                      {invitingId === member.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="w-4 h-4" />
+                      )}
+                      <span className="ml-2 hidden sm:inline">Create login</span>
+                    </Button>
+
+                    <Button
                       variant="ghost"
                       size="sm"
                       className="text-red-500 hover:text-red-600"
@@ -460,6 +516,28 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                     </Button>
                   </div>
                 </div>
+
+                {/* Copyable login link — owner delivers it themselves (no email). */}
+                {inviteLink?.id === member.id && (
+                  <div className="mt-4 rounded-lg border border-[#2E7C83]/30 bg-[#2E7C83]/5 p-3">
+                    <p className="text-xs text-[#5c5348] dark:text-[#b8c2cf] mb-2">
+                      Send this link to <span className="font-medium">{member.email}</span>. It lets them
+                      set a password and sign in. It&apos;s single-use and expires in 7 days.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        readOnly
+                        value={inviteLink.url}
+                        onFocus={(e) => e.currentTarget.select()}
+                        className="flex-1 text-xs rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-[#1a2b4a] dark:text-[#F8F5F0] font-mono"
+                      />
+                      <Button size="sm" onClick={copyInviteLink}>
+                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        <span className="ml-2">{copied ? "Copied" : "Copy"}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
