@@ -394,7 +394,7 @@ export default function TravelPartnerWidget() {
             <Award className="w-12 h-12 text-[#c9a227] mx-auto mb-3" />
             <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
             <p className="text-sm text-[#e8e4f0] mb-4">
-              You have set up your LifeCharter Architecture!
+              You have set up your LifeCharter Command Suite!
             </p>
             <Button onClick={() => setShowCelebration(false)} className="bg-[#c9a227] text-[#1a2b4a]">
               Continue
@@ -454,7 +454,7 @@ export default function TravelPartnerWidget() {
             </div>
           </div>
           <p className="text-sm text-[#e8e4f0] mt-1">
-            {mode === "journey" ? "Your guide to setting up LifeCharter Architecture" : "Ask me anything about LifeCharter"}
+            {mode === "journey" ? "Your guide to setting up LifeCharter Command Suite" : "Ask me anything about LifeCharter"}
           </p>
 
           {mode === "journey" && (

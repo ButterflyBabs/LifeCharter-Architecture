@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import PlanWorkspace from "@/components/plans/PlanWorkspace";
 
 export const metadata: Metadata = {
-  title: "Business Plan | LifeCharter Architecture",
+  title: "Business Plan | LifeCharter Command Suite",
   description: "Your living business plan — built from your Brain, Soul, and Profit assessments with AI.",
 };
 

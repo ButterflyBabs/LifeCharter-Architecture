@@ -34,7 +34,7 @@ export default function DomainScoresHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What are Domain Scores?",
-      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter Architecture framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
+      answer: "Domain Scores are numerical ratings (0-100) assigned to each of the 12 business domains in the LifeCharter Command Suite framework. These scores represent the current health, maturity, and alignment of each specific area of your business. They provide a granular view of where your business is thriving and where attention is needed."
     },
     {
       question: "How are Domain Scores calculated?",
@@ -157,7 +157,7 @@ export default function DomainScoresHelpPage() {
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             <strong>Domain Scores</strong> provide a numerical snapshot (0-100) of each of the 12 business domains 
-            in your LifeCharter Architecture. Think of them as vital signs for your business—each score tells you 
+            in your LifeCharter Command Suite. Think of them as vital signs for your business—each score tells you 
             how healthy, mature, and aligned that specific area is.
           </p>
           
@@ -410,7 +410,7 @@ export default function DomainScoresHelpPage() {
         <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;What gets measured gets managed. Domain Scores turn business intuition into actionable data.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Command Suite Team</p>
       </div>
     </div>
   );

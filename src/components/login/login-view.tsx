@@ -151,7 +151,7 @@ export function LoginView() {
             className="mx-auto mb-2.5 w-[78%] max-w-[300px] drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           />
           <div className="mb-8 text-center text-[10.5px] uppercase tracking-[0.4em] text-brand-taupe">
-            Architecture &middot; Command Suite
+            Command Suite
           </div>
 
           <h1 className="text-center font-display text-[26px] font-medium text-brand-ivory">

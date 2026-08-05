@@ -37,6 +37,7 @@ import {
   BarChart3,
   LineChart,
   Rocket,
+  LogOut,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -322,7 +323,7 @@ export function CollapsibleSidebar() {
                 LifeCharter
               </h1>
               <p className="text-[10px] text-white/40 tracking-[0.15em] uppercase whitespace-nowrap">
-                Architecture
+                Command Suite
               </p>
             </div>
           </div>
@@ -478,6 +479,19 @@ export function CollapsibleSidebar() {
             )}
           </div>
         </div>
+
+        {/* Sign out */}
+        <Link
+          href="/logout"
+          title="Sign out"
+          className={cn(
+            "flex items-center rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
+            isCollapsed ? "justify-center w-full p-2" : "gap-2 px-4 py-2.5"
+          )}
+        >
+          <LogOut className="w-4 h-4" />
+          {!isCollapsed && <span className="text-sm">Sign out</span>}
+        </Link>
 
         {/* Workspace Selector - only when expanded */}
         {!isCollapsed && (

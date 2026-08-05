@@ -405,7 +405,7 @@ export default function HealthTrendHelpPage() {
         <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;The trend is your friend—until it ends. Stay vigilant, stay adaptive, stay aligned.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Command Suite Team</p>
       </div>
     </div>
   );

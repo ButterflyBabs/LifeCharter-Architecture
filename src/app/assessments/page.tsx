@@ -6,7 +6,7 @@ import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Cloc
 import CheckinSchedule from "@/components/assessments/CheckinSchedule";
 
 export const metadata: Metadata = {
-  title: "Alignment Profile | LifeCharter Architecture",
+  title: "Alignment Profile | LifeCharter Command Suite",
   description: "Discover your business alignment across Brain (Systems), Soul (Purpose), and Profit (Financial Health) dimensions.",
 };
 
@@ -72,7 +72,7 @@ export default function AssessmentsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-[#c9a227]" />
-            <span className="text-sm font-medium text-[#e8e4f0]">LifeCharter Architecture</span>
+            <span className="text-sm font-medium text-[#e8e4f0]">LifeCharter Command Suite</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Alignment Profiles

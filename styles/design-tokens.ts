@@ -1,5 +1,5 @@
 /**
- * LifeCharter Architecture - Design Tokens
+ * LifeCharter Command Suite - Design Tokens
  * Based on the LifeCharter Brand Board
  */
 
