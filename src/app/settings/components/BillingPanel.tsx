@@ -10,7 +10,8 @@ interface PlanRow {
   name: string;
   description: string | null;
   price_monthly: number; // cents
-  onboarding_fee: number | null; // cents
+  price_yearly: number | null; // cents — pay-in-full, all-in first year
+  onboarding_fee: number | null; // cents — one-time implementation
   capabilities: Record<string, unknown>;
 }
 interface Current {
@@ -21,50 +22,72 @@ interface Current {
   comped: boolean;
 }
 
-// Marketing verbiage per tier (the launch-honest copy). Keyed by plan id.
-const COPY: Record<string, { tagline: string; onboarding: string; features: string[]; popular?: boolean }> = {
+type Cycle = "monthly" | "annual";
+
+// Positioning line + what scales per tier. Every tier includes the full Command
+// Suite + community layer (shown once, below the cards) — this list is only the
+// differentiation. Keyed by plan id.
+const COPY: Record<string, { tagline: string; features: string[]; popular?: boolean }> = {
   starter: {
-    tagline: "For the founder building it herself",
-    onboarding: "+ $1,997 one-time onboarding",
+    tagline: "Find your clarity in the cohort — self-driven, running one business.",
     features: [
-      "Your 12-dimension business health, scored from your own assessments",
-      "AI-built Business, Marketing & Sales plans — up to 10 builds or refreshes a month",
-      "Monthly check-ins and a living progress trajectory",
-      "Unlimited conversations with your AI business guide",
-      "Your business, mapped into segments and scored dimension by dimension",
-      "1 user · guided, self-paced onboarding",
+      "Weekly group coaching + weekly tech-support call",
+      "2× monthly Growth Sessions + 2× monthly Hope Seat",
+      "Guided, self-paced Suite setup",
+      "1 business workspace · just you",
+      "Standard AI for scoring and AI features",
     ],
   },
   growth: {
-    tagline: "For the coach running more than one business",
-    onboarding: "+ $2,497 one-time onboarding",
+    tagline: "Get hands-on help implementing it — a monthly hand on the wheel.",
     popular: true,
     features: [
       "Everything in Starter, plus:",
-      "Up to 50 plan builds or refreshes a month",
-      "Run multiple businesses side by side, each scored on its own",
-      "Up to 5 users on your team",
-      "Priority support",
+      "1× / month 1:1 with the Alignment Architect",
+      "Done-with-you kickoff intensive",
+      "Priority in Hope Seat & community",
+      "Up to 3 business workspaces · + 1 collaborator seat",
+      "Expanded AI limits",
     ],
   },
   vip: {
-    tagline: "For founders who want it built with them",
-    onboarding: "No onboarding fee — the hands-on work is the point",
+    tagline: "Have it built with you, at your side — white-glove, room to run everything.",
     features: [
       "Everything in Growth, plus:",
-      "Unlimited plan builds and re-scores",
-      "Unlimited businesses and team members",
-      "Dedicated Done-With-You implementation — we build it with you",
-      "Direct, priority access when you need us",
+      "2× / month 1:1 + async access to the Architect",
+      "White-glove, ongoing done-with-you setup",
+      "First seat in Hope Seat & community",
+      "Unlimited business workspaces · team seats",
+      "Priority AI — highest limits",
+      "Early access to new modules",
     ],
   },
 };
+
+// Included in EVERY tier — nothing is locked.
+const SUITE_INCLUDED = [
+  "12 live business dimensions",
+  "8 operational pillars",
+  "3 assessments — Profit Architecture, Brain, Soul",
+  "Daily Compass operating surface",
+  "Live finance ledger",
+  "Sales pipeline & conversion tracking",
+  "Business, Marketing, Sales & Forecasting plans",
+  "Scripts & templates library",
+  "Guided step-by-step setup",
+];
+const COMMUNITY_INCLUDED = [
+  "Weekly community / group coaching call (1:1 as needed)",
+  "Weekly tech-support call for the Command Suite",
+  "2× monthly Growth Sessions (cohort learning)",
+  "2× monthly Hope Seat (bring a real challenge; worked live)",
+  "Standalone private community (off Facebook)",
+];
 
 const ROADMAP = [
   "Separate branded client workspaces",
   "Full white-label",
   "Custom AI agents tuned to your business",
-  "Operations & review center",
 ];
 
 function usd(cents: number): string {
@@ -74,6 +97,7 @@ function usd(cents: number): string {
 export default function BillingPanel() {
   const [plans, setPlans] = useState<PlanRow[] | null>(null);
   const [current, setCurrent] = useState<Current | null>(null);
+  const [cycle, setCycle] = useState<Cycle>("monthly");
 
   useEffect(() => {
     fetch("/api/billing?ts=" + Date.now(), { cache: "no-store" })
@@ -110,13 +134,51 @@ export default function BillingPanel() {
         </Card>
       )}
 
-      {/* Pricing plans */}
+      {/* Header + billing-cycle toggle */}
       <div>
-        <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-6">Plans</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Plans</h3>
+            <p className="text-sm text-[#b8a898] mt-0.5">
+              Executive coaching + the full Command Suite, together. Every tier includes the whole Suite —
+              tiers scale on coaching depth and capacity.
+            </p>
+          </div>
+          {/* Monthly vs pay-in-full */}
+          <div className="inline-flex rounded-full border border-[#1a2b4a]/15 bg-[#1a2b4a]/5 p-1 self-start">
+            <button
+              onClick={() => setCycle("monthly")}
+              className={`px-4 py-1.5 text-sm rounded-full transition-colors ${
+                cycle === "monthly"
+                  ? "bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] shadow-sm font-medium"
+                  : "text-[#b8a898]"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setCycle("annual")}
+              className={`px-4 py-1.5 text-sm rounded-full transition-colors ${
+                cycle === "annual"
+                  ? "bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] shadow-sm font-medium"
+                  : "text-[#b8a898]"
+              }`}
+            >
+              Pay in full · save ~20%
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           {plans.map((plan) => {
-            const copy = COPY[plan.id] ?? { tagline: plan.description ?? "", onboarding: "", features: [] };
+            const copy = COPY[plan.id] ?? { tagline: plan.description ?? "", features: [] };
             const isCurrent = current?.planId === plan.id;
+            const impl = plan.onboarding_fee ?? 0;
+            const annual = plan.price_yearly ?? null;
+            // Year-one on the monthly path = implementation + 12 months.
+            const monthlyYearOne = impl + plan.price_monthly * 12;
+            const savings = annual !== null ? monthlyYearOne - annual : 0;
+
             return (
               <div key={plan.id} className="relative pt-3">
                 {copy.popular && !isCurrent && (
@@ -134,45 +196,105 @@ export default function BillingPanel() {
                   </div>
                 )}
                 <Card className={`relative h-full ${copy.popular ? "border-[#c9a227] border-2" : ""}`}>
-                <CardContent className="p-6">
-                  <h4 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.name}</h4>
-                  <p className="text-sm text-[#b8a898] mt-0.5">{copy.tagline}</p>
-                  <div className="mt-3 flex items-baseline">
-                    <span className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                      {usd(plan.price_monthly)}
-                    </span>
-                    <span className="text-[#b8a898] ml-1">/month</span>
-                  </div>
-                  {copy.onboarding && <p className="text-xs text-[#b8a898] mt-1">{copy.onboarding}</p>}
+                  <CardContent className="p-6">
+                    <h4 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.name}</h4>
+                    <p className="text-sm text-[#b8a898] mt-0.5 min-h-[40px]">{copy.tagline}</p>
 
-                  <ul className="mt-4 space-y-2">
-                    {copy.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5 flex-shrink-0" />
-                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Price */}
+                    {cycle === "monthly" ? (
+                      <>
+                        <div className="mt-3 flex items-baseline">
+                          <span className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
+                            {usd(plan.price_monthly)}
+                          </span>
+                          <span className="text-[#b8a898] ml-1">/month</span>
+                        </div>
+                        <p className="text-xs text-[#b8a898] mt-1">
+                          + {usd(impl)} one-time implementation
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mt-3 flex items-baseline">
+                          <span className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
+                            {annual !== null ? usd(annual) : "—"}
+                          </span>
+                          <span className="text-[#b8a898] ml-1">first year</span>
+                        </div>
+                        <p className="text-xs text-[#b8a898] mt-1">
+                          Implementation + 12 months, paid upfront
+                        </p>
+                        {annual !== null && savings > 0 && (
+                          <p className="text-xs font-medium text-[#2E7C83] mt-1">
+                            Save {usd(savings)} vs. paying monthly
+                          </p>
+                        )}
+                      </>
+                    )}
 
-                  {isCurrent ? (
-                    <Button className="w-full mt-6" variant="outline" disabled>
-                      Your current plan
-                    </Button>
-                  ) : (
-                    <a
-                      href={`mailto:babs@lifecharter.architecture?subject=${encodeURIComponent(plan.name + " plan")}`}
-                      className="block mt-6"
-                    >
-                      <Button className="w-full" variant={copy.popular ? "primary" : "outline"}>
-                        Talk to us about {plan.name}
+                    <ul className="mt-4 space-y-2">
+                      {copy.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {isCurrent ? (
+                      <Button className="w-full mt-6" variant="outline" disabled>
+                        Your current plan
                       </Button>
-                    </a>
-                  )}
-                </CardContent>
+                    ) : (
+                      <a
+                        href={`mailto:babs@lifecharter.architecture?subject=${encodeURIComponent(plan.name + " plan")}`}
+                        className="block mt-6"
+                      >
+                        <Button className="w-full" variant={copy.popular ? "primary" : "outline"}>
+                          Get started with {plan.name}
+                        </Button>
+                      </a>
+                    )}
+                  </CardContent>
                 </Card>
               </div>
             );
           })}
+        </div>
+
+        <p className="text-xs text-[#b8a898] mt-4">
+          Your first year is a commitment; cancel anytime after that. The implementation fee is a one-time charge
+          collected at signup (or included in the pay-in-full total).
+        </p>
+      </div>
+
+      {/* Included in every tier */}
+      <div className="rounded-xl border border-[#1a2b4a]/10 bg-[#1a2b4a]/[0.03] p-6">
+        <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Included in every tier</h4>
+        <p className="text-sm text-[#b8a898] mb-4">The full Command Suite — nothing is locked.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#c9a227] mb-2">Command Suite</p>
+            <ul className="space-y-1.5">
+              {SUITE_INCLUDED.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5 flex-shrink-0" />
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#c9a227] mb-2">Coaching community</p>
+            <ul className="space-y-1.5">
+              {COMMUNITY_INCLUDED.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-[#2E7C83] mt-0.5 flex-shrink-0" />
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -180,7 +302,7 @@ export default function BillingPanel() {
       <div className="rounded-xl border border-dashed border-[#c9a227]/40 p-5">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-[#c9a227]" />
-          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Coming soon to Growth &amp; VIP</h4>
+          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">On the roadmap</h4>
         </div>
         <div className="flex flex-wrap gap-2">
           {ROADMAP.map((r) => (

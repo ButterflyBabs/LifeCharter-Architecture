@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: plans } = await supabase
     .from("plans")
-    .select("id, name, description, price_monthly, onboarding_fee, capabilities")
+    .select("id, name, description, price_monthly, price_yearly, onboarding_fee, capabilities")
     .eq("is_active", true)
     .order("price_monthly", { ascending: true });
 
