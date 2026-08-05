@@ -74,7 +74,9 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
       });
       if (!res.ok) throw new Error();
       setAddedId(w.id);
-      setTimeout(() => setAddedId((cur) => (cur === w.id ? null : cur)), 2200);
+      // Tell the page a task was created so Today's Focus refreshes immediately.
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("tasks-changed"));
+      setTimeout(() => setAddedId((cur) => (cur === w.id ? null : cur)), 2600);
     } catch {
       setError("Couldn't add that to your tasks — try again.");
     } finally {
@@ -254,7 +256,12 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                 <button
                   onClick={() => doWin(w)}
                   disabled={busyId === w.id}
-                  className="flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/30 px-3 py-2.5 hover:border-[#2E7C83]/50 hover:bg-[#2E7C83]/5 transition disabled:opacity-60"
+                  title="Add this to today's tasks"
+                  className={`flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border px-3 py-2.5 transition disabled:opacity-60 ${
+                    addedId === w.id
+                      ? "border-[#2c6b3f]/40 bg-[#d8efdd]"
+                      : "border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/30 hover:border-[#2E7C83]/50 hover:bg-[#2E7C83]/5"
+                  }`}
                 >
                   <span className="text-2xl leading-none flex-shrink-0">{w.emoji}</span>
                   <span className="flex-1 min-w-0">
@@ -269,13 +276,15 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                   </span>
                   <span className="flex-shrink-0 ml-1">
                     {addedId === w.id ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#2c6b3f]">
-                        <Check className="w-3.5 h-3.5" /> Added
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2c6b3f] whitespace-nowrap">
+                        <Check className="w-3.5 h-3.5" /> Added to today
                       </span>
                     ) : busyId === w.id ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#b8a898]" />
                     ) : (
-                      <span className="text-xs text-[#b8a898] whitespace-nowrap">+ Task</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#2E7C83] whitespace-nowrap bg-[#2E7C83]/10 px-2 py-1 rounded-full">
+                        <Plus className="w-3 h-3" /> Add
+                      </span>
                     )}
                   </span>
                 </button>
