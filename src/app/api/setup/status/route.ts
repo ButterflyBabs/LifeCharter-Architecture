@@ -79,6 +79,16 @@ export async function GET() {
     }
   }
 
+  // Per-account setup bypass (set on the profile) — skips the gate while building.
+  let bypass = false;
+  try {
+    const { data: prof } = await supabase.from("profiles").select("preferences").limit(1).maybeSingle();
+    const prefs = (prof?.preferences as Record<string, unknown>) || {};
+    bypass = prefs.setupBypass === true || prefs.setupBypass === "true";
+  } catch {
+    /* optional */
+  }
+
   const assessmentsComplete = brain && soul && profit;
   const requiredComplete = assessmentsComplete && ai;
 
@@ -93,5 +103,6 @@ export async function GET() {
       poststream,
     },
     requiredComplete,
+    bypass,
   });
 }

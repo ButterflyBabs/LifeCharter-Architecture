@@ -18,6 +18,7 @@ export default function SetupGate() {
       .then((r) => r.json())
       .then((d) => {
         if (!active || !d) return;
+        if (d.bypass) return; // this account opted out of the setup gate
         if (d.requiredComplete) return; // fully set up — nothing to show
         let skipped = false;
         let entered = false;

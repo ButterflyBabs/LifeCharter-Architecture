@@ -218,7 +218,8 @@ export default function TravelPartnerWidget() {
         if (!d) return;
         const a = d.assessments || {};
         const done = [a.brain, a.soul, a.profit, d.ai?.connected].filter(Boolean).length;
-        setSetupStatus({ done, total: 4, complete: Boolean(d.requiredComplete) });
+        // Treat a bypassed account as complete so the setup banner stays hidden.
+        setSetupStatus({ done, total: 4, complete: Boolean(d.requiredComplete || d.bypass) });
       })
       .catch(() => {});
   }, []);
