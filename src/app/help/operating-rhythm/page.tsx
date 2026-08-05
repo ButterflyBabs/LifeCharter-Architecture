@@ -388,7 +388,7 @@ export default function OperatingRhythmHelpPage() {
           <Timer className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Find Your Rhythm</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
-            Use the LifeCharter Architecture platform to support your operating rhythm. 
+            Use the LifeCharter Command Suite platform to support your operating rhythm. 
             Schedule reviews, track progress, and keep your business aligned.
           </p>
           <div className="flex gap-3 justify-center">
@@ -412,7 +412,7 @@ export default function OperatingRhythmHelpPage() {
         <blockquote className="text-lg italic text-[#7b6b8d] dark:text-[#e8e4f0] border-l-4 border-[#c9a227] pl-4 inline-block">
           &ldquo;Rhythm creates momentum. Momentum creates results. Results create confidence.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Command Suite Team</p>
       </div>
     </div>
   );

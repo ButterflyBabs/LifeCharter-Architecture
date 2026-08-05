@@ -1,532 +1,265 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import {
-  ArrowLeft,
-  TrendingUp,
-  Plus,
-  Upload,
-  FileText,
-  Calendar,
-  CreditCard,
-  CheckCircle,
-  AlertCircle,
-  Sparkles,
-  Link as LinkIcon
-} from "lucide-react";
+import { ArrowLeft, TrendingUp, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { fetchSegmentOptions, type SegmentOption } from "../segments";
 
-interface Income {
+interface Entry {
   id: string;
-  date: string;
-  client: string;
+  type: "income" | "expense";
   amount: number;
-  source: string;
+  category: string;
   description: string;
-  status: "received" | "pending" | "scheduled";
+  occurredOn: string;
 }
 
-interface PaymentProcessor {
-  id: string;
-  name: string;
-  connected: boolean;
-  lastSync?: string;
-  transactionsCount?: number;
-}
-
-interface UploadedStatement {
-  id: string;
-  filename: string;
-  processor: string;
-  uploadDate: string;
-  status: "processing" | "processed" | "error";
-  transactionsFound?: number;
-}
-
-const incomeSources = [
-  "Client Payment",
-  "Product Sale",
-  "Course/Program",
-  "Consulting",
-  "Retainer",
-  "Affiliate",
-  "Referral",
-  "Other"
-];
+const usd = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+const tz = () =>
+  (typeof window !== "undefined" &&
+    (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+  "UTC";
 
 export default function IncomePage() {
-  const [income, setIncome] = useState<Income[]>([
-    {
-      id: "1",
-      date: "2026-07-15",
-      client: "ABC Company",
-      amount: 2500.00,
-      source: "Client Payment",
-      description: "Monthly retainer - July",
-      status: "received"
-    },
-    {
-      id: "2",
-      date: "2026-07-12",
-      client: "Jane Smith",
-      amount: 1500.00,
-      source: "Course/Program",
-      description: "LifeCharter Circle enrollment",
-      status: "received"
-    },
-    {
-      id: "3",
-      date: "2026-07-20",
-      client: "Mike Johnson",
-      amount: 3000.00,
-      source: "Consulting",
-      description: "Strategy session package",
-      status: "pending"
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [mtd, setMtd] = useState(0);
+  const [ytd, setYtd] = useState(0);
+  const [target, setTarget] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [occurredOn, setOccurredOn] = useState("");
+  const [segmentId, setSegmentId] = useState("");
+  const [segments, setSegments] = useState<SegmentOption[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSegmentOptions().then(setSegments).catch(() => {});
+  }, []);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/finance/entries?tz=${encodeURIComponent(tz())}`);
+      const d = await res.json().catch(() => ({}));
+      const all: Entry[] = Array.isArray(d.entries) ? d.entries : [];
+      setEntries(all.filter((e) => e.type === "income"));
+      setMtd(d.mtd?.income ?? 0);
+      setYtd(d.ytd?.income ?? 0);
+      setTarget(d.budgetSummary?.income?.mtdBudget ?? 0);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoaded(true);
     }
-  ]);
+  }, []);
 
-  const [processors, setProcessors] = useState<PaymentProcessor[]>([
-    { id: "stripe", name: "Stripe", connected: false },
-    { id: "paypal", name: "PayPal", connected: false },
-    { id: "square", name: "Square", connected: false },
-    { id: "quickbooks", name: "QuickBooks", connected: false }
-  ]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const [statements, setStatements] = useState<UploadedStatement[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  // Form state
-  const [newIncome, setNewIncome] = useState({
-    date: new Date().toISOString().split('T')[0],
-    client: "",
-    amount: "",
-    source: "",
-    description: "",
-    status: "received" as "received" | "pending" | "scheduled"
-  });
-
-  const handleAddIncome = () => {
-    if (!newIncome.client || !newIncome.amount || !newIncome.source) return;
-
-    const incomeItem: Income = {
-      id: Date.now().toString(),
-      date: newIncome.date,
-      client: newIncome.client,
-      amount: parseFloat(newIncome.amount),
-      source: newIncome.source,
-      description: newIncome.description,
-      status: newIncome.status
-    };
-
-    setIncome(prev => [incomeItem, ...prev]);
-    setNewIncome({
-      date: new Date().toISOString().split('T')[0],
-      client: "",
-      amount: "",
-      source: "",
-      description: "",
-      status: "received"
-    });
-    setShowAddForm(false);
+  const add = async () => {
+    const amt = Number(amount);
+    if (!isFinite(amt) || amt <= 0) {
+      setMsg("Enter an amount greater than zero.");
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/finance/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "income",
+          amount: amt,
+          category: category.trim(),
+          description: description.trim(),
+          occurredOn: occurredOn || undefined,
+          segmentId: segmentId || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setMsg(d?.error || "Couldn't save.");
+      } else {
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setOccurredOn("");
+        setSegmentId("");
+        await load();
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleConnectProcessor = (processorId: string) => {
-    setProcessors(prev => prev.map(p => 
-      p.id === processorId 
-        ? { ...p, connected: true, lastSync: new Date().toISOString().split('T')[0], transactionsCount: Math.floor(Math.random() * 50) + 10 }
-        : p
-    ));
+  const remove = async (id: string) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+    try {
+      await fetch(`/api/finance/entries/${id}`, { method: "DELETE" });
+      load();
+    } catch {
+      /* optimistic */
+    }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach(file => {
-      const processor = file.name.toLowerCase().includes('stripe') ? 'Stripe' :
-                       file.name.toLowerCase().includes('paypal') ? 'PayPal' :
-                       file.name.toLowerCase().includes('square') ? 'Square' : 'Other';
-
-      const statement: UploadedStatement = {
-        id: Date.now().toString() + Math.random(),
-        filename: file.name,
-        processor,
-        uploadDate: new Date().toISOString().split('T')[0],
-        status: 'processing'
-      };
-
-      setStatements(prev => [statement, ...prev]);
-
-      // Simulate AI processing
-      setTimeout(() => {
-        setStatements(prev => prev.map(s => 
-          s.id === statement.id 
-            ? { ...s, status: 'processed', transactionsFound: Math.floor(Math.random() * 30) + 5 }
-            : s
-        ));
-      }, 2000);
-    });
-  };
-
-  const totalIncome = income.filter(i => i.status === "received").reduce((sum, i) => sum + i.amount, 0);
-  const pendingIncome = income.filter(i => i.status === "pending").reduce((sum, i) => sum + i.amount, 0);
-  const thisMonth = income.filter(i => i.date.startsWith('2026-07') && i.status === "received").reduce((sum, i) => sum + i.amount, 0);
+  const byCat = Object.entries(
+    entries.reduce<Record<string, number>>((m, e) => {
+      const c = e.category || "Uncategorized";
+      m[c] = (m[c] || 0) + e.amount;
+      return m;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="py-8 px-4 max-w-7xl mx-auto">
-      {/* Header */}
-      <Link href="/finance" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Finance Center
+    <div className="py-6 px-4 max-w-4xl mx-auto">
+      <Link href="/finance/pulse" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-3">
+        <ArrowLeft className="w-4 h-4" /> Financial Pulse
       </Link>
-
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center">
-            <TrendingUp className="w-6 h-6 text-[#7b6b8d]" />
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-[#2E7C83]/15 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-[#2E7C83]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Income Tracker
-            </h1>
-            <p className="text-[#b8a898]">
-              Revenue from all sources with payment processor connections
-            </p>
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Income</h1>
+            <p className="text-[#b8a898]">Money coming in — tracked to the ledger</p>
           </div>
         </div>
+        <Button onClick={() => setShowAdd((v) => !v)}>
+          {showAdd ? <X className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
+          {showAdd ? "Close" : "Add income"}
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-[#b8a898] mb-1">Total Received</p>
-            <p className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              ${totalIncome.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-[#b8a898] mb-1">This Month</p>
-            <p className="text-3xl font-bold text-[#7b6b8d]">
-              ${thisMonth.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-[#b8a898] mb-1">Pending</p>
-            <p className="text-3xl font-bold text-[#c9a227]">
-              ${pendingIncome.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Income List */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Add Income Button */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Recent Income
-            </h2>
-            <Button onClick={() => setShowAddForm(!showAddForm)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Income
-            </Button>
-          </div>
-
-          {/* Add Income Form */}
-          {showAddForm && (
-            <Card className="border-[#c9a227]/30">
-              <CardHeader>
-                <CardTitle className="text-lg">Add New Income</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-[#b8a898] mb-1 block">Date</label>
-                    <Input
-                      type="date"
-                      value={newIncome.date}
-                      onChange={(e) => setNewIncome({...newIncome, date: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-[#b8a898] mb-1 block">Amount</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={newIncome.amount}
-                      onChange={(e) => setNewIncome({...newIncome, amount: e.target.value})}
-                    />
-                  </div>
-                </div>
+      {showAdd && (
+        <Card className="mb-6 border-[#2E7C83]/30">
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
+                <Input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Source / category</label>
+                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Coaching, Course" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Date</label>
+                <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={add} disabled={saving} className="w-full">
+                  {saving ? "Saving…" : "Add"}
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Note (optional)</label>
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" />
+              </div>
+              {segments.length > 0 && (
                 <div>
-                  <label className="text-sm text-[#b8a898] mb-1 block">Client/Customer</label>
-                  <Input
-                    placeholder="e.g., ABC Company, Jane Smith..."
-                    value={newIncome.client}
-                    onChange={(e) => setNewIncome({...newIncome, client: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-[#b8a898] mb-1 block">Source</label>
+                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Business segment (optional)</label>
                   <select
-                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
-                    value={newIncome.source}
-                    onChange={(e) => setNewIncome({...newIncome, source: e.target.value})}
+                    value={segmentId}
+                    onChange={(e) => setSegmentId(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                   >
-                    <option value="">Select source...</option>
-                    {incomeSources.map(src => (
-                      <option key={src} value={src}>{src}</option>
+                    <option value="">— none —</option>
+                    {segments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="text-sm text-[#b8a898] mb-1 block">Status</label>
-                  <select
-                    className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
-                    value={newIncome.status}
-                    onChange={(e) => setNewIncome({...newIncome, status: e.target.value as "received" | "pending" | "scheduled"})}
-                  >
-                    <option value="received">Received</option>
-                    <option value="pending">Pending</option>
-                    <option value="scheduled">Scheduled</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm text-[#b8a898] mb-1 block">Description</label>
-                  <Textarea
-                    placeholder="Details about this income..."
-                    value={newIncome.description}
-                    onChange={(e) => setNewIncome({...newIncome, description: e.target.value})}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddIncome}>
-                    Save Income
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Income List */}
-          <Card>
-            <CardContent className="p-0">
-              {income.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`p-4 flex items-center justify-between ${index !== income.length - 1 ? 'border-b border-[#1a2b4a]/10' : ''}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      item.status === 'received' ? 'bg-green-500/10' : 
-                      item.status === 'pending' ? 'bg-yellow-500/10' : 'bg-[#7b6b8d]/10'
-                    }`}>
-                      {item.status === 'received' ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : item.status === 'pending' ? (
-                        <AlertCircle className="w-5 h-5 text-yellow-500" />
-                      ) : (
-                        <Calendar className="w-5 h-5 text-[#7b6b8d]" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                        {item.client}
-                      </p>
-                      <p className="text-sm text-[#b8a898]">
-                        {item.date} • {item.source}
-                      </p>
-                      {item.description && (
-                        <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                      +${item.amount.toFixed(2)}
-                    </p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      item.status === 'received' ? 'bg-green-500/10 text-green-600' :
-                      item.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600' :
-                      'bg-[#7b6b8d]/10 text-[#7b6b8d]'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Processors & Upload */}
-        <div className="space-y-6">
-          {/* Payment Processors */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <LinkIcon className="w-5 h-5 text-[#c9a227]" />
-                Payment Processors
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-[#b8a898]">
-                Connect your payment processors for automatic income tracking
-              </p>
-              
-              {processors.map((processor) => (
-                <div
-                  key={processor.id}
-                  className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="w-5 h-5 text-[#b8a898]" />
-                    <div>
-                      <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                        {processor.name}
-                      </p>
-                      {processor.connected && (
-                        <p className="text-xs text-[#b8a898]">
-                          Last sync: {processor.lastSync} • {processor.transactionsCount} transactions
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {processor.connected ? (
-                    <div className="flex items-center gap-2 text-green-500">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-xs">Connected</span>
-                    </div>
-                  ) : (
-                    <Button size="sm" onClick={() => handleConnectProcessor(processor.id)}>
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Upload Statements */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#c9a227]" />
-                Upload Statements
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-[#b8a898] mx-auto mb-2" />
-                <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                  Upload payment processor statements
-                </p>
-                <p className="text-xs text-[#b8a898] mt-1">
-                  Stripe, PayPal, Square exports (CSV, PDF)
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept=".csv,.pdf"
-                  className="hidden"
-                  id="statement-upload"
-                  onChange={handleFileUpload}
-                />
-                <Button 
-                  variant="outline" 
-                  className="mt-3"
-                  onClick={() => document.getElementById('statement-upload')?.click()}
-                >
-                  Select Files
-                </Button>
-              </div>
-
-              {/* Uploaded Statements */}
-              {statements.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    Uploaded Statements
-                  </p>
-                  {statements.map((statement) => (
-                    <div
-                      key={statement.id}
-                      className="flex items-center justify-between p-3 bg-[#1a2b4a]/5 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-[#b8a898]" />
-                        <div>
-                          <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-                            {statement.filename}
-                          </p>
-                          <p className="text-xs text-[#b8a898]">
-                            {statement.processor} • {statement.uploadDate}
-                          </p>
-                        </div>
-                      </div>
-                      {statement.status === 'processing' ? (
-                        <div className="flex items-center gap-2 text-yellow-500">
-                          <Sparkles className="w-4 h-4 animate-pulse" />
-                          <span className="text-xs">AI Processing...</span>
-                        </div>
-                      ) : statement.status === 'processed' ? (
-                        <div className="flex items-center gap-2 text-green-500">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="text-xs">{statement.transactionsFound} found</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-red-500">
-                          <AlertCircle className="w-4 h-4" />
-                          <span className="text-xs">Error</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Income Sources Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Income by Source</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {incomeSources.map(source => {
-                  const sourceTotal = income
-                    .filter(i => i.source === source && i.status === "received")
-                    .reduce((sum, i) => sum + i.amount, 0);
-                  if (sourceTotal === 0) return null;
-                  return (
-                    <div key={source} className="flex items-center justify-between py-2">
-                      <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{source}</span>
-                      <span className="text-sm font-medium text-[#b8a898]">
-                        ${sourceTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+          <p className="text-sm text-[#7b6b8d]">This month</p>
+          <p className="text-2xl font-bold text-[#2E7C83]">{usd(mtd)}</p>
+          {target > 0 && <p className="text-[11px] text-[#b8a898] mt-1">toward {usd(target)} target</p>}
         </div>
+        <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+          <p className="text-sm text-[#7b6b8d]">Year to date</p>
+          <p className="text-2xl font-bold text-[#2E7C83]">{usd(ytd)}</p>
+        </div>
+        <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+          <p className="text-sm text-[#7b6b8d]">Entries (this year)</p>
+          <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{entries.length}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">By source (this year)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {byCat.length === 0 ? (
+              <p className="text-sm text-[#b8a898]">No income recorded yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {byCat.map(([c, amt]) => (
+                  <div key={c} className="flex items-center justify-between text-sm">
+                    <span className="text-[#3F4654] dark:text-[#e8e4f0]">{c}</span>
+                    <span className="tabular-nums text-[#2E7C83] font-medium">{usd(amt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent income</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!loaded ? (
+              <p className="text-sm text-[#b8a898]">Loading…</p>
+            ) : entries.length === 0 ? (
+              <p className="text-sm text-[#b8a898]">No income yet — add your first above.</p>
+            ) : (
+              <div className="divide-y divide-[#1a2b4a]/8 max-h-[360px] overflow-y-auto">
+                {entries.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                        {e.category || "Income"}
+                        {e.description ? ` — ${e.description}` : ""}
+                      </p>
+                      <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-semibold text-[#2E7C83]">+{usd(e.amount)}</span>
+                      <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

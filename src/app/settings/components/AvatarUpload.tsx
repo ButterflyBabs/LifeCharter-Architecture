@@ -5,10 +5,9 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { User, Upload, X, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;
@@ -16,42 +15,20 @@ interface AvatarUploadProps {
   userId: string;
 }
 
-export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUploadProps) {
+export function AvatarUpload({ currentAvatar, onAvatarChange }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatar || null);
   const [error, setError] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
-
-  // Check if we're in demo mode (no authenticated user)
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsDemoMode(!user);
-      
-      // Load from localStorage in demo mode
-      if (!user) {
-        const savedAvatar = localStorage.getItem(`demo-avatar-${userId}`);
-        if (savedAvatar) {
-          setPreviewUrl(savedAvatar);
-          onAvatarChange(savedAvatar);
-        }
-      }
-    }
-    checkAuth();
-  }, [userId, onAvatarChange, supabase.auth]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       setError("File size must be less than 5MB");
       return;
@@ -59,124 +36,36 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
 
     setError(null);
     setIsUploading(true);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
 
     try {
-      // Create preview URL
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-
-      if (isDemoMode) {
-        // Demo mode: Convert to base64 and store in localStorage
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          localStorage.setItem(`demo-avatar-${userId}`, base64String);
-          onAvatarChange(base64String);
-          setIsUploading(false);
-        };
-        reader.onerror = () => {
-          setError("Failed to read image file");
-          setPreviewUrl(currentAvatar || null);
-          setIsUploading(false);
-        };
-        reader.readAsDataURL(file);
-        return;
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/profile/avatar", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "upload failed");
       }
-
-      // Production mode: Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      // Check if avatars bucket exists, create if not
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarsBucket = buckets?.find((b: { name: string }) => b.name === "avatars");
-      
-      if (!avatarsBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket("avatars", {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-          allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp"]
-        });
-        if (bucketError) throw bucketError;
-      }
-
-      // Upload file
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      // Update profile in database
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", userId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      onAvatarChange(publicUrl);
-      setPreviewUrl(publicUrl);
-
+      onAvatarChange(data.url);
+      setPreviewUrl(data.url);
     } catch (err) {
       console.error("Upload error:", err);
       setError("Failed to upload image. Please try again.");
       setPreviewUrl(currentAvatar || null);
     } finally {
       setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleRemove = async () => {
     if (!previewUrl) return;
-
     setIsUploading(true);
-
     try {
-      if (isDemoMode) {
-        // Demo mode: Remove from localStorage
-        localStorage.removeItem(`demo-avatar-${userId}`);
-        onAvatarChange(null);
-        setPreviewUrl(null);
-        setIsUploading(false);
-        return;
-      }
-
-      // Production mode: Extract file path from URL
-      const urlParts = previewUrl.split("/");
-      const filePath = `avatars/${urlParts[urlParts.length - 1]}`;
-
-      // Delete from storage
-      await supabase.storage
-        .from("avatars")
-        .remove([filePath]);
-
-      // Update profile
-      await supabase
-        .from("profiles")
-        .update({ avatar_url: null })
-        .eq("id", userId);
-
+      await fetch("/api/profile/avatar", { method: "DELETE" });
       onAvatarChange(null);
       setPreviewUrl(null);
-
     } catch (err) {
       console.error("Remove error:", err);
       setError("Failed to remove image");
@@ -209,7 +98,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
         {previewUrl && !isUploading && (
           <button
             onClick={handleRemove}
-            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+            className="absolute -bottom-1 -left-1 w-6 h-6 rounded-full bg-[#7b6b8d] text-white flex items-center justify-center hover:bg-[#6a5b7c] shadow-sm border border-white transition-colors"
             title="Remove photo"
           >
             <X className="w-3 h-3" />
@@ -253,11 +142,6 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, userId }: AvatarUp
         {error && (
           <p className="text-xs text-red-500 mt-2">
             {error}
-          </p>
-        )}
-        {isDemoMode && (
-          <p className="text-xs text-[#c9a227] mt-2">
-            Demo mode: Avatar stored locally
           </p>
         )}
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import dynamic from "next/dynamic";
 
@@ -57,7 +58,32 @@ const data = [
   { domain: "Sustainability", you: 74, ideal: 85 },
 ];
 
-export function DomainAlignmentRadar() {
+interface RadarDatum {
+  domain: string;
+  you: number;
+  ideal: number;
+}
+
+export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }) {
+  const [live, setLive] = useState<RadarDatum[] | null>(null);
+  const [needsAssessment, setNeedsAssessment] = useState(false);
+
+  useEffect(() => {
+    if (propData) return;
+    fetch("/api/alignment?ts=" + Date.now(), { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasData) {
+          const domains = d.domains as Array<{ name: string; score: number }>;
+          setLive(domains.map((x) => ({ domain: x.name, you: x.score, ideal: 90 })));
+        } else setNeedsAssessment(true);
+      })
+      .catch(() => {});
+  }, [propData]);
+
+  // No thin-air fallback: empty radar until assessments produce real scores.
+  const chartData = propData ?? live ?? (needsAssessment ? [] : data);
+
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader>
@@ -66,7 +92,7 @@ export function DomainAlignmentRadar() {
       <CardContent className="p-6">
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
               <PolarGrid
                 stroke="#e8e4f0"
                 strokeOpacity={0.3}

@@ -38,7 +38,7 @@ export default function AIGuideHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What is the AI Business Guide?",
-      answer: "The AI Business Guide is your intelligent assistant integrated throughout the LifeCharter Architecture platform. It provides context-aware guidance, answers your questions about any business domain, and offers personalized recommendations based on your specific situation. Unlike generic AI chatbots, it understands your business data and can reference your assessments, plans, and progress."
+      answer: "The AI Business Guide is your intelligent assistant integrated throughout the LifeCharter Command Suite platform. It provides context-aware guidance, answers your questions about any business domain, and offers personalized recommendations based on your specific situation. Unlike generic AI chatbots, it understands your business data and can reference your assessments, plans, and progress."
     },
     {
       question: "How is the AI Guide different from other AI assistants?",
@@ -215,7 +215,7 @@ export default function AIGuideHelpPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
-            The <strong>AI Business Guide</strong> is an intelligent assistant embedded throughout the LifeCharter Architecture platform. 
+            The <strong>AI Business Guide</strong> is an intelligent assistant embedded throughout the LifeCharter Command Suite platform. 
             Unlike generic AI chatbots, it understands your business context, references your assessments and plans, 
             and provides personalized guidance tailored to your specific situation.
           </p>
@@ -481,7 +481,7 @@ export default function AIGuideHelpPage() {
           &ldquo;The best AI assistant is one that understands your context, respects your privacy, 
           and empowers your decisions—not replaces them.&rdquo;
         </blockquote>
-        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Architecture Team</p>
+        <p className="text-sm text-[#b8a898] mt-2">— LifeCharter Command Suite Team</p>
       </div>
     </div>
   );

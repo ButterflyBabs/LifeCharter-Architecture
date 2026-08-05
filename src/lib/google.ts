@@ -1,0 +1,691 @@
+import { createServerClient } from "@/lib/supabase/server";
+import { dayWindowUtc } from "@/lib/tz";
+
+// Google OAuth + Gmail/Calendar helpers (no external dependency — raw fetch).
+// Single-tenant: one stored credential keyed by ACCOUNT_KEY.
+
+const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
+const ACCOUNT_KEY = "primary";
+
+const SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  // modify covers reading + label changes (mark-read); send is needed for replies
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/calendar.readonly",
+  // calendar.events adds write access (create/update events on the primary calendar)
+  "https://www.googleapis.com/auth/calendar.events",
+].join(" ");
+
+// Accept both SCREAMING_SNAKE_CASE and camelCase names, in case the env vars
+// were added as GoogleClientID / GoogleClientSecret.
+function clientId(): string {
+  return process.env.GOOGLE_CLIENT_ID || process.env.GoogleClientID || "";
+}
+function clientSecret(): string {
+  return process.env.GOOGLE_CLIENT_SECRET || process.env.GoogleClientSecret || "";
+}
+
+export function isGoogleConfigured(): boolean {
+  return Boolean(clientId() && clientSecret());
+}
+
+export function redirectUri(origin?: string): string {
+  return (
+    process.env.GOOGLE_REDIRECT_URI ||
+    `${origin ?? process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/google/callback`
+  );
+}
+
+export function getAuthUrl(origin?: string): string {
+  const params = new URLSearchParams({
+    client_id: clientId(),
+    redirect_uri: redirectUri(origin),
+    response_type: "code",
+    scope: SCOPES,
+    access_type: "offline",
+    include_granted_scopes: "true",
+    prompt: "consent",
+  });
+  return `${GOOGLE_AUTH}?${params.toString()}`;
+}
+
+type TokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  scope?: string;
+  id_token?: string;
+};
+
+export async function exchangeCode(code: string, origin?: string): Promise<TokenResponse> {
+  const res = await fetch(GOOGLE_TOKEN, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId(),
+      client_secret: clientSecret(),
+      redirect_uri: redirectUri(origin),
+      grant_type: "authorization_code",
+    }),
+  });
+  if (!res.ok) throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+  const res = await fetch(GOOGLE_TOKEN, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: clientId(),
+      client_secret: clientSecret(),
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!res.ok) throw new Error(`token refresh failed: ${res.status}`);
+  return res.json();
+}
+
+export async function storeCredential(tokens: TokenResponse, email?: string): Promise<void> {
+  const supabase = createServerClient();
+  const expiry = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
+  const row: Record<string, unknown> = {
+    account_key: ACCOUNT_KEY,
+    access_token: tokens.access_token ?? null,
+    scope: tokens.scope ?? null,
+    expiry,
+    updated_at: new Date().toISOString(),
+  };
+  // Google only returns a refresh_token on first consent — keep the old one otherwise.
+  if (tokens.refresh_token) row.refresh_token = tokens.refresh_token;
+  if (email) row.email = email;
+  await supabase.from("google_credentials").upsert(row, { onConflict: "account_key" });
+}
+
+export async function isConnected(): Promise<boolean> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("account_key")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+export async function connectedEmail(): Promise<string | null> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("email")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  return (data?.email as string) ?? null;
+}
+
+export async function getValidAccessToken(): Promise<string | null> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("access_token, refresh_token, expiry")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  if (!data) return null;
+
+  const stillValid = data.expiry && new Date(data.expiry).getTime() > Date.now() + 60_000;
+  if (stillValid) return data.access_token ?? null;
+  if (!data.refresh_token) return data.access_token ?? null;
+
+  try {
+    const refreshed = await refreshAccessToken(data.refresh_token);
+    await storeCredential({ ...refreshed, refresh_token: data.refresh_token });
+    return refreshed.access_token ?? null;
+  } catch {
+    return data.access_token ?? null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gmail + Calendar reads
+// ---------------------------------------------------------------------------
+export type InboxEmail = {
+  id: string;
+  threadId: string;
+  from: string;
+  fromEmail: string;
+  messageId: string; // RFC822 Message-ID header, for threading replies
+  subject: string;
+  preview: string;
+  time: string;
+  ts: number; // epoch ms of the message date, for cross-account sorting
+  unread: boolean;
+  labels: MailLabel[];
+};
+
+function relativeTime(dateStr?: string): string {
+  if (!dateStr) return "";
+  const then = new Date(dateStr).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 60) return `${Math.max(1, mins)}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "Yesterday" : `${days}d ago`;
+}
+
+// Hydrate a list of Gmail message ids into InboxEmail rows (metadata only).
+async function hydrateInboxIds(
+  accessToken: string,
+  ids: string[],
+  labelMap: Map<string, string>
+): Promise<InboxEmail[]> {
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      const r = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=Message-ID`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!r.ok) return null;
+      const msg = await r.json();
+      const headers: Record<string, string> = Object.fromEntries(
+        (msg.payload?.headers ?? []).map((h: { name: string; value: string }) => [
+          h.name.toLowerCase(),
+          h.value,
+        ])
+      );
+      const fromRaw = headers["from"] ?? "";
+      const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
+      const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
+      const email: InboxEmail = {
+        id,
+        threadId: msg.threadId ?? "",
+        from: fromName,
+        fromEmail,
+        messageId: headers["message-id"] ?? "",
+        subject: headers["subject"] ?? "(no subject)",
+        preview: msg.snippet ?? "",
+        time: relativeTime(headers["date"]),
+        ts: headers["date"] ? new Date(headers["date"]).getTime() || 0 : 0,
+        unread: (msg.labelIds ?? []).includes("UNREAD"),
+        labels: ((msg.labelIds ?? []) as string[])
+          .filter((lid) => labelMap.has(lid))
+          .map((lid) => ({ id: lid, name: labelMap.get(lid) as string })),
+      };
+      return email;
+    })
+  );
+  return results.filter((e): e is InboxEmail => e !== null);
+}
+
+export async function fetchInbox(accessToken: string, max = 6): Promise<InboxEmail[]> {
+  const [listRes, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&labelIds=INBOX`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
+  if (!listRes.ok) throw new Error(`gmail list ${listRes.status}`);
+  const list = await listRes.json();
+  const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
+  return hydrateInboxIds(accessToken, ids, labelMap);
+}
+
+// Full-text search across the mailbox (Gmail search syntax).
+export async function searchInbox(accessToken: string, query: string, max = 20): Promise<InboxEmail[]> {
+  const [listRes, labelMap] = await Promise.all([
+    fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(query)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    ),
+    userLabelMap(accessToken),
+  ]);
+  if (!listRes.ok) throw new Error(`gmail search ${listRes.status}`);
+  const list = await listRes.json();
+  const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
+  return hydrateInboxIds(accessToken, ids, labelMap);
+}
+
+export type AttachmentMeta = { id: string; name: string; mimeType: string; size: number };
+export type MailLabel = { id: string; name: string; color?: string };
+
+// Full message body for the reading view.
+export type MessageDetail = {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  fromEmail: string;
+  messageId: string;
+  date: string;
+  bodyHtml: string | null;
+  bodyText: string | null;
+  attachments: AttachmentMeta[];
+  labels: MailLabel[];
+};
+
+type GmailPart = {
+  mimeType?: string;
+  filename?: string;
+  body?: { data?: string; attachmentId?: string; size?: number };
+  parts?: GmailPart[];
+};
+
+function decodeBody(data?: string): string {
+  if (!data) return "";
+  try {
+    return Buffer.from(data, "base64url").toString("utf-8");
+  } catch {
+    return "";
+  }
+}
+
+// Walk the MIME tree: first html + plain-text parts, and any real attachments.
+function extractBody(payload?: GmailPart): {
+  html: string | null;
+  text: string | null;
+  attachments: AttachmentMeta[];
+} {
+  let html: string | null = null;
+  let text: string | null = null;
+  const attachments: AttachmentMeta[] = [];
+  const visit = (part?: GmailPart) => {
+    if (!part) return;
+    const mime = part.mimeType ?? "";
+    if (part.filename && part.body?.attachmentId) {
+      attachments.push({
+        id: part.body.attachmentId,
+        name: part.filename,
+        mimeType: mime || "application/octet-stream",
+        size: part.body.size ?? 0,
+      });
+    } else if (mime === "text/html" && part.body?.data && html === null) {
+      html = decodeBody(part.body.data);
+    } else if (mime === "text/plain" && part.body?.data && text === null) {
+      text = decodeBody(part.body.data);
+    }
+    (part.parts ?? []).forEach(visit);
+  };
+  visit(payload);
+  return { html, text, attachments };
+}
+
+type GmailFullMessage = {
+  id: string;
+  threadId?: string;
+  snippet?: string;
+  labelIds?: string[];
+  payload?: GmailPart & { headers?: { name: string; value: string }[] };
+};
+
+function gmailMessageToDetail(msg: GmailFullMessage, labelMap: Map<string, string>): MessageDetail {
+  const headers: Record<string, string> = Object.fromEntries(
+    (msg.payload?.headers ?? []).map((h) => [h.name.toLowerCase(), h.value])
+  );
+  const fromRaw = headers["from"] ?? "";
+  const fromName = fromRaw.replace(/<[^>]*>/, "").replace(/"/g, "").trim() || fromRaw;
+  const fromEmail = (fromRaw.match(/<([^>]+)>/)?.[1] ?? fromRaw).trim();
+  const { html, text, attachments } = extractBody(msg.payload as GmailPart);
+  const labels: MailLabel[] = (msg.labelIds ?? [])
+    .filter((id) => labelMap.has(id))
+    .map((id) => ({ id, name: labelMap.get(id) as string }));
+  return {
+    id: msg.id,
+    threadId: msg.threadId ?? "",
+    subject: headers["subject"] ?? "(no subject)",
+    from: fromName,
+    fromEmail,
+    messageId: headers["message-id"] ?? "",
+    date: headers["date"] ?? "",
+    bodyHtml: html,
+    bodyText: text || (html ? null : (msg.snippet ?? "")),
+    attachments,
+    labels,
+  };
+}
+
+// User-created Gmail labels only (system labels like INBOX/SENT excluded).
+export async function listLabels(accessToken: string): Promise<MailLabel[]> {
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`gmail labels ${r.status}`);
+  const data = await r.json();
+  return ((data.labels ?? []) as Array<{ id: string; name: string; type?: string }>)
+    .filter((l) => l.type === "user")
+    .map((l) => ({ id: l.id, name: l.name }));
+}
+
+async function userLabelMap(accessToken: string): Promise<Map<string, string>> {
+  const labels = await listLabels(accessToken);
+  return new Map(labels.map((l) => [l.id, l.name]));
+}
+
+// Create a new Gmail label, returning it.
+export async function createLabel(accessToken: string, name: string): Promise<MailLabel> {
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/labels", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    }),
+  });
+  if (!r.ok) throw new Error(`gmail create label ${r.status} ${await r.text()}`);
+  const l = (await r.json()) as { id: string; name: string };
+  return { id: l.id, name: l.name };
+}
+
+// Add/remove labels on a message (by label id).
+export async function modifyLabels(
+  accessToken: string,
+  id: string,
+  add: string[],
+  remove: string[]
+): Promise<void> {
+  await gmailModify(accessToken, id, {
+    ...(add.length ? { addLabelIds: add } : {}),
+    ...(remove.length ? { removeLabelIds: remove } : {}),
+  });
+}
+
+// Download one attachment's raw bytes.
+export async function getAttachmentBytes(
+  accessToken: string,
+  messageId: string,
+  attachmentId: string
+): Promise<Buffer> {
+  const r = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`gmail attachment ${r.status}`);
+  const data = await r.json();
+  return Buffer.from(data.data ?? "", "base64url");
+}
+
+export async function fetchMessage(accessToken: string, id: string): Promise<MessageDetail> {
+  const [r, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
+  if (!r.ok) throw new Error(`gmail message ${r.status}`);
+  return gmailMessageToDetail(await r.json(), labelMap);
+}
+
+// All messages in a Gmail thread, oldest → newest.
+export async function fetchThread(accessToken: string, threadId: string): Promise<MessageDetail[]> {
+  const [r, labelMap] = await Promise.all([
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    userLabelMap(accessToken),
+  ]);
+  if (!r.ok) throw new Error(`gmail thread ${r.status}`);
+  const data = await r.json();
+  return ((data.messages ?? []) as GmailFullMessage[]).map((m) => gmailMessageToDetail(m, labelMap));
+}
+
+export type ScheduleEvent = {
+  id: string;
+  title: string;
+  time: string;
+  start: string | null;
+};
+
+// Does the stored Google credential include calendar write access? (Older
+// connections only granted calendar.readonly and must reconnect to write.)
+export async function hasCalendarWriteScope(): Promise<boolean> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("google_credentials")
+    .select("scope")
+    .eq("account_key", ACCOUNT_KEY)
+    .maybeSingle();
+  const scope = (data?.scope as string) || "";
+  return scope.includes("calendar.events") || scope.includes("auth/calendar");
+}
+
+// Create an event on the primary calendar. Requires the calendar.events scope.
+export async function createEvent(
+  accessToken: string,
+  ev: { subject: string; startISO: string; endISO: string; note?: string; timeZone?: string }
+): Promise<string> {
+  const body = {
+    summary: ev.subject,
+    description: ev.note || "",
+    start: { dateTime: ev.startISO, timeZone: ev.timeZone || "UTC" },
+    end: { dateTime: ev.endISO, timeZone: ev.timeZone || "UTC" },
+  };
+  const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    throw new Error(`google calendar create ${r.status} ${text.slice(0, 200)}`);
+  }
+  const data = await r.json();
+  return (data.id as string) || "";
+}
+
+export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
+  const { startISO, endISO } = dayWindowUtc(timeZone);
+  const params = new URLSearchParams({
+    timeMin: startISO,
+    timeMax: endISO,
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "15",
+    timeZone,
+  });
+  const r = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!r.ok) throw new Error(`calendar ${r.status}`);
+  const data = await r.json();
+  return (data.items ?? []).map(
+    (e: { id: string; summary?: string; start?: { dateTime?: string; date?: string } }) => ({
+      id: e.id,
+      title: e.summary ?? "(busy)",
+      // dateTime => timed event (format in the viewer's tz); bare date => all-day.
+      time: e.start?.dateTime
+        ? new Date(e.start.dateTime).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone,
+          })
+        : "All day",
+      start: e.start?.dateTime ?? e.start?.date ?? null,
+    })
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gmail writes (require gmail.modify / gmail.send scopes)
+// ---------------------------------------------------------------------------
+async function gmailModify(
+  accessToken: string,
+  id: string,
+  body: { addLabelIds?: string[]; removeLabelIds?: string[] }
+): Promise<void> {
+  const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`gmail modify ${r.status}`);
+}
+
+export async function markRead(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { removeLabelIds: ["UNREAD"] });
+}
+
+export async function setUnread(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { addLabelIds: ["UNREAD"] });
+}
+
+// Remove from Inbox (Gmail "archive"). Still searchable / in All Mail.
+export async function archiveMessage(accessToken: string, id: string): Promise<void> {
+  await gmailModify(accessToken, id, { removeLabelIds: ["INBOX"] });
+}
+
+// Move to Trash — reversible (Gmail keeps it ~30 days), not a hard delete.
+export async function trashMessage(accessToken: string, id: string): Promise<void> {
+  const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`gmail trash ${r.status}`);
+}
+
+function base64Url(str: string): string {
+  return Buffer.from(str, "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export type OutgoingAttachment = { name: string; mimeType: string; contentBase64: string };
+
+// Build a base64url raw message — plain when no attachments, multipart/mixed when there are.
+function buildRawMessage(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  attachments?: OutgoingAttachment[];
+  extraHeaders?: string[];
+}): string {
+  const attachments = opts.attachments ?? [];
+  const baseHeaders = [`To: ${opts.to}`, `Subject: ${opts.subject}`, ...(opts.extraHeaders ?? [])];
+  if (attachments.length === 0) {
+    return base64Url(
+      [...baseHeaders, "MIME-Version: 1.0", 'Content-Type: text/plain; charset="UTF-8"', "", opts.body].join(
+        "\r\n"
+      )
+    );
+  }
+  const boundary = `----=_lc_${Date.now().toString(36)}`;
+  const parts = [
+    ...baseHeaders,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    "",
+    opts.body,
+  ];
+  for (const a of attachments) {
+    const safe = a.name.replace(/"/g, "");
+    parts.push(
+      `--${boundary}`,
+      `Content-Type: ${a.mimeType || "application/octet-stream"}; name="${safe}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${safe}"`,
+      "",
+      a.contentBase64.replace(/\r?\n/g, "")
+    );
+  }
+  parts.push(`--${boundary}--`, "");
+  return base64Url(parts.join("\r\n"));
+}
+
+export async function sendReply(
+  accessToken: string,
+  opts: {
+    threadId: string;
+    to: string;
+    subject: string;
+    inReplyTo: string;
+    body: string;
+    attachments?: OutgoingAttachment[];
+  }
+): Promise<void> {
+  const subject = /^re:/i.test(opts.subject) ? opts.subject : `Re: ${opts.subject}`;
+  const raw = buildRawMessage({
+    to: opts.to,
+    subject,
+    body: opts.body,
+    attachments: opts.attachments,
+    extraHeaders: opts.inReplyTo
+      ? [`In-Reply-To: ${opts.inReplyTo}`, `References: ${opts.inReplyTo}`]
+      : [],
+  });
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw, threadId: opts.threadId || undefined }),
+  });
+  if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
+}
+
+// Compose and send a brand-new email (not a reply — no thread, subject as-is).
+export async function sendEmail(
+  accessToken: string,
+  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
+): Promise<void> {
+  const raw = buildRawMessage({
+    to: opts.to,
+    subject: opts.subject,
+    body: opts.body,
+    attachments: opts.attachments,
+  });
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw }),
+  });
+  if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
+}
+
+// Rough HTML → text, for quoting an html-only message into a plain-text forward.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Forward a message: quote the original body into a new plain-text email.
+// The original's own attachments aren't re-attached, but the sender can add
+// their own via `attachments`.
+export async function forwardMessage(
+  accessToken: string,
+  id: string,
+  to: string,
+  comment: string,
+  attachments?: OutgoingAttachment[]
+): Promise<void> {
+  const msg = await fetchMessage(accessToken, id);
+  const original = msg.bodyText || (msg.bodyHtml ? htmlToText(msg.bodyHtml) : msg.subject);
+  const subject = /^fwd:/i.test(msg.subject) ? msg.subject : `Fwd: ${msg.subject}`;
+  const body =
+    (comment ? `${comment}\n\n` : "") +
+    "---------- Forwarded message ----------\n" +
+    `From: ${msg.from}${msg.fromEmail ? ` <${msg.fromEmail}>` : ""}\n` +
+    (msg.date ? `Date: ${msg.date}\n` : "") +
+    `Subject: ${msg.subject}\n\n` +
+    original;
+  await sendEmail(accessToken, { to, subject, body, attachments });
+}

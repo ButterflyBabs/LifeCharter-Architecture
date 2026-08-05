@@ -1,339 +1,163 @@
-/**
- * Monthly Review
- * Comprehensive monthly check-in for business health
- * Captures data from Finance, Sales, Operations for Business Plan
- */
-
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Progress } from "@/components/ui/Progress";
-import { 
-  CheckCircle, 
-  Circle,
-  DollarSign,
-  Users,
-  Clock,
-  Target,
-  TrendingUp,
-  ArrowLeft,
-  Sparkles
-} from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import Link from "next/link";
 
-interface ReviewSection {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  questions: {
-    id: string;
-    question: string;
-    type: "currency" | "number" | "text" | "textarea" | "percent";
-    placeholder?: string;
-  }[];
+interface Line {
+  category: string;
+  amount: number;
+}
+interface PnL {
+  label: string;
+  year: number;
+  index: number;
+  income: { total: number; lines: Line[] };
+  expense: { total: number; lines: Line[] };
+  net: number;
 }
 
-const reviewSections: ReviewSection[] = [
-  {
-    id: "finance",
-    title: "Financial Performance",
-    icon: <DollarSign className="w-5 h-5" />,
-    questions: [
-      { id: "revenue", question: "Total Revenue (Money received this month)", type: "currency" },
-      { id: "expenses", question: "Total Expenses (All costs this month)", type: "currency" },
-      { id: "revenue_goal", question: "Revenue Goal for this month", type: "currency" },
-      { id: "cash_in_bank", question: "Cash in Bank (Current balance)", type: "currency" },
-    ]
-  },
-  {
-    id: "sales",
-    title: "Sales & Clients",
-    icon: <Users className="w-5 h-5" />,
-    questions: [
-      { id: "new_clients", question: "New Clients Acquired", type: "number" },
-      { id: "total_clients", question: "Total Active Clients", type: "number" },
-      { id: "leads", question: "New Leads/Inquiries", type: "number" },
-      { id: "conversion_rate", question: "Lead to Client Conversion Rate (%)", type: "percent" },
-    ]
-  },
-  {
-    id: "operations",
-    title: "Operations & Time",
-    icon: <Clock className="w-5 h-5" />,
-    questions: [
-      { id: "hours_worked", question: "Hours Worked This Month", type: "number" },
-      { id: "target_hours", question: "Target Hours (what you want to work)", type: "number" },
-      { id: "sops_created", question: "New SOPs Documented", type: "number" },
-      { id: "delegated_tasks", question: "Tasks Delegated to Team/AI", type: "number" },
-    ]
-  },
-  {
-    id: "goals",
-    title: "Goals & Reflection",
-    icon: <Target className="w-5 h-5" />,
-    questions: [
-      { id: "goal_progress", question: "Main Goal Progress (%)", type: "percent" },
-      { id: "wins", question: "Biggest Win This Month", type: "textarea" },
-      { id: "challenges", question: "Biggest Challenge", type: "textarea" },
-      { id: "next_month", question: "Top Priority for Next Month", type: "textarea" },
-    ]
-  },
-];
+const usd = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+const tz = () =>
+  (typeof window !== "undefined" &&
+    (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+  "UTC";
 
 export default function MonthlyReviewPage() {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [currentSection, setCurrentSection] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  const [data, setData] = useState<PnL | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleAnswer = (questionId: string, value: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
-  };
-
-  const calculateProgress = () => {
-    const totalQuestions = reviewSections.reduce((sum, s) => sum + s.questions.length, 0);
-    const answered = Object.keys(answers).length;
-    return (answered / totalQuestions) * 100;
-  };
-
-  const handleNext = () => {
-    if (currentSection < reviewSections.length - 1) {
-      setCurrentSection(currentSection + 1);
+  const load = useCallback(async (year?: number, index?: number) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ period: "month", tz: tz() });
+      if (year) params.set("year", String(year));
+      if (index) params.set("index", String(index));
+      const res = await fetch(`/api/finance/pnl?${params.toString()}`);
+      const d = await res.json().catch(() => null);
+      if (d && !d.error) setData(d);
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const step = (dir: -1 | 1) => {
+    if (!data) return;
+    let y = data.year;
+    let i = data.index + dir;
+    if (i < 1) { i = 12; y -= 1; }
+    if (i > 12) { i = 1; y += 1; }
+    load(y, i);
   };
 
-  const handlePrevious = () => {
-    if (currentSection > 0) {
-      setCurrentSection(currentSection - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsComplete(true);
-      // This data would feed into Business Plan health scores
-      console.log("Monthly Review Submitted:", answers);
-    }, 1500);
-  };
-
-  const renderInput = (question: ReviewSection["questions"][0]) => {
-    const value = answers[question.id] || "";
-    
-    switch (question.type) {
-      case "textarea":
-        return (
-          <Textarea
-            value={value}
-            onChange={(e) => handleAnswer(question.id, e.target.value)}
-            placeholder={question.placeholder || "Enter your answer..."}
-            className="min-h-[100px]"
-          />
-        );
-      case "number":
-        return (
-          <Input
-            type="number"
-            value={value}
-            onChange={(e) => handleAnswer(question.id, e.target.value)}
-            placeholder={question.placeholder || "0"}
-          />
-        );
-      case "currency":
-        return (
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">$</span>
-            <Input
-              type="number"
-              value={value}
-              onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="0"
-              className="pl-8"
-            />
-          </div>
-        );
-      case "percent":
-        return (
-          <div className="relative">
-            <Input
-              type="number"
-              value={value}
-              onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="0"
-              className="pr-8"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b8a898]">%</span>
-          </div>
-        );
-      default:
-        return (
-          <Input
-            type="text"
-            value={value}
-            onChange={(e) => handleAnswer(question.id, e.target.value)}
-            placeholder={question.placeholder || "Enter your answer..."}
-          />
-        );
-    }
-  };
-
-  const section = reviewSections[currentSection];
-  const progress = calculateProgress();
-
-  if (isComplete) {
-    return (
-      <div className="py-8 px-4 max-w-3xl mx-auto">
-        <Card className="text-center py-12">
-          <CardContent>
-            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-              Monthly Review Complete!
-            </h2>
-            <p className="text-[#b8a898] mb-6">
-              Your Business Plan health scores have been updated based on this month&apos;s data.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Link href="/finance">
-                <Button variant="outline">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Finance
-                </Button>
-              </Link>
-              <Link href="/business-plan">
-                <Button>
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  View Updated Business Plan
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const savingsRate = data && data.income.total > 0 ? Math.round((data.net / data.income.total) * 100) : null;
+  const topExpenses = data?.expense.lines.slice(0, 5) ?? [];
 
   return (
-    <div className="py-8 px-4 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <Link 
-          href="/finance"
-          className="inline-flex items-center text-sm text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Finance
+    <div className="py-6 px-4 max-w-3xl mx-auto">
+      <div className="print:hidden">
+        <Link href="/finance/pulse" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-3">
+          <ArrowLeft className="w-4 h-4" /> Financial Pulse
         </Link>
-        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-          Monthly Review
-        </h1>
-        <p className="text-[#b8a898]">
-          July 2026 • Takes 5-10 minutes
-        </p>
-      </div>
-
-      {/* Progress */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-[#b8a898]">
-              Section {currentSection + 1} of {reviewSections.length}
-            </span>
-            <span className="text-sm font-medium text-[#c9a227]">
-              {Math.round(progress)}% Complete
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </CardContent>
-      </Card>
-
-      {/* Current Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center">
-            {section.icon}
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              {section.title}
-            </h2>
-            <p className="text-sm text-[#b8a898]">
-              {section.questions.length} questions
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            {section.questions.map((question) => (
-              <div key={question.id}>
-                <div className="flex items-start gap-3 mb-2">
-                  {answers[question.id] ? (
-                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-[#b8a898] mt-0.5" />
-                  )}
-                  <label className="block text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                    {question.question}
-                  </label>
-                </div>
-                <div className="ml-8">
-                  {renderInput(question)}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1a2b4a]/10">
-            <Button 
-              variant="ghost" 
-              onClick={handlePrevious}
-              disabled={currentSection === 0}
-            >
-              Previous
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly Review</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => step(-1)}>
+              <ChevronLeft className="w-4 h-4" />
             </Button>
-            
-            {currentSection < reviewSections.length - 1 ? (
-              <Button onClick={handleNext}>
-                Next Section
-                <TrendingUp className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                {isSubmitting ? "Submitting..." : "Complete Review"}
-              </Button>
-            )}
+            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[110px] text-center">
+              {data?.label ?? "…"}
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => step(1)}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-1.5" /> Print
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Section Navigation Dots */}
-      <div className="flex justify-center gap-2 mt-6">
-        {reviewSections.map((s, idx) => (
-          <button
-            key={s.id}
-            onClick={() => setCurrentSection(idx)}
-            className={`w-2 h-2 rounded-full transition-all ${
-              idx === currentSection 
-                ? "bg-[#c9a227] w-6" 
-                : idx < currentSection 
-                  ? "bg-green-500" 
-                  : "bg-[#1a2b4a]/20"
-            }`}
-          />
-        ))}
+        </div>
       </div>
+
+      {loading ? (
+        <p className="text-sm text-[#b8a898]">Loading…</p>
+      ) : !data ? (
+        <p className="text-sm text-[#b8a898]">No data.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+              <div className="flex items-center gap-2 text-[#2E7C83] mb-1">
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-sm">Income</span>
+              </div>
+              <p className="text-2xl font-bold text-[#2E7C83]">{usd(data.income.total)}</p>
+            </div>
+            <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+              <div className="flex items-center gap-2 text-[#b06a5a] mb-1">
+                <TrendingDown className="w-4 h-4" />
+                <span className="text-sm">Expenses</span>
+              </div>
+              <p className="text-2xl font-bold text-[#b06a5a]">{usd(data.expense.total)}</p>
+            </div>
+            <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+              <div className="flex items-center gap-2 text-[#7b6b8d] mb-1">
+                <Wallet className="w-4 h-4" />
+                <span className="text-sm">Net</span>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: data.net >= 0 ? "#2c6b3f" : "#b06a5a" }}>
+                {data.net >= 0 ? "+" : "−"}
+                {usd(Math.abs(data.net))}
+              </p>
+              {savingsRate !== null && (
+                <p className="text-[11px] text-[#b8a898] mt-1">{savingsRate}% margin</p>
+              )}
+            </div>
+          </div>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">Where the money went</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topExpenses.length === 0 ? (
+                <p className="text-sm text-[#b8a898]">No expenses recorded for {data.label}.</p>
+              ) : (
+                <div className="space-y-2">
+                  {topExpenses.map((l) => {
+                    const pct = data.expense.total > 0 ? Math.round((l.amount / data.expense.total) * 100) : 0;
+                    return (
+                      <div key={l.category}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#3F4654] dark:text-[#e8e4f0]">{l.category}</span>
+                          <span className="text-[#b8a898] tabular-nums">
+                            {usd(l.amount)} · {pct}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[#1a2b4a]/10 overflow-hidden mt-1">
+                          <div className="h-full rounded-full bg-[#b06a5a]" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end print:hidden">
+            <Link href="/finance/pnl" className="text-sm text-[#2E7C83] hover:underline">
+              Open full P&amp;L →
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

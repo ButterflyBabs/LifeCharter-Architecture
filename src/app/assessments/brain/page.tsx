@@ -4042,11 +4042,37 @@ export default function BrainAssessmentPage() {
     setAnswers((prev) => ({ ...prev, [questions[currentQuestion].id]: value }));
   };
 
-  const handleNext = () => {
+  const persistResponses = async () => {
+    const payload = questions
+      .filter((q) => (answers[q.id] ?? "").toString().trim() !== "")
+      .map((q) => ({
+        questionId: q.id,
+        questionText: q.text,
+        section: q.section,
+        answerText: answers[q.id] ?? "",
+        value: answers[q.id] ?? "",
+      }));
+    try {
+      await fetch("/api/assessments/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "brain", responses: payload }),
+      });
+      // Kick off scoring so the dashboard updates without a manual trigger.
+      await fetch("/api/scoring/recompute", { method: "POST" }).catch(() => {});
+    } catch (err) {
+      console.error("brain save failed:", err);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      setIsSaving(true);
+      await persistResponses();
+      setIsSaving(false);
       setIsComplete(true);
     }
   };

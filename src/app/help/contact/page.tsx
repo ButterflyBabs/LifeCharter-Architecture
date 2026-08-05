@@ -198,7 +198,7 @@ export default function ContactSupportPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    placeholder="Seraphina Rose"
+                    placeholder="AmiLynne Carroll"
                   />
                 </div>
                 <div>

@@ -365,11 +365,38 @@ export default function SoulAssessmentPage() {
     setAnswers((prev) => ({ ...prev, [allQuestions[currentQuestion].id]: value }));
   };
 
-  const handleNext = () => {
+  const persistResponses = async () => {
+    const payload = allQuestions
+      .filter((q) => (answers[q.id] ?? "").toString().trim() !== "")
+      .map((q) => ({
+        questionId: q.id,
+        questionText: q.text,
+        section: q.section,
+        answerText: answers[q.id] ?? "",
+        value: answers[q.id] ?? "",
+        sensitive: Boolean(q.sensitive),
+      }));
+    try {
+      await fetch("/api/assessments/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "soul", responses: payload }),
+      });
+      // Kick off AI scoring so the dashboard updates without a manual trigger.
+      await fetch("/api/scoring/recompute", { method: "POST" }).catch(() => {});
+    } catch (err) {
+      console.error("soul save failed:", err);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentQuestion < allQuestions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      setIsSaving(true);
+      await persistResponses();
+      setIsSaving(false);
       setIsComplete(true);
     }
   };

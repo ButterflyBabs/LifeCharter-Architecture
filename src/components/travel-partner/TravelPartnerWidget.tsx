@@ -24,7 +24,12 @@ import {
   Lightbulb,
   Award,
   Flag,
-  GripVertical
+  GripVertical,
+  Map,
+  Send,
+  Loader2,
+  LifeBuoy,
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 
@@ -203,6 +208,70 @@ export default function TravelPartnerWidget() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Live setup progress (foundation: 3 assessments + AI), from the same source
+  // the /setup wizard uses — so the widget reflects real status.
+  const [setupStatus, setSetupStatus] = useState<{ done: number; total: number; complete: boolean } | null>(null);
+  useEffect(() => {
+    fetch("/api/setup/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d) return;
+        const a = d.assessments || {};
+        const done = [a.brain, a.soul, a.profit, d.ai?.connected].filter(Boolean).length;
+        // Treat a bypassed account as complete so the setup banner stays hidden.
+        setSetupStatus({ done, total: 4, complete: Boolean(d.requiredComplete || d.bypass) });
+      })
+      .catch(() => {});
+  }, []);
+
+  // Ask mode — answers questions from the LifeCharter knowledge base.
+  const [mode, setMode] = useState<"journey" | "ask">("journey");
+  const [askInput, setAskInput] = useState("");
+  const [askLoading, setAskLoading] = useState(false);
+  const [askMessages, setAskMessages] = useState<
+    { role: "user" | "guide"; text: string; escalate?: boolean }[]
+  >([]);
+  const askEndRef = useRef<HTMLDivElement>(null);
+
+  const suggestedQuestions = [
+    "How do Quick Wins work?",
+    "Can I export financial reports?",
+    "What are the 8 operational pillars?",
+    "How does tax prep calculate quarterly taxes?",
+  ];
+
+  const askQuestion = async (q: string) => {
+    const question = q.trim();
+    if (!question || askLoading) return;
+    setAskMessages((prev) => [...prev, { role: "user", text: question }]);
+    setAskInput("");
+    setAskLoading(true);
+    try {
+      const res = await fetch("/api/travel-partner/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const d = await res.json().catch(() => ({}));
+      setAskMessages((prev) => [
+        ...prev,
+        {
+          role: "guide",
+          text: d.answer || "I couldn't find an answer for that.",
+          escalate: Boolean(d.escalate),
+        },
+      ]);
+    } catch {
+      setAskMessages((prev) => [
+        ...prev,
+        { role: "guide", text: "I couldn't reach the assistant just now — try again in a moment.", escalate: true },
+      ]);
+    } finally {
+      setAskLoading(false);
+      setTimeout(() => askEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    }
+  };
+
   // Simple draggable state
   const [pos, setPos] = useState<{x: number, y: number} | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -325,7 +394,7 @@ export default function TravelPartnerWidget() {
             <Award className="w-12 h-12 text-[#c9a227] mx-auto mb-3" />
             <h3 className="font-bold text-lg mb-2">Journey Complete!</h3>
             <p className="text-sm text-[#e8e4f0] mb-4">
-              You have set up your LifeCharter Architecture!
+              You have set up your LifeCharter Command Suite!
             </p>
             <Button onClick={() => setShowCelebration(false)} className="bg-[#c9a227] text-[#1a2b4a]">
               Continue
@@ -384,19 +453,144 @@ export default function TravelPartnerWidget() {
               </button>
             </div>
           </div>
-          <p className="text-sm text-[#e8e4f0] mt-1">Your guide to setting up LifeCharter Architecture</p>
-          
-          <div className="mt-3">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-[#e8e4f0]">Progress</span>
-              <span className="text-[#c9a227] font-medium">{progress}%</span>
+          <p className="text-sm text-[#e8e4f0] mt-1">
+            {mode === "journey" ? "Your guide to setting up LifeCharter Command Suite" : "Ask me anything about LifeCharter"}
+          </p>
+
+          {mode === "journey" && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-[#e8e4f0]">Progress</span>
+                <span className="text-[#c9a227] font-medium">{progress}%</span>
+              </div>
+              <div className="w-full bg-[#F8F5F0]/20 rounded-full h-2">
+                <div className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+              </div>
             </div>
-            <div className="w-full bg-[#F8F5F0]/20 rounded-full h-2">
-              <div className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
+          )}
+
+          {/* Mode tabs */}
+          <div className="mt-3 grid grid-cols-2 gap-1 bg-[#F8F5F0]/10 rounded-lg p-1">
+            <button
+              onClick={() => setMode("journey")}
+              className={`flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors ${
+                mode === "journey" ? "bg-[#c9a227] text-[#1a2b4a]" : "text-[#e8e4f0] hover:bg-[#F8F5F0]/10"
+              }`}
+            >
+              <Map className="w-3.5 h-3.5" /> Journey
+            </button>
+            <button
+              onClick={() => setMode("ask")}
+              className={`flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors ${
+                mode === "ask" ? "bg-[#c9a227] text-[#1a2b4a]" : "text-[#e8e4f0] hover:bg-[#F8F5F0]/10"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Ask
+            </button>
           </div>
         </div>
 
+        {/* Live setup progress — foundation (assessments + AI) */}
+        {setupStatus && !setupStatus.complete && (
+          <Link
+            href="/setup"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2.5 bg-[#c9a227]/10 border-b border-[#c9a227]/20 hover:bg-[#c9a227]/15"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                Finish setup — foundation {setupStatus.done}/{setupStatus.total}
+              </span>
+              <span className="text-xs text-[#2E7C83] font-medium">Continue →</span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-[#1a2b4a]/10 overflow-hidden">
+              <div
+                className="h-1.5 rounded-full bg-gradient-to-r from-[#4a9b9b] to-[#c9a227]"
+                style={{ width: `${Math.round((setupStatus.done / setupStatus.total) * 100)}%` }}
+              />
+            </div>
+          </Link>
+        )}
+
+        {mode === "ask" ? (
+          <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {askMessages.length === 0 ? (
+                <div>
+                  <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-3">
+                    I&apos;ll answer from everything LifeCharter can do. Try one of these:
+                  </p>
+                  <div className="space-y-2">
+                    {suggestedQuestions.map((sq) => (
+                      <button
+                        key={sq}
+                        onClick={() => askQuestion(sq)}
+                        className="w-full text-left text-sm px-3 py-2 rounded-lg border border-[#1a2b4a]/12 hover:border-[#4a9b9b]/50 hover:bg-[#4a9b9b]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                      >
+                        {sq}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                askMessages.map((m, i) => (
+                  <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                        m.role === "user"
+                          ? "bg-[#1a2b4a] text-[#F8F5F0]"
+                          : "bg-[#4a9b9b]/10 text-[#1a2b4a] dark:text-[#F8F5F0] border border-[#4a9b9b]/20"
+                      }`}
+                    >
+                      <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
+                      {m.role === "guide" && m.escalate && (
+                        <a
+                          href="mailto:support@lifecharter.com?subject=LifeCharter%20support%20question"
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#c0632f] hover:underline"
+                        >
+                          <LifeBuoy className="w-3.5 h-3.5" /> Contact support
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+              {askLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-[#4a9b9b]/10 border border-[#4a9b9b]/20 rounded-2xl px-3 py-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#4a9b9b]" />
+                  </div>
+                </div>
+              )}
+              <div ref={askEndRef} />
+            </div>
+            <div className="p-3 border-t border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40">
+              <div className="flex items-center gap-2">
+                <input
+                  value={askInput}
+                  onChange={(e) => setAskInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") askQuestion(askInput);
+                  }}
+                  placeholder="Ask about any feature…"
+                  className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                />
+                <button
+                  onClick={() => askQuestion(askInput)}
+                  disabled={askLoading || !askInput.trim()}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#1a2b4a] text-[#F8F5F0] hover:bg-[#1a2b4a]/90 disabled:opacity-50"
+                  aria-label="Send"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[11px] text-[#b8a898] mt-2 text-center">
+                Answers come from the LifeCharter knowledge base, kept current as features ship.
+              </p>
+            </div>
+          </CardContent>
+        ) : (
         <CardContent className="p-0 overflow-y-auto flex-1">
           {currentStep && (
             <div className="p-4 bg-[#c9a227]/10 border-b border-[#c9a227]/20">
@@ -483,6 +677,7 @@ export default function TravelPartnerWidget() {
             </div>
           </div>
         </CardContent>
+        )}
       </Card>
     </div>
   );

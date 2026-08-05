@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  TrendingUp,
+  Mail,
   MessageSquare,
   Phone,
   Share2,
@@ -18,210 +18,399 @@ import {
   Zap,
   ArrowRight,
   Plus,
-  Flame,
-  Trophy,
   AlertCircle,
   Battery,
   BatteryMedium,
   BatteryLow,
-  X
+  X,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import { GlobalControlContacts } from "./GlobalControlContacts";
+import { TodaysActivity } from "./TodaysActivity";
+import QuickWins from "@/components/QuickWins";
 
-interface DailyFocus {
-  id: string;
-  type: "sales" | "content" | "followup" | "admin" | "strategic";
+// A task as returned by /api/tasks.
+interface RealTask {
+  id: number;
   title: string;
-  description: string;
-  estimatedTime: number;
-  priority: "high" | "medium" | "low";
-  completed: boolean;
-  source: "business_plan" | "marketing_plan" | "sales_system" | "domain_score" | "manual";
-  linkedGoal?: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  energy?: string | null;
+  due_date: string | null;
+  due_at: string | null;
+  followup: {
+    channel?: string;
+    contactId?: string;
+    contactName?: string;
+    contactEmail?: string;
+    aiMode?: string;
+    aiSubject?: string;
+    aiBody?: string;
+  } | null;
+  completed_at: string | null;
+  business: { name: string; color: string } | null;
+  segment: { name: string; color: string } | null;
 }
 
-interface ActivityStreak {
-  current: number;
-  longest: number;
-  lastActive: string;
-}
+const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-interface DailyMetrics {
-  callsMade: number;
-  callsGoal: number;
-  postsCreated: number;
-  postsGoal: number;
-  followupsSent: number;
-  followupsGoal: number;
-  contentEngagement: number;
-}
+// The 8 operational pillars (from the Operations page) — the operational
+// framework the insights weigh alongside the 12 business dimensions.
+const OPERATIONAL_PILLARS = [
+  "Customer Acquisition",
+  "Sales Journey",
+  "Onboarding",
+  "Support / Customer Service",
+  "Communication",
+  "Fulfillment",
+  "Internal Process & Culture",
+  "Referral Process",
+];
+
+const priorityColor = (p: string) => {
+  switch (p) {
+    case "critical":
+    case "high":
+      return "text-[#c98a27] bg-[#f4e6c9]/60 border-[#e6cf97]";
+    case "medium":
+      return "text-[#1c5a60] bg-[#d3ebee]/60 border-[#a9d4d9]";
+    default:
+      return "text-[#5c6b3f] bg-[#e2eccf]/60 border-[#c3d6a3]";
+  }
+};
+
+const isToday = (iso: string | null) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.toDateString() === now.toDateString();
+};
 
 export default function DailyCompassPage() {
-  const [currentDate] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   const [greeting, setGreeting] = useState("Good morning");
-  const [focusItems, setFocusItems] = useState<DailyFocus[]>([
-    {
-      id: "1",
-      type: "sales",
-      title: "Follow up with Sarah Johnson",
-      description: "She attended the Incubator last week - time to invite to Circle",
-      estimatedTime: 15,
-      priority: "high",
-      completed: false,
-      source: "sales_system",
-      linkedGoal: "Convert 3 Incubator attendees to Circle this month"
-    },
-    {
-      id: "2",
-      type: "content",
-      title: "Create LinkedIn post about alignment",
-      description: "Based on your Marketing Plan messaging",
-      estimatedTime: 20,
-      priority: "high",
-      completed: false,
-      source: "marketing_plan",
-      linkedGoal: "Build thought leadership in alignment space"
-    },
-    {
-      id: "3",
-      type: "followup",
-      title: "Send value-add to existing Circle members",
-      description: "Share the new worksheet on Domain Scores",
-      estimatedTime: 10,
-      priority: "medium",
-      completed: true,
-      source: "domain_score",
-      linkedGoal: "Improve Customer Experience domain score"
-    },
-    {
-      id: "4",
-      type: "strategic",
-      title: "Review Q3 Business Plan progress",
-      description: "Your Finance domain score dropped - check revenue goals",
-      estimatedTime: 30,
-      priority: "medium",
-      completed: false,
-      source: "business_plan",
-      linkedGoal: "Hit $50K Q3 revenue target"
-    }
-  ]);
+  const [firstName, setFirstName] = useState("");
+  const [assistantName, setAssistantName] = useState("Mariposa");
+  const [hasAiKey, setHasAiKey] = useState(false);
 
-  const [metrics] = useState<DailyMetrics>({
-    callsMade: 2,
-    callsGoal: 5,
-    postsCreated: 1,
-    postsGoal: 3,
-    followupsSent: 4,
-    followupsGoal: 5,
-    contentEngagement: 127
-  });
+  const [tasks, setTasks] = useState<RealTask[]>([]);
+  const [schedule, setSchedule] = useState<{ connected: boolean; events: { id: string; title: string; time: string }[] } | null>(null);
+  const [dataReady, setDataReady] = useState(false);
 
-  const [streak] = useState<ActivityStreak>({
-    current: 12,
-    longest: 28,
-    lastActive: "2026-07-17"
-  });
+  const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const [energyLevel, setEnergyLevel] = useState<number>(3);
   const [showEnergyInfo, setShowEnergyInfo] = useState(false);
+  const [showHigherEnergy, setShowHigherEnergy] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskType, setNewTaskType] = useState<DailyFocus["type"]>("sales");
-  const [newTaskPriority, setNewTaskPriority] = useState<DailyFocus["priority"]>("medium");
-  const [newTaskTime, setNewTaskTime] = useState(15);
+  const [newTaskPriority, setNewTaskPriority] = useState<string>("medium");
+  const [newTaskEnergy, setNewTaskEnergy] = useState<string>("medium");
+  const [saving, setSaving] = useState(false);
+
+  // AI-draft email view/send state (per focus item).
+  const [openDraftId, setOpenDraftId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendMsg, setSendMsg] = useState<{ id: number; text: string } | null>(null);
+
+  // Is PostStream connected? Drives where the Create Content / Content Calendar
+  // quick actions route (to the feature when connected, to Settings otherwise).
+  const [psConnected, setPsConnected] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/integrations/poststream")
+      .then((r) => r.json())
+      .then((d) => setPsConnected(Boolean(d?.connected)))
+      .catch(() => setPsConnected(false));
+  }, []);
 
   useEffect(() => {
-    const hour = currentDate.getHours();
+    const d = new Date();
+    setNow(d);
+    const hour = d.getHours();
     if (hour < 12) setGreeting("Good morning");
     else if (hour < 17) setGreeting("Good afternoon");
     else setGreeting("Good evening");
-  }, [currentDate]);
+  }, []);
 
-  const toggleComplete = (id: string) => {
-    setFocusItems(items => 
-      items.map(item => 
-        item.id === id ? { ...item, completed: !item.completed } : item
+  // Load the day's data.
+  useEffect(() => {
+    const tz =
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+      "UTC";
+    Promise.all([
+      fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([p, t, s]) => {
+        if (p?.firstName) setFirstName(p.firstName);
+        if (p?.assistantName) setAssistantName(p.assistantName);
+        setHasAiKey(Boolean(p?.hasOpenAiKey));
+        if (t?.tasks) setTasks(t.tasks as RealTask[]);
+        if (s) setSchedule(s);
+      })
+      .catch(() => {})
+      .finally(() => setDataReady(true));
+  }, []);
+
+  // Refetch tasks when something schedules/changes one (e.g. a follow-up).
+  useEffect(() => {
+    const refetch = () =>
+      fetch("/api/tasks")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.tasks) setTasks(d.tasks as RealTask[]);
+        })
+        .catch(() => {});
+    window.addEventListener("tasks-changed", refetch);
+    return () => window.removeEventListener("tasks-changed", refetch);
+  }, []);
+
+  const byPriority = (a: RealTask, b: RealTask) =>
+    (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
+
+  // When a task is "due" (precise time wins over date-only).
+  const dueBy = (t: RealTask): Date | null => {
+    if (t.due_at) return new Date(t.due_at);
+    if (t.due_date) return new Date(`${t.due_date}T23:59:59`);
+    return null;
+  };
+  const clock = new Date();
+  const endOfToday = new Date(
+    clock.getFullYear(),
+    clock.getMonth(),
+    clock.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+
+  // Today's focus = tasks flagged today/in-progress OR due today-or-overdue
+  // (scheduled follow-ups surface on their date and roll forward if missed),
+  // plus anything completed today (so it stays visible and counts).
+  const openTasks = tasks.filter((t) => t.status !== "done");
+  const openFocus = openTasks
+    .filter((t) => {
+      if (t.status === "today" || t.status === "in_progress") return true;
+      const d = dueBy(t);
+      return d ? d.getTime() <= endOfToday : false;
+    })
+    .sort(byPriority);
+  const doneToday = tasks.filter((t) => t.status === "done" && isToday(t.completed_at));
+  const focusItems = [...openFocus, ...doneToday];
+
+  // Energy matching: each task takes low/medium/high energy. When your current
+  // energy is lower, higher-energy tasks tuck away so you focus on what fits.
+  const ENERGY_NUM: Record<string, number> = { low: 1, medium: 2, high: 3 };
+  const taskEnergy = (t: RealTask) => ENERGY_NUM[t.energy || "medium"] ?? 2;
+  const fitsEnergy = (t: RealTask) => taskEnergy(t) <= energyLevel;
+  const openFit = openFocus.filter(fitsEnergy);
+  const openRest = openFocus.filter((t) => !fitsEnergy(t));
+  const displayItems = [...(showHigherEnergy ? openFocus : openFit), ...doneToday];
+
+  // Upcoming scheduled follow-ups (future-dated, next 7 days).
+  const upcoming = openTasks
+    .filter((t) => {
+      const d = dueBy(t);
+      return Boolean(d && d.getTime() > endOfToday && (t.followup?.channel || t.due_at));
+    })
+    .sort((a, b) => (dueBy(a)?.getTime() ?? 0) - (dueBy(b)?.getTime() ?? 0))
+    .slice(0, 6);
+
+  const completedCount = doneToday.length;
+  const totalCount = focusItems.length;
+  const progress = totalCount ? (completedCount / totalCount) * 100 : 0;
+
+  // Toggle a task done/reopen and persist it.
+  const toggleComplete = async (t: RealTask) => {
+    const nextStatus = t.status === "done" ? "today" : "done";
+    setTasks((prev) =>
+      prev.map((x) =>
+        x.id === t.id
+          ? { ...x, status: nextStatus, completed_at: nextStatus === "done" ? new Date().toISOString() : null }
+          : x
       )
     );
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high": return "text-red-500 bg-red-50 border-red-200";
-      case "medium": return "text-yellow-500 bg-yellow-50 border-yellow-200";
-      case "low": return "text-green-500 bg-green-50 border-green-200";
-      default: return "text-gray-500 bg-gray-50";
+    try {
+      await fetch(`/api/tasks/${t.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+    } catch {
+      /* optimistic */
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "sales": return <Phone className="w-4 h-4" />;
-      case "content": return <Share2 className="w-4 h-4" />;
-      case "followup": return <MessageSquare className="w-4 h-4" />;
-      case "strategic": return <Target className="w-4 h-4" />;
-      default: return <Circle className="w-4 h-4" />;
+  // Send an AI-drafted follow-up email, then mark the follow-up done. Tries the
+  // Microsoft account first, falls back to Google.
+  const sendDraft = async (t: RealTask) => {
+    const fu = t.followup;
+    if (!fu?.aiBody || !fu.contactEmail) {
+      setSendMsg({ id: t.id, text: "No email on file for this contact — add it on the contact first." });
+      return;
+    }
+    setSendingId(t.id);
+    setSendMsg(null);
+    const payload = { to: fu.contactEmail, subject: fu.aiSubject || "Following up", body: fu.aiBody };
+    const trySend = (provider: string) =>
+      fetch("/api/inbox/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, provider }),
+      });
+    try {
+      let res = await trySend("microsoft");
+      if (res.status === 401) res = await trySend("google");
+      if (!res.ok) throw new Error();
+      setSendMsg({ id: t.id, text: "Sent ✓" });
+      setOpenDraftId(null);
+      toggleComplete(t); // sending completes the follow-up
+    } catch {
+      setSendMsg({ id: t.id, text: "Couldn't send — open your inbox to send it manually." });
+    } finally {
+      setSendingId(null);
     }
   };
 
-  const getSourceLabel = (source: string) => {
-    switch (source) {
-      case "business_plan": return "Business Plan";
-      case "marketing_plan": return "Marketing Plan";
-      case "sales_system": return "Sales System";
-      case "domain_score": return "Domain Score";
-      default: return "Manual";
+  const addTask = async (title: string, priority = "medium", energy = "medium") => {
+    const clean = title.trim();
+    if (!clean) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: clean, priority, energy, status: "today" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.task) setTasks((prev) => [...prev, data.task as RealTask]);
+    } catch {
+      /* best effort */
+    } finally {
+      setSaving(false);
     }
   };
 
-  const completedCount = focusItems.filter(i => i.completed).length;
-  const totalCount = focusItems.length;
-  const progress = (completedCount / totalCount) * 100;
-
-  const handleAddTask = () => {
-    if (!newTaskTitle) return;
-    const newTask: DailyFocus = {
-      id: Date.now().toString(),
-      type: newTaskType,
-      title: newTaskTitle,
-      description: "Added manually",
-      estimatedTime: newTaskTime,
-      priority: newTaskPriority,
-      completed: false,
-      source: "manual"
-    };
-    setFocusItems([...focusItems, newTask]);
+  const handleAddTask = async () => {
+    await addTask(newTaskTitle, newTaskPriority, newTaskEnergy);
     setNewTaskTitle("");
+    setNewTaskEnergy("medium");
     setShowAddTask(false);
   };
 
-  const handleQuickWin = (type: string) => {
-    if (type === "testimonial") {
-      const newTask: DailyFocus = {
-        id: Date.now().toString(),
-        type: "followup",
-        title: "Send testimonial request to best client",
-        description: "Ask for a review from last week's success story",
-        estimatedTime: 5,
-        priority: "high",
-        completed: false,
-        source: "manual"
-      };
-      setFocusItems([newTask, ...focusItems]);
-    } else if (type === "win") {
-      const newTask: DailyFocus = {
-        id: Date.now().toString(),
-        type: "content",
-        title: "Share a client win on social media",
-        description: "5-minute post about recent transformation",
-        estimatedTime: 5,
-        priority: "medium",
-        completed: false,
-        source: "manual"
-      };
-      setFocusItems([newTask, ...focusItems]);
-    }
+  const getTypeIcon = (t: RealTask) => {
+    if (t.followup?.channel === "call") return <Phone className="w-4 h-4" />;
+    if (t.followup?.channel === "email") return <Mail className="w-4 h-4" />;
+    const label = (t.business?.name || t.segment?.name || "").toLowerCase();
+    if (label.includes("sale")) return <Phone className="w-4 h-4" />;
+    if (label.includes("content") || label.includes("market")) return <Share2 className="w-4 h-4" />;
+    return <Target className="w-4 h-4" />;
   };
+
+  // Ask the client's AI bot for 3 short, specific insights from today's data.
+  const buildInsights = useCallback(async () => {
+    setAiLoading(true);
+    setAiInsights(null);
+
+    // Strategic context: 12-dimension business health + the dimension-driven
+    // "next moves", so insights are goal- and benchmark-based, not just a
+    // reaction to today's task list.
+    let health = "";
+    let focus = "";
+    let moves = "";
+    let pillarLine = `My 8 operational pillars: ${OPERATIONAL_PILLARS.join(", ")}. `;
+    try {
+      const [al, nm, ops] = await Promise.all([
+        fetch("/api/alignment").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/next-moves").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/operations").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]);
+      if (ops && Array.isArray(ops.pillars)) {
+        const attn = ops.pillars.filter((p: { status: string }) => p.status === "needs_attention").map((p: { name: string }) => p.name);
+        const notStarted = ops.pillars.filter((p: { status: string }) => p.status === "not_started").map((p: { name: string }) => p.name);
+        const solid = ops.pillars.filter((p: { status: string }) => p.status === "complete").length;
+        pillarLine =
+          `Operational pillars (of 8): ${solid} solid` +
+          (attn.length ? `; needing attention: ${attn.join(", ")}` : "") +
+          (notStarted.length ? `; not started: ${notStarted.join(", ")}` : "") +
+          `. `;
+      }
+      if (al && typeof al.overall === "number") {
+        health = `overall business health ${al.overall}/100${al.status ? ` (${al.status} phase)` : ""}`;
+        if (Array.isArray(al.domains)) {
+          const weakest = [...al.domains]
+            .filter((d: { score?: number }) => typeof d.score === "number")
+            .sort((a: { score: number }, b: { score: number }) => a.score - b.score)
+            .slice(0, 3)
+            .map((d: { name: string; score: number }) => `${d.name} ${d.score}/100`);
+          if (weakest.length) focus = weakest.join(", ");
+        }
+      }
+      if (nm && Array.isArray(nm.moves)) {
+        moves = nm.moves.map((m: { title: string }) => m.title).slice(0, 3).join("; ");
+      }
+    } catch {
+      /* insights still work without strategic context */
+    }
+
+    const todayList = tasks
+      .filter((t) => t.status === "today" || t.status === "in_progress")
+      .map((t) => t.title);
+    const openOther = tasks
+      .filter((t) => t.status !== "done" && t.status !== "today" && t.status !== "in_progress")
+      .map((t) => t.title);
+    const meetings = schedule?.connected
+      ? schedule.events.length
+        ? `${schedule.events.length} meeting(s), next "${schedule.events[0].title}" at ${schedule.events[0].time}`
+        : "no meetings today"
+      : "calendar not connected";
+    const message =
+      `Give me exactly 3 short, STRATEGIC coaching insights for today, one per line, no preamble or numbering. ` +
+      `Speak directly to me${firstName ? ` (${firstName})` : ""}. Start each line with a single relevant emoji. Keep each under 24 words. ` +
+      (health ? `My ${health}. ` : "") +
+      (focus ? `My weakest business dimensions (where gains matter most right now): ${focus}. ` : "") +
+      (moves ? `Recommended strategic moves derived from those dimensions: ${moves}. ` : "") +
+      pillarLine +
+      `Today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
+      (openOther.length ? `Other open tasks: ${openOther.slice(0, 6).join("; ")}. ` : "") +
+      `Meetings: ${meetings}. ` +
+      `Ground the insights in my weakest business dimensions, my recommended moves, and my 8 operational pillars: connect today's work to strengthening those dimensions/pillars and advancing my goals. ` +
+      `Make one about where to focus first (tie it to a weak dimension, a recommended move, or an operational pillar), one flagging a strategic gap or risk (a key dimension or pillar I'm not touching today), and one encouraging about momentum. ` +
+      `If today's tasks don't advance my weakest dimensions or a pillar, gently say so and suggest one goal-driven action that would.`;
+    try {
+      const res = await fetch("/api/mariposa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      const lines = String(data.reply || "")
+        .split("\n")
+        .map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      setAiInsights(lines.length ? lines : ["I couldn't put your insights together right now."]);
+    } catch {
+      setAiInsights(["I couldn't put your insights together right now."]);
+    }
+    setAiLoading(false);
+  }, [tasks, schedule, firstName]);
+
+  // Generate once data has loaded and a key exists.
+  useEffect(() => {
+    if (dataReady && hasAiKey && aiInsights === null && !aiLoading) buildInsights();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataReady, hasAiKey]);
+
+  const dateLabel = now
+    ? now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+    : "";
 
   return (
     <div className="py-6 px-4 max-w-6xl mx-auto">
@@ -233,18 +422,17 @@ export default function DailyCompassPage() {
               <Compass className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                Daily Compass
-              </h1>
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Daily Compass</h1>
               <p className="text-[#b8a898]">
-                {greeting}, Babs • {currentDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                {greeting}
+                {firstName ? `, ${firstName}` : ""} • {dateLabel}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-4 py-2 bg-[#c9a227]/10 rounded-full">
-              <Flame className="w-5 h-5 text-[#c9a227]" />
-              <span className="font-semibold text-[#c9a227]">{streak.current} day streak</span>
+              <CheckCircle2 className="w-5 h-5 text-[#c9a227]" />
+              <span className="font-semibold text-[#c9a227]">{completedCount} done today</span>
             </div>
             <Link href="/daily-compass/weekly">
               <Button variant="outline" size="sm">
@@ -266,7 +454,7 @@ export default function DailyCompassPage() {
             </span>
           </div>
           <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
-            <div 
+            <div
               className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-3 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
@@ -279,12 +467,10 @@ export default function DailyCompassPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Action Bar */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Today&apos;s Focus
-            </h2>
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Today&apos;s Focus</h2>
             <div className="flex gap-2">
               <div className="relative">
-                <select 
+                <select
                   className="text-sm p-2 pr-8 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                   value={energyLevel}
                   onChange={(e) => setEnergyLevel(Number(e.target.value))}
@@ -293,7 +479,7 @@ export default function DailyCompassPage() {
                   <option value={2}>Medium Energy</option>
                   <option value={1}>Low Energy</option>
                 </select>
-                <button 
+                <button
                   onClick={() => setShowEnergyInfo(true)}
                   className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1a2b4a]/10 rounded"
                 >
@@ -307,7 +493,7 @@ export default function DailyCompassPage() {
             </div>
           </div>
 
-          {/* Energy Level Info Modal */}
+          {/* Energy Level Info */}
           {showEnergyInfo && (
             <Card className="border-[#c9a227]/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -325,8 +511,8 @@ export default function DailyCompassPage() {
                   <div>
                     <p className="font-medium text-green-800 dark:text-green-200">High Energy</p>
                     <p className="text-sm text-green-700 dark:text-green-300">
-                      You are firing on all cylinders. Perfect for sales calls, content creation, 
-                      strategic planning, and tackling your hardest tasks. Aim for 5+ meaningful activities.
+                      Firing on all cylinders. Perfect for sales calls, content, strategic planning, and
+                      your hardest tasks. Aim for 5+ meaningful activities.
                     </p>
                   </div>
                 </div>
@@ -335,8 +521,8 @@ export default function DailyCompassPage() {
                   <div>
                     <p className="font-medium text-yellow-800 dark:text-yellow-200">Medium Energy</p>
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      Steady and sustainable. Good for follow-ups, scheduling, light content creation, 
-                      and administrative tasks. Aim for 3-4 focused activities.
+                      Steady and sustainable. Good for follow-ups, scheduling, light content, and admin.
+                      Aim for 3-4 focused activities.
                     </p>
                   </div>
                 </div>
@@ -345,8 +531,8 @@ export default function DailyCompassPage() {
                   <div>
                     <p className="font-medium text-red-800 dark:text-red-200">Low Energy</p>
                     <p className="text-sm text-red-700 dark:text-red-300">
-                      Rest and recharge mode. Focus on quick wins, reviewing your Domain Scores, 
-                      light planning, or self-care. Aim for 1-2 small wins and permission to rest.
+                      Rest and recharge mode. Quick wins, reviewing your Domain Scores, light planning, or
+                      self-care. Aim for 1-2 small wins and permission to rest.
                     </p>
                   </div>
                 </div>
@@ -354,7 +540,7 @@ export default function DailyCompassPage() {
             </Card>
           )}
 
-          {/* Add Task Modal */}
+          {/* Add Task */}
           {showAddTask && (
             <Card className="border-[#4a9b9b]/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -373,122 +559,201 @@ export default function DailyCompassPage() {
                     type="text"
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
                     placeholder="What needs to be done?"
                     className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-sm text-[#b8a898] mb-1 block">Type</label>
-                    <select
-                      value={newTaskType}
-                      onChange={(e) => setNewTaskType(e.target.value as DailyFocus["type"])}
-                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
-                    >
-                      <option value="sales">Sales</option>
-                      <option value="content">Content</option>
-                      <option value="followup">Follow-up</option>
-                      <option value="strategic">Strategic</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-sm text-[#b8a898] mb-1 block">Priority</label>
                     <select
                       value={newTaskPriority}
-                      onChange={(e) => setNewTaskPriority(e.target.value as DailyFocus["priority"])}
+                      onChange={(e) => setNewTaskPriority(e.target.value)}
                       className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
                     >
+                      <option value="critical">Critical</option>
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
                       <option value="low">Low</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-[#b8a898] mb-1 block">Time (min)</label>
-                    <input
-                      type="number"
-                      value={newTaskTime}
-                      onChange={(e) => setNewTaskTime(Number(e.target.value))}
+                    <label className="text-sm text-[#b8a898] mb-1 block">Energy</label>
+                    <select
+                      value={newTaskEnergy}
+                      onChange={(e) => setNewTaskEnergy(e.target.value)}
                       className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
-                    />
+                    >
+                      <option value="high">High energy</option>
+                      <option value="medium">Medium energy</option>
+                      <option value="low">Low energy</option>
+                    </select>
                   </div>
                 </div>
-                <Button onClick={handleAddTask} className="w-full">
-                  Add Task
+                <Button onClick={handleAddTask} disabled={saving || !newTaskTitle.trim()} className="w-full">
+                  {saving ? "Adding…" : "Add Task"}
                 </Button>
+                <p className="text-xs text-[#b8a898]">
+                  Adds to your Tasks board (flagged for today). Energy sets how much oomph it takes, so it surfaces when
+                  your energy matches.
+                </p>
               </CardContent>
             </Card>
           )}
 
           {/* Focus Items */}
           <div className="space-y-3">
-            {focusItems.map((item) => (
-              <div 
-                key={item.id}
-                className={`p-4 rounded-lg border transition-all ${
-                  item.completed 
-                    ? "bg-[#1a2b4a]/5 border-[#1a2b4a]/10 opacity-60" 
-                    : "bg-white dark:bg-[#1a2b4a]/50 border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <button 
-                    onClick={() => toggleComplete(item.id)}
-                    className="mt-1"
+            {!dataReady ? (
+              <p className="text-sm text-[#b8a898] px-1">Loading your day…</p>
+            ) : focusItems.length === 0 ? (
+              <div className="p-6 rounded-lg border border-dashed border-[#1a2b4a]/20 text-center">
+                <p className="text-sm text-[#b8a898]">
+                  Nothing flagged for today yet. Add a task above, or generate a plan and flag items for today
+                  from your Tasks board.
+                </p>
+                <Link href="/tasks">
+                  <Button variant="outline" size="sm" className="mt-3">
+                    Open Tasks
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              displayItems.map((item) => {
+                const done = item.status === "done";
+                return (
+                  <div
+                    key={item.id}
+                    className={`p-4 rounded-lg border transition-all ${
+                      done
+                        ? "bg-[#1a2b4a]/5 border-[#1a2b4a]/10 opacity-60"
+                        : "bg-white dark:bg-[#1a2b4a]/50 border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
+                    }`}
                   >
-                    {item.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-[#b8a898] hover:text-[#c9a227]" />
-                    )}
-                  </button>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`p-1 rounded ${getPriorityColor(item.priority)}`}>
-                        {getTypeIcon(item.type)}
-                      </span>
-                      <span className={`font-medium ${item.completed ? "line-through text-[#b8a898]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-                        {item.title}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[#b8a898] mb-2">{item.description}</p>
-                    
-                    {item.linkedGoal && (
-                      <div className="flex items-center gap-2 text-xs text-[#7b6b8d] dark:text-[#e8e4f0] bg-[#7b6b8d]/10 px-2 py-1 rounded w-fit">
-                        <ArrowRight className="w-3 h-3" />
-                        <span>Linked to: {item.linkedGoal}</span>
-                      </div>
-                    )}
+                    <div className="flex items-start gap-3">
+                      <button onClick={() => toggleComplete(item)} className="mt-1" aria-label="Toggle done">
+                        {done ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-[#b8a898] hover:text-[#c9a227]" />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`p-1 rounded border ${priorityColor(item.priority)}`}>
+                            {getTypeIcon(item)}
+                          </span>
+                          <span
+                            className={`font-medium ${
+                              done ? "line-through text-[#b8a898]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"
+                            }`}
+                          >
+                            {item.title}
+                          </span>
+                        </div>
+                        {item.description && (
+                          <p className="text-sm text-[#b8a898] mb-2">{item.description}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full capitalize">
+                            {item.priority} priority
+                          </span>
+                          {item.status === "in_progress" && (
+                            <span className="text-xs px-2 py-0.5 bg-[#4a9b9b]/15 text-[#2E7C83] rounded-full">
+                              In progress
+                            </span>
+                          )}
+                          {item.business?.name && (
+                            <span className="text-xs text-[#b8a898] flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {item.business.name}
+                            </span>
+                          )}
+                        </div>
 
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-[#b8a898] flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {item.estimatedTime} min
-                      </span>
-                      <span className="text-xs px-2 py-0.5 bg-[#1a2b4a]/10 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full">
-                        From: {getSourceLabel(item.source)}
-                      </span>
+                        {/* AI-drafted follow-up email: review + send */}
+                        {!done && item.followup?.channel === "email" && item.followup?.aiBody && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs inline-flex items-center gap-1 text-[#2E7C83] bg-[#4a9b9b]/12 px-2 py-0.5 rounded-full">
+                                <Mail className="w-3 h-3" />
+                                {item.followup.aiMode === "auto" ? "Auto-send set" : "AI draft ready"}
+                              </span>
+                              <button
+                                onClick={() => setOpenDraftId(openDraftId === item.id ? null : item.id)}
+                                className="text-xs text-[#2E7C83] hover:underline"
+                              >
+                                {openDraftId === item.id ? "Hide" : "Review"}
+                              </button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={sendingId === item.id}
+                                onClick={() => sendDraft(item)}
+                              >
+                                {sendingId === item.id ? "Sending…" : "Send"}
+                              </Button>
+                              {sendMsg?.id === item.id && (
+                                <span className="text-xs text-[#2E7C83]">{sendMsg.text}</span>
+                              )}
+                            </div>
+                            {openDraftId === item.id && (
+                              <div className="mt-2 p-3 rounded-lg bg-[#1a2b4a]/5 border border-[#1a2b4a]/10 text-sm">
+                                <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                                  {item.followup.aiSubject}
+                                </p>
+                                <p className="text-[#3F4654] dark:text-[#e8e4f0] whitespace-pre-wrap mt-1">
+                                  {item.followup.aiBody}
+                                </p>
+                                <p className="text-xs text-[#b8a898] mt-2">
+                                  To: {item.followup.contactEmail || "—"} · edit or send from your inbox if you
+                                  prefer.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Link href="/tasks">
+                        <Button variant="ghost" size="sm">
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
+
+            {dataReady && displayItems.length === 0 && openRest.length > 0 && (
+              <p className="text-sm text-[#b8a898] px-1">
+                Nothing matches your energy right now — the rest needs more. Rest up, or reveal them below.
+              </p>
+            )}
+            {dataReady && energyLevel < 3 && openRest.length > 0 && (
+              <button
+                onClick={() => setShowHigherEnergy((s) => !s)}
+                className="w-full text-xs font-medium text-[#2E7C83] py-2 hover:underline"
+              >
+                {showHigherEnergy
+                  ? "Hide higher-energy tasks"
+                  : `Show ${openRest.length} higher-energy task${openRest.length === 1 ? "" : "s"}`}
+              </button>
+            )}
           </div>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href="/daily-compass/content-studio">
+            <Link href={psConnected === false ? "/settings" : "/daily-compass/content-studio"}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
                     <Share2 className="w-5 h-5 text-[#4a9b9b]" />
                   </div>
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Create Content</p>
-                  <p className="text-xs text-[#b8a898]">Social post, script</p>
+                  <p className="text-xs text-[#b8a898]">
+                    {psConnected === false ? "Connect PostStream" : "Social post via PostStream"}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
@@ -503,14 +768,16 @@ export default function DailyCompassPage() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/daily-compass/calendar">
+            <Link href={psConnected === false ? "/settings" : "/daily-compass/calendar"}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-2">
                     <Calendar className="w-5 h-5 text-[#c9a227]" />
                   </div>
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
-                  <p className="text-xs text-[#b8a898]">Schedule posts</p>
+                  <p className="text-xs text-[#b8a898]">
+                    {psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
@@ -520,7 +787,7 @@ export default function DailyCompassPage() {
                   <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
                     <MessageSquare className="w-5 h-5 text-[#4a9b9b]" />
                   </div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Scripts & Templates</p>
+                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Scripts &amp; Templates</p>
                   <p className="text-xs text-[#b8a898]">Sales, emails</p>
                 </CardContent>
               </Card>
@@ -530,129 +797,131 @@ export default function DailyCompassPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Daily Metrics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#c9a227]" />
-                Today&apos;s Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#b8a898]">Sales Calls</span>
-                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.callsMade}/{metrics.callsGoal}</span>
-                </div>
-                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
-                  <div className="bg-[#7b6b8d] h-2 rounded-full" style={{ width: `${(metrics.callsMade/metrics.callsGoal)*100}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#b8a898]">Content Posts</span>
-                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.postsCreated}/{metrics.postsGoal}</span>
-                </div>
-                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
-                  <div className="bg-[#4a9b9b] h-2 rounded-full" style={{ width: `${(metrics.postsCreated/metrics.postsGoal)*100}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#b8a898]">Follow-ups</span>
-                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.followupsSent}/{metrics.followupsGoal}</span>
-                </div>
-                <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
-                  <div className="bg-[#c9a227] h-2 rounded-full" style={{ width: `${(metrics.followupsSent/metrics.followupsGoal)*100}%` }} />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-[#1a2b4a]/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#b8a898]">Engagement</span>
-                  <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{metrics.contentEngagement}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Today's Activity — live from the in-app ledger */}
+          <TodaysActivity />
 
-          {/* Insights from Business Management */}
+          {/* Upcoming scheduled follow-ups */}
+          {upcoming.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#7b6b8d]" />
+                  Upcoming follow-ups
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {upcoming.map((t) => {
+                  const d = dueBy(t);
+                  return (
+                    <div key={t.id} className="flex items-start gap-2">
+                      <span className="text-[#7b6b8d] mt-0.5 flex-shrink-0">
+                        {t.followup?.channel === "email" ? (
+                          <Mail className="w-4 h-4" />
+                        ) : (
+                          <Phone className="w-4 h-4" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                          {t.followup?.contactName || t.title}
+                        </p>
+                        <p className="text-xs text-[#b8a898]">
+                          {d
+                            ? d.toLocaleDateString(undefined, {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              }) +
+                              (t.due_at
+                                ? ` · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
+                                : "")
+                            : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Insights */}
           <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#c9a227]" />
-                Insights
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#c9a227] mt-0.5" />
-                  <p className="text-[#e8e4f0]">
-                    Your <strong>Sales domain</strong> score dropped 5 points. Focus on making 3 more calls today.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-[#c9a227] mt-0.5" />
-                  <p className="text-[#e8e4f0]">
-                    Marketing Plan suggests posting about alignment - content idea ready in Studio.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Trophy className="w-4 h-4 text-[#c9a227] mt-0.5" />
-                  <p className="text-[#e8e4f0]">
-                    You are on track to hit your Q3 revenue goal! Keep the momentum.
-                  </p>
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#c9a227]" />
+                  Insights from {assistantName}
+                </h3>
+                {dataReady && hasAiKey && (
+                  <button
+                    onClick={buildInsights}
+                    disabled={aiLoading}
+                    className="inline-flex items-center gap-1 text-xs text-[#e8e4f0] hover:text-white disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${aiLoading ? "animate-spin" : ""}`} />
+                  </button>
+                )}
               </div>
+
+              {dataReady && !hasAiKey ? (
+                <div className="space-y-3 text-sm">
+                  <p className="text-[#e8e4f0]">
+                    Bring {assistantName} online with your OpenAI key and your insights write themselves from
+                    today&apos;s tasks and schedule.
+                  </p>
+                  <Link href="/settings?tab=ai">
+                    <Button
+                      variant="outline"
+                      className="w-full border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10"
+                    >
+                      Set up your AI assistant
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm min-h-[3rem]">
+                  {aiLoading || !dataReady ? (
+                    <p className="text-[#e8e4f0]">Reading your day…</p>
+                  ) : (
+                    (aiInsights ?? []).map((line, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-[#c9a227] mt-0.5 flex-shrink-0">
+                          <Zap className="w-4 h-4" />
+                        </span>
+                        <p className="text-[#e8e4f0]">{line}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
               <Link href="/dashboard">
-                <Button variant="outline" className="w-full mt-4 border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10"
+                >
                   View Business Health
                 </Button>
               </Link>
             </CardContent>
           </Card>
 
-          {/* Quick Wins */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#c9a227]" />
-                Quick Wins
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start text-left h-auto py-3"
-                onClick={() => handleQuickWin("testimonial")}
-              >
-                <span className="text-2xl mr-3">💬</span>
-                <div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Send a testimonial request</p>
-                  <p className="text-xs text-[#b8a898]">To your best client from last week</p>
-                </div>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start text-left h-auto py-3"
-                onClick={() => handleQuickWin("win")}
-              >
-                <span className="text-2xl mr-3">📱</span>
-                <div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Share a client win</p>
-                  <p className="text-xs text-[#b8a898]">5-minute social post</p>
-                </div>
-              </Button>
-              <Link href="/dashboard">
-                <Button variant="outline" className="w-full justify-start text-left h-auto py-3">
-                  <span className="text-2xl mr-3">✅</span>
-                  <div>
-                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Review your Domain Scores</p>
-                    <p className="text-xs text-[#b8a898]">2-minute check-in</p>
-                  </div>
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
         </div>
+      </div>
+
+      {/* Quick Wins — full-width horizontal band; each is live (click → real task, editable + AI). */}
+      <div className="mt-6">
+        <Card>
+          <CardContent className="pt-6">
+            <QuickWins mode="full" layout="grid" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Global Control contacts — full-width, editable */}
+      <div className="mt-6">
+        <GlobalControlContacts />
       </div>
     </div>
   );

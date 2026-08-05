@@ -16,6 +16,13 @@ export function createServerClient() {
           // No-op
         },
       },
+      // Next.js patches global fetch and caches GET responses in its Data Cache.
+      // The Supabase client talks to PostgREST via fetch, so without this every
+      // read would replay the first cached result. Force no-store on all of them.
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
+      },
     }
   );
 }

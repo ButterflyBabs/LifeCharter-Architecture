@@ -1,500 +1,396 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-// Input component imported for future use
-import { Textarea } from "@/components/ui/Textarea";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   Share2,
   Sparkles,
-  MessageSquare,
-  Mic,
-  CheckCircle,
-  RefreshCw,
-  Calendar,
   Wand2,
-  Lightbulb,
-  Target,
-  Zap
+  Loader2,
+  Calendar,
+  Send,
+  FileText,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
-import Link from "next/link";
+import { PLATFORMS, PLATFORM_LABELS } from "@/lib/postStreamConstants";
 
-interface ContentTemplate {
+interface Account {
   id: string;
-  name: string;
-  description: string;
   platform: string;
-  example: string;
+  username: string;
+  followersCount: number;
 }
 
-interface GeneratedContent {
-  id: string;
-  type: "social" | "email" | "script";
-  platform?: string;
-  content: string;
-  hashtags?: string[];
-  imagePrompt?: string;
-  status: "draft" | "approved" | "scheduled";
-}
+export default function CreateContentPage() {
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsError, setAccountsError] = useState("");
 
-const contentTemplates: ContentTemplate[] = [
-  {
-    id: "1",
-    name: "Client Win Story",
-    description: "Share a client transformation",
-    platform: "LinkedIn",
-    example: "Just watched Sarah go from overwhelmed to aligned..."
-  },
-  {
-    id: "2",
-    name: "Value Bomb",
-    description: "Share one key insight",
-    platform: "Instagram",
-    example: "3 signs you are out of alignment..."
-  },
-  {
-    id: "3",
-    name: "Behind the Scenes",
-    description: "Show your process",
-    platform: "Instagram Stories",
-    example: "How I plan my week for alignment..."
-  },
-  {
-    id: "4",
-    name: "Question Hook",
-    description: "Engage with a question",
-    platform: "LinkedIn",
-    example: "What would change if you stopped hustling and started aligning?"
-  }
-];
+  const [title, setTitle] = useState("");
+  const [caption, setCaption] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [when, setWhen] = useState<"draft" | "schedule" | "now">("draft");
+  const [scheduledAt, setScheduledAt] = useState("");
 
-const aiPrompts = [
-  "Create a post about the difference between hustle and alignment",
-  "Write an email inviting past clients to a new workshop",
-  "Generate 5 LinkedIn post ideas about LifeCharter",
-  "Create a sales script for the Incubator follow-up call",
-  "Write an Instagram caption about morning alignment rituals"
-];
+  const [aiIdea, setAiIdea] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [needsKey, setNeedsKey] = useState(false);
 
-export default function ContentStudioPage() {
-  const [selectedType, setSelectedType] = useState<"social" | "email" | "script">("social");
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("linkedin");
-  const [prompt, setPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  const [savedContent, setSavedContent] = useState<GeneratedContent[]>([]);
-  const [showTemplates, setShowTemplates] = useState(false);
-  // Use showTemplates in UI
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  showTemplates; setShowTemplates;
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  const handleGenerate = async () => {
-    if (!prompt) return;
-    
-    setIsGenerating(true);
-    
-    // Simulate AI generation
-    setTimeout(() => {
-      const content: GeneratedContent = {
-        id: Date.now().toString(),
-        type: selectedType,
-        platform: selectedPlatform,
-        content: generateMockContent(selectedType),
-        hashtags: selectedType === "social" ? ["#LifeCharter", "#Alignment", "#BusinessGrowth"] : undefined,
-        imagePrompt: selectedType === "social" ? "A serene image of a person meditating at sunrise with soft golden light" : undefined,
-        status: "draft"
+  const loadAccounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/content/accounts");
+      const d = await res.json().catch(() => ({}));
+      setConnected(Boolean(d.connected));
+      if (Array.isArray(d.accounts)) setAccounts(d.accounts);
+      if (d.error) setAccountsError(d.error);
+    } catch {
+      setConnected(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  // Platforms to offer: connected ones first; fall back to the full list.
+  const connectedPlatforms = Array.from(new Set(accounts.map((a) => a.platform)));
+  const offerPlatforms = connectedPlatforms.length ? connectedPlatforms : (PLATFORMS as readonly string[]);
+
+  const togglePlatform = (p: string) =>
+    setSelected((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+
+  const addMedia = () => {
+    const u = mediaUrl.trim();
+    if (u && !mediaUrls.includes(u)) setMediaUrls((prev) => [...prev, u]);
+    setMediaUrl("");
+  };
+
+  const draftWithAi = async () => {
+    if (!aiIdea.trim()) {
+      setMsg({ kind: "err", text: "Add a quick idea for the post first." });
+      return;
+    }
+    setAiBusy(true);
+    setNeedsKey(false);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/content/ai-caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: aiIdea, platforms: selected }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d.needsKey) {
+        setNeedsKey(true);
+      } else if (d.caption !== undefined) {
+        const tags = Array.isArray(d.hashtags) && d.hashtags.length ? "\n\n" + d.hashtags.join(" ") : "";
+        setCaption((d.caption || "") + tags);
+        if (!title) setTitle(aiIdea.slice(0, 60));
+      } else {
+        setMsg({ kind: "err", text: d.error || "Couldn't draft a caption." });
+      }
+    } catch {
+      setMsg({ kind: "err", text: "Couldn't reach the AI." });
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!title.trim()) {
+      setMsg({ kind: "err", text: "Give your post a title." });
+      return;
+    }
+    if (selected.length === 0) {
+      setMsg({ kind: "err", text: "Pick at least one platform." });
+      return;
+    }
+    if (when === "schedule" && !scheduledAt) {
+      setMsg({ kind: "err", text: "Choose a date and time to schedule." });
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const status = when === "schedule" ? "scheduled" : "draft";
+      const payload = {
+        title: title.trim(),
+        caption,
+        platforms: selected,
+        status,
+        scheduledAt: when === "schedule" ? new Date(scheduledAt).toISOString() : null,
+        mediaUrls,
       };
-      setGeneratedContent(content);
-      setIsGenerating(false);
-    }, 2000);
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const generateMockContent = (type: string, _platform?: string, _prompt?: string): string => {
-    if (type === "social") {
-      return `🦋 What if I told you that everything you've been taught about business growth is backwards?
-
-We've been told to hustle harder. To grind more. To sacrifice everything for success.
-
-But what if the real key is alignment?
-
-When you're aligned:
-✓ Decisions become obvious
-✓ Energy flows naturally  
-✓ Results come with ease
-✓ Success feels sustainable
-
-I've watched hundreds of entrepreneurs transform their businesses not by doing MORE, but by aligning what they do with who they truly are.
-
-The LifeCharter framework isn't about adding more to your plate. It's about clearing the clutter so what matters most can shine.
-
-What's one area of your business that feels out of alignment right now? 👇`;
-    } else if (type === "email") {
-      return `Subject: Your invitation to align your business (closes soon)
-
-Hi [Name],
-
-I hope this email finds you well. I wanted to personally reach out because I remember when you attended the LifeCharter Incubator, and I saw how the concept of alignment resonated with you.
-
-Since then, I've been thinking about your business and the challenges you mentioned around [specific challenge]. I believe you're ready for the next step.
-
-The LifeCharter Circle is opening for new members, and I'd love to invite you to join us. This is where we go deep - beyond concepts into actual implementation.
-
-In the Circle, you'll:
-• Get weekly alignment check-ins
-• Access the complete 12-domain framework
-• Connect with other aligned entrepreneurs
-• Receive direct support from me
-
-The investment is $297/month, and the doors close Friday.
-
-If you're feeling called to this, reply to this email and I'll send you the registration link.
-
-With alignment,
-Babs
-
-P.S. If now isn't the right time, I completely understand. The Incubator will always be there for you.`;
-    } else {
-      return `SALES SCRIPT: Incubator to Circle Follow-up
-
-OPENING:
-"Hi [Name], it's Babs from LifeCharter. How are you doing since the Incubator?"
-
-[Listen and acknowledge]
-
-BRIDGE:
-"I'm calling because I was thinking about our conversation during the workshop. You mentioned that [specific challenge] was really weighing on you, and I wanted to see how that's been going."
-
-[Listen]
-
-PRESENT:
-"The reason I'm calling is that the LifeCharter Circle is opening for new members, and I immediately thought of you. You have that spark - I could see it during the Incubator - and I think you're ready for the next level.
-
-The Circle is where we actually implement everything from the Incubator. It's weekly support, the full framework, and direct access to me. It's $297 a month.
-
-What questions do you have about joining us?"
-
-[Handle objections]
-
-CLOSE:
-"Based on what you've shared, I really believe this is the right next step for you. Can I count you in?"
-
-[If yes] "Great! I'll send you the link right now while we're on the phone."
-
-[If no] "I understand. Can I ask what would need to change for this to be a yes?"
-
-FOLLOW-UP:
-"No matter what you decide, I'm here to support you. Let's stay connected."`;
-    }
-  };
-
-  const handleApprove = () => {
-    if (generatedContent) {
-      setSavedContent([...savedContent, { ...generatedContent, status: "approved" }]);
-      setGeneratedContent(null);
-      setPrompt("");
-    }
-  };
-
-  const handleSchedule = () => {
-    if (generatedContent) {
-      setSavedContent([...savedContent, { ...generatedContent, status: "scheduled" }]);
-      setGeneratedContent(null);
-      setPrompt("");
+      const res = await fetch("/api/content/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || d.error) {
+        setMsg({ kind: "err", text: d.error || "Couldn't create the post." });
+        return;
+      }
+      // Publish-now: create as draft above, then push to platforms.
+      if (when === "now" && d.post?.id) {
+        const pub = await fetch("/api/content/posts", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: d.post.id, action: "publish" }),
+        });
+        const pd = await pub.json().catch(() => ({}));
+        if (!pub.ok || pd.error) {
+          setMsg({ kind: "err", text: `Saved as draft, but publishing failed: ${pd.error || "try from the calendar"}.` });
+          return;
+        }
+      }
+      setMsg({
+        kind: "ok",
+        text:
+          when === "now"
+            ? "Published! 🎉"
+            : when === "schedule"
+            ? "Scheduled — it'll appear on your Content Calendar."
+            : "Saved as a draft on your Content Calendar.",
+      });
+      setTitle("");
+      setCaption("");
+      setSelected([]);
+      setMediaUrls([]);
+      setScheduledAt("");
+      setWhen("draft");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="py-8 px-4 max-w-6xl mx-auto">
-      {/* Header */}
-      <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Daily Compass
+    <div className="py-8 px-4 max-w-3xl mx-auto">
+      <Link href="/daily-compass" className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:underline mb-4">
+        <ArrowLeft className="w-4 h-4" /> Back to Daily Compass
       </Link>
 
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center">
-            <Share2 className="w-6 h-6 text-[#4a9b9b]" />
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7b6b8d] to-[#2E7C83] flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Content Studio
-            </h1>
-            <p className="text-[#b8a898]">
-              AI-powered content creation for your business
+            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Create Content</h1>
+            <p className="text-[#b8a898]">Compose, schedule, and publish social posts through PostStream.</p>
+          </div>
+        </div>
+        <Link
+          href="/daily-compass/calendar"
+          className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2.5 rounded-xl border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+        >
+          <Calendar className="w-4 h-4" /> Content Calendar
+        </Link>
+      </div>
+
+      {connected === false && (
+        <div className="mb-6 rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-[#8a6a15] mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-[#8a6a15]">PostStream isn&apos;t connected yet.</p>
+            <p className="text-sm text-[#8a6a15]/90 mt-0.5">
+              Add your PostStream API key in{" "}
+              <Link href="/settings" className="underline font-medium">Settings → Integrations</Link>{" "}
+              to publish and schedule. You can still draft here.
             </p>
           </div>
         </div>
-      </div>
+      )}
+      {accountsError && <p className="mb-4 text-xs text-[#8a2f2f]">PostStream: {accountsError}</p>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Creation */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Content Type Selector */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">What would you like to create?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="space-y-5">
+        {/* Title */}
+        <div>
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Internal title for this post"
+            className="w-full px-3 h-11 rounded-xl border border-[#1a2b4a]/15 bg-white dark:bg-[#1a2b4a]/30 text-[#1a2b4a] dark:text-[#F8F5F0]"
+          />
+        </div>
+
+        {/* Platforms */}
+        <div>
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+            Platforms{" "}
+            {connectedPlatforms.length === 0 && (
+              <span className="text-xs text-[#b8a898]">(none connected yet — showing all)</span>
+            )}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {offerPlatforms.map((p) => {
+              const on = selected.includes(p);
+              const acct = accounts.find((a) => a.platform === p);
+              return (
                 <button
-                  onClick={() => setSelectedType("social")}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    selectedType === "social"
-                      ? "border-[#4a9b9b] bg-[#4a9b9b]/10"
-                      : "border-[#1a2b4a]/20 hover:border-[#4a9b9b]/50"
+                  key={p}
+                  onClick={() => togglePlatform(p)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                    on
+                      ? "bg-[#2E7C83] text-white border-[#2E7C83]"
+                      : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
                   }`}
+                  title={acct ? `@${acct.username}` : "Not connected"}
                 >
-                  <Share2 className="w-6 h-6 mx-auto mb-2 text-[#4a9b9b]" />
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Social Post</p>
+                  {PLATFORM_LABELS[p] || p}
                 </button>
-                <button
-                  onClick={() => setSelectedType("email")}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    selectedType === "email"
-                      ? "border-[#7b6b8d] bg-[#7b6b8d]/10"
-                      : "border-[#1a2b4a]/20 hover:border-[#7b6b8d]/50"
-                  }`}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* AI draft */}
+        <div className="rounded-2xl border border-[#2E7C83]/25 bg-[#F1F7F7] dark:bg-[#12303a] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-[#2E7C83]" />
+            <span className="text-sm font-semibold text-[#12303a] dark:text-[#F8F5F0]">Draft with AI</span>
+          </div>
+          {needsKey && (
+            <p className="text-xs text-[#8a6a15] mb-2">Connect your AI key in settings to draft captions with AI.</p>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              value={aiIdea}
+              onChange={(e) => setAiIdea(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") draftWithAi();
+              }}
+              placeholder="What's the post about? (a few words)"
+              className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+            />
+            <button
+              onClick={draftWithAi}
+              disabled={aiBusy}
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 h-10 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
+            >
+              {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              Draft
+            </button>
+          </div>
+        </div>
+
+        {/* Caption */}
+        <div>
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Caption</label>
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            rows={6}
+            placeholder="Write your caption, or draft it with AI above."
+            className="w-full px-3 py-2 rounded-xl border border-[#1a2b4a]/15 bg-white dark:bg-[#1a2b4a]/30 text-[#1a2b4a] dark:text-[#F8F5F0]"
+          />
+        </div>
+
+        {/* Media */}
+        <div>
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Media (image/video URLs)</label>
+          <div className="flex items-center gap-2">
+            <input
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addMedia();
+                }
+              }}
+              placeholder="https://…"
+              className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+            />
+            <button
+              onClick={addMedia}
+              className="inline-flex items-center gap-1 text-sm font-medium px-3 h-10 rounded-lg border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+            >
+              <ImageIcon className="w-4 h-4" /> Add
+            </button>
+          </div>
+          {mediaUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {mediaUrls.map((u) => (
+                <span
+                  key={u}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] max-w-[220px]"
                 >
-                  <MessageSquare className="w-6 h-6 mx-auto mb-2 text-[#7b6b8d]" />
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Email</p>
-                </button>
-                <button
-                  onClick={() => setSelectedType("script")}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    selectedType === "script"
-                      ? "border-[#c9a227] bg-[#c9a227]/10"
-                      : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
-                  }`}
-                >
-                  <Mic className="w-6 h-6 mx-auto mb-2 text-[#c9a227]" />
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Sales Script</p>
-                </button>
-              </div>
-
-              {/* Platform Selector (for social) */}
-              {selectedType === "social" && (
-                <div className="mb-6">
-                  <label className="text-sm text-[#b8a898] mb-2 block">Platform</label>
-                  <div className="flex gap-2">
-                    {["linkedin", "instagram", "twitter", "facebook"].map((platform) => (
-                      <button
-                        key={platform}
-                        onClick={() => setSelectedPlatform(platform)}
-                        className={`px-4 py-2 rounded-lg border transition-all capitalize ${
-                          selectedPlatform === platform
-                            ? "border-[#4a9b9b] bg-[#4a9b9b]/10 text-[#4a9b9b]"
-                            : "border-[#1a2b4a]/20 text-[#b8a898]"
-                        }`}
-                      >
-                        {platform}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* AI Prompt */}
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-[#b8a898] mb-2 block">
-                    Describe what you want to create
-                  </label>
-                  <Textarea
-                    placeholder="e.g., Create a LinkedIn post about the difference between hustle and alignment..."
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                </div>
-
-                {/* Quick Prompts */}
-                <div>
-                  <p className="text-sm text-[#b8a898] mb-2">Or try one of these:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {aiPrompts.map((p, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setPrompt(p)}
-                        className="text-xs px-3 py-1.5 bg-[#1a2b4a]/5 text-[#7b6b8d] dark:text-[#e8e4f0] rounded-full hover:bg-[#c9a227]/20 transition-colors"
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleGenerate}
-                  disabled={!prompt || isGenerating}
-                  className="w-full"
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      AI is creating...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Generate Content
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Generated Content */}
-          {generatedContent && (
-            <Card className="border-[#c9a227]/30">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#c9a227]" />
-                  AI Generated Content
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
-                  <p className="text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap">
-                    {generatedContent.content}
-                  </p>
-                  {generatedContent.hashtags && (
-                    <p className="text-[#4a9b9b] mt-3 text-sm">
-                      {generatedContent.hashtags.join(" ")}
-                    </p>
-                  )}
-                </div>
-
-                {generatedContent.imagePrompt && (
-                  <div className="p-3 bg-[#c9a227]/10 rounded-lg">
-                    <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                      <strong>Image Suggestion:</strong> {generatedContent.imagePrompt}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setGeneratedContent(null)}>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Regenerate
-                  </Button>
-                  <Button variant="outline" onClick={handleApprove}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Approve
-                  </Button>
-                  <Button onClick={handleSchedule}>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <span className="truncate">{u}</span>
+                  <button onClick={() => setMediaUrls((prev) => prev.filter((x) => x !== u))} aria-label="Remove">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Right Column - Templates & Saved */}
-        <div className="space-y-6">
-          {/* Templates */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-[#c9a227]" />
-                Templates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {contentTemplates.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => {
-                    setPrompt(`Create a ${template.name.toLowerCase()} post`);
-                    setSelectedType("social");
-                  }}
-                  className="w-full text-left p-3 bg-[#1a2b4a]/5 rounded-lg hover:bg-[#1a2b4a]/10 transition-colors"
-                >
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    {template.name}
-                  </p>
-                  <p className="text-xs text-[#b8a898]">{template.description}</p>
-                  <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] mt-1">
-                    {template.platform}
-                  </p>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Saved Content */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Saved Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {savedContent.length > 0 ? (
-                <div className="space-y-3">
-                  {savedContent.map((content) => (
-                    <div
-                      key={content.id}
-                      className="p-3 bg-[#1a2b4a]/5 rounded-lg"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize">
-                          {content.type}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          content.status === "approved"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}>
-                          {content.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-[#b8a898] line-clamp-2">
-                        {content.content.substring(0, 100)}...
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-[#b8a898] text-center py-4">
-                  No saved content yet
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Tips */}
-          <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
-            <CardContent className="p-6">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#c9a227]" />
-                Content Tips
-              </h3>
-              <ul className="text-sm space-y-2 text-[#e8e4f0]">
-                <li className="flex items-start gap-2">
-                  <Target className="w-4 h-4 mt-0.5" />
-                  Lead with value, not promotion
-                </li>
-                <li className="flex items-start gap-2">
-                  <Target className="w-4 h-4 mt-0.5" />
-                  Share real stories and transformations
-                </li>
-                <li className="flex items-start gap-2">
-                  <Target className="w-4 h-4 mt-0.5" />
-                  End with a question to drive engagement
-                </li>
-                <li className="flex items-start gap-2">
-                  <Target className="w-4 h-4 mt-0.5" />
-                  Use your authentic voice - be you
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+        {/* When */}
+        <div>
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">When</label>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: "draft", label: "Save as draft", icon: <FileText className="w-4 h-4" /> },
+              { id: "schedule", label: "Schedule", icon: <Clock className="w-4 h-4" /> },
+              { id: "now", label: "Publish now", icon: <Send className="w-4 h-4" /> },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setWhen(opt.id as "draft" | "schedule" | "now")}
+                className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border ${
+                  when === opt.id
+                    ? "bg-[#1a2b4a] text-white border-[#1a2b4a]"
+                    : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+                }`}
+              >
+                {opt.icon} {opt.label}
+              </button>
+            ))}
+            {when === "schedule" && (
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+              />
+            )}
+          </div>
+          {when === "now" && connected === false && (
+            <p className="text-xs text-[#8a6a15] mt-2">Publishing needs PostStream connected. It&apos;ll save as a draft otherwise.</p>
+          )}
         </div>
+
+        {msg && (
+          <div
+            className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 ${
+              msg.kind === "ok" ? "bg-[#d8efdd] text-[#2c6b3f]" : "bg-[#f6dcdc] text-[#8a2f2f]"
+            }`}
+          >
+            {msg.kind === "ok" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {msg.text}
+          </div>
+        )}
+
+        <button
+          onClick={submit}
+          disabled={saving}
+          className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {when === "now" ? "Publish post" : when === "schedule" ? "Schedule post" : "Save draft"}
+        </button>
       </div>
     </div>
   );

@@ -33,6 +33,11 @@ import {
   Timer,
   Flag,
   Wallet,
+  Boxes,
+  BarChart3,
+  LineChart,
+  Rocket,
+  LogOut,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -44,17 +49,20 @@ const navigationSections = [
     title: "DAILY OPERATIONS",
     color: "text-[#c9a227]",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/" },
+      { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
+      { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
     ],
   },
   {
     title: "STRATEGIC PLANNING",
     color: "text-[#4a9b9b]",
     items: [
+      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
-      { id: "sales", label: "Sales", icon: TrendingUp, href: "/sales" },
+      { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
+      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
     ],
   },
@@ -62,6 +70,9 @@ const navigationSections = [
     title: "ALIGNMENT",
     color: "text-[#7b6b8d]",
     items: [
+      { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
+      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
+      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
     ],
@@ -70,6 +81,7 @@ const navigationSections = [
     title: "SYSTEMS",
     color: "text-[#b8a898]",
     items: [
+      { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
@@ -224,6 +236,29 @@ export function CollapsibleSidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   const [helpExpanded, setHelpExpanded] = useState(false);
+  const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null }>({
+    fullName: "",
+    avatarUrl: null,
+  });
+
+  // Load the profile name + headshot for the footer block.
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setProfile({ fullName: (d.fullName || "").trim(), avatarUrl: d.avatarUrl ?? null });
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayName = profile.fullName || "AmiLynne Carroll";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "LC";
 
   // Get active item based on current path
   const getActiveItem = () => {
@@ -288,7 +323,7 @@ export function CollapsibleSidebar() {
                 LifeCharter
               </h1>
               <p className="text-[10px] text-white/40 tracking-[0.15em] uppercase whitespace-nowrap">
-                Architecture
+                Command Suite
               </p>
             </div>
           </div>
@@ -428,22 +463,40 @@ export function CollapsibleSidebar() {
           className={cn("rounded-xl bg-white/5 border border-white/10", isCollapsed ? "p-2 flex justify-center" : "px-3 py-3")}
         >
           <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
-              SR
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">Seraphina Rose</p>
+                <p className="text-sm font-medium text-white truncate">{displayName}</p>
                 <p className="text-xs text-white/40 truncate">Founder &amp; CEO</p>
               </div>
             )}
           </div>
         </div>
 
+        {/* Sign out */}
+        <Link
+          href="/logout"
+          title="Sign out"
+          className={cn(
+            "flex items-center rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
+            isCollapsed ? "justify-center w-full p-2" : "gap-2 px-4 py-2.5"
+          )}
+        >
+          <LogOut className="w-4 h-4" />
+          {!isCollapsed && <span className="text-sm">Sign out</span>}
+        </Link>
+
         {/* Workspace Selector - only when expanded */}
         {!isCollapsed && (
           <div className="px-4 py-1 text-xs text-white/40">
-            <span className="text-white/30">Workspace:</span> Soulful Solutions Co.
+            <span className="text-white/30">Workspace:</span> Sacred Kaleidoscope
           </div>
         )}
       </div>

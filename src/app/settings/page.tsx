@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
 import { IntegrationsPanel } from "./components/IntegrationsPanel";
+import BillingPanel from "./components/BillingPanel";
+import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -25,7 +27,6 @@ import {
   Globe,
   Save,
   CheckCircle,
-  AlertCircle,
   Moon,
   Sun,
   Mail,
@@ -36,8 +37,7 @@ import {
   Trash2,
   Lock,
   FileText,
-  Download,
-  Receipt
+  Sparkles
 } from "lucide-react";
 
 interface SettingsSection {
@@ -73,6 +73,12 @@ const settingsSections: SettingsSection[] = [
     description: "Theme, colors, and display preferences"
   },
   {
+    id: "ai",
+    title: "AI Assistant",
+    icon: <Sparkles className="w-5 h-5" />,
+    description: "Name your assistant and connect your OpenAI key"
+  },
+  {
     id: "integrations",
     title: "Integrations",
     icon: <ExternalLink className="w-5 h-5" />,
@@ -103,9 +109,240 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
-  const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
   const supabase = createClient();
-  
+
+  // Deep-link to a section via ?tab=… (e.g. /settings?tab=ai).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab && settingsSections.some((s) => s.id === tab)) setActiveTab(tab);
+  }, []);
+
+  // AI Assistant state
+  const [aiName, setAiName] = useState("");
+  const [aiKey, setAiKey] = useState("");
+  const [aiHasKey, setAiHasKey] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [aiMsg, setAiMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Global Control (Titanium Suite) connection — per client, key stored server-side.
+  const [gcConnected, setGcConnected] = useState(false);
+  const [gcAccountId, setGcAccountId] = useState("");
+  const [gcKeyInput, setGcKeyInput] = useState("");
+  const [gcAccountInput, setGcAccountInput] = useState("");
+  const [gcSaving, setGcSaving] = useState(false);
+  const [gcMsg, setGcMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/global-control")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setGcConnected(Boolean(d.connected));
+        setGcAccountId(d.accountId || "");
+        setGcAccountInput(d.accountId || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveGlobalControl = async () => {
+    if (!gcKeyInput.trim()) {
+      setGcMsg({ ok: false, text: "Paste your Global Control API key first." });
+      return;
+    }
+    setGcMsg(null);
+    setGcSaving(true);
+    try {
+      const res = await fetch("/api/integrations/global-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: gcKeyInput.trim(), accountId: gcAccountInput.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGcMsg({ ok: false, text: d?.error || "Couldn't save — please try again." });
+      } else {
+        setGcConnected(true);
+        setGcAccountId(gcAccountInput.trim());
+        setGcKeyInput("");
+        setGcMsg({ ok: true, text: "Global Control connected — your key is stored securely." });
+      }
+    } catch {
+      setGcMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setGcSaving(false);
+  };
+
+  const handleDisconnectGlobalControl = async () => {
+    setGcMsg(null);
+    setGcSaving(true);
+    try {
+      const res = await fetch("/api/integrations/global-control", { method: "DELETE" });
+      if (res.ok) {
+        setGcConnected(false);
+        setGcAccountId("");
+        setGcMsg({ ok: true, text: "Global Control disconnected." });
+      } else {
+        setGcMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+      }
+    } catch {
+      setGcMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+    }
+    setGcSaving(false);
+  };
+
+  // PostStream (social post creation + scheduling) — per client, key server-side.
+  const [psConnected, setPsConnected] = useState(false);
+  const [psAccountId, setPsAccountId] = useState("");
+  const [psKeyInput, setPsKeyInput] = useState("");
+  const [psAccountInput, setPsAccountInput] = useState("");
+  const [psSaving, setPsSaving] = useState(false);
+  const [psMsg, setPsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/poststream")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setPsConnected(Boolean(d.connected));
+        setPsAccountId(d.accountId || "");
+        setPsAccountInput(d.accountId || "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSavePostStream = async () => {
+    if (!psKeyInput.trim()) {
+      setPsMsg({ ok: false, text: "Paste your PostStream API key first." });
+      return;
+    }
+    setPsMsg(null);
+    setPsSaving(true);
+    try {
+      const res = await fetch("/api/integrations/poststream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: psKeyInput.trim(), accountId: psAccountInput.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPsMsg({ ok: false, text: d?.error || "Couldn't save — please try again." });
+      } else {
+        setPsConnected(true);
+        setPsAccountId(psAccountInput.trim());
+        setPsKeyInput("");
+        setPsMsg({ ok: true, text: "PostStream connected — your key is stored securely." });
+      }
+    } catch {
+      setPsMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setPsSaving(false);
+  };
+
+  const handleDisconnectPostStream = async () => {
+    setPsMsg(null);
+    setPsSaving(true);
+    try {
+      const res = await fetch("/api/integrations/poststream", { method: "DELETE" });
+      if (res.ok) {
+        setPsConnected(false);
+        setPsAccountId("");
+        setPsMsg({ ok: true, text: "PostStream disconnected." });
+      } else {
+        setPsMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+      }
+    } catch {
+      setPsMsg({ ok: false, text: "Couldn't disconnect — please try again." });
+    }
+    setPsSaving(false);
+  };
+
+  useEffect(() => {
+    fetch("/api/ai-settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setAiName(d.assistantName === "Mariposa" ? "" : d.assistantName || "");
+        setAiHasKey(Boolean(d.hasOpenAiKey));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveAi = async () => {
+    setAiMsg(null);
+    setAiSaving(true);
+    try {
+      const payload: { assistantName: string; openaiApiKey?: string } = {
+        assistantName: aiName.trim(),
+      };
+      // Only send the key if the user typed a new one (blank keeps the existing).
+      if (aiKey.trim()) payload.openaiApiKey = aiKey.trim();
+      const res = await fetch("/api/ai-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        setAiMsg({ ok: false, text: "Couldn't save — please try again." });
+        setAiSaving(false);
+        return;
+      }
+      const d = await res.json();
+      setAiHasKey(Boolean(d.hasOpenAiKey));
+      setAiKey("");
+      setAiMsg({
+        ok: true,
+        text: `Saved — your AI bot${d.assistantName ? ` (${d.assistantName})` : ""} has been updated.`,
+      });
+    } catch {
+      setAiMsg({ ok: false, text: "Couldn't save — please try again." });
+    }
+    setAiSaving(false);
+  };
+
+  // Change-password state
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleUpdatePassword = async () => {
+    setPwMsg(null);
+    if (pwNew.length < 8) {
+      setPwMsg({ ok: false, text: "New password must be at least 8 characters." });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ ok: false, text: "New passwords don't match." });
+      return;
+    }
+    const email = profile.email;
+    if (!email) {
+      setPwMsg({ ok: false, text: "Couldn't determine your account email — try reloading." });
+      return;
+    }
+    setPwSaving(true);
+    // Verify the current password by re-authenticating before changing it.
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pwCurrent });
+    if (signInErr) {
+      setPwSaving(false);
+      setPwMsg({ ok: false, text: "Current password is incorrect." });
+      return;
+    }
+    const { error: updErr } = await supabase.auth.updateUser({ password: pwNew });
+    setPwSaving(false);
+    if (updErr) {
+      setPwMsg({ ok: false, text: updErr.message });
+      return;
+    }
+    setPwCurrent("");
+    setPwNew("");
+    setPwConfirm("");
+    setPwMsg({ ok: true, text: "Password updated." });
+  };
+
+
   // Theme context for appearance settings
   const theme = useTheme();
 
@@ -119,28 +356,6 @@ export default function SettingsPage() {
     avatar: null as string | null
   });
 
-  // Billing state
-  const [currentPlan, setCurrentPlan] = useState<"starter" | "growth" | "vip">("growth");
-  const [billingCycle] = useState({
-    startDate: new Date("2026-07-15"),
-    endDate: new Date("2026-08-15"),
-    nextBillingDate: new Date("2026-08-15")
-  });
-  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
-  const [selectedNewPlan, setSelectedNewPlan] = useState<"starter" | "growth" | "vip" | null>(null);
-  const [prorationAmount, setProrationAmount] = useState<number | null>(null);
-  const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
-  const [showDowngradeMessage, setShowDowngradeMessage] = useState(false);
-
-  // Calculate proration when plan selection changes
-  useEffect(() => {
-    if (selectedNewPlan && selectedNewPlan !== currentPlan) {
-      const proration = calculateProration(currentPlan, selectedNewPlan, billingCycle);
-      setProrationAmount(proration);
-    } else {
-      setProrationAmount(null);
-    }
-  }, [selectedNewPlan, currentPlan, billingCycle]);
 
   // Load profile data on mount
   useEffect(() => {
@@ -169,189 +384,6 @@ export default function SettingsPage() {
     loadProfile();
   }, []);
 
-  // Invoice download functions
-  const downloadInvoice = (invoice: { id: string; date: string; amount: string; status: string; plan: string }) => {
-    // Create invoice content
-    const invoiceContent = `
-LIFECHARTER ARCHITECTURE - INVOICE
-=====================================
-
-Invoice ID: ${invoice.id}
-Date: ${invoice.date}
-Status: ${invoice.status}
-
-Plan: ${invoice.plan}
-Amount: ${invoice.amount}
-
-Billed To:
-${profile.fullName}
-${profile.email}
-
-Thank you for your business!
-
-For questions about this invoice, please contact support@lifecharter.architecture
-`;
-
-    // Create and download the file
-    const blob = new Blob([invoiceContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${invoice.id}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  };
-
-  const downloadAllInvoices = () => {
-    const allInvoices = [
-      { id: "INV-2026-07-001", date: "Jul 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-      { id: "INV-2026-06-001", date: "Jun 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-      { id: "INV-2026-05-001", date: "May 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-      { id: "INV-2026-04-001", date: "Apr 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-      { id: "INV-2026-03-001", date: "Mar 15, 2026", amount: "$497.00", status: "Paid", plan: "Starter Plan" },
-      { id: "INV-2026-02-001", date: "Feb 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" },
-      { id: "INV-2026-01-001", date: "Jan 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" }
-    ];
-
-    let combinedContent = `LIFECHARTER ARCHITECTURE - ALL INVOICES
-========================================\n\n`;
-    
-    allInvoices.forEach((invoice, index) => {
-      combinedContent += `
-Invoice #${index + 1}
--------------------
-Invoice ID: ${invoice.id}
-Date: ${invoice.date}
-Status: ${invoice.status}
-Plan: ${invoice.plan}
-Amount: ${invoice.amount}
-
-`;
-    });
-
-    combinedContent += `
-\nBilled To:
-${profile.fullName}
-${profile.email}
-
-Total Invoices: ${allInvoices.length}
-
-Thank you for your business!
-For questions, please contact support@lifecharter.architecture
-`;
-
-    const blob = new Blob([combinedContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `LifeCharter-All-Invoices.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  };
-
-  // Billing helper functions
-  const planPrices: Record<string, number> = {
-    starter: 297,
-    growth: 497,
-    vip: 997
-  };
-
-  const planHierarchy: Record<string, number> = {
-    starter: 1,
-    growth: 2,
-    vip: 3
-  };
-
-  const calculateProration = (
-    currentPlanId: string,
-    newPlanId: string,
-    cycle: { startDate: Date; endDate: Date }
-  ): number => {
-    const now = new Date();
-    const daysInCycle = Math.ceil((cycle.endDate.getTime() - cycle.startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const daysRemaining = Math.ceil((cycle.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysRemaining <= 0) return planPrices[newPlanId];
-    
-    const currentPlanDaily = planPrices[currentPlanId] / daysInCycle;
-    const newPlanDaily = planPrices[newPlanId] / daysInCycle;
-    
-    const unusedCurrent = currentPlanDaily * daysRemaining;
-    const costNewPlan = newPlanDaily * daysRemaining;
-    
-    return Math.max(0, costNewPlan - unusedCurrent);
-  };
-
-  const isUpgrade = (current: string, selected: string): boolean => {
-    return planHierarchy[selected] > planHierarchy[current];
-  };
-
-  const isDowngrade = (current: string, selected: string): boolean => {
-    return planHierarchy[selected] < planHierarchy[current];
-  };
-
-  const handlePlanChangeClick = () => {
-    setShowChangePlanModal(true);
-    setSelectedNewPlan(null);
-    setProrationAmount(null);
-    setShowDowngradeMessage(false);
-  };
-
-  const handlePlanSelection = (planId: "starter" | "growth" | "vip") => {
-    setSelectedNewPlan(planId);
-    
-    if (isDowngrade(currentPlan, planId)) {
-      setShowDowngradeMessage(true);
-    } else {
-      setShowDowngradeMessage(false);
-    }
-  };
-
-  const processUpgrade = async () => {
-    if (!selectedNewPlan || !isUpgrade(currentPlan, selectedNewPlan)) return;
-    
-    setIsProcessingUpgrade(true);
-    try {
-      const response = await fetch("/api/stripe/upgrade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPlan,
-          newPlan: selectedNewPlan,
-          prorationAmount,
-          userId,
-          userEmail: profile.email,
-          billingCycle
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.success) {
-        setCurrentPlan(selectedNewPlan);
-        setShowChangePlanModal(false);
-        alert(`Successfully upgraded to ${selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} plan!`);
-      } else {
-        alert("Failed to process upgrade. Please try again.");
-      }
-    } catch (error) {
-      console.error("Upgrade error:", error);
-      alert("Failed to process upgrade. Please try again.");
-    } finally {
-      setIsProcessingUpgrade(false);
-    }
-  };
-
-  const contactSupportForDowngrade = () => {
-    window.location.href = "mailto:support@lifecharter.architecture?subject=Plan%20Downgrade%20Request";
-  };
-
   // Social platform type
   type SocialPlatform = {
     id: string;
@@ -374,21 +406,51 @@ For questions, please contact support@lifecharter.architecture
     { id: "threads", name: "Threads", placeholder: "https://threads.net/@yourhandle", icon: "🧵" }
   ];
 
-  // Workspace settings
-  const [workspaces, setWorkspaces] = useState([
-    {
-      id: "ws-1",
-      name: "Sacred Kaleidoscope Community",
-      slug: "sacred-kaleidoscope",
-      description: "Spiritually grounded personal transformation ecosystem",
-      website: "https://lifecharter.architecture",
-      logo: null as string | null,
-      isDefault: true,
-      socials: {} as Record<string, string>
-    }
-  ]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState("ws-1");
-  
+  // Workspace settings (loaded live from /api/workspaces)
+  type Workspace = {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    website: string;
+    logo: string | null;
+    isDefault: boolean;
+    sortOrder: number;
+    socials: Record<string, string>;
+  };
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
+  const [wsLoading, setWsLoading] = useState(true);
+  const [wsError, setWsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/workspaces");
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(data.workspaces)) {
+          setWsError("Couldn't load your workspaces.");
+        } else {
+          setWorkspaces(data.workspaces);
+          setActiveWorkspaceId((prev) =>
+            prev && data.workspaces.some((w: Workspace) => w.id === prev)
+              ? prev
+              : (data.workspaces.find((w: Workspace) => w.isDefault) || data.workspaces[0])?.id || ""
+          );
+        }
+      } catch {
+        if (!cancelled) setWsError("Couldn't load your workspaces.");
+      } finally {
+        if (!cancelled) setWsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Plan limits
   const planLimits = {
     starter: 1,
@@ -398,6 +460,12 @@ For questions, please contact support@lifecharter.architecture
   const workspacePlan = "pro" as keyof typeof planLimits;
   const maxWorkspaces = planLimits[workspacePlan];
   const canCreateMore = workspaces.length < maxWorkspaces;
+
+  // Workspace save/upload UI state.
+  const [wsSaving, setWsSaving] = useState(false);
+  const [wsBusy, setWsBusy] = useState(false);
+  const [wsMsg, setWsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Notification settings
   const [notifications, setNotifications] = useState({
@@ -633,42 +701,196 @@ For questions, please contact support@lifecharter.architecture
 
   const renderWorkspaceSettings = () => {
     const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
-    
-    const handleCreateWorkspace = () => {
-      if (!canCreateMore) return;
-      const newId = `ws-${workspaces.length + 1}`;
-      const newWorkspace = {
-        id: newId,
-        name: `New Workspace ${workspaces.length + 1}`,
-        slug: `workspace-${workspaces.length + 1}`,
-        description: "",
-        website: "",
-        logo: null as string | null,
-        isDefault: false,
-        socials: {} as Record<string, string>
-      };
-      setWorkspaces([...workspaces, newWorkspace]);
-      setActiveWorkspaceId(newId);
+
+    // Ensure a link has a protocol so it opens correctly in a new tab.
+    const hrefFor = (url: string) => {
+      const v = (url || "").trim();
+      if (!v) return "";
+      return /^https?:\/\//i.test(v) ? v : `https://${v}`;
     };
 
-    const handleDeleteWorkspace = (id: string) => {
+    const patchLocal = (id: string, updates: Partial<Workspace>) =>
+      setWorkspaces(prev => prev.map(w => (w.id === id ? { ...w, ...updates } : w)));
+    const updateWorkspace = patchLocal;
+
+    const handleCreateWorkspace = async () => {
+      if (!canCreateMore || wsBusy) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch("/api/workspaces", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: `New Workspace ${workspaces.length + 1}` }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.workspace) throw new Error();
+        setWorkspaces(prev => [...prev, data.workspace as Workspace]);
+        setActiveWorkspaceId(data.workspace.id);
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't create the workspace." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    const handleDeleteWorkspace = async (id: string) => {
       if (workspaces.length <= 1) {
-        alert("You must have at least one workspace");
+        setWsMsg({ ok: false, text: "You must keep at least one workspace." });
         return;
       }
-      const updated = workspaces.filter(w => w.id !== id);
-      setWorkspaces(updated);
-      if (activeWorkspaceId === id) {
-        setActiveWorkspaceId(updated[0].id);
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error);
+        const wasDefault = workspaces.find(w => w.id === id)?.isDefault;
+        let remaining = workspaces.filter(w => w.id !== id);
+        if (wasDefault && remaining[0]) {
+          remaining = remaining.map((w, i) => (i === 0 ? { ...w, isDefault: true } : w));
+        }
+        setWorkspaces(remaining);
+        if (activeWorkspaceId === id) setActiveWorkspaceId(remaining[0]?.id || "");
+      } catch (e) {
+        setWsMsg({ ok: false, text: (e as Error)?.message || "Couldn't delete the workspace." });
+      } finally {
+        setWsBusy(false);
       }
     };
 
-    const updateWorkspace = (id: string, updates: Partial<typeof workspaces[0]>) => {
-      setWorkspaces(workspaces.map(w => w.id === id ? { ...w, ...updates } : w));
+    const handleSaveWorkspace = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsSaving(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: activeWorkspace.name,
+            slug: activeWorkspace.slug,
+            description: activeWorkspace.description,
+            website: activeWorkspace.website,
+            socials: activeWorkspace.socials,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setWsMsg({ ok: false, text: data?.error || "Couldn't save — please try again." });
+          setWsSaving(false);
+          return;
+        }
+        // Reflect any server normalization (e.g. cleaned slug).
+        patchLocal(activeWorkspace.id, data.workspace as Partial<Workspace>);
+        setWsMsg({ ok: true, text: "Workspace saved." });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't save — please try again." });
+      }
+      setWsSaving(false);
     };
+
+    const handleSetDefault = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isDefault: true }),
+        });
+        if (!res.ok) throw new Error();
+        setWorkspaces(prev => prev.map(w => ({ ...w, isDefault: w.id === activeWorkspace.id })));
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't set the default workspace." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("folder", "logos");
+        const up = await fetch("/api/uploads/image", { method: "POST", body: form });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok || !upData.url) throw new Error();
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logo: upData.url }),
+        });
+        if (!res.ok) throw new Error();
+        patchLocal(activeWorkspace.id, { logo: upData.url });
+        setWsMsg({ ok: true, text: "Logo updated." });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't upload the logo." });
+      } finally {
+        setWsBusy(false);
+        if (logoInputRef.current) logoInputRef.current.value = "";
+      }
+    };
+
+    const handleRemoveLogo = async () => {
+      if (!activeWorkspace) return;
+      setWsMsg(null);
+      setWsBusy(true);
+      try {
+        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logo: null }),
+        });
+        if (!res.ok) throw new Error();
+        patchLocal(activeWorkspace.id, { logo: null });
+      } catch {
+        setWsMsg({ ok: false, text: "Couldn't remove the logo." });
+      } finally {
+        setWsBusy(false);
+      }
+    };
+
+    if (wsLoading) {
+      return <p className="text-sm text-[#b8a898]">Loading your workspaces…</p>;
+    }
+    if (wsError && workspaces.length === 0) {
+      return (
+        <div className="space-y-3">
+          <p className="text-sm text-red-600">{wsError}</p>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      );
+    }
+    if (!activeWorkspace) {
+      return <p className="text-sm text-[#b8a898]">No workspace yet.</p>;
+    }
 
     return (
       <div className="space-y-6">
+        {/* Save / status banner */}
+        {wsMsg && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+              wsMsg.ok
+                ? "bg-green-50 border border-green-200 text-green-700"
+                : "bg-red-50 border border-red-200 text-red-600"
+            }`}
+          >
+            {wsMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+            <span>{wsMsg.text}</span>
+          </div>
+        )}
+
         {/* Workspace Selector */}
         <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
           <div className="flex items-center justify-between mb-3">
@@ -679,7 +901,7 @@ For questions, please contact support@lifecharter.architecture
               {workspaces.length} of {maxWorkspaces} used
             </span>
           </div>
-          
+
           <div className="space-y-2 mb-4">
             {workspaces.map((ws) => (
               <div
@@ -692,8 +914,12 @@ For questions, please contact support@lifecharter.architecture
                 onClick={() => setActiveWorkspaceId(ws.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-[#c9a227]" />
+                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
+                    {ws.logo ? (
+                      <img src={ws.logo} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-5 h-5 text-[#c9a227]" />
+                    )}
                   </div>
                   <div>
                     <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -704,7 +930,7 @@ For questions, please contact support@lifecharter.architecture
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-[#b8a898]">/{ws.slug}</p>
+                    <p className="text-xs text-[#b8a898]">/{ws.slug || "—"}</p>
                   </div>
                 </div>
                 {workspaces.length > 1 && (
@@ -712,6 +938,7 @@ For questions, please contact support@lifecharter.architecture
                     variant="ghost"
                     size="sm"
                     className="text-red-500 hover:text-red-600"
+                    disabled={wsBusy}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteWorkspace(ws.id);
@@ -728,6 +955,7 @@ For questions, please contact support@lifecharter.architecture
             <Button
               variant="outline"
               className="w-full"
+              disabled={wsBusy}
               onClick={handleCreateWorkspace}
             >
               <Building2 className="w-4 h-4 mr-2" />
@@ -738,7 +966,12 @@ For questions, please contact support@lifecharter.architecture
               <p className="text-sm text-yellow-600">
                 Workspace limit reached. Upgrade your plan to create more workspaces.
               </p>
-              <Button variant="outline" size="sm" className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setActiveTab("billing")}
+              >
                 Upgrade Plan
               </Button>
             </div>
@@ -752,7 +985,7 @@ For questions, please contact support@lifecharter.architecture
           </h4>
 
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-24 h-24 rounded-xl bg-[#c9a227]/20 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-xl bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
               {activeWorkspace.logo ? (
                 <img src={activeWorkspace.logo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
               ) : (
@@ -760,11 +993,36 @@ For questions, please contact support@lifecharter.architecture
               )}
             </div>
             <div>
-              <Button variant="outline" size="sm">
-                Upload Logo
-              </Button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoSelect}
+                className="hidden"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={wsBusy}
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  {activeWorkspace.logo ? "Change Logo" : "Upload Logo"}
+                </Button>
+                {activeWorkspace.logo && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#7b6b8d]"
+                    disabled={wsBusy}
+                    onClick={handleRemoveLogo}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
               <p className="text-xs text-[#b8a898] mt-2">
-                Recommended: 400x400px transparent PNG
+                Recommended: 400x400px transparent PNG. This is separate from your profile photo.
               </p>
             </div>
           </div>
@@ -793,6 +1051,9 @@ For questions, please contact support@lifecharter.architecture
                   className="pl-44"
                 />
               </div>
+              <p className="text-xs text-[#b8a898] mt-1.5">
+                Lowercase letters, numbers and hyphens. Must be unique across all workspaces.
+              </p>
             </div>
           </div>
 
@@ -811,11 +1072,25 @@ For questions, please contact support@lifecharter.architecture
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Website
             </label>
-            <Input
-              type="url"
-              value={activeWorkspace.website}
-              onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="url"
+                className="flex-1"
+                placeholder="https://yourdomain.com"
+                value={activeWorkspace.website}
+                onChange={(e) => updateWorkspace(activeWorkspace.id, { website: e.target.value })}
+              />
+              {activeWorkspace.website.trim() && (
+                <a
+                  href={hrefFor(activeWorkspace.website)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline whitespace-nowrap"
+                >
+                  Open <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Social Profiles */}
@@ -825,50 +1100,68 @@ For questions, please contact support@lifecharter.architecture
               Social Profiles
             </h4>
             <p className="text-sm text-[#b8a898] mb-4">
-              Connect your social media accounts for easy sharing and cross-posting
+              Add your profile links. Saved links become clickable here and can be surfaced on your public page.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {socialPlatforms.map((platform) => (
-                <div key={platform.id}>
-                  <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-                    <span className="mr-2">{platform.icon}</span>
-                    {platform.name}
-                  </label>
-                  <Input
-                    type="url"
-                    placeholder={platform.placeholder}
-                    value={activeWorkspace.socials?.[platform.id] || ""}
-                    onChange={(e) => {
-                      const newSocials = { ...activeWorkspace.socials, [platform.id]: e.target.value };
-                      updateWorkspace(activeWorkspace.id, { socials: newSocials });
-                    }}
-                  />
-                </div>
-              ))}
+              {socialPlatforms.map((platform) => {
+                const val = activeWorkspace.socials?.[platform.id] || "";
+                return (
+                  <div key={platform.id}>
+                    <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                      <span className="mr-2">{platform.icon}</span>
+                      {platform.name}
+                      {val.trim() && (
+                        <a
+                          href={hrefFor(val)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline align-middle"
+                        >
+                          Open <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder={platform.placeholder}
+                      value={val}
+                      onChange={(e) => {
+                        const newSocials = { ...activeWorkspace.socials, [platform.id]: e.target.value };
+                        updateWorkspace(activeWorkspace.id, { socials: newSocials });
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Save the active workspace's details */}
+          <div className="mt-6 flex items-center gap-3">
+            <Button type="button" onClick={handleSaveWorkspace} disabled={wsSaving || wsBusy}>
+              <Save className="w-4 h-4 mr-1.5" />
+              {wsSaving ? "Saving…" : "Save Workspace"}
+            </Button>
+            {!activeWorkspace.isDefault && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={wsBusy}
+                onClick={handleSetDefault}
+              >
+                Set as Default Workspace
+              </Button>
+            )}
           </div>
 
           <div className="mt-6 border-t border-[#1a2b4a]/10 pt-6">
             <TeamManagement
               workspaceId={activeWorkspace.id}
               workspaceName={activeWorkspace.name}
+              onChangePlan={() => setActiveTab("billing")}
             />
           </div>
-
-          {!activeWorkspace.isDefault && (
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setWorkspaces(workspaces.map(w => ({ ...w, isDefault: w.id === activeWorkspace.id })));
-                }}
-              >
-                Set as Default Workspace
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -1054,10 +1347,192 @@ For questions, please contact support@lifecharter.architecture
     const connectedCount = 0; // This would be calculated from actual connected integrations
     
     return (
-      <IntegrationsPanel 
-        planId={currentPlanId}
-        currentIntegrationCount={connectedCount}
-      />
+      <div className="space-y-6">
+        {/* Global Control (Titanium Suite) — per-client connection */}
+        <Card className="border-[#4a9b9b]/30">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-lg bg-[#4a9b9b]/15 flex items-center justify-center text-2xl">
+                  📊
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Global Control</h3>
+                    {gcConnected ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle className="w-3.5 h-3.5" /> Connected
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#b8a898]">Not connected</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-[#b8a898] mt-0.5">
+                    Connect your Global Control (Titanium Suite) account to bring your contacts, calls, and
+                    follow-ups into the Daily Compass. Your API key is exclusive to your account and stored
+                    securely — it&apos;s never shown again after you save it.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Global Control API key
+                </label>
+                <Input
+                  type="password"
+                  value={gcKeyInput}
+                  onChange={(e) => setGcKeyInput(e.target.value)}
+                  placeholder={gcConnected ? "•••••••••• (a key is saved)" : "Paste your API key"}
+                  className="max-w-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Account / Location ID <span className="text-[#b8a898] font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={gcAccountInput}
+                  onChange={(e) => setGcAccountInput(e.target.value)}
+                  placeholder="If your account requires a sub-account / location ID"
+                  className="max-w-lg"
+                />
+              </div>
+
+              {gcMsg && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                    gcMsg.ok
+                      ? "bg-green-50 border border-green-200 text-green-700"
+                      : "bg-red-50 border border-red-200 text-red-600"
+                  }`}
+                >
+                  {gcMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+                  <span>{gcMsg.text}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={handleSaveGlobalControl} disabled={gcSaving}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {gcSaving ? "Saving…" : gcConnected ? "Update key" : "Save & Connect"}
+                </Button>
+                {gcConnected && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDisconnectGlobalControl}
+                    disabled={gcSaving}
+                  >
+                    Disconnect
+                  </Button>
+                )}
+              </div>
+              {gcConnected && gcAccountId && (
+                <p className="text-xs text-[#b8a898]">Account/Location ID: {gcAccountId}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PostStream (Titanium Suite) — per-client connection */}
+        <Card className="border-[#7b6b8d]/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-lg bg-[#7b6b8d]/15 flex items-center justify-center text-2xl">
+                📣
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">PostStream</h3>
+                  {psConnected ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                      <CheckCircle className="w-3.5 h-3.5" /> Connected
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#b8a898]">Not connected</span>
+                  )}
+                </div>
+                <p className="text-sm text-[#b8a898] mt-0.5">
+                  Connect PostStream to create and schedule social posts from the Suite. Your API key is
+                  exclusive to your account and stored securely — never shown again after you save it.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  PostStream API key
+                </label>
+                <Input
+                  type="password"
+                  value={psKeyInput}
+                  onChange={(e) => setPsKeyInput(e.target.value)}
+                  placeholder={psConnected ? "•••••••••• (a key is saved)" : "Paste your API key"}
+                  className="max-w-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                  Account / Workspace ID <span className="text-[#b8a898] font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={psAccountInput}
+                  onChange={(e) => setPsAccountInput(e.target.value)}
+                  placeholder="If your PostStream account requires an id"
+                  className="max-w-lg"
+                />
+              </div>
+
+              {psMsg && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                    psMsg.ok
+                      ? "bg-green-50 border border-green-200 text-green-700"
+                      : "bg-red-50 border border-red-200 text-red-600"
+                  }`}
+                >
+                  {psMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+                  <span>{psMsg.text}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={handleSavePostStream} disabled={psSaving}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {psSaving ? "Saving…" : psConnected ? "Update key" : "Save & Connect"}
+                </Button>
+                {psConnected && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDisconnectPostStream}
+                    disabled={psSaving}
+                  >
+                    Disconnect
+                  </Button>
+                )}
+              </div>
+              {psConnected && psAccountId && (
+                <p className="text-xs text-[#b8a898]">Account/Workspace ID: {psAccountId}</p>
+              )}
+              <p className="text-xs text-[#b8a898]">
+                Saving stores your key now. Live validation and post creation/scheduling turn on once the
+                PostStream API details are wired.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <IntegrationsPanel planId={currentPlanId} currentIntegrationCount={connectedCount} />
+      </div>
     );
   };
 
@@ -1372,395 +1847,8 @@ For questions, please contact support@lifecharter.architecture
     );
   };
 
-  const handleSubscribe = async (planId: string) => {
-    if (planId === "vip") {
-      // For VIP, open contact form or email
-      window.location.href = "mailto:babs@lifecharter.architecture?subject=VIP%20Plan%20Inquiry";
-      return;
-    }
-    
-    setIsLoadingCheckout(planId);
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId,
-          userId,
-          userEmail: profile.email,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Failed to start checkout. Please try again.");
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Failed to start checkout. Please try again.");
-    } finally {
-      setIsLoadingCheckout(null);
-    }
-  };
 
-  const renderBillingSettings = () => {
-    
-    const plans = [
-      {
-        name: "Starter",
-        price: "$297",
-        period: "/month",
-        onboarding: "+$1,997 one-time onboarding",
-        description: "For a single coach running one business.",
-        features: [
-          "Command Center",
-          "Business Architecture",
-          "Revenue Engine",
-          "Client Experience",
-          "1 seat",
-          "1 business unit",
-          "50 AI actions per month",
-          "2 automations enabled",
-          "Guided roadmap onboarding"
-        ],
-        id: "starter",
-        cta: "Get Started",
-        popular: false
-      },
-      {
-        name: "Growth",
-        price: "$497",
-        period: "/month",
-        onboarding: "+$2,497 one-time onboarding",
-        description: "For a small delivery team across a few brands.",
-        features: [
-          "Everything in Starter, plus:",
-          "Operations",
-          "Review Center",
-          "AI Team",
-          "5 seats",
-          "3 business units",
-          "500 AI actions per month",
-          "10 automations enabled",
-          "Branded client portal",
-          "Multi-brand data scoping"
-        ],
-        id: "growth",
-        cta: "Get Started",
-        popular: true
-      },
-      {
-        name: "VIP / Done-With-You",
-        price: "$997+",
-        period: "/month",
-        onboarding: "Custom onboarding, scoped to you",
-        description: "Platform plus hands-on implementation support.",
-        features: [
-          "Everything in Growth, plus:",
-          "Unlimited seats and business units",
-          "Unlimited AI actions and automations",
-          "White-label domain and branding",
-          "Custom AI agent setup with our team",
-          "Dedicated onboarding support"
-        ],
-        id: "vip",
-        cta: "Contact Us",
-        popular: false
-      }
-    ];
-
-    return (
-      <div className="space-y-8">
-        {/* Pricing Plans */}
-        <div>
-          <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-6">
-            Choose Your Plan
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.name}
-                className={`relative ${plan.popular ? 'border-[#c9a227] border-2' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-[#c9a227] text-[#1a2b4a] text-xs font-semibold px-3 py-1 rounded-full">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-                <CardContent className="p-6">
-                  <h4 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    {plan.name}
-                  </h4>
-                  <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                      {plan.price}
-                    </span>
-                    <span className="text-[#b8a898] ml-1">{plan.period}</span>
-                  </div>
-                  <p className="text-sm text-[#b8a898] mt-1">{plan.onboarding}</p>
-                  <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] mt-3">
-                    {plan.description}
-                  </p>
-                  
-                  <ul className="mt-4 space-y-2">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    className="w-full mt-6"
-                    variant={plan.popular ? "primary" : "outline"}
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={isLoadingCheckout === plan.id}
-                  >
-                    {isLoadingCheckout === plan.id ? "Loading..." : plan.cta}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Current Plan Status */}
-        <Card className="bg-gradient-to-br from-[#c9a227]/20 to-[#7b6b8d]/20 border-[#c9a227]/30">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#b8a898]">Current Plan</p>
-                <h3 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                  {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
-                </h3>
-                <p className="text-sm text-[#b8a898] mt-1">
-                  ${planPrices[currentPlan]}/month • Renews {billingCycle.nextBillingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-              <Button variant="outline" onClick={handlePlanChangeClick}>Change Plan</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Change Plan Modal */}
-        {showChangePlanModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    Change Your Plan
-                  </h3>
-                  <Button variant="ghost" size="sm" onClick={() => setShowChangePlanModal(false)}>
-                    ✕
-                  </Button>
-                </div>
-
-                <p className="text-sm text-[#b8a898] mb-4">
-                  Current plan: <strong>{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</strong> at ${planPrices[currentPlan]}/month
-                </p>
-
-                {/* Plan Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {[
-                    { id: "starter", name: "Starter", price: "$297", features: ["Command Center", "Business Architecture", "1 seat", "50 AI actions"] },
-                    { id: "growth", name: "Growth", price: "$497", features: ["Everything in Starter", "Operations", "5 seats", "500 AI actions"], popular: true },
-                    { id: "vip", name: "VIP", price: "$997+", features: ["Everything in Growth", "Unlimited seats", "Custom AI setup", "White-label"] }
-                  ].map((plan) => (
-                    <button
-                      key={plan.id}
-                      onClick={() => handlePlanSelection(plan.id as "starter" | "growth" | "vip")}
-                      disabled={plan.id === currentPlan}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        selectedNewPlan === plan.id
-                          ? "border-[#c9a227] bg-[#c9a227]/10"
-                          : plan.id === currentPlan
-                          ? "border-gray-200 opacity-50 cursor-not-allowed"
-                          : "border-[#1a2b4a]/10 hover:border-[#c9a227]/50"
-                      }`}
-                    >
-                      {plan.popular && (
-                        <span className="text-xs bg-[#c9a227] text-[#1a2b4a] px-2 py-0.5 rounded-full mb-2 inline-block">
-                          Popular
-                        </span>
-                      )}
-                      {plan.id === currentPlan && (
-                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mb-2 inline-block">
-                          Current
-                        </span>
-                      )}
-                      <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.name}</h4>
-                      <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{plan.price}<span className="text-sm font-normal text-[#b8a898]">/mo</span></p>
-                      <ul className="mt-2 space-y-1">
-                        {plan.features.slice(0, 2).map((feature, i) => (
-                          <li key={i} className="text-xs text-[#b8a898]">• {feature}</li>
-                        ))}
-                      </ul>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Downgrade Message */}
-                {showDowngradeMessage && selectedNewPlan && (
-                  <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-6">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                          Downgrade Request
-                        </p>
-                        <p className="text-sm text-[#b8a898] mt-1">
-                          To downgrade from {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} to {selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)}, please contact our support team. We&apos;ll help you transition smoothly.
-                        </p>
-                        <Button 
-                          className="mt-3" 
-                          size="sm"
-                          onClick={contactSupportForDowngrade}
-                        >
-                          <Mail className="w-4 h-4 mr-2" />
-                          Contact Support
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Upgrade Summary */}
-                {selectedNewPlan && isUpgrade(currentPlan, selectedNewPlan) && prorationAmount !== null && (
-                  <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20 mb-6">
-                    <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Upgrade Summary</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-[#b8a898]">Current Plan</span>
-                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} (${planPrices[currentPlan]}/mo)</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#b8a898]">New Plan</span>
-                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{selectedNewPlan.charAt(0).toUpperCase() + selectedNewPlan.slice(1)} (${planPrices[selectedNewPlan]}/mo)</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#b8a898]">Days Remaining in Cycle</span>
-                        <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{Math.ceil((billingCycle.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</span>
-                      </div>
-                      <div className="border-t border-[#1a2b4a]/10 pt-2 mt-2">
-                        <div className="flex justify-between font-semibold">
-                          <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Amount Due Today (Prorated)</span>
-                          <span className="text-green-600">${prorationAmount.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-[#b8a898] mt-3">
-                      Your new billing cycle will start today. You&apos;ll be charged the prorated difference for the remaining days in your current cycle.
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 justify-end">
-                  <Button variant="outline" onClick={() => setShowChangePlanModal(false)}>
-                    Cancel
-                  </Button>
-                  {selectedNewPlan && isUpgrade(currentPlan, selectedNewPlan) && (
-                    <Button 
-                      onClick={processUpgrade}
-                      disabled={isProcessingUpgrade}
-                    >
-                      {isProcessingUpgrade ? "Processing..." : `Upgrade & Pay $${prorationAmount?.toFixed(2)}`}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Payment Method */}
-        <div>
-          <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">Payment Method</h4>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-8 bg-[#1a2b4a]/10 rounded flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-[#1a2b4a] dark:text-[#F8F5F0]" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                      •••• •••• •••• 4242
-                    </p>
-                    <p className="text-sm text-[#b8a898]">Expires 12/27</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Update
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Billing History */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Billing History</h4>
-            <Button variant="outline" size="sm" onClick={() => downloadAllInvoices()}>
-              <Download className="w-4 h-4 mr-2" />
-              Download All
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {[
-              { id: "INV-2026-07-001", date: "Jul 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-              { id: "INV-2026-06-001", date: "Jun 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-              { id: "INV-2026-05-001", date: "May 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-              { id: "INV-2026-04-001", date: "Apr 15, 2026", amount: "$497.00", status: "Paid", plan: "Growth Plan" },
-              { id: "INV-2026-03-001", date: "Mar 15, 2026", amount: "$497.00", status: "Paid", plan: "Starter Plan" },
-              { id: "INV-2026-02-001", date: "Feb 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" },
-              { id: "INV-2026-01-001", date: "Jan 15, 2026", amount: "$297.00", status: "Paid", plan: "Starter Plan" }
-            ].map((invoice, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-[#c9a227]" />
-                  </div>
-                  <div>
-                    <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">{invoice.id}</p>
-                    <p className="text-sm text-[#b8a898]">{invoice.date} • {invoice.plan}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{invoice.amount}</p>
-                    <span className="text-xs text-green-500">{invoice.status}</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => downloadInvoice(invoice)}
-                    title="Download Invoice"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-[#b8a898] mt-4">
-            Invoices are generated automatically on your billing date. Click the download button to save a PDF copy.
-          </p>
-        </div>
-      </div>
-    );
-  };
+  const renderBillingSettings = () => <BillingPanel />;
 
   const renderSecuritySettings = () => (
     <div className="space-y-6">
@@ -1770,69 +1858,40 @@ For questions, please contact support@lifecharter.architecture
           Change Password
         </h4>
         <div className="space-y-4">
-          <Input type="password" placeholder="Current password" />
-          <Input type="password" placeholder="New password" />
-          <Input type="password" placeholder="Confirm new password" />
-          <Button>Update Password</Button>
+          <Input
+            type="password"
+            placeholder="Current password"
+            autoComplete="current-password"
+            value={pwCurrent}
+            onChange={(e) => setPwCurrent(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="New password"
+            autoComplete="new-password"
+            value={pwNew}
+            onChange={(e) => setPwNew(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Confirm new password"
+            autoComplete="new-password"
+            value={pwConfirm}
+            onChange={(e) => setPwConfirm(e.target.value)}
+          />
+          {pwMsg && (
+            <p className={`text-sm ${pwMsg.ok ? "text-green-600" : "text-red-600"}`}>{pwMsg.text}</p>
+          )}
+          <Button
+            onClick={handleUpdatePassword}
+            disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}
+          >
+            {pwSaving ? "Updating…" : "Update Password"}
+          </Button>
         </div>
       </div>
 
-      <div className="border-t border-[#1a2b4a]/10 pt-6">
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
-          <Shield className="w-4 h-4" />
-          Two-Factor Authentication
-        </h4>
-        <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-            <div>
-              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                2FA Not Enabled
-              </p>
-              <p className="text-sm text-[#b8a898] mt-1">
-                Add an extra layer of security to your account
-              </p>
-              <Button className="mt-3" size="sm">
-                Enable 2FA
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-[#1a2b4a]/10 pt-6">
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
-          Active Sessions
-        </h4>
-        <div className="space-y-3">
-          {[
-            { device: "Chrome on MacOS", location: "Denver, CO", current: true },
-            { device: "Safari on iPhone", location: "Denver, CO", current: false }
-          ].map((session, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-lg border border-[#1a2b4a]/10"
-            >
-              <div>
-                <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-                  {session.device}
-                  {session.current && (
-                    <span className="ml-2 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded">
-                      Current
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-[#b8a898]">{session.location}</p>
-              </div>
-              {!session.current && (
-                <Button variant="ghost" size="sm" className="text-red-500">
-                  Revoke
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <SecurityPanel />
     </div>
   );
 
@@ -1887,12 +1946,110 @@ For questions, please contact support@lifecharter.architecture
     </div>
   );
 
+  const renderAiSettings = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">AI Assistant</h3>
+              <p className="text-sm text-[#b8a898]">
+                Name your assistant and connect your OpenAI key so it comes online.
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Assistant name */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              Assistant name
+            </label>
+            <Input
+              value={aiName}
+              onChange={(e) => setAiName(e.target.value)}
+              placeholder="Mariposa"
+              className="max-w-sm"
+            />
+            <p className="text-xs text-[#b8a898] mt-1.5">
+              What your assistant is called across the app (e.g. on your Morning Brief). Leave blank to
+              use the default, Mariposa.
+            </p>
+          </div>
+
+          {/* OpenAI key */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              OpenAI API key
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2 max-w-lg">
+              <Input
+                type="password"
+                value={aiKey}
+                onChange={(e) => setAiKey(e.target.value)}
+                placeholder={aiHasKey ? "•••••••••• (a key is saved)" : "sk-…"}
+                className="flex-1"
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              {aiHasKey ? (
+                <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                  <CheckCircle className="w-3.5 h-3.5" /> Key configured
+                </span>
+              ) : (
+                <span className="text-xs text-[#b8a898]">No key yet — the assistant stays offline until one is added.</span>
+              )}
+              <a
+                href="https://platform.openai.com/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline"
+              >
+                Get an OpenAI key <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-xs text-[#b8a898] mt-2">
+              Your key is stored securely and used only to power your assistant. Paste a new key to
+              replace an existing one.
+            </p>
+          </div>
+
+          {aiMsg && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+                aiMsg.ok
+                  ? "bg-green-50 border border-green-200 text-green-700"
+                  : "bg-red-50 border border-red-200 text-red-600"
+              }`}
+            >
+              {aiMsg.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : null}
+              <span>{aiMsg.text}</span>
+            </div>
+          )}
+
+          <div>
+            <Button type="button" onClick={handleSaveAi} disabled={aiSaving}>
+              <Save className="w-4 h-4 mr-1.5" />
+              {aiSaving ? "Saving…" : "Save AI settings"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case "profile": return renderProfileSettings();
       case "workspace": return renderWorkspaceSettings();
       case "notifications": return renderNotificationSettings();
       case "appearance": return renderAppearanceSettings();
+      case "ai": return renderAiSettings();
       case "integrations": return renderIntegrationSettings();
       case "billing": return renderBillingSettings();
       case "security": return renderSecuritySettings();

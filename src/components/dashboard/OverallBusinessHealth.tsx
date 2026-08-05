@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
@@ -10,12 +11,61 @@ interface OverallBusinessHealthProps {
   description?: string;
 }
 
-export function OverallBusinessHealth({
-  score = 68,
-  status = "Growth",
-  focusAreas = ["Sales", "Finance", "Systems"],
-  description = "You're building momentum. Align your systems and cash flow to scale with ease and clarity.",
-}: OverallBusinessHealthProps) {
+export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
+  const [live, setLive] = useState<{
+    overall: number;
+    status: string;
+    focusAreas: string[];
+    description: string;
+  } | null>(null);
+  const [needsAssessment, setNeedsAssessment] = useState(false);
+
+  useEffect(() => {
+    if (props.score !== undefined) return;
+    fetch("/api/alignment?ts=" + Date.now(), { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasData) setLive(d);
+        else setNeedsAssessment(true);
+      })
+      .catch(() => {});
+  }, [props.score]);
+
+  // No manual fallback: until the client completes assessments, prompt them.
+  if (props.score === undefined && needsAssessment) {
+    return (
+      <Card className="h-full border-[#c9a227]/30">
+        <CardContent className="p-6 flex flex-col items-start justify-center h-full">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">
+            Overall Business Health
+          </h2>
+          <p className="text-lg font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
+            Complete your assessments
+          </p>
+          <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-4 leading-relaxed">
+            Your health scores are built from your Soul, Brain, and Profit
+            assessments — real data, no guesswork. Take them to see where your
+            business actually stands.
+          </p>
+          <a
+            href="/assessments"
+            className="inline-block px-4 py-2 bg-[#1a2b4a] text-white rounded-md text-sm hover:bg-[#1a2b4a]/90"
+          >
+            Start assessments
+          </a>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const score = props.score ?? live?.overall ?? 68;
+  const status = props.status ?? live?.status ?? "Growth";
+  const focusAreas = props.focusAreas ?? live?.focusAreas ?? ["Sales", "Finance", "Systems"];
+  const description =
+    props.description ??
+    live?.description ??
+    "You're building momentum. Align your systems and cash flow to scale with ease and clarity.";
+
   // Calculate stroke dasharray for circular progress
   const radius = 52;
   const circumference = 2 * Math.PI * radius;

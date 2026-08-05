@@ -10,6 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Brand-board palette used by the login screen (text-brand-gold, etc.).
+        brand: {
+          indigo: "#1F315B",
+          "indigo-deep": "#16244A",
+          "indigo-dark": "#0F1A38",
+          plum: "#5E3B6C",
+          teal: "#2E7C83",
+          lavender: "#CDBFD6",
+          gold: "#D4AF63",
+          "gold-soft": "#E6C988",
+          ivory: "#F6F1E8",
+          taupe: "#B9AA9A",
+        },
         // LifeCharter Brand Palette (Light Mode)
         "lc-indigo": "#1a2b4a",
         "lc-plum": "#7b6b8d",
@@ -52,6 +65,11 @@ const config: Config = {
       fontFamily: {
         serif: ["Georgia", "Cambria", "Times New Roman", "serif"],
         sans: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        // Brand-board fonts, scoped to the login screen so the rest of the app
+        // is unaffected. Provided by next/font in app/layout.tsx.
+        display: ["var(--font-cormorant)", "Georgia", "serif"],
+        editorial: ["var(--font-eb-garamond)", "Georgia", "serif"],
+        ui: ["var(--font-montserrat)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         "lc": "12px",

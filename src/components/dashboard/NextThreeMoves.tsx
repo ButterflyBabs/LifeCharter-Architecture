@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
@@ -47,7 +48,19 @@ const numberColors = {
   3: "bg-[#e8e4f0] text-[#1a2b4a]",
 };
 
-export function NextThreeMoves({ moves = defaultMoves }: NextThreeMovesProps) {
+export function NextThreeMoves({ moves: movesProp }: NextThreeMovesProps) {
+  const [fetched, setFetched] = useState<Move[] | null>(null);
+
+  useEffect(() => {
+    if (movesProp) return;
+    fetch("/api/next-moves?ts=" + Date.now(), { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setFetched(d?.moves?.length ? d.moves : defaultMoves))
+      .catch(() => setFetched(defaultMoves));
+  }, [movesProp]);
+
+  const moves = movesProp ?? fetched ?? defaultMoves;
+
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader>

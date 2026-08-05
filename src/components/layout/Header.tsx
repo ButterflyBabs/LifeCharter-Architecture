@@ -6,17 +6,17 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
   Search,
-  Plus,
-  Bell,
   HelpCircle,
   Sparkles,
   ChevronDown,
 } from "lucide-react";
+import { NotificationsBell } from "./NotificationsBell";
+import { QuickAddMenu } from "./QuickAddMenu";
+import Link from "next/link";
 
 interface HeaderProps {
   title?: string;
   workspace?: string;
-  notificationCount?: number;
 }
 
 // Page title per route, mirroring the sidebar's own nav labels — kept here
@@ -24,12 +24,15 @@ interface HeaderProps {
 // the shared AppLayout doesn't require touching every route.
 const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
+  "/morning-brief": "Morning Brief",
   "/daily-compass": "Daily Compass",
   "/assessments": "Alignment Profile",
   "/business-plan": "Business Plan",
   "/marketing-plan": "Marketing Plan",
   "/sales": "Sales",
   "/finance": "Finance",
+  "/planning": "Planning Hub",
+  "/planning/forecast": "Forecasting",
   "/operations": "Operations",
   "/reviews": "Reviews",
   "/ai-guide": "AI Guide",
@@ -47,8 +50,7 @@ function titleForPath(pathname: string | null): string {
 
 export function Header({
   title,
-  workspace = "Soulful Solutions Co.",
-  notificationCount = 3,
+  workspace = "Sacred Kaleidoscope",
 }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
   const { mounted } = useTheme();
@@ -122,40 +124,21 @@ export function Header({
           />
         </div>
 
-        {/* Add Button */}
-        <button className="w-9 h-9 rounded-full bg-[#1a2b4a] text-[#F8F5F0] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors shadow-md">
-          <Plus className="w-5 h-5" />
-        </button>
+        {/* Quick add menu */}
+        <QuickAddMenu />
 
-        {/* Notifications */}
-        <button className="relative w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
-          <Bell className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#c9a227] text-[#1a2b4a] text-xs font-bold flex items-center justify-center">
-              {notificationCount}
-            </span>
-          )}
-        </button>
+        {/* Notifications — live feed */}
+        <NotificationsBell />
 
-        {/* Help */}
-        <button className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
+        {/* Help — opens the comprehensive Q&A knowledge base */}
+        <Link
+          href="/help/qa"
+          aria-label="Help and Q&A"
+          className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors"
+        >
           <HelpCircle className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
-        </button>
+        </Link>
 
-        {/* Decorative Compass */}
-        <div className="hidden lg:flex w-9 h-9 rounded-full border border-[#c9a227]/30 items-center justify-center">
-          <svg
-            viewBox="0 0 24 24"
-            className="w-5 h-5 text-[#c9a227]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2v20M2 12h20" />
-            <path d="M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
-          </svg>
-        </div>
       </div>
     </header>
   );
