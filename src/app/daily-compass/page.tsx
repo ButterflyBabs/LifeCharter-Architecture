@@ -37,6 +37,7 @@ interface RealTask {
   description: string | null;
   status: string;
   priority: string;
+  energy?: string | null;
   due_date: string | null;
   due_at: string | null;
   followup: {
@@ -103,9 +104,11 @@ export default function DailyCompassPage() {
 
   const [energyLevel, setEnergyLevel] = useState<number>(3);
   const [showEnergyInfo, setShowEnergyInfo] = useState(false);
+  const [showHigherEnergy, setShowHigherEnergy] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<string>("medium");
+  const [newTaskEnergy, setNewTaskEnergy] = useState<string>("medium");
   const [saving, setSaving] = useState(false);
 
   // AI-draft email view/send state (per focus item).
@@ -201,6 +204,15 @@ export default function DailyCompassPage() {
   const doneToday = tasks.filter((t) => t.status === "done" && isToday(t.completed_at));
   const focusItems = [...openFocus, ...doneToday];
 
+  // Energy matching: each task takes low/medium/high energy. When your current
+  // energy is lower, higher-energy tasks tuck away so you focus on what fits.
+  const ENERGY_NUM: Record<string, number> = { low: 1, medium: 2, high: 3 };
+  const taskEnergy = (t: RealTask) => ENERGY_NUM[t.energy || "medium"] ?? 2;
+  const fitsEnergy = (t: RealTask) => taskEnergy(t) <= energyLevel;
+  const openFit = openFocus.filter(fitsEnergy);
+  const openRest = openFocus.filter((t) => !fitsEnergy(t));
+  const displayItems = [...(showHigherEnergy ? openFocus : openFit), ...doneToday];
+
   // Upcoming scheduled follow-ups (future-dated, next 7 days).
   const upcoming = openTasks
     .filter((t) => {
@@ -266,7 +278,7 @@ export default function DailyCompassPage() {
     }
   };
 
-  const addTask = async (title: string, priority = "medium") => {
+  const addTask = async (title: string, priority = "medium", energy = "medium") => {
     const clean = title.trim();
     if (!clean) return;
     setSaving(true);
@@ -274,7 +286,7 @@ export default function DailyCompassPage() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: clean, priority, status: "today" }),
+        body: JSON.stringify({ title: clean, priority, energy, status: "today" }),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.task) setTasks((prev) => [...prev, data.task as RealTask]);
@@ -286,8 +298,9 @@ export default function DailyCompassPage() {
   };
 
   const handleAddTask = async () => {
-    await addTask(newTaskTitle, newTaskPriority);
+    await addTask(newTaskTitle, newTaskPriority, newTaskEnergy);
     setNewTaskTitle("");
+    setNewTaskEnergy("medium");
     setShowAddTask(false);
   };
 
@@ -565,14 +578,25 @@ export default function DailyCompassPage() {
                       <option value="low">Low</option>
                     </select>
                   </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleAddTask} disabled={saving || !newTaskTitle.trim()} className="w-full">
-                      {saving ? "Adding…" : "Add Task"}
-                    </Button>
+                  <div>
+                    <label className="text-sm text-[#b8a898] mb-1 block">Energy</label>
+                    <select
+                      value={newTaskEnergy}
+                      onChange={(e) => setNewTaskEnergy(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-sm"
+                    >
+                      <option value="high">High energy</option>
+                      <option value="medium">Medium energy</option>
+                      <option value="low">Low energy</option>
+                    </select>
                   </div>
                 </div>
+                <Button onClick={handleAddTask} disabled={saving || !newTaskTitle.trim()} className="w-full">
+                  {saving ? "Adding…" : "Add Task"}
+                </Button>
                 <p className="text-xs text-[#b8a898]">
-                  Adds to your Tasks board (flagged for today) — it&apos;ll also show on your Morning Brief.
+                  Adds to your Tasks board (flagged for today). Energy sets how much oomph it takes, so it surfaces when
+                  your energy matches.
                 </p>
               </CardContent>
             </Card>
@@ -595,7 +619,7 @@ export default function DailyCompassPage() {
                 </Link>
               </div>
             ) : (
-              focusItems.map((item) => {
+              displayItems.map((item) => {
                 const done = item.status === "done";
                 return (
                   <div
@@ -699,6 +723,22 @@ export default function DailyCompassPage() {
                   </div>
                 );
               })
+            )}
+
+            {dataReady && displayItems.length === 0 && openRest.length > 0 && (
+              <p className="text-sm text-[#b8a898] px-1">
+                Nothing matches your energy right now — the rest needs more. Rest up, or reveal them below.
+              </p>
+            )}
+            {dataReady && energyLevel < 3 && openRest.length > 0 && (
+              <button
+                onClick={() => setShowHigherEnergy((s) => !s)}
+                className="w-full text-xs font-medium text-[#2E7C83] py-2 hover:underline"
+              >
+                {showHigherEnergy
+                  ? "Hide higher-energy tasks"
+                  : `Show ${openRest.length} higher-energy task${openRest.length === 1 ? "" : "s"}`}
+              </button>
             )}
           </div>
 

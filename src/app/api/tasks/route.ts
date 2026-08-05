@@ -28,7 +28,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, due_date, due_at, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
     )
     .order("board_position", { ascending: true })
     .order("created_at", { ascending: true });
@@ -56,6 +56,7 @@ export async function POST(request: Request) {
     description: body.description ?? null,
     status: body.status ?? "today",
     priority: body.priority ?? "medium",
+    energy: ["low", "medium", "high"].includes(body.energy) ? body.energy : "medium",
     business_id: body.businessId ?? null,
     segment_id: body.segmentId ?? null,
     due_date: body.dueDate ?? null,

@@ -70,7 +70,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: w.title, priority: w.priority, status: "today" }),
+        body: JSON.stringify({ title: w.title, priority: w.priority, energy: "low", status: "today" }),
       });
       if (!res.ok) throw new Error();
       setAddedId(w.id);
@@ -254,11 +254,11 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                 <button
                   onClick={() => doWin(w)}
                   disabled={busyId === w.id}
-                  className="flex-1 flex items-center gap-3 text-left rounded-xl border border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/30 px-3 py-2.5 hover:border-[#2E7C83]/50 hover:bg-[#2E7C83]/5 transition disabled:opacity-60"
+                  className="flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/30 px-3 py-2.5 hover:border-[#2E7C83]/50 hover:bg-[#2E7C83]/5 transition disabled:opacity-60"
                 >
-                  <span className="text-2xl">{w.emoji}</span>
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-1.5">
+                  <span className="text-2xl leading-none flex-shrink-0">{w.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-1.5 min-w-0">
                       <span
                         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: PRIORITY_DOT[w.priority] || PRIORITY_DOT.medium }}
@@ -267,7 +267,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                     </span>
                     {w.detail && <span className="block text-xs text-[#b8a898] truncate">{w.detail}</span>}
                   </span>
-                  <span className="ml-auto flex-shrink-0">
+                  <span className="flex-shrink-0 ml-1">
                     {addedId === w.id ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-[#2c6b3f]">
                         <Check className="w-3.5 h-3.5" /> Added
@@ -275,7 +275,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                     ) : busyId === w.id ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#b8a898]" />
                     ) : (
-                      <span className="text-xs text-[#b8a898]">+ Task</span>
+                      <span className="text-xs text-[#b8a898] whitespace-nowrap">+ Task</span>
                     )}
                   </span>
                 </button>
