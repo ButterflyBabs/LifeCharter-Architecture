@@ -229,6 +229,19 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
         )}
       </div>
 
+      {/* Concise, practical explainer */}
+      <p className="text-xs text-[#7a8a99] dark:text-[#b8c2cf] mb-3 leading-relaxed">
+        {mode === "full" ? (
+          <>
+            A rotating menu of small, high-impact moves. <strong className="font-medium text-[#2E7C83]">Tap one to add it to today&apos;s tasks</strong> — the win stays so you can use it again. Use <strong className="font-medium">Manage</strong> to edit or delete, and <strong className="font-medium">AI suggest</strong> for a new one tailored to your weakest area.
+          </>
+        ) : (
+          <>
+            <strong className="font-medium text-[#2E7C83]">Tap a win to add it to today&apos;s tasks</strong> — small, high-impact moves you can knock out fast.
+          </>
+        )}
+      </p>
+
       {needsKey && (
         <p className="text-xs text-[#8a6a15] dark:text-[#e8cf8a] mb-2">
           Connect your AI key in settings to generate or polish quick wins with AI.
