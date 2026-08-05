@@ -867,13 +867,16 @@ export default function DailyCompassPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Wins — pick one, it becomes a real task. Editable + AI. */}
-          <Card>
-            <CardContent className="pt-6">
-              <QuickWins mode="full" />
-            </CardContent>
-          </Card>
         </div>
+      </div>
+
+      {/* Quick Wins — full-width horizontal band; each is live (click → real task, editable + AI). */}
+      <div className="mt-6">
+        <Card>
+          <CardContent className="pt-6">
+            <QuickWins mode="full" layout="grid" />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Global Control contacts — full-width, editable */}

@@ -23,10 +23,12 @@ interface Props {
   mode?: "full" | "compact";
   // How many to show in compact mode before "show all".
   compactLimit?: number;
+  // "list" stacks vertically; "grid" lays wins out horizontally in columns.
+  layout?: "list" | "grid";
   className?: string;
 }
 
-export default function QuickWins({ mode = "full", compactLimit = 4, className = "" }: Props) {
+export default function QuickWins({ mode = "full", compactLimit = 4, layout = "list", className = "" }: Props) {
   const [wins, setWins] = useState<QuickWin[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [addedId, setAddedId] = useState<string | null>(null);
@@ -235,7 +237,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, className =
       {!loaded ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>
       ) : (
-        <div className="space-y-2">
+        <div className={layout === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 items-start" : "space-y-2"}>
           {visible.map((w) =>
             editId === w.id ? (
               <DraftEditor
@@ -300,20 +302,22 @@ export default function QuickWins({ mode = "full", compactLimit = 4, className =
           )}
 
           {mode === "full" && managing && editId === "new" && (
-            <DraftEditor
-              draft={draft}
-              setDraft={setDraft}
-              onSave={saveDraft}
-              onCancel={cancelEdit}
-              onImprove={improveDraft}
-              aiBusy={aiBusy}
-            />
+            <div className={layout === "grid" ? "sm:col-span-2 lg:col-span-3" : ""}>
+              <DraftEditor
+                draft={draft}
+                setDraft={setDraft}
+                onSave={saveDraft}
+                onCancel={cancelEdit}
+                onImprove={improveDraft}
+                aiBusy={aiBusy}
+              />
+            </div>
           )}
 
           {mode === "full" && managing && editId !== "new" && (
             <button
               onClick={startAdd}
-              className="w-full inline-flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-xl border border-dashed border-[#2E7C83]/40 text-[#2E7C83] hover:bg-[#2E7C83]/5"
+              className={`${layout === "grid" ? "sm:col-span-2 lg:col-span-3 " : ""}w-full inline-flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-xl border border-dashed border-[#2E7C83]/40 text-[#2E7C83] hover:bg-[#2E7C83]/5`}
             >
               <Plus className="w-4 h-4" /> Add a quick win
             </button>
