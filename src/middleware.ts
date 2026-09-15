@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation"];
+const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",
@@ -15,6 +15,8 @@ const PUBLIC_APIS = [
   "/api/invite",
   "/api/cron/masterclass-recording", // secured by its own CRON_SECRET check, not a session
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
+  "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
+  "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
 // Is this signed-in email an invited team member? Checked via the Supabase REST

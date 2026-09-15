@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
+import { provisionAccountForEmail } from "@/lib/provisionAccount";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -43,7 +44,33 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const { userId, planId } = session.metadata!;
+        const meta = session.metadata || {};
+
+        if (meta.flow === "self_serve_starter") {
+          // Safety-net duplicate of what /api/stripe/starter-checkout/confirm
+          // already does synchronously in the customer's browser right after
+          // payment — provisionAccountForEmail is idempotent, so whichever of
+          // the two runs first wins and this becomes a no-op.
+          const email = session.customer_details?.email || session.customer_email;
+          if (email) {
+            await provisionAccountForEmail(email, meta.planId || "starter", meta.fullName || undefined);
+          }
+          break;
+        }
+
+        if (!meta.userId) {
+          // No app-set metadata at all — e.g. a real static Stripe Payment
+          // Link purchase (Marcello's sales calls use these directly).
+          // Auto-provisioning those isn't built yet; that's tracked as its
+          // own follow-up. Log and move on rather than throw, since this
+          // used to crash on session.metadata!.userId being undefined —
+          // which would have made Stripe retry-storm every real Payment
+          // Link sale against this endpoint.
+          console.warn(`checkout.session.completed with no userId/flow metadata — session ${session.id}`);
+          break;
+        }
+
+        const { userId, planId } = meta as { userId: string; planId: string };
         const subscriptionId = session.subscription as string;
 
         // Get subscription details from Stripe
