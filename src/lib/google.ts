@@ -753,16 +753,19 @@ export async function uploadUrlToDriveFile(
   const uploadUrl = initRes.headers.get("location");
   if (!uploadUrl) throw new Error("drive resumable init: no location header returned");
 
-  const putRes = await fetch(uploadUrl, {
+  // `duplex` isn't in every TS lib's RequestInit yet, but Node's fetch needs it
+  // to stream a body — cast via `as RequestInit` (not @ts-expect-error, which
+  // itself errors if this lib version *does* already know the field).
+  const putInit = {
     method: "PUT",
     headers: {
       "Content-Type": mimeType,
       ...(contentLength ? { "Content-Length": contentLength } : {}),
     },
     body: source.body,
-    // @ts-expect-error -- Node's fetch requires this to stream a body, no TS type for it yet
     duplex: "half",
-  });
+  } as RequestInit;
+  const putRes = await fetch(uploadUrl, putInit);
   if (!putRes.ok) {
     throw new Error(`drive resumable upload ${putRes.status} ${await putRes.text()}`);
   }
