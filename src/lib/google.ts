@@ -18,6 +18,10 @@ const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
   // calendar.events adds write access (create/update events on the primary calendar)
   "https://www.googleapis.com/auth/calendar.events",
+  // drive.file (not full drive) — only sees files this app creates, which is
+  // exactly what the MasterClass-recording upload needs. Existing connections
+  // made before this scope was added need to reconnect Google once in Settings.
+  "https://www.googleapis.com/auth/drive.file",
 ].join(" ");
 
 // Accept both SCREAMING_SNAKE_CASE and camelCase names, in case the env vars
@@ -688,4 +692,80 @@ export async function forwardMessage(
     `Subject: ${msg.subject}\n\n` +
     original;
   await sendEmail(accessToken, { to, subject, body, attachments });
+}
+
+// ---------------------------------------------------------------------------
+// Drive (requires the drive.file scope)
+// ---------------------------------------------------------------------------
+
+// True if a file with this exact name already exists in the folder — used so
+// a cron re-run (or a slow upload retried) doesn't create a duplicate.
+// drive.file scope only lets the app see files it created itself, which is
+// exactly the set we need to check against.
+export async function driveFileExistsInFolder(
+  accessToken: string,
+  folderId: string,
+  name: string
+): Promise<boolean> {
+  const q = encodeURIComponent(`name = '${name.replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed = false`);
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=1`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(`drive list ${r.status} ${await r.text()}`);
+  const data = (await r.json()) as { files?: { id: string }[] };
+  return Boolean(data.files && data.files.length > 0);
+}
+
+// Streams a remote URL straight into a new Drive file — the video bytes are
+// never buffered fully in memory, so this should hold up for a multi-hundred-
+// MB or multi-GB MasterClass recording within a serverless function's memory
+// limit. Uses Drive's resumable upload protocol (init the session, then PUT
+// the stream) rather than multipart, since multipart needs the full body
+// length known up front in a single request in a way that's awkward to
+// stream; resumable accepts a stream directly via the fetch duplex option.
+export async function uploadUrlToDriveFile(
+  accessToken: string,
+  opts: { sourceUrl: string; folderId: string; name: string; mimeType?: string }
+): Promise<{ id: string }> {
+  const source = await fetch(opts.sourceUrl);
+  if (!source.ok || !source.body) {
+    throw new Error(`source fetch ${source.status} ${await source.text().catch(() => "")}`);
+  }
+  const contentLength = source.headers.get("content-length");
+  const mimeType = opts.mimeType || source.headers.get("content-type") || "video/mp4";
+
+  const initRes = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": mimeType,
+        ...(contentLength ? { "X-Upload-Content-Length": contentLength } : {}),
+      },
+      body: JSON.stringify({ name: opts.name, parents: [opts.folderId] }),
+    }
+  );
+  if (!initRes.ok) {
+    throw new Error(`drive resumable init ${initRes.status} ${await initRes.text()}`);
+  }
+  const uploadUrl = initRes.headers.get("location");
+  if (!uploadUrl) throw new Error("drive resumable init: no location header returned");
+
+  const putRes = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": mimeType,
+      ...(contentLength ? { "Content-Length": contentLength } : {}),
+    },
+    body: source.body,
+    // @ts-expect-error -- Node's fetch requires this to stream a body, no TS type for it yet
+    duplex: "half",
+  });
+  if (!putRes.ok) {
+    throw new Error(`drive resumable upload ${putRes.status} ${await putRes.text()}`);
+  }
+  const file = (await putRes.json()) as { id: string };
+  return file;
 }
