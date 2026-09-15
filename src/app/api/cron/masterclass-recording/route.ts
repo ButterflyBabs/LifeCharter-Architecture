@@ -72,6 +72,20 @@ async function run(request: Request) {
   const titleTest = url.searchParams.get("titleTest");
   const namePrefix = titleTest ? "TEST DELETE ME — " : "";
 
+  // Debug-only: ?debug=1 shows exactly what Read.ai's API returned instead
+  // of just a yes/no match, to see what's actually there when the normal
+  // lookup comes back empty.
+  if (url.searchParams.get("debug") === "1") {
+    try {
+      const seen = await readai.debugListRecent(readaiToken, {
+        sinceMs: Date.now() - LOOKBACK_DAYS * 86_400_000,
+      });
+      return NextResponse.json({ status: "debug", count: seen.length, meetings: seen });
+    } catch (e) {
+      return NextResponse.json({ error: "debug lookup failed", detail: String(e) }, { status: 502 });
+    }
+  }
+
   let meeting;
   try {
     meeting = await readai.findRecentMeetingRecording(readaiToken, {

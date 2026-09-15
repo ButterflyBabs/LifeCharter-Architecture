@@ -107,10 +107,10 @@ export type ReadAiMeeting = {
  * yet, since Read.ai can take a while to finish processing after a call
  * ends; callers should treat that as "try again on the next scheduled run."
  */
-export async function findRecentMeetingRecording(
+async function listRecent(
   accessToken: string,
-  opts: { titleContains: string[]; sinceMs: number; untilMs?: number }
-): Promise<ReadAiMeeting | null> {
+  opts: { sinceMs: number; untilMs?: number }
+): Promise<ReadAiMeeting[]> {
   const params = new URLSearchParams({
     limit: "10",
     start_datetime_gte: new Date(opts.sinceMs).toISOString(),
@@ -123,10 +123,31 @@ export async function findRecentMeetingRecording(
   });
   if (!res.ok) throw new Error(`read.ai meetings ${res.status} ${await res.text()}`);
   const data = (await res.json()) as { data: ReadAiMeeting[] };
+  return data.data;
+}
 
+export async function findRecentMeetingRecording(
+  accessToken: string,
+  opts: { titleContains: string[]; sinceMs: number; untilMs?: number }
+): Promise<ReadAiMeeting | null> {
+  const meetings = await listRecent(accessToken, opts);
   const needles = opts.titleContains.map((s) => s.toLowerCase());
-  const match = data.data.find(
+  const match = meetings.find(
     (m) => needles.some((n) => m.title.toLowerCase().includes(n)) && m.recording_download?.url
   );
   return match ?? null;
+}
+
+// Debug-only: what the API actually returned, unfiltered, so a caller can
+// see titles/dates/recording-presence directly instead of just a boolean.
+export async function debugListRecent(
+  accessToken: string,
+  opts: { sinceMs: number; untilMs?: number }
+): Promise<{ title: string; startMs: number; hasRecording: boolean }[]> {
+  const meetings = await listRecent(accessToken, opts);
+  return meetings.map((m) => ({
+    title: m.title,
+    startMs: m.start_time_ms,
+    hasRecording: Boolean(m.recording_download?.url),
+  }));
 }
