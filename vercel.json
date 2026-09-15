@@ -8,5 +8,22 @@
       "path": "/api/cron/masterclass-recording",
       "schedule": "0 15 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/executive_consultation",
+      "destination": "/executive_consultation/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/executive_consultation/",
+      "destination": "https://lccs-lifecharter-booking.vercel.app/"
+    },
+    {
+      "source": "/executive_consultation/:path*",
+      "destination": "https://lccs-lifecharter-booking.vercel.app/:path*"
+    }
   ]
 }
