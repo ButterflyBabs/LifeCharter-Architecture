@@ -64,10 +64,18 @@ async function run(request: Request) {
     return NextResponse.json({ error: "Read.ai not connected yet (one-time /api/readai/bootstrap step)" }, { status: 500 });
   }
 
+  // Test-only override: ?titleTest=<substring> matches against ANY recent
+  // meeting regardless of the real MasterClass title filter, so this can be
+  // verified against a real, already-existing recording without waiting for
+  // an actual class or cycling env vars. Not used by the real weekly cron.
+  const url = new URL(request.url);
+  const titleTest = url.searchParams.get("titleTest");
+  const namePrefix = titleTest ? "TEST DELETE ME — " : "";
+
   let meeting;
   try {
     meeting = await readai.findRecentMeetingRecording(readaiToken, {
-      titleContains: titleMatches(),
+      titleContains: titleTest ? [titleTest] : titleMatches(),
       sinceMs: Date.now() - LOOKBACK_DAYS * 86_400_000,
     });
   } catch (e) {
@@ -79,7 +87,7 @@ async function run(request: Request) {
     return NextResponse.json({ status: "no matching recording ready yet" });
   }
 
-  const name = driveFileName(meeting.start_time_ms);
+  const name = namePrefix + driveFileName(meeting.start_time_ms);
 
   try {
     const already = await google.driveFileExistsInFolder(driveToken, folderId(), name);
