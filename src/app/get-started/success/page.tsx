@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+// This page's whole job depends on the ?session_id= query param, which
+// can't be known at static-generation time — useSearchParams() requires
+// either a Suspense boundary or opting the route out of prerendering.
+export const dynamic = "force-dynamic";
+
 export default function GetStartedSuccessPage() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
