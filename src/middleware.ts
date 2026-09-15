@@ -8,7 +8,14 @@ import { NextResponse, type NextRequest } from "next/server";
 // ALLOWED_EMAIL may sign in.
 
 const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite"];
-const PUBLIC_APIS = ["/api/google/callback", "/api/microsoft/callback", "/auth/callback", "/api/invite"]; // external redirects + invite acceptance land here without our session
+const PUBLIC_APIS = [
+  "/api/google/callback",
+  "/api/microsoft/callback",
+  "/auth/callback",
+  "/api/invite",
+  "/api/cron/masterclass-recording", // secured by its own CRON_SECRET check, not a session
+  "/api/readai/bootstrap", // one-time setup, secured by its own state check
+]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
 // Is this signed-in email an invited team member? Checked via the Supabase REST
 // endpoint with the service key so the edge middleware stays dependency-free.
