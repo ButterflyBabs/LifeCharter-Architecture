@@ -290,6 +290,14 @@ export function NewClientForm() {
             <div>
               <label className={LABEL_CLASS}>Preferred coaching call day/time</label>
               <input className={FIELD_CLASS} value={form.preferredCallTime} onChange={(e) => set("preferredCallTime", e.target.value)} />
+              <a
+                href="https://app.globalcontrol.io/appointment-booking/test-calendar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-block text-xs text-[#E3C27C] underline"
+              >
+                Schedule the recurring time on Babs&apos;s calendar &rarr;
+              </a>
             </div>
           </div>
         </div>
