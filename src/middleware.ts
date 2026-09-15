@@ -17,6 +17,7 @@ const PUBLIC_APIS = [
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
+  "/api/sales/onboard-client", // public so Marcello can use it from /sales-reference without a Suite login — see the punch list for the open gap this leaves (no auth, no rate limit)
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
 // Is this signed-in email an invited team member? Checked via the Supabase REST

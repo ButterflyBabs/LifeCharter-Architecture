@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SalesScript } from "./SalesScript";
+import { NewClientForm } from "./NewClientForm";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -110,10 +111,12 @@ export default function SalesReferencePage() {
           ))}
         </div>
 
-        <p className="mt-10 text-xs text-[#b8a898]/80">
+        <p className="mt-10 mb-14 text-xs text-[#b8a898]/80">
           Links open Stripe&apos;s hosted checkout directly — same Payment Links live on the Billing
           tab. Prospect enters their own card; nothing here creates a new Stripe object.
         </p>
+
+        <NewClientForm />
       </div>
     </main>
   );
