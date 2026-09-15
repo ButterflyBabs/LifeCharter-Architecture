@@ -167,7 +167,7 @@ export function NewClientForm() {
     <section className="mb-14">
       <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">New Client Onboarding</h2>
       <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
-        Fill this out right after a call closes. Creates their Command Suite login, tags their
+        Fill this out before the end of the call. Creates their Command Suite login, tags their
         existing Global Control contact as a client, and records the business info that seeds
         their first login.
       </p>
