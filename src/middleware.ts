@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started"];
+const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/sales-reference"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",
@@ -103,10 +103,17 @@ export async function middleware(request: NextRequest) {
   const isPublicApi = PUBLIC_APIS.some((p) => path.startsWith(p));
   const isPublicPage = PUBLIC_PAGES.some((p) => path === p || path.startsWith(p + "/"));
 
+  // /demo sets this cookie and redirects into the normal app shell (/, /daily-compass,
+  // etc.) so a marketing visitor can see the pre-seeded "Demo — Brand Alchemy Studio"
+  // plan without an account — src/lib/scoring/masterPlan.ts already trusts this same
+  // cookie to redirect every data read to that one fixed plan, so letting it pass the
+  // auth gate here isn't a new trust boundary, just honoring the one already coded in.
+  const isDemo = request.cookies.get("lc_demo")?.value === "1";
+
   if (isPublicApi) return response;
 
   if (path.startsWith("/api/")) {
-    if (!authed) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (!authed && !isDemo) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     if (needsMfa) return NextResponse.json({ error: "2fa required" }, { status: 401 });
     return response;
   }
@@ -118,7 +125,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (!authed || needsMfa) {
+  if ((!authed && !isDemo) || needsMfa) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   return response;
