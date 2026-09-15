@@ -138,10 +138,16 @@ export default function BillingPanel() {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
           <div>
-            <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Plans</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Plans</h3>
+              <span className="bg-[#c9a227]/15 text-[#8a6a16] dark:text-[#E3C27C] text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full whitespace-nowrap">
+                Early Adopter Pricing
+              </span>
+            </div>
             <p className="text-sm text-[#b8a898] mt-0.5">
               Executive coaching + the full Command Suite, together. Every tier includes the whole Suite —
-              tiers scale on coaching depth and capacity.
+              tiers scale on coaching depth and capacity. These are the founding rates — they rise as the
+              Suite grows.
             </p>
           </div>
           {/* Monthly vs pay-in-full */}
