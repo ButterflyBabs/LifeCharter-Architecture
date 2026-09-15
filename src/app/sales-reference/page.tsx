@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SalesScript } from "./SalesScript";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -68,6 +69,9 @@ export default function SalesReferencePage() {
           </p>
         </div>
 
+        <SalesScript />
+
+        <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-6">Pricing</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TIERS.map((tier) => (
             <div key={tier.id} className="rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6 flex flex-col">
