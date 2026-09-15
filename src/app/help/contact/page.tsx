@@ -46,12 +46,16 @@ export default function ContactSupportPage() {
     setSubmitError("");
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In production, this would send to your support system
-      console.log("Support request submitted:", formData);
-      
+      const res = await fetch("/api/support/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit request");
+      }
+
       setSubmitSuccess(true);
       setFormData({
         name: "",
@@ -172,8 +176,7 @@ export default function ContactSupportPage() {
                 Request Submitted!
               </h3>
               <p className="text-[#7b6b8d] dark:text-[#e8e4f0] mb-6">
-                We&apos;ve received your message and will respond within 24 hours. 
-                A confirmation email has been sent to your inbox.
+                We&apos;ve received your message and will respond within 24 hours.
               </p>
               <Button onClick={() => setSubmitSuccess(false)}>
                 Submit Another Request
