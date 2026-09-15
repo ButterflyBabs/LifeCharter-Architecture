@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
 // authorization URL issued for this bootstrap; it has no value once this
 // route has been used successfully, so leaving it in source isn't a
 // standing secret the way the client secret or a refresh token is.
-const CODE_VERIFIER = "JBNTBUxvt-Mpg0wmIBMgUxiLBIhIxdQ5Z5UEwvZTYtWt3Yt-M7KuIp8ZHfzZDhu97BwyKRUA9axyj0qgDYNVSQ";
-const EXPECTED_STATE = "QlblrbeOT-L1rGatPhgyqyRjLt7wtmJm";
+const CODE_VERIFIER = "GvueLc-IlQ9F4XXxLdAtjUBaLVn0JKBK5999jh7I6jw5aT7_y_a0NyfJL7Kp3PVNf5__fRs2WkwPpywhE1k0xw";
+const EXPECTED_STATE = "eP7TohPya-POQir-43YixjNcNutvLPzZ";
 const TOKEN_ENDPOINT = "https://authn.read.ai/oauth2/token";
 const REDIRECT_URI = "https://api.read.ai/oauth/ui";
 
