@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-// This page's whole job depends on the ?session_id= query param, which
-// can't be known at static-generation time — useSearchParams() requires
-// either a Suspense boundary or opting the route out of prerendering.
-export const dynamic = "force-dynamic";
-
-export default function GetStartedSuccessPage() {
+// useSearchParams() needs the real request URL, which doesn't exist during
+// Next's static-shell prerender pass for a client component — force-dynamic
+// alone doesn't skip that pass, only a Suspense boundary around the hook's
+// usage does (confirmed the hard way: force-dynamic alone still failed the
+// build with the same prerender error).
+function GetStartedSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [status, setStatus] = useState<"loading" | "error">("loading");
@@ -33,29 +33,43 @@ export default function GetStartedSuccessPage() {
   }, [sessionId]);
 
   return (
+    <div className="max-w-md text-center">
+      {status === "loading" ? (
+        <>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
+            Payment received
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold text-[#F8F5F0]">Setting up your account…</h1>
+          <p className="mt-3 text-sm text-[#b8a898]">
+            This takes just a moment — you&apos;ll be redirected automatically.
+          </p>
+        </>
+      ) : (
+        <>
+          <h1 className="text-2xl font-semibold text-[#F8F5F0]">We hit a snag</h1>
+          <p className="mt-3 text-sm text-[#b8a898]">{errorMsg}</p>
+          <p className="mt-4 text-xs text-[#b8a898]/80">
+            Your payment went through — this is just about getting your account linked up.
+            Reach out and we&apos;ll take care of it directly.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function GetStartedSuccessPage() {
+  return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4] flex items-center justify-center px-6">
-      <div className="max-w-md text-center">
-        {status === "loading" ? (
-          <>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
-              Payment received
-            </p>
-            <h1 className="mt-3 text-2xl font-semibold text-[#F8F5F0]">Setting up your account…</h1>
-            <p className="mt-3 text-sm text-[#b8a898]">
-              This takes just a moment — you&apos;ll be redirected automatically.
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="text-2xl font-semibold text-[#F8F5F0]">We hit a snag</h1>
-            <p className="mt-3 text-sm text-[#b8a898]">{errorMsg}</p>
-            <p className="mt-4 text-xs text-[#b8a898]/80">
-              Your payment went through — this is just about getting your account linked up.
-              Reach out and we&apos;ll take care of it directly.
-            </p>
-          </>
-        )}
-      </div>
+      <Suspense
+        fallback={
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-semibold text-[#F8F5F0]">Setting up your account…</h1>
+          </div>
+        }
+      >
+        <GetStartedSuccessContent />
+      </Suspense>
     </main>
   );
 }
