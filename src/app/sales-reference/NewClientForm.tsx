@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProspect } from "./ProspectContext";
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-[#F3EEE4]/20 bg-[#141826] px-3 py-2.5 text-sm text-[#F8F5F0] placeholder:text-[#b8a898]/60 focus:outline-none focus:border-[#c9a227]";
@@ -63,6 +64,26 @@ export function NewClientForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<Result>(null);
   const [copied, setCopied] = useState(false);
+  const [justPrefilled, setJustPrefilled] = useState(false);
+
+  // Picked up from the contact lookup panel above — merges over whatever's
+  // already typed rather than replacing it, and stays fully editable so
+  // Marcello can confirm or correct anything live on the call.
+  const { prefill, version } = useProspect();
+  useEffect(() => {
+    if (!prefill || version === 0) return;
+    setForm((prev) => ({
+      ...prev,
+      ...(prefill.fullName ? { fullName: prefill.fullName } : {}),
+      ...(prefill.email ? { email: prefill.email } : {}),
+      ...(prefill.phone ? { phone: prefill.phone } : {}),
+      ...(prefill.companyName ? { companyName: prefill.companyName } : {}),
+      ...(prefill.biggestChallenge ? { biggestChallenge: prefill.biggestChallenge } : {}),
+    }));
+    setJustPrefilled(true);
+    setTimeout(() => setJustPrefilled(false), 2500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -171,6 +192,12 @@ export function NewClientForm() {
         existing Global Control contact as a client, and records the business info that seeds
         their first login.
       </p>
+
+      {justPrefilled && (
+        <p className="mb-4 text-sm text-[#7FC4C9]">
+          &#10003; Filled in from their Global Control record below &mdash; check it over and fill in the rest.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
