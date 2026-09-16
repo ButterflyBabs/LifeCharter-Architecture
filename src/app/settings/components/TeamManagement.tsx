@@ -25,7 +25,7 @@ import {
   Check,
 } from "lucide-react";
 
-type Role = "admin" | "editor" | "viewer";
+type Role = "admin" | "editor" | "viewer" | "sales";
 
 interface TeamMember {
   id: string;
@@ -55,6 +55,7 @@ const roleLabels: Record<Role, string> = {
   admin: "Admin",
   editor: "Editor",
   viewer: "Viewer",
+  sales: "Sales (restricted)",
 };
 
 const roleDescriptions: Record<string, string> = {
@@ -62,6 +63,7 @@ const roleDescriptions: Record<string, string> = {
   admin: "Can manage team, settings, and all content",
   editor: "Can create and edit content, view analytics",
   viewer: "View-only access to reports and dashboards",
+  sales: "Restricted to the Sales Call Reference page only — no dashboard, no client data",
 };
 
 export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: TeamManagementProps) {
@@ -353,7 +355,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                 Role
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {(["admin", "editor", "viewer"] as const).map((role) => (
+                {(["admin", "editor", "viewer", "sales"] as const).map((role) => (
                   <button
                     key={role}
                     onClick={() => setNewMember({ ...newMember, role })}
@@ -488,6 +490,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       <option value="admin">Admin</option>
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>
+                      <option value="sales">Sales (restricted)</option>
                     </select>
 
                     <Button
