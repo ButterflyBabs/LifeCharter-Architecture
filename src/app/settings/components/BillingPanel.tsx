@@ -87,7 +87,6 @@ const COMMUNITY_INCLUDED = [
 const ROADMAP = [
   "Separate branded client workspaces",
   "Full white-label",
-  "Custom AI agents tuned to your business",
 ];
 
 function usd(cents: number): string {
