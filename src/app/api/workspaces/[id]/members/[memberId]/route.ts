@@ -5,7 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
-const ROLES = ["admin", "editor", "viewer"] as const;
+const ROLES = ["admin", "editor", "viewer", "sales"] as const;
 type Role = (typeof ROLES)[number];
 
 type MemberRow = {
