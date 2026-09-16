@@ -15,18 +15,22 @@
 
 const GC_BASE = process.env.GC_BASE || "https://api.globalcontrol.io/api/ai";
 
+// The fire-tag endpoint's real response is double-wrapped —
+// {type:"response", data:{type:"response", data:{_id:...contact}}} — one
+// level deeper than the single .data envelope everywhere else in this app.
+// Confirmed by inspecting the raw response directly; every candidate below
+// that only unwraps one level was silently missing the id, so custom-field
+// writes on this flow have never actually fired regardless of whether
+// GC_EXEC_FIELD_MAP is configured. Walk through nested .data wrappers
+// defensively so this keeps working if GC's nesting depth ever changes.
 function pickContactId(data: unknown): string | null {
-  if (!data || typeof data !== "object") return null;
-  const o = data as Record<string, unknown>;
-  const candidates = [
-    o._id,
-    o.id,
-    o.contactId,
-    (o.contact as Record<string, unknown> | undefined)?._id,
-    (o.data as Record<string, unknown> | undefined)?._id,
-    (o.data as Record<string, unknown> | undefined)?.id,
-  ];
-  for (const c of candidates) if (typeof c === "string" && c) return c;
+  let o: unknown = data;
+  for (let depth = 0; depth < 4 && o && typeof o === "object"; depth++) {
+    const rec = o as Record<string, unknown>;
+    const candidates = [rec._id, rec.id, rec.contactId, (rec.contact as Record<string, unknown> | undefined)?._id];
+    for (const c of candidates) if (typeof c === "string" && c) return c;
+    o = rec.data;
+  }
   return null;
 }
 
