@@ -100,7 +100,7 @@ export default async function GetStartedPage() {
                 + {usd(plan.onboarding_fee ?? 0)} one-time implementation
               </p>
               <a
-                href="/executive_consultation"
+                href="/schedule/website"
                 className="mt-6 block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2.5 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"
               >
                 Book an Executive Consultation
