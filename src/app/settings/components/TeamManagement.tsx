@@ -43,12 +43,13 @@ interface TeamManagementProps {
   onChangePlan?: () => void;
 }
 
-// Plan-based team member limits (owner counts toward the total).
-const planLimits = {
-  starter: 2,
-  pro: 5,
-  enterprise: 10,
-  unlimited: 999,
+// Real tier ids and their display names — the seat limit itself comes from
+// /api/billing (plans.capabilities.seats), not a hardcoded map, so it can
+// never drift from what's actually sold again.
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Starter",
+  growth: "Growth",
+  vip: "VIP",
 };
 
 const roleLabels: Record<Role, string> = {
@@ -67,8 +68,29 @@ const roleDescriptions: Record<string, string> = {
 };
 
 export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: TeamManagementProps) {
-  const currentPlan: keyof typeof planLimits = "pro";
-  const maxMembers = planLimits[currentPlan];
+  // Real plan + seat limit, straight from /api/billing (same source BillingPanel
+  // uses) — defaults match Starter until the real value loads, since that's the
+  // most restrictive real tier and avoids briefly showing a too-generous cap.
+  const [planId, setPlanId] = useState<string>("starter");
+  const [seatLimit, setSeatLimit] = useState<number>(1);
+
+  useEffect(() => {
+    fetch("/api/billing")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const id = d.current?.planId || "starter";
+        setPlanId(id);
+        const plan = (d.plans || []).find((p: { id: string }) => p.id === id);
+        const seats = plan?.capabilities?.seats;
+        if (typeof seats === "number") setSeatLimit(seats);
+      })
+      .catch(() => {});
+  }, []);
+
+  const isUnlimited = seatLimit === -1;
+  const maxMembers = isUnlimited ? Infinity : seatLimit;
+  const planLabel = PLAN_LABELS[planId] || (planId.charAt(0).toUpperCase() + planId.slice(1));
 
   // The workspace owner (the account holder) is rendered from the profile and
   // isn't a stored member row.
@@ -276,7 +298,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
             Team Members
           </h3>
           <p className="text-sm text-[#b8a898]">
-            {activeCount} of {maxMembers} members used • {workspaceName}
+            {isUnlimited ? `${activeCount} members used` : `${activeCount} of ${maxMembers} members used`} • {workspaceName}
           </p>
         </div>
         {canAddMore ? (
@@ -570,10 +592,10 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
         <div className="flex items-center justify-between">
           <div>
             <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
+              Current Plan: {planLabel}
             </h4>
             <p className="text-sm text-[#b8a898]">
-              {maxMembers} team members included
+              {isUnlimited ? "Unlimited" : maxMembers} team members included
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={onChangePlan}>
