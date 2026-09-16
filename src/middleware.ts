@@ -19,6 +19,7 @@ const PUBLIC_APIS = [
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
   "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
+  "/api/admin/stripe-coupon-setup", // one-time setup, secured by its own x-setup-secret check against app_settings — delete this route (and this line) once it's been run
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
 // A member with this role is scoped to exactly these pages/APIs and nothing
