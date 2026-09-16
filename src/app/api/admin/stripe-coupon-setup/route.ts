@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     const coupon = await stripe.coupons.create({
       percent_off: 100,
       duration: "once",
-      name: "First month free — implementation clients",
+      name: "First month free — impl. clients",
       applies_to: { products: productIds },
     });
 
