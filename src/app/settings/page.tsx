@@ -451,14 +451,22 @@ export default function SettingsPage() {
     };
   }, []);
 
-  // Plan limits
-  const planLimits = {
-    starter: 1,
-    pro: 3,
-    enterprise: 5
-  };
-  const workspacePlan = "pro" as keyof typeof planLimits;
-  const maxWorkspaces = planLimits[workspacePlan];
+  // Real workspace limit, straight from /api/billing (plans.capabilities.workspaces)
+  // — not a hardcoded map, so it can never drift from what's actually sold.
+  // Defaults to 1 (Starter, the most restrictive real tier) until it loads.
+  const [maxWorkspaces, setMaxWorkspaces] = useState<number>(1);
+  useEffect(() => {
+    fetch("/api/billing")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const id = d.current?.planId || "starter";
+        const plan = (d.plans || []).find((p: { id: string }) => p.id === id);
+        const cap = plan?.capabilities?.workspaces;
+        if (typeof cap === "number") setMaxWorkspaces(cap === -1 ? Infinity : cap);
+      })
+      .catch(() => {});
+  }, []);
   const canCreateMore = workspaces.length < maxWorkspaces;
 
   // Workspace save/upload UI state.
@@ -724,11 +732,11 @@ export default function SettingsPage() {
           body: JSON.stringify({ name: `New Workspace ${workspaces.length + 1}` }),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.workspace) throw new Error();
+        if (!res.ok || !data.workspace) throw new Error(data?.error);
         setWorkspaces(prev => [...prev, data.workspace as Workspace]);
         setActiveWorkspaceId(data.workspace.id);
-      } catch {
-        setWsMsg({ ok: false, text: "Couldn't create the workspace." });
+      } catch (err) {
+        setWsMsg({ ok: false, text: (err as Error)?.message || "Couldn't create the workspace." });
       } finally {
         setWsBusy(false);
       }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { withinStandingLimit } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,24 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const role: Role = ROLES.includes(body.role as Role) ? (body.role as Role) : "editor";
   const name =
     (typeof body.name === "string" && body.name.trim()) || email.split("@")[0];
+
+  // Seats count the owner too (TeamManagement.tsx's own accounting: members + 1).
+  const { count } = await supabase
+    .from("workspace_members")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", params.id);
+
+  const masterPlanId = await resolveMasterPlanId();
+  const { allowed, limit } = await withinStandingLimit("seats", masterPlanId, (count ?? 0) + 1);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: `Your plan includes ${limit} team seat${limit === 1 ? "" : "s"} (including you). Upgrade your plan to add more.`,
+        limitReached: true,
+      },
+      { status: 402 }
+    );
+  }
 
   const { data, error } = await supabase
     .from("workspace_members")

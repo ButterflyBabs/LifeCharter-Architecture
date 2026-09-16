@@ -61,3 +61,66 @@ export const AI_LIMIT_BODY = {
   error: "You've reached your plan's monthly limit for AI plan builds and re-scores. Upgrade your plan to keep going.",
   limitReached: true,
 };
+
+/**
+ * Standing-count capability enforcement (workspaces, seats) — separate from
+ * the metered AI-action accounting above. These are plain counts against a
+ * limit, not a monthly-resetting usage table, since a workspace or a seat
+ * doesn't expire at the end of the month the way an AI action does.
+ */
+
+export type StandingCapability = "workspaces" | "seats";
+
+// The plan capabilities for whoever owns this master plan: master plan ->
+// its user -> their active subscription -> that plan's capabilities. Returns
+// null when unlimited, comped/no-auth, or undeterminable for any reason —
+// callers should treat null as "allow," matching aiActionAllowed's fail-open
+// philosophy (never block a legitimate action on an accounting gap).
+async function planCapabilities(masterPlanId: string | null): Promise<Record<string, unknown> | null> {
+  if (!authEnabled()) return null; // owner / single-user — unlimited
+  if (!masterPlanId) return null;
+  try {
+    const supabase = createServerClient();
+    const { data: plan } = await supabase
+      .from("client_master_plans")
+      .select("user_id")
+      .eq("id", masterPlanId)
+      .maybeSingle();
+    if (!plan?.user_id) return null;
+
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("plan_id")
+      .eq("user_id", plan.user_id)
+      .eq("status", "active")
+      .gt("current_period_end", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!sub?.plan_id) return null;
+
+    const { data: planRow } = await supabase
+      .from("plans")
+      .select("capabilities")
+      .eq("id", sub.plan_id)
+      .maybeSingle();
+    return (planRow?.capabilities as Record<string, unknown>) ?? null;
+  } catch (e) {
+    console.error("planCapabilities:", e);
+    return null;
+  }
+}
+
+// Would adding one more of `kind` (given `currentCount` that already exist)
+// stay within the plan's limit? A missing capability or -1 means unlimited.
+export async function withinStandingLimit(
+  kind: StandingCapability,
+  masterPlanId: string | null,
+  currentCount: number
+): Promise<{ allowed: boolean; limit: number | null }> {
+  const caps = await planCapabilities(masterPlanId);
+  const raw = caps?.[kind];
+  const limit = typeof raw === "number" ? raw : null;
+  if (limit === null || limit < 0) return { allowed: true, limit };
+  return { allowed: currentCount < limit, limit };
+}

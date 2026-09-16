@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { withinStandingLimit } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +106,17 @@ export async function POST(request: Request) {
     .from("workspaces")
     .select("id", { count: "exact", head: true })
     .eq("master_plan_id", masterPlanId);
+
+  const { allowed, limit } = await withinStandingLimit("workspaces", masterPlanId, count ?? 0);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: `Your plan includes ${limit} business workspace${limit === 1 ? "" : "s"}. Upgrade your plan to add more.`,
+        limitReached: true,
+      },
+      { status: 402 }
+    );
+  }
 
   const { data, error } = await supabase
     .from("workspaces")
