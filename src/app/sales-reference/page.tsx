@@ -4,6 +4,7 @@ import { SalesScript } from "./SalesScript";
 import { NewClientForm } from "./NewClientForm";
 import { ContactLookup } from "./ContactLookup";
 import { ProspectProvider } from "./ProspectContext";
+import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -67,16 +68,11 @@ export default function SalesReferencePage() {
             LifeCharter Command Suite pricing
           </h1>
           <p className="mt-3 text-[#b8a898] max-w-2xl">
-            Charge the <strong className="text-[#F3EEE4]">Implementation Fee</strong> to close the
-            sale on the call. Monthly billing will begin only after implementation is complete,
-            approximately 30 days from the start date.
-          </p>
-          <p className="mt-3 text-[#b8a898] max-w-2xl">
-            At the same time you collect the credit card information for the Implementation Fee,
-            send the monthly billing link and have the client enter coupon code{" "}
-            <strong className="text-[#F3EEE4]">FIRSTMONTHFREE</strong>. This delays their first
-            monthly charge by one billing cycle, so their monthly billing is set up in advance and
-            begins automatically once the implementation period is complete.
+            &ldquo;Send combined checkout&rdquo; puts the Implementation Fee and the monthly
+            subscription in one cart — the client pays the Implementation Fee now, and monthly
+            billing is already set up to begin automatically about 30 days later.
+            The <strong className="text-[#F3EEE4]">FIRSTMONTHFREE</strong> discount is applied
+            for you — nothing for the client to type.
           </p>
         </div>
 
@@ -102,43 +98,53 @@ export default function SalesReferencePage() {
               <div className="mt-4">
                 <span className="text-xs uppercase tracking-wide text-[#b8a898]">Implementation (one-time)</span>
                 <div className="text-3xl font-bold text-[#F8F5F0] mt-0.5">{tier.implementation}</div>
+                <p className="text-xs text-[#b8a898] mt-0.5">+ {tier.monthly} after implementation</p>
               </div>
 
-              <a
-                href={tier.implementationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 block text-center rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] text-[#1a2b4a] font-semibold px-4 py-2.5 text-sm"
-              >
-                Charge Implementation — {tier.implementation}
-              </a>
+              <CombinedCheckoutButton
+                tier={tier.id as "starter" | "growth" | "vip"}
+                implementationDisplay={tier.implementation}
+                monthlyDisplay={tier.monthly}
+              />
 
-              <div className="mt-6 pt-4 border-t border-[#F3EEE4]/10">
-                <span className="text-xs uppercase tracking-wide text-[#b8a898]">
-                  Monthly (starts after implementation)
-                </span>
-                <div className="text-sm text-[#b8a898] mt-0.5">{tier.monthly}</div>
-                <a
-                  href={tier.monthlyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block text-xs text-[#E3C27C] underline"
-                >
-                  Monthly billing link
-                </a>
-                <p className="mt-2 text-[11px] text-[#b8a898]">
-                  Give them code{" "}
-                  <span className="font-mono font-semibold text-[#c9a227]">FIRSTMONTHFREE</span>{" "}
-                  at checkout — delays their first charge one cycle.
-                </p>
-              </div>
+              <details className="mt-4 pt-4 border-t border-[#F3EEE4]/10 group">
+                <summary className="text-xs uppercase tracking-wide text-[#b8a898] cursor-pointer select-none">
+                  Or send separately ▾
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <a
+                    href={tier.implementationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"
+                  >
+                    Charge Implementation only — {tier.implementation}
+                  </a>
+                  <div>
+                    <a
+                      href={tier.monthlyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-xs text-[#E3C27C] underline"
+                    >
+                      Monthly billing link only
+                    </a>
+                    <p className="mt-1 text-[11px] text-[#b8a898]">
+                      Give them code{" "}
+                      <span className="font-mono font-semibold text-[#c9a227]">FIRSTMONTHFREE</span>{" "}
+                      at checkout — delays their first charge one cycle.
+                    </p>
+                  </div>
+                </div>
+              </details>
             </div>
           ))}
         </div>
 
         <p className="mt-10 mb-14 text-xs text-[#b8a898]/80">
-          Links open Stripe&apos;s hosted checkout directly — same Payment Links live on the Billing
-          tab. Prospect enters their own card; nothing here creates a new Stripe object.
+          &ldquo;Send combined checkout&rdquo; creates a fresh Stripe Checkout Session per click —
+          the client enters their own card there. The &ldquo;Or send separately&rdquo; links use
+          the same static Payment Links live on the Billing tab and create nothing new.
         </p>
 
         <NewClientForm />
