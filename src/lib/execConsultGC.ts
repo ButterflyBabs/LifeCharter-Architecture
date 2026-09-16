@@ -7,11 +7,11 @@
 // stored in client_integrations (that one is scoped to each Suite client's
 // own connected account, a different concern).
 //
-// Pattern proven in commandsuite-landing-page's assessment route: fire the
-// tag first (creates/updates the contact by email and returns its id), then
-// PUT customFields onto that same contact id. Both steps are best-effort —
-// a missing GC_EXEC_FIELD_MAP entry or tag id degrades gracefully instead of
-// failing the submission, same as the sales onboarding flow.
+// fireExecConsultTag is also reused by the New Client Onboarding flow
+// (onboard-client/route.ts) — it's generic (tag id + contact -> status and
+// a real contact id), not specific to the exec-consult questionnaires.
+
+import { writeGcCustomFields } from "@/lib/gcCustomFields";
 
 const GC_BASE = process.env.GC_BASE || "https://api.globalcontrol.io/api/ai";
 
@@ -23,12 +23,12 @@ const GC_BASE = process.env.GC_BASE || "https://api.globalcontrol.io/api/ai";
 // writes on this flow have never actually fired regardless of whether
 // GC_EXEC_FIELD_MAP is configured. Walk through nested .data wrappers
 // defensively so this keeps working if GC's nesting depth ever changes.
-function pickContactId(data: unknown): string | null {
+function pickContact(data: unknown): Record<string, unknown> | null {
   let o: unknown = data;
   for (let depth = 0; depth < 4 && o && typeof o === "object"; depth++) {
     const rec = o as Record<string, unknown>;
-    const candidates = [rec._id, rec.id, rec.contactId, (rec.contact as Record<string, unknown> | undefined)?._id];
-    for (const c of candidates) if (typeof c === "string" && c) return c;
+    const id = rec._id ?? rec.id ?? rec.contactId ?? (rec.contact as Record<string, unknown> | undefined)?._id;
+    if (typeof id === "string" && id) return rec;
     o = rec.data;
   }
   return null;
@@ -61,52 +61,40 @@ export async function fireExecConsultTag(
         phone: contact.phone || undefined,
       }),
     });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { type?: string } | null;
+
+    // GC returns HTTP 200 for real failures too (a bad API key: {type:"error"};
+    // a bad tag id: {type:"response"} with a real contact but its tags array
+    // empty) — both confirmed directly against the live API. res.ok alone
+    // reads either as success, so check the body's own signals instead.
+    if (!res.ok || data?.type === "error") {
       console.error(`[execConsultGC] fire-tag failed for ${contact.email}:`, res.status, data);
-      return { status: "failed", contactId: pickContactId(data) };
+      return { status: "failed", contactId: null };
     }
-    return { status: "tagged", contactId: pickContactId(data) };
+
+    const record = pickContact(data);
+    const contactId = typeof record?._id === "string" ? record._id : typeof record?.id === "string" ? (record.id as string) : null;
+    const tags = Array.isArray(record?.tags) ? (record!.tags as unknown[]) : [];
+    if (!contactId || !tags.includes(tagId)) {
+      console.error(`[execConsultGC] tag did not actually apply for ${contact.email} (tag ${tagId}):`, data);
+      return { status: "failed", contactId };
+    }
+
+    return { status: "tagged", contactId };
   } catch (err) {
     console.error(`[execConsultGC] fire-tag error for ${contact.email}:`, err);
     return { status: "error", contactId: null };
   }
 }
 
-// Writes questionnaire answers onto the contact's custom fields, using
-// GC_EXEC_FIELD_MAP (JSON: {"<our key>": "<Global Control customFieldId>"}).
-// Silently writes only the keys that both have a value and are mapped —
-// the questionnaire still works end-to-end before every field exists in GC.
+// Writes questionnaire answers onto the contact's custom fields, using the
+// gc_exec_field_map field map (app_settings, falling back to the
+// GC_EXEC_FIELD_MAP env var). Silently writes only the keys that both have
+// a value and are mapped — the questionnaire still works end-to-end before
+// every field exists in GC.
 export async function writeExecConsultFields(
   contactId: string | null,
   values: Record<string, string | undefined>
 ): Promise<"written" | "skipped"> {
-  const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
-  if (!apiKey || !contactId) return "skipped";
-
-  let fieldMap: Record<string, string> = {};
-  try {
-    fieldMap = JSON.parse(process.env.GC_EXEC_FIELD_MAP || "{}");
-  } catch {
-    fieldMap = {};
-  }
-  if (!Object.keys(fieldMap).length) return "skipped";
-
-  const customFields = Object.entries(fieldMap)
-    .filter(([key]) => values[key] !== undefined && values[key] !== "")
-    .map(([key, customFieldId]) => ({ customFieldId, value: values[key] as string }));
-
-  if (!customFields.length) return "skipped";
-
-  try {
-    await fetch(`${GC_BASE}/contacts/${encodeURIComponent(contactId)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
-      body: JSON.stringify({ customFields }),
-    });
-    return "written";
-  } catch (err) {
-    console.error(`[execConsultGC] custom field write error for contact ${contactId}:`, err);
-    return "skipped";
-  }
+  return writeGcCustomFields(contactId, values, "gc_exec_field_map", "GC_EXEC_FIELD_MAP");
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { fireExecConsultTag } from "@/lib/execConsultGC";
+import { writeGcCustomFields, findGcContactIdByEmail } from "@/lib/gcCustomFields";
 
 /**
  * Called from the New Client form on /sales-reference after Marcello closes
@@ -25,6 +26,11 @@ import { fireExecConsultTag } from "@/lib/execConsultGC";
  *    Consultation specifically, separately from the general client tag.
  *    Reuses fireExecConsultTag, the same helper the /schedule qualification
  *    questionnaires already use to fire lccs-execconsult-* tags.
+ * 5. Write the full intake record onto that same contact's custom fields
+ *    (gc_client_field_map, app_settings-backed) — best-effort, no-op until
+ *    the fields exist and the map is set. tag-form-submission (step 3)
+ *    never hands back a contact id, so this reuses step 4's contact id
+ *    when available (same contact, same email), or looks it up fresh.
  */
 
 const GC_FORM_BASE =
@@ -222,6 +228,35 @@ export async function POST(req: NextRequest) {
     if (soldTagResult.status !== "tagged") {
       console.error(`[onboard-client] sold-tag ${soldTagResult.status} for ${body.email}`);
     }
+
+    // 3c. Write the intake details onto the contact's custom fields
+    // (best-effort, no-op until gc_client_field_map is configured).
+    // tag-form-submission (used above for the general client tag) never
+    // hands back a contact id, so reuse the sold-tag call's contact id when
+    // available, falling back to a fresh lookup by email.
+    const gcContactId = soldTagResult.contactId || (await findGcContactIdByEmail(body.email));
+    await writeGcCustomFields(
+      gcContactId,
+      {
+        company_name: body.companyName,
+        website: body.website,
+        industry: body.industry,
+        years_in_business: body.yearsInBusiness,
+        tier: body.tier,
+        implementation_amount_cents:
+          body.implementationAmountCents !== undefined ? String(body.implementationAmountCents) : undefined,
+        implementation_date: body.implementationDate,
+        monthly_revenue_range: body.monthlyRevenueRange,
+        team_size: body.teamSize,
+        primary_offer: body.primaryOffer,
+        biggest_challenge: body.biggestChallenge,
+        weakest_dimension: body.weakestDimension,
+        preferred_call_time: body.preferredCallTime,
+        session_source: body.sessionSource,
+      },
+      "gc_client_field_map",
+      "GC_CLIENT_FIELD_MAP"
+    );
 
     // 4. Generate a real login link to hand to the client — same recovery-link
     // pattern as the self-serve flow, since production SMTP still isn't wired
