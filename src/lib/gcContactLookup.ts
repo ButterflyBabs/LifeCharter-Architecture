@@ -69,6 +69,33 @@ export interface GcContactLookupResult {
   customFields?: { name: string; value: string }[];
 }
 
+export interface GcContactSummary {
+  name: string;
+  email: string;
+  phone?: string;
+  status?: string;
+}
+
+// Lightweight search for the "name or email" box — Global Control's search
+// param matches across name and email both, so one query covers either.
+// Deliberately skips tag/custom-field resolution (that's what
+// lookupContactByEmail is for) so a broad name search stays fast even with
+// several results to page through.
+export async function searchContacts(query: string): Promise<GcContactSummary[]> {
+  const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
+  if (!apiKey || !query.trim()) return [];
+
+  const data = await gcGet<{ contacts?: RawContact[] }>(
+    `/contacts?search=${encodeURIComponent(query.trim())}&limit=8`
+  );
+  return (data?.contacts || []).map((c) => ({
+    name: c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || c.email || "Unnamed",
+    email: c.email || "",
+    phone: c.phone || undefined,
+    status: c.currentStatus,
+  }));
+}
+
 export async function lookupContactByEmail(email: string): Promise<GcContactLookupResult> {
   const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
   if (!apiKey) return { found: false };
