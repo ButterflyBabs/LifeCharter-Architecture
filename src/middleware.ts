@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo"];
+const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",
@@ -17,6 +17,7 @@ const PUBLIC_APIS = [
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
+  "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
 // A member with this role is scoped to exactly these pages/APIs and nothing

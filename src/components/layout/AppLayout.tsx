@@ -13,7 +13,7 @@ interface AppLayoutProps {
 }
 
 // Routes that render full-screen without the app chrome (sidebar/header/widgets).
-const BARE_ROUTES = ["/login", "/logout", "/forgot-password", "/reset-password", "/sales-reference"];
+const BARE_ROUTES = ["/login", "/logout", "/forgot-password", "/reset-password", "/sales-reference", "/schedule"];
 
 function AppLayoutContent({ children }: AppLayoutProps) {
   const { isCollapsed } = useSidebar();
