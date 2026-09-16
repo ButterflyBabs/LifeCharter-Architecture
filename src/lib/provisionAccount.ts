@@ -23,22 +23,25 @@ export async function provisionAccountForEmail(
   email: string,
   planId: string,
   fullName?: string | null
-): Promise<{ userId: string; isNewAccount: boolean }> {
+): Promise<{ userId: string; workspaceId: string | null; isNewAccount: boolean }> {
   const supabase = serviceClient();
   const normalizedEmail = email.trim().toLowerCase();
 
   const { data: existingProfile } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, workspace_id")
     .eq("email", normalizedEmail)
     .maybeSingle();
 
   if (existingProfile) {
-    await supabase
-      .from("profiles")
-      .update({ current_plan_id: planId, subscription_status: "pending_implementation" })
-      .eq("id", existingProfile.id);
-    return { userId: existingProfile.id, isNewAccount: false };
+    const update: Record<string, unknown> = {
+      current_plan_id: planId,
+      subscription_status: "pending_implementation",
+    };
+    // Don't blank out a name that's already on file with an empty resubmit.
+    if (fullName?.trim()) update.full_name = fullName.trim();
+    await supabase.from("profiles").update(update).eq("id", existingProfile.id);
+    return { userId: existingProfile.id, workspaceId: existingProfile.workspace_id, isNewAccount: false };
   }
 
   const workspaceSlug = "ws-" + Date.now() + "-" + Math.random().toString(36).slice(2, 9);
@@ -94,5 +97,5 @@ export async function provisionAccountForEmail(
     console.error("client_master_plans creation failed (non-fatal):", planError.message);
   }
 
-  return { userId, isNewAccount: true };
+  return { userId, workspaceId: workspace.id, isNewAccount: true };
 }
