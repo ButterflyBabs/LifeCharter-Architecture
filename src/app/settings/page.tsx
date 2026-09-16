@@ -451,9 +451,11 @@ export default function SettingsPage() {
     };
   }, []);
 
-  // Real workspace limit, straight from /api/billing (plans.capabilities.workspaces)
-  // — not a hardcoded map, so it can never drift from what's actually sold.
-  // Defaults to 1 (Starter, the most restrictive real tier) until it loads.
+  // Real plan id + workspace limit, straight from /api/billing (the same
+  // source BillingPanel and TeamManagement already use) — not a hardcoded
+  // map, so it can never drift from what's actually sold. Defaults to
+  // Starter (the most restrictive real tier) until it loads.
+  const [currentPlanId, setCurrentPlanId] = useState<string>("starter");
   const [maxWorkspaces, setMaxWorkspaces] = useState<number>(1);
   useEffect(() => {
     fetch("/api/billing")
@@ -461,6 +463,7 @@ export default function SettingsPage() {
       .then((d) => {
         if (!d) return;
         const id = d.current?.planId || "starter";
+        setCurrentPlanId(id);
         const plan = (d.plans || []).find((p: { id: string }) => p.id === id);
         const cap = plan?.capabilities?.workspaces;
         if (typeof cap === "number") setMaxWorkspaces(cap === -1 ? Infinity : cap);
@@ -1350,10 +1353,9 @@ export default function SettingsPage() {
   };
 
   const renderIntegrationSettings = () => {
-    // Get user's current plan - in production this would come from subscription data
-    const currentPlanId = "growth"; // starter, growth, or vip
-    const connectedCount = 0; // This would be calculated from actual connected integrations
-    
+    // currentPlanId comes from the real /api/billing fetch above.
+    const connectedCount = 0; // TODO: calculate from actual connected integrations
+
     return (
       <div className="space-y-6">
         {/* Global Control (Titanium Suite) — per-client connection */}
