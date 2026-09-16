@@ -78,7 +78,12 @@ export default function SalesReferencePage() {
 
         <SalesScript />
 
-        <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-6">Pricing</h2>
+        <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">Pricing</h2>
+        <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
+          What actually separates the tiers: Starter is built for one business running lean; Growth
+          gives you room to grow — three businesses, monthly 1:1 coaching, and more AI horsepower;
+          VIP removes every limit and puts a dedicated, white-glove team behind you.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TIERS.map((tier) => (
             <div key={tier.id} className="rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6 flex flex-col">
