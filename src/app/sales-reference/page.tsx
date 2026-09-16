@@ -73,9 +73,10 @@ export default function SalesReferencePage() {
           </p>
           <p className="mt-3 text-[#b8a898] max-w-2xl">
             At the same time you collect the credit card information for the Implementation Fee,
-            use the monthly billing link with the applicable 30-day delay coupon code. This ensures
-            the client&apos;s monthly billing is set up in advance and will begin automatically once
-            the implementation period is complete.
+            send the monthly billing link and have the client enter coupon code{" "}
+            <strong className="text-[#F3EEE4]">FIRSTMONTHFREE</strong>. This delays their first
+            monthly charge by one billing cycle, so their monthly billing is set up in advance and
+            begins automatically once the implementation period is complete.
           </p>
         </div>
 
@@ -125,6 +126,11 @@ export default function SalesReferencePage() {
                 >
                   Monthly billing link
                 </a>
+                <p className="mt-2 text-[11px] text-[#b8a898]">
+                  Give them code{" "}
+                  <span className="font-mono font-semibold text-[#c9a227]">FIRSTMONTHFREE</span>{" "}
+                  at checkout — delays their first charge one cycle.
+                </p>
               </div>
             </div>
           ))}
