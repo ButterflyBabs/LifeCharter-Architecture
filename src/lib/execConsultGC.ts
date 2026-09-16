@@ -7,11 +7,11 @@
 // stored in client_integrations (that one is scoped to each Suite client's
 // own connected account, a different concern).
 //
-// Pattern proven in commandsuite-landing-page's assessment route: fire the
-// tag first (creates/updates the contact by email and returns its id), then
-// PUT customFields onto that same contact id. Both steps are best-effort —
-// a missing GC_EXEC_FIELD_MAP entry or tag id degrades gracefully instead of
-// failing the submission, same as the sales onboarding flow.
+// fireExecConsultTag is also reused by the New Client Onboarding flow
+// (onboard-client/route.ts) — it's generic (tag id + contact -> status and
+// a real contact id), not specific to the exec-consult questionnaires.
+
+import { writeGcCustomFields } from "@/lib/gcCustomFields";
 
 const GC_BASE = process.env.GC_BASE || "https://api.globalcontrol.io/api/ai";
 
@@ -87,40 +87,14 @@ export async function fireExecConsultTag(
   }
 }
 
-// Writes questionnaire answers onto the contact's custom fields, using
-// GC_EXEC_FIELD_MAP (JSON: {"<our key>": "<Global Control customFieldId>"}).
-// Silently writes only the keys that both have a value and are mapped —
-// the questionnaire still works end-to-end before every field exists in GC.
+// Writes questionnaire answers onto the contact's custom fields, using the
+// gc_exec_field_map field map (app_settings, falling back to the
+// GC_EXEC_FIELD_MAP env var). Silently writes only the keys that both have
+// a value and are mapped — the questionnaire still works end-to-end before
+// every field exists in GC.
 export async function writeExecConsultFields(
   contactId: string | null,
   values: Record<string, string | undefined>
 ): Promise<"written" | "skipped"> {
-  const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
-  if (!apiKey || !contactId) return "skipped";
-
-  let fieldMap: Record<string, string> = {};
-  try {
-    fieldMap = JSON.parse(process.env.GC_EXEC_FIELD_MAP || "{}");
-  } catch {
-    fieldMap = {};
-  }
-  if (!Object.keys(fieldMap).length) return "skipped";
-
-  const customFields = Object.entries(fieldMap)
-    .filter(([key]) => values[key] !== undefined && values[key] !== "")
-    .map(([key, customFieldId]) => ({ customFieldId, value: values[key] as string }));
-
-  if (!customFields.length) return "skipped";
-
-  try {
-    await fetch(`${GC_BASE}/contacts/${encodeURIComponent(contactId)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
-      body: JSON.stringify({ customFields }),
-    });
-    return "written";
-  } catch (err) {
-    console.error(`[execConsultGC] custom field write error for contact ${contactId}:`, err);
-    return "skipped";
-  }
+  return writeGcCustomFields(contactId, values, "gc_exec_field_map", "GC_EXEC_FIELD_MAP");
 }
