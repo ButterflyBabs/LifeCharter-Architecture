@@ -30,9 +30,9 @@ const PHASES: Phase[] = [
         <p className="script-note">Ask 2–3 of these. Follow whichever one has real energy behind it.</p>
         <ul className="script-list">
           <li>&ldquo;Walk me through a normal Tuesday — where does your time actually go?&rdquo;</li>
-          <li>&ldquo;What's the thing you know needs attention, but you keep putting off?&rdquo;</li>
+          <li>&ldquo;What&rsquo;s the thing you know needs attention, but you keep putting off?&rdquo;</li>
           <li>&ldquo;If I looked at your tools right now — CRM, finance, content, tasks — how many separate logins am I looking at?&rdquo;</li>
-          <li>&ldquo;What's the last thing that fell through the cracks and cost you real money or a real client?&rdquo;</li>
+          <li>&ldquo;What&rsquo;s the last thing that fell through the cracks and cost you real money or a real client?&rdquo;</li>
           <li>&ldquo;Picture this business a year from now, still running exactly like it runs today — how does that feel?&rdquo;</li>
         </ul>
       </>
