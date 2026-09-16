@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SalesScript } from "./SalesScript";
 import { NewClientForm } from "./NewClientForm";
+import { ContactLookup } from "./ContactLookup";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -75,6 +77,10 @@ export default function SalesReferencePage() {
             the implementation period is complete.
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <ContactLookup />
+        </Suspense>
 
         <SalesScript />
 
