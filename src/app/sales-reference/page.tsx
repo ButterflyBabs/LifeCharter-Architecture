@@ -64,9 +64,15 @@ export default function SalesReferencePage() {
             LifeCharter Command Suite pricing
           </h1>
           <p className="mt-3 text-[#b8a898] max-w-2xl">
-            Charge the <strong className="text-[#F3EEE4]">Implementation Fee</strong> to close on the
-            call — monthly billing starts only once implementation is complete, so the monthly link
-            below isn&apos;t what you send a prospect today.
+            Charge the <strong className="text-[#F3EEE4]">Implementation Fee</strong> to close the
+            sale on the call. Monthly billing will begin only after implementation is complete,
+            approximately 30 days from the start date.
+          </p>
+          <p className="mt-3 text-[#b8a898] max-w-2xl">
+            At the same time you collect the credit card information for the Implementation Fee,
+            use the monthly billing link with the applicable 30-day delay coupon code. This ensures
+            the client&apos;s monthly billing is set up in advance and will begin automatically once
+            the implementation period is complete.
           </p>
         </div>
 
