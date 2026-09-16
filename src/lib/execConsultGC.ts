@@ -23,12 +23,12 @@ const GC_BASE = process.env.GC_BASE || "https://api.globalcontrol.io/api/ai";
 // writes on this flow have never actually fired regardless of whether
 // GC_EXEC_FIELD_MAP is configured. Walk through nested .data wrappers
 // defensively so this keeps working if GC's nesting depth ever changes.
-function pickContactId(data: unknown): string | null {
+function pickContact(data: unknown): Record<string, unknown> | null {
   let o: unknown = data;
   for (let depth = 0; depth < 4 && o && typeof o === "object"; depth++) {
     const rec = o as Record<string, unknown>;
-    const candidates = [rec._id, rec.id, rec.contactId, (rec.contact as Record<string, unknown> | undefined)?._id];
-    for (const c of candidates) if (typeof c === "string" && c) return c;
+    const id = rec._id ?? rec.id ?? rec.contactId ?? (rec.contact as Record<string, unknown> | undefined)?._id;
+    if (typeof id === "string" && id) return rec;
     o = rec.data;
   }
   return null;
@@ -61,12 +61,26 @@ export async function fireExecConsultTag(
         phone: contact.phone || undefined,
       }),
     });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { type?: string } | null;
+
+    // GC returns HTTP 200 for real failures too (a bad API key: {type:"error"};
+    // a bad tag id: {type:"response"} with a real contact but its tags array
+    // empty) — both confirmed directly against the live API. res.ok alone
+    // reads either as success, so check the body's own signals instead.
+    if (!res.ok || data?.type === "error") {
       console.error(`[execConsultGC] fire-tag failed for ${contact.email}:`, res.status, data);
-      return { status: "failed", contactId: pickContactId(data) };
+      return { status: "failed", contactId: null };
     }
-    return { status: "tagged", contactId: pickContactId(data) };
+
+    const record = pickContact(data);
+    const contactId = typeof record?._id === "string" ? record._id : typeof record?.id === "string" ? (record.id as string) : null;
+    const tags = Array.isArray(record?.tags) ? (record!.tags as unknown[]) : [];
+    if (!contactId || !tags.includes(tagId)) {
+      console.error(`[execConsultGC] tag did not actually apply for ${contact.email} (tag ${tagId}):`, data);
+      return { status: "failed", contactId };
+    }
+
+    return { status: "tagged", contactId };
   } catch (err) {
     console.error(`[execConsultGC] fire-tag error for ${contact.email}:`, err);
     return { status: "error", contactId: null };
