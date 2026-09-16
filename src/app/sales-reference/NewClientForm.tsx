@@ -56,7 +56,7 @@ const DIMENSIONS = [
   "Leadership", "Vision", "Product", "Client Experience", "Legal", "Sustainability",
 ];
 
-type Result = { success: true; gcTagStatus: string; loginUrl: string | null } | null;
+type Result = { success: true; isNewAccount: boolean; gcTagStatus: string; loginUrl: string | null } | null;
 
 export function NewClientForm() {
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -130,7 +130,9 @@ export function NewClientForm() {
   if (result) {
     return (
       <section className="mb-14 rounded-2xl border border-[#c9a227]/40 bg-[#1C2236] p-6">
-        <h2 className="text-xl font-semibold text-[#F8F5F0]">Account created — {form.fullName}</h2>
+        <h2 className="text-xl font-semibold text-[#F8F5F0]">
+          {result.isNewAccount ? "Account created" : "Account updated"} — {form.fullName}
+        </h2>
         <p className="mt-2 text-sm text-[#b8a898]">
           Global Control tag:{" "}
           <span className={result.gcTagStatus === "tagged" ? "text-[#7FC4C9]" : "text-[#E3C27C]"}>
@@ -165,8 +167,9 @@ export function NewClientForm() {
           </div>
         ) : (
           <p className="mt-4 text-sm text-[#E3C27C]">
-            Account created, but the login link couldn&apos;t be generated — have them use
-            &ldquo;Forgot password&rdquo; at /login with {form.loginEmail || form.email}.
+            {result.isNewAccount ? "Account created" : "Account updated"}, but the login link
+            couldn&apos;t be generated — have them use &ldquo;Forgot password&rdquo; at /login with{" "}
+            {form.loginEmail || form.email}.
           </p>
         )}
 
@@ -188,9 +191,9 @@ export function NewClientForm() {
     <section className="mb-14">
       <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">New Client Onboarding</h2>
       <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
-        Fill this out before the end of the call. Creates their Command Suite login, tags their
-        existing Global Control contact as a client, and records the business info that seeds
-        their first login.
+        Fill this out before the end of the call. Creates their Command Suite login if they
+        don&apos;t already have one — or updates their existing account if they do — tags their
+        existing Global Control contact as a client, and saves the business info from this call.
       </p>
 
       {justPrefilled && (
@@ -361,7 +364,7 @@ export function NewClientForm() {
           disabled={state === "busy"}
           className="rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] text-[#1a2b4a] font-semibold px-6 py-3 text-sm disabled:opacity-60"
         >
-          {state === "busy" ? "Creating account…" : "Create account & tag contact"}
+          {state === "busy" ? "Saving…" : "Save client & tag contact"}
         </button>
       </form>
     </section>

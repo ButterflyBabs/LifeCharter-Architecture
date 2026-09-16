@@ -104,8 +104,10 @@ export async function POST(req: NextRequest) {
     );
 
     // 1. Provision the account first — need the user id before we can link the
-    // submission row to it.
-    const { userId } = await provisionAccountForEmail(
+    // submission row to it. Idempotent: an existing client (e.g. upgrading, or
+    // Marcello correcting/adding detail on a follow-up call) gets updated in
+    // place rather than a duplicate account.
+    const { userId, workspaceId, isNewAccount } = await provisionAccountForEmail(
       body.loginEmail || body.email,
       body.tier,
       body.fullName
@@ -142,6 +144,53 @@ export async function POST(req: NextRequest) {
       // gets a working login link.
     }
 
+    // 2b. Sync the call's business details onto the real account. The intake
+    // row above is just an audit log — this is what the client's workspace
+    // and plan actually show, for a brand-new account and an existing one
+    // being updated alike. Best-effort past this point too.
+    if (workspaceId) {
+      const workspaceUpdate: Record<string, unknown> = {};
+      if (body.companyName) workspaceUpdate.name = body.companyName;
+      if (body.website) workspaceUpdate.website = body.website;
+      if (Object.keys(workspaceUpdate).length) {
+        await supabase.from("workspaces").update(workspaceUpdate).eq("id", workspaceId);
+      }
+
+      const { data: existingPlan } = await supabase
+        .from("client_master_plans")
+        .select("id, metadata")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const intakeMetadata: Record<string, unknown> = {};
+      if (body.industry) intakeMetadata.industry = body.industry;
+      if (body.yearsInBusiness) intakeMetadata.years_in_business = body.yearsInBusiness;
+      if (body.monthlyRevenueRange) intakeMetadata.monthly_revenue_range = body.monthlyRevenueRange;
+      if (body.teamSize) intakeMetadata.team_size = body.teamSize;
+      if (body.primaryOffer) intakeMetadata.primary_offer = body.primaryOffer;
+      if (body.biggestChallenge) intakeMetadata.biggest_challenge = body.biggestChallenge;
+      if (body.weakestDimension) intakeMetadata.weakest_dimension = body.weakestDimension;
+      if (body.timezone) intakeMetadata.timezone = body.timezone;
+      if (body.preferredCallTime) intakeMetadata.preferred_call_time = body.preferredCallTime;
+
+      if (existingPlan) {
+        const mergedMetadata = { ...((existingPlan.metadata as object) || {}), ...intakeMetadata };
+        await supabase
+          .from("client_master_plans")
+          .update({ client_name: body.fullName, client_email: body.email, metadata: mergedMetadata })
+          .eq("id", existingPlan.id);
+      } else {
+        await supabase.from("client_master_plans").insert({
+          workspace_id: workspaceId,
+          user_id: userId,
+          client_name: body.fullName,
+          client_email: body.email,
+          status: "active",
+          metadata: intakeMetadata,
+        });
+      }
+    }
+
     // 3. Tag their existing Global Control contact (best-effort).
     const tagStatus = await fireClientTag(body.email, body.fullName, body.phone);
     await supabase
@@ -161,11 +210,12 @@ export async function POST(req: NextRequest) {
 
     if (linkError || !linkData?.properties?.action_link) {
       console.error("generateLink failed:", linkError?.message);
-      return NextResponse.json({ success: true, gcTagStatus: tagStatus, loginUrl: null });
+      return NextResponse.json({ success: true, isNewAccount, gcTagStatus: tagStatus, loginUrl: null });
     }
 
     return NextResponse.json({
       success: true,
+      isNewAccount,
       gcTagStatus: tagStatus,
       loginUrl: linkData.properties.action_link,
     });
