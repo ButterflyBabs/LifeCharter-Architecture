@@ -8,7 +8,11 @@ export const metadata: Metadata = {
 
 const BOOKING_URL = "https://app.globalcontrol.io/appointment-booking/lccsexec-consultwebsite";
 
-export default function ScheduleWebsitePage() {
+export default function ScheduleWebsitePage({
+  searchParams,
+}: {
+  searchParams: { src?: string };
+}) {
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
       <div className="mx-auto max-w-2xl px-6 py-16">
@@ -24,7 +28,7 @@ export default function ScheduleWebsitePage() {
         </p>
 
         <div className="mt-8 rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6">
-          <ScheduleQuestionnaireForm source="website" bookingUrl={BOOKING_URL} />
+          <ScheduleQuestionnaireForm source="website" bookingUrl={BOOKING_URL} sessionSource={searchParams.src} />
         </div>
       </div>
     </main>

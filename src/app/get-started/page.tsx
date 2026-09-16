@@ -41,10 +41,16 @@ async function getPlans(): Promise<PlanRow[]> {
   return data ?? [];
 }
 
-export default async function GetStartedPage() {
+export default async function GetStartedPage({
+  searchParams,
+}: {
+  searchParams: { src?: string };
+}) {
   const plans = await getPlans();
   const starter = plans.find((p) => p.id === "starter");
   const others = plans.filter((p) => p.id !== "starter");
+  const src = searchParams.src;
+  const websiteConsultHref = src ? `/schedule/website?src=${encodeURIComponent(src)}` : "/schedule/website";
 
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
@@ -81,7 +87,7 @@ export default async function GetStartedPage() {
                 + {usd(starter.onboarding_fee ?? 0)} one-time implementation
               </p>
               <div className="mt-6">
-                <StarterSignupForm />
+                <StarterSignupForm sessionSource={src} />
               </div>
             </div>
           )}
@@ -100,7 +106,7 @@ export default async function GetStartedPage() {
                 + {usd(plan.onboarding_fee ?? 0)} one-time implementation
               </p>
               <a
-                href="/schedule/website"
+                href={websiteConsultHref}
                 className="mt-6 block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2.5 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"
               >
                 Book an Executive Consultation

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fireExecConsultTag, writeExecConsultFields } from "@/lib/execConsultGC";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
  * Called from the two Executive Consultation qualification questionnaires
@@ -26,6 +27,8 @@ interface QualifyBody {
   isDecisionMaker: boolean;
   tools?: string[];
   implementationTimeline?: string;
+  /** e.g. "mc-2026-09-24" — which MasterClass/channel this came from, if known. */
+  sessionSource?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +66,31 @@ export async function POST(req: NextRequest) {
       tools: (body.tools || []).join(", "),
       implementation_timeline: body.implementationTimeline || "",
       qualified_at: new Date().toISOString().slice(0, 10),
+      // No-ops until GC_EXEC_FIELD_MAP has a "session_source" entry — same
+      // graceful-degrade pattern as every other field here.
+      session_source: body.sessionSource || "",
     });
+
+    // Best-effort audit row — independent of whether GC_EXEC_FIELD_MAP has a
+    // session_source mapping yet, so attribution is queryable immediately.
+    try {
+      const supabase = createServerClient();
+      await supabase.from("exec_consult_qualifications").insert({
+        source: body.source,
+        full_name: body.fullName,
+        email: body.email,
+        revenue_range: body.revenueRange,
+        bottleneck: body.bottleneck,
+        is_decision_maker: body.isDecisionMaker,
+        tools: (body.tools || []).join(", ") || null,
+        implementation_timeline: body.implementationTimeline || null,
+        session_source: body.sessionSource || null,
+        gc_contact_id: contactId,
+        gc_tag_status: gcTagStatus,
+      });
+    } catch (e) {
+      console.error("[consultation/qualify] audit insert failed:", e);
+    }
 
     return NextResponse.json({ success: true, gcTagStatus });
   } catch (error) {

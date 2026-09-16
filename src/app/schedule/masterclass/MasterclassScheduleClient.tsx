@@ -9,6 +9,7 @@ export function MasterclassScheduleClient() {
   const params = useSearchParams();
   const email = params.get("email") || "";
   const name = params.get("name") || "";
+  const src = params.get("src") || undefined;
 
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
@@ -30,6 +31,7 @@ export function MasterclassScheduleClient() {
             bookingUrl={BOOKING_URL}
             defaultFullName={name}
             defaultEmail={email}
+            sessionSource={src}
           />
         </div>
       </div>

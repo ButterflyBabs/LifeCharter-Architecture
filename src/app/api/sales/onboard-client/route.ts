@@ -48,6 +48,8 @@ interface OnboardBody {
   primaryOffer?: string;
   biggestChallenge?: string;
   weakestDimension?: string;
+  /** Which MasterClass/channel/referral this client came from, if known. */
+  sessionSource?: string;
   loginEmail?: string;
   timezone?: string;
   preferredCallTime?: string;
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
       primary_offer: body.primaryOffer || null,
       biggest_challenge: body.biggestChallenge || null,
       weakest_dimension: body.weakestDimension || null,
+      session_source: body.sessionSource || null,
       login_email: body.loginEmail || body.email,
       timezone: body.timezone || null,
       preferred_call_time: body.preferredCallTime || null,
@@ -176,6 +179,7 @@ export async function POST(req: NextRequest) {
       if (body.primaryOffer) intakeMetadata.primary_offer = body.primaryOffer;
       if (body.biggestChallenge) intakeMetadata.biggest_challenge = body.biggestChallenge;
       if (body.weakestDimension) intakeMetadata.weakest_dimension = body.weakestDimension;
+      if (body.sessionSource) intakeMetadata.session_source = body.sessionSource;
       if (body.timezone) intakeMetadata.timezone = body.timezone;
       if (body.preferredCallTime) intakeMetadata.preferred_call_time = body.preferredCallTime;
 

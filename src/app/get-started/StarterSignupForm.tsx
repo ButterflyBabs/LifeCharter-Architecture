@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-export function StarterSignupForm() {
+interface Props {
+  /** Which MasterClass/channel sent them here, e.g. "mc-2026-09-24" — carried into Stripe metadata. */
+  sessionSource?: string;
+}
+
+export function StarterSignupForm({ sessionSource }: Props) {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
@@ -17,7 +22,7 @@ export function StarterSignupForm() {
       const res = await fetch("/api/stripe/starter-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fullName }),
+        body: JSON.stringify({ email, fullName, sessionSource }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
