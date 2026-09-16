@@ -98,6 +98,7 @@ export default function BillingPanel() {
   const [plans, setPlans] = useState<PlanRow[] | null>(null);
   const [current, setCurrent] = useState<Current | null>(null);
   const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/billing?ts=" + Date.now(), { cache: "no-store" })
@@ -108,6 +109,23 @@ export default function BillingPanel() {
       })
       .catch(() => setPlans([]));
   }, []);
+
+  async function openBillingPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      alert(data?.error || "Couldn't open the billing portal. Try again in a moment.");
+    } catch {
+      alert("Couldn't open the billing portal. Try again in a moment.");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   if (plans === null) {
     return <p className="text-sm text-[#b8a898]">Loading plans…</p>;
@@ -130,6 +148,11 @@ export default function BillingPanel() {
                 ? `Renews ${new Date(current.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
                 : "Active"}
             </p>
+            {!current.comped && (
+              <Button variant="outline" className="mt-3" onClick={openBillingPortal} disabled={portalLoading}>
+                {portalLoading ? "Opening…" : "Manage billing"}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
