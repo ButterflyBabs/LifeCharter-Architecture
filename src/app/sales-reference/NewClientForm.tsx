@@ -23,6 +23,7 @@ interface FormState {
   primaryOffer: string;
   biggestChallenge: string;
   weakestDimension: string;
+  sessionSource: string;
   loginEmail: string;
   timezone: string;
   preferredCallTime: string;
@@ -45,6 +46,7 @@ const INITIAL: FormState = {
   primaryOffer: "",
   biggestChallenge: "",
   weakestDimension: "",
+  sessionSource: "",
   loginEmail: "",
   timezone: "",
   preferredCallTime: "",
@@ -233,6 +235,15 @@ export function NewClientForm() {
             <div>
               <label className={LABEL_CLASS}>Years in business</label>
               <input className={FIELD_CLASS} value={form.yearsInBusiness} onChange={(e) => set("yearsInBusiness", e.target.value)} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Where did they come from?</label>
+              <input
+                className={FIELD_CLASS}
+                placeholder="e.g. Sept 24 MasterClass, referral, Instagram"
+                value={form.sessionSource}
+                onChange={(e) => set("sessionSource", e.target.value)}
+              />
             </div>
           </div>
         </div>

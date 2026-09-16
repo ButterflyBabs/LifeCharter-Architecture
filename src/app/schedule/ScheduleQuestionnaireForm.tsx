@@ -15,6 +15,8 @@ interface Props {
   bookingUrl: string;
   defaultFullName?: string;
   defaultEmail?: string;
+  /** Which MasterClass/channel sent them here, e.g. "mc-2026-09-24" — carried through to the GC contact and our own audit trail. */
+  sessionSource?: string;
 }
 
 export function ScheduleQuestionnaireForm({
@@ -22,6 +24,7 @@ export function ScheduleQuestionnaireForm({
   bookingUrl,
   defaultFullName = "",
   defaultEmail = "",
+  sessionSource,
 }: Props) {
   const [fullName, setFullName] = useState(defaultFullName);
   const [email, setEmail] = useState(defaultEmail);
@@ -64,6 +67,7 @@ export function ScheduleQuestionnaireForm({
           bottleneck,
           isDecisionMaker: isDecisionMaker === "yes",
           ...(source === "website" ? { tools, implementationTimeline } : {}),
+          ...(sessionSource ? { sessionSource } : {}),
         }),
       });
       const data = await res.json();

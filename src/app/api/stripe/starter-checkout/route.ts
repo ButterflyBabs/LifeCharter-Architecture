@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { email, fullName } = await req.json();
+    const { email, fullName, sessionSource } = await req.json();
     if (!email || typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
     }
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
         flow: "self_serve_starter",
         planId: plan.id,
         fullName: fullName || "",
+        sessionSource: typeof sessionSource === "string" ? sessionSource : "",
       },
     });
 
