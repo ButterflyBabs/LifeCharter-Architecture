@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SalesScript } from "./SalesScript";
 import { NewClientForm } from "./NewClientForm";
 import { ContactLookup } from "./ContactLookup";
+import { ProspectProvider } from "./ProspectContext";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -78,6 +79,7 @@ export default function SalesReferencePage() {
           </p>
         </div>
 
+        <ProspectProvider>
         <Suspense fallback={null}>
           <ContactLookup />
         </Suspense>
@@ -134,6 +136,7 @@ export default function SalesReferencePage() {
         </p>
 
         <NewClientForm />
+        </ProspectProvider>
       </div>
     </main>
   );

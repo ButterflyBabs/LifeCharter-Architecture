@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useProspect } from "./ProspectContext";
 
 interface LookupResult {
   found: boolean;
@@ -24,17 +25,45 @@ function fmtDate(iso: string | null | undefined): string | null {
   }
 }
 
+// Custom-field names that have an obvious, unambiguous match to a New Client
+// Onboarding field — the account has many other custom fields (event
+// booking, assessment scores, ...) with no corresponding form field, so this
+// stays a short, exact-name allowlist rather than guessing at fuzzy matches.
+const FIELD_MAP: Record<string, "companyName" | "biggestChallenge"> = {
+  "Company Name": "companyName",
+  "Biggest Challenge": "biggestChallenge",
+};
+
 export function ContactLookup() {
   const params = useSearchParams();
+  const { setProspect } = useProspect();
   const [email, setEmail] = useState(params.get("email") || "");
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [result, setResult] = useState<LookupResult | null>(null);
+  const [used, setUsed] = useState(false);
+
+  function useContact() {
+    if (!result?.found) return;
+    const mapped: Record<string, string> = {};
+    for (const cf of result.customFields || []) {
+      const key = FIELD_MAP[cf.name];
+      if (key) mapped[key] = cf.value;
+    }
+    setProspect({
+      fullName: result.name,
+      email: result.email,
+      phone: result.phone,
+      ...mapped,
+    });
+    setUsed(true);
+  }
 
   async function lookup(e?: React.FormEvent) {
     e?.preventDefault();
     if (!email.trim() || state === "busy") return;
     setState("busy");
     setResult(null);
+    setUsed(false);
     try {
       const res = await fetch(`/api/sales/lookup-contact?email=${encodeURIComponent(email.trim())}`);
       const data = await res.json();
@@ -83,18 +112,29 @@ export function ContactLookup() {
 
       {result && result.found && (
         <div className="mt-4 rounded-xl border border-[#c9a227]/30 bg-[#141826] p-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-base font-semibold text-[#F8F5F0]">{result.name}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-base font-semibold text-[#F8F5F0]">{result.name}</p>
+              <p className="text-xs text-[#b8a898] mt-0.5">
+                {result.email}
+                {result.phone ? ` · ${result.phone}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={useContact}
+              className="rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-3 py-1.5 text-xs font-semibold hover:bg-[#c9a227]/10 whitespace-nowrap"
+            >
+              {used ? "✓ Added to form below" : "Use this contact ↓"}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-2 mt-2">
             {result.status && (
               <span className="text-[10px] font-semibold uppercase tracking-wide text-[#c9a227] bg-[#c9a227]/10 px-2 py-1 rounded-full">
                 {result.status}
               </span>
             )}
           </div>
-          <p className="text-xs text-[#b8a898] mt-1">
-            {result.email}
-            {result.phone ? ` · ${result.phone}` : ""}
-          </p>
 
           {(fmtDate(result.lastContactedAt) || fmtDate(result.lastActiveAt)) && (
             <p className="text-xs text-[#b8a898]/70 mt-1">
