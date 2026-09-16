@@ -118,15 +118,50 @@ export default function DashboardPage() {
     },
   ]);
 
-  // Workspace state
-  const [workspaces] = useState([
-    { id: "ws-1", name: "Sacred Kaleidoscope", role: "Owner" },
-    { id: "ws-2", name: "Sacred Kaleidoscope", role: "Admin" },
-    { id: "ws-3", name: "LifeCharter Ventures", role: "Member" },
-  ]);
-  const [currentWorkspace, setCurrentWorkspace] = useState(workspaces[0]);
+  // Real workspaces, straight from /api/workspaces (the same source Settings
+  // uses) — not the fabricated list + fake per-workspace "role" this used to
+  // show. Selecting a workspace here is currently cosmetic: no other card on
+  // this page is workspace-scoped yet, so this only renames which one is
+  // highlighted, not what data loads.
+  type Workspace = { id: string; name: string; isDefault: boolean };
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/workspaces")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = Array.isArray(d?.workspaces) ? (d.workspaces as Workspace[]) : [];
+        setWorkspaces(list);
+        setCurrentWorkspace((prev) =>
+          prev && list.some((w) => w.id === prev.id) ? prev : list.find((w) => w.isDefault) || list[0] || null
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleCreateWorkspace() {
+    setShowWorkspaceDropdown(false);
+    setCreatingWorkspace(true);
+    try {
+      const res = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: `New Workspace ${workspaces.length + 1}` }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.workspace) throw new Error(data?.error);
+      setWorkspaces((prev) => [...prev, data.workspace as Workspace]);
+      setCurrentWorkspace(data.workspace as Workspace);
+    } catch (err) {
+      alert((err as Error)?.message || "Couldn't create the workspace.");
+    } finally {
+      setCreatingWorkspace(false);
+    }
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -200,87 +235,91 @@ export default function DashboardPage() {
       {/* Welcome Section with Centered Workspace Dropdown */}
       <div className="mb-8">
         {/* Centered Workspace Selector with top padding */}
-        <div className="flex justify-center mb-6 pt-4">
-          <div className="relative" ref={workspaceDropdownRef}>
-            <button
-              onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] hover:bg-[#1a2b4a]/90 dark:hover:bg-[#7b6b8d]/90 transition-all shadow-md hover:shadow-lg border border-[#c9a227]/30"
-            >
-              <Building2 className="w-5 h-5 text-[#c9a227]" />
-              <div className="text-left">
-                <p className="text-xs text-[#c9a227] uppercase tracking-wider">Current Workspace</p>
-                <p className="text-sm font-semibold">{currentWorkspace.name}</p>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-[#c9a227] transition-transform ml-2 ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {/* Dropdown Menu - Theme Coordinated */}
-            {showWorkspaceDropdown && (
-              <Card className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 z-50 shadow-xl border-[#c9a227]/20">
-                <CardContent className="p-3">
-                  <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] uppercase tracking-wider px-3 py-2 font-semibold">
-                    Your Workspaces
-                  </p>
-                  {workspaces.map((workspace) => (
-                    <button
-                      key={workspace.id}
-                      onClick={() => {
-                        setCurrentWorkspace(workspace);
-                        setShowWorkspaceDropdown(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all ${
-                        currentWorkspace.id === workspace.id
-                          ? 'bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] shadow-md'
-                          : 'hover:bg-[#1a2b4a]/5 dark:hover:bg-[#e8e4f0]/10 text-[#1a2b4a] dark:text-[#F8F5F0]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          currentWorkspace.id === workspace.id 
-                            ? 'bg-[#c9a227]/20' 
-                            : 'bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10'
-                        }`}>
-                          <Building2 className={`w-5 h-5 ${
-                            currentWorkspace.id === workspace.id 
-                              ? 'text-[#c9a227]' 
-                              : 'text-[#1a2b4a] dark:text-[#e8e4f0]'
-                          }`} />
+        {currentWorkspace && (
+          <div className="flex justify-center mb-6 pt-4">
+            <div className="relative" ref={workspaceDropdownRef}>
+              <button
+                onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
+                className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] hover:bg-[#1a2b4a]/90 dark:hover:bg-[#7b6b8d]/90 transition-all shadow-md hover:shadow-lg border border-[#c9a227]/30"
+              >
+                <Building2 className="w-5 h-5 text-[#c9a227]" />
+                <div className="text-left">
+                  <p className="text-xs text-[#c9a227] uppercase tracking-wider">Current Workspace</p>
+                  <p className="text-sm font-semibold">{currentWorkspace.name}</p>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-[#c9a227] transition-transform ml-2 ${showWorkspaceDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu - Theme Coordinated */}
+              {showWorkspaceDropdown && (
+                <Card className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 z-50 shadow-xl border-[#c9a227]/20">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] uppercase tracking-wider px-3 py-2 font-semibold">
+                      Your Workspaces
+                    </p>
+                    {workspaces.map((workspace) => (
+                      <button
+                        key={workspace.id}
+                        onClick={() => {
+                          setCurrentWorkspace(workspace);
+                          setShowWorkspaceDropdown(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all ${
+                          currentWorkspace.id === workspace.id
+                            ? 'bg-[#1a2b4a] dark:bg-[#7b6b8d] text-[#F8F5F0] shadow-md'
+                            : 'hover:bg-[#1a2b4a]/5 dark:hover:bg-[#e8e4f0]/10 text-[#1a2b4a] dark:text-[#F8F5F0]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            currentWorkspace.id === workspace.id
+                              ? 'bg-[#c9a227]/20'
+                              : 'bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10'
+                          }`}>
+                            <Building2 className={`w-5 h-5 ${
+                              currentWorkspace.id === workspace.id
+                                ? 'text-[#c9a227]'
+                                : 'text-[#1a2b4a] dark:text-[#e8e4f0]'
+                            }`} />
+                          </div>
+                          <div>
+                            <p className={`text-sm font-medium ${
+                              currentWorkspace.id === workspace.id ? 'text-[#F8F5F0]' : ''
+                            }`}>{workspace.name}</p>
+                            {workspace.isDefault && (
+                              <p className={`text-xs ${
+                                currentWorkspace.id === workspace.id
+                                  ? 'text-[#c9a227]'
+                                  : 'text-[#b8a898]'
+                              }`}>Default</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className={`text-sm font-medium ${
-                            currentWorkspace.id === workspace.id ? 'text-[#F8F5F0]' : ''
-                          }`}>{workspace.name}</p>
-                          <p className={`text-xs ${
-                            currentWorkspace.id === workspace.id 
-                              ? 'text-[#c9a227]' 
-                              : 'text-[#b8a898]'
-                          }`}>{workspace.role}</p>
+                        {currentWorkspace.id === workspace.id && (
+                          <div className="w-3 h-3 rounded-full bg-[#c9a227] shadow-sm" />
+                        )}
+                      </button>
+                    ))}
+                    <div className="border-t border-[#1a2b4a]/10 dark:border-[#e8e4f0]/20 mt-2 pt-2">
+                      <button
+                        onClick={handleCreateWorkspace}
+                        disabled={creatingWorkspace}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10 transition-colors group disabled:opacity-50"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center group-hover:bg-[#c9a227]/20">
+                          <Plus className="w-5 h-5 text-[#c9a227]" />
                         </div>
-                      </div>
-                      {currentWorkspace.id === workspace.id && (
-                        <div className="w-3 h-3 rounded-full bg-[#c9a227] shadow-sm" />
-                      )}
-                    </button>
-                  ))}
-                  <div className="border-t border-[#1a2b4a]/10 dark:border-[#e8e4f0]/20 mt-2 pt-2">
-                    <button
-                      onClick={() => {
-                        setShowWorkspaceDropdown(false);
-                        alert("Create new workspace - coming soon!");
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10 transition-colors group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-[#c9a227]/10 flex items-center justify-center group-hover:bg-[#c9a227]/20">
-                        <Plus className="w-5 h-5 text-[#c9a227]" />
-                      </div>
-                      <span className="text-sm font-medium">Create New Workspace</span>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                        <span className="text-sm font-medium">
+                          {creatingWorkspace ? "Creating…" : "Create New Workspace"}
+                        </span>
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Welcome Text - Left justified with drag hint on same line right justified */}
         <div className="flex items-center justify-between">
