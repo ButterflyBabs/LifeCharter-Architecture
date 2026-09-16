@@ -26,7 +26,7 @@ const PUBLIC_APIS = [
 // form but shouldn't see client data, the dashboard, or anything else.
 const SALES_ROLE = "sales";
 const SALES_ONLY_PAGES = ["/sales-reference"];
-const SALES_ONLY_APIS = ["/api/sales/onboard-client", "/api/sales/lookup-contact", "/api/sales/search-contacts"];
+const SALES_ONLY_APIS = ["/api/sales/onboard-client", "/api/sales/lookup-contact", "/api/sales/search-contacts", "/api/sales/checkout-session"];
 
 // Is this signed-in email an invited team member, and if so what role are
 // they? Checked via the Supabase REST endpoint with the service key so the
