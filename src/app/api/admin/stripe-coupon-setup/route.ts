@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     });
 
     const promotionCode = await stripe.promotionCodes.create({
-      coupon: coupon.id,
+      promotion: { type: "coupon", coupon: coupon.id },
       code,
     });
 
