@@ -107,6 +107,12 @@ export default async function GetStartedPage() {
         <p className="text-center text-xs text-[#b8a898] mt-10">
           Already have an account? <a href="/login" className="underline">Sign in</a>
         </p>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#b8a898]/60">
+          <a href="/legal/terms-of-sale" className="hover:text-[#b8a898]">Terms of Sale</a>
+          <a href="/legal/year-1-agreement" className="hover:text-[#b8a898]">Year-1 Agreement</a>
+          <a href="/legal/privacy-policy" className="hover:text-[#b8a898]">Privacy Policy</a>
+        </div>
       </div>
     </main>
   );

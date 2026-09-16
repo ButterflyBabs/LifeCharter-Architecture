@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule"];
+const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",

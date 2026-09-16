@@ -311,10 +311,16 @@ export function NewClientForm() {
               onChange={(e) => set("year1AgreementAccepted", e.target.checked)}
             />
             <span>
-              Client has acknowledged the year-1 commitment terms. *
-              <span className="block text-xs text-[#b8a898] mt-1">
-                Placeholder until real terms-of-sale language exists — see the punch list.
-              </span>
+              Client has acknowledged the{" "}
+              <a
+                href="/legal/year-1-agreement"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E3C27C] underline"
+              >
+                year-1 commitment terms
+              </a>
+              . *
             </span>
           </label>
         </div>
