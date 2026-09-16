@@ -26,7 +26,6 @@ import { NextThreeMoves } from "@/components/dashboard/NextThreeMoves";
 import { DomainScores } from "@/components/dashboard/DomainScores";
 import { BusinessHealthTrend } from "@/components/dashboard/BusinessHealthTrend";
 import { OperatingRhythm } from "@/components/dashboard/OperatingRhythm";
-import { MilestonesMomentum } from "@/components/dashboard/MilestonesMomentum";
 import { RevenueSnapshot } from "@/components/dashboard/RevenueSnapshot";
 import { Card, CardContent } from "@/components/ui/Card";
 
@@ -111,11 +110,6 @@ export default function DashboardPage() {
       id: "operating-rhythm",
       title: "Operating Rhythm",
       component: <OperatingRhythm />,
-    },
-    {
-      id: "milestones",
-      title: "Milestones",
-      component: <MilestonesMomentum />,
     },
     {
       id: "revenue",
