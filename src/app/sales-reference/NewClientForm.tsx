@@ -296,7 +296,7 @@ export function NewClientForm() {
                 rel="noopener noreferrer"
                 className="mt-1.5 inline-block text-xs text-[#E3C27C] underline"
               >
-                Schedule the recurring time on Babs&apos;s calendar &rarr;
+                Schedule first 1:1 time on Babs&apos;s calendar &rarr;
               </a>
             </div>
           </div>
