@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
+import { fireExecConsultTag } from "@/lib/execConsultGC";
 
 /**
  * Called from the New Client form on /sales-reference after Marcello closes
@@ -19,6 +20,11 @@ import { provisionAccountForEmail } from "@/lib/provisionAccount";
  *    commandsuite-landing-page/app/api/register/route.ts). Missing
  *    GC_CLIENT_TAG_ID is a configuration gap, not a reason to fail the
  *    whole request — the account still gets created either way.
+ * 4. Also fire lccs-execconsult-sold (GC_EXEC_SOLD_TAG_ID), best-effort —
+ *    lets Global Control report on sales that came from an Executive
+ *    Consultation specifically, separately from the general client tag.
+ *    Reuses fireExecConsultTag, the same helper the /schedule qualification
+ *    questionnaires already use to fire lccs-execconsult-* tags.
  */
 
 const GC_FORM_BASE =
@@ -198,6 +204,20 @@ export async function POST(req: NextRequest) {
       .update({ gc_tag_status: tagStatus })
       .eq("email", body.email)
       .eq("user_id", userId);
+
+    // 3b. Also fire the "sold" tag (best-effort, no-op if GC_EXEC_SOLD_TAG_ID
+    // isn't configured yet) — separates Executive-Consultation-sourced sales
+    // out from the general client tag for reporting.
+    const [soldFirstName, ...soldRest] = body.fullName.trim().split(/\s+/);
+    const soldTagResult = await fireExecConsultTag(process.env.GC_EXEC_SOLD_TAG_ID, {
+      email: body.email,
+      firstName: soldFirstName || undefined,
+      lastName: soldRest.join(" ") || undefined,
+      phone: body.phone,
+    });
+    if (soldTagResult.status !== "tagged") {
+      console.error(`[onboard-client] sold-tag ${soldTagResult.status} for ${body.email}`);
+    }
 
     // 4. Generate a real login link to hand to the client — same recovery-link
     // pattern as the self-serve flow, since production SMTP still isn't wired
