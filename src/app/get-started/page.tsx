@@ -58,6 +58,11 @@ export default async function GetStartedPage() {
             Executive coaching + the full Command Suite, together. Starter is the self-serve
             doorway — Growth and VIP are a conversation, not a checkout.
           </p>
+          <p className="mt-3 text-sm text-[#b8a898]/80 max-w-xl mx-auto">
+            Starter is built for one business running lean; Growth gives you room to grow — three
+            businesses, monthly 1:1 coaching, and more AI horsepower; VIP removes every limit and
+            puts a dedicated, white-glove team behind you.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
