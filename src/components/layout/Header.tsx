@@ -60,7 +60,7 @@ export function Header({
   // SSR fallback - simplified version
   if (!mounted) {
     return (
-      <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center justify-between px-6 sticky top-0 z-40">
+      <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center justify-between pl-14 pr-6 lg:px-6 sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <h1 className="font-serif text-xl font-bold text-[#1a2b4a]">
             {resolvedTitle}
@@ -76,7 +76,7 @@ export function Header({
   }
 
   return (
-    <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center justify-between px-6 sticky top-0 z-40">
+    <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center justify-between pl-14 pr-6 lg:px-6 sticky top-0 z-40">
       {/* Left: Title */}
       <div className="flex items-center gap-2">
         <h1 className="font-serif text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
