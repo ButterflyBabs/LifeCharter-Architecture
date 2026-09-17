@@ -13,7 +13,24 @@ interface AppLayoutProps {
 }
 
 // Routes that render full-screen without the app chrome (sidebar/header/widgets).
-const BARE_ROUTES = ["/login", "/logout", "/forgot-password", "/reset-password", "/sales-reference", "/schedule", "/legal"];
+// Includes every pre-auth / public-prospect page (mirrors middleware's
+// PUBLIC_PAGES) other than /demo, which exists specifically to preview the
+// dashboard chrome. Without this, a page like /get-started — a public
+// self-serve checkout — rendered wrapped in the real internal app sidebar
+// (Finance, Settings, Command Center, ...), which is both a confusing first
+// impression for an anonymous prospect and, on mobile, was completely
+// unusable before the sidebar got an off-canvas mobile state.
+const BARE_ROUTES = [
+  "/login",
+  "/logout",
+  "/forgot-password",
+  "/reset-password",
+  "/accept-invite",
+  "/get-started",
+  "/sales-reference",
+  "/schedule",
+  "/legal",
+];
 
 function AppLayoutContent({ children }: AppLayoutProps) {
   const { isCollapsed } = useSidebar();
