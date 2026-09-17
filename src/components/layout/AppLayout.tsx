@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { CollapsibleSidebarProvider, CollapsibleSidebar, useSidebar } from "./CollapsibleSidebar";
+import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, useSidebar } from "./CollapsibleSidebar";
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
 import AIGuideWidget from "@/components/ai-guide/AIGuideWidget";
@@ -22,11 +22,13 @@ function AppLayoutContent({ children }: AppLayoutProps) {
     <div className="min-h-screen bg-[#F8F5F0] dark:bg-[#1A1A2E]">
       {/* Sidebar */}
       <CollapsibleSidebar />
+      <MobileSidebarToggle />
 
-      {/* Main content area */}
+      {/* Main content area — no left margin on mobile, where the sidebar is
+          an off-canvas drawer rather than a permanent column. */}
       <main className={cn(
         "min-h-screen transition-all duration-300 ease-in-out flex flex-col",
-        isCollapsed ? "ml-16" : "ml-64"
+        isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}>
         <DemoBanner />
         <Header />

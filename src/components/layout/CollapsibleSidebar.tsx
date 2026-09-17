@@ -24,6 +24,7 @@ import {
   Menu,
   HelpCircle,
   ChevronDown,
+  X,
   LifeBuoy,
   HeartPulse,
   Target,
@@ -108,15 +109,38 @@ const helpItems = [
 interface SidebarContextType {
   isCollapsed: boolean;
   toggleSidebar: () => void;
+  isMobileOpen: boolean;
+  toggleMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextType>({
   isCollapsed: false,
   toggleSidebar: () => {},
+  isMobileOpen: false,
+  toggleMobileSidebar: () => {},
+  closeMobileSidebar: () => {},
 });
 
 export function useSidebar() {
   return useContext(SidebarContext);
+}
+
+// Below Tailwind's `lg` breakpoint (1024px) the sidebar becomes an off-canvas
+// drawer instead of a permanent column — without this, a 375px phone had the
+// full-width fixed sidebar (or its w-16 collapsed rail) permanently covering
+// the page with no way to dismiss it, since MobileSidebarToggle existed but
+// was never rendered anywhere.
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
 }
 
 interface CollapsibleSidebarProps {
@@ -125,11 +149,23 @@ interface CollapsibleSidebarProps {
 
 export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  const toggleMobileSidebar = () => setIsMobileOpen((v) => !v);
+  const closeMobileSidebar = () => setIsMobileOpen(false);
+
+  // Close the mobile drawer on navigation so it doesn't stay open over the
+  // next page.
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, toggleSidebar }}>
+    <SidebarContext.Provider
+      value={{ isCollapsed, toggleSidebar, isMobileOpen, toggleMobileSidebar, closeMobileSidebar }}
+    >
       {children}
     </SidebarContext.Provider>
   );
@@ -233,7 +269,11 @@ function NavItem({
 
 export function CollapsibleSidebar() {
   const { theme, toggleTheme, mounted } = useTheme();
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { isCollapsed: isCollapsedDesktop, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
+  const isMobile = useIsMobile();
+  // The mobile drawer always shows full labels — only the desktop rail
+  // collapses to icons-only.
+  const isCollapsed = isMobile ? false : isCollapsedDesktop;
   const pathname = usePathname();
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null }>({
@@ -276,8 +316,8 @@ export function CollapsibleSidebar() {
     return (
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300",
-          isCollapsed ? "w-16" : "w-64"
+          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300 w-64 -translate-x-full lg:translate-x-0",
+          isCollapsedDesktop ? "lg:w-16" : "lg:w-64"
         )}
       >
         <div className="p-4 border-b border-white/10">
@@ -290,12 +330,24 @@ export function CollapsibleSidebar() {
   }
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300 ease-in-out shadow-xl",
-        isCollapsed ? "w-16" : "w-64"
+    <>
+      {/* Backdrop — mobile only, dismisses the drawer on tap outside it */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={closeMobileSidebar}
+          aria-hidden="true"
+        />
       )}
-    >
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 lg:z-50 transition-all duration-300 ease-in-out shadow-xl w-64",
+          isMobileOpen && "z-[65]",
+          isCollapsed ? "lg:w-16" : "lg:w-64",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full",
+          "lg:translate-x-0"
+        )}
+      >
       {/* Logo Area & Toggle */}
       <div
         className={cn(
@@ -334,16 +386,26 @@ export function CollapsibleSidebar() {
           </div>
         )}
 
-        {/* Collapse/Expand Button */}
+        {/* Collapse/Expand Button — desktop rail only, meaningless on the mobile drawer */}
         <button
           onClick={toggleSidebar}
           className={cn(
-            "p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors",
+            "hidden lg:block p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors",
             isCollapsed && "mx-auto"
           )}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
+        {/* Close Button — mobile drawer only */}
+        <button
+          onClick={closeMobileSidebar}
+          className="lg:hidden p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+          title="Close menu"
+          aria-label="Close menu"
+        >
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -501,18 +563,22 @@ export function CollapsibleSidebar() {
         )}
       </div>
     </aside>
+    </>
   );
 }
 
-// Mobile sidebar toggle button
+// Mobile hamburger button — opens the off-canvas drawer. Hidden while the
+// drawer is open since the drawer has its own close (X) button.
 export function MobileSidebarToggle() {
-  const { toggleSidebar } = useSidebar();
+  const { isMobileOpen, toggleMobileSidebar } = useSidebar();
+
+  if (isMobileOpen) return null;
 
   return (
     <button
-      onClick={toggleSidebar}
-      className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#1a2b4a] text-[#F8F5F0] shadow-lg"
-      aria-label="Toggle sidebar"
+      onClick={toggleMobileSidebar}
+      className="lg:hidden fixed top-4 left-4 z-[70] p-2 rounded-lg bg-[#1a2b4a] text-[#F8F5F0] shadow-lg"
+      aria-label="Open menu"
     >
       <Menu className="w-5 h-5" />
     </button>
