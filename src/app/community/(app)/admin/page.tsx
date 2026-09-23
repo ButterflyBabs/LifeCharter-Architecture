@@ -11,7 +11,7 @@ import { timeAgo } from "@/lib/community/format";
 import { SECTION_LABELS, type Channel, type DiscoverCard, type Profile, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
 
-type Tab = "invites" | "spaces" | "discover" | "members";
+type Tab = "invites" | "welcome" | "spaces" | "discover" | "members";
 
 function newCode() {
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -37,6 +37,7 @@ export default function AdminPage() {
         {(
           [
             ["invites", "Invite links"],
+            ["welcome", "Welcome message"],
             ["spaces", "Channels & pathways"],
             ["discover", "Explore cards"],
             ["members", "Members"],
@@ -55,6 +56,7 @@ export default function AdminPage() {
         ))}
       </div>
       {tab === "invites" && <Invites />}
+      {tab === "welcome" && <WelcomeMessage />}
       {tab === "spaces" && <Spaces />}
       {tab === "discover" && <Discover />}
       {tab === "members" && <Members />}
@@ -153,6 +155,89 @@ function Invites() {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Welcome message ───────────────────────────────────────────────────────
+
+function WelcomeMessage() {
+  const { supabase, profile } = useCommunity();
+  const [body, setBody] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState(true);
+  const [saved, setSaved] = useState<"idle" | "saving" | "saved">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void supabase
+      .from("cm_settings")
+      .select("value")
+      .eq("key", "welcome_dm")
+      .maybeSingle()
+      .then(({ data }: { data: { value: { enabled?: boolean; body?: string } } | null }) => {
+        setBody(data?.value?.body ?? "");
+        setEnabled(data?.value?.enabled ?? true);
+      });
+  }, [supabase]);
+
+  async function save() {
+    if (body === null) return;
+    setSaved("saving");
+    setError(null);
+    const { error } = await supabase
+      .from("cm_settings")
+      .upsert({ key: "welcome_dm", value: { enabled, body: body.trim() }, updated_at: new Date().toISOString() });
+    if (error) {
+      setError(error.message);
+      setSaved("idle");
+      return;
+    }
+    setSaved("saved");
+    setTimeout(() => setSaved("idle"), 2000);
+  }
+
+  if (body === null) return <PageLoading />;
+  const preview = body.replaceAll("{first_name}", "Jordan");
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[14px] text-[#5B6275]">
+        Every new member gets this as a private message from you, waiting in their Messages the first time they sign in. When they reply, it
+        arrives in your Messages like any conversation. Write <code className="rounded bg-[#F7F3EA] px-1">{"{first_name}"}</code> where their
+        first name should go.
+      </p>
+      <Card className="space-y-3 p-4">
+        <label className="flex items-center gap-2 text-[14px] font-semibold text-[#1F315B]">
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Send a welcome message to every new member
+        </label>
+        <TextArea value={body} onChange={(e) => setBody(e.target.value)} className="min-h-[260px]" disabled={!enabled} aria-label="Welcome message" />
+        <ErrorNote>{error}</ErrorNote>
+        <div className="flex justify-end">
+          <Button variant="gold" onClick={save} disabled={saved === "saving"}>
+            {saved === "saved" ? (
+              <>
+                <Check className="h-4 w-4" /> Saved
+              </>
+            ) : saved === "saving" ? (
+              "Saving…"
+            ) : (
+              "Save welcome message"
+            )}
+          </Button>
+        </div>
+      </Card>
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A8873F]">Preview — how a new member named Jordan sees it</p>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <Avatar name={profile?.display_name} url={profile?.avatar_url} size={36} />
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-[#E9E2D3] bg-white px-3.5 py-2.5 shadow-sm">
+              <p className="mb-1 text-[12px] font-semibold text-[#1F315B]">{profile?.display_name ?? "You"}</p>
+              <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-[#2A3552]">{enabled ? preview : "Welcome messages are turned off."}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
