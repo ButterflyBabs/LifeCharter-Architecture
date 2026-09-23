@@ -142,7 +142,7 @@ function CommunityHome() {
         />
         <NextCard
           icon={<Compass className="h-5 w-5" />}
-          label={myPrograms.length ? "Continue Your Program" : "Start Here"}
+          label={myPrograms.length ? "Pick Up Where You Left Off" : "Start Here"}
           href={myPrograms[0] ? `/community/s/${myPrograms[0].slug}` : "/community/s/start-here/introductions"}
           title={myPrograms[0]?.name ?? "Introduce yourself to the Collective"}
           detail={
@@ -157,7 +157,7 @@ function CommunityHome() {
 
       {myPrograms.length > 1 && (
         <section>
-          <SectionTitle>Your programs</SectionTitle>
+          <SectionTitle>Your channels</SectionTitle>
           <div className="grid gap-3 sm:grid-cols-2">
             {myPrograms.slice(1).map((s) => (
               <Link key={s.id} href={`/community/s/${s.slug}`}>

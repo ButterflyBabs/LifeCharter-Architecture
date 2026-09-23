@@ -184,7 +184,7 @@ export interface CommunityNotification {
 export const SECTION_LABELS: Record<SpaceSection, string> = {
   start: "Start Here",
   community: "Community",
-  programs: "Your Programs",
+  programs: "Your Channels",
   alumni: "Alumni & Professional",
 };
 
