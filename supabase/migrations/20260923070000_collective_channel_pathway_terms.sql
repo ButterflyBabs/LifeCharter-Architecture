@@ -17,10 +17,10 @@ grant execute on function public.cm_join_public_space(uuid) to authenticated;
 
 insert into public.cm_faqs (category, question, answer, sort_order)
 select 'Getting started', 'What''s the difference between a channel and a pathway?',
- E'Channels are the main areas of the Collective — Start Here, The Commons, and a private channel for each LifeCharter program you''re in.\n\nPathways are the conversations inside a channel. In The Commons, for example, Wins & Aligned Action and Ask the Collective are pathways. Each pathway has one purpose, so it''s easy to know where to post.', 25
+ E'Channels are the main areas of the Collective — Start Here, Community, and a private channel for each LifeCharter program you''re in.\n\nPathways are the conversations inside a channel. In Community, for example, Wins & Aligned Action and Ask the Collective are pathways. Each pathway has one purpose, so it''s easy to know where to post.', 25
 where not exists (select 1 from public.cm_faqs where question like 'What''s the difference between a channel and a pathway%');
 
 update public.cm_posts set body = replace(body,
   'Here''s how to find your way around.',
-  E'Here''s how to find your way around.\n\nThe Collective is made of channels — like Start Here, The Commons, and the channel for each program you''re in. Each channel has pathways, and each pathway is for a particular kind of conversation.')
+  E'Here''s how to find your way around.\n\nThe Collective is made of channels — like Start Here, Community, and the channel for each program you''re in. Each channel has pathways, and each pathway is for a particular kind of conversation.')
 where title like 'Welcome — here%' and body not like '%made of channels%';

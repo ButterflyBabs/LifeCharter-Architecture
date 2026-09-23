@@ -105,7 +105,7 @@ function Invites() {
     <div className="space-y-3">
       <p className="text-[14px] text-[#5B6275]">
         Share a channel&rsquo;s link <em>and</em> its code. New people create their account there; existing members use &ldquo;Already a member&rdquo;.
-        Everyone who joins any channel also lands in Start Here and The Commons.
+        Everyone who joins any channel also lands in Start Here and Community.
       </p>
       {spaces.map((s) => {
         const link = `${origin}/join/${s.slug === "start-here" ? "collective" : s.slug}`;

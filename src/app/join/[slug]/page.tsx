@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { JoinView, type JoinSpace } from "@/components/community/JoinView";
 
 // Public join link for a Collective space: /join/<slug>. "collective" is the
-// friendly alias for the main community (Start Here + The Commons).
+// friendly alias for the main community (Start Here + Community).
 const ALIASES: Record<string, string> = { collective: "start-here", community: "start-here" };
 
 async function loadSpace(raw: string): Promise<JoinSpace | null> {

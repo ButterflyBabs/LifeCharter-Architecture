@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 // Every Monday morning: open this week's "Share Your Offer" thread in The
-// Commons → Connect & Collaborate, pin it, and unpin last week's. This is the
+// Community → Connect & Collaborate, pin it, and unpin last week's. This is the
 // one place the Community Guidelines allow promotion. Posted as the super
 // admin. Safe to run more than once — it won't post twice in the same week.
 // Same CRON_SECRET convention as the other crons.
@@ -37,7 +37,7 @@ async function run(request: Request) {
   const supabase = createServerClient();
 
   const { data: space } = await supabase.from("cm_spaces").select("id").eq("slug", "commons").maybeSingle();
-  if (!space) return NextResponse.json({ error: "The Commons space not found" }, { status: 404 });
+  if (!space) return NextResponse.json({ error: "Community channel not found" }, { status: 404 });
   const { data: channel } = await supabase
     .from("cm_channels")
     .select("id")

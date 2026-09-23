@@ -19,7 +19,7 @@ create policy cm_faqs_manage on public.cm_faqs for all to authenticated
 insert into public.cm_faqs (category, question, answer, sort_order)
 select * from (values
   ('Getting started', 'What is The LifeCharter Collective?',
-   E'The Collective is LifeCharter''s private community — a place to create balance, build alignment and take command, alongside people who understand what that takes.\n\nEvery member has Start Here and The Commons. If you''re in a LifeCharter program, that program has its own private channel inside the Collective too.', 10),
+   E'The Collective is LifeCharter''s private community — a place to create balance, build alignment and take command, alongside people who understand what that takes.\n\nEvery member has Start Here and Community. If you''re in a LifeCharter program, that program has its own private channel inside the Collective too.', 10),
   ('Getting started', 'How do I find my way around?',
    E'Home shows what to do next: this week''s Alignment Anchor, your intention, your next session and what''s new.\n\nThe left sidebar (tap ☰ or Channels on your phone) lists every channel you belong to and its pathways. Messages, Events, the LifeCharter Library, Members and this Help page are there too.', 20),
   ('Getting started', 'How do I join a program channel?',
@@ -34,7 +34,7 @@ select * from (values
   ('Posting & conversation', 'How do I reply, react, edit or delete?',
    E'Tap "Reply" under a post to open the conversation. Tap ＋☺ to react.\n\nTo edit or delete your own post, tap ⋯ at the top right of the post. You can delete your own replies with the trash icon.', 30),
   ('Posting & conversation', 'Where can I share my offer?',
-   'Every Monday a pinned "Share Your Offer" thread opens in The Commons → Connect & Collaborate. Reply there with your launch, offer, event or link — one reply per person each week. Please keep promotion out of other pathways and out of direct messages unless someone asks.', 40),
+   'Every Monday a pinned "Share Your Offer" thread opens in Community → Connect & Collaborate. Reply there with your launch, offer, event or link — one reply per person each week. Please keep promotion out of other pathways and out of direct messages unless someone asks.', 40),
   ('Posting & conversation', 'What are the community guidelines?',
    E'In short: lead with respect, what''s shared here stays here, offers go in the weekly thread, only LifeCharter records sessions, and harm ends membership.\n\nRead the full guidelines: https://lccommandsuite.com/legal/community-guidelines', 50),
 
