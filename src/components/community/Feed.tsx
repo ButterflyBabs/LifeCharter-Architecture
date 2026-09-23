@@ -8,7 +8,9 @@ import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import type { Channel, Post, Reaction } from "@/lib/community/types";
 import { AttachButton, DraftStrip, LinkEmbed, MediaGallery, pasteInto, useMediaDraft } from "./Media";
-import { Avatar, Badge, Button, Card, ErrorNote, RichText, TextArea, Input, EmptyState, Spinner } from "./ui";
+import { MentionTextArea, useMentions } from "./MentionTextArea";
+import { decodeMentions, toPlain } from "@/lib/community/mentions";
+import { Avatar, Badge, Button, Card, ErrorNote, RichText, Input, EmptyState, Spinner } from "./ui";
 
 export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
 
@@ -22,6 +24,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const media = useMediaDraft();
+  const mentions = useMentions();
   const isAnnouncement = channel.kind === "announcements";
 
   if (channel.post_policy === "moderators" && !canModerate(channel.space_id)) return null;
@@ -40,7 +43,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
           space_id: channel.space_id,
           author_id: userId,
           title: title.trim() || null,
-          body: body.trim(),
+          body: mentions.encode(body.trim()),
           attachments,
         })
         .select("*")
@@ -50,6 +53,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
       setBody("");
       setTitle("");
       media.clear();
+      mentions.reset();
       setFocused(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't post. Please try again.");
@@ -68,12 +72,13 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
         <div className="min-w-0 flex-1 space-y-2.5">
           {expanded && isAnnouncement && <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)" />}
           {expanded ? (
-            <TextArea
+            <MentionTextArea
               autoFocus
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onValueChange={setBody}
+              mentions={mentions}
               onPaste={pasteInto(media)}
-              placeholder={placeholder}
+              placeholder={`${placeholder}  (Type @ to tag someone.)`}
               className="min-h-[110px]"
               rows={4}
             />
@@ -81,7 +86,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
             <button
               type="button"
               onClick={() => setFocused(true)}
-              className="block w-full truncate rounded-xl border border-[#DCD3C1] bg-white px-3.5 py-2.5 text-left text-[15px] text-[#9AA0B0] transition hover:border-[#D4AF63]"
+              className="block w-full truncate rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3.5 py-2.5 text-left text-[15px] text-[var(--cm-faint)] transition hover:border-[#D4AF63]"
             >
               {placeholder}
             </button>
@@ -146,7 +151,7 @@ export function ReactionBar({
           onClick={() => toggle(c.emoji)}
           className={cn(
             "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] transition",
-            c.mine ? "border-[#D4AF63] bg-[#FBF3DF] text-[#1F315B]" : "border-[#E9E2D3] bg-white text-[#5B6275] hover:border-[#D4AF63]"
+            c.mine ? "border-[#D4AF63] bg-[var(--cm-gold-soft)] text-[var(--cm-ink)]" : "border-[var(--cm-line)] bg-[var(--cm-surface)] text-[var(--cm-muted-2)] hover:border-[#D4AF63]"
           )}
         >
           <span>{c.emoji}</span>
@@ -156,12 +161,12 @@ export function ReactionBar({
       <button
         onClick={() => setPicker((v) => !v)}
         aria-label="Add reaction"
-        className="inline-flex h-7 items-center rounded-full border border-dashed border-[#DCD3C1] px-2 text-[13px] text-[#8A8FA0] hover:border-[#D4AF63] hover:text-[#1F315B]"
+        className="inline-flex h-7 items-center rounded-full border border-dashed border-[var(--cm-line-strong)] px-2 text-[13px] text-[var(--cm-muted)] hover:border-[#D4AF63] hover:text-[var(--cm-ink)]"
       >
         ＋☺
       </button>
       {picker && (
-        <div className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border border-[#E9E2D3] bg-white px-2 py-1 shadow-lg">
+        <div className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border border-[var(--cm-line)] bg-[var(--cm-surface)] px-2 py-1 shadow-lg">
           {REACTIONS.map((e) => (
             <button key={e} onClick={() => toggle(e)} className="rounded-full p-1 text-[18px] transition hover:scale-125">
               {e}
@@ -197,14 +202,15 @@ export function PostCard({
   const author = authors[post.author_id];
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(post.body);
+  const editMentions = useMentions(post.body);
+  const [draft, setDraft] = useState(() => decodeMentions(post.body).text);
   const [expanded, setExpanded] = useState(!!full);
   const mod = canModerate(post.space_id);
   const mine = post.author_id === userId;
   const long = post.body.length > 600;
 
   async function save() {
-    const { data, error } = await supabase.from("cm_posts").update({ body: draft }).eq("id", post.id).select("*").single();
+    const { data, error } = await supabase.from("cm_posts").update({ body: editMentions.encode(draft) }).eq("id", post.id).select("*").single();
     if (!error && data) onChanged(data as Post);
     setEditing(false);
   }
@@ -228,7 +234,7 @@ export function PostCard({
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <Link href={`/community/members/${post.author_id}`} className="font-semibold text-[#1F315B] hover:underline">
+            <Link href={`/community/members/${post.author_id}`} className="font-semibold text-[var(--cm-ink)] hover:underline">
               {author?.display_name ?? "…"}
             </Link>
             {post.pinned && (
@@ -237,16 +243,16 @@ export function PostCard({
               </Badge>
             )}
           </div>
-          <p className="text-[12.5px] text-[#8A8FA0]">
+          <p className="text-[12.5px] text-[var(--cm-muted)]">
             {channelLabel && (
               <>
-                <Link href={channelLabel.href} className="hover:text-[#1F315B]">
+                <Link href={channelLabel.href} className="hover:text-[var(--cm-ink)]">
                   {channelLabel.emoji} {channelLabel.name}
                 </Link>{" "}
                 ·{" "}
               </>
             )}
-            <Link href={`/community/post/${post.id}`} className="hover:text-[#1F315B]">
+            <Link href={`/community/post/${post.id}`} className="hover:text-[var(--cm-ink)]">
               {timeAgo(post.created_at)}
             </Link>
             {post.edited_at && " · edited"}
@@ -254,18 +260,18 @@ export function PostCard({
         </div>
         {(mine || mod) && (
           <div className="relative">
-            <button onClick={() => setMenu((v) => !v)} aria-label="Post options" className="rounded-lg p-1.5 text-[#8A8FA0] hover:bg-black/5">
+            <button onClick={() => setMenu((v) => !v)} aria-label="Post options" className="rounded-lg p-1.5 text-[var(--cm-muted)] hover:bg-black/5">
               <MoreHorizontal className="h-5 w-5" />
             </button>
             {menu && (
-              <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-[#E9E2D3] bg-white py-1 text-[14px] shadow-lg">
+              <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-[var(--cm-line)] bg-[var(--cm-surface)] py-1 text-[14px] shadow-lg">
                 {mine && (
-                  <button onClick={() => { setMenu(false); setEditing(true); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[#FBF8F2]">
+                  <button onClick={() => { setMenu(false); setEditing(true); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[var(--cm-fill)]">
                     <Pencil className="h-4 w-4" /> Edit
                   </button>
                 )}
                 {mod && (
-                  <button onClick={togglePin} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[#FBF8F2]">
+                  <button onClick={togglePin} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[var(--cm-fill)]">
                     <Pin className="h-4 w-4" /> {post.pinned ? "Unpin" : "Pin to top"}
                   </button>
                 )}
@@ -279,10 +285,10 @@ export function PostCard({
       </header>
 
       <div className="mt-3">
-        {post.title && <h2 className="mb-1.5 font-display text-[22px] font-semibold leading-snug text-[#1F315B]">{post.title}</h2>}
+        {post.title && <h2 className="mb-1.5 font-display text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{post.title}</h2>}
         {editing ? (
           <div className="space-y-2">
-            <TextArea value={draft} onChange={(e) => setDraft(e.target.value)} />
+            <MentionTextArea value={draft} onValueChange={setDraft} mentions={editMentions} />
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
                 Cancel
@@ -294,9 +300,9 @@ export function PostCard({
           </div>
         ) : (
           <>
-            <RichText text={long && !expanded ? post.body.slice(0, 560).trimEnd() + "…" : post.body} />
+            <RichText text={long && !expanded ? toPlain(post.body).slice(0, 560).trimEnd() + "…" : post.body} />
             {long && !expanded && (
-              <button onClick={() => setExpanded(true)} className="mt-1 text-[13.5px] font-semibold text-[#A8873F] hover:underline">
+              <button onClick={() => setExpanded(true)} className="mt-1 text-[13.5px] font-semibold text-[var(--cm-gold-text)] hover:underline">
                 Read more
               </button>
             )}
@@ -306,10 +312,10 @@ export function PostCard({
         {!post.attachments?.some((x) => x.type?.startsWith("video/")) && <LinkEmbed text={post.body} />}
       </div>
 
-      <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#F0EBE0] pt-3">
+      <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cm-line-soft)] pt-3">
         <ReactionBar target={{ post_id: post.id }} reactions={reactions} onChange={onReactions} />
         {!full && (
-          <Link href={`/community/post/${post.id}`} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[#5B6275] hover:text-[#1F315B]">
+          <Link href={`/community/post/${post.id}`} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[var(--cm-muted-2)] hover:text-[var(--cm-ink)]">
             <MessageSquare className="h-4 w-4" />
             {post.comment_count > 0 ? `${post.comment_count} ${post.comment_count === 1 ? "reply" : "replies"}` : "Reply"}
           </Link>

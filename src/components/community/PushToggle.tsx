@@ -74,9 +74,9 @@ export function PushToggle() {
     "not-configured": "Push notifications are coming soon.",
   };
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F7F3EA] px-3.5 py-3">
-      <span className="flex items-center gap-2 text-[14px] text-[#1F315B]">
-        <BellRing className="h-4 w-4 text-[#A8873F]" />
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--cm-fill-2)] px-3.5 py-3">
+      <span className="flex items-center gap-2 text-[14px] text-[var(--cm-ink)]">
+        <BellRing className="h-4 w-4 text-[var(--cm-gold-text)]" />
         {state === "on" ? "Push is on for this device." : note[state] ?? "Get notified on this device."}
       </span>
       {state === "off" && (

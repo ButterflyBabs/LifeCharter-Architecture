@@ -130,7 +130,7 @@ export default function EventsPage() {
         )}
       </div>
 
-      <div className="mb-4 inline-flex rounded-full bg-[#1F315B]/[0.07] p-1">
+      <div className="mb-4 inline-flex rounded-full bg-[var(--cm-ink-tint)] p-1">
         {(
           [
             ["upcoming", "Upcoming"],
@@ -141,7 +141,7 @@ export default function EventsPage() {
           <button
             key={t}
             onClick={() => setView(t)}
-            className={cn("rounded-full px-3.5 py-1.5 text-[13.5px] font-semibold sm:px-4", view === t ? "bg-white text-[#1F315B] shadow-sm" : "text-[#6B6F80]")}
+            className={cn("rounded-full px-3.5 py-1.5 text-[13.5px] font-semibold sm:px-4", view === t ? "bg-[var(--cm-surface)] text-[var(--cm-ink)] shadow-sm" : "text-[var(--cm-muted-2)]")}
           >
             {label}
           </button>
@@ -234,10 +234,10 @@ function EventCard({
               ))
             )}
           </div>
-          <h2 className="mt-1 font-display text-[22px] font-semibold leading-snug text-[#1F315B]">{e.title}</h2>
-          <p className="text-[13.5px] text-[#5B6275]">{eventWhen(s.start.toISOString(), s.end.toISOString())}</p>
+          <h2 className="mt-1 font-display text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{e.title}</h2>
+          <p className="text-[13.5px] text-[var(--cm-muted-2)]">{eventWhen(s.start.toISOString(), s.end.toISOString())}</p>
           {repeats && (
-            <p className="mt-0.5 flex items-center gap-1 text-[12.5px] text-[#8A8FA0]">
+            <p className="mt-0.5 flex items-center gap-1 text-[12.5px] text-[var(--cm-muted)]">
               <Repeat className="h-3.5 w-3.5" /> {repeats}
             </p>
           )}
@@ -260,13 +260,13 @@ function EventCard({
             )}
             {upcoming && (
               <>
-                <div className="inline-flex overflow-hidden rounded-xl border border-[#DCD3C1]">
+                <div className="inline-flex overflow-hidden rounded-xl border border-[var(--cm-line-strong)]">
                   {(["going", "maybe"] as Rsvp[]).map((st) => (
                     <button
                       key={st}
                       onClick={() => onRsvp(e, rsvp === st ? "not_going" : st)}
                       title={e.recur_freq && st === "going" ? "You'll get a reminder before each session" : undefined}
-                      className={cn("px-3 py-1.5 text-[13px] font-semibold", rsvp === st ? "bg-[#1F315B] text-white" : "bg-white text-[#1F315B] hover:bg-[#FBF8F2]")}
+                      className={cn("px-3 py-1.5 text-[13px] font-semibold", rsvp === st ? "bg-[var(--cm-navy)] text-white" : "bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:bg-[var(--cm-fill)]")}
                     >
                       {st === "going" ? "Going" : "Maybe"}
                     </button>
@@ -277,7 +277,7 @@ function EventCard({
                 </Button>
               </>
             )}
-            {!!goingCount && <span className="text-[12.5px] text-[#8A8FA0]">{goingCount} going</span>}
+            {!!goingCount && <span className="text-[12.5px] text-[var(--cm-muted)]">{goingCount} going</span>}
             {manage && (
               <span className="ml-auto flex gap-1">
                 {e.recur_freq && upcoming && (
@@ -328,7 +328,7 @@ function EventCard({
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 const CHIP: Partial<Record<EventKind, string>> = {
-  anchor: "bg-[#1F315B] text-white",
+  anchor: "bg-[var(--cm-navy)] text-white",
   masterclass: "bg-[#B8923F] text-white",
   workshop: "bg-[#2E7C83] text-white",
   office_hours: "bg-[#5E3B6C] text-white",
@@ -385,12 +385,12 @@ function MonthCalendar({
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between gap-2 border-b border-[#F0EBE0] px-3 py-3 sm:px-4">
-          <button onClick={() => shift(-1)} aria-label="Previous month" className="rounded-lg p-2 text-[#1F315B] hover:bg-black/5">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--cm-line-soft)] px-3 py-3 sm:px-4">
+          <button onClick={() => shift(-1)} aria-label="Previous month" className="rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h2 className="font-display text-[22px] font-semibold text-[#1F315B]">
+            <h2 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">
               {month.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
             </h2>
             {(month.getMonth() !== today.getMonth() || month.getFullYear() !== today.getFullYear()) && (
@@ -399,20 +399,20 @@ function MonthCalendar({
                   setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
                   setSelected(today);
                 }}
-                className="rounded-full border border-[#DCD3C1] px-2.5 py-0.5 text-[12px] font-semibold text-[#1F315B] hover:border-[#D4AF63]"
+                className="rounded-full border border-[var(--cm-line-strong)] px-2.5 py-0.5 text-[12px] font-semibold text-[var(--cm-ink)] hover:border-[#D4AF63]"
               >
                 Today
               </button>
             )}
           </div>
-          <button onClick={() => shift(1)} aria-label="Next month" className="rounded-lg p-2 text-[#1F315B] hover:bg-black/5">
+          <button onClick={() => shift(1)} aria-label="Next month" className="rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 border-b border-[#F0EBE0] bg-[#FBF9F5]">
+        <div className="grid grid-cols-7 border-b border-[var(--cm-line-soft)] bg-[var(--cm-fill)]">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="py-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8A8FA0]">
+            <div key={w} className="py-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--cm-muted)]">
               <span className="sm:hidden">{w[0]}</span>
               <span className="hidden sm:inline">{w}</span>
             </div>
@@ -432,17 +432,17 @@ function MonthCalendar({
                 aria-label={`${d.toDateString()}${list.length ? `, ${list.length} event${list.length > 1 ? "s" : ""}` : ""}`}
                 aria-pressed={isSel}
                 className={cn(
-                  "flex min-h-[54px] flex-col items-stretch gap-1 border-b border-r border-[#F0EBE0] p-1 text-left transition sm:min-h-[104px] sm:p-1.5",
+                  "flex min-h-[54px] flex-col items-stretch gap-1 border-b border-r border-[var(--cm-line-soft)] p-1 text-left transition sm:min-h-[104px] sm:p-1.5",
                   i % 7 === 6 && "border-r-0",
                   i >= 35 && "border-b-0",
-                  inMonth ? "bg-white" : "bg-[#FBF9F5]",
-                  isSel ? "ring-2 ring-inset ring-[#D4AF63]" : "hover:bg-[#FBF6EA]"
+                  inMonth ? "bg-[var(--cm-surface)]" : "bg-[var(--cm-fill)]",
+                  isSel ? "ring-2 ring-inset ring-[#D4AF63]" : "hover:bg-[var(--cm-fill)]"
                 )}
               >
                 <span
                   className={cn(
                     "mx-auto flex h-6 w-6 items-center justify-center rounded-full text-[12.5px] font-semibold sm:mx-0",
-                    isToday ? "bg-[#1F315B] text-white" : inMonth ? "text-[#1F315B]" : "text-[#B8BCC8]"
+                    isToday ? "bg-[var(--cm-navy)] text-white" : inMonth ? "text-[var(--cm-ink)]" : "text-[var(--cm-faint)]"
                   )}
                 >
                   {d.getDate()}
@@ -460,12 +460,12 @@ function MonthCalendar({
                     <span
                       key={`${s.event.id}-${s.date}`}
                       title={`${time(s.start)} ${s.event.title}`}
-                      className={cn("truncate rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold", CHIP[s.event.kind] ?? "bg-[#F5EBD3] text-[#7A5E1F]")}
+                      className={cn("truncate rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold", CHIP[s.event.kind] ?? "bg-[var(--cm-gold-soft)] text-[var(--cm-gold-ink)]")}
                     >
                       {time(s.start)} {s.event.title}
                     </span>
                   ))}
-                  {list.length > 2 && <span className="px-1 text-[11px] font-semibold text-[#8A8FA0]">+{list.length - 2} more</span>}
+                  {list.length > 2 && <span className="px-1 text-[11px] font-semibold text-[var(--cm-muted)]">+{list.length - 2} more</span>}
                 </span>
               </button>
             );
@@ -475,7 +475,7 @@ function MonthCalendar({
 
       <div>
         <div className="mb-2 flex items-center justify-between gap-3">
-          <h3 className="font-display text-[22px] font-semibold text-[#1F315B]">
+          <h3 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">
             {selected.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
           </h3>
           {canCreate && (
@@ -485,7 +485,7 @@ function MonthCalendar({
           )}
         </div>
         {selectedSessions.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[#DCD3C1] bg-white/60 px-4 py-6 text-center text-[14px] text-[#8A8FA0]">Nothing scheduled this day.</p>
+          <p className="rounded-2xl border border-dashed border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-4 py-6 text-center text-[14px] text-[var(--cm-muted)]">Nothing scheduled this day.</p>
         ) : (
           <div className="space-y-3">
             {selectedSessions.map((s) => (
@@ -507,7 +507,7 @@ function toLocalInput(iso?: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const selectClass = "w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]";
+const selectClass = "w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-2.5 text-[15px]";
 
 function EventEditor({ initial, onClose, onSaved }: { initial: Partial<CommunityEvent>; onClose: () => void; onSaved: () => void }) {
   const { supabase, userId, spaces, isAdmin, canModerate } = useCommunity();
@@ -591,22 +591,22 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
           </select>
         </div>
         <fieldset className="sm:col-span-2">
-          <legend className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B6F80]">Who can see it</legend>
-          <div className="space-y-2 rounded-xl border border-[#DCD3C1] bg-white p-3">
+          <legend className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--cm-muted-2)]">Who can see it</legend>
+          <div className="space-y-2 rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] p-3">
             {isAdmin && (
-              <label className="flex items-center gap-2 text-[14.5px] text-[#1F315B]">
+              <label className="flex items-center gap-2 text-[14.5px] text-[var(--cm-ink)]">
                 <input type="radio" name="audience" checked={f.audience === "all"} onChange={() => setF({ ...f, audience: "all" })} />
                 Whole Collective — every member
               </label>
             )}
-            <label className="flex items-center gap-2 text-[14.5px] text-[#1F315B]">
+            <label className="flex items-center gap-2 text-[14.5px] text-[var(--cm-ink)]">
               <input type="radio" name="audience" checked={f.audience === "channels"} onChange={() => setF({ ...f, audience: "channels" })} />
               Only members of these channels
             </label>
             {f.audience === "channels" && (
               <div className="ml-6 grid gap-1.5 sm:grid-cols-2">
                 {spaceOptions.map((s) => (
-                  <label key={s.id} className="flex items-center gap-2 text-[14px] text-[#2A3552]">
+                  <label key={s.id} className="flex items-center gap-2 text-[14px] text-[var(--cm-body)]">
                     <input
                       type="checkbox"
                       checked={f.channelIds.includes(s.id)}
@@ -646,7 +646,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
           <Input type="date" value={f.until} onChange={set("until")} disabled={!repeating} min={f.starts.slice(0, 10) || undefined} />
         </div>
         {repeating && (
-          <p className="-mt-1 text-[12.5px] text-[#8A8FA0] sm:col-span-2">
+          <p className="-mt-1 text-[12.5px] text-[var(--cm-muted)] sm:col-span-2">
             Each session runs at the same local time. Leave “Repeat until” empty to keep it going. To skip a single date later, use the{" "}
             <CalendarX className="inline h-3.5 w-3.5 align-[-2px]" /> button on that session.
           </p>

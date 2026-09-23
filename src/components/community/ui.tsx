@@ -7,6 +7,8 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { initials, linkify } from "@/lib/community/format";
 import { useFileUrl } from "@/lib/community/storage";
+import { splitMentions } from "@/lib/community/mentions";
+import Link from "next/link";
 
 export const INK = "#1F315B";
 
@@ -14,7 +16,7 @@ export function Card({ className, children, as: Tag = "div" }: { className?: str
   return (
     <Tag
       className={cn(
-        "rounded-2xl border border-[#E9E2D3] bg-white shadow-[0_1px_2px_rgba(31,49,91,0.06),0_12px_28px_-16px_rgba(31,49,91,0.28)]",
+        "rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] shadow-[0_1px_2px_rgba(31,49,91,0.06),0_12px_28px_-16px_rgba(31,49,91,0.28)]",
         className
       )}
     >
@@ -26,10 +28,10 @@ export function Card({ className, children, as: Tag = "div" }: { className?: str
 type ButtonVariant = "gold" | "navy" | "ghost" | "outline" | "danger";
 const BUTTON: Record<ButtonVariant, string> = {
   gold: "bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] shadow-[0_10px_22px_-12px_rgba(184,146,63,0.9)] hover:brightness-105",
-  navy: "bg-[#1F315B] text-[#F8F5F0] hover:bg-[#16244A]",
-  ghost: "text-[#1F315B] hover:bg-[#1F315B]/[0.06]",
-  outline: "border border-[#D9CFBA] bg-white text-[#1F315B] hover:border-[#D4AF63] hover:bg-[#FBF8F2]",
-  danger: "border border-red-200 bg-white text-red-700 hover:bg-red-50",
+  navy: "bg-[var(--cm-navy)] text-[#F8F5F0] hover:bg-[#16244A]",
+  ghost: "text-[var(--cm-ink)] hover:bg-[var(--cm-ink-tint)]",
+  outline: "border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63] hover:bg-[var(--cm-fill)]",
+  danger: "border border-red-200 bg-[var(--cm-surface)] text-red-700 hover:bg-red-50",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: "sm" | "md" }>(
@@ -50,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
 );
 
 export const inputClass =
-  "w-full rounded-xl border border-[#DCD3C1] bg-white px-3.5 py-2.5 text-[15px] text-[#1F315B] outline-none transition placeholder:text-[#9AA0B0] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20";
+  "w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3.5 py-2.5 text-[15px] text-[var(--cm-ink)] outline-none transition placeholder:text-[var(--cm-faint)] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...props }, ref) {
   return <input ref={ref} {...props} className={cn(inputClass, className)} />;
@@ -62,7 +64,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 
 export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B6F80]">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--cm-muted-2)]">
       {children}
     </label>
   );
@@ -73,14 +75,14 @@ export function Avatar({ name, url, size = 40, className }: { name?: string | nu
   const src = useFileUrl(url);
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" style={style} className={cn("shrink-0 rounded-full object-cover ring-2 ring-white", className)} />;
+    return <img src={src} alt="" style={style} className={cn("shrink-0 rounded-full object-cover ring-2 ring-[var(--cm-surface)]", className)} />;
   }
   return (
     <span
       style={style}
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1F315B] to-[#2E4A7F] font-semibold text-[#E6C988] ring-2 ring-white",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1F315B] to-[#2E4A7F] font-semibold text-[#E6C988] ring-2 ring-[var(--cm-surface)]",
         className
       )}
     >
@@ -92,21 +94,21 @@ export function Avatar({ name, url, size = 40, className }: { name?: string | nu
 export function Heading({ children, className, sub }: { children: ReactNode; className?: string; sub?: ReactNode }) {
   return (
     <div className={cn("mb-5", className)}>
-      <h1 className="font-display text-[30px] font-semibold leading-tight text-[#1F315B] md:text-[34px]">{children}</h1>
-      {sub && <p className="mt-1 text-[14.5px] text-[#6B6F80]">{sub}</p>}
+      <h1 className="font-display text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">{children}</h1>
+      {sub && <p className="mt-1 text-[14.5px] text-[var(--cm-muted-2)]">{sub}</p>}
     </div>
   );
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A8873F]", className)}>{children}</p>;
+  return <p className={cn("text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--cm-gold-text)]", className)}>{children}</p>;
 }
 
 export function Badge({ children, tone = "gold" }: { children: ReactNode; tone?: "gold" | "navy" | "gray" | "green" }) {
   const tones = {
-    gold: "bg-[#F5EBD3] text-[#7A5E1F]",
-    navy: "bg-[#1F315B]/10 text-[#1F315B]",
-    gray: "bg-[#EEF0F4] text-[#5B6275]",
+    gold: "bg-[var(--cm-gold-soft)] text-[var(--cm-gold-ink)]",
+    navy: "bg-[var(--cm-ink-tint)] text-[var(--cm-ink)]",
+    gray: "bg-[var(--cm-fill-2)] text-[var(--cm-muted-2)]",
     green: "bg-emerald-50 text-emerald-700",
   };
   return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", tones[tone])}>{children}</span>;
@@ -114,14 +116,26 @@ export function Badge({ children, tone = "gold" }: { children: ReactNode; tone?:
 
 export function RichText({ text, className }: { text: string; className?: string }) {
   return (
-    <div className={cn("whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[#2A3552]", className)}>
-      {linkify(text).map((seg, i) =>
-        seg.href ? (
-          <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer nofollow" className="text-[#2E5AA8] underline decoration-[#2E5AA8]/30 underline-offset-2 hover:decoration-[#2E5AA8]">
-            {seg.text}
-          </a>
+    <div className={cn("whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[var(--cm-body)]", className)}>
+      {splitMentions(text).map((part, j) =>
+        part.mention ? (
+          <Link
+            key={`m${j}`}
+            href={`/community/members/${part.mention.id}`}
+            className="rounded bg-[var(--cm-ink-tint)] px-0.5 font-semibold text-[var(--cm-ink)] hover:bg-[#D4AF63]/25"
+          >
+            {part.text}
+          </Link>
         ) : (
-          <span key={i}>{seg.text}</span>
+          linkify(part.text).map((seg, i) =>
+            seg.href ? (
+              <a key={`${j}-${i}`} href={seg.href} target="_blank" rel="noopener noreferrer nofollow" className="text-[var(--cm-link)] underline decoration-[var(--cm-link)] underline-offset-2 hover:decoration-[var(--cm-link)]">
+                {seg.text}
+              </a>
+            ) : (
+              <span key={`${j}-${i}`}>{seg.text}</span>
+            )
+          )
         )
       )}
     </div>
@@ -148,10 +162,10 @@ export function PageLoading() {
 
 export function EmptyState({ icon, title, children }: { icon?: ReactNode; title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#DCD3C1] bg-white/60 px-6 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-6 py-10 text-center">
       {icon && <div className="mb-2 text-3xl">{icon}</div>}
-      <p className="font-display text-[20px] font-semibold text-[#1F315B]">{title}</p>
-      {children && <div className="mx-auto mt-1 max-w-md text-[14px] text-[#6B6F80]">{children}</div>}
+      <p className="font-display text-[20px] font-semibold text-[var(--cm-ink)]">{title}</p>
+      {children && <div className="mx-auto mt-1 max-w-md text-[14px] text-[var(--cm-muted-2)]">{children}</div>}
     </div>
   );
 }
@@ -177,13 +191,13 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[#FBF9F5] p-5 shadow-2xl sm:rounded-2xl sm:p-6",
+          "max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--cm-fill)] p-5 shadow-2xl sm:rounded-2xl sm:p-6",
           wide ? "sm:max-w-2xl" : "sm:max-w-lg"
         )}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="font-display text-[24px] font-semibold text-[#1F315B]">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[#6B6F80] hover:bg-black/5">
+          <h2 className="font-display text-[24px] font-semibold text-[var(--cm-ink)]">{title}</h2>
+          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[var(--cm-muted-2)] hover:bg-black/5">
             <X className="h-5 w-5" />
           </button>
         </div>

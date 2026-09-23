@@ -71,19 +71,19 @@ export default function MessagesPage() {
           Start one from a member&rsquo;s profile, or tap <strong>New</strong>.
         </EmptyState>
       ) : (
-        <Card className="divide-y divide-[#F0EBE0] overflow-hidden">
+        <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
           {threads.map((t) => {
             const p = t.other ? people[t.other] : undefined;
             const unread = t.last && t.last.sender_id !== userId && t.last.created_at > t.lastReadAt;
             return (
-              <Link key={t.id} href={`/community/messages/${t.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#FBF8F2]">
+              <Link key={t.id} href={`/community/messages/${t.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--cm-fill)]">
                 <Avatar name={p?.display_name} url={p?.avatar_url} size={44} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className={unread ? "font-bold text-[#1F315B]" : "font-semibold text-[#1F315B]"}>{p?.display_name ?? "…"}</span>
-                    <span className="shrink-0 text-[12px] text-[#8A8FA0]">{t.last ? timeAgo(t.last.created_at) : ""}</span>
+                    <span className={unread ? "font-bold text-[var(--cm-ink)]" : "font-semibold text-[var(--cm-ink)]"}>{p?.display_name ?? "…"}</span>
+                    <span className="shrink-0 text-[12px] text-[var(--cm-muted)]">{t.last ? timeAgo(t.last.created_at) : ""}</span>
                   </div>
-                  <p className={unread ? "truncate text-[14px] font-semibold text-[#1F315B]" : "truncate text-[14px] text-[#6B6F80]"}>
+                  <p className={unread ? "truncate text-[14px] font-semibold text-[var(--cm-ink)]" : "truncate text-[14px] text-[var(--cm-muted-2)]"}>
                     {t.last?.sender_id === userId ? "You: " : ""}
                     {t.last?.body || (t.last?.attachments?.length ? "📷 Photo" : "")}
                   </p>

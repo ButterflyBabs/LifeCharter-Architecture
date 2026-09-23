@@ -9,8 +9,8 @@ export function JoinSpaceBanner({ spaceId, name }: { spaceId: string; name: stri
   const { supabase, refresh } = useCommunity();
   const [busy, setBusy] = useState(false);
   return (
-    <Card className="mb-4 flex flex-col items-start justify-between gap-3 bg-[#FBF3DF] p-4 sm:flex-row sm:items-center">
-      <p className="text-[14.5px] text-[#1F315B]">
+    <Card className="mb-4 flex flex-col items-start justify-between gap-3 bg-[var(--cm-gold-soft)] p-4 sm:flex-row sm:items-center">
+      <p className="text-[14.5px] text-[var(--cm-ink)]">
         You&rsquo;re viewing <strong>{name}</strong>. Join to post and get updates.
       </p>
       <Button

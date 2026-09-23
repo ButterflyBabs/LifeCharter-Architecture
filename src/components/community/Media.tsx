@@ -104,11 +104,11 @@ export function AttachButton({ draft, children, className, accept = "image/*,vid
       <button
         type="button"
         onClick={() => ref.current?.click()}
-        className={cn("inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-semibold text-[#1F315B] transition hover:bg-[#1F315B]/[0.06]", className)}
+        className={cn("inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-semibold text-[var(--cm-ink)] transition hover:bg-[var(--cm-ink-tint)]", className)}
       >
         {children ?? (
           <>
-            <ImagePlus className="h-4 w-4 text-[#A8873F]" /> Photo / video
+            <ImagePlus className="h-4 w-4 text-[var(--cm-gold-text)]" /> Photo / video
           </>
         )}
       </button>
@@ -134,7 +134,7 @@ export function DraftStrip({ draft, size = 84 }: { draft: MediaDraft; size?: num
       {draft.items.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {draft.items.map((i) => (
-            <div key={i.id} className="relative shrink-0 overflow-hidden rounded-xl border border-[#E9E2D3] bg-[#F3EEE3]" style={{ width: size, height: size }}>
+            <div key={i.id} className="relative shrink-0 overflow-hidden rounded-xl border border-[var(--cm-line)] bg-[var(--cm-fill-2)]" style={{ width: size, height: size }}>
               {i.preview && isImage(i.file.type) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={i.preview} alt={i.file.name} className="h-full w-full object-cover" />
@@ -149,8 +149,8 @@ export function DraftStrip({ draft, size = 84 }: { draft: MediaDraft; size?: num
                 </>
               ) : (
                 <span className="flex h-full w-full flex-col items-center justify-center gap-1 p-1.5 text-center">
-                  <FileText className="h-5 w-5 text-[#A8873F]" />
-                  <span className="line-clamp-2 break-all text-[10px] leading-tight text-[#1F315B]">{i.file.name}</span>
+                  <FileText className="h-5 w-5 text-[var(--cm-gold-text)]" />
+                  <span className="line-clamp-2 break-all text-[10px] leading-tight text-[var(--cm-ink)]">{i.file.name}</span>
                 </span>
               )}
               <button
@@ -165,7 +165,7 @@ export function DraftStrip({ draft, size = 84 }: { draft: MediaDraft; size?: num
           ))}
         </div>
       )}
-      {draft.error && <p className="rounded-lg bg-[#FBF3DF] px-3 py-2 text-[13px] text-[#7A5E1F]">{draft.error}</p>}
+      {draft.error && <p className="rounded-lg bg-[var(--cm-gold-soft)] px-3 py-2 text-[13px] text-[var(--cm-gold-ink)]">{draft.error}</p>}
     </div>
   );
 }
@@ -175,7 +175,7 @@ export function DraftStrip({ draft, size = 84 }: { draft: MediaDraft; size?: num
 function Thumb({ a, className, onClick, overlay }: { a: Attachment; className?: string; onClick: () => void; overlay?: ReactNode }) {
   const url = useFileUrl(a.path || a.url);
   return (
-    <button type="button" onClick={onClick} className={cn("group relative block overflow-hidden bg-[#F0EBE0]", className)} aria-label={`Open ${a.name}`}>
+    <button type="button" onClick={onClick} className={cn("group relative block overflow-hidden bg-[var(--cm-fill-2)]", className)} aria-label={`Open ${a.name}`}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={a.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
@@ -189,7 +189,7 @@ function Thumb({ a, className, onClick, overlay }: { a: Attachment; className?: 
 
 export function VideoPlayer({ a, className }: { a: Attachment; className?: string }) {
   const url = useFileUrl(a.path || a.url);
-  if (!url) return <div className={cn("aspect-video animate-pulse rounded-xl bg-[#1F315B]/10", className)} />;
+  if (!url) return <div className={cn("aspect-video animate-pulse rounded-xl bg-[var(--cm-ink-tint)]", className)} />;
   return (
     <video
       src={url}
@@ -208,11 +208,11 @@ function FileRow({ a }: { a: Attachment }) {
       href={url ?? "#"}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 rounded-xl border border-[#E9E2D3] bg-[#FBF9F5] px-3 py-2.5 text-[14px] hover:border-[#D4AF63]"
+      className="flex items-center gap-3 rounded-xl border border-[var(--cm-line)] bg-[var(--cm-fill)] px-3 py-2.5 text-[14px] hover:border-[#D4AF63]"
     >
-      <FileText className="h-5 w-5 shrink-0 text-[#A8873F]" />
-      <span className="min-w-0 flex-1 truncate font-medium text-[#1F315B]">{a.name}</span>
-      <span className="text-[12px] text-[#8A8FA0]">{fileSize(a.size)}</span>
+      <FileText className="h-5 w-5 shrink-0 text-[var(--cm-gold-text)]" />
+      <span className="min-w-0 flex-1 truncate font-medium text-[var(--cm-ink)]">{a.name}</span>
+      <span className="text-[12px] text-[var(--cm-muted)]">{fileSize(a.size)}</span>
     </a>
   );
 }
@@ -232,7 +232,7 @@ export function MediaGallery({ items, compact }: { items: Attachment[]; compact?
   return (
     <div className={cn("space-y-2", compact ? "mt-2" : "mt-3")}>
       {images.length === 1 && (
-        <Thumb a={images[0]} onClick={() => setOpen(0)} className={cn("w-full rounded-xl", compact ? "max-h-[260px]" : "max-h-[520px]", "[&_img]:max-h-[520px] [&_img]:object-contain [&_img]:bg-[#F0EBE0]")} />
+        <Thumb a={images[0]} onClick={() => setOpen(0)} className={cn("w-full rounded-xl", compact ? "max-h-[260px]" : "max-h-[520px]", "[&_img]:max-h-[520px] [&_img]:object-contain [&_img]:bg-[var(--cm-fill-2)]")} />
       )}
       {images.length === 2 && (
         <div className={cn("grid grid-cols-2 gap-1 overflow-hidden rounded-xl", h)}>

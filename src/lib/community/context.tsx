@@ -22,6 +22,9 @@ interface CommunityState {
   memberships: Membership[];
   unreadDms: number;
   unreadNotifications: number;
+  blockedIds: Set<string>; // people I've blocked
+  block: (userId: string) => Promise<void>;
+  unblock: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
   refreshCounts: () => Promise<void>;
   isMember: (spaceId: string) => boolean;
@@ -50,6 +53,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [unreadDms, setUnreadDms] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const uidRef = useRef<string | null>(null);
 
   const refreshCounts = useCallback(async () => {
@@ -78,13 +82,15 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const [prof, admin, sp, ch, mem] = await Promise.all([
+    const [prof, admin, sp, ch, mem, blk] = await Promise.all([
       supabase.from("cm_profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.rpc("cm_is_admin"),
       supabase.from("cm_spaces").select("*").eq("archived", false).order("sort_order"),
       supabase.from("cm_channels").select("*").eq("archived", false).order("sort_order"),
       supabase.from("cm_space_members").select("*").eq("user_id", user.id),
+      supabase.from("cm_blocks").select("blocked_id").eq("blocker_id", user.id),
     ]);
+    setBlockedIds(new Set(((blk.data as { blocked_id: string }[]) ?? []).map((b) => b.blocked_id)));
     let me = (prof.data as Profile) ?? null;
     // Someone who has added a photo and introduced themselves has done the
     // Start Here work — count them as settled even if they never tapped
@@ -136,6 +142,31 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, userId, refreshCounts]);
 
+  const block = useCallback(
+    async (id: string) => {
+      const uid = uidRef.current;
+      if (!uid) return;
+      const { error } = await supabase.from("cm_blocks").upsert({ blocker_id: uid, blocked_id: id }, { onConflict: "blocker_id,blocked_id" });
+      if (error) throw new Error(error.message);
+      setBlockedIds((prev) => new Set(prev).add(id));
+    },
+    [supabase]
+  );
+  const unblock = useCallback(
+    async (id: string) => {
+      const uid = uidRef.current;
+      if (!uid) return;
+      const { error } = await supabase.from("cm_blocks").delete().eq("blocker_id", uid).eq("blocked_id", id);
+      if (error) throw new Error(error.message);
+      setBlockedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    [supabase]
+  );
+
   const value = useMemo<CommunityState>(() => {
     const memberSet = new Map(memberships.map((m) => [m.space_id, m]));
     return {
@@ -150,6 +181,9 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       memberships,
       unreadDms,
       unreadNotifications,
+      blockedIds,
+      block,
+      unblock,
       refresh,
       refreshCounts,
       isMember: (id) => memberSet.has(id),
@@ -157,7 +191,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       spaceBySlug: (slug) => spaces.find((s) => s.slug === slug),
       channelsFor: (id) => channels.filter((c) => c.space_id === id),
     };
-  }, [loading, supabase, userId, email, profile, isAdmin, spaces, channels, memberships, unreadDms, unreadNotifications, refresh, refreshCounts]);
+  }, [loading, supabase, userId, email, profile, isAdmin, spaces, channels, memberships, unreadDms, unreadNotifications, blockedIds, block, unblock, refresh, refreshCounts]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

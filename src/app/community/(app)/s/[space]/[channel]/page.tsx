@@ -27,11 +27,11 @@ export default function ChannelPage({ params }: { params: { space: string; chann
             {space.emoji} {space.name}
           </Link>
         </Eyebrow>
-        <h1 className="mt-1 font-display text-[30px] font-semibold leading-tight text-[#1F315B] md:text-[34px]">
+        <h1 className="mt-1 font-display text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">
           <span className="mr-2">{channel.emoji}</span>
           {channel.name}
         </h1>
-        {channel.description && <p className="mt-1 text-[14.5px] text-[#6B6F80]">{channel.description}</p>}
+        {channel.description && <p className="mt-1 text-[14.5px] text-[var(--cm-muted-2)]">{channel.description}</p>}
       </div>
       {!isMember(space.id) && <JoinSpaceBanner spaceId={space.id} name={space.name} />}
       <ChannelFeed key={channel.id} channel={channel} />

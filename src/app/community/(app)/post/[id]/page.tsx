@@ -8,8 +8,9 @@ import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import type { Comment, Post, Reaction } from "@/lib/community/types";
 import { PostCard, ReactionBar } from "@/components/community/Feed";
-import { Avatar, Button, Card, EmptyState, ErrorNote, PageLoading, RichText, TextArea } from "@/components/community/ui";
+import { Avatar, Button, Card, EmptyState, ErrorNote, PageLoading, RichText } from "@/components/community/ui";
 import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
+import { MentionTextArea, useMentions } from "@/components/community/MentionTextArea";
 
 export default function PostPage({ params }: { params: { id: string } }) {
   const { supabase, channels, spaces } = useCommunity();
@@ -71,7 +72,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-4">
-      <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[#5B6275] hover:text-[#1F315B]">
+      <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[var(--cm-muted-2)] hover:text-[var(--cm-ink)]">
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
       <PostCard
@@ -85,7 +86,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
       />
 
       <Card className="p-4 sm:p-5">
-        <h2 className="mb-3 font-display text-[21px] font-semibold text-[#1F315B]">
+        <h2 className="mb-3 font-display text-[21px] font-semibold text-[var(--cm-ink)]">
           {comments.length ? `${comments.length} ${comments.length === 1 ? "reply" : "replies"}` : "Replies"}
         </h2>
         <div className="space-y-4">
@@ -99,7 +100,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                 replyBox={<ReplyBox postId={post.id} parentId={c.id} compact onPosted={(n) => setComments((p) => [...p.filter((x) => x.id !== n.id), n])} />}
               />
               {replies(c.id).length > 0 && (
-                <div className="ml-11 mt-3 space-y-3 border-l-2 border-[#F0EBE0] pl-4">
+                <div className="ml-11 mt-3 space-y-3 border-l-2 border-[var(--cm-line-soft)] pl-4">
                   {replies(c.id).map((r) => (
                     <CommentRow
                       key={r.id}
@@ -114,7 +115,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
             </div>
           ))}
         </div>
-        <div className="mt-5 border-t border-[#F0EBE0] pt-4">
+        <div className="mt-5 border-t border-[var(--cm-line-soft)] pt-4">
           <ReplyBox postId={post.id} onPosted={(n) => setComments((p) => [...p.filter((x) => x.id !== n.id), n])} />
         </div>
       </Card>
@@ -147,12 +148,12 @@ function CommentRow({
         <Avatar name={author?.display_name} url={author?.avatar_url} size={34} />
       </Link>
       <div className="min-w-0 flex-1">
-        <div className="rounded-2xl bg-[#F7F3EA] px-3.5 py-2.5">
+        <div className="rounded-2xl bg-[var(--cm-fill-2)] px-3.5 py-2.5">
           <p className="text-[13.5px]">
-            <Link href={`/community/members/${comment.author_id}`} className="font-semibold text-[#1F315B] hover:underline">
+            <Link href={`/community/members/${comment.author_id}`} className="font-semibold text-[var(--cm-ink)] hover:underline">
               {author?.display_name ?? "…"}
             </Link>{" "}
-            <span className="text-[12px] text-[#8A8FA0]">· {timeAgo(comment.created_at)}</span>
+            <span className="text-[12px] text-[var(--cm-muted)]">· {timeAgo(comment.created_at)}</span>
           </p>
           {comment.body && <RichText text={comment.body} className="text-[14.5px]" />}
           <MediaGallery items={comment.attachments} compact />
@@ -160,7 +161,7 @@ function CommentRow({
         <div className="mt-1.5 flex flex-wrap items-center gap-3 pl-1">
           <ReactionBar target={{ comment_id: comment.id }} reactions={reactions} onChange={onReactions} />
           {replyBox && (
-            <button onClick={() => setReplying((v) => !v)} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#5B6275] hover:text-[#1F315B]">
+            <button onClick={() => setReplying((v) => !v)} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--cm-muted-2)] hover:text-[var(--cm-ink)]">
               <CornerDownRight className="h-3.5 w-3.5" /> Reply
             </button>
           )}
@@ -172,7 +173,7 @@ function CommentRow({
                 if (!error) onDeleted(comment.id);
               }}
               aria-label="Delete reply"
-              className="text-[#B0B4C0] hover:text-red-600"
+              className="text-[var(--cm-faint)] hover:text-red-600"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -190,6 +191,7 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const media = useMediaDraft();
+  const mentions = useMentions();
   const ready = !!text.trim() || media.items.length > 0;
   async function send() {
     if (!ready || !userId) return;
@@ -199,13 +201,14 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
       const attachments = await media.upload(userId);
       const { data, error } = await supabase
         .from("cm_comments")
-        .insert({ post_id: postId, parent_id: parentId ?? null, author_id: userId, body: text.trim(), attachments })
+        .insert({ post_id: postId, parent_id: parentId ?? null, author_id: userId, body: mentions.encode(text.trim()), attachments })
         .select("*")
         .single();
       if (error) throw new Error(error.message);
       onPosted(data as Comment);
       setText("");
       media.clear();
+      mentions.reset();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't send your reply.");
     } finally {
@@ -216,9 +219,10 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
     <div className="flex gap-3">
       {!compact && <Avatar name={profile?.display_name} url={profile?.avatar_url} size={34} />}
       <div className="flex-1 space-y-2">
-        <TextArea
+        <MentionTextArea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onValueChange={setText}
+          mentions={mentions}
           onPaste={pasteInto(media)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send();

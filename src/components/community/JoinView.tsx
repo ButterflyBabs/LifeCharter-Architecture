@@ -32,7 +32,7 @@ const PAGE_BG: React.CSSProperties = {
 };
 
 const field =
-  "w-full rounded-xl border border-[#DCD3C1] bg-white px-4 py-3 text-[15px] text-[#1F315B] outline-none transition placeholder:text-[#9AA0B0] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20";
+  "w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-4 py-3 text-[15px] text-[var(--cm-ink)] outline-none transition placeholder:text-[var(--cm-faint)] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20";
 const goldButton =
   "w-full rounded-xl bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] py-3.5 text-[15px] font-semibold tracking-[0.02em] text-[#0F1A38] shadow-[0_12px_26px_-12px_rgba(184,146,63,0.9)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70";
 
@@ -137,8 +137,8 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
   if (!signinOnly && !space) {
     return (
       <Shell>
-        <p className="mb-2 text-center font-display text-[26px] font-semibold text-[#1F315B]">This link isn&rsquo;t active</p>
-        <p className="text-center text-[14.5px] text-[#6B6F80]">Please check the link you were given, or ask whoever invited you for a new one.</p>
+        <p className="mb-2 text-center font-display text-[26px] font-semibold text-[var(--cm-ink)]">This link isn&rsquo;t active</p>
+        <p className="text-center text-[14.5px] text-[var(--cm-muted-2)]">Please check the link you were given, or ask whoever invited you for a new one.</p>
       </Shell>
     );
   }
@@ -149,7 +149,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
     <Shell>
       {!signinOnly && (
         <div className="mb-5 flex justify-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1F315B]/[0.07] px-3.5 py-1.5 text-[12px] font-semibold text-[#1F315B]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--cm-ink-tint)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--cm-ink)]">
             <Lock className="h-3.5 w-3.5 text-[#B8923F]" /> Private Access — Do Not Share This Page
           </span>
         </div>
@@ -162,11 +162,11 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
         priority
         className="mx-auto mb-4 h-auto w-[148px]"
       />
-      {!isMain && <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A8873F]">The LifeCharter Collective</p>}
-      <h1 className="mt-1 text-center font-display text-[32px] font-semibold leading-tight text-[#1F315B]">
+      {!isMain && <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--cm-gold-text)]">The LifeCharter Collective</p>}
+      <h1 className="mt-1 text-center font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)]">
         {signinOnly ? "Welcome back" : title}
       </h1>
-      <p className="mx-auto mt-1.5 max-w-sm text-center text-[14.5px] leading-relaxed text-[#6B6F80]">
+      <p className="mx-auto mt-1.5 max-w-sm text-center text-[14.5px] leading-relaxed text-[var(--cm-muted-2)]">
         {signinOnly
           ? "Sign in to The LifeCharter Collective."
           : isMain
@@ -175,13 +175,13 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
       </p>
 
       {closed ? (
-        <p className="mt-6 rounded-xl bg-[#F5EBD3] px-4 py-3 text-center text-[14px] text-[#7A5E1F]">
+        <p className="mt-6 rounded-xl bg-[var(--cm-gold-soft)] px-4 py-3 text-center text-[14px] text-[var(--cm-gold-ink)]">
           This channel isn&rsquo;t accepting new members right now.
         </p>
       ) : signedInAs && !signinOnly ? (
         <form onSubmit={onMember} className="mt-6 space-y-3">
-          <p className="text-center text-[13.5px] text-[#6B6F80]">
-            Signed in as <strong className="text-[#1F315B]">{signedInAs}</strong> ·{" "}
+          <p className="text-center text-[13.5px] text-[var(--cm-muted-2)]">
+            Signed in as <strong className="text-[var(--cm-ink)]">{signedInAs}</strong> ·{" "}
             <button type="button" onClick={signOut} className="underline underline-offset-2">
               not you?
             </button>
@@ -195,7 +195,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
       ) : (
         <>
           {!signinOnly && (
-            <div className="mt-6 grid grid-cols-2 rounded-full bg-[#1F315B]/[0.07] p-1" role="tablist">
+            <div className="mt-6 grid grid-cols-2 rounded-full bg-[var(--cm-ink-tint)] p-1" role="tablist">
               {(["new", "member"] as const).map((t) => (
                 <button
                   key={t}
@@ -208,7 +208,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
                   }}
                   className={cn(
                     "rounded-full py-2 text-[14px] font-semibold transition",
-                    tab === t ? "bg-white text-[#1F315B] shadow-sm" : "text-[#6B6F80] hover:text-[#1F315B]"
+                    tab === t ? "bg-[var(--cm-surface)] text-[var(--cm-ink)] shadow-sm" : "text-[var(--cm-muted-2)] hover:text-[var(--cm-ink)]"
                   )}
                 >
                   {t === "new" ? "New here" : "Already a member"}
@@ -228,7 +228,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               <button disabled={busy} className={goldButton}>
                 {busy ? "Creating your account…" : joinLabel}
               </button>
-              <p className="pt-1 text-center text-[12px] leading-relaxed text-[#8A8FA0]">
+              <p className="pt-1 text-center text-[12px] leading-relaxed text-[var(--cm-muted)]">
                 By joining you agree to the{" "}
                 <Link href="/legal/community-guidelines" className="underline underline-offset-2">
                   Terms of Use
@@ -253,7 +253,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
                 {busy ? "Signing in…" : signinOnly ? "Sign in" : joinLabel}
               </button>
               <p className="pt-1 text-center text-[13px]">
-                <Link href="/forgot-password" className="text-[#6B6F80] underline underline-offset-2 hover:text-[#1F315B]">
+                <Link href="/forgot-password" className="text-[var(--cm-muted-2)] underline underline-offset-2 hover:text-[var(--cm-ink)]">
                   Forgot password?
                 </Link>
               </p>
@@ -276,7 +276,7 @@ function ErrorLine({ children }: { children: React.ReactNode }) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main style={PAGE_BG} className="flex min-h-screen w-full items-center justify-center px-4 py-10 font-ui">
-      <div className="w-full max-w-[440px] rounded-[26px] border border-[#E9E2D3] bg-white px-6 py-8 shadow-[0_2px_4px_rgba(31,49,91,0.05),0_30px_60px_-30px_rgba(31,49,91,0.45)] sm:px-9 sm:py-10">
+      <div className="w-full max-w-[440px] rounded-[26px] border border-[var(--cm-line)] bg-[var(--cm-surface)] px-6 py-8 shadow-[0_2px_4px_rgba(31,49,91,0.05),0_30px_60px_-30px_rgba(31,49,91,0.45)] sm:px-9 sm:py-10">
         {children}
       </div>
     </main>

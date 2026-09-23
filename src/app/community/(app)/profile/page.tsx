@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check } from "lucide-react";
+import { Camera, Check, Monitor, Moon, Sun } from "lucide-react";
+import { useThemePref, type ThemePref } from "@/lib/community/prefs";
 import { useCommunity } from "@/lib/community/context";
 import { uploadCommunityFile } from "@/lib/community/storage";
 import type { Membership } from "@/lib/community/types";
@@ -104,7 +105,7 @@ export default function ProfilePage() {
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
               Change photo
             </Button>
-            <p className="mt-1 text-[12.5px] text-[#8A8FA0]">A clear, friendly photo helps the Collective get to know you.</p>
+            <p className="mt-1 text-[12.5px] text-[var(--cm-muted)]">A clear, friendly photo helps the Collective get to know you.</p>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -120,14 +121,16 @@ export default function ProfilePage() {
         </div>
       </Card>
 
+      <Appearance />
+
       <Card className="p-5">
-        <h2 className="mb-3 font-display text-[22px] font-semibold text-[#1F315B]">Privacy</h2>
+        <h2 className="mb-3 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Privacy</h2>
         <Toggle label="Show me in the member directory" checked={prefs.show_in_directory} onChange={(v) => setPrefs({ ...prefs, show_in_directory: v })} />
         <Toggle label="Let members send me direct messages" checked={prefs.allow_dms} onChange={(v) => setPrefs({ ...prefs, allow_dms: v })} />
       </Card>
 
       <Card className="p-5">
-        <h2 className="mb-3 font-display text-[22px] font-semibold text-[#1F315B]">Notifications</h2>
+        <h2 className="mb-3 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Notifications</h2>
         <Toggle label="Email me about announcements, replies and messages" checked={prefs.notify_email} onChange={(v) => setPrefs({ ...prefs, notify_email: v })} />
         <Toggle label="Send push notifications to my devices" checked={prefs.notify_push} onChange={(v) => setPrefs({ ...prefs, notify_push: v })} />
         <div className="mt-3">
@@ -151,9 +154,11 @@ export default function ProfilePage() {
         </Button>
       </div>
 
+      <BlockedMembers />
+
       <InstallAppCard />
 
-      <p className="text-center text-[12.5px] text-[#8A8FA0]">
+      <p className="text-center text-[12.5px] text-[var(--cm-muted)]">
         <Link href="/legal/community-guidelines" className="underline">
           Community guidelines
         </Link>{" "}
@@ -166,18 +171,83 @@ export default function ProfilePage() {
   );
 }
 
+function Appearance() {
+  const { pref, setPref } = useThemePref();
+  const options: { value: ThemePref; label: string; icon: typeof Sun }[] = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+  ];
+  return (
+    <Card className="p-5">
+      <h2 className="mb-1 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Appearance</h2>
+      <p className="mb-3 text-[13.5px] text-[var(--cm-muted)]">System matches your phone or computer. Saved on this device.</p>
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Appearance">
+        {options.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            role="radio"
+            aria-checked={pref === value}
+            onClick={() => setPref(value)}
+            className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-[13.5px] font-semibold transition ${
+              pref === value
+                ? "border-[#D4AF63] bg-[var(--cm-gold-soft)] text-[var(--cm-ink)]"
+                : "border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-muted-2)] hover:border-[#D4AF63]"
+            }`}
+          >
+            <Icon className="h-5 w-5" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function BlockedMembers() {
+  const { supabase, blockedIds, unblock } = useCommunity();
+  const [people, setPeople] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const key = Array.from(blockedIds).sort().join(",");
+  useEffect(() => {
+    if (!key) return setPeople([]);
+    void supabase
+      .from("cm_profiles")
+      .select("user_id, display_name, avatar_url")
+      .in("user_id", key.split(","))
+      .then(({ data }: { data: { user_id: string; display_name: string; avatar_url: string | null }[] | null }) => setPeople(data ?? []));
+  }, [supabase, key]);
+  if (!people.length) return null;
+  return (
+    <Card className="p-5">
+      <h2 className="mb-1 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Blocked members</h2>
+      <p className="mb-3 text-[13.5px] text-[var(--cm-muted)]">You don&rsquo;t see their posts or replies, and you can&rsquo;t message each other. They aren&rsquo;t told.</p>
+      <div className="space-y-2">
+        {people.map((p) => (
+          <div key={p.user_id} className="flex items-center gap-3">
+            <Avatar name={p.display_name} url={p.avatar_url} size={34} />
+            <span className="flex-1 font-semibold text-[var(--cm-ink)]">{p.display_name}</span>
+            <Button size="sm" variant="outline" onClick={() => void unblock(p.user_id)}>
+              Unblock
+            </Button>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 py-2 text-[14.5px] text-[#2A3552]">
+    <label className="flex cursor-pointer items-center justify-between gap-4 py-2 text-[14.5px] text-[var(--cm-body)]">
       {label}
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-[#1F315B]" : "bg-[#D5D8E0]"}`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-[var(--cm-navy)]" : "bg-[var(--cm-line-strong)]"}`}
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? "left-[22px]" : "left-0.5"}`} />
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--cm-surface)] shadow transition ${checked ? "left-[22px]" : "left-0.5"}`} />
       </button>
     </label>
   );
@@ -187,15 +257,15 @@ function SpaceNotifyLevels({ memberships, spaces }: { memberships: Membership[];
   const { supabase, userId, refresh } = useCommunity();
   if (!memberships.length) return null;
   return (
-    <div className="mt-4 border-t border-[#F0EBE0] pt-3">
-      <p className="mb-2 text-[13px] font-semibold text-[#5B6275]">Per channel</p>
+    <div className="mt-4 border-t border-[var(--cm-line-soft)] pt-3">
+      <p className="mb-2 text-[13px] font-semibold text-[var(--cm-muted-2)]">Per channel</p>
       <div className="space-y-1.5">
         {memberships.map((m) => {
           const s = spaces.find((x) => x.id === m.space_id);
           if (!s) return null;
           return (
             <div key={m.space_id} className="flex items-center justify-between gap-3 text-[14px]">
-              <span className="text-[#1F315B]">
+              <span className="text-[var(--cm-ink)]">
                 {s.emoji} {s.name}
               </span>
               <select
@@ -205,7 +275,7 @@ function SpaceNotifyLevels({ memberships, spaces }: { memberships: Membership[];
                   await supabase.from("cm_space_members").update({ notify_level: e.target.value }).eq("space_id", m.space_id).eq("user_id", userId);
                   await refresh();
                 }}
-                className="rounded-lg border border-[#DCD3C1] bg-white px-2 py-1 text-[13px]"
+                className="rounded-lg border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-2 py-1 text-[13px]"
               >
                 <option value="all">Everything</option>
                 <option value="announcements">Announcements only</option>

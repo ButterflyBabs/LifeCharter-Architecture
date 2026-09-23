@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check, MessageCircle, Sparkles } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
+import { toPlain } from "@/lib/community/mentions";
 import type { Profile } from "@/lib/community/types";
 import { Avatar, Card } from "./ui";
 
@@ -29,7 +30,7 @@ interface Newcomer {
 }
 
 export function WelcomeStrip() {
-  const { supabase, userId, spaces, channels } = useCommunity();
+  const { supabase, userId, spaces, channels, blockedIds } = useCommunity();
   const router = useRouter();
   const [people, setPeople] = useState<Newcomer[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -50,7 +51,7 @@ export function WelcomeStrip() {
         .neq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(12);
-      const list = (profs as Newcomer["profile"][]) ?? [];
+      const list = ((profs as Newcomer["profile"][]) ?? []).filter((p) => !blockedIds.has(p.user_id));
       if (!list.length) return setPeople([]);
 
       let intros: { id: string; author_id: string; body: string; title: string | null }[] = [];
@@ -76,13 +77,13 @@ export function WelcomeStrip() {
       setPeople(
         list.map((p) => {
           const intro = firstIntro.get(p.user_id);
-          const line = intro ? (intro.title || intro.body).split("\n").find((l) => l.trim()) ?? null : null;
+          const line = intro ? toPlain(intro.title || intro.body).split("\n").find((l) => l.trim()) ?? null : null;
           return { profile: p, introId: intro?.id ?? null, introLine: line, welcomed: intro ? replied.has(intro.id) : false };
         })
       );
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, userId, introChannel?.id]);
+  }, [supabase, userId, introChannel?.id, blockedIds]);
 
   async function sayHello(uid: string) {
     setBusy(uid);
@@ -96,10 +97,10 @@ export function WelcomeStrip() {
   return (
     <section aria-labelledby="welcome-strip">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 id="welcome-strip" className="flex items-center gap-2 font-display text-[24px] font-semibold text-[#1F315B]">
-          <Sparkles className="h-5 w-5 text-[#A8873F]" /> Welcome our newest members
+        <h2 id="welcome-strip" className="flex items-center gap-2 font-display text-[24px] font-semibold text-[var(--cm-ink)]">
+          <Sparkles className="h-5 w-5 text-[var(--cm-gold-text)]" /> Welcome our newest members
         </h2>
-        <span className="text-[12.5px] text-[#8A8FA0]">Joined in the last {WINDOW_DAYS} days</span>
+        <span className="text-[12.5px] text-[var(--cm-muted)]">Joined in the last {WINDOW_DAYS} days</span>
       </div>
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
         {people.map(({ profile: p, introId, introLine, welcomed }) => (
@@ -107,12 +108,12 @@ export function WelcomeStrip() {
             <Link href={`/community/members/${p.user_id}`} className="flex items-center gap-3">
               <Avatar name={p.display_name} url={p.avatar_url} size={44} />
               <span className="min-w-0">
-                <span className="block truncate font-semibold text-[#1F315B]">{p.display_name}</span>
-                <span className="block text-[12px] text-[#8A8FA0]">{joined(p.created_at)}</span>
+                <span className="block truncate font-semibold text-[var(--cm-ink)]">{p.display_name}</span>
+                <span className="block text-[12px] text-[var(--cm-muted)]">{joined(p.created_at)}</span>
               </span>
             </Link>
-            <p className="mt-3 line-clamp-3 flex-1 text-[13.5px] leading-snug text-[#2A3552]">
-              {introLine ? `“${introLine}”` : <span className="italic text-[#8A8FA0]">Hasn&rsquo;t introduced themselves yet.</span>}
+            <p className="mt-3 line-clamp-3 flex-1 text-[13.5px] leading-snug text-[var(--cm-body)]">
+              {introLine ? `“${introLine}”` : <span className="italic text-[var(--cm-muted)]">Hasn&rsquo;t introduced themselves yet.</span>}
             </p>
             <div className="mt-3">
               {introId ? (
@@ -135,12 +136,12 @@ export function WelcomeStrip() {
                 <button
                   onClick={() => sayHello(p.user_id)}
                   disabled={busy === p.user_id}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCD3C1] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#1F315B] hover:border-[#D4AF63] disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--cm-ink)] hover:border-[#D4AF63] disabled:opacity-60"
                 >
                   <MessageCircle className="h-4 w-4" /> {busy === p.user_id ? "Opening…" : "Say hello"}
                 </button>
               ) : (
-                <Link href={`/community/members/${p.user_id}`} className="text-[13px] font-semibold text-[#A8873F] hover:underline">
+                <Link href={`/community/members/${p.user_id}`} className="text-[13px] font-semibold text-[var(--cm-gold-text)] hover:underline">
                   View profile
                 </Link>
               )}

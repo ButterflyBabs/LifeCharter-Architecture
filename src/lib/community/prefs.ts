@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const COLLAPSED_KEY = "cm-collapsed-channels";
 const VIEW_KEY = "cm-view-as";
+const THEME_KEY = "cm-theme";
 const EVENT = "cm-prefs-changed";
 
 function read<T>(key: string, fallback: T): T {
@@ -66,4 +67,21 @@ export type ViewAs = "admin" | "member";
 export function useViewAs(): [ViewAs, (v: ViewAs) => void] {
   const [v, set] = usePref<ViewAs>(VIEW_KEY, "member");
   return [v, set];
+}
+
+export type ThemePref = "light" | "dark" | "system";
+
+// The member's appearance choice, and whether it resolves to dark right now
+// ("system" follows the phone or computer and updates live).
+export function useThemePref(): { pref: ThemePref; setPref: (v: ThemePref) => void; dark: boolean } {
+  const [pref, setPref] = usePref<ThemePref>(THEME_KEY, "system");
+  const [systemDark, setSystemDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const sync = () => setSystemDark(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return { pref, setPref, dark: pref === "dark" || (pref === "system" && systemDark) };
 }

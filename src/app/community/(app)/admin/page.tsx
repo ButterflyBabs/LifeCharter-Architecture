@@ -48,7 +48,7 @@ export default function AdminPage() {
             onClick={() => setTab(t)}
             className={cn(
               "rounded-full border px-3.5 py-1.5 text-[13.5px] font-semibold",
-              tab === t ? "border-[#1F315B] bg-[#1F315B] text-white" : "border-[#DCD3C1] bg-white text-[#1F315B] hover:border-[#D4AF63]"
+              tab === t ? "border-[var(--cm-ink)] bg-[var(--cm-navy)] text-white" : "border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63]"
             )}
           >
             {label}
@@ -105,7 +105,7 @@ function Invites() {
 
   return (
     <div className="space-y-3">
-      <p className="text-[14px] text-[#5B6275]">
+      <p className="text-[14px] text-[var(--cm-muted-2)]">
         Share a channel&rsquo;s link <em>and</em> its code. New people create their account there; existing members use &ldquo;Already a member&rdquo;.
         Everyone who joins any channel also lands in Start Here and Community.
       </p>
@@ -115,14 +115,14 @@ function Invites() {
         return (
           <Card key={s.id} className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-semibold text-[#1F315B]">
+              <p className="font-semibold text-[var(--cm-ink)]">
                 {s.emoji} {s.name}{" "}
-                <span className="ml-1 text-[12.5px] font-normal text-[#8A8FA0]">
+                <span className="ml-1 text-[12.5px] font-normal text-[var(--cm-muted)]">
                   {counts[s.id] ?? 0} {counts[s.id] === 1 ? "member" : "members"} · {s.visibility}
                   {s.is_default ? " · everyone" : ""}
                 </span>
               </p>
-              <label className="flex items-center gap-2 text-[13px] text-[#5B6275]">
+              <label className="flex items-center gap-2 text-[13px] text-[var(--cm-muted-2)]">
                 <input
                   type="checkbox"
                   checked={s.join_enabled}
@@ -135,9 +135,9 @@ function Invites() {
               </label>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <code className="rounded-lg bg-[#F7F3EA] px-2.5 py-1.5 text-[13px] text-[#1F315B]">{link.replace(/^https?:\/\//, "")}</code>
+              <code className="rounded-lg bg-[var(--cm-fill-2)] px-2.5 py-1.5 text-[13px] text-[var(--cm-ink)]">{link.replace(/^https?:\/\//, "")}</code>
               <CopyButton text={link} label="Link" />
-              <code className="rounded-lg bg-[#1F315B] px-2.5 py-1.5 font-mono text-[13px] tracking-[0.15em] text-[#E6C988]">{code ?? "—"}</code>
+              <code className="rounded-lg bg-[var(--cm-navy)] px-2.5 py-1.5 font-mono text-[13px] tracking-[0.15em] text-[#E6C988]">{code ?? "—"}</code>
               {code && <CopyButton text={code} label="Code" />}
               {code && <CopyButton text={`Join ${s.name}: ${link}\nInvite code: ${code}`} label="Both" />}
               <Button
@@ -201,13 +201,13 @@ function WelcomeMessage() {
 
   return (
     <div className="space-y-4">
-      <p className="text-[14px] text-[#5B6275]">
+      <p className="text-[14px] text-[var(--cm-muted-2)]">
         Every new member gets this as a private message from you, waiting in their Messages the first time they sign in. When they reply, it
-        arrives in your Messages like any conversation. Write <code className="rounded bg-[#F7F3EA] px-1">{"{first_name}"}</code> where their
+        arrives in your Messages like any conversation. Write <code className="rounded bg-[var(--cm-fill-2)] px-1">{"{first_name}"}</code> where their
         first name should go.
       </p>
       <Card className="space-y-3 p-4">
-        <label className="flex items-center gap-2 text-[14px] font-semibold text-[#1F315B]">
+        <label className="flex items-center gap-2 text-[14px] font-semibold text-[var(--cm-ink)]">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Send a welcome message to every new member
         </label>
         <TextArea value={body} onChange={(e) => setBody(e.target.value)} className="min-h-[260px]" disabled={!enabled} aria-label="Welcome message" />
@@ -227,13 +227,13 @@ function WelcomeMessage() {
         </div>
       </Card>
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A8873F]">Preview — how a new member named Jordan sees it</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">Preview — how a new member named Jordan sees it</p>
         <Card className="p-4">
           <div className="flex items-start gap-3">
             <Avatar name={profile?.display_name} url={profile?.avatar_url} size={36} />
-            <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-[#E9E2D3] bg-white px-3.5 py-2.5 shadow-sm">
-              <p className="mb-1 text-[12px] font-semibold text-[#1F315B]">{profile?.display_name ?? "You"}</p>
-              <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-[#2A3552]">{enabled ? preview : "Welcome messages are turned off."}</p>
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-[var(--cm-line)] bg-[var(--cm-surface)] px-3.5 py-2.5 shadow-sm">
+              <p className="mb-1 text-[12px] font-semibold text-[var(--cm-ink)]">{profile?.display_name ?? "You"}</p>
+              <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-[var(--cm-body)]">{enabled ? preview : "Welcome messages are turned off."}</p>
             </div>
           </div>
         </Card>
@@ -259,7 +259,7 @@ function Spaces() {
       </div>
       {sections.map((sec) => (
         <section key={sec}>
-          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A8873F]">{SECTION_LABELS[sec]}</h2>
+          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">{SECTION_LABELS[sec]}</h2>
           <div className="space-y-2">
             {spaces
               .filter((s) => s.section === sec)
@@ -267,8 +267,8 @@ function Spaces() {
                 <Card key={s.id} className="flex flex-wrap items-center gap-3 p-4">
                   <span className="text-[24px]">{s.emoji}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-[#1F315B]">{s.name}</p>
-                    <p className="text-[12.5px] text-[#8A8FA0]">
+                    <p className="font-semibold text-[var(--cm-ink)]">{s.name}</p>
+                    <p className="text-[12.5px] text-[var(--cm-muted)]">
                       /{s.slug} · {s.visibility}
                       {s.is_default ? " · everyone joins" : ""}
                     </p>
@@ -359,7 +359,7 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
         </div>
         <div>
           <Label>Section</Label>
-          <select value={f.section} onChange={(e) => setF({ ...f, section: e.target.value as SpaceSection })} className="w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]">
+          <select value={f.section} onChange={(e) => setF({ ...f, section: e.target.value as SpaceSection })} className="w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-2.5 text-[15px]">
             {Object.entries(SECTION_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
@@ -377,7 +377,7 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
         </div>
         <div>
           <Label>Visibility</Label>
-          <select value={f.visibility} onChange={(e) => setF({ ...f, visibility: e.target.value as Space["visibility"] })} className="w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]">
+          <select value={f.visibility} onChange={(e) => setF({ ...f, visibility: e.target.value as Space["visibility"] })} className="w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-2.5 text-[15px]">
             <option value="private">Private — members only, invite code to join</option>
             <option value="public">Public — every Collective member can read and join</option>
           </select>
@@ -387,7 +387,7 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
           <Input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: Number(e.target.value) })} />
         </div>
       </div>
-      <div className="mt-3 space-y-1.5 text-[14px] text-[#2A3552]">
+      <div className="mt-3 space-y-1.5 text-[14px] text-[var(--cm-body)]">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={f.is_default} onChange={(e) => setF({ ...f, is_default: e.target.checked })} /> Everyone who joins the Collective is added automatically
         </label>
@@ -472,15 +472,15 @@ function ChannelsEditor({ space, onClose }: { space: Space; onClose: () => void 
       ) : (
         <div className="space-y-2">
           {rows.map((c) => (
-            <div key={c.id} className={cn("rounded-xl border border-[#E9E2D3] bg-white p-3", c.archived && "opacity-50")}>
+            <div key={c.id} className={cn("rounded-xl border border-[var(--cm-line)] bg-[var(--cm-surface)] p-3", c.archived && "opacity-50")}>
               <div className="grid gap-2 sm:grid-cols-[56px_1fr_150px_150px]">
                 <Input value={c.emoji ?? ""} onChange={(e) => update(c.id, { emoji: e.target.value.slice(0, 4) })} className="text-center" aria-label="Emoji" />
                 <Input value={c.name} onChange={(e) => update(c.id, { name: e.target.value })} onBlur={(e) => !c.slug.startsWith("channel-") || update(c.id, { slug: slugify(e.target.value) || c.slug })} aria-label="Name" />
-                <select value={c.kind} onChange={(e) => update(c.id, { kind: e.target.value as Channel["kind"] })} className="rounded-xl border border-[#DCD3C1] bg-white px-2 text-[13.5px]" aria-label="Kind">
+                <select value={c.kind} onChange={(e) => update(c.id, { kind: e.target.value as Channel["kind"] })} className="rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-2 text-[13.5px]" aria-label="Kind">
                   <option value="discussion">Discussion</option>
                   <option value="announcements">Announcements</option>
                 </select>
-                <select value={c.post_policy} onChange={(e) => update(c.id, { post_policy: e.target.value as Channel["post_policy"] })} className="rounded-xl border border-[#DCD3C1] bg-white px-2 text-[13.5px]" aria-label="Who can post">
+                <select value={c.post_policy} onChange={(e) => update(c.id, { post_policy: e.target.value as Channel["post_policy"] })} className="rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-2 text-[13.5px]" aria-label="Who can post">
                   <option value="members">Anyone posts</option>
                   <option value="moderators">Admins post</option>
                 </select>
@@ -524,15 +524,15 @@ function Discover() {
   if (rows === null) return <PageLoading />;
   return (
     <div className="space-y-3">
-      <p className="text-[14px] text-[#5B6275]">
+      <p className="text-[14px] text-[var(--cm-muted-2)]">
         These appear under &ldquo;Explore LifeCharter&rdquo; on members&rsquo; home screens. A card tied to a channel is hidden from people already in it.
-        For the link, use a web address — or type <code className="rounded bg-[#F7F3EA] px-1">dm:</code> followed by a note (e.g. <code className="rounded bg-[#F7F3EA] px-1">dm:Hi AmiLynne, I&apos;d like to hear about…</code>) to open a private message to you with that note ready to send.
+        For the link, use a web address — or type <code className="rounded bg-[var(--cm-fill-2)] px-1">dm:</code> followed by a note (e.g. <code className="rounded bg-[var(--cm-fill-2)] px-1">dm:Hi AmiLynne, I&apos;d like to hear about…</code>) to open a private message to you with that note ready to send.
       </p>
       {rows.map((c) => (
         <Card key={c.id} className={cn("space-y-2 p-4", !c.active && "opacity-60")}>
           <div className="grid gap-2 sm:grid-cols-2">
             <Input value={c.title} onChange={(e) => update(c.id, { title: e.target.value })} aria-label="Title" />
-            <select value={c.space_id ?? ""} onChange={(e) => update(c.id, { space_id: e.target.value || null })} className="rounded-xl border border-[#DCD3C1] bg-white px-3 text-[14px]" aria-label="Space">
+            <select value={c.space_id ?? ""} onChange={(e) => update(c.id, { space_id: e.target.value || null })} className="rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 text-[14px]" aria-label="Space">
               <option value="">Not tied to a channel</option>
               {spaces.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -601,16 +601,16 @@ function Members() {
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[14px] text-[#5B6275]">{rows.length} members</p>
+        <p className="text-[14px] text-[var(--cm-muted-2)]">{rows.length} members</p>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="max-w-xs" />
       </div>
-      <Card className="divide-y divide-[#F0EBE0] overflow-hidden">
+      <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
         {list.map((p) => (
-          <Link key={p.user_id} href={`/community/members/${p.user_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#FBF8F2]">
+          <Link key={p.user_id} href={`/community/members/${p.user_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--cm-fill)]">
             <Avatar name={p.display_name} url={p.avatar_url} size={36} />
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-[#1F315B]">{p.display_name}</span>
-              <span className="block text-[12.5px] text-[#8A8FA0]">
+              <span className="block font-semibold text-[var(--cm-ink)]">{p.display_name}</span>
+              <span className="block text-[12.5px] text-[var(--cm-muted)]">
                 Joined {timeAgo(p.created_at)} · {p.spaces} {p.spaces === 1 ? "channel" : "channels"}
               </span>
             </span>

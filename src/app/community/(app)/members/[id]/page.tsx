@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Globe, MapPin, MessageCircle, ShieldAlert } from "lucide-react";
+import { Ban, Globe, MapPin, MessageCircle, ShieldAlert } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
+import { toPlain } from "@/lib/community/mentions";
 import type { Membership, Post, Profile, SpaceRole } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, PageLoading, RichText } from "@/components/community/ui";
 
 export default function MemberPage({ params }: { params: { id: string } }) {
-  const { supabase, userId, spaces, isAdmin } = useCommunity();
+  const { supabase, userId, spaces, isAdmin, blockedIds, block, unblock } = useCommunity();
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const blocked = blockedIds.has(params.id);
   const router = useRouter();
   const [p, setP] = useState<Profile | null | undefined>(undefined);
   const [their, setTheir] = useState<Membership[]>([]);
@@ -53,25 +56,38 @@ export default function MemberPage({ params }: { params: { id: string } }) {
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
             <Avatar name={p.display_name} url={p.avatar_url} size={96} className="ring-4" />
             {p.user_id !== userId ? (
-              <Button variant="gold" onClick={message}>
-                <MessageCircle className="h-4 w-4" /> Message
-              </Button>
+              <span className="flex flex-wrap items-center gap-2">
+                {!blocked && (
+                  <Button variant="gold" onClick={message}>
+                    <MessageCircle className="h-4 w-4" /> Message
+                  </Button>
+                )}
+                {blocked ? (
+                  <Button variant="outline" onClick={() => void unblock(p.user_id)}>
+                    Unblock
+                  </Button>
+                ) : (
+                  <Button variant="ghost" onClick={() => setConfirmBlock(true)} aria-label={`Block ${p.display_name}`}>
+                    <Ban className="h-4 w-4" /> Block
+                  </Button>
+                )}
+              </span>
             ) : (
               <Link href="/community/profile">
                 <Button variant="outline">Edit profile</Button>
               </Link>
             )}
           </div>
-          <h1 className="mt-3 font-display text-[30px] font-semibold text-[#1F315B]">{p.display_name}</h1>
-          {p.headline && <p className="text-[15px] text-[#5B6275]">{p.headline}</p>}
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-[#8A8FA0]">
+          <h1 className="mt-3 font-display text-[30px] font-semibold text-[var(--cm-ink)]">{p.display_name}</h1>
+          {p.headline && <p className="text-[15px] text-[var(--cm-muted-2)]">{p.headline}</p>}
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-[var(--cm-muted)]">
             {p.location && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" /> {p.location}
               </span>
             )}
             {website && (
-              <a href={website} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1 hover:text-[#1F315B]">
+              <a href={website} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1 hover:text-[var(--cm-ink)]">
                 <Globe className="h-4 w-4" /> {p.website}
               </a>
             )}
@@ -83,16 +99,48 @@ export default function MemberPage({ params }: { params: { id: string } }) {
             </p>
           )}
           <ErrorNote>{error}</ErrorNote>
+          {blocked && (
+            <p className="mt-3 rounded-xl bg-[var(--cm-fill-2)] px-3 py-2 text-[13.5px] text-[var(--cm-muted-2)]">
+              You&rsquo;ve blocked {p.display_name}. You won&rsquo;t see their posts or replies, they can&rsquo;t message you, and their tags and replies won&rsquo;t notify you. They aren&rsquo;t told.
+            </p>
+          )}
+          {confirmBlock && (
+            <div role="alertdialog" aria-label={`Block ${p.display_name}?`} className="mt-3 rounded-xl border border-[#E6C988] bg-[var(--cm-gold-soft)] p-3 text-[14px] text-[var(--cm-ink)]">
+              <p className="font-semibold">Block {p.display_name}?</p>
+              <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">
+                You won&rsquo;t see their posts or replies, you can&rsquo;t message each other, and their tags and replies won&rsquo;t notify you. They won&rsquo;t be told. You can unblock them anytime.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={async () => {
+                    setConfirmBlock(false);
+                    try {
+                      await block(p.user_id);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "Couldn't block right now.");
+                    }
+                  }}
+                >
+                  Block
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmBlock(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
           {p.bio && <RichText text={p.bio} className="mt-4" />}
         </div>
       </Card>
 
       {shared.length > 0 && (
         <div>
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-[#1F315B]">Channels</h2>
+          <h2 className="mb-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">Channels</h2>
           <div className="flex flex-wrap gap-2">
             {shared.map((s) => (
-              <Link key={s.id} href={`/community/s/${s.slug}`} className="rounded-full border border-[#E9E2D3] bg-white px-3 py-1 text-[13.5px] text-[#1F315B] hover:border-[#D4AF63]">
+              <Link key={s.id} href={`/community/s/${s.slug}`} className="rounded-full border border-[var(--cm-line)] bg-[var(--cm-surface)] px-3 py-1 text-[13.5px] text-[var(--cm-ink)] hover:border-[#D4AF63]">
                 {s.emoji} {s.name}
               </Link>
             ))}
@@ -102,13 +150,13 @@ export default function MemberPage({ params }: { params: { id: string } }) {
 
       {posts.length > 0 && (
         <div>
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-[#1F315B]">Recent posts</h2>
+          <h2 className="mb-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">Recent posts</h2>
           <div className="space-y-2">
             {posts.map((post) => (
               <Link key={post.id} href={`/community/post/${post.id}`}>
                 <Card className="p-4 hover:border-[#D4AF63]">
-                  <p className="text-[12.5px] text-[#8A8FA0]">{timeAgo(post.created_at)}</p>
-                  <p className="line-clamp-2 text-[14.5px] text-[#2A3552]">{post.title || post.body}</p>
+                  <p className="text-[12.5px] text-[var(--cm-muted)]">{timeAgo(post.created_at)}</p>
+                  <p className="line-clamp-2 text-[14.5px] text-[var(--cm-body)]">{toPlain(post.title || post.body)}</p>
                 </Card>
               </Link>
             ))}
@@ -134,16 +182,16 @@ function AdminMemberTools({ profile, memberships, onChanged }: { profile: Profil
 
   return (
     <Card className="border-[#E6C988] p-5">
-      <h2 className="flex items-center gap-2 font-display text-[21px] font-semibold text-[#1F315B]">
-        <ShieldAlert className="h-5 w-5 text-[#A8873F]" /> Admin
+      <h2 className="flex items-center gap-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">
+        <ShieldAlert className="h-5 w-5 text-[var(--cm-gold-text)]" /> Admin
       </h2>
-      <p className="mb-3 text-[13px] text-[#8A8FA0]">Only super admins see this.</p>
-      <div className="divide-y divide-[#F0EBE0] rounded-xl border border-[#F0EBE0]">
+      <p className="mb-3 text-[13px] text-[var(--cm-muted)]">Only super admins see this.</p>
+      <div className="divide-y divide-[var(--cm-line-soft)] rounded-xl border border-[var(--cm-line-soft)]">
         {spaces.map((s) => {
           const m = memberships.find((x) => x.space_id === s.id);
           return (
             <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-              <span className="text-[14px] text-[#1F315B]">
+              <span className="text-[14px] text-[var(--cm-ink)]">
                 {s.emoji} {s.name}
               </span>
               {m ? (
@@ -155,7 +203,7 @@ function AdminMemberTools({ profile, memberships, onChanged }: { profile: Profil
                     onChange={(e) =>
                       run(() => supabase.from("cm_space_members").update({ role: e.target.value as SpaceRole }).eq("space_id", s.id).eq("user_id", profile.user_id))
                     }
-                    className="rounded-lg border border-[#DCD3C1] bg-white px-2 py-1 text-[13px]"
+                    className="rounded-lg border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-2 py-1 text-[13px]"
                   >
                     <option value="member">Member</option>
                     <option value="moderator">Moderator</option>

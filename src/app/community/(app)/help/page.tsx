@@ -72,7 +72,7 @@ export default function HelpPage() {
       </div>
 
       <div className="relative mb-5">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9AA0B0]" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--cm-faint)]" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search questions" className="pl-9" />
       </div>
 
@@ -86,19 +86,19 @@ export default function HelpPage() {
         <div className="space-y-6">
           {categories.map((cat) => (
             <section key={cat.name}>
-              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A8873F]">{cat.name}</h2>
-              <Card className="divide-y divide-[#F0EBE0] overflow-hidden">
+              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">{cat.name}</h2>
+              <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
                 {cat.items.map((f) => {
                   const isOpen = open === f.id || !!q.trim();
                   return (
-                    <div key={f.id} className={cn(!f.published && "bg-[#F7F7F9]")}>
+                    <div key={f.id} className={cn(!f.published && "bg-[var(--cm-fill)]")}>
                       <div className="flex items-start">
                         <button
                           onClick={() => setOpen(open === f.id ? null : f.id)}
                           aria-expanded={isOpen}
-                          className="flex flex-1 items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-[#FBF8F2]"
+                          className="flex flex-1 items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-[var(--cm-fill)]"
                         >
-                          <span className="font-semibold text-[#1F315B]">
+                          <span className="font-semibold text-[var(--cm-ink)]">
                             {f.question}
                             {!f.published && (
                               <span className="ml-2 align-middle">
@@ -108,10 +108,10 @@ export default function HelpPage() {
                               </span>
                             )}
                           </span>
-                          <ChevronDown className={cn("mt-0.5 h-5 w-5 shrink-0 text-[#A8873F] transition", isOpen && "rotate-180")} />
+                          <ChevronDown className={cn("mt-0.5 h-5 w-5 shrink-0 text-[var(--cm-gold-text)] transition", isOpen && "rotate-180")} />
                         </button>
                         {isAdmin && (
-                          <button onClick={() => setEditing(f)} aria-label={`Edit “${f.question}”`} className="px-3 py-3.5 text-[#B0B4C0] hover:text-[#1F315B]">
+                          <button onClick={() => setEditing(f)} aria-label={`Edit “${f.question}”`} className="px-3 py-3.5 text-[var(--cm-faint)] hover:text-[var(--cm-ink)]">
                             <Pencil className="h-4 w-4" />
                           </button>
                         )}
@@ -131,10 +131,10 @@ export default function HelpPage() {
       )}
 
       {adminId && (
-        <Card className="mt-8 flex flex-col items-start justify-between gap-3 bg-gradient-to-br from-[#FFFDF8] to-[#FBF3DF] p-5 sm:flex-row sm:items-center">
+        <Card className="mt-8 flex flex-col items-start justify-between gap-3 bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-5 sm:flex-row sm:items-center">
           <div>
-            <p className="font-display text-[21px] font-semibold text-[#1F315B]">Still need help?</p>
-            <p className="text-[14px] text-[#5B6275]">Send a private message to a LifeCharter admin.</p>
+            <p className="font-display text-[21px] font-semibold text-[var(--cm-ink)]">Still need help?</p>
+            <p className="text-[14px] text-[var(--cm-muted-2)]">Send a private message to a LifeCharter admin.</p>
           </div>
           <Button variant="gold" onClick={messageAdmin}>
             <MessageCircle className="h-4 w-4" /> Message an admin
@@ -207,9 +207,9 @@ function FaqEditor({ initial, categories, onClose, onSaved }: { initial: Partial
         <div>
           <Label>Answer</Label>
           <TextArea value={f.answer} onChange={(e) => setF({ ...f, answer: e.target.value })} className="min-h-[160px]" />
-          <p className="mt-1 text-[12px] text-[#8A8FA0]">Line breaks are kept. Full links (https://…) become clickable.</p>
+          <p className="mt-1 text-[12px] text-[var(--cm-muted)]">Line breaks are kept. Full links (https://…) become clickable.</p>
         </div>
-        <label className="flex items-center gap-2 text-[14px] text-[#2A3552]">
+        <label className="flex items-center gap-2 text-[14px] text-[var(--cm-body)]">
           <input type="checkbox" checked={f.published} onChange={(e) => setF({ ...f, published: e.target.checked })} /> Visible to members
         </label>
         <ErrorNote>{error}</ErrorNote>

@@ -13,7 +13,7 @@ import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Button, PageLoading } from "./ui";
 import { PwaRegister } from "./PwaRegister";
-import { useCollapsedChannels, useViewAs } from "@/lib/community/prefs";
+import { useCollapsedChannels, useThemePref, useViewAs } from "@/lib/community/prefs";
 
 export function CommunityShell({ children }: { children: ReactNode }) {
   return (
@@ -28,6 +28,14 @@ function Frame({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
+  const { dark } = useThemePref();
+  // Paint the page behind the app too (overscroll, phone status bar area).
+  useEffect(() => {
+    document.body.style.background = dark ? "#0E1628" : "#F8F5F0";
+    return () => {
+      document.body.style.background = "";
+    };
+  }, [dark]);
 
   useEffect(() => setDrawer(false), [pathname]);
   useEffect(() => {
@@ -36,7 +44,7 @@ function Frame({ children }: { children: ReactNode }) {
 
   if (loading || !userId) {
     return (
-      <div className="min-h-screen bg-[#F8F5F0]">
+      <div className="min-h-screen bg-[var(--cm-ground)]">
         <PageLoading />
       </div>
     );
@@ -45,7 +53,7 @@ function Frame({ children }: { children: ReactNode }) {
   if (!profile && !isAdmin) return <NotYetMember />;
 
   return (
-    <div className="min-h-screen bg-[#F8F5F0] font-ui text-[#1F315B]">
+    <div className={cn("min-h-screen bg-[var(--cm-ground)] font-ui text-[var(--cm-ink)]", dark && "cm-dark")}>
       <PwaRegister />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] lg:block">
@@ -97,15 +105,15 @@ function SuiteRedirectNotice() {
   if (!show) return null;
   const who = [profile?.display_name, email ? `(${email})` : null].filter(Boolean).join(" ") || "this account";
   return (
-    <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-[#E6C988] bg-[#FBF3DF] px-4 py-3 text-[14px] text-[#1F315B]">
+    <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-[#E6C988] bg-[var(--cm-gold-soft)] px-4 py-3 text-[14px] text-[var(--cm-ink)]">
       <p className="flex-1 leading-relaxed">
         That page is part of <strong>LifeCharter Command Suite</strong>. You&rsquo;re signed in as <strong>{who}</strong>, a Collective member.{" "}
-        <button onClick={signOut} className="font-semibold text-[#A8873F] underline underline-offset-2 hover:text-[#1F315B]">
+        <button onClick={signOut} className="font-semibold text-[var(--cm-gold-text)] underline underline-offset-2 hover:text-[var(--cm-ink)]">
           Sign out to switch accounts
         </button>
         .
       </p>
-      <button onClick={() => setShow(false)} aria-label="Dismiss" className="rounded-lg p-1 text-[#8A8FA0] hover:bg-black/5">
+      <button onClick={() => setShow(false)} aria-label="Dismiss" className="rounded-lg p-1 text-[var(--cm-muted)] hover:bg-black/5">
         <X className="h-4 w-4" />
       </button>
     </div>
@@ -114,10 +122,10 @@ function SuiteRedirectNotice() {
 
 function NotYetMember() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8F5F0] px-4 font-ui">
-      <div className="max-w-md rounded-2xl border border-[#E9E2D3] bg-white p-8 text-center shadow-lg">
-        <p className="font-display text-[28px] font-semibold text-[#1F315B]">You&rsquo;re not in the Collective yet</p>
-        <p className="mt-2 text-[14.5px] text-[#6B6F80]">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--cm-ground)] px-4 font-ui">
+      <div className="max-w-md rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] p-8 text-center shadow-lg">
+        <p className="font-display text-[28px] font-semibold text-[var(--cm-ink)]">You&rsquo;re not in the Collective yet</p>
+        <p className="mt-2 text-[14.5px] text-[var(--cm-muted-2)]">
           Use the join link and invite code you were given to become a member of The LifeCharter Collective.
         </p>
         <Link href="/join/collective" className="mt-5 inline-block">
@@ -394,15 +402,15 @@ function NavItem({ href, icon: Icon, label, active, badge }: { href: string; ico
 function MobileTopBar({ onMenu }: { onMenu: () => void }) {
   const { unreadNotifications } = useCommunity();
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E9E2D3] bg-[#F8F5F0]/95 px-3 py-2 backdrop-blur lg:hidden">
-      <button onClick={onMenu} aria-label="Open menu" className="rounded-lg p-2 text-[#1F315B] hover:bg-black/5">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--cm-line)] bg-[var(--cm-ground)] px-3 py-2 backdrop-blur lg:hidden">
+      <button onClick={onMenu} aria-label="Open menu" className="rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
         <Menu className="h-5 w-5" />
       </button>
       <Link href="/community" className="flex items-center gap-2">
         <Image src="/lifecharter-collective-mark.png" alt="" width={803} height={772} className="h-8 w-auto" />
-        <span className="font-display text-[19px] font-semibold text-[#1F315B]">The Collective</span>
+        <span className="font-display text-[19px] font-semibold text-[var(--cm-ink)]">The Collective</span>
       </Link>
-      <Link href="/community/notifications" aria-label="Notifications" className="relative rounded-lg p-2 text-[#1F315B] hover:bg-black/5">
+      <Link href="/community/notifications" aria-label="Notifications" className="relative rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
         <Bell className="h-5 w-5" />
         {!!unreadNotifications && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#D4AF63] ring-2 ring-[#F8F5F0]" />}
       </Link>
@@ -414,12 +422,12 @@ function MobileTabBar({ onSpaces }: { onSpaces: () => void }) {
   const pathname = usePathname() || "";
   const { unreadDms, profile } = useCommunity();
   const tab = "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-semibold";
-  const on = "text-[#1F315B]";
-  const off = "text-[#8A8FA0]";
+  const on = "text-[var(--cm-ink)]";
+  const off = "text-[var(--cm-muted)]";
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[#E9E2D3] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--cm-line)] bg-[var(--cm-surface)] pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <Link href="/community" className={cn(tab, pathname === "/community" ? on : off)}>
         <Home className="h-5 w-5" /> Home

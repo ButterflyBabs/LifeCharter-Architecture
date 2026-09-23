@@ -61,19 +61,19 @@ export default function NotificationsPage() {
           Announcements and replies to your posts will show up here.
         </EmptyState>
       ) : (
-        <Card className="divide-y divide-[#F0EBE0] overflow-hidden">
+        <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
           {rows.map((n) => {
             const actor = n.actor_id ? people[n.actor_id] : undefined;
             return (
-              <button key={n.id} onClick={() => open(n)} className={cn("flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-[#FBF8F2]", !n.read_at && "bg-[#FDF8EC]")}>
+              <button key={n.id} onClick={() => open(n)} className={cn("flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-[var(--cm-fill)]", !n.read_at && "bg-[var(--cm-fill)]")}>
                 <span className="relative">
                   <Avatar name={actor?.display_name} url={actor?.avatar_url} size={40} />
-                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] shadow">{ICON[n.kind] ?? "•"}</span>
+                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--cm-surface)] text-[11px] shadow">{ICON[n.kind] ?? "•"}</span>
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={cn("block text-[14.5px] text-[#1F315B]", !n.read_at && "font-semibold")}>{n.title}</span>
-                  {n.body && <span className="line-clamp-2 block text-[13.5px] text-[#6B6F80]">{n.body}</span>}
-                  <span className="text-[12px] text-[#8A8FA0]">{timeAgo(n.created_at)}</span>
+                  <span className={cn("block text-[14.5px] text-[var(--cm-ink)]", !n.read_at && "font-semibold")}>{n.title}</span>
+                  {n.body && <span className="line-clamp-2 block text-[13.5px] text-[var(--cm-muted-2)]">{n.body}</span>}
+                  <span className="text-[12px] text-[var(--cm-muted)]">{timeAgo(n.created_at)}</span>
                 </span>
                 {!n.read_at && <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#D4AF63]" aria-label="Unread" />}
               </button>

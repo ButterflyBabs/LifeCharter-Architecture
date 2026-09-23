@@ -16,6 +16,7 @@ import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
 import { WelcomeStrip } from "@/components/community/WelcomeStrip";
 import { useViewAs } from "@/lib/community/prefs";
+import { toPlain } from "@/lib/community/mentions";
 
 function greeting() {
   const h = new Date().getHours();
@@ -102,10 +103,10 @@ function CommunityHome() {
     <div className="space-y-7">
       <div>
         <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</Eyebrow>
-        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight text-[#1F315B] md:text-[40px]">
+        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[40px]">
           {greeting()}, {firstName}
         </h1>
-        <p className="font-editorial text-[18px] italic text-[#A8873F]">Create Balance. Build Alignment. Take Command.</p>
+        <p className="font-editorial text-[18px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
       </div>
 
       <InstallBanner />
@@ -128,7 +129,7 @@ function CommunityHome() {
           icon={<Anchor className="h-5 w-5" />}
           label="Your Alignment Anchor"
           href={anchor ? `/community/post/${anchor.id}` : anchorChannel && commons ? `/community/s/${commons.slug}/${anchorChannel.slug}` : "/community"}
-          title={anchor?.title || (anchor ? anchor.body.split("\n")[0].slice(0, 90) : "This week's Anchor is on its way")}
+          title={anchor?.title || (anchor ? toPlain(anchor.body).split("\n")[0].slice(0, 90) : "This week's Anchor is on its way")}
           detail={anchor ? `Posted ${timeAgo(anchor.created_at)}` : "The week's topic, replay and reflection will appear here."}
           featured
         />
@@ -136,7 +137,7 @@ function CommunityHome() {
           icon={<Target className="h-5 w-5" />}
           label="This Week's Intention"
           href={intentionChannel && commons ? `/community/s/${commons.slug}/${intentionChannel.slug}` : "/community"}
-          title={intention ? intention.body.split("\n")[0].slice(0, 90) : "What are you aligning with this week?"}
+          title={intention ? toPlain(intention.body).split("\n")[0].slice(0, 90) : "What are you aligning with this week?"}
           detail={intention ? "Your intention is set — keep it in view." : "Set your intention and let the Collective hold you to it."}
           done={!!intention}
           cta={intention === null ? "Set my intention" : undefined}
@@ -156,7 +157,7 @@ function CommunityHome() {
             title={myPrograms[0].name}
             detail={
               programLatest[myPrograms[0].id]
-                ? `Latest: ${(programLatest[myPrograms[0].id]!.title || programLatest[myPrograms[0].id]!.body).slice(0, 70)}`
+                ? `Latest: ${toPlain(programLatest[myPrograms[0].id]!.title || programLatest[myPrograms[0].id]!.body).slice(0, 70)}`
                 : "Jump back into the conversation."
             }
           />
@@ -188,12 +189,12 @@ function CommunityHome() {
                 <Card className="flex items-center gap-3 p-4 hover:border-[#D4AF63]">
                   <span className="text-[24px]">{s.emoji}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-[#1F315B]">{s.name}</span>
-                    <span className="block truncate text-[12.5px] text-[#8A8FA0]">
+                    <span className="block font-semibold text-[var(--cm-ink)]">{s.name}</span>
+                    <span className="block truncate text-[12.5px] text-[var(--cm-muted)]">
                       {programLatest[s.id] ? `Active ${timeAgo(programLatest[s.id]!.created_at)}` : s.tagline}
                     </span>
                   </span>
-                  <ArrowRight className="h-4 w-4 text-[#C9BFA8]" />
+                  <ArrowRight className="h-4 w-4 text-[var(--cm-faint)]" />
                 </Card>
               </Link>
             ))}
@@ -221,9 +222,9 @@ function CommunityHome() {
             ))}
           </div>
         ) : (
-          <Card className="p-5 text-[14.5px] text-[#6B6F80]">
+          <Card className="p-5 text-[14.5px] text-[var(--cm-muted-2)]">
             It&rsquo;s quiet in here — say hello in{" "}
-            <Link href="/community/s/start-here/introductions" className="font-semibold text-[#A8873F] underline-offset-2 hover:underline">
+            <Link href="/community/s/start-here/introductions" className="font-semibold text-[var(--cm-gold-text)] underline-offset-2 hover:underline">
               Introduce Yourself
             </Link>
             .
@@ -243,7 +244,7 @@ function CommunityHome() {
       )}
 
       {isAdmin && (
-        <p className="text-center text-[12.5px] text-[#8A8FA0]">
+        <p className="text-center text-[12.5px] text-[var(--cm-muted)]">
           You&rsquo;re a super admin — manage spaces, invite codes and cards in{" "}
           <Link href="/community/admin" className="underline">
             Admin
@@ -256,7 +257,7 @@ function CommunityHome() {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-3 font-display text-[24px] font-semibold text-[#1F315B]">{children}</h2>;
+  return <h2 className="mb-3 font-display text-[24px] font-semibold text-[var(--cm-ink)]">{children}</h2>;
 }
 
 function NextCard({
@@ -287,17 +288,17 @@ function NextCard({
             : "h-full p-5 transition group-hover:-translate-y-0.5 group-hover:border-[#D4AF63]"
         }
       >
-        <div className={featured ? "flex items-center gap-2 text-[#E6C988]" : "flex items-center gap-2 text-[#A8873F]"}>
+        <div className={featured ? "flex items-center gap-2 text-[#E6C988]" : "flex items-center gap-2 text-[var(--cm-gold-text)]"}>
           {icon}
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">{label}</span>
           {done && <Check className="ml-auto h-4 w-4 text-emerald-600" aria-label="Done" />}
         </div>
-        <p className={featured ? "mt-3 font-display text-[23px] font-semibold leading-snug text-white" : "mt-3 font-display text-[21px] font-semibold leading-snug text-[#1F315B]"}>
+        <p className={featured ? "mt-3 font-display text-[23px] font-semibold leading-snug text-white" : "mt-3 font-display text-[21px] font-semibold leading-snug text-[var(--cm-ink)]"}>
           {title}
         </p>
-        <p className={featured ? "mt-1 text-[13.5px] text-[#EDE6D6]/75" : "mt-1 text-[13.5px] text-[#6B6F80]"}>{detail}</p>
+        <p className={featured ? "mt-1 text-[13.5px] text-[#EDE6D6]/75" : "mt-1 text-[13.5px] text-[var(--cm-muted-2)]"}>{detail}</p>
         {cta && (
-          <span className="mt-3 inline-flex items-center gap-1 text-[13.5px] font-semibold text-[#A8873F]">
+          <span className="mt-3 inline-flex items-center gap-1 text-[13.5px] font-semibold text-[var(--cm-gold-text)]">
             {cta} <ArrowRight className="h-4 w-4" />
           </span>
         )}
@@ -314,15 +315,15 @@ function FeedLine({ post, where, space, emoji }: { post: Post; where?: string; s
       <Card className="flex gap-3 p-4 transition hover:border-[#D4AF63]">
         <Avatar name={a?.display_name} url={a?.avatar_url} size={38} />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] text-[#8A8FA0]">
-            <span className="font-semibold text-[#1F315B]">{a?.display_name ?? "…"}</span> in {emoji} {where}
+          <p className="text-[13px] text-[var(--cm-muted)]">
+            <span className="font-semibold text-[var(--cm-ink)]">{a?.display_name ?? "…"}</span> in {emoji} {where}
             {space ? ` · ${space}` : ""} · {timeAgo(post.created_at)}
           </p>
-          {post.title && <p className="font-semibold text-[#1F315B]">{post.title}</p>}
-          <p className="line-clamp-2 text-[14.5px] text-[#2A3552]">
-            {post.body || (post.attachments?.length ? `📷 Shared ${post.attachments.length === 1 ? "a photo" : `${post.attachments.length} photos`}` : "")}
+          {post.title && <p className="font-semibold text-[var(--cm-ink)]">{post.title}</p>}
+          <p className="line-clamp-2 text-[14.5px] text-[var(--cm-body)]">
+            {toPlain(post.body) || (post.attachments?.length ? `📷 Shared ${post.attachments.length === 1 ? "a photo" : `${post.attachments.length} photos`}` : "")}
           </p>
-          {post.comment_count > 0 && <p className="mt-1 text-[12.5px] font-semibold text-[#A8873F]">{post.comment_count} replies</p>}
+          {post.comment_count > 0 && <p className="mt-1 text-[12.5px] font-semibold text-[var(--cm-gold-text)]">{post.comment_count} replies</p>}
         </div>
       </Card>
     </Link>
@@ -360,26 +361,26 @@ function DiscoverTile({ card }: { card: DiscoverCard }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={img} alt="" className="h-28 w-full object-cover" />
       ) : (
-        <div className="flex h-20 items-center justify-center bg-gradient-to-br from-[#F5EBD3] to-[#EFE6D2] text-[#A8873F]">
+        <div className="flex h-20 items-center justify-center bg-gradient-to-br from-[var(--cm-gold-soft)] to-[var(--cm-gold-soft)] text-[var(--cm-gold-text)]">
           <Sparkles className="h-6 w-6" />
         </div>
       )}
       <div className="flex flex-1 flex-col p-4">
-        <p className="font-display text-[19px] font-semibold leading-snug text-[#1F315B]">{card.title}</p>
-        {card.blurb && <p className="mt-1 text-[13.5px] text-[#6B6F80]">{card.blurb}</p>}
-        {card.teaser && <p className="mt-2 font-editorial text-[14.5px] italic text-[#5B6275]">{card.teaser}</p>}
+        <p className="font-display text-[19px] font-semibold leading-snug text-[var(--cm-ink)]">{card.title}</p>
+        {card.blurb && <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">{card.blurb}</p>}
+        {card.teaser && <p className="mt-2 font-editorial text-[14.5px] italic text-[var(--cm-muted-2)]">{card.teaser}</p>}
         {dm !== null ? (
-          <button onClick={openMessage} disabled={busy} className="mt-auto pt-3 text-left text-[13.5px] font-semibold text-[#A8873F] hover:underline disabled:opacity-60">
+          <button onClick={openMessage} disabled={busy} className="mt-auto pt-3 text-left text-[13.5px] font-semibold text-[var(--cm-gold-text)] hover:underline disabled:opacity-60">
             {busy ? "Opening…" : `${card.cta_label} →`}
           </button>
         ) : (
           card.cta_url && (
-            <a href={card.cta_url} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-[13.5px] font-semibold text-[#A8873F] hover:underline">
+            <a href={card.cta_url} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-[13.5px] font-semibold text-[var(--cm-gold-text)] hover:underline">
               {card.cta_label} →
             </a>
           )
         )}
-        {note && <p className="mt-1 text-[12px] text-[#8A8FA0]">{note}</p>}
+        {note && <p className="mt-1 text-[12px] text-[var(--cm-muted)]">{note}</p>}
       </div>
     </Card>
   );
@@ -393,16 +394,16 @@ function WelcomeCard({ onDone }: { onDone: () => void }) {
     { href: "/community/profile#app", label: "Add the app to your phone & turn on notifications" },
   ];
   return (
-    <Card className="border-[#E6C988] bg-gradient-to-br from-[#FFFDF8] to-[#FBF3DF] p-5">
+    <Card className="border-[#E6C988] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-5">
       <Eyebrow>Welcome to The LifeCharter Collective</Eyebrow>
-      <p className="mt-1 font-display text-[24px] font-semibold text-[#1F315B]">Four small steps to settle in</p>
+      <p className="mt-1 font-display text-[24px] font-semibold text-[var(--cm-ink)]">Four small steps to settle in</p>
       <ol className="mt-3 space-y-2">
         {steps.map((s, i) => (
           <li key={s.href}>
-            <Link href={s.href} className="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 text-[14.5px] text-[#1F315B] hover:bg-white">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1F315B] text-[12px] font-bold text-[#E6C988]">{i + 1}</span>
+            <Link href={s.href} className="flex items-center gap-3 rounded-xl bg-[var(--cm-surface)] px-3 py-2.5 text-[14.5px] text-[var(--cm-ink)] hover:bg-[var(--cm-surface)]">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--cm-navy)] text-[12px] font-bold text-[#E6C988]">{i + 1}</span>
               {s.label}
-              <ArrowRight className="ml-auto h-4 w-4 text-[#C9BFA8]" />
+              <ArrowRight className="ml-auto h-4 w-4 text-[var(--cm-faint)]" />
             </Link>
           </li>
         ))}

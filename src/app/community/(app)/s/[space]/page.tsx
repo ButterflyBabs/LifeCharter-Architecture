@@ -50,12 +50,12 @@ export default function SpacePage({ params }: { params: { space: string } }) {
     <div className="space-y-6">
       <div>
         <Eyebrow>The LifeCharter Collective</Eyebrow>
-        <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight text-[#1F315B] md:text-[38px]">
+        <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[38px]">
           <span className="mr-2">{space.emoji}</span>
           {space.name}
         </h1>
-        {space.tagline && <p className="mt-1 font-editorial text-[18px] italic text-[#A8873F]">{space.tagline}</p>}
-        {space.description && <p className="mt-2 max-w-2xl text-[15px] text-[#5B6275]">{space.description}</p>}
+        {space.tagline && <p className="mt-1 font-editorial text-[18px] italic text-[var(--cm-gold-text)]">{space.tagline}</p>}
+        {space.description && <p className="mt-2 max-w-2xl text-[15px] text-[var(--cm-muted-2)]">{space.description}</p>}
       </div>
 
       {!isMember(space.id) && <JoinSpaceBanner spaceId={space.id} name={space.name} />}
@@ -64,15 +64,15 @@ export default function SpacePage({ params }: { params: { space: string } }) {
         {channels.map((c) => (
           <Link key={c.id} href={`/community/s/${space.slug}/${c.slug}`}>
             <Card className="flex h-full items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-[#D4AF63]">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F5EFE2] text-[22px]">{c.emoji}</span>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--cm-fill-2)] text-[22px]">{c.emoji}</span>
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 font-semibold text-[#1F315B]">
+                <span className="flex items-center gap-1.5 font-semibold text-[var(--cm-ink)]">
                   {c.name}
-                  {c.kind === "announcements" && <Megaphone className="h-3.5 w-3.5 text-[#A8873F]" aria-label="Announcements" />}
+                  {c.kind === "announcements" && <Megaphone className="h-3.5 w-3.5 text-[var(--cm-gold-text)]" aria-label="Announcements" />}
                 </span>
-                <span className="block text-[12.5px] text-[#8A8FA0]">{activity[c.id] ? `Active ${timeAgo(activity[c.id])}` : "No posts yet"}</span>
+                <span className="block text-[12.5px] text-[var(--cm-muted)]">{activity[c.id] ? `Active ${timeAgo(activity[c.id])}` : "No posts yet"}</span>
               </span>
-              <ChevronRight className="h-4 w-4 text-[#C9BFA8]" />
+              <ChevronRight className="h-4 w-4 text-[var(--cm-faint)]" />
             </Card>
           </Link>
         ))}
@@ -80,13 +80,13 @@ export default function SpacePage({ params }: { params: { space: string } }) {
 
       {events.length > 0 && (
         <section>
-          <h2 className="mb-2 font-display text-[22px] font-semibold text-[#1F315B]">Upcoming</h2>
+          <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Upcoming</h2>
           <div className="space-y-2">
             {events.map(({ event: e, start, end }) => (
               <Link key={e.id} href={`/community/events#${e.id}`}>
                 <Card className="p-4 hover:border-[#D4AF63]">
-                  <p className="font-semibold text-[#1F315B]">{e.title}</p>
-                  <p className="text-[13px] text-[#6B6F80]">{eventWhen(start.toISOString(), end.toISOString())}</p>
+                  <p className="font-semibold text-[var(--cm-ink)]">{e.title}</p>
+                  <p className="text-[13px] text-[var(--cm-muted-2)]">{eventWhen(start.toISOString(), end.toISOString())}</p>
                 </Card>
               </Link>
             ))}
@@ -95,8 +95,8 @@ export default function SpacePage({ params }: { params: { space: string } }) {
       )}
 
       <section>
-        <h2 className="mb-2 font-display text-[22px] font-semibold text-[#1F315B]">
-          Members <span className="text-[16px] font-normal text-[#8A8FA0]">· {memberCount}</span>
+        <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+          Members <span className="text-[16px] font-normal text-[var(--cm-muted)]">· {memberCount}</span>
         </h2>
         <div className="flex flex-wrap gap-2">
           {memberIds.map((id) => (

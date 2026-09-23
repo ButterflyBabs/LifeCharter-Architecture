@@ -65,7 +65,7 @@ export function useInstallPlatform() {
 }
 
 function Steps({ children }: { children: React.ReactNode }) {
-  return <ol className="ml-5 mt-2 list-decimal space-y-1.5 text-[14.5px] leading-relaxed text-[#2A3552]">{children}</ol>;
+  return <ol className="ml-5 mt-2 list-decimal space-y-1.5 text-[14.5px] leading-relaxed text-[var(--cm-body)]">{children}</ol>;
 }
 
 export function InstallInstructions({ platform }: { platform: Platform }) {
@@ -81,7 +81,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
   if (platform === "prompt") {
     return (
       <div>
-        <p className="text-[14.5px] text-[#2A3552]">Add the Collective to your home screen — it opens like any other app.</p>
+        <p className="text-[14.5px] text-[var(--cm-body)]">Add the Collective to your home screen — it opens like any other app.</p>
         <Button
           variant="gold"
           className="mt-3"
@@ -106,7 +106,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
     return (
       <Steps>
         <li>
-          Tap the <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[#2E5AA8]" /> at the bottom of Safari.
+          Tap the <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[var(--cm-link)]" /> at the bottom of Safari.
         </li>
         <li>
           Scroll down and tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
@@ -119,7 +119,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
     return (
       <Steps>
         <li>
-          Tap the <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[#2E5AA8]" /> in Chrome&rsquo;s address bar, at the top right.
+          Tap the <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[var(--cm-link)]" /> in Chrome&rsquo;s address bar, at the top right.
         </li>
         <li>
           Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>. (If you don&rsquo;t see it, tap <strong>More</strong> or scroll the list.)
@@ -132,7 +132,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
     return (
       <Steps>
         <li>
-          Tap your browser&rsquo;s <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[#2E5AA8]" />.
+          Tap your browser&rsquo;s <strong>Share</strong> button <Share className="inline h-4 w-4 align-[-2px] text-[var(--cm-link)]" />.
         </li>
         <li>
           Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
@@ -143,7 +143,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
   }
   if (platform === "in-app") {
     return (
-      <p className="text-[14.5px] leading-relaxed text-[#2A3552]">
+      <p className="text-[14.5px] leading-relaxed text-[var(--cm-body)]">
         You&rsquo;re viewing this inside another app, which can&rsquo;t install the Collective. Tap the <strong>⋯</strong> menu and choose{" "}
         <strong>Open in browser</strong> (Safari or Chrome), then come back to this page.
       </p>
@@ -163,7 +163,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
     );
   }
   return (
-    <p className="text-[14.5px] leading-relaxed text-[#2A3552]">
+    <p className="text-[14.5px] leading-relaxed text-[var(--cm-body)]">
       On your phone, open <strong>lccommandsuite.com/community</strong> in Safari or Chrome and come back to this page — it will show the steps for
       your phone.
     </p>
@@ -176,8 +176,8 @@ export function InstallAppCard() {
   return (
     <Card className="p-5">
       <div id="app" className="scroll-mt-20" />
-      <h2 className="flex items-center gap-2 font-display text-[22px] font-semibold text-[#1F315B]">
-        <Smartphone className="h-5 w-5 text-[#A8873F]" /> Put the Collective on your phone
+      <h2 className="flex items-center gap-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+        <Smartphone className="h-5 w-5 text-[var(--cm-gold-text)]" /> Put the Collective on your phone
       </h2>
       <div className="mt-2">{platform && <InstallInstructions platform={platform} />}</div>
     </Card>
@@ -197,7 +197,7 @@ export function InstallBanner() {
   }, []);
   if (hidden || !platform || platform === "installed" || platform === "desktop") return null;
   return (
-    <Card className="relative border-[#E6C988] bg-gradient-to-br from-[#FFFDF8] to-[#FBF3DF] p-4 pr-10">
+    <Card className="relative border-[#E6C988] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-4 pr-10">
       <button
         onClick={() => {
           setHidden(true);
@@ -208,12 +208,12 @@ export function InstallBanner() {
           }
         }}
         aria-label="Dismiss"
-        className="absolute right-2 top-2 rounded-lg p-1.5 text-[#8A8FA0] hover:bg-black/5"
+        className="absolute right-2 top-2 rounded-lg p-1.5 text-[var(--cm-muted)] hover:bg-black/5"
       >
         <X className="h-4 w-4" />
       </button>
-      <p className="flex items-center gap-2 font-display text-[19px] font-semibold text-[#1F315B]">
-        <Smartphone className="h-5 w-5 text-[#A8873F]" /> Put the Collective on your phone
+      <p className="flex items-center gap-2 font-display text-[19px] font-semibold text-[var(--cm-ink)]">
+        <Smartphone className="h-5 w-5 text-[var(--cm-gold-text)]" /> Put the Collective on your phone
       </p>
       <InstallInstructions platform={platform} />
     </Card>

@@ -20,7 +20,8 @@ function dayLabel(iso: string) {
 }
 
 export default function ThreadPage({ params }: { params: { thread: string } }) {
-  const { supabase, userId, refreshCounts } = useCommunity();
+  const { supabase, userId, refreshCounts, blockedIds } = useCommunity();
+  const [sendError, setSendError] = useState<string | null>(null);
   const [messages, setMessages] = useState<DmMessage[] | null>(null);
   const [other, setOther] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -100,6 +101,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
     }
     const { data, error } = await supabase.from("cm_dm_messages").insert({ thread_id: params.thread, sender_id: userId, body, attachments }).select("*").single();
     setSending(false);
+    setSendError(error ? "This message couldn't be sent. This member may not be accepting messages from you." : null);
     if (!error && data) {
       setText("");
       media.clear();
@@ -115,23 +117,23 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
   let lastDay = "";
   return (
     <div className="flex h-[calc(100dvh-9.5rem)] flex-col lg:h-[calc(100dvh-4rem)]">
-      <div className="flex items-center gap-3 border-b border-[#E9E2D3] pb-3">
-        <Link href="/community/messages" aria-label="Back to messages" className="rounded-lg p-1.5 text-[#5B6275] hover:bg-black/5">
+      <div className="flex items-center gap-3 border-b border-[var(--cm-line)] pb-3">
+        <Link href="/community/messages" aria-label="Back to messages" className="rounded-lg p-1.5 text-[var(--cm-muted-2)] hover:bg-black/5">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         {other && (
           <Link href={`/community/members/${other}`} className="flex items-center gap-3">
             <Avatar name={p?.display_name} url={p?.avatar_url} size={38} />
             <span>
-              <span className="block font-semibold text-[#1F315B]">{p?.display_name ?? "…"}</span>
-              {p?.headline && <span className="block text-[12.5px] text-[#8A8FA0]">{p.headline}</span>}
+              <span className="block font-semibold text-[var(--cm-ink)]">{p?.display_name ?? "…"}</span>
+              {p?.headline && <span className="block text-[12.5px] text-[var(--cm-muted)]">{p.headline}</span>}
             </span>
           </Link>
         )}
       </div>
 
       <div className="flex-1 space-y-1.5 overflow-y-auto py-4">
-        {messages.length === 0 && <p className="py-10 text-center text-[14px] text-[#8A8FA0]">Say hello 👋</p>}
+        {messages.length === 0 && <p className="py-10 text-center text-[14px] text-[var(--cm-muted)]">Say hello 👋</p>}
         {messages.map((m) => {
           const mine = m.sender_id === userId;
           const day = dayLabel(m.created_at);
@@ -139,12 +141,12 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
           lastDay = day;
           return (
             <div key={m.id}>
-              {showDay && <p className="my-3 text-center text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[#A8A08C]">{day}</p>}
+              {showDay && <p className="my-3 text-center text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--cm-faint)]">{day}</p>}
               <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
                     "max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm",
-                    mine ? "rounded-br-md bg-[#1F315B] text-white [&_*]:text-white" : "rounded-bl-md border border-[#E9E2D3] bg-white"
+                    mine ? "rounded-br-md bg-[var(--cm-navy)] text-white [&_*]:text-white" : "rounded-bl-md border border-[var(--cm-line)] bg-[var(--cm-surface)]"
                   )}
                   title={new Date(m.created_at).toLocaleString()}
                 >
@@ -158,36 +160,45 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
         <div ref={bottom} />
       </div>
 
-      <div className="border-t border-[#E9E2D3] pt-3">
-        <DraftStrip draft={media} size={64} />
-      </div>
-      <div className="flex items-end gap-2 pt-2">
-        <AttachButton draft={media} accept="image/*,video/*" className="h-11 w-11 justify-center rounded-full px-0">
-          <ImagePlus className="h-5 w-5 text-[#A8873F]" aria-label="Add photo or video" />
-        </AttachButton>
-        <textarea
-          onPaste={pasteInto(media)}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          rows={1}
-          placeholder="Write a message…"
-          className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl border border-[#DCD3C1] bg-white px-4 py-2.5 text-[15px] text-[#1F315B] outline-none focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20"
-        />
-        <button
-          onClick={send}
-          disabled={sending || (!text.trim() && !media.items.length)}
-          aria-label="Send"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] disabled:opacity-50"
-        >
-          <Send className="h-5 w-5" />
-        </button>
-      </div>
+      {other && blockedIds.has(other) ? (
+        <p className="border-t border-[var(--cm-line)] pt-3 text-center text-[13.5px] text-[var(--cm-muted)]">
+          You&rsquo;ve blocked this member. Unblock them from their profile to message again.
+        </p>
+      ) : (
+        <>
+          {sendError && <p className="border-t border-[var(--cm-line)] pt-2 text-[13px] text-red-700">{sendError}</p>}
+      <div className="border-t border-[var(--cm-line)] pt-3">
+            <DraftStrip draft={media} size={64} />
+          </div>
+          <div className="flex items-end gap-2 pt-2">
+            <AttachButton draft={media} accept="image/*,video/*" className="h-11 w-11 justify-center rounded-full px-0">
+              <ImagePlus className="h-5 w-5 text-[var(--cm-gold-text)]" aria-label="Add photo or video" />
+            </AttachButton>
+            <textarea
+              onPaste={pasteInto(media)}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              rows={1}
+              placeholder="Write a message…"
+              className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-4 py-2.5 text-[15px] text-[var(--cm-ink)] outline-none focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20"
+            />
+            <button
+              onClick={send}
+              disabled={sending || (!text.trim() && !media.items.length)}
+              aria-label="Send"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] disabled:opacity-50"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

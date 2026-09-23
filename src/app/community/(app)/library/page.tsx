@@ -67,7 +67,7 @@ export default function LibraryPage() {
           ))}
         </div>
         <div className="relative sm:ml-auto sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9AA0B0]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--cm-faint)]" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="pl-9" />
         </div>
       </div>
@@ -82,25 +82,25 @@ export default function LibraryPage() {
         <div className="space-y-6">
           {Object.entries(byCategory).map(([cat, items]) => (
             <section key={cat}>
-              <h2 className="mb-2 font-display text-[22px] font-semibold text-[#1F315B]">{cat}</h2>
+              <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">{cat}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {items.map((r) => {
                   const Icon = r.kind === "video" ? PlayCircle : r.kind === "file" ? FileText : Link2;
                   const manage = isAdmin || (r.space_id ? canModerate(r.space_id) : false);
                   return (
                     <Card key={r.id} className="flex items-start gap-3 p-4">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EFE2] text-[#A8873F]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--cm-fill-2)] text-[var(--cm-gold-text)]">
                         <Icon className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <button onClick={() => open(r)} className="text-left font-semibold text-[#1F315B] hover:underline">
+                        <button onClick={() => open(r)} className="text-left font-semibold text-[var(--cm-ink)] hover:underline">
                           {r.title}
                         </button>
-                        {r.description && <p className="mt-0.5 text-[13.5px] text-[#6B6F80]">{r.description}</p>}
-                        <p className="mt-1 text-[12px] text-[#8A8FA0]">{r.kind === "file" ? `${r.file_name ?? "File"} ${fileSize(r.file_size)}` : r.kind === "video" ? "Video" : "Link"}</p>
+                        {r.description && <p className="mt-0.5 text-[13.5px] text-[var(--cm-muted-2)]">{r.description}</p>}
+                        <p className="mt-1 text-[12px] text-[var(--cm-muted)]">{r.kind === "file" ? `${r.file_name ?? "File"} ${fileSize(r.file_size)}` : r.kind === "video" ? "Video" : "Link"}</p>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <button onClick={() => open(r)} aria-label={`Open ${r.title}`} className="rounded-lg p-1.5 text-[#8A8FA0] hover:bg-black/5 hover:text-[#1F315B]">
+                        <button onClick={() => open(r)} aria-label={`Open ${r.title}`} className="rounded-lg p-1.5 text-[var(--cm-muted)] hover:bg-black/5 hover:text-[var(--cm-ink)]">
                           <ExternalLink className="h-4 w-4" />
                         </button>
                         {manage && (
@@ -111,7 +111,7 @@ export default function LibraryPage() {
                               await supabase.from("cm_resources").update({ deleted_at: new Date().toISOString() }).eq("id", r.id);
                               void load();
                             }}
-                            className="rounded-lg p-1.5 text-[#B0B4C0] hover:bg-red-50 hover:text-red-600"
+                            className="rounded-lg p-1.5 text-[var(--cm-faint)] hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -147,7 +147,7 @@ function ScopeChip({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={cn(
         "rounded-full border px-3 py-1.5 text-[13px] font-semibold transition",
-        active ? "border-[#1F315B] bg-[#1F315B] text-white" : "border-[#DCD3C1] bg-white text-[#1F315B] hover:border-[#D4AF63]"
+        active ? "border-[var(--cm-ink)] bg-[var(--cm-navy)] text-white" : "border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63]"
       )}
     >
       {children}
@@ -212,7 +212,7 @@ function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { catego
           </div>
           <div>
             <Label>Where</Label>
-            <select value={f.space_id} onChange={(e) => setF({ ...f, space_id: e.target.value })} className="w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]">
+            <select value={f.space_id} onChange={(e) => setF({ ...f, space_id: e.target.value })} className="w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-2.5 text-[15px]">
               {isAdmin && <option value="">LifeCharter Library (everyone)</option>}
               {spaces
                 .filter((s) => isAdmin || canModerate(s.id))
