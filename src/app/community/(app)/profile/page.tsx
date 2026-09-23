@@ -14,7 +14,7 @@ import { InstallAppCard } from "@/components/community/InstallApp";
 export default function ProfilePage() {
   const { supabase, userId, email, profile, spaces, memberships, refresh } = useCommunity();
   const [form, setForm] = useState({ display_name: "", headline: "", bio: "", location: "", website: "", phone: "" });
-  const [prefs, setPrefs] = useState({ show_in_directory: true, allow_dms: true, notify_email: true, notify_push: true });
+  const [prefs, setPrefs] = useState({ show_in_directory: true, allow_dms: true, notify_email: true, notify_push: true, journal_reminders: true });
   const [avatar, setAvatar] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -31,7 +31,13 @@ export default function ProfilePage() {
       location: profile.location ?? "",
       website: profile.website ?? "",
     }));
-    setPrefs({ show_in_directory: profile.show_in_directory, allow_dms: profile.allow_dms, notify_email: profile.notify_email, notify_push: profile.notify_push });
+    setPrefs({
+      show_in_directory: profile.show_in_directory,
+      allow_dms: profile.allow_dms,
+      notify_email: profile.notify_email,
+      notify_push: profile.notify_push,
+      journal_reminders: profile.journal_reminders ?? true,
+    });
     setAvatar(profile.avatar_url);
     void supabase
       .from("cm_private_profiles")
@@ -121,6 +127,18 @@ export default function ProfilePage() {
         </div>
       </Card>
 
+      <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+        <div>
+          <h2 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">My Alignment Journal</h2>
+          <p className="text-[13.5px] text-[var(--cm-muted)]">Your private intentions, wins and weekly reflections.</p>
+        </div>
+        <Link href="/community/journal">
+          <Button variant="gold" size="sm">
+            Open my journal
+          </Button>
+        </Link>
+      </Card>
+
       <Appearance />
 
       <Card className="p-5">
@@ -133,6 +151,11 @@ export default function ProfilePage() {
         <h2 className="mb-3 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Notifications</h2>
         <Toggle label="Email me about announcements, replies and messages" checked={prefs.notify_email} onChange={(v) => setPrefs({ ...prefs, notify_email: v })} />
         <Toggle label="Send push notifications to my devices" checked={prefs.notify_push} onChange={(v) => setPrefs({ ...prefs, notify_push: v })} />
+        <Toggle
+          label="Journal reminders — Monday: set an intention · Friday: capture a win"
+          checked={prefs.journal_reminders}
+          onChange={(v) => setPrefs({ ...prefs, journal_reminders: v })}
+        />
         <div className="mt-3">
           <PushToggle />
         </div>

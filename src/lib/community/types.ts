@@ -60,6 +60,9 @@ export interface Profile {
   notify_push: boolean;
   status: "active" | "suspended";
   onboarded: boolean;
+  journal_reminders?: boolean;
+  journal_share_win?: boolean;
+  journal_share_intention?: boolean;
   created_at: string;
 }
 

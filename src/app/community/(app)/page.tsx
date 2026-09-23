@@ -5,7 +5,7 @@
 // program → what's new, with a small "Explore LifeCharter" row at the end.
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor, Trophy } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { eventWhen, timeAgo } from "@/lib/community/format";
@@ -16,6 +16,8 @@ import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
 import { WelcomeStrip } from "@/components/community/WelcomeStrip";
 import { HomeFeed } from "@/components/community/HomeFeed";
+import { JournalSheet } from "@/components/community/JournalSheet";
+import { weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
 import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
 
@@ -42,6 +44,18 @@ function CommunityHome() {
   const [activity, setActivity] = useState<Post[]>([]);
   const [programLatest, setProgramLatest] = useState<Record<string, Post | null>>({});
   const [cards, setCards] = useState<DiscoverCard[]>([]);
+  const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [sheet, setSheet] = useState<{ kind: JournalKind; entry?: JournalEntry | null } | null>(null);
+  const loadJournal = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase.from("cm_journal_entries").select("*").eq("user_id", userId).eq("week_start", weekStartOf());
+    setJournal((data as JournalEntry[]) ?? []);
+  }, [supabase, userId]);
+  useEffect(() => {
+    void loadJournal();
+  }, [loadJournal]);
+  const myIntention = journal.find((e) => e.kind === "intention");
+  const myWins = journal.filter((e) => e.kind === "win");
 
   const channelBy = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels]);
   const spaceBy = useMemo(() => new Map(spaces.map((s) => [s.id, s])), [spaces]);
@@ -140,9 +154,10 @@ function CommunityHome() {
           <MiniCard
             icon={<Target className="h-4 w-4" />}
             label="Your Intention"
-            href={intentionChannel && commons ? `/community/s/${commons.slug}/${intentionChannel.slug}` : "/community"}
-            title={intention ? toPlain(intention.body).split("\n")[0].slice(0, 70) : "What are you aligning with?"}
-            done={!!intention}
+            onClick={() => setSheet({ kind: "intention", entry: myIntention })}
+            title={myIntention?.headline ?? "What are you aligning with?"}
+            detail={myIntention ? "Set ✓ · tap to edit" : "Private unless you share it"}
+            done={!!myIntention}
           />
           <MiniCard
             icon={<CalendarDays className="h-4 w-4" />}
@@ -154,14 +169,27 @@ function CommunityHome() {
           <MiniCard
             icon={<Trophy className="h-4 w-4" />}
             label="Share a Win"
-            href={commonsSpace ? `/community/s/${commonsSpace.slug}/wins` : "/community"}
+            onClick={() => setSheet({ kind: "win" })}
             title="What did you move forward this week?"
+            detail={myWins.length ? `${myWins.length} ${myWins.length === 1 ? "win" : "wins"} this week` : undefined}
           />
         </div>
 
         <WelcomeStrip />
 
         <HomeFeed spaces={[...(commonsSpace ? [commonsSpace] : []), ...myPrograms]} explore={explore} />
+
+        {sheet && (
+          <JournalSheet
+            kind={sheet.kind}
+            entry={sheet.entry}
+            onClose={() => setSheet(null)}
+            onSaved={() => {
+              setSheet(null);
+              void loadJournal();
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -341,6 +369,7 @@ function MiniCard({
   title,
   detail,
   href,
+  onClick,
   featured,
   done,
 }: {
@@ -348,12 +377,23 @@ function MiniCard({
   label: string;
   title: string;
   detail?: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   featured?: boolean;
   done?: boolean;
 }) {
+  const Wrap = ({ children }: { children: React.ReactNode }) =>
+    onClick ? (
+      <button type="button" onClick={onClick} className="group w-[72%] shrink-0 snap-start text-left sm:w-auto">
+        {children}
+      </button>
+    ) : (
+      <Link href={href ?? "/community"} className="group w-[72%] shrink-0 snap-start sm:w-auto">
+        {children}
+      </Link>
+    );
   return (
-    <Link href={href} className="group w-[72%] shrink-0 snap-start sm:w-auto">
+    <Wrap>
       <Card
         className={
           featured
@@ -377,7 +417,7 @@ function MiniCard({
         </p>
         {detail && <p className={featured ? "mt-0.5 text-[12px] text-[#EDE6D6]/75" : "mt-0.5 text-[12px] text-[var(--cm-muted)]"}>{detail}</p>}
       </Card>
-    </Link>
+    </Wrap>
   );
 }
 

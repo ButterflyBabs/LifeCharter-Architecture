@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
@@ -190,6 +190,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       {(() => {
         const items = [
           { href: "/community", icon: Home, label: "Home", active: pathname === "/community" },
+          { href: "/community/journal", icon: NotebookPen, label: "My Journal", active: pathname.startsWith("/community/journal") },
           { href: "/community/messages", icon: MessageCircle, label: "Messages", active: pathname.startsWith("/community/messages"), badge: unreadDms },
           { href: "/community/notifications", icon: Bell, label: "Notifications", active: pathname.startsWith("/community/notifications"), badge: unreadNotifications },
           { href: "/community/events", icon: CalendarDays, label: "Events", active: pathname.startsWith("/community/events") },
