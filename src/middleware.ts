@@ -20,6 +20,7 @@ const PUBLIC_APIS = [
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
   "/api/cron/journal-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/journal-review", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/moderate", // secured by its own CRON_SECRET check, not a session
   "/api/cron/weekly-offer-thread", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
   "/api/auth/forgot", // public — password-reset request; always answers the same way

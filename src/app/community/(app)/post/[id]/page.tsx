@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, CornerDownRight, Trash2 } from "lucide-react";
+import { ArrowLeft, CornerDownRight, Flag, Trash2 } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import type { Comment, Post, Reaction } from "@/lib/community/types";
@@ -11,6 +11,7 @@ import { PostCard, ReactionBar } from "@/components/community/Feed";
 import { Avatar, Button, Card, EmptyState, ErrorNote, PageLoading, RichText } from "@/components/community/ui";
 import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
 import { MentionTextArea, useMentions } from "@/components/community/MentionTextArea";
+import { ReportDialog } from "@/components/community/ReportDialog";
 
 export default function PostPage({ params }: { params: { id: string } }) {
   const { supabase, channels, spaces } = useCommunity();
@@ -140,6 +141,7 @@ function CommentRow({
   const people = useProfiles([comment.author_id]);
   const author = people[comment.author_id];
   const [replying, setReplying] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const canDelete = comment.author_id === userId || canModerate(comment.space_id);
 
   return (
@@ -178,8 +180,14 @@ function CommentRow({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
+          {comment.author_id !== userId && (
+            <button onClick={() => setReporting(true)} aria-label="Report reply" title="Report" className="text-[var(--cm-faint)] hover:text-[var(--cm-ink)]">
+              <Flag className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         {replying && replyBox && <div className="mt-2">{replyBox}</div>}
+        {reporting && <ReportDialog target={{ type: "comment", id: comment.id, userId: comment.author_id, userName: author?.display_name }} onClose={() => setReporting(false)} />}
       </div>
     </div>
   );

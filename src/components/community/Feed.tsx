@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { MessageSquare, MoreHorizontal, Pin, Trash2, Pencil } from "lucide-react";
+import { Flag, MessageSquare, MoreHorizontal, Pin, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
@@ -11,6 +11,7 @@ import { AttachButton, DraftStrip, LinkEmbed, MediaGallery, pasteInto, useMediaD
 import { MentionTextArea, useMentions } from "./MentionTextArea";
 import { decodeMentions, toPlain } from "@/lib/community/mentions";
 import { Avatar, Badge, Button, Card, ErrorNote, RichText, Input, EmptyState, Spinner } from "./ui";
+import { ReportDialog } from "./ReportDialog";
 
 export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
 
@@ -203,6 +204,7 @@ export function PostCard({
   const authors = useProfiles([post.author_id]);
   const author = authors[post.author_id];
   const [menu, setMenu] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [editing, setEditing] = useState(false);
   const editMentions = useMentions(post.body);
   const [draft, setDraft] = useState(() => decodeMentions(post.body).text);
@@ -269,7 +271,7 @@ export function PostCard({
             {post.edited_at && " · edited"}
           </p>
         </div>
-        {(mine || mod) && (
+        {userId && (
           <div className="relative">
             <button onClick={() => setMenu((v) => !v)} aria-label="Post options" className="rounded-lg p-1.5 text-[var(--cm-muted)] hover:bg-black/5">
               <MoreHorizontal className="h-5 w-5" />
@@ -286,13 +288,27 @@ export function PostCard({
                     <Pin className="h-4 w-4" /> {post.pinned ? "Unpin" : "Pin to top"}
                   </button>
                 )}
-                <button onClick={remove} className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50">
-                  <Trash2 className="h-4 w-4" /> Delete
-                </button>
+                {(mine || mod) && (
+                  <button onClick={remove} className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50">
+                    <Trash2 className="h-4 w-4" /> Delete
+                  </button>
+                )}
+                {!mine && (
+                  <button
+                    onClick={() => {
+                      setMenu(false);
+                      setReporting(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[var(--cm-fill)]"
+                  >
+                    <Flag className="h-4 w-4" /> Report
+                  </button>
+                )}
               </div>
             )}
           </div>
         )}
+        {reporting && <ReportDialog target={{ type: "post", id: post.id, userId: post.author_id, userName: author?.display_name }} onClose={() => setReporting(false)} />}
       </header>
 
       <div className="mt-3">

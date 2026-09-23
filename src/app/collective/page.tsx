@@ -176,7 +176,7 @@ const HERO_BG: React.CSSProperties = {
     radial-gradient(900px 700px at 110% 30%, rgba(31,49,91,0.13), transparent 60%), #F8F5F0`,
 };
 
-export default function CollectiveLanding() {
+export default function CollectiveLanding({ searchParams }: { searchParams?: { deleted?: string } }) {
   return (
     <div className="min-h-screen bg-[#F8F5F0] font-ui text-[#1F315B] [font-variant-numeric:lining-nums]">
       <JsonLd />
@@ -203,6 +203,11 @@ export default function CollectiveLanding() {
       </header>
 
       <main>
+        {searchParams?.deleted === "1" && (
+          <p role="status" className="fixed inset-x-0 top-0 z-20 bg-[#1F315B] px-4 py-2.5 text-center text-[13.5px] text-white">
+            Your account has been deleted. Thank you for being part of the Collective.
+          </p>
+        )}
         {/* Hero */}
         <section style={HERO_BG} className="px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-36">
           <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_1fr]">

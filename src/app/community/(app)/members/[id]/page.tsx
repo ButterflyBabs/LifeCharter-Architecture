@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Ban, Globe, MapPin, MessageCircle, ShieldAlert } from "lucide-react";
+import { Ban, Flag, Globe, MapPin, MessageCircle, ShieldAlert } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import { toPlain } from "@/lib/community/mentions";
 import type { Membership, Post, Profile, SpaceRole } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, PageLoading, RichText, PlusMark } from "@/components/community/ui";
+import { ReportDialog } from "@/components/community/ReportDialog";
 
 export default function MemberPage({ params }: { params: { id: string } }) {
   const { supabase, userId, spaces, isAdmin, blockedIds, block, unblock, plusIds } = useCommunity();
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const blocked = blockedIds.has(params.id);
   const router = useRouter();
   const [p, setP] = useState<Profile | null | undefined>(undefined);
@@ -71,6 +73,10 @@ export default function MemberPage({ params }: { params: { id: string } }) {
                     <Ban className="h-4 w-4" /> Block
                   </Button>
                 )}
+                <Button variant="ghost" onClick={() => setReporting(true)} aria-label={`Report ${p.display_name}`}>
+                  <Flag className="h-4 w-4" /> Report
+                </Button>
+                {reporting && <ReportDialog target={{ type: "profile", id: p.user_id, userId: p.user_id, userName: p.display_name }} onClose={() => setReporting(false)} />}
               </span>
             ) : (
               <Link href="/community/profile">

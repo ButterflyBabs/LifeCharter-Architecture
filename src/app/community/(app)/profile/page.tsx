@@ -7,7 +7,7 @@ import { useThemePref, type ThemePref } from "@/lib/community/prefs";
 import { useCommunity } from "@/lib/community/context";
 import { uploadCommunityFile } from "@/lib/community/storage";
 import type { Membership } from "@/lib/community/types";
-import { Avatar, Button, Card, ErrorNote, Heading, Input, Label, TextArea } from "@/components/community/ui";
+import { Avatar, Button, Card, ErrorNote, Heading, Input, Label, Modal, TextArea } from "@/components/community/ui";
 import { PushToggle } from "@/components/community/PushToggle";
 import { InstallAppCard } from "@/components/community/InstallApp";
 
@@ -181,6 +181,8 @@ export default function ProfilePage() {
 
       <InstallAppCard />
 
+      <DeleteAccount />
+
       <p className="text-center text-[12.5px] text-[var(--cm-muted)]">
         <Link href="/legal/community-guidelines" className="underline">
           Community guidelines
@@ -309,5 +311,76 @@ function SpaceNotifyLevels({ memberships, spaces }: { memberships: Membership[];
         })}
       </div>
     </div>
+  );
+}
+
+// Permanently delete my account (App Store Guideline 5.1.1(v)).
+function DeleteAccount() {
+  const { supabase, isPlus } = useCommunity();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [requested, setRequested] = useState(false);
+
+  async function go() {
+    setBusy(true);
+    setError(null);
+    const r = await fetch("/api/community/account/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: typed.trim() }) });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) return setError(j.error ?? "Something went wrong — please try again.");
+    if (j.requested) return setRequested(true);
+    await supabase.auth.signOut().catch(() => undefined);
+    window.location.href = "/collective?deleted=1";
+  }
+
+  return (
+    <Card className="border-red-200 p-5">
+      <p className="font-semibold text-[var(--cm-ink)]">Delete my account</p>
+      <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">Permanently remove your account and everything in it from The LifeCharter Collective.</p>
+      <Button variant="danger" size="sm" className="mt-3" onClick={() => setOpen(true)}>
+        Delete my account
+      </Button>
+      {open && (
+        <Modal open onClose={() => setOpen(false)} title={requested ? "Request received" : "Delete your account?"}>
+          {requested ? (
+            <div className="space-y-3 text-[14.5px] text-[var(--cm-body)]">
+              <p>
+                Your login also includes LifeCharter Command Suite, so the LifeCharter team will complete the deletion for you and confirm by email within 7 days.
+              </p>
+              <div className="flex justify-end">
+                <Button onClick={() => setOpen(false)}>Done</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 text-[14.5px] text-[var(--cm-body)]">
+              <p>This can&rsquo;t be undone. Deleting your account permanently removes:</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                <li>your profile, posts, replies and reactions</li>
+                <li>your messages</li>
+                <li>your Alignment Journal, focus and reviews</li>
+                <li>photos and files you uploaded</li>
+                <li>any other LifeCharter app that uses this login, such as Command Shift Challenge progress</li>
+              </ul>
+              {isPlus && <p className="rounded-xl bg-[var(--cm-gold-soft)] px-3 py-2 text-[13.5px] text-[var(--cm-gold-ink)]">Your Collective Plus subscription will be cancelled right away.</p>}
+              <div>
+                <Label htmlFor="del-confirm">Type DELETE to confirm</Label>
+                <Input id="del-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
+              </div>
+              <ErrorNote>{error}</ErrorNote>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setOpen(false)}>
+                  Keep my account
+                </Button>
+                <Button variant="danger" onClick={go} disabled={busy || typed.trim() !== "DELETE"}>
+                  {busy ? "Deleting…" : "Delete permanently"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </Card>
   );
 }

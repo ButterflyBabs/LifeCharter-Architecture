@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ImagePlus, Send } from "lucide-react";
+import { ArrowLeft, Flag, ImagePlus, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import type { DmMessage } from "@/lib/community/types";
 import { Avatar, EmptyState, PageLoading, RichText } from "@/components/community/ui";
 import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
+import { ReportDialog } from "@/components/community/ReportDialog";
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -25,6 +26,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
   const [messages, setMessages] = useState<DmMessage[] | null>(null);
   const [other, setOther] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [reporting, setReporting] = useState<DmMessage | null>(null);
   // A pre-written note from an "Explore" card (?draft=…): fill the box once,
   // for the member to edit and send themselves — never sent automatically.
   useEffect(() => {
@@ -142,7 +144,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
           return (
             <div key={m.id}>
               {showDay && <p className="my-3 text-center text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--cm-faint)]">{day}</p>}
-              <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
+              <div className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
                     "max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm",
@@ -153,12 +155,25 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
                   {m.body && <RichText text={m.body} className={cn("text-[14.5px]", mine && "text-white")} />}
                   <MediaGallery items={m.attachments} compact />
                 </div>
+                {!mine && (
+                  <button
+                    onClick={() => setReporting(m)}
+                    aria-label="Report message"
+                    title="Report"
+                    className="rounded-full p-1.5 text-[var(--cm-faint)] opacity-60 hover:bg-black/5 hover:text-[var(--cm-ink)] group-hover:opacity-100"
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
         <div ref={bottom} />
       </div>
+      {reporting && (
+        <ReportDialog target={{ type: "message", id: reporting.id, userId: reporting.sender_id, userName: p?.display_name }} onClose={() => setReporting(null)} />
+      )}
 
       {other && blockedIds.has(other) ? (
         <p className="border-t border-[var(--cm-line)] pt-3 text-center text-[13.5px] text-[var(--cm-muted)]">

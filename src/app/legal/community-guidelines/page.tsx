@@ -227,8 +227,18 @@ export default function CommunityGuidelinesPage() {
           the Collective. Continuing to use the Collective means you accept the updated guidelines.
         </p>
         <p className={P}>
-          If something doesn&rsquo;t feel right, send a direct message to a LifeCharter admin. We read every report, and we
-          handle every one with care.
+          If something doesn&rsquo;t feel right, tap <strong>Report</strong> on the post, reply, message or profile (or send a
+          direct message to a LifeCharter admin). We read every report and act within 24 hours; the person reported is never
+          told who reported them. You can also <strong>Block</strong> anyone from their profile so you no longer see each
+          other&rsquo;s posts or messages.
+        </p>
+        <p className={P}>
+          To keep the Collective safe, new posts and replies are checked by an automated filter. Anything it flags is reviewed by
+          a person, and clearly harmful content is hidden until it is. Private messages are not scanned. Content that breaks
+          these guidelines is removed, and members who post it may be paused or removed from the Collective.
+        </p>
+        <p className={P}>
+          You can permanently delete your account at any time from <strong>Me → Delete my account</strong>.
         </p>
 
         <p className="mt-12 border-t border-[#E9E2D3] pt-6 font-editorial text-[18px] italic text-[#A8873F]">

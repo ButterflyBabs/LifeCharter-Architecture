@@ -6,12 +6,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCommunity } from "@/lib/community/context";
+import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import { SECTION_LABELS, type Channel, type DiscoverCard, type Profile, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
 
-type Tab = "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
+type Tab = "reports" | "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
 
 function newCode() {
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -27,6 +27,11 @@ function slugify(s: string) {
 export default function AdminPage() {
   const { isAdmin, loading } = useCommunity();
   const [tab, setTab] = useState<Tab>("invites");
+  // Report notifications link to ?tab=reports.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "reports" || t === "requests" || t === "members") setTab(t);
+  }, []);
   if (loading) return <PageLoading />;
   if (!isAdmin) return <EmptyState icon="🔒" title="Admins only" />;
 
@@ -36,6 +41,7 @@ export default function AdminPage() {
       <div className="mb-5 flex flex-wrap gap-1.5">
         {(
           [
+            ["reports", "Reports"],
             ["invites", "Invite links"],
             ["requests", "Invitation requests"],
             ["welcome", "Welcome message"],
@@ -56,6 +62,7 @@ export default function AdminPage() {
           </button>
         ))}
       </div>
+      {tab === "reports" && <Reports />}
       {tab === "invites" && <Invites />}
       {tab === "requests" && <InviteRequests />}
       {tab === "welcome" && <WelcomeMessage />}
@@ -716,6 +723,138 @@ function InviteRequests() {
             </div>
           ))}
         </Card>
+      )}
+    </div>
+  );
+}
+
+interface ReportRow {
+  id: string;
+  reporter_id: string | null;
+  target_type: "post" | "comment" | "message" | "profile";
+  target_id: string;
+  target_user_id: string;
+  reason: string;
+  details: string | null;
+  snapshot: string | null;
+  status: "open" | "removed" | "dismissed" | "restored";
+  auto_hidden: boolean;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+// Safety queue: member reports + the automatic filter. Aim to act within 24 hours.
+function Reports() {
+  const { supabase } = useCommunity();
+  const [rows, setRows] = useState<ReportRow[] | null>(null);
+  const [view, setView] = useState<"open" | "closed">("open");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    const { data } = await supabase.from("cm_reports").select("*").order("created_at", { ascending: false }).limit(500);
+    setRows((data as ReportRow[]) ?? []);
+  }, [supabase]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  const people = useProfiles((rows ?? []).flatMap((r) => [r.reporter_id, r.target_user_id]));
+
+  async function act(r: ReportRow, action: "remove" | "dismiss" | "pause" | "restore") {
+    if (action === "pause" && !confirm("Pause this member's access to the Collective?")) return;
+    setBusy(r.id);
+    setError(null);
+    const { error } = await supabase.rpc("cm_admin_resolve_report", { p_report: r.id, p_action: action });
+    if (error) setError(error.message);
+    await load();
+    setBusy(null);
+  }
+
+  if (rows === null) return <PageLoading />;
+  const open = rows.filter((r) => r.status === "open");
+  const list = view === "open" ? open : rows.filter((r) => r.status !== "open");
+  const link = (r: ReportRow) =>
+    r.target_type === "post" ? `/community/post/${r.target_id}` : r.target_type === "profile" ? `/community/members/${r.target_id}` : null;
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[14px] text-[var(--cm-muted-2)]">
+          {open.length} open · reports and the automatic filter. Aim to act within 24 hours.
+        </p>
+        <div className="flex gap-1.5">
+          {(["open", "closed"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn("rounded-full px-3 py-1 text-[13px] font-semibold", view === v ? "bg-[var(--cm-navy)] text-white" : "bg-[var(--cm-fill)] text-[var(--cm-ink)]")}
+            >
+              {v === "open" ? "Open" : "Resolved"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <ErrorNote>{error}</ErrorNote>
+      {list.length === 0 ? (
+        <EmptyState icon="🛡️" title={view === "open" ? "Nothing to review" : "No resolved reports yet"} />
+      ) : (
+        <div className="space-y-3">
+          {list.map((r) => {
+            const who = people[r.target_user_id]?.display_name ?? "A member";
+            const by = r.reporter_id ? people[r.reporter_id]?.display_name ?? "A member" : "Automatic filter";
+            const href = link(r);
+            return (
+              <Card key={r.id} className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-[var(--cm-ink)]">
+                      {r.reason} <span className="font-normal text-[var(--cm-muted-2)]">· {r.target_type} by {who}</span>
+                    </p>
+                    <p className="text-[12.5px] text-[var(--cm-muted)]">
+                      Reported by {by} · {timeAgo(r.created_at)}
+                      {r.auto_hidden && " · hidden automatically until reviewed"}
+                    </p>
+                  </div>
+                  {r.status !== "open" && <Badge tone={r.status === "removed" ? "gray" : "green"}>{r.status}</Badge>}
+                </div>
+                {r.snapshot && <p className="mt-2 whitespace-pre-line rounded-xl bg-[var(--cm-fill)] px-3 py-2 text-[14px] text-[var(--cm-body)]">{r.snapshot}</p>}
+                {r.details && <p className="mt-2 text-[13.5px] text-[var(--cm-muted-2)]">&ldquo;{r.details}&rdquo;</p>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {href && (
+                    <Link href={href} className="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-[var(--cm-link)] hover:underline">
+                      View
+                    </Link>
+                  )}
+                  {r.status === "open" && (
+                    <>
+                      {r.target_type !== "profile" &&
+                        (r.auto_hidden ? (
+                          <Button size="sm" variant="ghost" disabled={busy === r.id} onClick={() => act(r, "restore")}>
+                            Restore — it&rsquo;s fine
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => act(r, "remove")}>
+                            Remove {r.target_type === "comment" ? "reply" : r.target_type}
+                          </Button>
+                        ))}
+                      {r.auto_hidden && (
+                        <Button size="sm" variant="danger" disabled={busy === r.id} onClick={() => act(r, "remove")}>
+                          Keep it removed
+                        </Button>
+                      )}
+                      <Button size="sm" variant="ghost" disabled={busy === r.id} onClick={() => act(r, "pause")}>
+                        Pause {who}
+                      </Button>
+                      {!r.auto_hidden && (
+                        <Button size="sm" variant="ghost" disabled={busy === r.id} onClick={() => act(r, "dismiss")}>
+                          Dismiss
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </div>
   );
