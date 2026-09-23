@@ -8,7 +8,8 @@ import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import type { Comment, Post, Reaction } from "@/lib/community/types";
 import { PostCard, ReactionBar } from "@/components/community/Feed";
-import { Avatar, Button, Card, EmptyState, PageLoading, RichText, TextArea } from "@/components/community/ui";
+import { Avatar, Button, Card, EmptyState, ErrorNote, PageLoading, RichText, TextArea } from "@/components/community/ui";
+import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
 
 export default function PostPage({ params }: { params: { id: string } }) {
   const { supabase, channels, spaces } = useCommunity();
@@ -153,7 +154,8 @@ function CommentRow({
             </Link>{" "}
             <span className="text-[12px] text-[#8A8FA0]">· {timeAgo(comment.created_at)}</span>
           </p>
-          <RichText text={comment.body} className="text-[14.5px]" />
+          {comment.body && <RichText text={comment.body} className="text-[14.5px]" />}
+          <MediaGallery items={comment.attachments} compact />
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-3 pl-1">
           <ReactionBar target={{ comment_id: comment.id }} reactions={reactions} onChange={onReactions} />
@@ -186,18 +188,28 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
   const { supabase, userId, profile } = useCommunity();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const media = useMediaDraft();
+  const ready = !!text.trim() || media.items.length > 0;
   async function send() {
-    if (!text.trim() || !userId) return;
+    if (!ready || !userId) return;
     setBusy(true);
-    const { data, error } = await supabase
-      .from("cm_comments")
-      .insert({ post_id: postId, parent_id: parentId ?? null, author_id: userId, body: text.trim() })
-      .select("*")
-      .single();
-    setBusy(false);
-    if (!error && data) {
+    setError(null);
+    try {
+      const attachments = await media.upload(userId);
+      const { data, error } = await supabase
+        .from("cm_comments")
+        .insert({ post_id: postId, parent_id: parentId ?? null, author_id: userId, body: text.trim(), attachments })
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
       onPosted(data as Comment);
       setText("");
+      media.clear();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't send your reply.");
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -207,6 +219,7 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
         <TextArea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={pasteInto(media)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send();
           }}
@@ -214,9 +227,12 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
           className="min-h-[64px]"
           rows={2}
         />
-        <div className="flex justify-end">
-          <Button size="sm" variant="gold" disabled={busy || !text.trim()} onClick={send}>
-            {busy ? "Sending…" : "Reply"}
+        <DraftStrip draft={media} size={64} />
+        <ErrorNote>{error}</ErrorNote>
+        <div className="flex items-center justify-between">
+          <AttachButton draft={media} accept="image/*,video/*" />
+          <Button size="sm" variant="gold" disabled={busy || !ready} onClick={send}>
+            {busy ? media.progress ?? "Sending…" : "Reply"}
           </Button>
         </div>
       </div>

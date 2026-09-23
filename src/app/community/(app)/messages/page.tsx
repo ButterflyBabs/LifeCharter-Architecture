@@ -85,7 +85,7 @@ export default function MessagesPage() {
                   </div>
                   <p className={unread ? "truncate text-[14px] font-semibold text-[#1F315B]" : "truncate text-[14px] text-[#6B6F80]"}>
                     {t.last?.sender_id === userId ? "You: " : ""}
-                    {t.last?.body}
+                    {t.last?.body || (t.last?.attachments?.length ? "📷 Photo" : "")}
                   </p>
                 </div>
                 {unread && <span className="h-2.5 w-2.5 rounded-full bg-[#D4AF63]" aria-label="Unread" />}

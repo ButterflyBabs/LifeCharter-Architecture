@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText, ImagePlus, MessageSquare, MoreHorizontal, Paperclip, Pin, Trash2, Pencil, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { MessageSquare, MoreHorizontal, Pin, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity, useProfiles } from "@/lib/community/context";
-import { timeAgo, fileSize } from "@/lib/community/format";
-import { uploadCommunityFile, useFileUrl } from "@/lib/community/storage";
-import type { Attachment, Channel, Post, Reaction } from "@/lib/community/types";
+import { timeAgo } from "@/lib/community/format";
+import type { Channel, Post, Reaction } from "@/lib/community/types";
+import { AttachButton, DraftStrip, LinkEmbed, MediaGallery, pasteInto, useMediaDraft } from "./Media";
 import { Avatar, Badge, Button, Card, ErrorNote, RichText, TextArea, Input, EmptyState, Spinner } from "./ui";
 
 export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
@@ -18,22 +18,21 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
   const { supabase, userId, profile, canModerate } = useCommunity();
   const [body, setBody] = useState("");
   const [title, setTitle] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const media = useMediaDraft();
   const isAnnouncement = channel.kind === "announcements";
 
   if (channel.post_policy === "moderators" && !canModerate(channel.space_id)) return null;
 
+  const hasMedia = media.items.length > 0;
   async function submit() {
-    if (!userId || (!body.trim() && files.length === 0)) return;
+    if (!userId || (!body.trim() && !hasMedia)) return;
     setBusy(true);
     setError(null);
     try {
-      const attachments: Attachment[] = [];
-      for (const f of files) attachments.push(await uploadCommunityFile(f, userId));
+      const attachments = await media.upload(userId);
       const { data, error } = await supabase
         .from("cm_posts")
         .insert({
@@ -50,7 +49,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
       onPosted(data as Post);
       setBody("");
       setTitle("");
-      setFiles([]);
+      media.clear();
       setFocused(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't post. Please try again.");
@@ -59,7 +58,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
     }
   }
 
-  const expanded = focused || body.length > 0 || files.length > 0;
+  const expanded = focused || body.length > 0 || hasMedia;
 
   return (
     <Card className="p-4">
@@ -71,51 +70,26 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onFocus={() => setFocused(true)}
+            onPaste={pasteInto(media)}
             placeholder={channel.prompt || (isAnnouncement ? "Share an update…" : "Share with the Collective…")}
             className={cn("transition-all", expanded ? "min-h-[110px]" : "min-h-[46px]")}
             rows={expanded ? 4 : 1}
           />
-          {files.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {files.map((f, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-[#F3EEE3] px-2.5 py-1 text-[12.5px] text-[#1F315B]">
-                  <Paperclip className="h-3.5 w-3.5" /> {f.name}
-                  <button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
-                    <X className="h-3.5 w-3.5 text-[#8A8FA0]" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+          <DraftStrip draft={media} />
           <ErrorNote>{error}</ErrorNote>
-          {expanded && (
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  multiple
-                  hidden
-                  onChange={(e) => {
-                    const picked = Array.from(e.target.files ?? []).filter((f) => f.size <= 50 * 1024 * 1024);
-                    setFiles([...files, ...picked].slice(0, 6));
-                    e.target.value = "";
-                  }}
-                />
-                <Button variant="ghost" size="sm" type="button" onClick={() => fileRef.current?.click()}>
-                  <ImagePlus className="h-4 w-4" /> Photo / file
-                </Button>
-              </div>
+          <div className="flex items-center justify-between gap-2">
+            <AttachButton draft={media} />
+            {expanded && (
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setBody(""); setTitle(""); setFiles([]); }}>
+                <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setBody(""); setTitle(""); media.clear(); }}>
                   Cancel
                 </Button>
-                <Button variant="gold" size="sm" disabled={busy || (!body.trim() && files.length === 0)} onClick={submit}>
-                  {busy ? "Posting…" : "Post"}
+                <Button variant="gold" size="sm" disabled={busy || (!body.trim() && !hasMedia)} onClick={submit}>
+                  {busy ? media.progress ?? "Posting…" : "Post"}
                 </Button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </Card>
@@ -184,55 +158,6 @@ export function ReactionBar({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Attachments ───────────────────────────────────────────────────────────
-
-function AttachmentImage({ a }: { a: Attachment }) {
-  const url = useFileUrl(a.path || a.url);
-  if (!url) return <div className="aspect-video animate-pulse rounded-xl bg-[#F0EBE0]" />;
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt={a.name} className="max-h-[420px] w-full rounded-xl border border-[#E9E2D3] object-cover" />
-    </a>
-  );
-}
-
-function AttachmentFile({ a }: { a: Attachment }) {
-  const url = useFileUrl(a.path || a.url);
-  return (
-    <a
-      href={url ?? "#"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 rounded-xl border border-[#E9E2D3] bg-[#FBF9F5] px-3 py-2.5 text-[14px] hover:border-[#D4AF63]"
-    >
-      <FileText className="h-5 w-5 shrink-0 text-[#A8873F]" />
-      <span className="min-w-0 flex-1 truncate font-medium text-[#1F315B]">{a.name}</span>
-      <span className="text-[12px] text-[#8A8FA0]">{fileSize(a.size)}</span>
-    </a>
-  );
-}
-
-export function Attachments({ items }: { items: Attachment[] }) {
-  if (!items?.length) return null;
-  const images = items.filter((a) => a.type?.startsWith("image/"));
-  const files = items.filter((a) => !a.type?.startsWith("image/"));
-  return (
-    <div className="mt-3 space-y-2">
-      {images.length > 0 && (
-        <div className={cn("grid gap-2", images.length > 1 && "grid-cols-2")}>
-          {images.map((a, i) => (
-            <AttachmentImage key={i} a={a} />
-          ))}
-        </div>
-      )}
-      {files.map((a, i) => (
-        <AttachmentFile key={i} a={a} />
-      ))}
     </div>
   );
 }
@@ -366,7 +291,8 @@ export function PostCard({
             )}
           </>
         )}
-        <Attachments items={post.attachments} />
+        <MediaGallery items={post.attachments} />
+        {!post.attachments?.some((x) => x.type?.startsWith("video/")) && <LinkEmbed text={post.body} />}
       </div>
 
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#F0EBE0] pt-3">

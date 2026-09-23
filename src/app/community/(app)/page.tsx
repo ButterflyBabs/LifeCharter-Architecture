@@ -292,7 +292,9 @@ function FeedLine({ post, where, space, emoji }: { post: Post; where?: string; s
             {space ? ` · ${space}` : ""} · {timeAgo(post.created_at)}
           </p>
           {post.title && <p className="font-semibold text-[#1F315B]">{post.title}</p>}
-          <p className="line-clamp-2 text-[14.5px] text-[#2A3552]">{post.body}</p>
+          <p className="line-clamp-2 text-[14.5px] text-[#2A3552]">
+            {post.body || (post.attachments?.length ? `📷 Shared ${post.attachments.length === 1 ? "a photo" : `${post.attachments.length} photos`}` : "")}
+          </p>
           {post.comment_count > 0 && <p className="mt-1 text-[12.5px] font-semibold text-[#A8873F]">{post.comment_count} replies</p>}
         </div>
       </Card>

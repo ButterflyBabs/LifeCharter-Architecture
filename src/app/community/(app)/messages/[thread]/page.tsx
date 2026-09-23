@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, ImagePlus, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import type { DmMessage } from "@/lib/community/types";
 import { Avatar, EmptyState, PageLoading, RichText } from "@/components/community/ui";
+import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -24,6 +25,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
   const [other, setOther] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const media = useMediaDraft();
   const bottom = useRef<HTMLDivElement>(null);
   const people = useProfiles([other]);
   const p = other ? people[other] : undefined;
@@ -77,12 +79,21 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
 
   async function send() {
     const body = text.trim();
-    if (!body || !userId) return;
+    if ((!body && !media.items.length) || !userId) return;
     setSending(true);
-    const { data, error } = await supabase.from("cm_dm_messages").insert({ thread_id: params.thread, sender_id: userId, body }).select("*").single();
+    let attachments: Awaited<ReturnType<typeof media.upload>> = [];
+    try {
+      attachments = await media.upload(userId);
+    } catch (e) {
+      media.setError(e instanceof Error ? e.message : "Upload failed.");
+      setSending(false);
+      return;
+    }
+    const { data, error } = await supabase.from("cm_dm_messages").insert({ thread_id: params.thread, sender_id: userId, body, attachments }).select("*").single();
     setSending(false);
     if (!error && data) {
       setText("");
+      media.clear();
       setMessages((prev) => (prev && !prev.some((x) => x.id === (data as DmMessage).id) ? [...prev, data as DmMessage] : prev));
     }
   }
@@ -128,7 +139,8 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
                   )}
                   title={new Date(m.created_at).toLocaleString()}
                 >
-                  <RichText text={m.body} className={cn("text-[14.5px]", mine && "text-white")} />
+                  {m.body && <RichText text={m.body} className={cn("text-[14.5px]", mine && "text-white")} />}
+                  <MediaGallery items={m.attachments} compact />
                 </div>
               </div>
             </div>
@@ -137,8 +149,15 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
         <div ref={bottom} />
       </div>
 
-      <div className="flex items-end gap-2 border-t border-[#E9E2D3] pt-3">
+      <div className="border-t border-[#E9E2D3] pt-3">
+        <DraftStrip draft={media} size={64} />
+      </div>
+      <div className="flex items-end gap-2 pt-2">
+        <AttachButton draft={media} accept="image/*,video/*" className="h-11 w-11 justify-center rounded-full px-0">
+          <ImagePlus className="h-5 w-5 text-[#A8873F]" aria-label="Add photo or video" />
+        </AttachButton>
         <textarea
+          onPaste={pasteInto(media)}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -153,7 +172,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
         />
         <button
           onClick={send}
-          disabled={sending || !text.trim()}
+          disabled={sending || (!text.trim() && !media.items.length)}
           aria-label="Send"
           className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] disabled:opacity-50"
         >

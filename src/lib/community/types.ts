@@ -91,6 +91,7 @@ export interface Comment {
   author_id: string;
   parent_id: string | null;
   body: string;
+  attachments: Attachment[];
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -116,6 +117,7 @@ export interface DmMessage {
   thread_id: string;
   sender_id: string;
   body: string;
+  attachments: Attachment[];
   created_at: string;
   deleted_at: string | null;
 }
