@@ -188,7 +188,7 @@ function SpaceNotifyLevels({ memberships, spaces }: { memberships: Membership[];
   if (!memberships.length) return null;
   return (
     <div className="mt-4 border-t border-[#F0EBE0] pt-3">
-      <p className="mb-2 text-[13px] font-semibold text-[#5B6275]">Per space</p>
+      <p className="mb-2 text-[13px] font-semibold text-[#5B6275]">Per channel</p>
       <div className="space-y-1.5">
         {memberships.map((m) => {
           const s = spaces.find((x) => x.id === m.space_id);

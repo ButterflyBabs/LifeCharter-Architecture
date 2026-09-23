@@ -165,7 +165,7 @@ function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { catego
   async function save() {
     if (!f.title.trim()) return setError("Please add a title.");
     if (f.kind === "file" ? !file : !f.url.trim()) return setError(f.kind === "file" ? "Choose a file to upload." : "Add the link.");
-    if (!f.space_id && !isAdmin) return setError("Choose a space.");
+    if (!f.space_id && !isAdmin) return setError("Choose a channel.");
     setBusy(true);
     setError(null);
     try {

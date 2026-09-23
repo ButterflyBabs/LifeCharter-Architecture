@@ -91,7 +91,7 @@ export default function CommunityGuidelinesPage() {
           alongside people who understand what that takes.
         </p>
         <p className={P}>
-          Every space here has a purpose. Wins go in Wins. Questions go in Ask the Collective. Intentions go in This Week&rsquo;s
+          Every channel and pathway here has a purpose. Wins go in Wins. Questions go in Ask the Collective. Intentions go in This Week&rsquo;s
           Intention. Keeping conversations where they belong is how the Collective stays useful — for you, and for the person who
           joins next month.
         </p>
@@ -149,14 +149,14 @@ export default function CommunityGuidelinesPage() {
             Members may not record, screenshot or transcribe live sessions — including with AI notetakers or meeting bots. Please
             remove any notetaker from your account before you join.
           </Item>
-          <Item>Replays are for members of the space they&rsquo;re posted in. Don&rsquo;t download, share or repost them.</Item>
+          <Item>Replays are for members of the channel they&rsquo;re posted in. Don&rsquo;t download, share or repost them.</Item>
         </List>
 
         <h2 id="content" className={H2}>6. Program content</h2>
         <p className={P}>
           Lessons, replays, worksheets, templates and other materials in the Collective and the LifeCharter Library are for your
           personal use while you&rsquo;re a member. They may not be shared, resold, taught or repackaged as your own. Access to a
-          program&rsquo;s space may end when your program or membership ends; your place in the wider Collective, and Alumni where
+          program&rsquo;s channel may end when your program or membership ends; your place in the wider Collective, and Alumni where
           it applies, continues.
         </p>
 
@@ -187,7 +187,7 @@ export default function CommunityGuidelinesPage() {
           </p>
         </div>
         <p className={P}>
-          LifeCharter makes the final decision on moderation. Paused or removed members may lose access to program spaces and
+          LifeCharter makes the final decision on moderation. Paused or removed members may lose access to program channels and
           content; any refund questions are handled under the terms of the program you purchased.
         </p>
 
@@ -204,7 +204,7 @@ export default function CommunityGuidelinesPage() {
 
         <h2 id="account" className={H2}>9. Your content &amp; your account</h2>
         <List>
-          <Item>You own what you post. By posting, you give LifeCharter permission to display it to the members who can see that space.</Item>
+          <Item>You own what you post. By posting, you give LifeCharter permission to display it to the members who can see that channel.</Item>
           <Item>You can edit or delete your posts and replies at any time.</Item>
           <Item>You must be 18 or older to join, and you may hold only one account.</Item>
           <Item>Keep your password private. You&rsquo;re responsible for activity on your account.</Item>

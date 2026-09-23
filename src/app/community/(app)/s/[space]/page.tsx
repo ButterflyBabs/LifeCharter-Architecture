@@ -38,7 +38,7 @@ export default function SpacePage({ params }: { params: { space: string } }) {
 
   if (!space) {
     return (
-      <EmptyState icon="🧭" title="This space isn't available">
+      <EmptyState icon="🧭" title="This channel isn't available">
         It may be private, or the link may have changed.
       </EmptyState>
     );

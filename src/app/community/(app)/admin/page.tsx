@@ -32,12 +32,12 @@ export default function AdminPage() {
 
   return (
     <div>
-      <Heading sub="Manage the Collective's spaces, invitations and members.">Admin</Heading>
+      <Heading sub="Manage the Collective's channels, invitations and members.">Admin</Heading>
       <div className="mb-5 flex flex-wrap gap-1.5">
         {(
           [
             ["invites", "Invite links"],
-            ["spaces", "Spaces & channels"],
+            ["spaces", "Channels & pathways"],
             ["discover", "Explore cards"],
             ["members", "Members"],
           ] as [Tab, string][]
@@ -104,8 +104,8 @@ function Invites() {
   return (
     <div className="space-y-3">
       <p className="text-[14px] text-[#5B6275]">
-        Share a space&rsquo;s link <em>and</em> its code. New people create their account there; existing members use &ldquo;Already a member&rdquo;.
-        Everyone who joins any space also lands in Start Here and The Commons.
+        Share a channel&rsquo;s link <em>and</em> its code. New people create their account there; existing members use &ldquo;Already a member&rdquo;.
+        Everyone who joins any channel also lands in Start Here and The Commons.
       </p>
       {spaces.map((s) => {
         const link = `${origin}/join/${s.slug === "start-here" ? "collective" : s.slug}`;
@@ -169,7 +169,7 @@ function Spaces() {
     <div className="space-y-5">
       <div className="flex justify-end">
         <Button variant="gold" size="sm" onClick={() => setEditing({ section: "programs", visibility: "private", join_enabled: true })}>
-          <Plus className="h-4 w-4" /> New space
+          <Plus className="h-4 w-4" /> New channel
         </Button>
       </div>
       {sections.map((sec) => (
@@ -185,11 +185,11 @@ function Spaces() {
                     <p className="font-semibold text-[#1F315B]">{s.name}</p>
                     <p className="text-[12.5px] text-[#8A8FA0]">
                       /{s.slug} · {s.visibility}
-                      {s.is_default ? " · auto-joined" : ""}
+                      {s.is_default ? " · everyone joins" : ""}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => setChannelsFor(s)}>
-                    Channels
+                    Pathways
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
                     Edit
@@ -256,7 +256,7 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
   }
 
   return (
-    <Modal open onClose={onClose} title={initial.id ? `Edit ${initial.name}` : "New space"} wide>
+    <Modal open onClose={onClose} title={initial.id ? `Edit ${initial.name}` : "New channel"} wide>
       <div className="grid gap-3 sm:grid-cols-[80px_1fr]">
         <div>
           <Label>Emoji</Label>
@@ -325,7 +325,7 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
               onClose();
             }}
           >
-            Archive space
+            Archive channel
           </Button>
         ) : (
           <span />
@@ -366,7 +366,7 @@ function ChannelsEditor({ space, onClose }: { space: Space; onClose: () => void 
     const n = (rows?.length ?? 0) + 1;
     const { error } = await supabase
       .from("cm_channels")
-      .insert({ space_id: space.id, slug: `channel-${Date.now().toString(36)}`, name: `New channel ${n}`, emoji: "💬", sort_order: (rows?.at(-1)?.sort_order ?? 0) + 10 });
+      .insert({ space_id: space.id, slug: `channel-${Date.now().toString(36)}`, name: `New pathway ${n}`, emoji: "💬", sort_order: (rows?.at(-1)?.sort_order ?? 0) + 10 });
     if (error) setError(error.message);
     void load();
   }
@@ -378,7 +378,7 @@ function ChannelsEditor({ space, onClose }: { space: Space; onClose: () => void 
         void refresh();
         onClose();
       }}
-      title={`${space.emoji} ${space.name} — channels`}
+      title={`${space.emoji} ${space.name} — pathways`}
       wide
     >
       <ErrorNote>{error}</ErrorNote>
@@ -410,7 +410,7 @@ function ChannelsEditor({ space, onClose }: { space: Space; onClose: () => void 
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={add}>
-            <Plus className="h-4 w-4" /> Add channel
+            <Plus className="h-4 w-4" /> Add pathway
           </Button>
         </div>
       )}
@@ -440,14 +440,14 @@ function Discover() {
   return (
     <div className="space-y-3">
       <p className="text-[14px] text-[#5B6275]">
-        These appear under &ldquo;Explore LifeCharter&rdquo; on members&rsquo; home screens. A card tied to a space is hidden from people already in it.
+        These appear under &ldquo;Explore LifeCharter&rdquo; on members&rsquo; home screens. A card tied to a channel is hidden from people already in it.
       </p>
       {rows.map((c) => (
         <Card key={c.id} className={cn("space-y-2 p-4", !c.active && "opacity-60")}>
           <div className="grid gap-2 sm:grid-cols-2">
             <Input value={c.title} onChange={(e) => update(c.id, { title: e.target.value })} aria-label="Title" />
             <select value={c.space_id ?? ""} onChange={(e) => update(c.id, { space_id: e.target.value || null })} className="rounded-xl border border-[#DCD3C1] bg-white px-3 text-[14px]" aria-label="Space">
-              <option value="">Not tied to a space</option>
+              <option value="">Not tied to a channel</option>
               {spaces.map((s) => (
                 <option key={s.id} value={s.id}>
                   Hide from members of {s.name}
@@ -525,7 +525,7 @@ function Members() {
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-[#1F315B]">{p.display_name}</span>
               <span className="block text-[12.5px] text-[#8A8FA0]">
-                Joined {timeAgo(p.created_at)} · {p.spaces} spaces
+                Joined {timeAgo(p.created_at)} · {p.spaces} {p.spaces === 1 ? "channel" : "channels"}
               </span>
             </span>
             {p.status === "suspended" && <Badge tone="gray">Paused</Badge>}

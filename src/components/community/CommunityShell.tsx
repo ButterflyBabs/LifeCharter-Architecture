@@ -282,7 +282,7 @@ function MobileTabBar({ onSpaces }: { onSpaces: () => void }) {
         <Home className="h-5 w-5" /> Home
       </Link>
       <button onClick={onSpaces} className={cn(tab, pathname.startsWith("/community/s/") ? on : off)}>
-        <Menu className="h-5 w-5" /> Spaces
+        <Menu className="h-5 w-5" /> Channels
       </button>
       <Link href="/community/messages" className={cn(tab, "relative", pathname.startsWith("/community/messages") ? on : off)}>
         <MessageCircle className="h-5 w-5" /> Messages

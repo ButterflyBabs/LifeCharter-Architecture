@@ -2,7 +2,7 @@
 
 // The Collective's front door — modelled on a private-group join page:
 // "New here" creates an account with an invite code; "Already a member"
-// signs in and (with the code) adds the space. Also used, without a space,
+// signs in and (with the code) adds the channel. Also used, without one,
 // as the plain sign-in page for returning members.
 import Image from "next/image";
 import Link from "next/link";
@@ -176,7 +176,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
 
       {closed ? (
         <p className="mt-6 rounded-xl bg-[#F5EBD3] px-4 py-3 text-center text-[14px] text-[#7A5E1F]">
-          This space isn&rsquo;t accepting new members right now.
+          This channel isn&rsquo;t accepting new members right now.
         </p>
       ) : signedInAs && !signinOnly ? (
         <form onSubmit={onMember} className="mt-6 space-y-3">
@@ -243,7 +243,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               {!signinOnly && (
                 <input
                   name="code"
-                  placeholder="Invite code (if you're new to this space)"
+                  placeholder="Invite code (if you're new to this channel)"
                   autoComplete="off"
                   className={cn(field, "uppercase tracking-[0.12em] placeholder:normal-case placeholder:tracking-normal")}
                 />

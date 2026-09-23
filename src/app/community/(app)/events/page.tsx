@@ -482,7 +482,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
 
   async function save() {
     if (!f.title.trim() || !f.starts) return setError("Title and start time are required.");
-    if (!f.space_id && !isAdmin) return setError("Choose a space.");
+    if (!f.space_id && !isAdmin) return setError("Choose a channel.");
     setBusy(true);
     const row = {
       title: f.title.trim(),

@@ -43,7 +43,7 @@ export default function MembersPage() {
         <select
           value={spaceFilter}
           onChange={(e) => setSpaceFilter(e.target.value)}
-          aria-label="Filter by space"
+          aria-label="Filter by channel"
           className="rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[14px] text-[#1F315B]"
         >
           <option value="">Everyone</option>

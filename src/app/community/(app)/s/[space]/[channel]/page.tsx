@@ -13,7 +13,7 @@ export default function ChannelPage({ params }: { params: { space: string; chann
 
   if (!space || !channel) {
     return (
-      <EmptyState icon="🧭" title="This space isn't available">
+      <EmptyState icon="🧭" title="This pathway isn't available">
         It may be private, or the link may have changed. <Link href="/community" className="underline">Back to Home</Link>
       </EmptyState>
     );

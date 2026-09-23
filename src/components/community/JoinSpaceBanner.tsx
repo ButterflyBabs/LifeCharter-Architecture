@@ -24,7 +24,7 @@ export function JoinSpaceBanner({ spaceId, name }: { spaceId: string; name: stri
           setBusy(false);
         }}
       >
-        {busy ? "Joining…" : "Join space"}
+        {busy ? "Joining…" : "Join channel"}
       </Button>
     </Card>
   );

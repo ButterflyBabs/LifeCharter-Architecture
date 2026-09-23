@@ -89,7 +89,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
 
       {shared.length > 0 && (
         <div>
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-[#1F315B]">Spaces</h2>
+          <h2 className="mb-2 font-display text-[21px] font-semibold text-[#1F315B]">Channels</h2>
           <div className="flex flex-wrap gap-2">
             {shared.map((s) => (
               <Link key={s.id} href={`/community/s/${s.slug}`} className="rounded-full border border-[#E9E2D3] bg-white px-3 py-1 text-[13.5px] text-[#1F315B] hover:border-[#D4AF63]">
@@ -159,7 +159,7 @@ function AdminMemberTools({ profile, memberships, onChanged }: { profile: Profil
                   >
                     <option value="member">Member</option>
                     <option value="moderator">Moderator</option>
-                    <option value="admin">Space admin</option>
+                    <option value="admin">Channel admin</option>
                   </select>
                   <Button
                     size="sm"
