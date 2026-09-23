@@ -14,6 +14,7 @@ import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
 import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
+import { WelcomeStrip } from "@/components/community/WelcomeStrip";
 import { useViewAs } from "@/lib/community/prefs";
 
 function greeting() {
@@ -118,6 +119,8 @@ function CommunityHome() {
           }}
         />
       )}
+
+      <WelcomeStrip />
 
       {/* What's next */}
       <section className="grid gap-4 md:grid-cols-2">
