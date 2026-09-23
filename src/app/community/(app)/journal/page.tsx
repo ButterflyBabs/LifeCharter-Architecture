@@ -311,7 +311,7 @@ function LookBack({ entryCount }: { entryCount: number }) {
           <Sparkles className="h-4 w-4 text-[var(--cm-gold-text)]" /> {ai.assistantName} can help
         </p>
         <p className="text-[13px] text-[var(--cm-muted-2)]">
-          Open your intention, a win or your reflection above and tap &ldquo;Ask {ai.assistantName}&rdquo; to sharpen it, unpack it or draft it.
+          Open your intention, a win or your reflection above — {ai.assistantName} is right there in the form to sharpen it, unpack it or draft it.
           {ready ? "" : ` After a few entries, ${ai.assistantName} can also look back for patterns.`}
         </p>
         <p className="mt-0.5 text-[12px] text-[var(--cm-muted)]">{error ?? AI_PRIVACY_NOTE}</p>

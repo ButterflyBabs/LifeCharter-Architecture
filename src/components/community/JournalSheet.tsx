@@ -6,12 +6,12 @@
 // Sharing posts the headline (+ an optional note written for the Collective)
 // into the matching Community pathway; the private journal never leaves.
 import { useEffect, useState } from "react";
-import { Lock, Share2 } from "lucide-react";
+import { Lock, Share2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
 import { JOURNAL_PROMPTS, SHARE_PATHWAY, weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
 import { Button, ErrorNote, Input, Label, Modal, TextArea } from "./ui";
-import { AI_PRIVACY_NOTE, AssistButton, Suggestion, askJournalAi, useJournalAi } from "./JournalAssist";
+import { AI_PRIVACY_NOTE, Suggestion, askJournalAi, useJournalAi } from "./JournalAssist";
 
 type AiSuggestion =
   | { kind: "sharpen"; headline: string; first_step: string }
@@ -112,10 +112,10 @@ export function JournalSheet({
 
   const assistLabel = ai
     ? kind === "intention"
-      ? `Ask ${ai.assistantName} to sharpen this`
+      ? "Sharpen my intention"
       : kind === "win"
-        ? `Ask ${ai.assistantName} to help unpack this`
-        : `Ask ${ai.assistantName} to draft my reflection`
+        ? "Help me unpack this"
+        : "Draft my reflection"
     : "";
 
   const commons = spaces.find((s) => s.slug === "commons");
@@ -203,46 +203,8 @@ export function JournalSheet({
         <div>
           <Label htmlFor="j-headline">{kind === "reflection" ? "Your week in a sentence (optional)" : "Headline"}</Label>
           <Input id="j-headline" value={f.headline} onChange={(e) => setF({ ...f, headline: e.target.value })} placeholder={prompt.headline} maxLength={140} autoFocus />
-          {ai && !suggestion && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
-              <AssistButton busy={aiBusy} onClick={assist}>
-                {assistLabel}
-              </AssistButton>
-              <span className="text-[12px] text-[var(--cm-muted)]">{AI_PRIVACY_NOTE}</span>
-            </div>
-          )}
         </div>
 
-        {ai && suggestion && (
-          <Suggestion
-            name={ai.assistantName}
-            onUse={applySuggestion}
-            onDismiss={() => setSuggestion(null)}
-            useLabel={suggestion.kind === "unpack" ? "Add to my journal" : suggestion.kind === "reflect" ? "Use this draft" : "Use this"}
-          >
-            {suggestion.kind === "sharpen" && (
-              <>
-                <p className="font-semibold">{suggestion.headline}</p>
-                {suggestion.first_step && <p className="mt-1 text-[var(--cm-muted-2)]">First step: {suggestion.first_step}</p>}
-              </>
-            )}
-            {suggestion.kind === "unpack" && (
-              <ul className="list-disc space-y-1 pl-5">
-                {suggestion.questions.map((q) => (
-                  <li key={q}>{q}</li>
-                ))}
-              </ul>
-            )}
-            {suggestion.kind === "reflect" && (
-              <>
-                <p className="font-semibold">{suggestion.headline}</p>
-                <p className="mt-1 whitespace-pre-line">{suggestion.note}</p>
-                {suggestion.carry_forward && <p className="mt-1 text-[var(--cm-muted-2)]">Carry forward: {suggestion.carry_forward}</p>}
-                <p className="mt-1.5 text-[12px] text-[var(--cm-muted)]">You still choose your own rating.</p>
-              </>
-            )}
-          </Suggestion>
-        )}
 
         {kind === "reflection" && (
           <div>
@@ -299,6 +261,61 @@ export function JournalSheet({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {ai && (
+          <div className="rounded-2xl border border-[#D4AF63]/40 bg-[var(--cm-gold-soft)] p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-[14.5px] font-semibold text-[var(--cm-ink)]">
+                <Sparkles className="h-4 w-4 text-[var(--cm-gold-text)]" /> {ai.assistantName} can help
+              </span>
+              {!suggestion && (
+                <Button type="button" size="sm" variant="gold" onClick={assist} disabled={aiBusy}>
+                  <Sparkles className="h-4 w-4" /> {aiBusy ? "Thinking…" : assistLabel}
+                </Button>
+              )}
+            </div>
+            <p className="mt-1 text-[12.5px] text-[var(--cm-muted)]">
+              {kind === "intention"
+                ? "Write a rough intention, then ask for a clearer headline and a first step."
+                : kind === "win"
+                  ? "Write the win, then get three questions to help you see what made it happen."
+                  : "Get a first draft of your reflection from this week's intention and wins."}{" "}
+              {AI_PRIVACY_NOTE}
+            </p>
+            {suggestion && (
+              <div className="mt-3">
+              <Suggestion
+                name={ai.assistantName}
+                onUse={applySuggestion}
+                onDismiss={() => setSuggestion(null)}
+                useLabel={suggestion.kind === "unpack" ? "Add to my journal" : suggestion.kind === "reflect" ? "Use this draft" : "Use this"}
+              >
+                {suggestion.kind === "sharpen" && (
+                  <>
+                    <p className="font-semibold">{suggestion.headline}</p>
+                    {suggestion.first_step && <p className="mt-1 text-[var(--cm-muted-2)]">First step: {suggestion.first_step}</p>}
+                  </>
+                )}
+                {suggestion.kind === "unpack" && (
+                  <ul className="list-disc space-y-1 pl-5">
+                    {suggestion.questions.map((q) => (
+                      <li key={q}>{q}</li>
+                    ))}
+                  </ul>
+                )}
+                {suggestion.kind === "reflect" && (
+                  <>
+                    <p className="font-semibold">{suggestion.headline}</p>
+                    <p className="mt-1 whitespace-pre-line">{suggestion.note}</p>
+                    {suggestion.carry_forward && <p className="mt-1 text-[var(--cm-muted-2)]">Carry forward: {suggestion.carry_forward}</p>}
+                    <p className="mt-1.5 text-[12px] text-[var(--cm-muted)]">You still choose your own rating.</p>
+                  </>
+                )}
+              </Suggestion>
+              </div>
+            )}
           </div>
         )}
 
