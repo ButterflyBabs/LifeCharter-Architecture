@@ -188,6 +188,7 @@ export function PostCard({
   onDeleted,
   channelLabel,
   full,
+  tint,
 }: {
   post: Post;
   reactions: Reaction[];
@@ -196,6 +197,7 @@ export function PostCard({
   onDeleted: (id: string) => void;
   channelLabel?: { name: string; emoji: string | null; href: string };
   full?: boolean;
+  tint?: string; // "r, g, b" — program posts get a soft wash in the Home feed
 }) {
   const { supabase, userId, canModerate } = useCommunity();
   const authors = useProfiles([post.author_id]);
@@ -227,7 +229,15 @@ export function PostCard({
   }
 
   return (
-    <Card as="article" className="p-4 sm:p-5">
+    <Card
+      as="article"
+      className="p-4 sm:p-5"
+      style={
+        tint
+          ? { backgroundImage: `linear-gradient(rgba(${tint}, 0.08), rgba(${tint}, 0.08))`, borderColor: `rgba(${tint}, 0.35)` }
+          : undefined
+      }
+    >
       <header className="flex items-start gap-3">
         <Link href={`/community/members/${post.author_id}`}>
           <Avatar name={author?.display_name} url={author?.avatar_url} size={42} />
@@ -246,7 +256,8 @@ export function PostCard({
           <p className="text-[12.5px] text-[var(--cm-muted)]">
             {channelLabel && (
               <>
-                <Link href={channelLabel.href} className="hover:text-[var(--cm-ink)]">
+                <Link href={channelLabel.href} className="inline-flex items-center gap-1 hover:text-[var(--cm-ink)]">
+                  {tint && <span className="inline-block h-2 w-2 rounded-full" style={{ background: `rgb(${tint})` }} aria-hidden />}
                   {channelLabel.emoji} {channelLabel.name}
                 </Link>{" "}
                 ·{" "}

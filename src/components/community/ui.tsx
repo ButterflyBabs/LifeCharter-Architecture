@@ -12,9 +12,20 @@ import Link from "next/link";
 
 export const INK = "#1F315B";
 
-export function Card({ className, children, as: Tag = "div" }: { className?: string; children: ReactNode; as?: "div" | "section" | "article" }) {
+export function Card({
+  className,
+  children,
+  as: Tag = "div",
+  style,
+}: {
+  className?: string;
+  children: ReactNode;
+  as?: "div" | "section" | "article";
+  style?: React.CSSProperties;
+}) {
   return (
     <Tag
+      style={style}
       className={cn(
         "rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] shadow-[0_1px_2px_rgba(31,49,91,0.06),0_12px_28px_-16px_rgba(31,49,91,0.28)]",
         className

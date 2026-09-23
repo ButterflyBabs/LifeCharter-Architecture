@@ -15,6 +15,7 @@ import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
 import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
 import { WelcomeStrip } from "@/components/community/WelcomeStrip";
+import { HomeFeed } from "@/components/community/HomeFeed";
 import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
 
@@ -98,11 +99,79 @@ function CommunityHome() {
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "friend";
   const showWelcome = params.get("welcome") === "1" || (profile && !profile.onboarded);
+  const commonsSpace = spaces.find((s) => s.slug === "commons");
+
+  const explore =
+    cards.length > 0 ? (
+      <section>
+        <SectionTitle>Explore LifeCharter</SectionTitle>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {cards.map((c) => (
+            <DiscoverTile key={c.id} card={c} />
+          ))}
+        </div>
+      </section>
+    ) : null;
+
+  // Settled members: four compact "what's next" cards, then the feed.
+  if (!showWelcome) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Eyebrow>
+            <LiveDate />
+          </Eyebrow>
+          <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[36px]">
+            {greeting()}, {firstName}
+          </h1>
+          <p className="font-editorial text-[17px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
+        </div>
+
+        <InstallBanner />
+
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-4">
+          <MiniCard
+            featured
+            icon={<Anchor className="h-4 w-4" />}
+            label="Alignment Anchor"
+            href={anchor ? `/community/post/${anchor.id}` : anchorChannel && commons ? `/community/s/${commons.slug}/${anchorChannel.slug}` : "/community"}
+            title={anchor?.title || (anchor ? toPlain(anchor.body).split("\n")[0].slice(0, 70) : "This week's Anchor is on its way")}
+          />
+          <MiniCard
+            icon={<Target className="h-4 w-4" />}
+            label="Your Intention"
+            href={intentionChannel && commons ? `/community/s/${commons.slug}/${intentionChannel.slug}` : "/community"}
+            title={intention ? toPlain(intention.body).split("\n")[0].slice(0, 70) : "What are you aligning with?"}
+            done={!!intention}
+          />
+          <MiniCard
+            icon={<CalendarDays className="h-4 w-4" />}
+            label="Your Next Session"
+            href={nextSession ? `/community/events#${nextSession.event.id}` : "/community/events"}
+            title={nextSession?.event.title ?? "Nothing scheduled yet"}
+            detail={nextSession ? nextSession.start.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : undefined}
+          />
+          <MiniCard
+            icon={<Trophy className="h-4 w-4" />}
+            label="Share a Win"
+            href={commonsSpace ? `/community/s/${commonsSpace.slug}/wins` : "/community"}
+            title="What did you move forward this week?"
+          />
+        </div>
+
+        <WelcomeStrip />
+
+        <HomeFeed spaces={[...(commonsSpace ? [commonsSpace] : []), ...myPrograms]} explore={explore} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-7">
       <div>
-        <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</Eyebrow>
+        <Eyebrow>
+          <LiveDate />
+        </Eyebrow>
         <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[40px]">
           {greeting()}, {firstName}
         </h1>
@@ -232,16 +301,7 @@ function CommunityHome() {
         )}
       </section>
 
-      {cards.length > 0 && (
-        <section>
-          <SectionTitle>Explore LifeCharter</SectionTitle>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {cards.map((c) => (
-              <DiscoverTile key={c.id} card={c} />
-            ))}
-          </div>
-        </section>
-      )}
+      {explore}
 
       {isAdmin && (
         <p className="text-center text-[12.5px] text-[var(--cm-muted)]">
@@ -253,6 +313,71 @@ function CommunityHome() {
         </p>
       )}
     </div>
+  );
+}
+
+// Today's date and the time where the member is, e.g.
+// "THURSDAY, SEPTEMBER 24 · 9:41 AM MDT" — ticks over each minute.
+function LiveDate() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  if (!now) return <>&nbsp;</>;
+  const date = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const time = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  return (
+    <>
+      {date} <span aria-hidden>·</span> <time dateTime={now.toISOString()}>{time}</time>
+    </>
+  );
+}
+
+function MiniCard({
+  icon,
+  label,
+  title,
+  detail,
+  href,
+  featured,
+  done,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  detail?: string;
+  href: string;
+  featured?: boolean;
+  done?: boolean;
+}) {
+  return (
+    <Link href={href} className="group w-[72%] shrink-0 snap-start sm:w-auto">
+      <Card
+        className={
+          featured
+            ? "h-full border-transparent bg-gradient-to-br from-[#1F315B] to-[#0F1A38] p-3.5 transition group-hover:-translate-y-0.5"
+            : "h-full p-3.5 transition group-hover:-translate-y-0.5 group-hover:border-[#D4AF63]"
+        }
+      >
+        <div className={featured ? "flex items-center gap-1.5 text-[#E6C988]" : "flex items-center gap-1.5 text-[var(--cm-gold-text)]"}>
+          {icon}
+          <span className="truncate text-[10px] font-semibold uppercase tracking-[0.16em]">{label}</span>
+          {done && <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-600" aria-label="Done" />}
+        </div>
+        <p
+          className={
+            featured
+              ? "mt-2 line-clamp-2 font-display text-[17px] font-semibold leading-snug text-white"
+              : "mt-2 line-clamp-2 font-display text-[17px] font-semibold leading-snug text-[var(--cm-ink)]"
+          }
+        >
+          {title}
+        </p>
+        {detail && <p className={featured ? "mt-0.5 text-[12px] text-[#EDE6D6]/75" : "mt-0.5 text-[12px] text-[var(--cm-muted)]"}>{detail}</p>}
+      </Card>
+    </Link>
   );
 }
 

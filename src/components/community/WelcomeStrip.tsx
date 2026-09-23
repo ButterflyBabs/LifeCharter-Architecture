@@ -97,10 +97,10 @@ export function WelcomeStrip() {
   return (
     <section aria-labelledby="welcome-strip">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 id="welcome-strip" className="flex items-center gap-2 font-display text-[24px] font-semibold text-[var(--cm-ink)]">
+        <h2 id="welcome-strip" className="flex items-center gap-2 font-display text-[22px] font-semibold sm:text-[24px] text-[var(--cm-ink)]">
           <Sparkles className="h-5 w-5 text-[var(--cm-gold-text)]" /> Welcome our newest members
         </h2>
-        <span className="text-[12.5px] text-[var(--cm-muted)]">Joined in the last {WINDOW_DAYS} days</span>
+        <span className="hidden text-[12.5px] text-[var(--cm-muted)] sm:inline">Joined in the last {WINDOW_DAYS} days</span>
       </div>
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
         {people.map(({ profile: p, introId, introLine, welcomed }) => (
