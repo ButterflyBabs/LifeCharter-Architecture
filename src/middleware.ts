@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
+const PUBLIC_PAGES = ["/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",
@@ -18,6 +18,8 @@ const PUBLIC_APIS = [
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
+  "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
+  "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code
   "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
@@ -27,6 +29,28 @@ const PUBLIC_APIS = [
 const SALES_ROLE = "sales";
 const SALES_ONLY_PAGES = ["/sales-reference"];
 const SALES_ONLY_APIS = ["/api/sales/onboard-client", "/api/sales/lookup-contact", "/api/sales/search-contacts", "/api/sales/checkout-session"];
+
+// A LifeCharter Collective member (community-only login) may reach the
+// community and nothing else in the app.
+const COMMUNITY_PAGES = ["/community", "/join", "/logout", "/reset-password", "/legal"];
+const COMMUNITY_APIS = ["/api/community"];
+
+async function isCommunityMember(userId: string): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !svc) return false;
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/cm_profiles?select=user_id&status=eq.active&user_id=eq.${encodeURIComponent(userId)}`,
+      { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
+    );
+    if (!res.ok) return false;
+    const rows = (await res.json()) as unknown[];
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 // Is this signed-in email an invited team member, and if so what role are
 // they? Checked via the Supabase REST endpoint with the service key so the
@@ -103,6 +127,11 @@ export async function middleware(request: NextRequest) {
     memberRole = info.role;
   }
   const isSalesOnly = authed && !isOwner && memberRole === SALES_ROLE;
+  let isCommunityOnly = false;
+  if (user && !authed && (await isCommunityMember(user.id))) {
+    authed = true;
+    isCommunityOnly = true;
+  }
 
   // 2FA enforcement: a user who has 2FA enrolled but has only completed the
   // password step is at assurance level aal1 with a pending aal2 — they must
@@ -136,20 +165,30 @@ export async function middleware(request: NextRequest) {
     if (isSalesOnly && !SALES_ONLY_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
+    if (isCommunityOnly && !COMMUNITY_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     return response;
   }
 
   if (isPublicPage) {
     // Don't bounce a signed-in user off /login while their 2FA is still pending —
     // that's where they enter the code.
-    if (authed && !needsMfa && path === "/login") {
-      return NextResponse.redirect(new URL(isSalesOnly ? "/sales-reference" : "/", request.url));
+    if (authed && !needsMfa && (path === "/login" || path === "/community/sign-in")) {
+      const home = isSalesOnly ? "/sales-reference" : isCommunityOnly || path === "/community/sign-in" ? "/community" : "/";
+      return NextResponse.redirect(new URL(home, request.url));
     }
     return response;
   }
 
   if ((!authed && !isDemo) || needsMfa) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Community visitors get the Collective's own sign-in, not the Command Suite login.
+    const isCommunityPath = path === "/community" || path.startsWith("/community/");
+    return NextResponse.redirect(new URL(isCommunityPath && !needsMfa ? "/community/sign-in" : "/login", request.url));
+  }
+
+  if (isCommunityOnly && !COMMUNITY_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
+    return NextResponse.redirect(new URL("/community", request.url));
   }
 
   // A sales-only member is confined to their own pages — anything else
@@ -164,5 +203,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Run on everything except Next internals and static image assets.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|community-sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)"],
 };

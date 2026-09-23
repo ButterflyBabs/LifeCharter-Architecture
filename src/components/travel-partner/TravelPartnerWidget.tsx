@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Card, CardContent, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -203,6 +204,7 @@ const journeyStages: JourneyStage[] = [
 ];
 
 export default function TravelPartnerWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStage, setCurrentStage] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
@@ -380,6 +382,9 @@ export default function TravelPartnerWidget() {
 
   const currentStep = getCurrentStep();
   const progress = getProgress();
+
+  // The LifeCharter Collective has its own experience — no Command Suite guide there.
+  if (pathname?.startsWith("/community") || pathname?.startsWith("/join")) return null;
 
   const getStyle = (): React.CSSProperties => {
     if (!pos) return { position: "fixed", bottom: 16, right: 16, zIndex: 9999 };

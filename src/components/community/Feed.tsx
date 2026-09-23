@@ -1,0 +1,479 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FileText, ImagePlus, MessageSquare, MoreHorizontal, Paperclip, Pin, Trash2, Pencil, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useCommunity, useProfiles } from "@/lib/community/context";
+import { timeAgo, fileSize } from "@/lib/community/format";
+import { uploadCommunityFile, useFileUrl } from "@/lib/community/storage";
+import type { Attachment, Channel, Post, Reaction } from "@/lib/community/types";
+import { Avatar, Badge, Button, Card, ErrorNote, RichText, TextArea, Input, EmptyState, Spinner } from "./ui";
+
+export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
+
+// ─── Composer ──────────────────────────────────────────────────────────────
+
+export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p: Post) => void }) {
+  const { supabase, userId, profile, canModerate } = useCommunity();
+  const [body, setBody] = useState("");
+  const [title, setTitle] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const isAnnouncement = channel.kind === "announcements";
+
+  if (channel.post_policy === "moderators" && !canModerate(channel.space_id)) return null;
+
+  async function submit() {
+    if (!userId || (!body.trim() && files.length === 0)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const attachments: Attachment[] = [];
+      for (const f of files) attachments.push(await uploadCommunityFile(f, userId));
+      const { data, error } = await supabase
+        .from("cm_posts")
+        .insert({
+          channel_id: channel.id,
+          space_id: channel.space_id,
+          author_id: userId,
+          title: title.trim() || null,
+          body: body.trim(),
+          attachments,
+        })
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
+      onPosted(data as Post);
+      setBody("");
+      setTitle("");
+      setFiles([]);
+      setFocused(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't post. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const expanded = focused || body.length > 0 || files.length > 0;
+
+  return (
+    <Card className="p-4">
+      <div className="flex gap-3">
+        <Avatar name={profile?.display_name} url={profile?.avatar_url} size={40} />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          {expanded && isAnnouncement && <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)" />}
+          <TextArea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onFocus={() => setFocused(true)}
+            placeholder={channel.prompt || (isAnnouncement ? "Share an update…" : "Share with the Collective…")}
+            className={cn("transition-all", expanded ? "min-h-[110px]" : "min-h-[46px]")}
+            rows={expanded ? 4 : 1}
+          />
+          {files.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {files.map((f, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-[#F3EEE3] px-2.5 py-1 text-[12.5px] text-[#1F315B]">
+                  <Paperclip className="h-3.5 w-3.5" /> {f.name}
+                  <button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
+                    <X className="h-3.5 w-3.5 text-[#8A8FA0]" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <ErrorNote>{error}</ErrorNote>
+          {expanded && (
+            <div className="flex items-center justify-between">
+              <div className="flex gap-1">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []).filter((f) => f.size <= 50 * 1024 * 1024);
+                    setFiles([...files, ...picked].slice(0, 6));
+                    e.target.value = "";
+                  }}
+                />
+                <Button variant="ghost" size="sm" type="button" onClick={() => fileRef.current?.click()}>
+                  <ImagePlus className="h-4 w-4" /> Photo / file
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setBody(""); setTitle(""); setFiles([]); }}>
+                  Cancel
+                </Button>
+                <Button variant="gold" size="sm" disabled={busy || (!body.trim() && files.length === 0)} onClick={submit}>
+                  {busy ? "Posting…" : "Post"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Reactions ─────────────────────────────────────────────────────────────
+
+export function ReactionBar({
+  target,
+  reactions,
+  onChange,
+}: {
+  target: { post_id?: string; comment_id?: string };
+  reactions: Reaction[];
+  onChange: (next: Reaction[]) => void;
+}) {
+  const { supabase, userId } = useCommunity();
+  const [picker, setPicker] = useState(false);
+  const counts = REACTIONS.map((e) => ({ emoji: e, n: reactions.filter((r) => r.emoji === e).length, mine: reactions.find((r) => r.emoji === e && r.user_id === userId) }))
+    .filter((x) => x.n > 0);
+
+  async function toggle(emoji: string) {
+    setPicker(false);
+    if (!userId) return;
+    const mine = reactions.find((r) => r.emoji === emoji && r.user_id === userId);
+    if (mine) {
+      onChange(reactions.filter((r) => r.id !== mine.id));
+      await supabase.from("cm_reactions").delete().eq("id", mine.id);
+    } else {
+      const temp: Reaction = { id: `tmp-${Math.random()}`, post_id: target.post_id ?? null, comment_id: target.comment_id ?? null, user_id: userId, emoji };
+      onChange([...reactions, temp]);
+      const { data } = await supabase.from("cm_reactions").insert({ ...target, user_id: userId, emoji }).select("*").single();
+      if (data) onChange([...reactions.filter((r) => r.id !== temp.id), data as Reaction]);
+    }
+  }
+
+  return (
+    <div className="relative flex flex-wrap items-center gap-1.5">
+      {counts.map((c) => (
+        <button
+          key={c.emoji}
+          onClick={() => toggle(c.emoji)}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] transition",
+            c.mine ? "border-[#D4AF63] bg-[#FBF3DF] text-[#1F315B]" : "border-[#E9E2D3] bg-white text-[#5B6275] hover:border-[#D4AF63]"
+          )}
+        >
+          <span>{c.emoji}</span>
+          <span className="font-semibold">{c.n}</span>
+        </button>
+      ))}
+      <button
+        onClick={() => setPicker((v) => !v)}
+        aria-label="Add reaction"
+        className="inline-flex h-7 items-center rounded-full border border-dashed border-[#DCD3C1] px-2 text-[13px] text-[#8A8FA0] hover:border-[#D4AF63] hover:text-[#1F315B]"
+      >
+        ＋☺
+      </button>
+      {picker && (
+        <div className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border border-[#E9E2D3] bg-white px-2 py-1 shadow-lg">
+          {REACTIONS.map((e) => (
+            <button key={e} onClick={() => toggle(e)} className="rounded-full p-1 text-[18px] transition hover:scale-125">
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Attachments ───────────────────────────────────────────────────────────
+
+function AttachmentImage({ a }: { a: Attachment }) {
+  const url = useFileUrl(a.path || a.url);
+  if (!url) return <div className="aspect-video animate-pulse rounded-xl bg-[#F0EBE0]" />;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={a.name} className="max-h-[420px] w-full rounded-xl border border-[#E9E2D3] object-cover" />
+    </a>
+  );
+}
+
+function AttachmentFile({ a }: { a: Attachment }) {
+  const url = useFileUrl(a.path || a.url);
+  return (
+    <a
+      href={url ?? "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 rounded-xl border border-[#E9E2D3] bg-[#FBF9F5] px-3 py-2.5 text-[14px] hover:border-[#D4AF63]"
+    >
+      <FileText className="h-5 w-5 shrink-0 text-[#A8873F]" />
+      <span className="min-w-0 flex-1 truncate font-medium text-[#1F315B]">{a.name}</span>
+      <span className="text-[12px] text-[#8A8FA0]">{fileSize(a.size)}</span>
+    </a>
+  );
+}
+
+export function Attachments({ items }: { items: Attachment[] }) {
+  if (!items?.length) return null;
+  const images = items.filter((a) => a.type?.startsWith("image/"));
+  const files = items.filter((a) => !a.type?.startsWith("image/"));
+  return (
+    <div className="mt-3 space-y-2">
+      {images.length > 0 && (
+        <div className={cn("grid gap-2", images.length > 1 && "grid-cols-2")}>
+          {images.map((a, i) => (
+            <AttachmentImage key={i} a={a} />
+          ))}
+        </div>
+      )}
+      {files.map((a, i) => (
+        <AttachmentFile key={i} a={a} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Post card ─────────────────────────────────────────────────────────────
+
+export function PostCard({
+  post,
+  reactions,
+  onReactions,
+  onChanged,
+  onDeleted,
+  channelLabel,
+  full,
+}: {
+  post: Post;
+  reactions: Reaction[];
+  onReactions: (r: Reaction[]) => void;
+  onChanged: (p: Post) => void;
+  onDeleted: (id: string) => void;
+  channelLabel?: { name: string; emoji: string | null; href: string };
+  full?: boolean;
+}) {
+  const { supabase, userId, canModerate } = useCommunity();
+  const authors = useProfiles([post.author_id]);
+  const author = authors[post.author_id];
+  const [menu, setMenu] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(post.body);
+  const [expanded, setExpanded] = useState(!!full);
+  const mod = canModerate(post.space_id);
+  const mine = post.author_id === userId;
+  const long = post.body.length > 600;
+
+  async function save() {
+    const { data, error } = await supabase.from("cm_posts").update({ body: draft }).eq("id", post.id).select("*").single();
+    if (!error && data) onChanged(data as Post);
+    setEditing(false);
+  }
+  async function remove() {
+    setMenu(false);
+    if (!confirm("Delete this post?")) return;
+    const { error } = await supabase.from("cm_posts").update({ deleted_at: new Date().toISOString() }).eq("id", post.id);
+    if (!error) onDeleted(post.id);
+  }
+  async function togglePin() {
+    setMenu(false);
+    const { data } = await supabase.from("cm_posts").update({ pinned: !post.pinned }).eq("id", post.id).select("*").single();
+    if (data) onChanged(data as Post);
+  }
+
+  return (
+    <Card as="article" className="p-4 sm:p-5">
+      <header className="flex items-start gap-3">
+        <Link href={`/community/members/${post.author_id}`}>
+          <Avatar name={author?.display_name} url={author?.avatar_url} size={42} />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <Link href={`/community/members/${post.author_id}`} className="font-semibold text-[#1F315B] hover:underline">
+              {author?.display_name ?? "…"}
+            </Link>
+            {post.pinned && (
+              <Badge>
+                <Pin className="h-3 w-3" /> Pinned
+              </Badge>
+            )}
+          </div>
+          <p className="text-[12.5px] text-[#8A8FA0]">
+            {channelLabel && (
+              <>
+                <Link href={channelLabel.href} className="hover:text-[#1F315B]">
+                  {channelLabel.emoji} {channelLabel.name}
+                </Link>{" "}
+                ·{" "}
+              </>
+            )}
+            <Link href={`/community/post/${post.id}`} className="hover:text-[#1F315B]">
+              {timeAgo(post.created_at)}
+            </Link>
+            {post.edited_at && " · edited"}
+          </p>
+        </div>
+        {(mine || mod) && (
+          <div className="relative">
+            <button onClick={() => setMenu((v) => !v)} aria-label="Post options" className="rounded-lg p-1.5 text-[#8A8FA0] hover:bg-black/5">
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+            {menu && (
+              <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-[#E9E2D3] bg-white py-1 text-[14px] shadow-lg">
+                {mine && (
+                  <button onClick={() => { setMenu(false); setEditing(true); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[#FBF8F2]">
+                    <Pencil className="h-4 w-4" /> Edit
+                  </button>
+                )}
+                {mod && (
+                  <button onClick={togglePin} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-[#FBF8F2]">
+                    <Pin className="h-4 w-4" /> {post.pinned ? "Unpin" : "Pin to top"}
+                  </button>
+                )}
+                <button onClick={remove} className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50">
+                  <Trash2 className="h-4 w-4" /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </header>
+
+      <div className="mt-3">
+        {post.title && <h2 className="mb-1.5 font-display text-[22px] font-semibold leading-snug text-[#1F315B]">{post.title}</h2>}
+        {editing ? (
+          <div className="space-y-2">
+            <TextArea value={draft} onChange={(e) => setDraft(e.target.value)} />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={save}>
+                Save
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <RichText text={long && !expanded ? post.body.slice(0, 560).trimEnd() + "…" : post.body} />
+            {long && !expanded && (
+              <button onClick={() => setExpanded(true)} className="mt-1 text-[13.5px] font-semibold text-[#A8873F] hover:underline">
+                Read more
+              </button>
+            )}
+          </>
+        )}
+        <Attachments items={post.attachments} />
+      </div>
+
+      <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#F0EBE0] pt-3">
+        <ReactionBar target={{ post_id: post.id }} reactions={reactions} onChange={onReactions} />
+        {!full && (
+          <Link href={`/community/post/${post.id}`} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[#5B6275] hover:text-[#1F315B]">
+            <MessageSquare className="h-4 w-4" />
+            {post.comment_count > 0 ? `${post.comment_count} ${post.comment_count === 1 ? "reply" : "replies"}` : "Reply"}
+          </Link>
+        )}
+      </footer>
+    </Card>
+  );
+}
+
+// ─── Channel feed ──────────────────────────────────────────────────────────
+
+const PAGE = 20;
+
+export function ChannelFeed({ channel }: { channel: Channel }) {
+  const { supabase } = useCommunity();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [more, setMore] = useState(false);
+
+  const loadReactions = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length) return;
+      const { data } = await supabase.from("cm_reactions").select("*").in("post_id", ids);
+      const grouped: Record<string, Reaction[]> = {};
+      for (const r of (data as Reaction[]) ?? []) (grouped[r.post_id!] ||= []).push(r);
+      setReactions((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, grouped[id] ?? []])) }));
+    },
+    [supabase]
+  );
+
+  const load = useCallback(
+    async (before?: string) => {
+      let q = supabase
+        .from("cm_posts")
+        .select("*")
+        .eq("channel_id", channel.id)
+        .is("deleted_at", null)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(PAGE);
+      if (before) q = q.eq("pinned", false).lt("created_at", before);
+      const { data } = await q;
+      const rows = (data as Post[]) ?? [];
+      setPosts((prev) => (before ? [...prev, ...rows] : rows));
+      setMore(rows.length === PAGE);
+      setLoading(false);
+      void loadReactions(rows.map((p) => p.id));
+    },
+    [supabase, channel.id, loadReactions]
+  );
+
+  useEffect(() => {
+    setLoading(true);
+    void load();
+  }, [load]);
+
+  // New posts from others appear live.
+  useEffect(() => {
+    const sub = supabase
+      .channel(`cm-posts-${channel.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "cm_posts", filter: `channel_id=eq.${channel.id}` }, (payload: { new: unknown }) => {
+        const p = payload.new as Post;
+        setPosts((prev) => (prev.some((x) => x.id === p.id) ? prev : [p, ...prev]));
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(sub);
+    };
+  }, [supabase, channel.id]);
+
+  return (
+    <div className="space-y-4">
+      <Composer channel={channel} onPosted={(p) => setPosts((prev) => [p, ...prev.filter((x) => x.id !== p.id)])} />
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Spinner className="h-7 w-7" />
+        </div>
+      ) : posts.length === 0 ? (
+        <EmptyState icon={channel.emoji ?? "✨"} title="Nothing here yet">
+          {channel.post_policy === "moderators" ? "Updates will appear here." : "Be the first to share."}
+        </EmptyState>
+      ) : (
+        posts.map((p) => (
+          <PostCard
+            key={p.id}
+            post={p}
+            reactions={reactions[p.id] ?? []}
+            onReactions={(r) => setReactions((prev) => ({ ...prev, [p.id]: r }))}
+            onChanged={(np) => setPosts((prev) => prev.map((x) => (x.id === np.id ? np : x)))}
+            onDeleted={(id) => setPosts((prev) => prev.filter((x) => x.id !== id))}
+          />
+        ))
+      )}
+      {more && (
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={() => load(posts.filter((p) => !p.pinned).at(-1)?.created_at)}>
+            Load more
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

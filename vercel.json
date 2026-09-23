@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/masterclass-zoom-sync",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/community-notify",
+      "schedule": "*/5 * * * *"
     }
   ],
   "rewrites": [

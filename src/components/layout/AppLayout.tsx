@@ -30,6 +30,8 @@ const BARE_ROUTES = [
   "/sales-reference",
   "/schedule",
   "/legal",
+  "/join",
+  "/community", // The LifeCharter Collective has its own shell
 ];
 
 function AppLayoutContent({ children }: AppLayoutProps) {
