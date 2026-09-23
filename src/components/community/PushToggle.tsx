@@ -69,7 +69,7 @@ export function PushToggle() {
   if (!state) return null;
   const note: Partial<Record<State, string>> = {
     unsupported: "This browser doesn't support push notifications.",
-    "needs-install": "On iPhone, add the Collective to your Home Screen first (see below), then turn on notifications from there.",
+    "needs-install": "On iPhone, add the Collective to your Home Screen first (from Safari or Chrome — see below), then open it from that icon to turn on notifications.",
     denied: "Notifications are blocked for this site in your browser settings.",
     "not-configured": "Push notifications are coming soon.",
   };

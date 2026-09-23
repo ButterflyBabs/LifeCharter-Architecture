@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, Smartphone } from "lucide-react";
+import { Camera, Check } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import { uploadCommunityFile } from "@/lib/community/storage";
 import type { Membership } from "@/lib/community/types";
 import { Avatar, Button, Card, ErrorNote, Heading, Input, Label, TextArea } from "@/components/community/ui";
 import { PushToggle } from "@/components/community/PushToggle";
+import { InstallAppCard } from "@/components/community/InstallApp";
 
 export default function ProfilePage() {
   const { supabase, userId, email, profile, spaces, memberships, refresh } = useCommunity();
@@ -150,31 +151,7 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      <Card className="p-5" >
-        <div id="app" className="scroll-mt-20" />
-        <h2 className="flex items-center gap-2 font-display text-[22px] font-semibold text-[#1F315B]">
-          <Smartphone className="h-5 w-5 text-[#A8873F]" /> Put the Collective on your phone
-        </h2>
-        <div className="mt-2 grid gap-4 text-[14px] text-[#2A3552] sm:grid-cols-2">
-          <div>
-            <p className="font-semibold text-[#1F315B]">iPhone / iPad</p>
-            <ol className="ml-4 mt-1 list-decimal space-y-0.5">
-              <li>Open this page in Safari.</li>
-              <li>Tap the Share button.</li>
-              <li>Choose <strong>Add to Home Screen</strong>.</li>
-              <li>Open the Collective from your home screen, then turn on notifications above.</li>
-            </ol>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1F315B]">Android</p>
-            <ol className="ml-4 mt-1 list-decimal space-y-0.5">
-              <li>Open this page in Chrome.</li>
-              <li>Tap the ⋮ menu.</li>
-              <li>Choose <strong>Install app</strong> (or Add to Home screen).</li>
-            </ol>
-          </div>
-        </div>
-      </Card>
+      <InstallAppCard />
 
       <p className="text-center text-[12.5px] text-[#8A8FA0]">
         <Link href="/legal/community-guidelines" className="underline">

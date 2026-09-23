@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import "./InstallApp"; // hooks Chrome's install prompt at load time
 
 // Registers the Collective's service worker so the app is installable and can
 // receive push notifications. Harmless where service workers aren't supported.

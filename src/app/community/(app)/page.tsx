@@ -12,6 +12,7 @@ import { eventWhen, timeAgo } from "@/lib/community/format";
 import type { CommunityEvent, DiscoverCard, Post } from "@/lib/community/types";
 import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
 import { useFileUrl } from "@/lib/community/storage";
+import { InstallBanner } from "@/components/community/InstallApp";
 
 function greeting() {
   const h = new Date().getHours();
@@ -100,6 +101,8 @@ function CommunityHome() {
         </h1>
         <p className="font-editorial text-[18px] italic text-[#A8873F]">Create Balance. Build Alignment. Take Command.</p>
       </div>
+
+      <InstallBanner />
 
       {showWelcome && profile && (
         <WelcomeCard
