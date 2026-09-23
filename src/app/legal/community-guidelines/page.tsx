@@ -142,7 +142,7 @@ export default function CommunityGuidelinesPage() {
         <h2 id="sessions" className={H2}>5. Live sessions &amp; recordings</h2>
         <List>
           <Item>
-            LifeCharter may record live sessions — including Alignment Anchors, office hours, workshops and Hot Seats — and share
+            LifeCharter may record live sessions — including Alignment Anchors, office hours, workshops and Hope Seats — and share
             replays inside the Collective. If you&rsquo;d rather not appear in a recording, keep your camera off and use the chat.
           </Item>
           <Item>
