@@ -18,6 +18,7 @@ const PUBLIC_APIS = [
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
+  "/api/cron/weekly-offer-thread", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
   "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code
   "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
