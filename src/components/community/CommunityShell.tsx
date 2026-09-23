@@ -7,12 +7,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, HelpCircle, Home, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Button, PageLoading } from "./ui";
 import { PwaRegister } from "./PwaRegister";
+import { useCollapsedChannels, useViewAs } from "@/lib/community/prefs";
 
 export function CommunityShell({ children }: { children: ReactNode }) {
   return (
@@ -97,13 +98,26 @@ function useSignOut() {
 }
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { spaces, channelsFor, isMember, isAdmin, profile, unreadDms, unreadNotifications } = useCommunity();
+  const { spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications } = useCommunity();
   const pathname = usePathname() || "";
   const signOut = useSignOut();
+  const [viewAs, setViewAs] = useViewAs();
+  const { collapsed, toggle } = useCollapsedChannels();
+  const memberView = isAdmin && viewAs === "member";
 
-  // Only spaces this person belongs to — plus public ones — ever appear here.
-  const visible = spaces.filter((s) => isMember(s.id) || s.visibility === "public");
+  // Only channels this person belongs to — plus public ones — ever appear
+  // here. A super admin belongs to everything, so "member view" hides the
+  // channels they were only added to as an admin.
+  const adminOnly = new Set(memberships.filter((m) => m.joined_via === "admin").map((m) => m.space_id));
+  const visible = spaces.filter((s) => {
+    if (s.visibility === "public" || s.is_default) return true;
+    if (!isMember(s.id)) return false;
+    return !(memberView && adminOnly.has(s.id));
+  });
   const bySection = (sec: SpaceSection) => visible.filter((s) => s.section === sec);
+  // Until someone chooses, Start Here folds away once they've settled in.
+  const defaultCollapsed = profile?.onboarded ? spaces.filter((s) => s.section === "start").map((s) => s.id) : [];
+  const isCollapsed = (id: string) => (collapsed ?? defaultCollapsed).includes(id);
 
   return (
     <nav
@@ -138,7 +152,15 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {(["start", "community"] as SpaceSection[]).map((sec) =>
         bySection(sec).map((space) => (
-          <SpaceChannels key={space.id} label={bySection(sec).length > 1 ? space.name : SECTION_LABELS[sec]} space={space} channels={channelsFor(space.id)} pathname={pathname} />
+          <SpaceChannels
+            key={space.id}
+            label={bySection(sec).length > 1 ? space.name : SECTION_LABELS[sec]}
+            space={space}
+            channels={channelsFor(space.id)}
+            pathname={pathname}
+            collapsed={isCollapsed(space.id)}
+            onToggle={() => toggle(space.id, isCollapsed(space.id), defaultCollapsed)}
+          />
         ))
       )}
 
@@ -176,6 +198,29 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       )}
 
       <div className="mt-auto border-t border-white/10 px-3 pb-4 pt-3">
+        {isAdmin && (
+          <div className="mb-3 px-2">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#EDE6D6]/50">Viewing as</p>
+            <div className="grid grid-cols-2 rounded-full bg-white/[0.07] p-0.5" role="group" aria-label="Viewing as">
+              {(["member", "admin"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setViewAs(v)}
+                  aria-pressed={viewAs === v}
+                  className={cn(
+                    "rounded-full py-1 text-[12px] font-semibold transition",
+                    viewAs === v ? "bg-[#D4AF63] text-[#0F1A38]" : "text-[#EDE6D6]/70 hover:text-white"
+                  )}
+                >
+                  {v === "member" ? "Member" : "Admin"}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-[#EDE6D6]/45">
+              {viewAs === "member" ? "Showing the channels a free member sees." : "Showing every channel."}
+            </p>
+          </div>
+        )}
         <Link href="/community/profile" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/[0.06]">
           <Avatar name={profile?.display_name} url={profile?.avatar_url} size={34} className="ring-[#D4AF63]/40" />
           <span className="min-w-0 flex-1">
@@ -197,16 +242,35 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
-function SpaceChannels({ label, space, channels, pathname }: { label: string; space: Space; channels: ReturnType<ReturnType<typeof useCommunity>["channelsFor"]>; pathname: string }) {
+function SpaceChannels({
+  label,
+  space,
+  channels,
+  pathname,
+  collapsed,
+  onToggle,
+}: {
+  label: string;
+  space: Space;
+  channels: ReturnType<ReturnType<typeof useCommunity>["channelsFor"]>;
+  pathname: string;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const base = `/community/s/${space.slug}`;
+  // A folded heading still shows the pathway you're currently on.
+  const shown = collapsed ? channels.filter((c) => pathname === `${base}/${c.slug}`) : channels;
   return (
     <div className="mt-5 px-3">
-      <SectionLabel>
-        <Link href={base} className="hover:text-[#E6C988]">
-          {label}
-        </Link>
-      </SectionLabel>
-      {channels.map((c) => (
+      <button
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        className="group mb-1.5 flex w-full items-center justify-between rounded-md px-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90 hover:text-[#E6C988]"
+      >
+        <span>{label}</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", collapsed && "-rotate-90")} aria-hidden />
+      </button>
+      {shown.map((c) => (
         <ChannelLink key={c.id} href={`${base}/${c.slug}`} emoji={c.emoji} name={c.name} active={pathname === `${base}/${c.slug}`} />
       ))}
     </div>

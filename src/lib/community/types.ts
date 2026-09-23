@@ -41,6 +41,7 @@ export interface Membership {
   space_id: string;
   user_id: string;
   role: SpaceRole;
+  joined_via?: "code" | "default" | "public" | "admin";
   notify_level: "all" | "announcements" | "none";
   joined_at: string;
 }

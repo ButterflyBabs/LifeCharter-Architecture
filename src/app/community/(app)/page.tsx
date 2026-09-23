@@ -14,6 +14,7 @@ import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
 import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
+import { useViewAs } from "@/lib/community/prefs";
 
 function greeting() {
   const h = new Date().getHours();
@@ -44,8 +45,11 @@ function CommunityHome() {
   const commons = spaces.find((s) => s.slug === "commons");
   const anchorChannel = commons && channels.find((c) => c.space_id === commons.id && c.slug === "alignment-anchor");
   const intentionChannel = commons && channels.find((c) => c.space_id === commons.id && c.slug === "this-weeks-intention");
-  const myPrograms = spaces.filter((s) => (s.section === "programs" || s.section === "alumni") && isMember(s.id));
-  const memberSpaceIds = memberships.map((m) => m.space_id);
+  const [viewAs] = useViewAs();
+  // A super admin in "member view" sees Home as a free member would.
+  const hiddenAdminOnly = isAdmin && viewAs === "member" ? new Set(memberships.filter((m) => m.joined_via === "admin" && !spaces.some((x) => x.id === m.space_id && (x.is_default || x.visibility === "public"))).map((m) => m.space_id)) : new Set<string>();
+  const myPrograms = spaces.filter((s) => (s.section === "programs" || s.section === "alumni") && isMember(s.id) && !hiddenAdminOnly.has(s.id));
+  const memberSpaceIds = memberships.map((m) => m.space_id).filter((id) => !hiddenAdminOnly.has(id));
 
   useEffect(() => {
     if (!userId) return;
@@ -88,7 +92,7 @@ function CommunityHome() {
       setProgramLatest(latest);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, userId, channels.length, memberships.length]);
+  }, [supabase, userId, channels.length, memberships.length, viewAs]);
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "friend";
   const showWelcome = params.get("welcome") === "1" || (profile && !profile.onboarded);
