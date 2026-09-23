@@ -43,6 +43,12 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
+  // Invitation emails link here with ?code=… so the code is already filled in.
+  const [prefill, setPrefill] = useState("");
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("code");
+    if (c) setPrefill(c.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 32));
+  }, []);
 
   const isMain = !space || space.slug === "start-here";
   const title = isMain ? "The LifeCharter Collective" : space!.name;
@@ -187,7 +193,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               not you?
             </button>
           </p>
-          <input name="code" placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
+          <input key={`c1-${prefill}`} defaultValue={prefill} name="code" placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
           {error && <ErrorLine>{error}</ErrorLine>}
           <button disabled={busy} className={goldButton}>
             {busy ? "Joining…" : joinLabel}
@@ -224,7 +230,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               <input name="email" required type="email" placeholder="Email" autoComplete="email" className={field} />
               <input name="phone" type="tel" placeholder="Phone number (optional)" autoComplete="tel" className={field} />
               <input name="password" required type="password" minLength={8} placeholder="Create a password" autoComplete="new-password" className={field} />
-              <input name="code" required placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
+              <input key={`c2-${prefill}`} defaultValue={prefill} name="code" required placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
               {error && <ErrorLine>{error}</ErrorLine>}
               <button disabled={busy} className={goldButton}>
                 {busy ? "Creating your account…" : joinLabel}
@@ -243,6 +249,8 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               <input name="password" required type="password" placeholder="Password" autoComplete="current-password" className={field} />
               {!signinOnly && (
                 <input
+                  key={`c3-${prefill}`}
+                  defaultValue={prefill}
                   name="code"
                   placeholder="Invite code (if you're new to this channel)"
                   autoComplete="off"

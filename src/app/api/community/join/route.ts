@@ -84,6 +84,8 @@ export async function POST(req: Request) {
   if (memberErr) console.error("community join ensure_member:", memberErr.message);
   await supabase.from("cm_space_members").upsert({ space_id: space.id, user_id: uid, joined_via: "code" }, { onConflict: "space_id,user_id", ignoreDuplicates: true });
   if (phone) await supabase.from("cm_private_profiles").upsert({ user_id: uid, phone });
+  // If they came through the landing page, mark the invitation as accepted.
+  await supabase.from("cm_invite_requests").update({ joined_user_id: uid, joined_at: new Date().toISOString() }).eq("email", email.toLowerCase()).is("joined_at", null);
 
   return NextResponse.json({ ok: true });
 }

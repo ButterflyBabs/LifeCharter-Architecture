@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
+const PUBLIC_PAGES = ["/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
 const PUBLIC_APIS = [
   "/api/google/callback",
   "/api/microsoft/callback",
@@ -23,6 +23,7 @@ const PUBLIC_APIS = [
   "/api/cron/weekly-offer-thread", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
   "/api/auth/forgot", // public — password-reset request; always answers the same way
+  "/api/collective/request-invite", // public — landing-page invitation requests; rate-limited + honeypot
   "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code
   "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session

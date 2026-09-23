@@ -11,7 +11,7 @@ import { timeAgo } from "@/lib/community/format";
 import { SECTION_LABELS, type Channel, type DiscoverCard, type Profile, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
 
-type Tab = "invites" | "welcome" | "spaces" | "discover" | "members";
+type Tab = "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
 
 function newCode() {
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -37,6 +37,7 @@ export default function AdminPage() {
         {(
           [
             ["invites", "Invite links"],
+            ["requests", "Invitation requests"],
             ["welcome", "Welcome message"],
             ["spaces", "Channels & pathways"],
             ["discover", "Explore cards"],
@@ -56,6 +57,7 @@ export default function AdminPage() {
         ))}
       </div>
       {tab === "invites" && <Invites />}
+      {tab === "requests" && <InviteRequests />}
       {tab === "welcome" && <WelcomeMessage />}
       {tab === "spaces" && <Spaces />}
       {tab === "discover" && <Discover />}
@@ -645,6 +647,76 @@ function Members() {
           );
         })}
       </Card>
+    </div>
+  );
+}
+
+interface InviteRequest {
+  id: string;
+  email: string;
+  name: string | null;
+  source: string | null;
+  utm: Record<string, string> | null;
+  referrer: string | null;
+  sent_count: number;
+  joined_at: string | null;
+  created_at: string;
+}
+
+// Leads from the public landing page (lccommandsuite.com/collective).
+function InviteRequests() {
+  const { supabase } = useCommunity();
+  const [rows, setRows] = useState<InviteRequest[] | null>(null);
+  useEffect(() => {
+    void supabase
+      .from("cm_invite_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1000)
+      .then(({ data }: { data: InviteRequest[] | null }) => setRows(data ?? []));
+  }, [supabase]);
+  if (rows === null) return <PageLoading />;
+  const joined = rows.filter((r) => r.joined_at).length;
+  const origin = (r: InviteRequest) => {
+    const u = r.utm ?? {};
+    const campaign = [u.utm_source, u.utm_medium, u.utm_campaign].filter(Boolean).join(" / ") || u.ref;
+    if (campaign) return campaign;
+    try {
+      return r.referrer ? new URL(r.referrer).hostname.replace(/^www\./, "") : "direct";
+    } catch {
+      return "direct";
+    }
+  };
+  return (
+    <div>
+      <p className="mb-3 text-[14px] text-[var(--cm-muted-2)]">
+        {rows.length} {rows.length === 1 ? "request" : "requests"} · {joined} joined
+        {rows.length ? ` (${Math.round((joined / rows.length) * 100)}%)` : ""} · from{" "}
+        <a href="/collective" target="_blank" className="underline">
+          the landing page
+        </a>
+      </p>
+      {rows.length === 0 ? (
+        <EmptyState icon="✉️" title="No invitation requests yet">
+          Share lccommandsuite.com/collective. Add ?utm_source=instagram (or any source) to a link to see which channels bring people in.
+        </EmptyState>
+      ) : (
+        <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
+          {rows.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-[var(--cm-ink)]">{r.name || r.email}</span>
+                <span className="block truncate text-[12.5px] text-[var(--cm-muted)]">
+                  {r.name ? `${r.email} · ` : ""}
+                  {timeAgo(r.created_at)} · {origin(r)}
+                  {r.sent_count > 1 ? ` · sent ${r.sent_count}×` : ""}
+                </span>
+              </span>
+              {r.joined_at ? <Badge tone="green">Joined</Badge> : <Badge tone="gray">Invited</Badge>}
+            </div>
+          ))}
+        </Card>
+      )}
     </div>
   );
 }

@@ -32,6 +32,7 @@ const BARE_ROUTES = [
   "/schedule",
   "/legal",
   "/join",
+  "/collective", // public landing page for The LifeCharter Collective
   "/community", // The LifeCharter Collective has its own shell
 ];
 
