@@ -526,6 +526,7 @@ function Discover() {
     <div className="space-y-3">
       <p className="text-[14px] text-[#5B6275]">
         These appear under &ldquo;Explore LifeCharter&rdquo; on members&rsquo; home screens. A card tied to a channel is hidden from people already in it.
+        For the link, use a web address — or type <code className="rounded bg-[#F7F3EA] px-1">dm:</code> followed by a note (e.g. <code className="rounded bg-[#F7F3EA] px-1">dm:Hi AmiLynne, I&apos;d like to hear about…</code>) to open a private message to you with that note ready to send.
       </p>
       {rows.map((c) => (
         <Card key={c.id} className={cn("space-y-2 p-4", !c.active && "opacity-60")}>
@@ -543,7 +544,7 @@ function Discover() {
           <Input value={c.blurb ?? ""} onChange={(e) => update(c.id, { blurb: e.target.value || null })} placeholder="Short description" />
           <Input value={c.teaser ?? ""} onChange={(e) => update(c.id, { teaser: e.target.value || null })} placeholder="A glimpse from inside (optional)" />
           <div className="grid gap-2 sm:grid-cols-[1fr_160px]">
-            <Input value={c.cta_url ?? ""} onChange={(e) => update(c.id, { cta_url: e.target.value || null })} placeholder="Learn more link (sales page)" />
+            <Input value={c.cta_url ?? ""} onChange={(e) => update(c.id, { cta_url: e.target.value || null })} placeholder="Web address, or dm: then a note to open a message to you" />
             <Input value={c.cta_label} onChange={(e) => update(c.id, { cta_label: e.target.value })} placeholder="Button text" />
           </div>
           <div className="flex items-center justify-between">

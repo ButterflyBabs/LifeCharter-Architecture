@@ -4,7 +4,7 @@
 // Alignment Anchor → this week's intention → next session → continue your
 // program → what's new, with a small "Explore LifeCharter" row at the end.
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor, Trophy } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
@@ -329,8 +329,31 @@ function FeedLine({ post, where, space, emoji }: { post: Post; where?: string; s
   );
 }
 
+// A card's link is either a web address, or "dm:" plus the note to start a
+// private message to the founding admin with (e.g. "dm:I'd like to hear about…").
 function DiscoverTile({ card }: { card: DiscoverCard }) {
+  const { supabase, userId } = useCommunity();
+  const router = useRouter();
   const img = useFileUrl(card.image_url);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const dm = card.cta_url?.startsWith("dm:") ? card.cta_url.slice(3).trim() : null;
+
+  async function openMessage() {
+    setBusy(true);
+    setNote(null);
+    const { data: admins } = await supabase.from("cm_admins").select("user_id").order("created_at").limit(1);
+    const adminId = (admins as { user_id: string }[] | null)?.[0]?.user_id;
+    if (!adminId || adminId === userId) {
+      setBusy(false);
+      return setNote("Members who tap this start a message to you with this note.");
+    }
+    const { data, error } = await supabase.rpc("cm_start_dm", { p_other: adminId });
+    setBusy(false);
+    if (error || !data) return setNote("Couldn't open a message just now — please try again.");
+    router.push(`/community/messages/${data}${dm ? `?draft=${encodeURIComponent(dm)}` : ""}`);
+  }
+
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       {img ? (
@@ -345,11 +368,18 @@ function DiscoverTile({ card }: { card: DiscoverCard }) {
         <p className="font-display text-[19px] font-semibold leading-snug text-[#1F315B]">{card.title}</p>
         {card.blurb && <p className="mt-1 text-[13.5px] text-[#6B6F80]">{card.blurb}</p>}
         {card.teaser && <p className="mt-2 font-editorial text-[14.5px] italic text-[#5B6275]">{card.teaser}</p>}
-        {card.cta_url && (
-          <a href={card.cta_url} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-[13.5px] font-semibold text-[#A8873F] hover:underline">
-            {card.cta_label} →
-          </a>
+        {dm !== null ? (
+          <button onClick={openMessage} disabled={busy} className="mt-auto pt-3 text-left text-[13.5px] font-semibold text-[#A8873F] hover:underline disabled:opacity-60">
+            {busy ? "Opening…" : `${card.cta_label} →`}
+          </button>
+        ) : (
+          card.cta_url && (
+            <a href={card.cta_url} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-[13.5px] font-semibold text-[#A8873F] hover:underline">
+              {card.cta_label} →
+            </a>
+          )
         )}
+        {note && <p className="mt-1 text-[12px] text-[#8A8FA0]">{note}</p>}
       </div>
     </Card>
   );

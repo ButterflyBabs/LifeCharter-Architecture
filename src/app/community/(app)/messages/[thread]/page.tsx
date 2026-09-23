@@ -24,6 +24,15 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
   const [messages, setMessages] = useState<DmMessage[] | null>(null);
   const [other, setOther] = useState<string | null>(null);
   const [text, setText] = useState("");
+  // A pre-written note from an "Explore" card (?draft=…): fill the box once,
+  // for the member to edit and send themselves — never sent automatically.
+  useEffect(() => {
+    const draft = new URLSearchParams(window.location.search).get("draft");
+    if (draft) {
+      setText(draft.slice(0, 1000));
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
   const [sending, setSending] = useState(false);
   const media = useMediaDraft();
   const bottom = useRef<HTMLDivElement>(null);
