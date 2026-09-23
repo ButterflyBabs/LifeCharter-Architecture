@@ -149,7 +149,7 @@ function CommunityHome() {
             myPrograms[0]
               ? programLatest[myPrograms[0].id]
                 ? `Latest: ${(programLatest[myPrograms[0].id]!.title || programLatest[myPrograms[0].id]!.body).slice(0, 70)}`
-                : "Pick up where you left off."
+                : "Jump back into the conversation."
               : "Where are you now, and what are you creating?"
           }
         />
