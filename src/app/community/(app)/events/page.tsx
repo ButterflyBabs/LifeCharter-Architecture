@@ -124,7 +124,7 @@ export default function EventsPage() {
       <div className="flex items-start justify-between gap-3">
         <Heading sub="Alignment Anchors, office hours, workshops and more — shown in your time zone.">LifeCharter Live</Heading>
         {canCreate && (
-          <Button variant="gold" size="sm" onClick={() => setEditing({ kind: "session", space_id: null })}>
+          <Button variant="gold" size="sm" onClick={() => setEditing({ kind: "session", space_ids: [] })}>
             <Plus className="h-4 w-4" /> New event
           </Button>
         )}
@@ -155,7 +155,7 @@ export default function EventsPage() {
           onNew={(day) => {
             const start = new Date(day);
             start.setHours(9, 0, 0, 0);
-            setEditing({ kind: "session", space_id: null, starts_at: start.toISOString() });
+            setEditing({ kind: "session", space_ids: [], starts_at: start.toISOString() });
           }}
           onEdit={setEditing}
           onChanged={reload}
@@ -209,8 +209,9 @@ function EventCard({
   const e = s.event;
   const upcoming = s.end.getTime() > Date.now();
   const soon = s.start.getTime() - Date.now() < 30 * 60_000 && upcoming;
-  const space = spaces.find((x) => x.id === e.space_id);
-  const manage = isAdmin || (e.space_id ? canModerate(e.space_id) : false);
+  const ids = e.space_ids ?? [];
+  const audience = ids.map((id) => spaces.find((x) => x.id === id)).filter(Boolean) as typeof spaces;
+  const manage = isAdmin || (ids.length > 0 && ids.every((id) => canModerate(id)));
   const repeats = describeRule(e) ?? e.recurrence;
 
   return (
@@ -223,7 +224,15 @@ function EventCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge>{EVENT_KIND_LABELS[e.kind]}</Badge>
-            <Badge tone="gray">{space ? `${space.emoji} ${space.name}` : "Whole Collective"}</Badge>
+            {ids.length === 0 ? (
+              <Badge tone="gray">Whole Collective</Badge>
+            ) : (
+              audience.map((x) => (
+                <Badge key={x.id} tone="navy">
+                  {x.emoji} {x.name}
+                </Badge>
+              ))
+            )}
           </div>
           <h2 className="mt-1 font-display text-[22px] font-semibold leading-snug text-[#1F315B]">{e.title}</h2>
           <p className="text-[13.5px] text-[#5B6275]">{eventWhen(s.start.toISOString(), s.end.toISOString())}</p>
@@ -505,7 +514,8 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
   const [f, setF] = useState({
     title: initial.title ?? "",
     kind: (initial.kind ?? "session") as EventKind,
-    space_id: initial.space_id ?? "",
+    audience: (initial.space_ids?.length ? "channels" : isAdmin ? "all" : "channels") as "all" | "channels",
+    channelIds: initial.space_ids ?? [],
     starts: toLocalInput(initial.starts_at),
     ends: toLocalInput(initial.ends_at),
     repeat: (initial.recur_freq ?? "") as RecurFreq | "",
@@ -523,7 +533,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
 
   async function save() {
     if (!f.title.trim() || !f.starts) return setError("Title and start time are required.");
-    if (!f.space_id && !isAdmin) return setError("Choose a channel.");
+    if (f.audience === "channels" && f.channelIds.length === 0) return setError("Choose at least one channel, or show it to the whole Collective.");
     const start = new Date(f.starts);
     const end = f.ends ? new Date(f.ends) : null;
     if (end && end <= start) return setError("The end time needs to be after the start time.");
@@ -542,7 +552,8 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
     const row = {
       title: f.title.trim(),
       kind: f.kind,
-      space_id: f.space_id || null,
+      space_ids: f.audience === "all" ? [] : f.channelIds,
+      space_id: f.audience === "all" ? null : f.channelIds[0] ?? null,
       ...rule,
       ends_at: end ? end.toISOString() : null,
       recur_exdates: repeating ? initial.recur_exdates ?? [] : [],
@@ -579,17 +590,39 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
             ))}
           </select>
         </div>
-        <div>
-          <Label>Who can see it</Label>
-          <select value={f.space_id} onChange={set("space_id")} className={selectClass}>
-            {isAdmin && <option value="">Whole Collective</option>}
-            {spaceOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.emoji} {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B6F80]">Who can see it</legend>
+          <div className="space-y-2 rounded-xl border border-[#DCD3C1] bg-white p-3">
+            {isAdmin && (
+              <label className="flex items-center gap-2 text-[14.5px] text-[#1F315B]">
+                <input type="radio" name="audience" checked={f.audience === "all"} onChange={() => setF({ ...f, audience: "all" })} />
+                Whole Collective — every member
+              </label>
+            )}
+            <label className="flex items-center gap-2 text-[14.5px] text-[#1F315B]">
+              <input type="radio" name="audience" checked={f.audience === "channels"} onChange={() => setF({ ...f, audience: "channels" })} />
+              Only members of these channels
+            </label>
+            {f.audience === "channels" && (
+              <div className="ml-6 grid gap-1.5 sm:grid-cols-2">
+                {spaceOptions.map((s) => (
+                  <label key={s.id} className="flex items-center gap-2 text-[14px] text-[#2A3552]">
+                    <input
+                      type="checkbox"
+                      checked={f.channelIds.includes(s.id)}
+                      onChange={(e) =>
+                        setF({ ...f, channelIds: e.target.checked ? [...f.channelIds, s.id] : f.channelIds.filter((x) => x !== s.id) })
+                      }
+                    />
+                    <span className="truncate">
+                      {s.emoji} {s.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </fieldset>
         <div>
           <Label>{repeating ? "First session starts" : "Starts"}</Label>
           <Input type="datetime-local" value={f.starts} onChange={set("starts")} />

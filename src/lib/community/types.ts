@@ -129,7 +129,8 @@ export type EventKind = "anchor" | "session" | "workshop" | "masterclass" | "off
 
 export interface CommunityEvent {
   id: string;
-  space_id: string | null;
+  space_id: string | null; // legacy: the first of space_ids
+  space_ids: string[]; // channels it's shown to; empty = the whole Collective
   title: string;
   description: string | null;
   kind: EventKind;

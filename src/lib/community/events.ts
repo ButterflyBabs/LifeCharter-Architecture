@@ -18,7 +18,7 @@ export async function sessionsBetween(supabase: Db, from: Date, to: Date, spaceI
     .lt("starts_at", to.toISOString())
     .or(`recur_freq.not.is.null,starts_at.gte.${new Date(from.getTime() - 2 * 86_400_000).toISOString()}`)
     .limit(500);
-  if (spaceId) q = q.eq("space_id", spaceId);
+  if (spaceId) q = q.contains("space_ids", [spaceId]);
   const { data } = await q;
   const today = from.toISOString().slice(0, 10);
   const out: Session[] = [];
