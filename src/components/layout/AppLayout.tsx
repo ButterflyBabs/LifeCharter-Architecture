@@ -26,6 +26,7 @@ const BARE_ROUTES = [
   "/forgot-password",
   "/reset-password",
   "/accept-invite",
+  "/auth",
   "/get-started",
   "/sales-reference",
   "/schedule",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { AuthShell, authInputClass, authLabelClass, authButtonClass } from "@/components/login/auth-shell";
 
 export default function ForgotPasswordPage() {
@@ -15,14 +14,18 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     const email = String(new FormData(e.currentTarget).get("email") ?? "").trim();
-    const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
+    // Sent by our own endpoint so the link works in any browser or device
+    // (see src/app/api/auth/forgot/route.ts).
+    const res = await fetch("/api/auth/forgot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).catch(() => null);
+    const out = res ? await res.json().catch(() => ({})) : {};
 
     setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (!res || !res.ok) {
+      setError(out.error || "Something went wrong. Please try again.");
       return;
     }
     setSent(true);
@@ -35,7 +38,7 @@ export default function ForgotPasswordPage() {
         subtitle="If an account exists for that address, we've sent a link to reset your password. It expires in an hour."
       >
         <p className="rounded-lg border border-brand-teal/40 bg-brand-teal/10 px-4 py-3 text-center text-[12.5px] text-brand-lavender">
-          Didn&apos;t get it? Check spam, or wait a moment and try again.
+          Didn&apos;t get it? It comes from community@lccommandsuite.com — check Other, Promotions and Spam, or wait a moment and try again.
         </p>
       </AuthShell>
     );
