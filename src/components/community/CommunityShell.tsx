@@ -116,6 +116,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   });
   const bySection = (sec: SpaceSection) => visible.filter((s) => s.section === sec);
   // Until someone chooses, Start Here folds away once they've settled in.
+  const settled = !profile || profile.onboarded;
   const defaultCollapsed = profile?.onboarded ? spaces.filter((s) => s.section === "start").map((s) => s.id) : [];
   const isCollapsed = (id: string) => (collapsed ?? defaultCollapsed).includes(id);
 
@@ -165,7 +166,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         );
       })()}
 
-      {(["start", "community"] as SpaceSection[]).map((sec) =>
+      {(settled ? (["community"] as SpaceSection[]) : (["start", "community"] as SpaceSection[])).map((sec) =>
         bySection(sec).map((space) => (
           <SpaceChannels
             key={space.id}
@@ -217,6 +218,22 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </div>
         );
       })}
+
+      {/* Settled members: Start Here moves to the bottom, out of the way but still there. */}
+      {settled &&
+        (["start"] as SpaceSection[]).map((sec) =>
+        bySection(sec).map((space) => (
+          <SpaceChannels
+            key={space.id}
+            label={bySection(sec).length > 1 ? space.name : SECTION_LABELS[sec]}
+            space={space}
+            channels={channelsFor(space.id)}
+            pathname={pathname}
+            collapsed={isCollapsed(space.id)}
+            onToggle={() => toggle(space.id, isCollapsed(space.id), defaultCollapsed)}
+          />
+        ))
+      )}
 
       <div className="mt-auto border-t border-white/10 px-3 pb-4 pt-3">
         {isAdmin && (

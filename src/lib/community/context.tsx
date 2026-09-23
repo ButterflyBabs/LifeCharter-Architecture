@@ -85,7 +85,29 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       supabase.from("cm_channels").select("*").eq("archived", false).order("sort_order"),
       supabase.from("cm_space_members").select("*").eq("user_id", user.id),
     ]);
-    setProfile((prof.data as Profile) ?? null);
+    let me = (prof.data as Profile) ?? null;
+    // Someone who has added a photo and introduced themselves has done the
+    // Start Here work — count them as settled even if they never tapped
+    // "I'm settled", so Start Here moves out of the way for them too.
+    if (me && !me.onboarded && me.avatar_url) {
+      const introChannel = ((ch.data as Channel[]) ?? []).find(
+        (c) => c.slug === "introductions" && ((sp.data as Space[]) ?? []).some((x) => x.id === c.space_id && x.slug === "start-here")
+      );
+      if (introChannel) {
+        const { data: intro } = await supabase
+          .from("cm_posts")
+          .select("id")
+          .eq("channel_id", introChannel.id)
+          .eq("author_id", user.id)
+          .is("deleted_at", null)
+          .limit(1);
+        if (intro?.length) {
+          await supabase.from("cm_profiles").update({ onboarded: true }).eq("user_id", user.id);
+          me = { ...me, onboarded: true };
+        }
+      }
+    }
+    setProfile(me);
     setIsAdmin(admin.data === true);
     setSpaces((sp.data as Space[]) ?? []);
     setChannels((ch.data as Channel[]) ?? []);

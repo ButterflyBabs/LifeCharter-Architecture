@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor, Trophy } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { eventWhen, timeAgo } from "@/lib/community/format";
 import type { DiscoverCard, Post } from "@/lib/community/types";
@@ -145,19 +145,35 @@ function CommunityHome() {
           title={nextSession?.event.title ?? "No sessions scheduled yet"}
           detail={nextSession ? eventWhen(nextSession.start.toISOString(), nextSession.end.toISOString()) : "Alignment Anchors, office hours and workshops appear here."}
         />
-        <NextCard
-          icon={<Compass className="h-5 w-5" />}
-          label={myPrograms.length ? "Pick Up Where You Left Off" : "Start Here"}
-          href={myPrograms[0] ? `/community/s/${myPrograms[0].slug}` : "/community/s/start-here/introductions"}
-          title={myPrograms[0]?.name ?? "Introduce yourself to the Collective"}
-          detail={
-            myPrograms[0]
-              ? programLatest[myPrograms[0].id]
+        {myPrograms[0] ? (
+          <NextCard
+            icon={<Compass className="h-5 w-5" />}
+            label="Pick Up Where You Left Off"
+            href={`/community/s/${myPrograms[0].slug}`}
+            title={myPrograms[0].name}
+            detail={
+              programLatest[myPrograms[0].id]
                 ? `Latest: ${(programLatest[myPrograms[0].id]!.title || programLatest[myPrograms[0].id]!.body).slice(0, 70)}`
                 : "Jump back into the conversation."
-              : "Where are you now, and what are you creating?"
-          }
-        />
+            }
+          />
+        ) : profile && !profile.onboarded ? (
+          <NextCard
+            icon={<Compass className="h-5 w-5" />}
+            label="Start Here"
+            href="/community/s/start-here/introductions"
+            title="Introduce yourself to the Collective"
+            detail="Where are you now, and what are you creating?"
+          />
+        ) : (
+          <NextCard
+            icon={<Trophy className="h-5 w-5" />}
+            label="Share a Win"
+            href="/community/s/commons/wins"
+            title="What did you move forward this week?"
+            detail="Big or small, it counts — and it lifts everyone who reads it."
+          />
+        )}
       </section>
 
       {myPrograms.length > 1 && (
