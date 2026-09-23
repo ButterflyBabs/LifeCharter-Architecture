@@ -384,7 +384,7 @@ export default function TravelPartnerWidget() {
   const progress = getProgress();
 
   // The LifeCharter Collective has its own experience — no Command Suite guide there.
-  if (pathname?.startsWith("/community") || pathname?.startsWith("/join")) return null;
+  if (pathname?.startsWith("/community") || pathname?.startsWith("/join") || pathname === "/legal/community-guidelines") return null;
 
   const getStyle = (): React.CSSProperties => {
     if (!pos) return { position: "fixed", bottom: 16, right: 16, zIndex: 9999 };
