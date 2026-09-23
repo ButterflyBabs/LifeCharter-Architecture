@@ -1,58 +1,59 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { readAccountKey, resolveAiAccount } from "@/lib/ai/config";
 
 export const dynamic = "force-dynamic";
 
-// Returns the AI assistant name + whether an OpenAI key is set (never the key).
-export async function GET() {
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, assistant_name, openai_api_key")
-    .limit(1)
-    .maybeSingle();
-  return NextResponse.json({
-    assistantName: ((data?.assistant_name as string) || "").trim() || "Mariposa",
-    hasOpenAiKey: Boolean(((data?.openai_api_key as string) || "").trim()),
-  });
+async function current(profileId: string | null) {
+  let assistantName = "Mariposa";
+  if (profileId) {
+    const { data } = await createServerClient().from("profiles").select("assistant_name").eq("id", profileId).maybeSingle();
+    assistantName = ((data?.assistant_name as string) || "").trim() || assistantName;
+  }
+  return { assistantName, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
 }
 
-// Saves the assistant name and/or the OpenAI key. Send openaiApiKey:"" to clear.
+// Returns this account's AI assistant name + whether its own OpenAI key is set
+// (never the key itself).
+export async function GET() {
+  const account = await resolveAiAccount();
+  return NextResponse.json({ ...(await current(account.profileId)), canEdit: account.canEdit });
+}
+
+// Saves the assistant name and/or the OpenAI key for the signed-in account.
+// Send openaiApiKey:"" to clear. The key is stored encrypted in Vault.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
   const body = await request.json().catch(() => ({}));
+  const account = await resolveAiAccount();
+  if (!account.profileId) return NextResponse.json({ error: "no profile" }, { status: 400 });
+  if (!account.canEdit) {
+    return NextResponse.json({ error: "Only the account owner can change the AI connection." }, { status: 403 });
+  }
   const supabase = createServerClient();
-  const { data: prof } = await supabase.from("profiles").select("id").limit(1).maybeSingle();
-  if (!prof?.id) return NextResponse.json({ error: "no profile" }, { status: 400 });
 
-  const patch: Record<string, string | null> = {};
-  if (typeof body?.assistantName === "string") {
-    patch.assistant_name = body.assistantName.trim() || null;
-  }
-  if (typeof body?.openaiApiKey === "string") {
-    // Only overwrite when a real value is sent; empty string clears it.
-    patch.openai_api_key = body.openaiApiKey.trim() || null;
-  }
-  if (Object.keys(patch).length === 0) {
+  if (typeof body?.assistantName !== "string" && typeof body?.openaiApiKey !== "string") {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
-
-  const { error } = await supabase.from("profiles").update(patch).eq("id", prof.id);
-  if (error) {
-    console.error("POST /api/ai-settings:", error);
-    return NextResponse.json({ error: "save failed" }, { status: 500 });
+  if (typeof body?.assistantName === "string") {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ assistant_name: body.assistantName.trim() || null })
+      .eq("id", account.profileId);
+    if (error) {
+      console.error("POST /api/ai-settings name:", error);
+      return NextResponse.json({ error: "save failed" }, { status: 500 });
+    }
   }
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("assistant_name, openai_api_key")
-    .eq("id", prof.id)
-    .maybeSingle();
-  return NextResponse.json({
-    assistantName: ((data?.assistant_name as string) || "").trim() || "Mariposa",
-    hasOpenAiKey: Boolean(((data?.openai_api_key as string) || "").trim()),
-  });
+  if (typeof body?.openaiApiKey === "string") {
+    const { error } = await supabase.rpc("set_account_ai_key", { p_user: account.profileId, p_key: body.openaiApiKey });
+    if (error) {
+      console.error("POST /api/ai-settings key:", error);
+      return NextResponse.json({ error: "save failed" }, { status: 500 });
+    }
+  }
+  return NextResponse.json({ ...(await current(account.profileId)), canEdit: true });
 }

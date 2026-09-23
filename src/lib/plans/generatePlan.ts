@@ -74,7 +74,7 @@ export interface PlanInputs {
 }
 
 export async function generatePlan(inputs: PlanInputs, apiKey?: string): Promise<GeneratedPlan | null> {
-  const key = apiKey || openaiKey();
+  const key = apiKey ?? openaiKey();
   if (!key) return null;
 
   const focus = PLAN_FOCUS[inputs.planType];

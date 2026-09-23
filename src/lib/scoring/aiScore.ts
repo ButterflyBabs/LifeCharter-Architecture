@@ -66,7 +66,7 @@ export async function scoreDimensionFromProse(
   answers: ProseAnswer[],
   apiKey?: string
 ): Promise<AiDimensionScore | null> {
-  const key = apiKey || openaiKey();
+  const key = apiKey ?? openaiKey();
   if (!key || answers.length === 0) return null;
 
   const rubric = RUBRIC[dimensionKey] ?? `Overall strength of the "${dimensionLabel}" dimension.`;
