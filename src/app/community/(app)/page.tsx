@@ -331,8 +331,8 @@ function DiscoverTile({ card }: { card: DiscoverCard }) {
 function WelcomeCard({ onDone }: { onDone: () => void }) {
   const steps = [
     { href: "/community/profile", label: "Add a photo and a line about you" },
+    { href: "/legal/community-guidelines", label: "Read the Community Guidelines — how we show up for each other" },
     { href: "/community/s/start-here/introductions", label: "Introduce yourself" },
-    { href: "/community/s/start-here/welcome", label: "Read how the Collective works" },
     { href: "/community/profile#app", label: "Add the app to your phone & turn on notifications" },
   ];
   return (
