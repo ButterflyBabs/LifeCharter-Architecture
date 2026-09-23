@@ -7,3 +7,7 @@ update public.cm_discover_cards d set cta_label = 'Learn more',
   end
 from public.cm_spaces s
 where s.id = d.space_id and s.slug in ('lifecharter-program', 'command-suite');
+
+-- Command Suite has a landing page after all.
+update public.cm_discover_cards d set cta_url = 'https://commandsuite-landing-page.vercel.app/'
+from public.cm_spaces s where s.id = d.space_id and s.slug = 'command-suite';
