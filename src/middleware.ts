@@ -190,7 +190,11 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isCommunityOnly && !COMMUNITY_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
-    return NextResponse.redirect(new URL("/community", request.url));
+    // Tell the Collective why they landed there (it shows a "switch accounts"
+    // notice) — except right after a password reset, where it would confuse.
+    const dest = new URL("/community", request.url);
+    if (request.nextUrl.searchParams.get("after") !== "reset") dest.searchParams.set("from", "suite");
+    return NextResponse.redirect(dest);
   }
 
   // A sales-only member is confined to their own pages — anything else

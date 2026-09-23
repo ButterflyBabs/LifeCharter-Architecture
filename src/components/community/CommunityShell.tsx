@@ -65,10 +65,49 @@ function Frame({ children }: { children: ReactNode }) {
       <MobileTopBar onMenu={() => setDrawer(true)} />
 
       <main className="pb-24 lg:ml-[272px] lg:pb-10">
-        <div className="mx-auto w-full max-w-[860px] px-4 pt-4 sm:px-6 lg:pt-8">{children}</div>
+        <div className="mx-auto w-full max-w-[860px] px-4 pt-4 sm:px-6 lg:pt-8">
+          <SuiteRedirectNotice />
+          {children}
+        </div>
       </main>
 
       <MobileTabBar onSpaces={() => setDrawer(true)} />
+    </div>
+  );
+}
+
+// Shown when a Collective-only account tried to open a Command Suite page and
+// was sent here instead — so nobody is left wondering which account they're in.
+function SuiteRedirectNotice() {
+  const { profile, email, supabase } = useCommunity();
+  const [show, setShow] = useState(false);
+  // They were heading for the Command Suite, so sign out to its sign-in page.
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("from") === "suite") {
+      setShow(true);
+      url.searchParams.delete("from");
+      window.history.replaceState(null, "", url.pathname + (url.search ? url.search : "") + url.hash);
+    }
+  }, []);
+  if (!show) return null;
+  const who = [profile?.display_name, email ? `(${email})` : null].filter(Boolean).join(" ") || "this account";
+  return (
+    <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-[#E6C988] bg-[#FBF3DF] px-4 py-3 text-[14px] text-[#1F315B]">
+      <p className="flex-1 leading-relaxed">
+        That page is part of <strong>LifeCharter Command Suite</strong>. You&rsquo;re signed in as <strong>{who}</strong>, a Collective member.{" "}
+        <button onClick={signOut} className="font-semibold text-[#A8873F] underline underline-offset-2 hover:text-[#1F315B]">
+          Sign out to switch accounts
+        </button>
+        .
+      </p>
+      <button onClick={() => setShow(false)} aria-label="Dismiss" className="rounded-lg p-1 text-[#8A8FA0] hover:bg-black/5">
+        <X className="h-4 w-4" />
+      </button>
     </div>
   );
 }

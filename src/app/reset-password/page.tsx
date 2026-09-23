@@ -48,7 +48,7 @@ function ResetPasswordInner() {
       setError(error.message);
       return;
     }
-    router.push("/");
+    router.push("/?after=reset");
     router.refresh();
   }
 
