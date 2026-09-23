@@ -139,16 +139,31 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <div className="space-y-0.5 px-3">
-        <NavItem href="/community" icon={Home} label="Home" active={pathname === "/community"} />
-        <NavItem href="/community/messages" icon={MessageCircle} label="Messages" active={pathname.startsWith("/community/messages")} badge={unreadDms} />
-        <NavItem href="/community/notifications" icon={Bell} label="Notifications" active={pathname.startsWith("/community/notifications")} badge={unreadNotifications} />
-        <NavItem href="/community/events" icon={CalendarDays} label="Events" active={pathname.startsWith("/community/events")} />
-        <NavItem href="/community/library" icon={Library} label="LifeCharter Library" active={pathname.startsWith("/community/library")} />
-        <NavItem href="/community/members" icon={Users} label="Members" active={pathname.startsWith("/community/members")} />
-        <NavItem href="/community/help" icon={HelpCircle} label="Help & FAQ" active={pathname.startsWith("/community/help")} />
-        {isAdmin && <NavItem href="/community/admin" icon={Shield} label="Admin" active={pathname.startsWith("/community/admin")} />}
-      </div>
+      {(() => {
+        const items = [
+          { href: "/community", icon: Home, label: "Home", active: pathname === "/community" },
+          { href: "/community/messages", icon: MessageCircle, label: "Messages", active: pathname.startsWith("/community/messages"), badge: unreadDms },
+          { href: "/community/notifications", icon: Bell, label: "Notifications", active: pathname.startsWith("/community/notifications"), badge: unreadNotifications },
+          { href: "/community/events", icon: CalendarDays, label: "Events", active: pathname.startsWith("/community/events") },
+          { href: "/community/library", icon: Library, label: "LifeCharter Library", active: pathname.startsWith("/community/library") },
+          { href: "/community/members", icon: Users, label: "Members", active: pathname.startsWith("/community/members") },
+          { href: "/community/help", icon: HelpCircle, label: "Help & FAQ", active: pathname.startsWith("/community/help") },
+          ...(isAdmin ? [{ href: "/community/admin", icon: Shield, label: "Admin", active: pathname.startsWith("/community/admin") }] : []),
+        ];
+        const folded = isCollapsed("section:menu");
+        // A folded menu keeps the page you're on — and anything with unread items — in view.
+        const shown = folded ? items.filter((i) => i.active || ("badge" in i && i.badge)) : items;
+        return (
+          <div className="px-3">
+            <FoldHeading label="Menu" collapsed={folded} onToggle={() => toggle("section:menu", folded, defaultCollapsed)} />
+            <div className="space-y-0.5">
+              {shown.map((i) => (
+                <NavItem key={i.href} href={i.href} icon={i.icon} label={i.label} active={i.active} badge={"badge" in i ? i.badge : undefined} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {(["start", "community"] as SpaceSection[]).map((sec) =>
         bySection(sec).map((space) => (
@@ -164,11 +179,17 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         ))
       )}
 
-      {(["programs", "alumni"] as SpaceSection[]).map((sec) =>
-        bySection(sec).length ? (
+      {(["programs", "alumni"] as SpaceSection[]).map((sec) => {
+        const list = bySection(sec);
+        if (!list.length) return null;
+        const key = `section:${sec}`;
+        const folded = isCollapsed(key);
+        // A folded section still shows the channel you're in.
+        const shown = folded ? list.filter((space) => pathname.startsWith(`/community/s/${space.slug}`)) : list;
+        return (
           <div key={sec} className="mt-5 px-3">
-            <SectionLabel>{SECTION_LABELS[sec]}</SectionLabel>
-            {bySection(sec).map((space) => {
+            <FoldHeading label={SECTION_LABELS[sec]} collapsed={folded} onToggle={() => toggle(key, folded, defaultCollapsed)} />
+            {shown.map((space) => {
               const base = `/community/s/${space.slug}`;
               const open = pathname.startsWith(base);
               return (
@@ -194,8 +215,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
               );
             })}
           </div>
-        ) : null
-      )}
+        );
+      })}
 
       <div className="mt-auto border-t border-white/10 px-3 pb-4 pt-3">
         {isAdmin && (
@@ -262,14 +283,7 @@ function SpaceChannels({
   const shown = collapsed ? channels.filter((c) => pathname === `${base}/${c.slug}`) : channels;
   return (
     <div className="mt-5 px-3">
-      <button
-        onClick={onToggle}
-        aria-expanded={!collapsed}
-        className="group mb-1.5 flex w-full items-center justify-between rounded-md px-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90 hover:text-[#E6C988]"
-      >
-        <span>{label}</span>
-        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", collapsed && "-rotate-90")} aria-hidden />
-      </button>
+      <FoldHeading label={label} collapsed={collapsed} onToggle={onToggle} />
       {shown.map((c) => (
         <ChannelLink key={c.id} href={`${base}/${c.slug}`} emoji={c.emoji} name={c.name} active={pathname === `${base}/${c.slug}`} />
       ))}
@@ -277,8 +291,17 @@ function SpaceChannels({
   );
 }
 
-function SectionLabel({ children }: { children: ReactNode }) {
-  return <p className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90">{children}</p>;
+function FoldHeading({ label, collapsed, onToggle }: { label: string; collapsed: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90 hover:text-[#E6C988]"
+    >
+      <span>{label}</span>
+      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", collapsed && "-rotate-90")} aria-hidden />
+    </button>
+  );
 }
 
 function ChannelLink({ href, emoji, name, active }: { href: string; emoji: string | null; name: string; active: boolean }) {
