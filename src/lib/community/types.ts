@@ -61,6 +61,7 @@ export interface Profile {
   status: "active" | "suspended";
   onboarded: boolean;
   journal_reminders?: boolean;
+  ai_consent_at?: string | null;
   journal_share_win?: boolean;
   journal_share_intention?: boolean;
   created_at: string;

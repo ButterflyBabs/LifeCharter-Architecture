@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sessionUser } from "@/lib/authz";
-import { aiJson, aiUnavailableMessage, collectiveAiFor, logAiUse } from "@/lib/community/ai";
+import { aiJson, aiUnavailableMessage, collectiveAiFor, hasAiConsent, logAiUse } from "@/lib/community/ai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 
@@ -70,6 +70,7 @@ export async function POST(request: Request) {
 
   const ai = await collectiveAiFor(user);
   if (!ai.key) return NextResponse.json({ error: aiUnavailableMessage(ai), needsPlus: !ai.plus && !ai.source }, { status: 402 });
+  if (!(await hasAiConsent(user.id))) return NextResponse.json({ error: "Please allow Mariposa first.", needsConsent: true }, { status: 428 });
 
   const body = await request.json().catch(() => ({}));
   const action = body.action as Action;

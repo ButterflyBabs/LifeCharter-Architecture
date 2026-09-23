@@ -181,6 +181,8 @@ export default function ProfilePage() {
 
       <InstallAppCard />
 
+      <MariposaConsent />
+
       <DeleteAccount />
 
       <p className="text-center text-[12.5px] text-[var(--cm-muted)]">
@@ -380,6 +382,40 @@ function DeleteAccount() {
             </div>
           )}
         </Modal>
+      )}
+    </Card>
+  );
+}
+
+// Me → Mariposa: see or withdraw consent for Mariposa sending text to OpenAI.
+function MariposaConsent() {
+  const { supabase, userId, profile, refresh } = useCommunity();
+  const [busy, setBusy] = useState(false);
+  const since = profile?.ai_consent_at;
+  return (
+    <Card className="p-5">
+      <p className="font-semibold text-[var(--cm-ink)]">Mariposa (AI)</p>
+      <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">
+        {since
+          ? `You allowed Mariposa on ${new Date(since).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}. When you use her, the text involved is sent to OpenAI to write the answer — never used for training, never shared with members.`
+          : "Mariposa is off. She'll ask for your permission the first time you use her."}
+      </p>
+      {since && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-2"
+          disabled={busy}
+          onClick={async () => {
+            if (!userId) return;
+            setBusy(true);
+            await supabase.from("cm_profiles").update({ ai_consent_at: null }).eq("user_id", userId);
+            await refresh();
+            setBusy(false);
+          }}
+        >
+          Withdraw permission
+        </Button>
       )}
     </Card>
   );

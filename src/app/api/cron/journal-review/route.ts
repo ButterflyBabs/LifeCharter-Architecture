@@ -9,7 +9,8 @@ export const maxDuration = 300;
 // on their own AI). For every member with journal reminders on who journaled
 // this week, Mariposa reads the week and writes a short personal review; it's
 // saved to their journal and sent as a notification (in-app, push, email).
-// Same CRON_SECRET convention as the other crons; never writes twice a week.
+// Only for members who have allowed Mariposa. Same CRON_SECRET convention as
+// the other crons; never writes twice a week.
 // ?user=<id> runs it for one member (testing).
 
 function denverWeekStart(now: Date): string {
@@ -41,7 +42,7 @@ async function run(request: Request) {
   const supabase = createServerClient();
   const week = denverWeekStart(new Date());
 
-  let q = supabase.from("cm_profiles").select("user_id, display_name").eq("status", "active").eq("journal_reminders", true);
+  let q = supabase.from("cm_profiles").select("user_id, display_name").eq("status", "active").eq("journal_reminders", true).not("ai_consent_at", "is", null);
   if (onlyUser) q = q.eq("user_id", onlyUser);
   const { data: members } = await q;
   const ids = ((members as { user_id: string; display_name: string }[]) ?? []).map((m) => m.user_id);

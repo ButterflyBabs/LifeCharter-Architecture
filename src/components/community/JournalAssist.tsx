@@ -5,7 +5,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
-import { Button } from "./ui";
+import { useCommunity } from "@/lib/community/context";
+import { Button, Modal } from "./ui";
 
 export interface AiStatus {
   enabled: boolean;
@@ -75,12 +76,77 @@ export function PlusInvite({ what, title = "Mariposa can help", compact }: { wha
   );
 }
 
+// POST to an AI route; if the member hasn't allowed Mariposa yet, ask once
+// (the consent screen) and retry.
+export async function aiPost(url: string, body: unknown): Promise<Response> {
+  const send = () => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const res = await send();
+  if (res.status === 428 && (await requestAiConsent())) return send();
+  return res;
+}
+
+export function requestAiConsent(): Promise<boolean> {
+  return new Promise((resolve) => window.dispatchEvent(new CustomEvent<(ok: boolean) => void>("cm-ai-consent", { detail: resolve })));
+}
+
+// Mounted once in the community shell: the one-time "Mariposa uses OpenAI"
+// consent (App Store 5.1.2). Withdrawable from Me.
+export function AiConsentHost() {
+  const { supabase, userId, refresh } = useCommunity();
+  const [resolver, setResolver] = useState<((ok: boolean) => void) | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setResolver(() => (e as CustomEvent<(ok: boolean) => void>).detail);
+    window.addEventListener("cm-ai-consent", on);
+    return () => window.removeEventListener("cm-ai-consent", on);
+  }, []);
+  if (!resolver) return null;
+  const finish = (ok: boolean) => {
+    resolver(ok);
+    setResolver(null);
+  };
+  return (
+    <Modal open onClose={() => finish(false)} title="Before Mariposa helps">
+      <div className="space-y-3 text-[14.5px] leading-relaxed text-[var(--cm-body)]">
+        <p>
+          Mariposa is an AI coach powered by <strong>OpenAI</strong>. To answer you, the text involved is sent to OpenAI:
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>what you&rsquo;re writing when you tap a Mariposa button</li>
+          <li>for a reflection, look-back, report or Sunday review: the journal entries it covers</li>
+          <li>for Ask the Library: your question</li>
+        </ul>
+        <p>
+          OpenAI processes it only to write the answer and does not use it to train its models. Nothing is shared with other members, and Mariposa only runs
+          when you ask (or for your Sunday review).
+        </p>
+        <p className="text-[13px] text-[var(--cm-muted-2)]">You can withdraw this anytime in Me → Mariposa.</p>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={() => finish(false)}>
+            Not now
+          </Button>
+          <Button
+            variant="gold"
+            disabled={busy}
+            onClick={async () => {
+              if (!userId) return finish(false);
+              setBusy(true);
+              const { error } = await supabase.from("cm_profiles").update({ ai_consent_at: new Date().toISOString() }).eq("user_id", userId);
+              setBusy(false);
+              if (!error) void refresh();
+              finish(!error);
+            }}
+          >
+            <Sparkles className="h-4 w-4" /> Allow Mariposa
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export async function askJournalAi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
-  const res = await fetch("/api/community/journal-ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...payload }),
-  });
+  const res = await aiPost("/api/community/journal-ai", { action, ...payload });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.result) throw new Error(json.error || "The AI didn't respond — try again.");
   return json.result as T;

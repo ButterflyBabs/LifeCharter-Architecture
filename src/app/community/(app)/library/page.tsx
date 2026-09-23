@@ -8,7 +8,7 @@ import { fileSize } from "@/lib/community/format";
 import { signedUrl, uploadCommunityFile } from "@/lib/community/storage";
 import type { Resource } from "@/lib/community/types";
 import { Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
-import { AI_PRIVACY_NOTE, PlusInvite, useJournalAi, usePlusAccess } from "@/components/community/JournalAssist";
+import { AI_PRIVACY_NOTE, PlusInvite, aiPost, useJournalAi, usePlusAccess } from "@/components/community/JournalAssist";
 
 const DEFAULT_CATEGORIES = ["Templates", "Worksheets", "Assessments", "Recordings", "Guides", "Recommended Tools", "Command Suite Resources", "Alignment Exercises"];
 
@@ -375,7 +375,7 @@ function AskLibrary({ onOpen }: { onOpen: (id: string) => void }) {
     if (q.trim().length < 3) return;
     setBusy(true);
     setError(null);
-    const r = await fetch("/api/community/library/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
+    const r = await aiPost("/api/community/library/ask", { question: q });
     const j = await r.json().catch(() => ({}));
     if (r.ok && j.result) setResult({ question: q.trim(), ...j.result });
     else setError(j.error ?? "Try again in a moment.");

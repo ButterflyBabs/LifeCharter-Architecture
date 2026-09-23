@@ -13,6 +13,7 @@ import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Button, PageLoading } from "./ui";
 import { PwaRegister } from "./PwaRegister";
+import { AiConsentHost } from "./JournalAssist";
 import { useCollapsedChannels, useThemePref, useViewAs } from "@/lib/community/prefs";
 
 export function CommunityShell({ children }: { children: ReactNode }) {
@@ -55,6 +56,7 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <div className={cn("min-h-screen bg-[var(--cm-ground)] font-ui text-[var(--cm-ink)]", dark && "cm-dark")}>
       <PwaRegister />
+      <AiConsentHost />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] lg:block">
         <Sidebar />
@@ -145,8 +147,17 @@ function useSignOut() {
 }
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications, isPlus } = useCommunity();
+  const { supabase, spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications, isPlus } = useCommunity();
   const pathname = usePathname() || "";
+  // The Library only appears once there's something in it (admins always see it, to stock it).
+  const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  useEffect(() => {
+    void supabase
+      .from("cm_resources")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .then(({ count }: { count: number | null }) => setLibraryCount(count ?? 0));
+  }, [supabase]);
   const signOut = useSignOut();
   const [viewAs, setViewAs] = useViewAs();
   const { collapsed, toggle } = useCollapsedChannels();
@@ -194,7 +205,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           { href: "/community/messages", icon: MessageCircle, label: "Messages", active: pathname.startsWith("/community/messages"), badge: unreadDms },
           { href: "/community/notifications", icon: Bell, label: "Notifications", active: pathname.startsWith("/community/notifications"), badge: unreadNotifications },
           { href: "/community/events", icon: CalendarDays, label: "Events", active: pathname.startsWith("/community/events") },
-          { href: "/community/library", icon: Library, label: "LifeCharter Library", active: pathname.startsWith("/community/library") },
+          ...(isAdmin || (libraryCount ?? 0) > 0
+            ? [{ href: "/community/library", icon: Library, label: "LifeCharter Library", active: pathname.startsWith("/community/library") }]
+            : []),
           { href: "/community/members", icon: Users, label: "Members", active: pathname.startsWith("/community/members") },
           { href: "/community/plus", icon: Sparkles, label: isPlus ? "My Plus" : "Collective Plus", active: pathname.startsWith("/community/plus") },
           { href: "/community/help", icon: HelpCircle, label: "Help & FAQ", active: pathname.startsWith("/community/help") },

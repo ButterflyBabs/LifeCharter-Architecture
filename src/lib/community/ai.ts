@@ -117,3 +117,9 @@ export async function aiJson(key: string, system: string, user: string, maxToken
     throw new Error(status === 401 ? "The AI key was rejected — update it in Command Suite settings." : "The AI didn't respond — try again in a moment.");
   }
 }
+
+// Has this member agreed to Mariposa sending their text to OpenAI?
+export async function hasAiConsent(userId: string): Promise<boolean> {
+  const { data } = await createServerClient().from("cm_profiles").select("ai_consent_at").eq("user_id", userId).maybeSingle();
+  return Boolean(data?.ai_consent_at);
+}
