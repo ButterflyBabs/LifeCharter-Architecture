@@ -49,17 +49,17 @@ async function run(request: Request) {
   const { data: admin } = await supabase.from("cm_admins").select("user_id").order("created_at").limit(1).maybeSingle();
   if (!admin) return NextResponse.json({ error: "No super admin to post as" }, { status: 500 });
 
-  // Already posted this week? (6 days covers a retried or manual run.)
-  const since = new Date(Date.now() - 6 * 86400_000).toISOString();
-  const { data: recent } = await supabase
+  // Already posted this week? Matched on the week's exact title, so a
+  // retried, manual or mid-week run never doubles up.
+  const title = `${TITLE_PREFIX} — Week of ${weekOf(new Date())}`;
+  const { data: existing } = await supabase
     .from("cm_posts")
     .select("id")
     .eq("channel_id", channel.id)
-    .like("title", `${TITLE_PREFIX}%`)
+    .eq("title", title)
     .is("deleted_at", null)
-    .gte("created_at", since)
     .limit(1);
-  if (recent?.length) return NextResponse.json({ ok: true, skipped: "already posted this week", id: recent[0].id });
+  if (existing?.length) return NextResponse.json({ ok: true, skipped: "already posted this week", id: existing[0].id });
 
   // Unpin earlier weeks' threads so only the current one sits on top.
   await supabase.from("cm_posts").update({ pinned: false }).eq("channel_id", channel.id).like("title", `${TITLE_PREFIX}%`).eq("pinned", true);
@@ -70,7 +70,7 @@ async function run(request: Request) {
       channel_id: channel.id,
       space_id: space.id,
       author_id: admin.user_id,
-      title: `${TITLE_PREFIX} — Week of ${weekOf(new Date())}`,
+      title,
       body: BODY,
       pinned: true,
     })
