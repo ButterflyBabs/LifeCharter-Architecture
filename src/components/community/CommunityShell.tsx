@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, Home, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
+import { Bell, CalendarDays, HelpCircle, Home, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
@@ -132,6 +132,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         <NavItem href="/community/events" icon={CalendarDays} label="Events" active={pathname.startsWith("/community/events")} />
         <NavItem href="/community/library" icon={Library} label="LifeCharter Library" active={pathname.startsWith("/community/library")} />
         <NavItem href="/community/members" icon={Users} label="Members" active={pathname.startsWith("/community/members")} />
+        <NavItem href="/community/help" icon={HelpCircle} label="Help & FAQ" active={pathname.startsWith("/community/help")} />
         {isAdmin && <NavItem href="/community/admin" icon={Shield} label="Admin" active={pathname.startsWith("/community/admin")} />}
       </div>
 
