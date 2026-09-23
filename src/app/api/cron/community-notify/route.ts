@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createServerClient } from "@/lib/supabase/server";
 import { sessionsBetween } from "@/lib/community/events";
+import { apnsConfigured, sendApns, type ApnsEnv } from "@/lib/community/apns";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +12,8 @@ export const dynamic = "force-dynamic";
 // grace period, and only for anything still unread). It also queues 1-hour
 // reminders for events people said they're going to.
 //
-// Runs on Vercel Cron every 5 minutes. Push needs VAPID keys; email needs a
-// Resend API key. Either channel quietly skips when its keys aren't set.
+// Runs on Vercel Cron every 5 minutes. Web push needs VAPID keys, iPhone-app
+// push needs APNS_* keys; email needs a Resend API key. Either channel quietly skips when its keys aren't set.
 // Same CRON_SECRET convention as the other crons.
 
 const EMAIL_GRACE_MIN = 10;
@@ -67,12 +68,14 @@ async function run(request: Request) {
     result.reminders += users.length;
   }
 
-  // ── Push ─────────────────────────────────────────────────────────────────
+  // ── Push (web push + the iPhone app) ─────────────────────────────────────
   const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-  if (vapidPublic && vapidPrivate) {
+  const webOn = Boolean(vapidPublic && vapidPrivate);
+  const apnsOn = apnsConfigured();
+  if (webOn || apnsOn) {
     result.pushConfigured = true;
-    webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:amilynne@amilynnecarroll.com", vapidPublic, vapidPrivate);
+    if (webOn) webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:amilynne@amilynnecarroll.com", vapidPublic!, vapidPrivate!);
     const { data } = await supabase
       .from("cm_notifications")
       .select("*")
@@ -83,8 +86,9 @@ async function run(request: Request) {
     const notes = (data as NoteRow[]) ?? [];
     const userIds = Array.from(new Set(notes.map((n) => n.user_id)));
     if (userIds.length) {
-      const [{ data: subs }, { data: prefs }] = await Promise.all([
-        supabase.from("cm_push_subscriptions").select("id, user_id, endpoint, p256dh, auth").in("user_id", userIds),
+      const [{ data: subs }, { data: devices }, { data: prefs }] = await Promise.all([
+        webOn ? supabase.from("cm_push_subscriptions").select("id, user_id, endpoint, p256dh, auth").in("user_id", userIds) : Promise.resolve({ data: [] }),
+        apnsOn ? supabase.from("cm_apns_devices").select("token, user_id, env").in("user_id", userIds) : Promise.resolve({ data: [] }),
         supabase.from("cm_profiles").select("user_id, notify_push").in("user_id", userIds),
       ]);
       const wants = new Set(((prefs as { user_id: string; notify_push: boolean }[]) ?? []).filter((p) => p.notify_push).map((p) => p.user_id));
@@ -92,6 +96,11 @@ async function run(request: Request) {
       for (const s of (subs as { id: string; user_id: string; endpoint: string; p256dh: string; auth: string }[]) ?? []) {
         if (!byUser.has(s.user_id)) byUser.set(s.user_id, []);
         byUser.get(s.user_id)!.push(s);
+      }
+      const phones = new Map<string, { token: string; env: ApnsEnv }[]>();
+      for (const d of (devices as { token: string; user_id: string; env: ApnsEnv }[]) ?? []) {
+        if (!phones.has(d.user_id)) phones.set(d.user_id, []);
+        phones.get(d.user_id)!.push(d);
       }
       for (const n of notes) {
         if (wants.has(n.user_id)) {
@@ -107,6 +116,24 @@ async function run(request: Request) {
               const code = (err as { statusCode?: number }).statusCode;
               if (code === 404 || code === 410) await supabase.from("cm_push_subscriptions").delete().eq("id", s.id);
               else console.error("community push:", code, (err as Error).message);
+            }
+          }
+          const mine = phones.get(n.user_id) ?? [];
+          if (mine.length) {
+            const msg = { title: n.title, body: n.body ?? "", href: n.href ?? "/community", threadId: n.kind === "dm" ? n.href ?? undefined : n.kind };
+            for (const env of ["production", "sandbox"] as const) {
+              const tokens = mine.filter((d) => d.env === env).map((d) => d.token);
+              for (const r of await sendApns(env, tokens, msg)) {
+                if (r.ok) result.pushed += 1;
+                else if (r.reason === "BadDeviceToken" && env === "production") {
+                  // A development build's token: remember it as sandbox and retry there.
+                  await supabase.from("cm_apns_devices").update({ env: "sandbox" }).eq("token", r.token);
+                  const [retry] = await sendApns("sandbox", [r.token], msg);
+                  if (retry?.ok) result.pushed += 1;
+                } else if (r.status === 410 || r.reason === "BadDeviceToken" || r.reason === "Unregistered") {
+                  await supabase.from("cm_apns_devices").delete().eq("token", r.token);
+                } else console.error("apns push:", r.status, r.reason);
+              }
             }
           }
         }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
+import { useIsNativeApp } from "@/lib/community/native";
 import { Button, Modal } from "./ui";
 
 export interface AiStatus {
@@ -58,6 +59,9 @@ function loadStatus(): Promise<AiStatus> {
 
 // Shown to free members wherever Mariposa would appear.
 export function PlusInvite({ what, title = "Mariposa can help", compact }: { what: string; title?: string; compact?: boolean }) {
+  // The iPhone app doesn't sell Plus (members upgrade on the web), so no invitation there.
+  const native = useIsNativeApp();
+  if (native) return null;
   return (
     <div className="rounded-2xl border border-dashed border-[#D4AF63]/60 bg-[var(--cm-surface)] p-3.5">
       <div className="flex flex-wrap items-center justify-between gap-2">

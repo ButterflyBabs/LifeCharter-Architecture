@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { Check, Download, MoreVertical, Share, Smartphone, X } from "lucide-react";
 import { Button, Card } from "./ui";
+import { useIsNativeApp } from "@/lib/community/native";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -173,6 +174,8 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
 // Full card for the profile page.
 export function InstallAppCard() {
   const platform = useInstallPlatform();
+  const native = useIsNativeApp();
+  if (native) return null;
   return (
     <Card className="p-5">
       <div id="app" className="scroll-mt-20" />
@@ -187,6 +190,7 @@ export function InstallAppCard() {
 // Slim, dismissable banner for the home screen on phones that haven't installed yet.
 export function InstallBanner() {
   const platform = useInstallPlatform();
+  const native = useIsNativeApp();
   const [hidden, setHidden] = useState(true);
   useEffect(() => {
     try {
@@ -195,7 +199,7 @@ export function InstallBanner() {
       setHidden(false);
     }
   }, []);
-  if (hidden || !platform || platform === "installed" || platform === "desktop") return null;
+  if (hidden || !platform || platform === "installed" || platform === "desktop" || native) return null;
   return (
     <Card className="relative border-[#E6C988] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-4 pr-10">
       <button

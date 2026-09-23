@@ -12,6 +12,7 @@ import { MentionTextArea, useMentions } from "./MentionTextArea";
 import { decodeMentions, toPlain } from "@/lib/community/mentions";
 import { Avatar, Badge, Button, Card, ErrorNote, RichText, Input, EmptyState, Spinner } from "./ui";
 import { ReportDialog } from "./ReportDialog";
+import { haptic } from "@/lib/community/native";
 
 export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
 
@@ -130,6 +131,7 @@ export function ReactionBar({
     .filter((x) => x.n > 0);
 
   async function toggle(emoji: string) {
+    void haptic();
     setPicker(false);
     if (!userId) return;
     const mine = reactions.find((r) => r.emoji === emoji && r.user_id === userId);

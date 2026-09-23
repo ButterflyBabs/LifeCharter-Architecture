@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>You're offline — The LifeCharter Collective</title>
+<style>
+  :root { color-scheme: light dark; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+    background: radial-gradient(700px 500px at 10% -10%, rgba(212,175,99,0.25), transparent 60%), #F8F5F0;
+    color: #1F315B; font-family: Georgia, "Times New Roman", serif; box-sizing: border-box;
+  }
+  .eyebrow { font: 600 11px/1 -apple-system, system-ui, sans-serif; letter-spacing: 3px; text-transform: uppercase; color: #A8873F; }
+  h1 { font-size: 30px; font-weight: 600; margin: 12px 0 8px; }
+  p { font: 15px/1.6 -apple-system, system-ui, sans-serif; color: #5B6275; max-width: 320px; margin: 0 auto; }
+  button {
+    margin-top: 24px; border: 0; border-radius: 12px; padding: 14px 28px; cursor: pointer;
+    background: linear-gradient(135deg, #E6C988, #D4AF63 55%, #B8923F); color: #0F1A38;
+    font: 600 15px -apple-system, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0E1628; color: #EDE6D6; }
+    p { color: #B6BBCB; }
+  }
+</style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">The LifeCharter Collective</div>
+    <h1>You're offline</h1>
+    <p>We can't reach the Collective right now. Check your Wi-Fi or mobile data, then try again.</p>
+    <button onclick="location.href='https://lccommandsuite.com/community'">Try again</button>
+  </main>
+</body>
+</html>

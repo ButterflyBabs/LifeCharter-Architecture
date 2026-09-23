@@ -14,6 +14,8 @@ import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/t
 import { Avatar, Button, PageLoading } from "./ui";
 import { PwaRegister } from "./PwaRegister";
 import { AiConsentHost } from "./JournalAssist";
+import { NativeBridge } from "./NativeBridge";
+import { useIsNativeApp } from "@/lib/community/native";
 import { useCollapsedChannels, useThemePref, useViewAs } from "@/lib/community/prefs";
 
 export function CommunityShell({ children }: { children: ReactNode }) {
@@ -57,6 +59,7 @@ function Frame({ children }: { children: ReactNode }) {
     <div className={cn("min-h-screen bg-[var(--cm-ground)] font-ui text-[var(--cm-ink)]", dark && "cm-dark")}>
       <PwaRegister />
       <AiConsentHost />
+      <NativeBridge dark={dark} />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] lg:block">
         <Sidebar />
@@ -66,7 +69,7 @@ function Frame({ children }: { children: ReactNode }) {
       {drawer && (
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setDrawer(false)}>
           <div className="absolute inset-0 bg-[#0F1A38]/50" />
-          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[320px] bg-[#0F1A38] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <Sidebar onClose={() => setDrawer(false)} />
           </div>
         </div>
@@ -149,6 +152,7 @@ function useSignOut() {
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const { supabase, spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications, isPlus } = useCommunity();
   const pathname = usePathname() || "";
+  const native = useIsNativeApp();
   // The Library only appears once there's something in it (admins always see it, to stock it).
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   useEffect(() => {
@@ -209,7 +213,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             ? [{ href: "/community/library", icon: Library, label: "LifeCharter Library", active: pathname.startsWith("/community/library") }]
             : []),
           { href: "/community/members", icon: Users, label: "Members", active: pathname.startsWith("/community/members") },
-          { href: "/community/plus", icon: Sparkles, label: isPlus ? "My Plus" : "Collective Plus", active: pathname.startsWith("/community/plus") },
+          ...(!native || isPlus ? [{ href: "/community/plus", icon: Sparkles, label: isPlus ? "My Plus" : "Collective Plus", active: pathname.startsWith("/community/plus") }] : []),
           { href: "/community/help", icon: HelpCircle, label: "Help & FAQ", active: pathname.startsWith("/community/help") },
           ...(isAdmin ? [{ href: "/community/admin", icon: Shield, label: "Admin", active: pathname.startsWith("/community/admin") }] : []),
         ];
@@ -417,7 +421,7 @@ function NavItem({ href, icon: Icon, label, active, badge }: { href: string; ico
 function MobileTopBar({ onMenu }: { onMenu: () => void }) {
   const { unreadNotifications } = useCommunity();
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--cm-line)] bg-[var(--cm-ground)] px-3 py-2 backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--cm-line)] bg-[var(--cm-ground)] px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
       <button onClick={onMenu} aria-label="Open menu" className="rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
         <Menu className="h-5 w-5" />
       </button>

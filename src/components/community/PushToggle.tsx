@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
+import { enableNativePush, isNativeApp, nativePushState, useIsNativeApp, type NativePushState } from "@/lib/community/native";
 import { Button } from "./ui";
 
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -15,8 +16,49 @@ function urlBase64ToUint8Array(base64: string) {
 
 type State = "unsupported" | "needs-install" | "off" | "on" | "denied" | "not-configured";
 
-// Turns on web push for this device and stores the subscription.
+// Turns on push for this device: Apple push inside the iPhone app, web push
+// everywhere else.
 export function PushToggle() {
+  const native = useIsNativeApp();
+  return native ? <NativePushToggle /> : <WebPushToggle />;
+}
+
+function NativePushToggle() {
+  const [state, setState] = useState<NativePushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (isNativeApp()) void nativePushState().then(setState).catch(() => setState(null));
+  }, []);
+  if (!state) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--cm-fill-2)] px-3.5 py-3">
+      <span className="flex items-center gap-2 text-[14px] text-[var(--cm-ink)]">
+        <BellRing className="h-4 w-4 text-[var(--cm-gold-text)]" />
+        {state === "granted"
+          ? "Notifications are on for this iPhone."
+          : state === "denied"
+            ? "Notifications are off. Turn them on in iPhone Settings → Collective → Notifications."
+            : "Get notified on this iPhone."}
+      </span>
+      {state === "prompt" && (
+        <Button
+          size="sm"
+          variant="navy"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setState(await enableNativePush().catch(() => "prompt" as const));
+            setBusy(false);
+          }}
+        >
+          Turn on
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function WebPushToggle() {
   const { supabase, userId } = useCommunity();
   const [state, setState] = useState<State | null>(null);
   const [busy, setBusy] = useState(false);

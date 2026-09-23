@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
 import { Badge, Button, Card, ErrorNote, Heading, PageLoading } from "@/components/community/ui";
 import { resetJournalAiStatus } from "@/components/community/JournalAssist";
+import { useIsNativeApp } from "@/lib/community/native";
 
 interface Status {
   foundingLeft: number;
@@ -49,6 +50,8 @@ function Plus() {
   const [error, setError] = useState<string | null>(null);
   const [welcome, setWelcome] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  // The iPhone app never sells Plus or links to billing (members manage it on the web).
+  const native = useIsNativeApp();
 
   const load = useCallback(async () => {
     const r = await fetch("/api/community/plus/status").catch(() => null);
@@ -92,6 +95,14 @@ function Plus() {
   }
 
   if (!status) return loadFailed ? <ErrorNote>Collective Plus couldn&rsquo;t load — please refresh the page.</ErrorNote> : <PageLoading />;
+  if (native && !status.plus && status.aiSource !== "own") {
+    return (
+      <div>
+        <Heading>Collective Plus</Heading>
+        <p className="text-[14.5px] text-[var(--cm-muted-2)]">This page isn&rsquo;t available in the app.</p>
+      </div>
+    );
+  }
   const founding = status.foundingLeft > 0;
   const monthly = founding ? 700 : 999;
   const annual = founding ? 7000 : 9900;
@@ -131,7 +142,7 @@ function Plus() {
                 </p>
               )}
             </div>
-            {sub?.canManage && (
+            {sub?.canManage && !native && (
               <Button variant="ghost" onClick={() => go("/api/community/plus/portal")} disabled={busy}>
                 Manage billing
               </Button>
@@ -208,6 +219,7 @@ function Plus() {
         ))}
       </section>
 
+      {!native && (
       <Card className="space-y-2 p-5 text-[13px] text-[var(--cm-muted-2)]">
         <p className="flex items-center gap-2 font-semibold text-[var(--cm-ink)]">
           <CalendarCheck className="h-4 w-4 text-[var(--cm-gold-text)]" /> Good to know
@@ -226,6 +238,7 @@ function Plus() {
           <strong>Free membership stays free.</strong> Posting, conversations, messages, events and your journal are always included.
         </p>
       </Card>
+      )}
 
       {isAdmin && (
         <p className="text-[12.5px] text-[var(--cm-muted)]">

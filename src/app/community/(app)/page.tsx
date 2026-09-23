@@ -20,6 +20,7 @@ import { JournalSheet } from "@/components/community/JournalSheet";
 import { weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } from "@/lib/community/journal";
 import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
+import { useIsNativeApp } from "@/lib/community/native";
 
 function greeting() {
   const h = new Date().getHours();
@@ -115,18 +116,22 @@ function CommunityHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, channels.length, memberships.length, viewAs]);
 
+  const native = useIsNativeApp();
   const firstName = profile?.display_name?.split(" ")[0] ?? "friend";
   // Once a member hides the welcome ("I'm settled"), it never shows again —
   // not even from an old ?welcome=1 link.
   const showWelcome = Boolean(profile && !profile.onboarded);
   const commonsSpace = spaces.find((s) => s.slug === "commons");
 
+  // In the iPhone app, Explore only shows "message us" cards — never links to
+  // outside sales pages (App Store rules on buying digital services).
+  const shownCards = native ? cards.filter((c) => !c.cta_url || c.cta_url.startsWith("dm:")) : cards;
   const explore =
-    cards.length > 0 ? (
+    shownCards.length > 0 ? (
       <section>
         <SectionTitle>Explore LifeCharter</SectionTitle>
         <div className="grid gap-3 sm:grid-cols-3">
-          {cards.map((c) => (
+          {shownCards.map((c) => (
             <DiscoverTile key={c.id} card={c} />
           ))}
         </div>
