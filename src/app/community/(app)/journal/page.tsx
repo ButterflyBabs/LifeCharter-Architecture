@@ -143,7 +143,7 @@ function Journal() {
         </div>
       )}
 
-      {entries.length >= 3 && <LookBack />}
+      <LookBack entryCount={entries.length} />
 
       {/* Search + history */}
       {entries.length > 0 ? (
@@ -272,7 +272,7 @@ function EntryRow({ e, stats, onEdit }: { e: JournalEntry; stats?: { reactions: 
 
 // "What patterns do you see?" — the member's own AI reads their journal
 // history (server-side, their entries only) and names what it notices.
-function LookBack() {
+function LookBack({ entryCount }: { entryCount: number }) {
   const ai = useJournalAi();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ patterns: string[]; suggestion: string } | null>(null);
@@ -303,15 +303,24 @@ function LookBack() {
       </Suggestion>
     );
   }
+  const ready = entryCount >= 3;
   return (
-    <Card className="flex flex-col items-start gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="flex flex-col items-start gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="font-semibold text-[var(--cm-ink)]">Look back</p>
-        <p className="text-[12.5px] text-[var(--cm-muted)]">{error ?? AI_PRIVACY_NOTE}</p>
+        <p className="flex items-center gap-1.5 font-semibold text-[var(--cm-ink)]">
+          <Sparkles className="h-4 w-4 text-[var(--cm-gold-text)]" /> {ai.assistantName} can help
+        </p>
+        <p className="text-[13px] text-[var(--cm-muted-2)]">
+          Open your intention, a win or your reflection above and tap &ldquo;Ask {ai.assistantName}&rdquo; to sharpen it, unpack it or draft it.
+          {ready ? "" : ` After a few entries, ${ai.assistantName} can also look back for patterns.`}
+        </p>
+        <p className="mt-0.5 text-[12px] text-[var(--cm-muted)]">{error ?? AI_PRIVACY_NOTE}</p>
       </div>
-      <AssistButton busy={busy} onClick={run}>
-        Ask {ai.assistantName} what patterns they see
-      </AssistButton>
+      {ready && (
+        <AssistButton busy={busy} onClick={run}>
+          Ask {ai.assistantName} what patterns they see
+        </AssistButton>
+      )}
     </Card>
   );
 }

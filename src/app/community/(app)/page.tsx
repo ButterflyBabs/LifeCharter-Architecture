@@ -4,7 +4,7 @@
 // Alignment Anchor → this week's intention → next session → continue your
 // program → what's new, with a small "Explore LifeCharter" row at the end.
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor, Trophy } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
@@ -36,7 +36,6 @@ export default function CommunityHomePage() {
 
 function CommunityHome() {
   const { supabase, userId, profile, spaces, channels, memberships, isMember, isAdmin, refresh } = useCommunity();
-  const params = useSearchParams();
   const [anchor, setAnchor] = useState<Post | null>(null);
   const [intention, setIntention] = useState<Post | null | undefined>(undefined);
   const [nextSession, setNextSession] = useState<Session | null>(null);
@@ -112,7 +111,9 @@ function CommunityHome() {
   }, [supabase, userId, channels.length, memberships.length, viewAs]);
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "friend";
-  const showWelcome = params.get("welcome") === "1" || (profile && !profile.onboarded);
+  // Once a member hides the welcome ("I'm settled"), it never shows again —
+  // not even from an old ?welcome=1 link.
+  const showWelcome = Boolean(profile && !profile.onboarded);
   const commonsSpace = spaces.find((s) => s.slug === "commons");
 
   const explore =

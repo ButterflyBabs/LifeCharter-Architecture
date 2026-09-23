@@ -54,8 +54,9 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
       .then(({ data }: { data: { user: { email?: string } | null } }) => setSignedInAs(data.user?.email ?? null));
   }, []);
 
-  function enter() {
-    router.push("/community?welcome=1");
+  // Brand-new members land on the welcome; returning members go straight home.
+  function enter(isNew = false) {
+    router.push(isNew ? "/community?welcome=1" : "/community");
     router.refresh();
   }
 
@@ -102,7 +103,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
       setBusy(false);
       return;
     }
-    enter();
+    enter(true);
   }
 
   async function onMember(e: FormEvent<HTMLFormElement>) {
