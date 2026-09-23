@@ -11,6 +11,7 @@ import { useCommunity } from "@/lib/community/context";
 import { weekLabel, weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
 import { Badge, Button, Card, EmptyState, Heading, Input, PageLoading, RichText } from "@/components/community/ui";
 import { JournalSheet } from "@/components/community/JournalSheet";
+import { AI_PRIVACY_NOTE, AssistButton, Suggestion, askJournalAi, useJournalAi } from "@/components/community/JournalAssist";
 
 type Sheet = { kind: JournalKind; entry?: JournalEntry | null } | null;
 
@@ -142,6 +143,8 @@ function Journal() {
         </div>
       )}
 
+      {entries.length >= 3 && <LookBack />}
+
       {/* Search + history */}
       {entries.length > 0 ? (
         <>
@@ -264,5 +267,51 @@ function EntryRow({ e, stats, onEdit }: { e: JournalEntry; stats?: { reactions: 
         </Button>
       </div>
     </div>
+  );
+}
+
+// "What patterns do you see?" — the member's own AI reads their journal
+// history (server-side, their entries only) and names what it notices.
+function LookBack() {
+  const ai = useJournalAi();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ patterns: string[]; suggestion: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  if (!ai) return null;
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      setResult(await askJournalAi<{ patterns: string[]; suggestion: string }>("lookback", {}));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The AI didn't respond — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <Suggestion name={ai.assistantName} onDismiss={() => setResult(null)}>
+        <ul className="list-disc space-y-1.5 pl-5">
+          {result.patterns.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+        {result.suggestion && <p className="mt-2 font-semibold">{result.suggestion}</p>}
+      </Suggestion>
+    );
+  }
+  return (
+    <Card className="flex flex-col items-start gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-[var(--cm-ink)]">Look back</p>
+        <p className="text-[12.5px] text-[var(--cm-muted)]">{error ?? AI_PRIVACY_NOTE}</p>
+      </div>
+      <AssistButton busy={busy} onClick={run}>
+        Ask {ai.assistantName} what patterns they see
+      </AssistButton>
+    </Card>
   );
 }

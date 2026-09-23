@@ -11,6 +11,12 @@ import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
 import { JOURNAL_PROMPTS, SHARE_PATHWAY, weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
 import { Button, ErrorNote, Input, Label, Modal, TextArea } from "./ui";
+import { AI_PRIVACY_NOTE, AssistButton, Suggestion, askJournalAi, useJournalAi } from "./JournalAssist";
+
+type AiSuggestion =
+  | { kind: "sharpen"; headline: string; first_step: string }
+  | { kind: "unpack"; questions: string[] }
+  | { kind: "reflect"; headline: string; note: string; carry_forward: string };
 
 const TITLES: Record<JournalKind, string> = {
   intention: "This week's intention",
@@ -60,6 +66,57 @@ export function JournalSheet({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const prompt = JOURNAL_PROMPTS[kind];
+  const ai = useJournalAi();
+  const [aiBusy, setAiBusy] = useState(false);
+  const [suggestion, setSuggestion] = useState<AiSuggestion | null>(null);
+
+  async function assist() {
+    setAiBusy(true);
+    setError(null);
+    setSuggestion(null);
+    try {
+      if (kind === "intention") {
+        const r = await askJournalAi<{ headline: string; first_step: string }>("sharpen", { headline: f.headline, note: f.private_note });
+        setSuggestion({ kind: "sharpen", ...r });
+      } else if (kind === "win") {
+        const r = await askJournalAi<{ questions: string[] }>("unpack", { headline: f.headline, note: f.private_note });
+        setSuggestion({ kind: "unpack", ...r });
+      } else {
+        const r = await askJournalAi<{ headline: string; note: string; carry_forward: string }>("reflect", { weekStart: entry?.week_start ?? weekStartOf() });
+        setSuggestion({ kind: "reflect", ...r });
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The AI didn't respond — try again.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  function applySuggestion() {
+    if (!suggestion) return;
+    const addTo = (text: string, extra: string) => (text.trim() ? `${text.trim()}\n\n${extra}` : extra);
+    if (suggestion.kind === "sharpen") {
+      setF({ ...f, headline: suggestion.headline || f.headline, private_note: suggestion.first_step ? addTo(f.private_note, `First step: ${suggestion.first_step}`) : f.private_note });
+    } else if (suggestion.kind === "unpack") {
+      setF({ ...f, private_note: addTo(f.private_note, suggestion.questions.map((q) => `${q}\n`).join("\n")) });
+    } else {
+      setF({
+        ...f,
+        headline: suggestion.headline || f.headline,
+        private_note: suggestion.note ? addTo(f.private_note, suggestion.note) : f.private_note,
+        carry_forward: suggestion.carry_forward || f.carry_forward,
+      });
+    }
+    setSuggestion(null);
+  }
+
+  const assistLabel = ai
+    ? kind === "intention"
+      ? `Ask ${ai.assistantName} to sharpen this`
+      : kind === "win"
+        ? `Ask ${ai.assistantName} to help unpack this`
+        : `Ask ${ai.assistantName} to draft my reflection`
+    : "";
 
   const commons = spaces.find((s) => s.slug === "commons");
   const pathway = commons && SHARE_PATHWAY[kind] ? channels.find((c) => c.space_id === commons.id && c.slug === SHARE_PATHWAY[kind]) : undefined;
@@ -146,7 +203,46 @@ export function JournalSheet({
         <div>
           <Label htmlFor="j-headline">{kind === "reflection" ? "Your week in a sentence (optional)" : "Headline"}</Label>
           <Input id="j-headline" value={f.headline} onChange={(e) => setF({ ...f, headline: e.target.value })} placeholder={prompt.headline} maxLength={140} autoFocus />
+          {ai && !suggestion && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+              <AssistButton busy={aiBusy} onClick={assist}>
+                {assistLabel}
+              </AssistButton>
+              <span className="text-[12px] text-[var(--cm-muted)]">{AI_PRIVACY_NOTE}</span>
+            </div>
+          )}
         </div>
+
+        {ai && suggestion && (
+          <Suggestion
+            name={ai.assistantName}
+            onUse={applySuggestion}
+            onDismiss={() => setSuggestion(null)}
+            useLabel={suggestion.kind === "unpack" ? "Add to my journal" : suggestion.kind === "reflect" ? "Use this draft" : "Use this"}
+          >
+            {suggestion.kind === "sharpen" && (
+              <>
+                <p className="font-semibold">{suggestion.headline}</p>
+                {suggestion.first_step && <p className="mt-1 text-[var(--cm-muted-2)]">First step: {suggestion.first_step}</p>}
+              </>
+            )}
+            {suggestion.kind === "unpack" && (
+              <ul className="list-disc space-y-1 pl-5">
+                {suggestion.questions.map((q) => (
+                  <li key={q}>{q}</li>
+                ))}
+              </ul>
+            )}
+            {suggestion.kind === "reflect" && (
+              <>
+                <p className="font-semibold">{suggestion.headline}</p>
+                <p className="mt-1 whitespace-pre-line">{suggestion.note}</p>
+                {suggestion.carry_forward && <p className="mt-1 text-[var(--cm-muted-2)]">Carry forward: {suggestion.carry_forward}</p>}
+                <p className="mt-1.5 text-[12px] text-[var(--cm-muted)]">You still choose your own rating.</p>
+              </>
+            )}
+          </Suggestion>
+        )}
 
         {kind === "reflection" && (
           <div>
