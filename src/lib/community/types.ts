@@ -164,6 +164,7 @@ export interface Resource {
   mime_type: string | null;
   sort_order: number;
   created_at: string;
+  ai_text?: string | null;
 }
 
 export interface DiscoverCard {

@@ -8,7 +8,7 @@ import { timeAgo } from "@/lib/community/format";
 import type { CommunityNotification } from "@/lib/community/types";
 import { Avatar, Button, Card, EmptyState, Heading, PageLoading } from "@/components/community/ui";
 
-const ICON: Record<string, string> = { announcement: "📣", comment: "💬", reply: "↩️", dm: "✉️", mention: "@", event: "📅" };
+const ICON: Record<string, string> = { announcement: "📣", comment: "💬", reply: "↩️", dm: "✉️", mention: "@", event: "📅", journal: "📓", journal_review: "🌅" };
 
 export default function NotificationsPage() {
   const { supabase, userId, refreshCounts } = useCommunity();

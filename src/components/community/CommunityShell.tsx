@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
@@ -145,7 +145,7 @@ function useSignOut() {
 }
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications } = useCommunity();
+  const { spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications, isPlus } = useCommunity();
   const pathname = usePathname() || "";
   const signOut = useSignOut();
   const [viewAs, setViewAs] = useViewAs();
@@ -196,6 +196,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           { href: "/community/events", icon: CalendarDays, label: "Events", active: pathname.startsWith("/community/events") },
           { href: "/community/library", icon: Library, label: "LifeCharter Library", active: pathname.startsWith("/community/library") },
           { href: "/community/members", icon: Users, label: "Members", active: pathname.startsWith("/community/members") },
+          { href: "/community/plus", icon: Sparkles, label: isPlus ? "My Plus" : "Collective Plus", active: pathname.startsWith("/community/plus") },
           { href: "/community/help", icon: HelpCircle, label: "Help & FAQ", active: pathname.startsWith("/community/help") },
           ...(isAdmin ? [{ href: "/community/admin", icon: Shield, label: "Admin", active: pathname.startsWith("/community/admin") }] : []),
         ];

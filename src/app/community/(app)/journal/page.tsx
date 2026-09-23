@@ -6,14 +6,22 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Lock, MessageSquare, Pencil, Plus, Search, Share2, Target, Trophy, Sparkles } from "lucide-react";
+import { BarChart3, FileDown, Lock, MessageSquare, Pencil, Plus, Search, Share2, Sunrise, Target, Trophy, Sparkles, X } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
-import { weekLabel, weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
+import { weekLabel, weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } from "@/lib/community/journal";
 import { Badge, Button, Card, EmptyState, Heading, Input, PageLoading, RichText } from "@/components/community/ui";
 import { JournalSheet } from "@/components/community/JournalSheet";
-import { AI_PRIVACY_NOTE, AssistButton, Suggestion, askJournalAi, useJournalAi } from "@/components/community/JournalAssist";
+import { AI_PRIVACY_NOTE, AssistButton, Suggestion, askJournalAi, useJournalAi, usePlusAccess } from "@/components/community/JournalAssist";
+import { FocusCard } from "@/components/community/FocusCard";
 
 type Sheet = { kind: JournalKind; entry?: JournalEntry | null } | null;
+
+export interface WeeklyReview {
+  id: string;
+  week_start: string;
+  body: { opening?: string; highlights?: string[]; noticing?: string; next_focus?: string };
+  created_at: string;
+}
 
 export default function JournalPage() {
   return (
@@ -24,7 +32,10 @@ export default function JournalPage() {
 }
 
 function Journal() {
-  const { supabase, userId } = useCommunity();
+  const { supabase, userId, isPlus } = useCommunity();
+  const access = usePlusAccess(isPlus);
+  const [focus, setFocus] = useState<JournalFocus | null>(null);
+  const [review, setReview] = useState<WeeklyReview | null>(null);
   const params = useSearchParams();
   const [entries, setEntries] = useState<JournalEntry[] | null>(null);
   const [shared, setShared] = useState<Record<string, { reactions: number; replies: number }>>({});
@@ -37,6 +48,13 @@ function Journal() {
     const { data } = await supabase.from("cm_journal_entries").select("*").eq("user_id", userId).order("week_start", { ascending: false }).order("created_at", { ascending: true }).limit(1000);
     const list = (data as JournalEntry[]) ?? [];
     setEntries(list);
+    const since = new Date(Date.now() - 8 * 86400000).toISOString();
+    const [{ data: fx }, { data: rv }] = await Promise.all([
+      supabase.from("cm_journal_focus").select("*").eq("user_id", userId).eq("status", "active").order("starts_on", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("cm_journal_reviews").select("*").eq("user_id", userId).gte("created_at", since).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    setFocus((fx as JournalFocus) ?? null);
+    setReview((rv as WeeklyReview) ?? null);
     const postIds = list.map((e) => e.shared_post_id).filter(Boolean) as string[];
     if (postIds.length) {
       const [{ data: posts }, { data: reacts }] = await Promise.all([
@@ -103,6 +121,21 @@ function Journal() {
       <Heading sub={<span className="inline-flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Private to you. Anything you share goes to the Collective as a headline and note — never your journal.</span>}>
         My Alignment Journal
       </Heading>
+
+      {access.has && entries.length > 0 && (
+        <div className="-mt-3 flex flex-wrap gap-2">
+          <Link href="/community/journal/report" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--cm-ink)] hover:border-[#D4AF63]">
+            <BarChart3 className="h-4 w-4 text-[var(--cm-gold-text)]" /> Monthly report
+          </Link>
+          <Link href="/community/journal/export" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--cm-ink)] hover:border-[#D4AF63]">
+            <FileDown className="h-4 w-4 text-[var(--cm-gold-text)]" /> Export
+          </Link>
+        </div>
+      )}
+
+      {review && <ReviewCard review={review} />}
+
+      {!access.loading && <FocusCard focus={focus} entries={entries} hasAccess={access.has} onChanged={() => void load()} />}
 
       {/* This week */}
       <Card className="p-5">
@@ -178,6 +211,7 @@ function Journal() {
         <JournalSheet
           kind={sheet.kind}
           entry={sheet.entry}
+          focus={focus}
           onClose={() => setSheet(null)}
           onSaved={() => {
             setSheet(null);
@@ -320,6 +354,57 @@ function LookBack({ entryCount }: { entryCount: number }) {
         <AssistButton busy={busy} onClick={run}>
           Ask {ai.assistantName} what patterns they see
         </AssistButton>
+      )}
+    </Card>
+  );
+}
+
+// Mariposa's Sunday week-in-review (Collective Plus). Dismissing only hides it
+// on this device.
+function ReviewCard({ review }: { review: WeeklyReview }) {
+  const key = `cm-review-dismissed-${review.id}`;
+  const [hidden, setHidden] = useState(true);
+  useEffect(() => {
+    try {
+      setHidden(localStorage.getItem(key) === "1");
+    } catch {
+      setHidden(false);
+    }
+  }, [key]);
+  if (hidden) return null;
+  const b = review.body;
+  return (
+    <Card className="relative border-[#D4AF63]/50 bg-[var(--cm-gold-soft)] p-5">
+      <button
+        aria-label="Hide this review"
+        className="absolute right-3 top-3 rounded-full p-1 text-[var(--cm-muted)] hover:bg-white/40"
+        onClick={() => {
+          try {
+            localStorage.setItem(key, "1");
+          } catch {
+            /* private mode */
+          }
+          setHidden(true);
+        }}
+      >
+        <X className="h-4 w-4" />
+      </button>
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">
+        <Sunrise className="h-3.5 w-3.5" /> Mariposa&rsquo;s week in review · {weekLabel(review.week_start)}
+      </p>
+      {b.opening && <p className="mt-2 text-[15px] text-[var(--cm-ink)]">{b.opening}</p>}
+      {b.highlights && b.highlights.length > 0 && (
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] text-[var(--cm-body)]">
+          {b.highlights.map((h) => (
+            <li key={h}>{h}</li>
+          ))}
+        </ul>
+      )}
+      {b.noticing && <p className="mt-2 text-[14px] text-[var(--cm-body)]">{b.noticing}</p>}
+      {b.next_focus && (
+        <p className="mt-3 rounded-xl bg-[var(--cm-surface)] px-3 py-2 text-[14px] text-[var(--cm-ink)]">
+          <strong>For the week ahead:</strong> {b.next_focus}
+        </p>
       )}
     </Card>
   );

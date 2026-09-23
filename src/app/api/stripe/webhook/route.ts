@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
+import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -40,6 +41,12 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createClient();
+
+    // Collective Plus subscriptions are handled on their own and never touch
+    // Command Suite plans/profiles below.
+    if (await handlePlusEvent(stripe, event)) {
+      return NextResponse.json({ received: true });
+    }
 
     switch (event.type) {
       case "checkout.session.completed": {
@@ -216,6 +223,41 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Returns true when the event belonged to a Collective Plus subscription.
+async function handlePlusEvent(stripe: Stripe, event: Stripe.Event): Promise<boolean> {
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.flow !== PLUS_FLOW) return false;
+      if (session.subscription) {
+        const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+        await syncPlusSubscription(sub);
+      }
+      return true;
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      if (!isPlusSubscription(sub)) return false;
+      await syncPlusSubscription(sub);
+      return true;
+    }
+    case "invoice.payment_succeeded":
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const raw = invoice as unknown as { subscription?: string; parent?: { subscription_details?: { subscription?: string; metadata?: Stripe.Metadata } } };
+      const subscriptionId = raw.subscription ?? raw.parent?.subscription_details?.subscription;
+      if (!subscriptionId) return false;
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      if (!isPlusSubscription(sub)) return false;
+      await syncPlusSubscription(sub);
+      return true;
+    }
+  }
+  return false;
 }
 
 export const runtime = 'nodejs';

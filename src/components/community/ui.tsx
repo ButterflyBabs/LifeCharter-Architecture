@@ -217,3 +217,15 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     </div>
   );
 }
+
+// The small gold Collective Plus mark next to a member's name.
+export function PlusMark({ className }: { className?: string }) {
+  return (
+    <span
+      title="Collective Plus member"
+      className={cn("inline-flex items-center rounded-full bg-gradient-to-br from-[#E6C988] to-[#B8923F] px-1.5 py-px align-middle text-[10px] font-bold uppercase tracking-[0.08em] text-[#0F1A38]", className)}
+    >
+      Plus
+    </span>
+  );
+}

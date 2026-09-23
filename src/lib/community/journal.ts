@@ -14,8 +14,32 @@ export interface JournalEntry {
   rating: number | null;
   carry_forward: string | null;
   shared_post_id: string | null;
+  focus_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// A 90-day focus (Collective Plus): one bigger goal weekly intentions roll up into.
+export interface JournalFocus {
+  id: string;
+  user_id: string;
+  title: string;
+  why: string | null;
+  starts_on: string;
+  ends_on: string;
+  status: "active" | "done" | "released";
+  created_at: string;
+  updated_at: string;
+}
+
+export function isoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function parseDate(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 // The Monday (YYYY-MM-DD) of the week `d` falls in, in the member's own time zone.

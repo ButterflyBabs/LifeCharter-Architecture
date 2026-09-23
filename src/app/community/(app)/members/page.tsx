@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { MapPin, Search } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import type { Profile } from "@/lib/community/types";
-import { Avatar, Card, EmptyState, Heading, Input, PageLoading } from "@/components/community/ui";
+import { Avatar, Card, EmptyState, Heading, Input, PageLoading, PlusMark } from "@/components/community/ui";
 
 export default function MembersPage() {
-  const { supabase, spaces, isMember, blockedIds } = useCommunity();
+  const { supabase, spaces, isMember, blockedIds, plusIds } = useCommunity();
   const [q, setQ] = useState("");
   const [spaceFilter, setSpaceFilter] = useState("");
   const [rows, setRows] = useState<Profile[] | null>(null);
@@ -65,7 +65,9 @@ export default function MembersPage() {
               <Card className="flex h-full items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-[#D4AF63]">
                 <Avatar name={p.display_name} url={p.avatar_url} size={52} />
                 <div className="min-w-0">
-                  <p className="font-semibold text-[var(--cm-ink)]">{p.display_name}</p>
+                  <p className="font-semibold text-[var(--cm-ink)]">
+                    {p.display_name} {plusIds.has(p.user_id) && <PlusMark className="ml-1" />}
+                  </p>
                   {p.headline && <p className="truncate text-[13.5px] text-[var(--cm-muted-2)]">{p.headline}</p>}
                   {p.location && (
                     <p className="mt-0.5 flex items-center gap-1 text-[12.5px] text-[var(--cm-muted)]">

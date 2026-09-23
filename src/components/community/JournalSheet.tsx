@@ -9,9 +9,9 @@ import { useEffect, useState } from "react";
 import { Lock, Share2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
-import { JOURNAL_PROMPTS, SHARE_PATHWAY, weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
+import { JOURNAL_PROMPTS, SHARE_PATHWAY, weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } from "@/lib/community/journal";
 import { Button, ErrorNote, Input, Label, Modal, TextArea } from "./ui";
-import { AI_PRIVACY_NOTE, Suggestion, askJournalAi, useJournalAi } from "./JournalAssist";
+import { AI_PRIVACY_NOTE, PlusInvite, Suggestion, askJournalAi, useJournalAi, useJournalAiStatus } from "./JournalAssist";
 
 type AiSuggestion =
   | { kind: "sharpen"; headline: string; first_step: string }
@@ -41,11 +41,13 @@ export function useJournalDimensions() {
 export function JournalSheet({
   kind,
   entry,
+  focus,
   onClose,
   onSaved,
 }: {
   kind: JournalKind;
   entry?: JournalEntry | null;
+  focus?: JournalFocus | null;
   onClose: () => void;
   onSaved: (e: JournalEntry | null) => void;
 }) {
@@ -61,12 +63,14 @@ export function JournalSheet({
     rating: entry?.rating ?? 0,
     carry_forward: entry?.carry_forward ?? "",
     share: entry ? Boolean(entry.shared_post_id) : defaultShare,
+    towardFocus: entry ? Boolean(focus && entry.focus_id === focus.id) : Boolean(focus && kind === "intention"),
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const prompt = JOURNAL_PROMPTS[kind];
   const ai = useJournalAi();
+  const aiStatus = useJournalAiStatus();
   const [aiBusy, setAiBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<AiSuggestion | null>(null);
 
@@ -138,6 +142,7 @@ export function JournalSheet({
         dimension: f.dimension || null,
         rating: kind === "reflection" ? f.rating || null : null,
         carry_forward: kind === "reflection" ? f.carry_forward.trim() || null : null,
+        ...(focus && kind !== "reflection" ? { focus_id: f.towardFocus ? focus.id : null } : {}),
         updated_at: new Date().toISOString(),
       };
       // Save the private entry first.
@@ -245,6 +250,15 @@ export function JournalSheet({
           </div>
         )}
 
+        {focus && kind !== "reflection" && (
+          <label className="flex cursor-pointer items-start gap-2 text-[14px] text-[var(--cm-body)]">
+            <input type="checkbox" className="mt-1" checked={f.towardFocus} onChange={(e) => setF({ ...f, towardFocus: e.target.checked })} />
+            <span>
+              Toward my 90-day focus: <strong className="text-[var(--cm-ink)]">{focus.title}</strong>
+            </span>
+          </label>
+        )}
+
         {dimensions.length > 0 && (
           <div>
             <Label htmlFor="j-dim">Area of life (optional, private)</Label>
@@ -318,6 +332,19 @@ export function JournalSheet({
             )}
           </div>
         )}
+
+        {!ai && aiStatus && !aiStatus.source && (
+          <PlusInvite
+            what={
+              kind === "intention"
+                ? "Get a clearer headline and a first step."
+                : kind === "win"
+                  ? "Get three questions that help you see what made this win happen."
+                  : "Get a first draft of your reflection from your week."
+            }
+          />
+        )}
+        {!ai && aiStatus?.unavailable && <p className="text-[12.5px] text-[var(--cm-muted)]">{aiStatus.unavailable}</p>}
 
         {shareable && pathway && (
           <div className="rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-fill)] p-3.5">

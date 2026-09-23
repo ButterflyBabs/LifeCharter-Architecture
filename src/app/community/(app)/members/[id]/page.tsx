@@ -8,10 +8,10 @@ import { useCommunity } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import { toPlain } from "@/lib/community/mentions";
 import type { Membership, Post, Profile, SpaceRole } from "@/lib/community/types";
-import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, PageLoading, RichText } from "@/components/community/ui";
+import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, PageLoading, RichText, PlusMark } from "@/components/community/ui";
 
 export default function MemberPage({ params }: { params: { id: string } }) {
-  const { supabase, userId, spaces, isAdmin, blockedIds, block, unblock } = useCommunity();
+  const { supabase, userId, spaces, isAdmin, blockedIds, block, unblock, plusIds } = useCommunity();
   const [confirmBlock, setConfirmBlock] = useState(false);
   const blocked = blockedIds.has(params.id);
   const router = useRouter();
@@ -78,7 +78,9 @@ export default function MemberPage({ params }: { params: { id: string } }) {
               </Link>
             )}
           </div>
-          <h1 className="mt-3 font-display text-[30px] font-semibold text-[var(--cm-ink)]">{p.display_name}</h1>
+          <h1 className="mt-3 font-display text-[30px] font-semibold text-[var(--cm-ink)]">
+            {p.display_name} {plusIds.has(p.user_id) && <PlusMark className="ml-1 text-[11px]" />}
+          </h1>
           {p.headline && <p className="text-[15px] text-[var(--cm-muted-2)]">{p.headline}</p>}
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-[var(--cm-muted)]">
             {p.location && (

@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { plusCreditFor } from "@/lib/community/plus";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -43,6 +44,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Starter plan is not configured" }, { status: 500 });
     }
 
+    // Collective Plus members get their last month of Plus credited.
+    const credit = Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
+    const amount = plan.onboarding_fee - Math.max(0, credit);
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: email,
@@ -50,11 +55,12 @@ export async function POST(req: NextRequest) {
         {
           price_data: {
             currency: "usd",
-            unit_amount: plan.onboarding_fee,
+            unit_amount: amount,
             product_data: {
               name: `LifeCharter Command Suite — ${plan.name} Implementation`,
               description:
-                "One-time implementation fee. Monthly billing begins once implementation is complete.",
+                "One-time implementation fee. Monthly billing begins once implementation is complete." +
+                (credit > 0 ? ` Includes a $${(credit / 100).toFixed(2)} credit for your last month of Collective Plus.` : ""),
             },
           },
           quantity: 1,
@@ -67,6 +73,7 @@ export async function POST(req: NextRequest) {
         planId: plan.id,
         fullName: fullName || "",
         sessionSource: typeof sessionSource === "string" ? sessionSource : "",
+        plusCredit: String(credit > 0 ? credit : 0),
       },
     });
 

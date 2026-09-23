@@ -1,14 +1,18 @@
 "use client";
 
-// The journal assistant: runs on the member's own Command Suite AI. Members
-// without an AI connection (Collective-only) never see any of this.
+// The journal assistant: runs on the member's own Command Suite AI, or on
+// Mariposa for Collective Plus members. Free members see a Plus invitation.
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "./ui";
 
-interface AiStatus {
+export interface AiStatus {
   enabled: boolean;
   assistantName: string;
+  plus?: boolean;
+  source?: "own" | "plus" | null;
+  unavailable?: string | null;
 }
 
 let cached: Promise<AiStatus> | null = null;
@@ -16,9 +20,7 @@ let cached: Promise<AiStatus> | null = null;
 export function useJournalAi(): AiStatus | null {
   const [status, setStatus] = useState<AiStatus | null>(null);
   useEffect(() => {
-    cached ??= fetch("/api/community/journal-ai")
-      .then((r) => (r.ok ? r.json() : { enabled: false, assistantName: "" }))
-      .catch(() => ({ enabled: false, assistantName: "" }));
+    cached ??= loadStatus();
     let live = true;
     void cached.then((s) => live && setStatus(s));
     return () => {
@@ -28,6 +30,51 @@ export function useJournalAi(): AiStatus | null {
   return status?.enabled ? status : null;
 }
 
+// Full status (null while loading) — for showing the Plus invitation or a
+// "limit reached" note instead of the buttons.
+export function useJournalAiStatus(): AiStatus | null {
+  const [status, setStatus] = useState<AiStatus | null>(null);
+  useEffect(() => {
+    cached ??= loadStatus();
+    let live = true;
+    void cached.then((s) => live && setStatus(s));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return status;
+}
+
+export function resetJournalAiStatus() {
+  cached = null;
+}
+
+function loadStatus(): Promise<AiStatus> {
+  return fetch("/api/community/journal-ai")
+    .then((r) => (r.ok ? r.json() : { enabled: false, assistantName: "Mariposa" }))
+    .catch(() => ({ enabled: false, assistantName: "Mariposa" }));
+}
+
+// Shown to free members wherever Mariposa would appear.
+export function PlusInvite({ what, title = "Mariposa can help", compact }: { what: string; title?: string; compact?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[#D4AF63]/60 bg-[var(--cm-surface)] p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-[14.5px] font-semibold text-[var(--cm-ink)]">
+          <Sparkles className="h-4 w-4 text-[var(--cm-gold-text)]" /> {title}
+        </span>
+        <Link
+          href="/community/plus"
+          className="rounded-full bg-[var(--cm-navy)] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:opacity-90"
+        >
+          See Collective Plus
+        </Link>
+      </div>
+      {!compact && <p className="mt-1 text-[12.5px] text-[var(--cm-muted)]">{what} {title === "Mariposa can help" ? "Mariposa, your LifeCharter AI coach, comes with Collective Plus." : "Included with Collective Plus."}</p>}
+    </div>
+  );
+}
+
 export async function askJournalAi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
   const res = await fetch("/api/community/journal-ai", {
     method: "POST",
@@ -35,7 +82,6 @@ export async function askJournalAi<T>(action: string, payload: Record<string, un
     body: JSON.stringify({ action, ...payload }),
   });
   const json = await res.json().catch(() => ({}));
-  if (json.needsKey) throw new Error("Connect your AI in Command Suite settings first.");
   if (!res.ok || !json.result) throw new Error(json.error || "The AI didn't respond — try again.");
   return json.result as T;
 }
@@ -70,4 +116,13 @@ export function Suggestion({ name, children, onUse, onDismiss, useLabel = "Use t
   );
 }
 
-export const AI_PRIVACY_NOTE = "Uses your own AI connection. Your words go to the AI only when you tap.";
+export const AI_PRIVACY_NOTE = "Private to you — your words go to the AI only when you tap.";
+
+// Plus features (report, focus, Ask the Library, export) are open to Plus
+// members and to Command Suite clients (who bring their own AI).
+export function usePlusAccess(isPlus: boolean): { loading: boolean; has: boolean; viaCommandSuite: boolean } {
+  const status = useJournalAiStatus();
+  if (isPlus) return { loading: false, has: true, viaCommandSuite: false };
+  if (!status) return { loading: true, has: false, viaCommandSuite: false };
+  return { loading: false, has: status.source === "own", viaCommandSuite: status.source === "own" };
+}

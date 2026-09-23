@@ -582,41 +582,68 @@ function Discover() {
 // ─── Members ───────────────────────────────────────────────────────────────
 
 function Members() {
-  const { supabase } = useCommunity();
+  const { supabase, plusIds, refresh } = useCommunity();
   const [rows, setRows] = useState<(Profile & { spaces: number })[] | null>(null);
   const [q, setQ] = useState("");
+  const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [busyId, setBusyId] = useState<string | null>(null);
   useEffect(() => {
     void (async () => {
-      const [p, m] = await Promise.all([
+      const [p, m, subs] = await Promise.all([
         supabase.from("cm_profiles").select("*").order("created_at", { ascending: false }).limit(1000),
         supabase.from("cm_space_members").select("user_id"),
+        supabase.rpc("cm_admin_plus_paid_ids"),
       ]);
       const n: Record<string, number> = {};
       for (const r of (m.data as { user_id: string }[]) ?? []) n[r.user_id] = (n[r.user_id] ?? 0) + 1;
       setRows(((p.data as Profile[]) ?? []).map((x) => ({ ...x, spaces: n[x.user_id] ?? 0 })));
+      setPaid(new Set((subs.data as string[] | null) ?? []));
     })();
   }, [supabase]);
+
+  async function togglePlus(userId: string, on: boolean) {
+    setBusyId(userId);
+    await supabase.rpc("cm_admin_set_plus", { p_user: userId, p_on: on });
+    await refresh();
+    setBusyId(null);
+  }
+
   if (rows === null) return <PageLoading />;
   const list = rows.filter((r) => !q || r.display_name.toLowerCase().includes(q.toLowerCase()));
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[14px] text-[var(--cm-muted-2)]">{rows.length} members</p>
+        <p className="text-[14px] text-[var(--cm-muted-2)]">
+          {rows.length} members · {plusIds.size} with Plus
+        </p>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="max-w-xs" />
       </div>
       <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
-        {list.map((p) => (
-          <Link key={p.user_id} href={`/community/members/${p.user_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--cm-fill)]">
-            <Avatar name={p.display_name} url={p.avatar_url} size={36} />
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-[var(--cm-ink)]">{p.display_name}</span>
-              <span className="block text-[12.5px] text-[var(--cm-muted)]">
-                Joined {timeAgo(p.created_at)} · {p.spaces} {p.spaces === 1 ? "channel" : "channels"}
-              </span>
-            </span>
-            {p.status === "suspended" && <Badge tone="gray">Paused</Badge>}
-          </Link>
-        ))}
+        {list.map((p) => {
+          const hasPlus = plusIds.has(p.user_id);
+          const isPaid = paid.has(p.user_id);
+          return (
+            <div key={p.user_id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--cm-fill)]">
+              <Link href={`/community/members/${p.user_id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar name={p.display_name} url={p.avatar_url} size={36} />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-[var(--cm-ink)]">{p.display_name}</span>
+                  <span className="block text-[12.5px] text-[var(--cm-muted)]">
+                    Joined {timeAgo(p.created_at)} · {p.spaces} {p.spaces === 1 ? "channel" : "channels"}
+                  </span>
+                </span>
+              </Link>
+              {p.status === "suspended" && <Badge tone="gray">Paused</Badge>}
+              {isPaid ? (
+                <Badge>Plus · paid</Badge>
+              ) : (
+                <Button size="sm" variant={hasPlus ? "ghost" : "navy"} disabled={busyId === p.user_id} onClick={() => togglePlus(p.user_id, !hasPlus)}>
+                  {hasPlus ? "Remove gifted Plus" : "Gift Plus"}
+                </Button>
+              )}
+            </div>
+          );
+        })}
       </Card>
     </div>
   );

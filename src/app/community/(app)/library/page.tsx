@@ -1,19 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ExternalLink, FileText, Link2, Plus, PlayCircle, Search, Trash2 } from "lucide-react";
+import { ExternalLink, FileText, Link2, Plus, PlayCircle, Search, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
 import { fileSize } from "@/lib/community/format";
 import { signedUrl, uploadCommunityFile } from "@/lib/community/storage";
 import type { Resource } from "@/lib/community/types";
 import { Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
+import { AI_PRIVACY_NOTE, PlusInvite, useJournalAi, usePlusAccess } from "@/components/community/JournalAssist";
 
 const DEFAULT_CATEGORIES = ["Templates", "Worksheets", "Assessments", "Recordings", "Guides", "Recommended Tools", "Command Suite Resources", "Alignment Exercises"];
 
 export default function LibraryPage() {
-  const { supabase, spaces, isAdmin, canModerate } = useCommunity();
+  const { supabase, spaces, isAdmin, canModerate, isPlus } = useCommunity();
+  const access = usePlusAccess(isPlus);
   const [rows, setRows] = useState<Resource[] | null>(null);
+  const [teaching, setTeaching] = useState<Resource | null>(null);
   const [scope, setScope] = useState<string>("library");
   const [q, setQ] = useState("");
   const [adding, setAdding] = useState(false);
@@ -54,6 +57,8 @@ export default function LibraryPage() {
           </Button>
         )}
       </div>
+
+      {!access.loading && (access.has ? <AskLibrary onOpen={(id) => { const r = rows?.find((x) => x.id === id); if (r) void open(r); }} /> : <div className="mb-4"><PlusInvite title="Ask the Library" what="Ask Mariposa anything about LifeCharter's frameworks and get answers drawn from the Library." /></div>)}
 
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-wrap gap-1.5">
@@ -105,6 +110,16 @@ export default function LibraryPage() {
                         </button>
                         {manage && (
                           <button
+                            aria-label={`Teach Mariposa about ${r.title}`}
+                            title={r.ai_text ? "Mariposa knows this item — update" : "Teach Mariposa about this item"}
+                            onClick={() => setTeaching(r)}
+                            className={cn("rounded-lg p-1.5 hover:bg-black/5", r.ai_text ? "text-[var(--cm-gold-text)]" : "text-[var(--cm-faint)] hover:text-[var(--cm-ink)]")}
+                          >
+                            <Sparkles className="h-4 w-4" />
+                          </button>
+                        )}
+                        {manage && (
+                          <button
                             aria-label={`Remove ${r.title}`}
                             onClick={async () => {
                               if (!confirm(`Remove “${r.title}” from the library?`)) return;
@@ -124,6 +139,17 @@ export default function LibraryPage() {
             </section>
           ))}
         </div>
+      )}
+
+      {teaching && (
+        <TeachMariposa
+          resource={teaching}
+          onClose={() => setTeaching(null)}
+          onSaved={() => {
+            setTeaching(null);
+            void load();
+          }}
+        />
       )}
 
       {adding && (
@@ -157,7 +183,7 @@ function ScopeChip({ active, onClick, children }: { active: boolean; onClick: ()
 
 function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { categories: string[]; defaultScope: string; onClose: () => void; onSaved: () => void }) {
   const { supabase, userId, spaces, isAdmin, canModerate } = useCommunity();
-  const [f, setF] = useState({ title: "", category: categories[0], description: "", kind: "link" as Resource["kind"], url: "", space_id: defaultScope });
+  const [f, setF] = useState({ title: "", category: categories[0], description: "", kind: "link" as Resource["kind"], url: "", space_id: defaultScope, notes: "" });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,17 +200,23 @@ function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { catego
         const a = await uploadCommunityFile(file, isAdmin ? "library" : userId!);
         storage = { storage_path: a.path!, file_name: file.name, file_size: file.size, mime_type: file.type };
       }
-      const { error } = await supabase.from("cm_resources").insert({
-        title: f.title.trim(),
-        category: f.category.trim() || "Guides",
-        description: f.description.trim() || null,
-        kind: f.kind,
-        url: f.kind === "file" ? null : f.url.trim(),
-        space_id: f.space_id || null,
-        created_by: userId,
-        ...(storage ?? {}),
-      });
+      const { data: created, error } = await supabase
+        .from("cm_resources")
+        .insert({
+          title: f.title.trim(),
+          category: f.category.trim() || "Guides",
+          description: f.description.trim() || null,
+          kind: f.kind,
+          url: f.kind === "file" ? null : f.url.trim(),
+          space_id: f.space_id || null,
+          created_by: userId,
+          ...(storage ?? {}),
+        })
+        .select("id")
+        .single();
       if (error) throw new Error(error.message);
+      // Let Mariposa learn it (reads uploaded PDFs/text files + any notes).
+      if (storage || f.notes.trim()) await teach((created as { id: string }).id, f.notes);
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't save.");
@@ -246,6 +278,15 @@ function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { catego
           <Label>Description (optional)</Label>
           <TextArea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className="min-h-[70px]" />
         </div>
+        <div>
+          <Label>What Mariposa should know (optional)</Label>
+          <TextArea
+            value={f.notes}
+            onChange={(e) => setF({ ...f, notes: e.target.value })}
+            className="min-h-[70px]"
+            placeholder="Key ideas, steps or who it's for — used to answer members' questions. Uploaded PDFs and text files are read automatically."
+          />
+        </div>
         <ErrorNote>{error}</ErrorNote>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
@@ -257,5 +298,118 @@ function ResourceEditor({ categories, defaultScope, onClose, onSaved }: { catego
         </div>
       </div>
     </Modal>
+  );
+}
+
+async function teach(id: string, notes: string): Promise<{ chars: number; fromFile: boolean }> {
+  const r = await fetch("/api/community/library/learn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, notes }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error ?? "Mariposa couldn't read that item.");
+  return j;
+}
+
+function TeachMariposa({ resource, onClose, onSaved }: { resource: Resource; onClose: () => void; onSaved: () => void }) {
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const known = resource.ai_text?.length ?? 0;
+  return (
+    <Modal open onClose={onClose} title="Teach Mariposa">
+      <div className="space-y-3">
+        <p className="text-[14px] text-[var(--cm-body)]">
+          <strong>{resource.title}</strong>
+          <br />
+          <span className="text-[13px] text-[var(--cm-muted-2)]">
+            {known ? `Mariposa currently knows about ${Math.round(known / 5)} words from this item.` : "Mariposa doesn't know this item yet."}
+            {resource.storage_path ? " Saving re-reads the uploaded file." : ""}
+          </span>
+        </p>
+        <div>
+          <Label>What Mariposa should know</Label>
+          <TextArea value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[140px]" placeholder="Key ideas, steps, who it's for, when to use it…" />
+          <p className="mt-1 text-[12px] text-[var(--cm-muted)]">This replaces what she knew before{resource.storage_path ? " (plus the file's text)" : ""}.</p>
+        </div>
+        <ErrorNote>{error}</ErrorNote>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="gold"
+            disabled={busy || (!notes.trim() && !resource.storage_path)}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await teach(resource.id, notes);
+                onSaved();
+              } catch (e) {
+                setError(e instanceof Error ? e.message : "Couldn't save.");
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Teaching…" : "Save"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// "Ask the Library" (Collective Plus / Command Suite).
+function AskLibrary({ onOpen }: { onOpen: (id: string) => void }) {
+  const ai = useJournalAi();
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ question: string; answer: string; sources: { id: string; title: string }[] } | null>(null);
+  const name = ai?.assistantName ?? "Mariposa";
+
+  async function ask(e: React.FormEvent) {
+    e.preventDefault();
+    if (q.trim().length < 3) return;
+    setBusy(true);
+    setError(null);
+    const r = await fetch("/api/community/library/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.result) setResult({ question: q.trim(), ...j.result });
+    else setError(j.error ?? "Try again in a moment.");
+    setBusy(false);
+  }
+
+  return (
+    <Card className="mb-5 border-[#D4AF63]/40 bg-[var(--cm-gold-soft)] p-4">
+      <form onSubmit={ask} className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Sparkles className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--cm-gold-text)]" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Ask ${name} about LifeCharter's frameworks and resources`} className="pl-9" maxLength={500} />
+        </div>
+        <Button variant="gold" type="submit" disabled={busy || q.trim().length < 3}>
+          {busy ? "Thinking…" : "Ask"}
+        </Button>
+      </form>
+      <p className="mt-1.5 text-[12px] text-[var(--cm-muted)]">{error ?? AI_PRIVACY_NOTE}</p>
+      {result && (
+        <div className="mt-3 rounded-xl bg-[var(--cm-surface)] p-3.5">
+          <p className="text-[12.5px] font-semibold text-[var(--cm-muted-2)]">{result.question}</p>
+          <p className="mt-1 whitespace-pre-line text-[14.5px] text-[var(--cm-ink)]">{result.answer}</p>
+          {result.sources.length > 0 && (
+            <p className="mt-2 flex flex-wrap gap-1.5 text-[12.5px]">
+              <span className="text-[var(--cm-muted)]">From:</span>
+              {result.sources.map((s) => (
+                <button key={s.id} onClick={() => onOpen(s.id)} className="rounded-full border border-[var(--cm-line-strong)] px-2 py-0.5 font-semibold text-[var(--cm-ink)] hover:border-[#D4AF63]">
+                  {s.title}
+                </button>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

@@ -23,6 +23,8 @@ interface CommunityState {
   unreadDms: number;
   unreadNotifications: number;
   blockedIds: Set<string>; // people I've blocked
+  plusIds: Set<string>; // members with Collective Plus (for the badge)
+  isPlus: boolean; // do I have Collective Plus?
   block: (userId: string) => Promise<void>;
   unblock: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -54,6 +56,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const [unreadDms, setUnreadDms] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [plusIds, setPlusIds] = useState<Set<string>>(new Set());
   const uidRef = useRef<string | null>(null);
 
   const refreshCounts = useCallback(async () => {
@@ -90,6 +93,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       supabase.from("cm_space_members").select("*").eq("user_id", user.id),
       supabase.from("cm_blocks").select("blocked_id").eq("blocker_id", user.id),
     ]);
+    void supabase.rpc("cm_plus_member_ids").then(({ data }: { data: string[] | null }) => setPlusIds(new Set(data ?? [])));
     setBlockedIds(new Set(((blk.data as { blocked_id: string }[]) ?? []).map((b) => b.blocked_id)));
     let me = (prof.data as Profile) ?? null;
     // Someone who has added a photo and introduced themselves has done the
@@ -182,6 +186,8 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       unreadDms,
       unreadNotifications,
       blockedIds,
+      plusIds,
+      isPlus: userId ? plusIds.has(userId) : false,
       block,
       unblock,
       refresh,
@@ -191,7 +197,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       spaceBySlug: (slug) => spaces.find((s) => s.slug === slug),
       channelsFor: (id) => channels.filter((c) => c.space_id === id),
     };
-  }, [loading, supabase, userId, email, profile, isAdmin, spaces, channels, memberships, unreadDms, unreadNotifications, blockedIds, block, unblock, refresh, refreshCounts]);
+  }, [loading, supabase, userId, email, profile, isAdmin, spaces, channels, memberships, unreadDms, unreadNotifications, blockedIds, plusIds, block, unblock, refresh, refreshCounts]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -17,7 +17,7 @@ import { InstallBanner } from "@/components/community/InstallApp";
 import { WelcomeStrip } from "@/components/community/WelcomeStrip";
 import { HomeFeed } from "@/components/community/HomeFeed";
 import { JournalSheet } from "@/components/community/JournalSheet";
-import { weekStartOf, type JournalEntry, type JournalKind } from "@/lib/community/journal";
+import { weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } from "@/lib/community/journal";
 import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
 
@@ -44,11 +44,16 @@ function CommunityHome() {
   const [programLatest, setProgramLatest] = useState<Record<string, Post | null>>({});
   const [cards, setCards] = useState<DiscoverCard[]>([]);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [focus, setFocus] = useState<JournalFocus | null>(null);
   const [sheet, setSheet] = useState<{ kind: JournalKind; entry?: JournalEntry | null } | null>(null);
   const loadJournal = useCallback(async () => {
     if (!userId) return;
-    const { data } = await supabase.from("cm_journal_entries").select("*").eq("user_id", userId).eq("week_start", weekStartOf());
+    const [{ data }, { data: fx }] = await Promise.all([
+      supabase.from("cm_journal_entries").select("*").eq("user_id", userId).eq("week_start", weekStartOf()),
+      supabase.from("cm_journal_focus").select("*").eq("user_id", userId).eq("status", "active").order("starts_on", { ascending: false }).limit(1).maybeSingle(),
+    ]);
     setJournal((data as JournalEntry[]) ?? []);
+    setFocus((fx as JournalFocus) ?? null);
   }, [supabase, userId]);
   useEffect(() => {
     void loadJournal();
@@ -184,6 +189,7 @@ function CommunityHome() {
           <JournalSheet
             kind={sheet.kind}
             entry={sheet.entry}
+            focus={focus}
             onClose={() => setSheet(null)}
             onSaved={() => {
               setSheet(null);
