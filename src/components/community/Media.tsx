@@ -311,7 +311,7 @@ export function Lightbox({ images, start, onClose }: { images: Attachment[]; sta
       role="dialog"
       aria-modal="true"
       aria-label="Photo viewer"
-      className="fixed inset-0 z-[100] flex flex-col bg-[#0B1226]/95"
+      className="fixed inset-0 z-[100] flex flex-col bg-[#0B1226]"
       onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
       onTouchEnd={(e) => {
         if (!touch.current) return;

@@ -116,7 +116,7 @@ function Invites() {
               <p className="font-semibold text-[#1F315B]">
                 {s.emoji} {s.name}{" "}
                 <span className="ml-1 text-[12.5px] font-normal text-[#8A8FA0]">
-                  {counts[s.id] ?? 0} members · {s.visibility}
+                  {counts[s.id] ?? 0} {counts[s.id] === 1 ? "member" : "members"} · {s.visibility}
                   {s.is_default ? " · everyone" : ""}
                 </span>
               </p>

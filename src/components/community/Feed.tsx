@@ -59,6 +59,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
   }
 
   const expanded = focused || body.length > 0 || hasMedia;
+  const placeholder = channel.prompt || (isAnnouncement ? "Share an update…" : "Share with the Collective…");
 
   return (
     <Card className="p-4">
@@ -66,15 +67,25 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
         <Avatar name={profile?.display_name} url={profile?.avatar_url} size={40} />
         <div className="min-w-0 flex-1 space-y-2.5">
           {expanded && isAnnouncement && <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)" />}
-          <TextArea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onPaste={pasteInto(media)}
-            placeholder={channel.prompt || (isAnnouncement ? "Share an update…" : "Share with the Collective…")}
-            className={cn("transition-all", expanded ? "min-h-[110px]" : "min-h-[46px]")}
-            rows={expanded ? 4 : 1}
-          />
+          {expanded ? (
+            <TextArea
+              autoFocus
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onPaste={pasteInto(media)}
+              placeholder={placeholder}
+              className="min-h-[110px]"
+              rows={4}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFocused(true)}
+              className="block w-full truncate rounded-xl border border-[#DCD3C1] bg-white px-3.5 py-2.5 text-left text-[15px] text-[#9AA0B0] transition hover:border-[#D4AF63]"
+            >
+              {placeholder}
+            </button>
+          )}
           <DraftStrip draft={media} />
           <ErrorNote>{error}</ErrorNote>
           <div className="flex items-center justify-between gap-2">
