@@ -9,7 +9,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { eventWhen, timeAgo } from "@/lib/community/format";
-import type { CommunityEvent, DiscoverCard, Post } from "@/lib/community/types";
+import type { DiscoverCard, Post } from "@/lib/community/types";
+import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
 import { useFileUrl } from "@/lib/community/storage";
 import { InstallBanner } from "@/components/community/InstallApp";
@@ -32,7 +33,7 @@ function CommunityHome() {
   const params = useSearchParams();
   const [anchor, setAnchor] = useState<Post | null>(null);
   const [intention, setIntention] = useState<Post | null | undefined>(undefined);
-  const [nextEvent, setNextEvent] = useState<CommunityEvent | null>(null);
+  const [nextSession, setNextSession] = useState<Session | null>(null);
   const [announcements, setAnnouncements] = useState<Post[]>([]);
   const [activity, setActivity] = useState<Post[]>([]);
   const [programLatest, setProgramLatest] = useState<Record<string, Post | null>>({});
@@ -61,7 +62,7 @@ function CommunityHome() {
         intentionChannel
           ? supabase.from("cm_posts").select("*").eq("channel_id", intentionChannel.id).eq("author_id", userId).gte("created_at", weekStart.toISOString()).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle()
           : Promise.resolve({ data: null }),
-        supabase.from("cm_events").select("*").gte("starts_at", new Date(Date.now() - 60 * 60_000).toISOString()).order("starts_at").limit(1).maybeSingle(),
+        upcomingEvents(supabase, { limit: 1, days: 120 }),
         annIds.length
           ? supabase.from("cm_posts").select("*").in("channel_id", annIds).is("deleted_at", null).order("created_at", { ascending: false }).limit(3)
           : Promise.resolve({ data: [] }),
@@ -72,7 +73,7 @@ function CommunityHome() {
       ]);
       setAnchor((a.data as Post) ?? null);
       setIntention((i.data as Post) ?? null);
-      setNextEvent((e.data as CommunityEvent) ?? null);
+      setNextSession(e[0] ?? null);
       setAnnouncements(((ann.data as Post[]) ?? []).filter((p) => p.channel_id !== anchorChannel?.id));
       setActivity((act.data as Post[]) ?? []);
       setCards(((disc.data as DiscoverCard[]) ?? []).filter((c) => !c.space_id || !memberSpaceIds.includes(c.space_id)));
@@ -136,9 +137,9 @@ function CommunityHome() {
         <NextCard
           icon={<CalendarDays className="h-5 w-5" />}
           label="Your Next Session"
-          href={nextEvent ? `/community/events#${nextEvent.id}` : "/community/events"}
-          title={nextEvent?.title ?? "No sessions scheduled yet"}
-          detail={nextEvent ? eventWhen(nextEvent.starts_at, nextEvent.ends_at) : "Alignment Anchors, office hours and workshops appear here."}
+          href={nextSession ? `/community/events#${nextSession.event.id}` : "/community/events"}
+          title={nextSession?.event.title ?? "No sessions scheduled yet"}
+          detail={nextSession ? eventWhen(nextSession.start.toISOString(), nextSession.end.toISOString()) : "Alignment Anchors, office hours and workshops appear here."}
         />
         <NextCard
           icon={<Compass className="h-5 w-5" />}

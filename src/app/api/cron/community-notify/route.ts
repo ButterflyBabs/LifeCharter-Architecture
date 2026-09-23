@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createServerClient } from "@/lib/supabase/server";
+import { sessionsBetween } from "@/lib/community/events";
 
 export const dynamic = "force-dynamic";
 
@@ -44,21 +45,25 @@ async function run(request: Request) {
   const now = Date.now();
   const result = { reminders: 0, pushed: 0, emailed: 0, pushConfigured: false, emailConfigured: false };
 
-  // ── Event reminders: ~1 hour before, for people who RSVP'd "going". ──────
-  const { data: soon } = await supabase
-    .from("cm_events")
-    .select("id, title, starts_at")
-    .is("deleted_at", null)
-    .gte("starts_at", new Date(now).toISOString())
-    .lte("starts_at", new Date(now + 65 * 60_000).toISOString());
-  for (const e of (soon as { id: string; title: string; starts_at: string }[]) ?? []) {
-    const { data: rsvps } = await supabase.from("cm_event_rsvps").select("user_id").eq("event_id", e.id).eq("status", "going").is("reminded_at", null);
-    const users = ((rsvps as { user_id: string }[]) ?? []).map((r) => r.user_id);
+  // ── Event reminders: ~1 hour before each session, for people who RSVP'd
+  //    "going". Recurring series remind before every session.
+  const soon = await sessionsBetween(supabase, new Date(now), new Date(now + 65 * 60_000));
+  for (const s of soon) {
+    if (s.start.getTime() < now) continue;
+    const at = s.start.toISOString();
+    const { data: rsvps } = await supabase
+      .from("cm_event_rsvps")
+      .select("user_id, reminded_for")
+      .eq("event_id", s.event.id)
+      .eq("status", "going");
+    const users = ((rsvps as { user_id: string; reminded_for: string | null }[]) ?? [])
+      .filter((r) => !r.reminded_for || new Date(r.reminded_for).getTime() !== s.start.getTime())
+      .map((r) => r.user_id);
     if (!users.length) continue;
     await supabase.from("cm_notifications").insert(
-      users.map((u) => ({ user_id: u, kind: "event", title: `Starting soon: ${e.title}`, body: "Your session begins within the hour.", href: `/community/events#${e.id}` }))
+      users.map((u) => ({ user_id: u, kind: "event", title: `Starting soon: ${s.event.title}`, body: "Your session begins within the hour.", href: `/community/events#${s.event.id}` }))
     );
-    await supabase.from("cm_event_rsvps").update({ reminded_at: new Date().toISOString() }).eq("event_id", e.id).in("user_id", users);
+    await supabase.from("cm_event_rsvps").update({ reminded_for: at, reminded_at: new Date().toISOString() }).eq("event_id", s.event.id).in("user_id", users);
     result.reminders += users.length;
   }
 

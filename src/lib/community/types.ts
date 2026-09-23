@@ -1,5 +1,7 @@
 // Row shapes for The LifeCharter Collective (cm_* tables).
 
+import type { RecurFreq } from "./recurrence";
+
 export type SpaceSection = "start" | "community" | "programs" | "alumni";
 
 export interface Space {
@@ -138,6 +140,9 @@ export interface CommunityEvent {
   replay_url: string | null;
   cover_url: string | null;
   recurrence: string | null;
+  recur_freq: RecurFreq | null;
+  recur_until: string | null;
+  recur_exdates: string[] | null;
 }
 
 export interface Resource {

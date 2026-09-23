@@ -1,20 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, PlayCircle, Plus, Repeat, Trash2, Video } from "lucide-react";
+import { CalendarPlus, CalendarX, ChevronLeft, ChevronRight, Pencil, PlayCircle, Plus, Repeat, Trash2, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
 import { eventWhen } from "@/lib/community/format";
+import { sessionsBetween, upcomingEvents, type Session } from "@/lib/community/events";
+import { describeRule, icsLocal, rrule, ruleChoices, type RecurFreq } from "@/lib/community/recurrence";
 import { EVENT_KIND_LABELS, type CommunityEvent, type EventKind } from "@/lib/community/types";
 import { Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, RichText, TextArea } from "@/components/community/ui";
 
 type Rsvp = "going" | "maybe" | "not_going";
+type View = "upcoming" | "past" | "calendar";
 
-function icsFor(e: CommunityEvent) {
+// One-off events download as a single calendar entry; series download with
+// their repeat rule, in the event's own time zone, so they stay correct
+// across daylight-saving changes.
+function icsFor(s: Session) {
+  const e = s.event;
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const start = new Date(e.starts_at);
-  const end = e.ends_at ? new Date(e.ends_at) : new Date(start.getTime() + 60 * 60_000);
-  const esc = (s: string) => s.replace(/[\\,;]/g, (m) => "\\" + m).replace(/\n/g, "\\n");
+  const esc = (t: string) => t.replace(/[\\,;]/g, (m) => "\\" + m).replace(/\n/g, "\\n");
+  const rule = rrule(e);
+  const first = new Date(e.starts_at);
+  const firstEnd = e.ends_at ? new Date(e.ends_at) : new Date(first.getTime() + 60 * 60_000);
+  const tz = e.timezone || "America/Denver";
+  const timing = rule
+    ? [
+        `DTSTART;TZID=${tz}:${icsLocal(first, tz)}`,
+        `DTEND;TZID=${tz}:${icsLocal(firstEnd, tz)}`,
+        rule,
+        ...(e.recur_exdates ?? []).map((d) => `EXDATE;TZID=${tz}:${d.replace(/-/g, "")}T${icsLocal(first, tz).slice(9)}`),
+      ]
+    : [`DTSTART:${fmt(s.start)}`, `DTEND:${fmt(s.end)}`];
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -22,8 +39,7 @@ function icsFor(e: CommunityEvent) {
     "BEGIN:VEVENT",
     `UID:${e.id}@lifecharter-collective`,
     `DTSTAMP:${fmt(new Date())}`,
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
+    ...timing,
     `SUMMARY:${esc(e.title)}`,
     `DESCRIPTION:${esc([e.description, e.join_url].filter(Boolean).join("\n\n"))}`,
     e.join_url ? `URL:${e.join_url}` : "",
@@ -39,13 +55,13 @@ function icsFor(e: CommunityEvent) {
   URL.revokeObjectURL(a.href);
 }
 
-type View = "upcoming" | "past" | "calendar";
-
-function useRsvps(events: CommunityEvent[] | null) {
+// RSVPs are per event — "Going" to a series means every session (with a
+// reminder before each one).
+function useRsvps(sessions: Session[] | null) {
   const { supabase, userId } = useCommunity();
   const [rsvps, setRsvps] = useState<Record<string, Rsvp>>({});
   const [going, setGoing] = useState<Record<string, number>>({});
-  const key = (events ?? []).map((e) => e.id).join(",");
+  const key = Array.from(new Set((sessions ?? []).map((s) => s.event.id))).join(",");
 
   useEffect(() => {
     if (!key) return;
@@ -76,30 +92,30 @@ function useRsvps(events: CommunityEvent[] | null) {
 export default function EventsPage() {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
   const [view, setView] = useState<View>("upcoming");
-  const [events, setEvents] = useState<CommunityEvent[] | null>(null);
+  const [sessions, setSessions] = useState<Session[] | null>(null);
   const [editing, setEditing] = useState<Partial<CommunityEvent> | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const canCreate = isAdmin || spaces.some((s) => canModerate(s.id));
-  const { rsvps, going, rsvp } = useRsvps(view === "calendar" ? null : events);
+  const { rsvps, going, rsvp } = useRsvps(view === "calendar" ? null : sessions);
 
   const load = useCallback(async () => {
     if (view === "calendar") return;
-    const cutoff = new Date(Date.now() - 2 * 3600_000).toISOString();
-    const q = supabase.from("cm_events").select("*");
-    const { data } =
-      view === "upcoming" ? await q.gte("starts_at", cutoff).order("starts_at").limit(50) : await q.lt("starts_at", cutoff).order("starts_at", { ascending: false }).limit(50);
-    setEvents((data as CommunityEvent[]) ?? []);
+    if (view === "upcoming") return setSessions(await upcomingEvents(supabase, { limit: 60 }));
+    // Past: sessions from the last 18 months, newest first.
+    const now = new Date();
+    const past = await sessionsBetween(supabase, new Date(now.getTime() - 540 * 86_400_000), new Date(now.getTime() - 2 * 3600_000));
+    setSessions(past.filter((s) => s.end.getTime() < now.getTime()).reverse().slice(0, 60));
   }, [supabase, view]);
 
   useEffect(() => {
-    setEvents(null);
+    setSessions(null);
     void load();
   }, [load, reloadKey]);
 
   useEffect(() => {
-    if (!events?.length || !window.location.hash) return;
+    if (!sessions?.length || !window.location.hash) return;
     document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [events]);
+  }, [sessions]);
 
   const reload = () => setReloadKey((k) => k + 1);
 
@@ -144,16 +160,16 @@ export default function EventsPage() {
           onEdit={setEditing}
           onChanged={reload}
         />
-      ) : events === null ? (
+      ) : sessions === null ? (
         <PageLoading />
-      ) : events.length === 0 ? (
+      ) : sessions.length === 0 ? (
         <EmptyState icon="📅" title={view === "upcoming" ? "Nothing scheduled yet" : "No past events"}>
           {view === "upcoming" ? "New sessions will appear here." : "Replays will collect here after each session."}
         </EmptyState>
       ) : (
         <div className="space-y-3">
-          {events.map((e) => (
-            <EventCard key={e.id} e={e} rsvp={rsvps[e.id]} goingCount={going[e.id]} onRsvp={rsvp} onEdit={setEditing} onChanged={reload} />
+          {sessions.map((s) => (
+            <EventCard key={`${s.event.id}-${s.date}`} s={s} rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={setEditing} onChanged={reload} />
           ))}
         </div>
       )}
@@ -173,7 +189,7 @@ export default function EventsPage() {
 }
 
 function EventCard({
-  e,
+  s,
   rsvp,
   goingCount,
   onRsvp,
@@ -181,28 +197,28 @@ function EventCard({
   onChanged,
   compact,
 }: {
-  e: CommunityEvent;
+  s: Session;
   rsvp?: Rsvp;
   goingCount?: number;
-  onRsvp: (e: CommunityEvent, s: Rsvp) => void;
+  onRsvp: (e: CommunityEvent, st: Rsvp) => void;
   onEdit: (e: CommunityEvent) => void;
   onChanged: () => void;
   compact?: boolean;
 }) {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
-  const d = new Date(e.starts_at);
-  const endMs = e.ends_at ? new Date(e.ends_at).getTime() : d.getTime() + 2 * 3600_000;
-  const upcoming = endMs > Date.now();
-  const soon = d.getTime() - Date.now() < 30 * 60_000 && upcoming;
-  const space = spaces.find((s) => s.id === e.space_id);
+  const e = s.event;
+  const upcoming = s.end.getTime() > Date.now();
+  const soon = s.start.getTime() - Date.now() < 30 * 60_000 && upcoming;
+  const space = spaces.find((x) => x.id === e.space_id);
   const manage = isAdmin || (e.space_id ? canModerate(e.space_id) : false);
+  const repeats = describeRule(e) ?? e.recurrence;
 
   return (
     <Card className={cn("scroll-mt-24", compact ? "p-4" : "p-4 sm:p-5")}>
       <div id={e.id} className="flex gap-4">
         <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#1F315B] to-[#0F1A38] text-white">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E6C988]">{d.toLocaleDateString(undefined, { month: "short" })}</span>
-          <span className="font-display text-[26px] font-semibold leading-none">{d.getDate()}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E6C988]">{s.start.toLocaleDateString(undefined, { month: "short" })}</span>
+          <span className="font-display text-[26px] font-semibold leading-none">{s.start.getDate()}</span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -210,10 +226,10 @@ function EventCard({
             <Badge tone="gray">{space ? `${space.emoji} ${space.name}` : "Whole Collective"}</Badge>
           </div>
           <h2 className="mt-1 font-display text-[22px] font-semibold leading-snug text-[#1F315B]">{e.title}</h2>
-          <p className="text-[13.5px] text-[#5B6275]">{eventWhen(e.starts_at, e.ends_at)}</p>
-          {e.recurrence && (
+          <p className="text-[13.5px] text-[#5B6275]">{eventWhen(s.start.toISOString(), s.end.toISOString())}</p>
+          {repeats && (
             <p className="mt-0.5 flex items-center gap-1 text-[12.5px] text-[#8A8FA0]">
-              <Repeat className="h-3.5 w-3.5" /> {e.recurrence}
+              <Repeat className="h-3.5 w-3.5" /> {repeats}
             </p>
           )}
           {e.description && !compact && <RichText text={e.description} className="mt-2 text-[14.5px]" />}
@@ -226,7 +242,7 @@ function EventCard({
                 </Button>
               </a>
             )}
-            {e.replay_url && (
+            {e.replay_url && !e.recur_freq && (
               <a href={e.replay_url} target="_blank" rel="noopener noreferrer">
                 <Button size="sm" variant="gold">
                   <PlayCircle className="h-4 w-4" /> Watch replay
@@ -236,33 +252,53 @@ function EventCard({
             {upcoming && (
               <>
                 <div className="inline-flex overflow-hidden rounded-xl border border-[#DCD3C1]">
-                  {(["going", "maybe"] as Rsvp[]).map((s) => (
+                  {(["going", "maybe"] as Rsvp[]).map((st) => (
                     <button
-                      key={s}
-                      onClick={() => onRsvp(e, rsvp === s ? "not_going" : s)}
-                      className={cn("px-3 py-1.5 text-[13px] font-semibold", rsvp === s ? "bg-[#1F315B] text-white" : "bg-white text-[#1F315B] hover:bg-[#FBF8F2]")}
+                      key={st}
+                      onClick={() => onRsvp(e, rsvp === st ? "not_going" : st)}
+                      title={e.recur_freq && st === "going" ? "You'll get a reminder before each session" : undefined}
+                      className={cn("px-3 py-1.5 text-[13px] font-semibold", rsvp === st ? "bg-[#1F315B] text-white" : "bg-white text-[#1F315B] hover:bg-[#FBF8F2]")}
                     >
-                      {s === "going" ? "Going" : "Maybe"}
+                      {st === "going" ? "Going" : "Maybe"}
                     </button>
                   ))}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => icsFor(e)}>
-                  <CalendarPlus className="h-4 w-4" /> Add to calendar
+                <Button size="sm" variant="ghost" onClick={() => icsFor(s)}>
+                  <CalendarPlus className="h-4 w-4" /> {e.recur_freq ? "Add series to calendar" : "Add to calendar"}
                 </Button>
               </>
             )}
             {!!goingCount && <span className="text-[12.5px] text-[#8A8FA0]">{goingCount} going</span>}
             {manage && (
               <span className="ml-auto flex gap-1">
-                <Button size="sm" variant="ghost" onClick={() => onEdit(e)} aria-label="Edit event">
+                {e.recur_freq && upcoming && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Skip this date"
+                    title="Skip this date only"
+                    onClick={async () => {
+                      const label = s.start.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+                      if (!confirm(`Skip ${label}? The rest of the series stays on the calendar.`)) return;
+                      await supabase
+                        .from("cm_events")
+                        .update({ recur_exdates: Array.from(new Set([...(e.recur_exdates ?? []), s.date])) })
+                        .eq("id", e.id);
+                      onChanged();
+                    }}
+                  >
+                    <CalendarX className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => onEdit(e)} aria-label={e.recur_freq ? "Edit series" : "Edit event"}>
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  aria-label="Delete event"
+                  aria-label={e.recur_freq ? "Delete series" : "Delete event"}
                   onClick={async () => {
-                    if (!confirm(`Delete “${e.title}”?`)) return;
+                    if (!confirm(e.recur_freq ? `Delete every session of “${e.title}”?` : `Delete “${e.title}”?`)) return;
                     await supabase.from("cm_events").update({ deleted_at: new Date().toISOString() }).eq("id", e.id);
                     onChanged();
                   }}
@@ -307,8 +343,8 @@ function MonthCalendar({
   const today = new Date();
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState<Date>(today);
-  const [events, setEvents] = useState<CommunityEvent[] | null>(null);
-  const { rsvps, going, rsvp } = useRsvps(events);
+  const [sessions, setSessions] = useState<Session[] | null>(null);
+  const { rsvps, going, rsvp } = useRsvps(sessions);
 
   // Six-week grid starting on the Sunday on or before the 1st.
   const gridStart = new Date(month);
@@ -322,26 +358,20 @@ function MonthCalendar({
   gridEnd.setDate(gridEnd.getDate() + 1);
 
   useEffect(() => {
-    setEvents(null);
-    void supabase
-      .from("cm_events")
-      .select("*")
-      .gte("starts_at", gridStart.toISOString())
-      .lt("starts_at", gridEnd.toISOString())
-      .order("starts_at")
-      .then(({ data }: { data: CommunityEvent[] | null }) => setEvents(data ?? []));
+    setSessions(null);
+    void sessionsBetween(supabase, gridStart, gridEnd).then(setSessions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, month.getTime(), reloadKey]);
 
-  const byDay = new Map<string, CommunityEvent[]>();
-  for (const e of events ?? []) {
-    const k = dayKey(new Date(e.starts_at));
+  const byDay = new Map<string, Session[]>();
+  for (const s of sessions ?? []) {
+    const k = dayKey(s.start);
     if (!byDay.has(k)) byDay.set(k, []);
-    byDay.get(k)!.push(e);
+    byDay.get(k)!.push(s);
   }
-  const selectedEvents = byDay.get(dayKey(selected)) ?? [];
+  const selectedSessions = byDay.get(dayKey(selected)) ?? [];
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
-  const time = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }).replace(":00", "").replace(" ", "").toLowerCase();
+  const time = (d: Date) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }).replace(":00", "").replace(" ", "").toLowerCase();
 
   return (
     <div className="space-y-4">
@@ -380,7 +410,7 @@ function MonthCalendar({
           ))}
         </div>
 
-        <div className={cn("grid grid-cols-7", events === null && "opacity-60")}>
+        <div className={cn("grid grid-cols-7", sessions === null && "opacity-60")}>
           {days.map((d, i) => {
             const inMonth = d.getMonth() === month.getMonth();
             const isToday = dayKey(d) === dayKey(today);
@@ -411,15 +441,19 @@ function MonthCalendar({
                 {/* Phones: dots. Larger screens: time + title chips. */}
                 {list.length > 0 && (
                   <span className="flex justify-center gap-0.5 sm:hidden">
-                    {list.slice(0, 3).map((e) => (
-                      <span key={e.id} className="h-1.5 w-1.5 rounded-full bg-[#B8923F]" />
+                    {list.slice(0, 3).map((s) => (
+                      <span key={`${s.event.id}-${s.date}`} className="h-1.5 w-1.5 rounded-full bg-[#B8923F]" />
                     ))}
                   </span>
                 )}
                 <span className="hidden flex-col gap-0.5 sm:flex">
-                  {list.slice(0, 2).map((e) => (
-                    <span key={e.id} title={`${time(e.starts_at)} ${e.title}`} className={cn("truncate rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold", CHIP[e.kind] ?? "bg-[#F5EBD3] text-[#7A5E1F]")}>
-                      {time(e.starts_at)} {e.title}
+                  {list.slice(0, 2).map((s) => (
+                    <span
+                      key={`${s.event.id}-${s.date}`}
+                      title={`${time(s.start)} ${s.event.title}`}
+                      className={cn("truncate rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold", CHIP[s.event.kind] ?? "bg-[#F5EBD3] text-[#7A5E1F]")}
+                    >
+                      {time(s.start)} {s.event.title}
                     </span>
                   ))}
                   {list.length > 2 && <span className="px-1 text-[11px] font-semibold text-[#8A8FA0]">+{list.length - 2} more</span>}
@@ -441,12 +475,12 @@ function MonthCalendar({
             </Button>
           )}
         </div>
-        {selectedEvents.length === 0 ? (
+        {selectedSessions.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-[#DCD3C1] bg-white/60 px-4 py-6 text-center text-[14px] text-[#8A8FA0]">Nothing scheduled this day.</p>
         ) : (
           <div className="space-y-3">
-            {selectedEvents.map((e) => (
-              <EventCard key={e.id} e={e} compact rsvp={rsvps[e.id]} goingCount={going[e.id]} onRsvp={rsvp} onEdit={onEdit} onChanged={onChanged} />
+            {selectedSessions.map((s) => (
+              <EventCard key={`${s.event.id}-${s.date}`} s={s} compact rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={onEdit} onChanged={onChanged} />
             ))}
           </div>
         )}
@@ -455,12 +489,16 @@ function MonthCalendar({
   );
 }
 
+// ─── Editor ────────────────────────────────────────────────────────────────
+
 function toLocalInput(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+const selectClass = "w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]";
 
 function EventEditor({ initial, onClose, onSaved }: { initial: Partial<CommunityEvent>; onClose: () => void; onSaved: () => void }) {
   const { supabase, userId, spaces, isAdmin, canModerate } = useCommunity();
@@ -470,31 +508,48 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
     space_id: initial.space_id ?? "",
     starts: toLocalInput(initial.starts_at),
     ends: toLocalInput(initial.ends_at),
+    repeat: (initial.recur_freq ?? "") as RecurFreq | "",
+    until: initial.recur_until ?? "",
     join_url: initial.join_url ?? "",
     location: initial.location ?? "",
     replay_url: initial.replay_url ?? "",
-    recurrence: initial.recurrence ?? "",
     description: initial.description ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const spaceOptions = spaces.filter((s) => isAdmin || canModerate(s.id));
+  const choices = ruleChoices(f.starts);
+  const repeating = !!f.repeat;
 
   async function save() {
     if (!f.title.trim() || !f.starts) return setError("Title and start time are required.");
     if (!f.space_id && !isAdmin) return setError("Choose a channel.");
+    const start = new Date(f.starts);
+    const end = f.ends ? new Date(f.ends) : null;
+    if (end && end <= start) return setError("The end time needs to be after the start time.");
+    if (repeating && end && end.getTime() - start.getTime() > 24 * 3600_000) {
+      return setError("For a repeating event, set when this first session ends (the same day), and use “Repeat until” for the last date.");
+    }
+    if (repeating && f.until && f.until < f.starts.slice(0, 10)) return setError("“Repeat until” needs to be on or after the first session.");
     setBusy(true);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const rule = {
+      starts_at: start.toISOString(),
+      timezone,
+      recur_freq: (f.repeat || null) as RecurFreq | null,
+      recur_until: repeating && f.until ? f.until : null,
+    };
     const row = {
       title: f.title.trim(),
       kind: f.kind,
       space_id: f.space_id || null,
-      starts_at: new Date(f.starts).toISOString(),
-      ends_at: f.ends ? new Date(f.ends).toISOString() : null,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ...rule,
+      ends_at: end ? end.toISOString() : null,
+      recur_exdates: repeating ? initial.recur_exdates ?? [] : [],
+      recurrence: describeRule(rule),
       join_url: f.join_url.trim() || null,
       location: f.location.trim() || null,
       replay_url: f.replay_url.trim() || null,
-      recurrence: f.recurrence.trim() || null,
       description: f.description.trim() || null,
     };
     const { error } = initial.id
@@ -508,7 +563,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
 
   return (
-    <Modal open onClose={onClose} title={initial.id ? "Edit event" : "New event"} wide>
+    <Modal open onClose={onClose} title={initial.id ? (initial.recur_freq ? "Edit series" : "Edit event") : "New event"} wide>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label>Title</Label>
@@ -516,7 +571,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
         </div>
         <div>
           <Label>Type</Label>
-          <select value={f.kind} onChange={set("kind")} className="w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]">
+          <select value={f.kind} onChange={set("kind")} className={selectClass}>
             {Object.entries(EVENT_KIND_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
@@ -526,7 +581,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
         </div>
         <div>
           <Label>Who can see it</Label>
-          <select value={f.space_id} onChange={set("space_id")} className="w-full rounded-xl border border-[#DCD3C1] bg-white px-3 py-2.5 text-[15px]">
+          <select value={f.space_id} onChange={set("space_id")} className={selectClass}>
             {isAdmin && <option value="">Whole Collective</option>}
             {spaceOptions.map((s) => (
               <option key={s.id} value={s.id}>
@@ -536,29 +591,47 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
           </select>
         </div>
         <div>
-          <Label>Starts</Label>
+          <Label>{repeating ? "First session starts" : "Starts"}</Label>
           <Input type="datetime-local" value={f.starts} onChange={set("starts")} />
         </div>
         <div>
-          <Label>Ends</Label>
+          <Label>{repeating ? "First session ends" : "Ends"}</Label>
           <Input type="datetime-local" value={f.ends} onChange={set("ends")} />
         </div>
+        <div>
+          <Label>Repeats</Label>
+          <select value={f.repeat} onChange={set("repeat")} className={selectClass} disabled={!f.starts}>
+            {choices.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Repeat until (optional)</Label>
+          <Input type="date" value={f.until} onChange={set("until")} disabled={!repeating} min={f.starts.slice(0, 10) || undefined} />
+        </div>
+        {repeating && (
+          <p className="-mt-1 text-[12.5px] text-[#8A8FA0] sm:col-span-2">
+            Each session runs at the same local time. Leave “Repeat until” empty to keep it going. To skip a single date later, use the{" "}
+            <CalendarX className="inline h-3.5 w-3.5 align-[-2px]" /> button on that session.
+          </p>
+        )}
         <div className="sm:col-span-2">
           <Label>Join link (Zoom, etc.)</Label>
           <Input value={f.join_url} onChange={set("join_url")} placeholder="https://zoom.us/j/…" />
         </div>
         <div>
-          <Label>Repeats (shown as text)</Label>
-          <Input value={f.recurrence} onChange={set("recurrence")} placeholder="Every Tuesday" />
-        </div>
-        <div>
           <Label>Location (optional)</Label>
           <Input value={f.location} onChange={set("location")} placeholder="Online" />
         </div>
-        <div className="sm:col-span-2">
-          <Label>Replay link (add after the session)</Label>
-          <Input value={f.replay_url} onChange={set("replay_url")} placeholder="https://…" />
-        </div>
+        {!repeating && (
+          <div>
+            <Label>Replay link (add after the session)</Label>
+            <Input value={f.replay_url} onChange={set("replay_url")} placeholder="https://…" />
+          </div>
+        )}
         <div className="sm:col-span-2">
           <Label>Description</Label>
           <TextArea value={f.description} onChange={set("description")} />
@@ -572,7 +645,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
           Cancel
         </Button>
         <Button variant="gold" onClick={save} disabled={busy}>
-          {busy ? "Saving…" : "Save event"}
+          {busy ? "Saving…" : initial.recur_freq || repeating ? "Save series" : "Save event"}
         </Button>
       </div>
     </Modal>

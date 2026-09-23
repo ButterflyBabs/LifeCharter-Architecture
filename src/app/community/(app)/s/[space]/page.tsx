@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, Megaphone } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import { eventWhen, timeAgo } from "@/lib/community/format";
-import type { CommunityEvent } from "@/lib/community/types";
+import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Card, EmptyState, Eyebrow, Avatar } from "@/components/community/ui";
 import { JoinSpaceBanner } from "@/components/community/JoinSpaceBanner";
 import { useProfiles } from "@/lib/community/context";
@@ -14,7 +14,7 @@ export default function SpacePage({ params }: { params: { space: string } }) {
   const { supabase, spaceBySlug, channelsFor, isMember } = useCommunity();
   const space = spaceBySlug(params.space);
   const [activity, setActivity] = useState<Record<string, string>>({});
-  const [events, setEvents] = useState<CommunityEvent[]>([]);
+  const [events, setEvents] = useState<Session[]>([]);
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const people = useProfiles(memberIds);
@@ -24,13 +24,13 @@ export default function SpacePage({ params }: { params: { space: string } }) {
     void (async () => {
       const [posts, ev, mem] = await Promise.all([
         supabase.from("cm_posts").select("channel_id, created_at").eq("space_id", space.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
-        supabase.from("cm_events").select("*").eq("space_id", space.id).gte("starts_at", new Date(Date.now() - 2 * 3600_000).toISOString()).order("starts_at").limit(3),
+        upcomingEvents(supabase, { spaceId: space.id, limit: 3, days: 120 }),
         supabase.from("cm_space_members").select("user_id", { count: "exact" }).eq("space_id", space.id).order("joined_at", { ascending: false }).limit(8),
       ]);
       const latest: Record<string, string> = {};
       for (const p of (posts.data as { channel_id: string; created_at: string }[]) ?? []) latest[p.channel_id] ??= p.created_at;
       setActivity(latest);
-      setEvents((ev.data as CommunityEvent[]) ?? []);
+      setEvents(ev);
       setMemberIds(((mem.data as { user_id: string }[]) ?? []).map((m) => m.user_id));
       setMemberCount(mem.count ?? 0);
     })();
@@ -82,11 +82,11 @@ export default function SpacePage({ params }: { params: { space: string } }) {
         <section>
           <h2 className="mb-2 font-display text-[22px] font-semibold text-[#1F315B]">Upcoming</h2>
           <div className="space-y-2">
-            {events.map((e) => (
+            {events.map(({ event: e, start, end }) => (
               <Link key={e.id} href={`/community/events#${e.id}`}>
                 <Card className="p-4 hover:border-[#D4AF63]">
                   <p className="font-semibold text-[#1F315B]">{e.title}</p>
-                  <p className="text-[13px] text-[#6B6F80]">{eventWhen(e.starts_at, e.ends_at)}</p>
+                  <p className="text-[13px] text-[#6B6F80]">{eventWhen(start.toISOString(), end.toISOString())}</p>
                 </Card>
               </Link>
             ))}
