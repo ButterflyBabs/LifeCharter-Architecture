@@ -327,7 +327,7 @@ Appendix A. Handoff Package Contents
 LifeCharter-Architecture_Master_Build_Directive_v1.0.docx
 LifeCharter-Architecture_Light_Mode_Prototype.png
 LifeCharter-Architecture_Dark_Mode_Prototype.png
-LifeCharter_Brand_Board.png
+LifeCharter_Brand_Board.png (retired 2026-09-24 — brand now lives in the Sept 2026 boards in ~/Claude/brand)
 LifeCharter_Standalone_Application_Blueprint.docx
 Profit-Architecture-Integration-Assessment.docx
 The prototype images must remain in the repository as permanent product references. The build team should not rely on compressed screenshots pasted into chat when the original reference files are available in the handoff package.

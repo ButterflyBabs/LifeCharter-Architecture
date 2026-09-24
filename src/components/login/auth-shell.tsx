@@ -35,8 +35,8 @@ export function AuthShell({
           <Image
             src="/lifecharter-command-suite-logo.png"
             alt="LifeCharter Command Suite"
-            width={1390}
-            height={371}
+            width={1400}
+            height={447}
             priority
             className="mx-auto mb-6 w-[72%] max-w-[260px] drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           />

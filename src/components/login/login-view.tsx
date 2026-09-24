@@ -145,8 +145,8 @@ export function LoginView() {
           <Image
             src="/lifecharter-command-suite-logo.png"
             alt="LifeCharter Command Suite"
-            width={1390}
-            height={371}
+            width={1400}
+            height={447}
             priority
             className="mx-auto mb-2.5 w-[78%] max-w-[300px] drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           />
