@@ -24,17 +24,21 @@ export interface JoinSpace {
   join_enabled: boolean;
 }
 
+// A soft dawn wash behind the card: blush and gold rising, misty blue settling.
 const PAGE_BG: React.CSSProperties = {
   background: `
-    radial-gradient(900px 600px at 10% -10%, rgba(212,175,99,0.22), transparent 60%),
-    radial-gradient(900px 700px at 110% 110%, rgba(31,49,91,0.16), transparent 60%),
-    #F8F5F0`,
+    radial-gradient(900px 600px at 8% -10%, rgba(245,216,207,0.9), transparent 60%),
+    radial-gradient(700px 520px at 45% -20%, rgba(212,175,99,0.22), transparent 60%),
+    radial-gradient(900px 700px at 110% 110%, rgba(148,163,184,0.35), transparent 60%),
+    #FAF8F3`,
 };
+// The Collective's signature gradient.
+const DAWN = "linear-gradient(100deg, #F5D8CF 0%, #F0B58B 22%, #D4AF63 48%, #94A3B8 74%, #1F2B59 100%)";
 
 const field =
   "w-full rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-4 py-3 text-[15px] text-[var(--cm-ink)] outline-none transition placeholder:text-[var(--cm-faint)] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/20";
 const goldButton =
-  "w-full rounded-xl bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] py-3.5 text-[15px] font-semibold tracking-[0.02em] text-[#0F1A38] shadow-[0_12px_26px_-12px_rgba(184,146,63,0.9)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70";
+  "w-full rounded-xl bg-gradient-to-br from-[#E9D7A9] via-[#D4AF63] to-[#B8923F] py-3.5 text-[15px] font-semibold tracking-[0.02em] text-[#1F2B3A] shadow-[0_12px_26px_-12px_rgba(184,146,63,0.9)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70";
 
 export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mode?: "join" | "signin" }) {
   const router = useRouter();
@@ -144,7 +148,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
   if (!signinOnly && !space) {
     return (
       <Shell>
-        <p className="mb-2 text-center font-display text-[26px] font-semibold text-[var(--cm-ink)]">This link isn&rsquo;t active</p>
+        <p className="mb-2 text-center font-editorial text-[26px] font-semibold text-[var(--cm-ink)]">This link isn&rsquo;t active</p>
         <p className="text-center text-[14.5px] text-[var(--cm-muted-2)]">Please check the link you were given, or ask whoever invited you for a new one.</p>
       </Shell>
     );
@@ -162,22 +166,27 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
         </div>
       )}
       <Image
-        src="/lifecharter-collective-mark.png"
-        alt="LifeCharter Command Suite"
-        width={803}
-        height={772}
+        src="/collective-logo.png"
+        alt="The LifeCharter Collective"
+        width={280}
+        height={93}
         priority
-        className="mx-auto mb-4 h-auto w-[148px]"
+        className="mx-auto mb-4 h-auto w-[280px] max-w-full"
       />
-      {!isMain && <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--cm-gold-text)]">The LifeCharter Collective</p>}
-      <h1 className="mt-1 text-center font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)]">
+      {/* The logo already names the Collective, so on its own front door the title is for screen readers. */}
+      <h1
+        className={cn(
+          "mt-1 text-center font-editorial text-[32px] font-semibold leading-tight text-[var(--cm-ink)]",
+          isMain && !signinOnly && "sr-only"
+        )}
+      >
         {signinOnly ? "Welcome back" : title}
       </h1>
       <p className="mx-auto mt-1.5 max-w-sm text-center text-[14.5px] leading-relaxed text-[var(--cm-muted-2)]">
         {signinOnly
           ? "Sign in to The LifeCharter Collective."
           : isMain
-            ? "Your community for Purpose, Clarity and Aligned Action."
+            ? "Where LifeCharter and LifeCharter Command Suite members gather."
             : space!.description || space!.tagline}
       </p>
 
@@ -285,7 +294,8 @@ function ErrorLine({ children }: { children: React.ReactNode }) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main style={PAGE_BG} className="flex min-h-screen w-full items-center justify-center px-4 py-10 font-ui">
-      <div className="w-full max-w-[440px] rounded-[26px] border border-[var(--cm-line)] bg-[var(--cm-surface)] px-6 py-8 shadow-[0_2px_4px_rgba(31,49,91,0.05),0_30px_60px_-30px_rgba(31,49,91,0.45)] sm:px-9 sm:py-10">
+      <div className="relative w-full max-w-[440px] overflow-hidden rounded-[26px] border border-[var(--cm-line)] bg-[var(--cm-surface)] px-6 py-8 shadow-[0_2px_4px_rgba(31,43,58,0.05),0_30px_60px_-30px_rgba(31,43,58,0.45)] sm:px-9 sm:py-10">
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: DAWN }} />
         {children}
       </div>
     </main>

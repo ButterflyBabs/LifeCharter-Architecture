@@ -34,7 +34,7 @@ function Frame({ children }: { children: ReactNode }) {
   const { dark } = useThemePref();
   // Paint the page behind the app too (overscroll, phone status bar area).
   useEffect(() => {
-    document.body.style.background = dark ? "#0E1628" : "#F8F5F0";
+    document.body.style.background = dark ? "#151D27" : "#FAF8F3";
     return () => {
       document.body.style.background = "";
     };
@@ -68,8 +68,8 @@ function Frame({ children }: { children: ReactNode }) {
       {/* Mobile drawer */}
       {drawer && (
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setDrawer(false)}>
-          <div className="absolute inset-0 bg-[#0F1A38]/50" />
-          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[320px] bg-[#0F1A38] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-[#1F2B3A]/50" />
+          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[320px] bg-[#1A2E44] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <Sidebar onClose={() => setDrawer(false)} />
           </div>
         </div>
@@ -110,7 +110,7 @@ function SuiteRedirectNotice() {
   if (!show) return null;
   const who = [profile?.display_name, email ? `(${email})` : null].filter(Boolean).join(" ") || "this account";
   return (
-    <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-[#E6C988] bg-[var(--cm-gold-soft)] px-4 py-3 text-[14px] text-[var(--cm-ink)]">
+    <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-[#E9D7A9] bg-[var(--cm-gold-soft)] px-4 py-3 text-[14px] text-[var(--cm-ink)]">
       <p className="flex-1 leading-relaxed">
         That page is part of <strong>LifeCharter Command Suite</strong>. You&rsquo;re signed in as <strong>{who}</strong>, a Collective member.{" "}
         <button onClick={signOut} className="font-semibold text-[var(--cm-gold-text)] underline underline-offset-2 hover:text-[var(--cm-ink)]">
@@ -129,7 +129,7 @@ function NotYetMember() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--cm-ground)] px-4 font-ui">
       <div className="max-w-md rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] p-8 text-center shadow-lg">
-        <p className="font-display text-[28px] font-semibold text-[var(--cm-ink)]">You&rsquo;re not in the Collective yet</p>
+        <p className="font-editorial text-[28px] font-semibold text-[var(--cm-ink)]">You&rsquo;re not in the Collective yet</p>
         <p className="mt-2 text-[14.5px] text-[var(--cm-muted-2)]">
           Use the join link and invite code you were given to become a member of The LifeCharter Collective.
         </p>
@@ -185,18 +185,23 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <nav
       aria-label="Community"
-      className="flex h-full flex-col overflow-y-auto bg-gradient-to-b from-[#1B2B52] via-[#16244A] to-[#0F1A38] text-[#EDE6D6]"
+      className="relative flex h-full flex-col overflow-y-auto bg-gradient-to-b from-[#123F47] via-[#1A2E44] to-[#1F2B59] text-[#F3EEE4]"
     >
+      {/* The dawn — the Collective's signature — as a thin line across the top. */}
+      <div
+        aria-hidden
+        className="pointer-events-none sticky top-0 z-10 h-[3px] w-full shrink-0 bg-[linear-gradient(100deg,#F5D8CF_0%,#F0B58B_22%,#D4AF63_48%,#94A3B8_74%,#1F2B59_100%)]"
+      />
       <div className="flex items-center justify-between gap-2 px-5 pb-4 pt-5">
         <Link href="/community" className="flex items-center gap-3">
-          <Image src="/lifecharter-collective-mark.png" alt="" width={803} height={772} className="h-11 w-auto drop-shadow" />
+          <Image src="/collective-emblem.png" alt="" width={44} height={44} className="h-11 w-11 drop-shadow" />
           <span className="leading-tight">
             <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-[#D4AF63]">The LifeCharter</span>
-            <span className="block font-display text-[21px] font-semibold text-[#F8F5F0]">Collective</span>
+            <span className="block font-editorial text-[21px] font-semibold text-[#FAF8F3]">Collective</span>
           </span>
         </Link>
         {onClose && (
-          <button onClick={onClose} aria-label="Close menu" className="rounded-lg p-1.5 text-[#EDE6D6]/70 hover:bg-white/10">
+          <button onClick={onClose} aria-label="Close menu" className="rounded-lg p-1.5 text-[#F3EEE4]/70 hover:bg-white/10">
             <X className="h-5 w-5" />
           </button>
         )}
@@ -265,7 +270,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                     href={base}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[14px] transition",
-                      open ? "bg-white/10 text-white" : "text-[#EDE6D6]/85 hover:bg-white/[0.06] hover:text-white"
+                      open ? "bg-white/10 text-white" : "text-[#F3EEE4]/85 hover:bg-white/[0.06] hover:text-white"
                     )}
                   >
                     <span className="w-5 text-center">{space.emoji}</span>
@@ -304,7 +309,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="mt-auto border-t border-white/10 px-3 pb-4 pt-3">
         {isAdmin && (
           <div className="mb-3 px-2">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#EDE6D6]/50">Viewing as</p>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#F3EEE4]/50">Viewing as</p>
             <div className="grid grid-cols-2 rounded-full bg-white/[0.07] p-0.5" role="group" aria-label="Viewing as">
               {(["member", "admin"] as const).map((v) => (
                 <button
@@ -313,14 +318,14 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                   aria-pressed={viewAs === v}
                   className={cn(
                     "rounded-full py-1 text-[12px] font-semibold transition",
-                    viewAs === v ? "bg-[#D4AF63] text-[#0F1A38]" : "text-[#EDE6D6]/70 hover:text-white"
+                    viewAs === v ? "bg-[#D4AF63] text-[#1F2B3A]" : "text-[#F3EEE4]/70 hover:text-white"
                   )}
                 >
                   {v === "member" ? "Member" : "Admin"}
                 </button>
               ))}
             </div>
-            <p className="mt-1 text-[11px] leading-snug text-[#EDE6D6]/45">
+            <p className="mt-1 text-[11px] leading-snug text-[#F3EEE4]/45">
               {viewAs === "member" ? "Showing the channels a free member sees." : "Showing every channel."}
             </p>
           </div>
@@ -329,16 +334,16 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <Avatar name={profile?.display_name} url={profile?.avatar_url} size={34} className="ring-[#D4AF63]/40" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[14px] font-semibold text-white">{profile?.display_name ?? "Your profile"}</span>
-            <span className="block text-[12px] text-[#EDE6D6]/60">Profile & settings</span>
+            <span className="block text-[12px] text-[#F3EEE4]/60">Profile & settings</span>
           </span>
-          <Settings2 className="h-4 w-4 text-[#EDE6D6]/50" />
+          <Settings2 className="h-4 w-4 text-[#F3EEE4]/50" />
         </Link>
         {isAdmin && (
-          <Link href="/" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#EDE6D6]/70 hover:bg-white/[0.06] hover:text-white">
+          <Link href="/" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
             <ArrowLeftRight className="h-4 w-4" /> Command Suite
           </Link>
         )}
-        <button onClick={signOut} className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#EDE6D6]/70 hover:bg-white/[0.06] hover:text-white">
+        <button onClick={signOut} className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
           <LogOut className="h-4 w-4" /> Sign out
         </button>
       </div>
@@ -379,7 +384,7 @@ function FoldHeading({ label, collapsed, onToggle }: { label: string; collapsed:
     <button
       onClick={onToggle}
       aria-expanded={!collapsed}
-      className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90 hover:text-[#E6C988]"
+      className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[#D4AF63]/90 hover:text-[#E9D7A9]"
     >
       <span>{label}</span>
       <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", collapsed && "-rotate-90")} aria-hidden />
@@ -393,7 +398,7 @@ function ChannelLink({ href, emoji, name, active }: { href: string; emoji: strin
       href={href}
       className={cn(
         "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[13.5px] transition",
-        active ? "bg-[#D4AF63]/15 font-semibold text-[#F3E3BC]" : "text-[#EDE6D6]/75 hover:bg-white/[0.06] hover:text-white"
+        active ? "bg-[#D4AF63]/15 font-semibold text-[#F3E3BC]" : "text-[#F3EEE4]/75 hover:bg-white/[0.06] hover:text-white"
       )}
     >
       <span className="w-5 text-center text-[14px]">{emoji}</span>
@@ -408,12 +413,12 @@ function NavItem({ href, icon: Icon, label, active, badge }: { href: string; ico
       href={href}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition",
-        active ? "bg-[#D4AF63]/15 font-semibold text-[#F3E3BC]" : "text-[#EDE6D6]/85 hover:bg-white/[0.06] hover:text-white"
+        active ? "bg-[#D4AF63]/15 font-semibold text-[#F3E3BC]" : "text-[#F3EEE4]/85 hover:bg-white/[0.06] hover:text-white"
       )}
     >
-      <Icon className={cn("h-[18px] w-[18px]", active ? "text-[#D4AF63]" : "text-[#EDE6D6]/60")} />
+      <Icon className={cn("h-[18px] w-[18px]", active ? "text-[#D4AF63]" : "text-[#F3EEE4]/60")} />
       <span className="flex-1">{label}</span>
-      {!!badge && <span className="rounded-full bg-[#D4AF63] px-1.5 text-[11px] font-bold text-[#0F1A38]">{badge > 99 ? "99+" : badge}</span>}
+      {!!badge && <span className="rounded-full bg-[#D4AF63] px-1.5 text-[11px] font-bold text-[#1F2B3A]">{badge > 99 ? "99+" : badge}</span>}
     </Link>
   );
 }
@@ -426,12 +431,12 @@ function MobileTopBar({ onMenu }: { onMenu: () => void }) {
         <Menu className="h-5 w-5" />
       </button>
       <Link href="/community" className="flex items-center gap-2">
-        <Image src="/lifecharter-collective-mark.png" alt="" width={803} height={772} className="h-8 w-auto" />
-        <span className="font-display text-[19px] font-semibold text-[var(--cm-ink)]">The Collective</span>
+        <Image src="/collective-emblem.png" alt="" width={32} height={32} className="h-8 w-8" />
+        <span className="font-editorial text-[19px] font-semibold text-[var(--cm-ink)]">The Collective</span>
       </Link>
       <Link href="/community/notifications" aria-label="Notifications" className="relative rounded-lg p-2 text-[var(--cm-ink)] hover:bg-black/5">
         <Bell className="h-5 w-5" />
-        {!!unreadNotifications && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#D4AF63] ring-2 ring-[#F8F5F0]" />}
+        {!!unreadNotifications && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#D4AF63] ring-2 ring-[#FAF8F3]" />}
       </Link>
     </header>
   );
@@ -456,7 +461,7 @@ function MobileTabBar({ onSpaces }: { onSpaces: () => void }) {
       </button>
       <Link href="/community/messages" className={cn(tab, "relative", pathname.startsWith("/community/messages") ? on : off)}>
         <MessageCircle className="h-5 w-5" /> Messages
-        {!!unreadDms && <span className="absolute right-[26%] top-1 rounded-full bg-[#D4AF63] px-1 text-[10px] font-bold text-[#0F1A38]">{unreadDms}</span>}
+        {!!unreadDms && <span className="absolute right-[26%] top-1 rounded-full bg-[#D4AF63] px-1 text-[10px] font-bold text-[#1F2B3A]">{unreadDms}</span>}
       </Link>
       <Link href="/community/events" className={cn(tab, pathname.startsWith("/community/events") ? on : off)}>
         <CalendarDays className="h-5 w-5" /> Events

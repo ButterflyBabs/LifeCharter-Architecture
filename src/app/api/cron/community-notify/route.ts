@@ -185,20 +185,20 @@ async function run(request: Request) {
           const rows = items
             .slice(0, 12)
             .map(
-              (i) => `<tr><td style="padding:12px 0;border-bottom:1px solid #EFE8DA">
-                <a href="${APP_URL}${escapeHtml(i.href ?? "/community")}" style="color:#1F315B;font-weight:600;text-decoration:none">${escapeHtml(i.title)}</a>
-                ${i.body ? `<div style="color:#5B6275;font-size:14px;margin-top:3px">${escapeHtml(i.body.slice(0, 180))}</div>` : ""}
+              (i) => `<tr><td style="padding:12px 0;border-bottom:1px solid #F1EBDF">
+                <a href="${APP_URL}${escapeHtml(i.href ?? "/community")}" style="color:#1F2B3A;font-weight:600;text-decoration:none">${escapeHtml(i.title)}</a>
+                ${i.body ? `<div style="color:#56616E;font-size:14px;margin-top:3px">${escapeHtml(i.body.slice(0, 180))}</div>` : ""}
               </td></tr>`
             )
             .join("");
-          const html = `<!doctype html><html><body style="margin:0;background:#F8F5F0;font-family:Georgia,serif">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5F0;padding:28px 12px"><tr><td align="center">
-            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:28px;border:1px solid #E9E2D3">
-              <tr><td style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A8873F;font-family:Arial,sans-serif">The LifeCharter Collective</td></tr>
-              <tr><td style="font-size:24px;color:#1F315B;padding:8px 0 4px">Hi ${escapeHtml(first)}, here's what's new</td></tr>
+          const html = `<!doctype html><html><body style="margin:0;background:#FAF8F3;font-family:Georgia,serif">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3;padding:28px 12px"><tr><td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:28px;border:1px solid #E6DDCB">
+              <tr><td style="padding-bottom:6px"><img src="${APP_URL}/collective-logo.png" width="240" alt="The LifeCharter Collective" style="display:block;width:240px;max-width:100%;height:auto;border:0"></td></tr>
+              <tr><td style="font-size:24px;color:#1F2B3A;padding:8px 0 4px">Hi ${escapeHtml(first)}, here's what's new</td></tr>
               <tr><td><table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:15px">${rows}</table></td></tr>
-              <tr><td style="padding-top:22px"><a href="${APP_URL}/community" style="display:inline-block;background:#D4AF63;color:#0F1A38;font-family:Arial,sans-serif;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none">Open the Collective</a></td></tr>
-              <tr><td style="padding-top:22px;font-size:12px;color:#8A8FA0;font-family:Arial,sans-serif">You're receiving this because you're a member of The LifeCharter Collective. <a href="${APP_URL}/community/profile" style="color:#8A8FA0">Change email settings</a>.</td></tr>
+              <tr><td style="padding-top:22px"><a href="${APP_URL}/community" style="display:inline-block;background:#D4AF63;color:#1F2B3A;font-family:Arial,sans-serif;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none">Open the Collective</a></td></tr>
+              <tr><td style="padding-top:22px;font-size:12px;color:#7F8894;font-family:Arial,sans-serif">You're receiving this because you're a member of The LifeCharter Collective. <a href="${APP_URL}/community/profile" style="color:#7F8894">Change email settings</a>.</td></tr>
             </table></td></tr></table></body></html>`;
           const res = await fetch("https://api.resend.com/emails", {
             method: "POST",

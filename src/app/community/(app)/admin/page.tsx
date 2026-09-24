@@ -146,7 +146,7 @@ function Invites() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <code className="rounded-lg bg-[var(--cm-fill-2)] px-2.5 py-1.5 text-[13px] text-[var(--cm-ink)]">{link.replace(/^https?:\/\//, "")}</code>
               <CopyButton text={link} label="Link" />
-              <code className="rounded-lg bg-[var(--cm-navy)] px-2.5 py-1.5 font-mono text-[13px] tracking-[0.15em] text-[#E6C988]">{code ?? "—"}</code>
+              <code className="rounded-lg bg-[var(--cm-navy)] px-2.5 py-1.5 font-mono text-[13px] tracking-[0.15em] text-[#E9D7A9]">{code ?? "—"}</code>
               {code && <CopyButton text={code} label="Code" />}
               {code && <CopyButton text={`Join ${s.name}: ${link}\nInvite code: ${code}`} label="Both" />}
               <Button

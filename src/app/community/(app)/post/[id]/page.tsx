@@ -87,7 +87,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
       />
 
       <Card className="p-4 sm:p-5">
-        <h2 className="mb-3 font-display text-[21px] font-semibold text-[var(--cm-ink)]">
+        <h2 className="mb-3 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">
           {comments.length ? `${comments.length} ${comments.length === 1 ? "reply" : "replies"}` : "Replies"}
         </h2>
         <div className="space-y-4">

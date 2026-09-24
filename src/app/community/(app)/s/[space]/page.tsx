@@ -50,7 +50,7 @@ export default function SpacePage({ params }: { params: { space: string } }) {
     <div className="space-y-6">
       <div>
         <Eyebrow>The LifeCharter Collective</Eyebrow>
-        <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[38px]">
+        <h1 className="mt-1 font-editorial text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[38px]">
           <span className="mr-2">{space.emoji}</span>
           {space.name}
         </h1>
@@ -80,7 +80,7 @@ export default function SpacePage({ params }: { params: { space: string } }) {
 
       {events.length > 0 && (
         <section>
-          <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Upcoming</h2>
+          <h2 className="mb-2 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Upcoming</h2>
           <div className="space-y-2">
             {events.map(({ event: e, start, end }) => (
               <Link key={e.id} href={`/community/events#${e.id}`}>
@@ -95,7 +95,7 @@ export default function SpacePage({ params }: { params: { space: string } }) {
       )}
 
       <section>
-        <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+        <h2 className="mb-2 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">
           Members <span className="text-[16px] font-normal text-[var(--cm-muted)]">· {memberCount}</span>
         </h2>
         <div className="flex flex-wrap gap-2">

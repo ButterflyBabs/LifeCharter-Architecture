@@ -97,7 +97,7 @@ export function WelcomeStrip() {
   return (
     <section aria-labelledby="welcome-strip">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 id="welcome-strip" className="flex items-center gap-2 font-display text-[22px] font-semibold sm:text-[24px] text-[var(--cm-ink)]">
+        <h2 id="welcome-strip" className="flex items-center gap-2 font-editorial text-[22px] font-semibold sm:text-[24px] text-[var(--cm-ink)]">
           <Sparkles className="h-5 w-5 text-[var(--cm-gold-text)]" /> Welcome our newest members
         </h2>
         <span className="hidden text-[12.5px] text-[var(--cm-muted)] sm:inline">Joined in the last {WINDOW_DAYS} days</span>
@@ -127,7 +127,7 @@ export function WelcomeStrip() {
                 ) : (
                   <Link
                     href={`/community/post/${introId}`}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] px-3 py-1.5 text-[13px] font-semibold text-[#0F1A38]"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#E9D7A9] via-[#D4AF63] to-[#B8923F] px-3 py-1.5 text-[13px] font-semibold text-[#1F2B3A]"
                   >
                     👋 Say welcome
                   </Link>

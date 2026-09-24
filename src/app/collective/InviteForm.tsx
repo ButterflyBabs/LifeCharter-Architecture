@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 const field =
-  "w-full rounded-xl border border-[#DCD3C1] bg-white px-4 py-3.5 text-[15px] text-[#1F315B] outline-none transition placeholder:text-[#A9AEBB] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/25";
+  "w-full rounded-xl border border-[#D9CCB3] bg-white px-4 py-3.5 text-[15px] text-[#1F2B3A] outline-none transition placeholder:text-[#A6ADB6] focus:border-[#D4AF63] focus:ring-[3px] focus:ring-[#D4AF63]/25";
 
 export function InviteForm({ source, dark = false }: { source: string; dark?: boolean }) {
   const [busy, setBusy] = useState(false);
@@ -38,13 +38,13 @@ export function InviteForm({ source, dark = false }: { source: string; dark?: bo
 
   if (sentTo) {
     return (
-      <div className={`rounded-2xl p-5 text-left ${dark ? "bg-white/10 text-[#F8F5F0]" : "border border-[#E9E2D3] bg-white text-[#1F315B]"}`} role="status">
-        <p className="font-display text-[24px] font-semibold leading-tight">Your invitation is on its way.</p>
-        <p className={`mt-1.5 text-[14.5px] leading-relaxed ${dark ? "text-[#EDE6D6]/85" : "text-[#5B6275]"}`}>
+      <div className={`rounded-2xl p-5 text-left ${dark ? "bg-white/10 text-[#FAF8F3]" : "border border-[#E6DDCB] bg-white text-[#1F2B3A]"}`} role="status">
+        <p className="font-editorial text-[24px] font-semibold leading-tight">Your invitation is on its way.</p>
+        <p className={`mt-1.5 text-[14.5px] leading-relaxed ${dark ? "text-[#F3EEE4]/85" : "text-[#56616E]"}`}>
           Check <strong>{sentTo}</strong> for an email from The LifeCharter Collective with your personal link and invite code. If it isn&rsquo;t there in a minute, look in
           Promotions or Spam.
         </p>
-        <button onClick={() => setSentTo(null)} className={`mt-3 text-[13px] underline underline-offset-2 ${dark ? "text-[#E6C988]" : "text-[#A8873F]"}`}>
+        <button onClick={() => setSentTo(null)} className={`mt-3 text-[13px] underline underline-offset-2 ${dark ? "text-[#E9D7A9]" : "text-[#A8873F]"}`}>
           Use a different email
         </button>
       </div>
@@ -67,7 +67,7 @@ export function InviteForm({ source, dark = false }: { source: string; dark?: bo
       <input name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 opacity-0" />
       <button
         disabled={busy}
-        className="mt-2.5 w-full rounded-xl bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] py-4 text-[15.5px] font-semibold tracking-[0.02em] text-[#0F1A38] shadow-[0_14px_30px_-14px_rgba(184,146,63,0.95)] transition hover:brightness-105 disabled:opacity-70"
+        className="mt-2.5 w-full rounded-xl bg-gradient-to-br from-[#E9D7A9] via-[#D4AF63] to-[#B8923F] py-4 text-[15.5px] font-semibold tracking-[0.02em] text-[#1F2B3A] shadow-[0_14px_30px_-14px_rgba(184,146,63,0.95)] transition hover:brightness-105 disabled:opacity-70"
       >
         {busy ? "Sending your invitation…" : "Request your free invitation"}
       </button>
@@ -76,9 +76,9 @@ export function InviteForm({ source, dark = false }: { source: string; dark?: bo
           {error}
         </p>
       )}
-      <p className={`mt-2.5 text-[12.5px] leading-relaxed ${dark ? "text-[#EDE6D6]/70" : "text-[#8A8FA0]"}`}>
+      <p className={`mt-2.5 text-[12.5px] leading-relaxed ${dark ? "text-[#F3EEE4]/70" : "text-[#7F8894]"}`}>
         Free to join. Your invitation arrives by email in under a minute. Already have a code?{" "}
-        <Link href="/join/collective" className={`font-semibold underline underline-offset-2 ${dark ? "text-[#E6C988]" : "text-[#A8873F]"}`}>
+        <Link href="/join/collective" className={`font-semibold underline underline-offset-2 ${dark ? "text-[#E9D7A9]" : "text-[#A8873F]"}`}>
           Join here
         </Link>
         .

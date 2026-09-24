@@ -80,7 +80,7 @@ export function FocusCard({
             )}
           </div>
         </div>
-        <p className="mt-1 font-display text-[22px] font-semibold text-[var(--cm-ink)]">{focus.title}</p>
+        <p className="mt-1 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">{focus.title}</p>
         {focus.why && <p className="text-[14px] text-[var(--cm-muted-2)]">{focus.why}</p>}
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--cm-fill)]">
           <div className="h-full rounded-full bg-[#D4AF63]" style={{ width: `${pct}%` }} />

@@ -1,22 +1,25 @@
 // A soft colour per program channel, so program posts stand apart from
-// Community posts in the Home feed. Stored as "r, g, b" and applied at low
+// Community posts in the Home feed. Every channel wears its home brand
+// (Collective board, Sept 2026). Stored as "r, g, b" and applied at low
 // opacity, so it works on both the light and the dark theme.
 const BY_SLUG: Record<string, string> = {
-  "lifecharter-program": "123, 92, 168", // butterfly lavender
-  "command-suite": "46, 124, 131", // teal
-  "coaching-certification": "76, 122, 90", // sage
-  "command-shift-masterclass": "196, 140, 40", // amber
-  "command-shift-challenge": "200, 90, 70", // ember
-  incubator: "60, 110, 180", // sky
-  "soul-sessions": "150, 80, 130", // plum
-  alumni: "184, 146, 63", // gold
-  "certified-coaches": "90, 100, 120", // slate
+  // Shared spaces — warm gold
+  "start-here": "212, 175, 99", // gold
+  commons: "212, 175, 99", // gold
+  // LifeCharter channels — deep teal
+  "lifecharter-program": "15, 91, 99", // deep teal
+  incubator: "15, 91, 99", // deep teal
+  "soul-sessions": "15, 91, 99", // deep teal
+  alumni: "15, 91, 99", // deep teal
+  // Command Suite channels — indigo slate (#1F2B59, so an 8% wash shows)
+  "command-suite": "31, 43, 89", // indigo
+  "command-shift-masterclass": "31, 43, 89", // indigo
+  "command-shift-challenge": "31, 43, 89", // indigo
+  "coaching-certification": "31, 43, 89", // indigo
+  "certified-coaches": "31, 43, 89", // indigo
 };
-const FALLBACK = ["110, 90, 160", "40, 130, 120", "180, 110, 60", "70, 110, 170", "150, 90, 110"];
+const FALLBACK = "148, 163, 184"; // misty blue
 
 export function tintFor(slug: string): string {
-  if (BY_SLUG[slug]) return BY_SLUG[slug];
-  let h = 0;
-  for (const c of slug) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return FALLBACK[h % FALLBACK.length];
+  return BY_SLUG[slug] ?? FALLBACK;
 }

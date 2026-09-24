@@ -27,7 +27,7 @@ export default function ChannelPage({ params }: { params: { space: string; chann
             {space.emoji} {space.name}
           </Link>
         </Eyebrow>
-        <h1 className="mt-1 font-display text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">
+        <h1 className="mt-1 font-editorial text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">
           <span className="mr-2">{channel.emoji}</span>
           {channel.name}
         </h1>

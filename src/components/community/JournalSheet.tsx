@@ -223,7 +223,7 @@ export function JournalSheet({
                   onClick={() => setF({ ...f, rating: n })}
                   className={cn(
                     "h-11 w-11 rounded-full border text-[15px] font-semibold transition",
-                    f.rating === n ? "border-[#D4AF63] bg-[#D4AF63] text-[#0F1A38]" : "border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63]"
+                    f.rating === n ? "border-[#D4AF63] bg-[#D4AF63] text-[#1F2B3A]" : "border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63]"
                   )}
                 >
                   {n}

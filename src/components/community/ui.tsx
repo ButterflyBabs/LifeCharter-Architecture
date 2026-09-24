@@ -1,7 +1,7 @@
 "use client";
 
-// Small UI kit for the Collective — the command-shift-landing look: cream
-// page, navy ink, gold accents, Cormorant headings, lifted white cards.
+// Small UI kit for the Collective (Sept 2026 Collective board): ivory page,
+// dusk ink, warm gold accents, EB Garamond headings, lifted white cards.
 import { forwardRef, useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ import { useFileUrl } from "@/lib/community/storage";
 import { splitMentions } from "@/lib/community/mentions";
 import Link from "next/link";
 
-export const INK = "#1F315B";
+export const INK = "#1F2B3A";
 
 export function Card({
   className,
@@ -27,7 +27,7 @@ export function Card({
     <Tag
       style={style}
       className={cn(
-        "rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] shadow-[0_1px_2px_rgba(31,49,91,0.06),0_12px_28px_-16px_rgba(31,49,91,0.28)]",
+        "rounded-2xl border border-[var(--cm-line)] bg-[var(--cm-surface)] shadow-[0_1px_2px_rgba(31,43,58,0.06),0_12px_28px_-16px_rgba(31,43,58,0.28)]",
         className
       )}
     >
@@ -38,8 +38,8 @@ export function Card({
 
 type ButtonVariant = "gold" | "navy" | "ghost" | "outline" | "danger";
 const BUTTON: Record<ButtonVariant, string> = {
-  gold: "bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] shadow-[0_10px_22px_-12px_rgba(184,146,63,0.9)] hover:brightness-105",
-  navy: "bg-[var(--cm-navy)] text-[#F8F5F0] hover:bg-[#16244A]",
+  gold: "bg-gradient-to-br from-[#E9D7A9] via-[#D4AF63] to-[#B8923F] text-[#1F2B3A] shadow-[0_10px_22px_-12px_rgba(184,146,63,0.9)] hover:brightness-105",
+  navy: "bg-[var(--cm-navy)] text-[#FAF8F3] hover:bg-[#16202C]",
   ghost: "text-[var(--cm-ink)] hover:bg-[var(--cm-ink-tint)]",
   outline: "border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] text-[var(--cm-ink)] hover:border-[#D4AF63] hover:bg-[var(--cm-fill)]",
   danger: "border border-red-200 bg-[var(--cm-surface)] text-red-700 hover:bg-red-50",
@@ -52,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
         ref={ref}
         {...props}
         className={cn(
-          "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold tracking-[0.01em] transition disabled:cursor-not-allowed disabled:opacity-60",
+          "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold tracking-[0.01em] transition focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#D4AF63]/45 disabled:cursor-not-allowed disabled:opacity-60",
           size === "sm" ? "px-3 py-1.5 text-[13px]" : "px-4 py-2.5 text-[14px]",
           BUTTON[variant],
           className
@@ -93,7 +93,7 @@ export function Avatar({ name, url, size = 40, className }: { name?: string | nu
       style={style}
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1F315B] to-[#2E4A7F] font-semibold text-[#E6C988] ring-2 ring-[var(--cm-surface)]",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F5D8CF] via-[#D4AF63] to-[#94A3B8] font-semibold text-[#1F2B3A] ring-2 ring-[var(--cm-surface)]",
         className
       )}
     >
@@ -105,7 +105,7 @@ export function Avatar({ name, url, size = 40, className }: { name?: string | nu
 export function Heading({ children, className, sub }: { children: ReactNode; className?: string; sub?: ReactNode }) {
   return (
     <div className={cn("mb-5", className)}>
-      <h1 className="font-display text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">{children}</h1>
+      <h1 className="font-editorial text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">{children}</h1>
       {sub && <p className="mt-1 text-[14.5px] text-[var(--cm-muted-2)]">{sub}</p>}
     </div>
   );
@@ -175,7 +175,7 @@ export function EmptyState({ icon, title, children }: { icon?: ReactNode; title:
   return (
     <div className="rounded-2xl border border-dashed border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-6 py-10 text-center">
       {icon && <div className="mb-2 text-3xl">{icon}</div>}
-      <p className="font-display text-[20px] font-semibold text-[var(--cm-ink)]">{title}</p>
+      <p className="font-editorial text-[20px] font-semibold text-[var(--cm-ink)]">{title}</p>
       {children && <div className="mx-auto mt-1 max-w-md text-[14px] text-[var(--cm-muted-2)]">{children}</div>}
     </div>
   );
@@ -195,7 +195,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#0F1A38]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1F2B3A]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -207,7 +207,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
         )}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="font-display text-[24px] font-semibold text-[var(--cm-ink)]">{title}</h2>
+          <h2 className="font-editorial text-[24px] font-semibold text-[var(--cm-ink)]">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[var(--cm-muted-2)] hover:bg-black/5">
             <X className="h-5 w-5" />
           </button>
@@ -223,7 +223,7 @@ export function PlusMark({ className }: { className?: string }) {
   return (
     <span
       title="Collective Plus member"
-      className={cn("inline-flex items-center rounded-full bg-gradient-to-br from-[#E6C988] to-[#B8923F] px-1.5 py-px align-middle text-[10px] font-bold uppercase tracking-[0.08em] text-[#0F1A38]", className)}
+      className={cn("inline-flex items-center rounded-full bg-gradient-to-br from-[#E9D7A9] to-[#B8923F] px-1.5 py-px align-middle text-[10px] font-bold uppercase tracking-[0.08em] text-[#1F2B3A]", className)}
     >
       Plus
     </span>

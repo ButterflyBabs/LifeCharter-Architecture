@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 
 const EFFECTIVE = "September 23, 2026";
 
-const H2 = "font-display text-[28px] font-semibold leading-tight text-[#1F315B] mt-12 mb-3 scroll-mt-8";
-const P = "text-[16px] text-[#3A4462] leading-relaxed mb-4";
+const H2 = "font-editorial text-[28px] font-semibold leading-tight text-[#1F2B3A] mt-12 mb-3 scroll-mt-8";
+const P = "text-[16px] text-[#2E3A46] leading-relaxed mb-4";
 
 function Item({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +21,7 @@ function Item({ children }: { children: React.ReactNode }) {
 }
 
 function List({ children }: { children: React.ReactNode }) {
-  return <ul className="mb-4 space-y-2.5 text-[16px] leading-relaxed text-[#3A4462]">{children}</ul>;
+  return <ul className="mb-4 space-y-2.5 text-[16px] leading-relaxed text-[#2E3A46]">{children}</ul>;
 }
 
 const SECTIONS = [
@@ -40,15 +40,15 @@ const SECTIONS = [
 
 export default function CommunityGuidelinesPage() {
   return (
-    <main className="min-h-screen bg-[#F8F5F0] font-ui text-[#1F315B]">
+    <main className="min-h-screen bg-[#FAF8F3] font-ui text-[#1F2B3A]">
       <div className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
         <Link href="/community" className="text-sm font-semibold text-[#A8873F] hover:underline">
           &larr; Back to the Collective
         </Link>
 
         <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#A8873F]">The LifeCharter Collective</p>
-        <h1 className="mt-2 font-display text-[40px] font-semibold leading-[1.1] sm:text-[48px]">How we show up for each other.</h1>
-        <p className="mt-2 text-[14px] text-[#8A8FA0]">Community Guidelines &amp; Terms of Use · Effective {EFFECTIVE}</p>
+        <h1 className="mt-2 font-editorial text-[40px] font-semibold leading-[1.1] sm:text-[48px]">How we show up for each other.</h1>
+        <p className="mt-2 text-[14px] text-[#7F8894]">Community Guidelines &amp; Terms of Use · Effective {EFFECTIVE}</p>
 
         <p className={`${P} mt-8 text-[17px]`}>
           The LifeCharter Collective is a private community for people creating lives and businesses of Purpose, Clarity and
@@ -60,9 +60,9 @@ export default function CommunityGuidelinesPage() {
         </p>
 
         {/* The short version */}
-        <div className="mt-8 rounded-2xl border border-[#E6C988] bg-gradient-to-br from-[#FFFDF8] to-[#FBF3DF] p-6 shadow-[0_12px_28px_-18px_rgba(31,49,91,0.35)]">
+        <div className="mt-8 rounded-2xl border border-[#E9D7A9] bg-gradient-to-br from-[#FFFDF8] to-[#FBF3DF] p-6 shadow-[0_12px_28px_-18px_rgba(31,43,58,0.35)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A8873F]">The short version</p>
-          <ol className="mt-3 space-y-2 text-[16px] leading-relaxed text-[#1F315B]">
+          <ol className="mt-3 space-y-2 text-[16px] leading-relaxed text-[#1F2B3A]">
             <li><strong>Lead with respect.</strong> Offer perspective, not judgment.</li>
             <li><strong>What&rsquo;s shared here stays here.</strong> No screenshots, no reposting, no retelling.</li>
             <li><strong>Offers go in the weekly Share Your Offer thread.</strong> Never in someone&rsquo;s messages uninvited.</li>
@@ -71,12 +71,12 @@ export default function CommunityGuidelinesPage() {
           </ol>
         </div>
 
-        <nav aria-label="Contents" className="mt-8 rounded-2xl border border-[#E9E2D3] bg-white p-5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A8FA0]">Contents</p>
+        <nav aria-label="Contents" className="mt-8 rounded-2xl border border-[#E6DDCB] bg-white p-5">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7F8894]">Contents</p>
           <ol className="grid gap-x-6 gap-y-1.5 text-[14.5px] sm:grid-cols-2">
             {SECTIONS.map(([id, label], i) => (
               <li key={id}>
-                <a href={`#${id}`} className="text-[#1F315B] hover:text-[#A8873F] hover:underline">
+                <a href={`#${id}`} className="text-[#1F2B3A] hover:text-[#A8873F] hover:underline">
                   {i + 1}. {label}
                 </a>
               </li>
@@ -164,17 +164,17 @@ export default function CommunityGuidelinesPage() {
         <p className={P}>
           Most missteps are honest ones, so we start with a conversation. When a guideline is broken, here&rsquo;s what happens:
         </p>
-        <ol className="mb-5 space-y-3 text-[16px] leading-relaxed text-[#3A4462]">
+        <ol className="mb-5 space-y-3 text-[16px] leading-relaxed text-[#2E3A46]">
           <li className="flex gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F315B] text-[13px] font-bold text-[#E6C988]">1</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F2B3A] text-[13px] font-bold text-[#E9D7A9]">1</span>
             <span><strong>A private reminder.</strong> An admin reaches out directly, and the content may be edited or removed.</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F315B] text-[13px] font-bold text-[#E6C988]">2</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F2B3A] text-[13px] font-bold text-[#E9D7A9]">2</span>
             <span><strong>A pause.</strong> If it happens again, your membership may be paused while we talk it through.</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F315B] text-[13px] font-bold text-[#E6C988]">3</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1F2B3A] text-[13px] font-bold text-[#E9D7A9]">3</span>
             <span><strong>Removal.</strong> Continued violations end membership in the Collective.</span>
           </li>
         </ol>
@@ -241,7 +241,7 @@ export default function CommunityGuidelinesPage() {
           You can permanently delete your account at any time from <strong>Me → Delete my account</strong>.
         </p>
 
-        <p className="mt-12 border-t border-[#E9E2D3] pt-6 font-editorial text-[18px] italic text-[#A8873F]">
+        <p className="mt-12 border-t border-[#E6DDCB] pt-6 font-editorial text-[18px] italic text-[#A8873F]">
           Create Balance. Build Alignment. Take Command. — together.
         </p>
       </div>

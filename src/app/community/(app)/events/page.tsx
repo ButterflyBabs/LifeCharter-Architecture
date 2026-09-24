@@ -217,9 +217,9 @@ function EventCard({
   return (
     <Card className={cn("scroll-mt-24", compact ? "p-4" : "p-4 sm:p-5")}>
       <div id={e.id} className="flex gap-4">
-        <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#1F315B] to-[#0F1A38] text-white">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E6C988]">{s.start.toLocaleDateString(undefined, { month: "short" })}</span>
-          <span className="font-display text-[26px] font-semibold leading-none">{s.start.getDate()}</span>
+        <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#123F47] via-[#1A2E44] to-[#1F2B59] text-white">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E9D7A9]">{s.start.toLocaleDateString(undefined, { month: "short" })}</span>
+          <span className="font-editorial text-[26px] font-semibold leading-none">{s.start.getDate()}</span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -234,7 +234,7 @@ function EventCard({
               ))
             )}
           </div>
-          <h2 className="mt-1 font-display text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{e.title}</h2>
+          <h2 className="mt-1 font-editorial text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{e.title}</h2>
           <p className="text-[13.5px] text-[var(--cm-muted-2)]">{eventWhen(s.start.toISOString(), s.end.toISOString())}</p>
           {repeats && (
             <p className="mt-0.5 flex items-center gap-1 text-[12.5px] text-[var(--cm-muted)]">
@@ -390,7 +390,7 @@ function MonthCalendar({
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h2 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+            <h2 className="font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">
               {month.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
             </h2>
             {(month.getMonth() !== today.getMonth() || month.getFullYear() !== today.getFullYear()) && (
@@ -475,7 +475,7 @@ function MonthCalendar({
 
       <div>
         <div className="mb-2 flex items-center justify-between gap-3">
-          <h3 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+          <h3 className="font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">
             {selected.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
           </h3>
           {canCreate && (

@@ -258,7 +258,7 @@ export function MediaGallery({ items, compact }: { items: Attachment[]; compact?
               className="h-full"
               overlay={
                 i === 3 && extra > 0 ? (
-                  <span className="absolute inset-0 flex items-center justify-center bg-[#0F1A38]/55 font-display text-[34px] font-semibold text-white">+{extra}</span>
+                  <span className="absolute inset-0 flex items-center justify-center bg-[#1F2B3A]/55 font-editorial text-[34px] font-semibold text-white">+{extra}</span>
                 ) : undefined
               }
             />
@@ -311,7 +311,7 @@ export function Lightbox({ images, start, onClose }: { images: Attachment[]; sta
       role="dialog"
       aria-modal="true"
       aria-label="Photo viewer"
-      className="fixed inset-0 z-[100] flex flex-col bg-[#0B1226]"
+      className="fixed inset-0 z-[100] flex flex-col bg-[#10161E]"
       onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
       onTouchEnd={(e) => {
         if (!touch.current) return;

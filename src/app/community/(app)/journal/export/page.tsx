@@ -62,7 +62,7 @@ export default function ExportPage() {
     <div>
       <style>{`@media print {
         body * { visibility: hidden !important; }
-        #journal-print, #journal-print * { visibility: visible !important; color: #1F315B !important; background: transparent !important; }
+        #journal-print, #journal-print * { visibility: visible !important; color: #1F2B3A !important; background: transparent !important; }
         #journal-print { position: absolute; left: 0; top: 0; width: 100%; padding: 0 12mm; }
         .jp-week { break-inside: avoid; }
         @page { margin: 16mm 0; }
@@ -95,12 +95,12 @@ export default function ExportPage() {
 
       <div id="journal-print" className="rounded-2xl bg-[var(--cm-surface)] p-6 text-[var(--cm-ink)] shadow-sm print:shadow-none">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">The LifeCharter Collective</p>
-        <h1 className="font-display text-[30px] font-semibold">{profile?.display_name ? `${profile.display_name}’s` : "My"} Alignment Journal</h1>
+        <h1 className="font-editorial text-[30px] font-semibold">{profile?.display_name ? `${profile.display_name}’s` : "My"} Alignment Journal</h1>
         <p className="text-[13px] text-[var(--cm-muted-2)]">Exported {new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</p>
 
         {focuses.length > 0 && (
           <section className="jp-week mt-6">
-            <h2 className="font-display text-[20px] font-semibold">90-day focus</h2>
+            <h2 className="font-editorial text-[20px] font-semibold">90-day focus</h2>
             {focuses.map((f) => (
               <p key={f.id} className="mt-1 text-[14px]">
                 <strong>{f.title}</strong> · {f.starts_on} → {f.ends_on} · {f.status === "active" ? "in progress" : f.status === "done" ? "achieved" : "released"}
@@ -115,7 +115,7 @@ export default function ExportPage() {
         ) : (
           weeks.map(([week, list]) => (
             <section key={week} className="jp-week mt-6 border-t border-[var(--cm-line)] pt-4">
-              <h2 className="font-display text-[19px] font-semibold">Week of {weekLabel(week)}</h2>
+              <h2 className="font-editorial text-[19px] font-semibold">Week of {weekLabel(week)}</h2>
               {list.map((e) => (
                 <div key={e.id} className="mt-2.5">
                   <p className="text-[14.5px]">

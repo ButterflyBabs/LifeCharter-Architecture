@@ -53,7 +53,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-5">
       <Card className="overflow-hidden">
-        <div className="h-24 bg-gradient-to-br from-[#1F315B] via-[#2E4A7F] to-[#0F1A38]" />
+        <div className="h-24 bg-gradient-to-br from-[#123F47] via-[#1A2E44] to-[#1F2B59]" />
         <div className="px-5 pb-5">
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
             <Avatar name={p.display_name} url={p.avatar_url} size={96} className="ring-4" />
@@ -84,7 +84,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
               </Link>
             )}
           </div>
-          <h1 className="mt-3 font-display text-[30px] font-semibold text-[var(--cm-ink)]">
+          <h1 className="mt-3 font-editorial text-[30px] font-semibold text-[var(--cm-ink)]">
             {p.display_name} {plusIds.has(p.user_id) && <PlusMark className="ml-1 text-[11px]" />}
           </h1>
           {p.headline && <p className="text-[15px] text-[var(--cm-muted-2)]">{p.headline}</p>}
@@ -113,7 +113,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
             </p>
           )}
           {confirmBlock && (
-            <div role="alertdialog" aria-label={`Block ${p.display_name}?`} className="mt-3 rounded-xl border border-[#E6C988] bg-[var(--cm-gold-soft)] p-3 text-[14px] text-[var(--cm-ink)]">
+            <div role="alertdialog" aria-label={`Block ${p.display_name}?`} className="mt-3 rounded-xl border border-[#E9D7A9] bg-[var(--cm-gold-soft)] p-3 text-[14px] text-[var(--cm-ink)]">
               <p className="font-semibold">Block {p.display_name}?</p>
               <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">
                 You won&rsquo;t see their posts or replies, you can&rsquo;t message each other, and their tags and replies won&rsquo;t notify you. They won&rsquo;t be told. You can unblock them anytime.
@@ -145,7 +145,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
 
       {shared.length > 0 && (
         <div>
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">Channels</h2>
+          <h2 className="mb-2 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">Channels</h2>
           <div className="flex flex-wrap gap-2">
             {shared.map((s) => (
               <Link key={s.id} href={`/community/s/${s.slug}`} className="rounded-full border border-[var(--cm-line)] bg-[var(--cm-surface)] px-3 py-1 text-[13.5px] text-[var(--cm-ink)] hover:border-[#D4AF63]">
@@ -158,7 +158,7 @@ export default function MemberPage({ params }: { params: { id: string } }) {
 
       {posts.length > 0 && (
         <div>
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">Recent posts</h2>
+          <h2 className="mb-2 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">Recent posts</h2>
           <div className="space-y-2">
             {posts.map((post) => (
               <Link key={post.id} href={`/community/post/${post.id}`}>
@@ -189,8 +189,8 @@ function AdminMemberTools({ profile, memberships, onChanged }: { profile: Profil
   }
 
   return (
-    <Card className="border-[#E6C988] p-5">
-      <h2 className="flex items-center gap-2 font-display text-[21px] font-semibold text-[var(--cm-ink)]">
+    <Card className="border-[#E9D7A9] p-5">
+      <h2 className="flex items-center gap-2 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">
         <ShieldAlert className="h-5 w-5 text-[var(--cm-gold-text)]" /> Admin
       </h2>
       <p className="mb-3 text-[13px] text-[var(--cm-muted)]">Only super admins see this.</p>

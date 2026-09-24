@@ -146,7 +146,7 @@ function CommunityHome() {
           <Eyebrow>
             <LiveDate />
           </Eyebrow>
-          <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[36px]">
+          <h1 className="mt-1 font-editorial text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[36px]">
             {greeting()}, {firstName}
           </h1>
           <p className="font-editorial text-[17px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
@@ -212,7 +212,7 @@ function CommunityHome() {
         <Eyebrow>
           <LiveDate />
         </Eyebrow>
-        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[40px]">
+        <h1 className="mt-1 font-editorial text-[34px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[40px]">
           {greeting()}, {firstName}
         </h1>
         <p className="font-editorial text-[18px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
@@ -409,11 +409,11 @@ function MiniCard({
       <Card
         className={
           featured
-            ? "h-full border-transparent bg-gradient-to-br from-[#1F315B] to-[#0F1A38] p-3.5 transition group-hover:-translate-y-0.5"
+            ? "h-full border-transparent bg-gradient-to-br from-[#123F47] via-[#1A2E44] to-[#1F2B59] p-3.5 transition group-hover:-translate-y-0.5"
             : "h-full p-3.5 transition group-hover:-translate-y-0.5 group-hover:border-[#D4AF63]"
         }
       >
-        <div className={featured ? "flex items-center gap-1.5 text-[#E6C988]" : "flex items-center gap-1.5 text-[var(--cm-gold-text)]"}>
+        <div className={featured ? "flex items-center gap-1.5 text-[#E9D7A9]" : "flex items-center gap-1.5 text-[var(--cm-gold-text)]"}>
           {icon}
           <span className="truncate text-[10px] font-semibold uppercase tracking-[0.16em]">{label}</span>
           {done && <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-600" aria-label="Done" />}
@@ -421,20 +421,20 @@ function MiniCard({
         <p
           className={
             featured
-              ? "mt-2 line-clamp-2 font-display text-[17px] font-semibold leading-snug text-white"
-              : "mt-2 line-clamp-2 font-display text-[17px] font-semibold leading-snug text-[var(--cm-ink)]"
+              ? "mt-2 line-clamp-2 font-editorial text-[17px] font-semibold leading-snug text-white"
+              : "mt-2 line-clamp-2 font-editorial text-[17px] font-semibold leading-snug text-[var(--cm-ink)]"
           }
         >
           {title}
         </p>
-        {detail && <p className={featured ? "mt-0.5 text-[12px] text-[#EDE6D6]/75" : "mt-0.5 text-[12px] text-[var(--cm-muted)]"}>{detail}</p>}
+        {detail && <p className={featured ? "mt-0.5 text-[12px] text-[#F3EEE4]/75" : "mt-0.5 text-[12px] text-[var(--cm-muted)]"}>{detail}</p>}
       </Card>
     </Wrap>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-3 font-display text-[24px] font-semibold text-[var(--cm-ink)]">{children}</h2>;
+  return <h2 className="mb-3 font-editorial text-[24px] font-semibold text-[var(--cm-ink)]">{children}</h2>;
 }
 
 function NextCard({
@@ -461,19 +461,19 @@ function NextCard({
       <Card
         className={
           featured
-            ? "h-full border-transparent bg-gradient-to-br from-[#1F315B] to-[#0F1A38] p-5 text-[#F8F5F0] transition group-hover:-translate-y-0.5"
+            ? "h-full border-transparent bg-gradient-to-br from-[#123F47] via-[#1A2E44] to-[#1F2B59] p-5 text-[#FAF8F3] transition group-hover:-translate-y-0.5"
             : "h-full p-5 transition group-hover:-translate-y-0.5 group-hover:border-[#D4AF63]"
         }
       >
-        <div className={featured ? "flex items-center gap-2 text-[#E6C988]" : "flex items-center gap-2 text-[var(--cm-gold-text)]"}>
+        <div className={featured ? "flex items-center gap-2 text-[#E9D7A9]" : "flex items-center gap-2 text-[var(--cm-gold-text)]"}>
           {icon}
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">{label}</span>
           {done && <Check className="ml-auto h-4 w-4 text-emerald-600" aria-label="Done" />}
         </div>
-        <p className={featured ? "mt-3 font-display text-[23px] font-semibold leading-snug text-white" : "mt-3 font-display text-[21px] font-semibold leading-snug text-[var(--cm-ink)]"}>
+        <p className={featured ? "mt-3 font-editorial text-[23px] font-semibold leading-snug text-white" : "mt-3 font-editorial text-[21px] font-semibold leading-snug text-[var(--cm-ink)]"}>
           {title}
         </p>
-        <p className={featured ? "mt-1 text-[13.5px] text-[#EDE6D6]/75" : "mt-1 text-[13.5px] text-[var(--cm-muted-2)]"}>{detail}</p>
+        <p className={featured ? "mt-1 text-[13.5px] text-[#F3EEE4]/75" : "mt-1 text-[13.5px] text-[var(--cm-muted-2)]"}>{detail}</p>
         {cta && (
           <span className="mt-3 inline-flex items-center gap-1 text-[13.5px] font-semibold text-[var(--cm-gold-text)]">
             {cta} <ArrowRight className="h-4 w-4" />
@@ -543,7 +543,7 @@ function DiscoverTile({ card }: { card: DiscoverCard }) {
         </div>
       )}
       <div className="flex flex-1 flex-col p-4">
-        <p className="font-display text-[19px] font-semibold leading-snug text-[var(--cm-ink)]">{card.title}</p>
+        <p className="font-editorial text-[19px] font-semibold leading-snug text-[var(--cm-ink)]">{card.title}</p>
         {card.blurb && <p className="mt-1 text-[13.5px] text-[var(--cm-muted-2)]">{card.blurb}</p>}
         {card.teaser && <p className="mt-2 font-editorial text-[14.5px] italic text-[var(--cm-muted-2)]">{card.teaser}</p>}
         {dm !== null ? (
@@ -571,14 +571,14 @@ function WelcomeCard({ onDone }: { onDone: () => void }) {
     { href: "/community/profile#app", label: "Add the app to your phone & turn on notifications" },
   ];
   return (
-    <Card className="border-[#E6C988] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-5">
+    <Card className="border-[#E9D7A9] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-5">
       <Eyebrow>Welcome to The LifeCharter Collective</Eyebrow>
-      <p className="mt-1 font-display text-[24px] font-semibold text-[var(--cm-ink)]">Four small steps to settle in</p>
+      <p className="mt-1 font-editorial text-[24px] font-semibold text-[var(--cm-ink)]">Four small steps to settle in</p>
       <ol className="mt-3 space-y-2">
         {steps.map((s, i) => (
           <li key={s.href}>
             <Link href={s.href} className="flex items-center gap-3 rounded-xl bg-[var(--cm-surface)] px-3 py-2.5 text-[14.5px] text-[var(--cm-ink)] hover:bg-[var(--cm-surface)]">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--cm-navy)] text-[12px] font-bold text-[#E6C988]">{i + 1}</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--cm-navy)] text-[12px] font-bold text-[#E9D7A9]">{i + 1}</span>
               {s.label}
               <ArrowRight className="ml-auto h-4 w-4 text-[var(--cm-faint)]" />
             </Link>

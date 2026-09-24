@@ -11,48 +11,49 @@
   --font-montserrat: 'Montserrat', system-ui, sans-serif;
 }
 
-/* The LifeCharter Collective — colour tokens. Light by default; the
-   community shell adds .cm-dark for dark mode (Profile → Appearance). */
+/* The LifeCharter Collective — colour tokens (Sept 2026 Collective board:
+   ivory ground, dusk ink, warm gold). Light by default; the community shell
+   adds .cm-dark for dark mode (Profile → Appearance). */
 :root {
-  --cm-ground: #F8F5F0;
+  --cm-ground: #FAF8F3;
   --cm-surface: #FFFFFF;
-  --cm-fill: #FBF8F2;
-  --cm-fill-2: #F7F3EA;
-  --cm-line: #E9E2D3;
-  --cm-line-strong: #DCD3C1;
-  --cm-line-soft: #F0EBE0;
-  --cm-ink: #1F315B;
-  --cm-body: #2A3552;
-  --cm-muted: #8A8FA0;
-  --cm-muted-2: #5B6275;
-  --cm-faint: #A9AEBB;
+  --cm-fill: #FBF9F4;
+  --cm-fill-2: #F5F1E8;
+  --cm-line: #E6DDCB;
+  --cm-line-strong: #D9CCB3;
+  --cm-line-soft: #F1EBDF;
+  --cm-ink: #1F2B3A;
+  --cm-body: #2E3A46;
+  --cm-muted: #7F8894;
+  --cm-muted-2: #56616E;
+  --cm-faint: #A6ADB6;
   --cm-gold-soft: #FBF3DF;
   --cm-gold-ink: #7A5E1F;
   --cm-gold-text: #A8873F;
-  --cm-link: #2E5AA8;
-  --cm-navy: #1F315B;
-  --cm-ink-tint: rgba(31, 49, 91, 0.07);
+  --cm-link: #0F5B63;
+  --cm-navy: #1F2B3A;
+  --cm-ink-tint: rgba(31, 43, 58, 0.07);
 }
 .cm-dark {
   color-scheme: dark;
-  --cm-ground: #0E1628;
-  --cm-surface: #16213A;
-  --cm-fill: #1B2744;
-  --cm-fill-2: #202D4D;
-  --cm-line: #2A3657;
-  --cm-line-strong: #34426A;
-  --cm-line-soft: #223050;
-  --cm-ink: #EDE6D6;
-  --cm-body: #D6CFC0;
-  --cm-muted: #9AA1B5;
-  --cm-muted-2: #B6BBCB;
-  --cm-faint: #7E859B;
+  --cm-ground: #151D27;
+  --cm-surface: #1C2632;
+  --cm-fill: #222D3A;
+  --cm-fill-2: #283443;
+  --cm-line: #2F3B4A;
+  --cm-line-strong: #3B4859;
+  --cm-line-soft: #26313E;
+  --cm-ink: #F3EEE4;
+  --cm-body: #D9D3C7;
+  --cm-muted: #9AA3AF;
+  --cm-muted-2: #B9C0C9;
+  --cm-faint: #7D8794;
   --cm-gold-soft: #2E2A1F;
   --cm-gold-ink: #E6C988;
   --cm-gold-text: #D9B868;
-  --cm-link: #8FB2F0;
-  --cm-navy: #2E4A7F;
-  --cm-ink-tint: rgba(237, 230, 214, 0.1);
+  --cm-link: #6CC0BB;
+  --cm-navy: #33465C;
+  --cm-ink-tint: rgba(243, 238, 228, 0.1);
 }
 
 /* LifeCharter Command Suite - Design Tokens */

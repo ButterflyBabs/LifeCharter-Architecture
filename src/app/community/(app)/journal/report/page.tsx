@@ -140,7 +140,7 @@ export default function ReportPage() {
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
     <Card className="p-4 text-center">
-      <p className="font-display text-[28px] font-semibold leading-none text-[var(--cm-ink)]">{value}</p>
+      <p className="font-editorial text-[28px] font-semibold leading-none text-[var(--cm-ink)]">{value}</p>
       <p className="mt-1 text-[12px] text-[var(--cm-muted-2)]">{label}</p>
     </Card>
   );

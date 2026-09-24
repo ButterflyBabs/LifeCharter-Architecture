@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
     allowNavigation: ["lccommandsuite.com"],
   },
   appendUserAgent: "LifeCharterCollectiveApp/1.0",
-  backgroundColor: "#F8F5F0",
+  backgroundColor: "#FAF8F3",
   ios: {
     contentInset: "never", // the web layout already pads for the notch and home bar (viewport-fit=cover)
     scheme: "LifeCharterCollective",
@@ -25,7 +25,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 1200,
       launchAutoHide: true,
-      backgroundColor: "#0F1A38",
+      backgroundColor: "#FAF8F3",
       showSpinner: false,
     },
     PushNotifications: {

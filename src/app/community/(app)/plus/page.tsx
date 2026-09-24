@@ -113,7 +113,7 @@ function Plus() {
     <div className="space-y-6">
       {welcome && (
         <Card className="border-[#D4AF63] bg-[var(--cm-gold-soft)] p-5">
-          <p className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">Welcome to Collective Plus ✨</p>
+          <p className="font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Welcome to Collective Plus ✨</p>
           <p className="mt-1 text-[14.5px] text-[var(--cm-body)]">
             Mariposa is ready in your journal. Start by <Link href="/community/journal?new=intention" className="font-semibold underline">setting this week&rsquo;s intention</Link> and asking her to sharpen it.
           </p>
@@ -132,7 +132,7 @@ function Plus() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cm-gold-text)]">Your plan</p>
-              <p className="mt-1 font-display text-[21px] font-semibold text-[var(--cm-ink)]">
+              <p className="mt-1 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">
                 {sub?.plan === "comp" ? "Gifted by LifeCharter" : `${sub?.plan === "annual" ? "Annual" : "Monthly"}${sub?.founding ? " · Founding Member" : ""}`}
               </p>
               {sub?.currentPeriodEnd && sub.plan !== "comp" && (
@@ -171,7 +171,7 @@ function Plus() {
         <Card className="overflow-hidden p-0">
           {founding && (
             <div className="bg-[var(--cm-navy)] px-5 py-2.5 text-[13.5px] text-white">
-              <span className="font-semibold text-[#E6C988]">Founding Member pricing</span> — {status.foundingLeft} of 100 spots left. Keep this price for as long as you stay.
+              <span className="font-semibold text-[#E9D7A9]">Founding Member pricing</span> — {status.foundingLeft} of 100 spots left. Keep this price for as long as you stay.
             </div>
           )}
           <div className="p-5">
@@ -189,7 +189,7 @@ function Plus() {
               ))}
             </div>
             <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-1">
-              <p className="font-display text-[40px] font-semibold leading-none text-[var(--cm-ink)]">
+              <p className="font-editorial text-[40px] font-semibold leading-none text-[var(--cm-ink)]">
                 {money(plan === "monthly" ? monthly : annual)}
                 <span className="text-[16px] font-normal text-[var(--cm-muted-2)]">/{plan === "monthly" ? "month" : "year"}</span>
               </p>

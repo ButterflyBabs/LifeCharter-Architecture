@@ -129,7 +129,7 @@ export default function ProfilePage() {
 
       <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
         <div>
-          <h2 className="font-display text-[22px] font-semibold text-[var(--cm-ink)]">My Alignment Journal</h2>
+          <h2 className="font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">My Alignment Journal</h2>
           <p className="text-[13.5px] text-[var(--cm-muted)]">Your private intentions, wins and weekly reflections.</p>
         </div>
         <Link href="/community/journal">
@@ -142,13 +142,13 @@ export default function ProfilePage() {
       <Appearance />
 
       <Card className="p-5">
-        <h2 className="mb-3 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Privacy</h2>
+        <h2 className="mb-3 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Privacy</h2>
         <Toggle label="Show me in the member directory" checked={prefs.show_in_directory} onChange={(v) => setPrefs({ ...prefs, show_in_directory: v })} />
         <Toggle label="Let members send me direct messages" checked={prefs.allow_dms} onChange={(v) => setPrefs({ ...prefs, allow_dms: v })} />
       </Card>
 
       <Card className="p-5">
-        <h2 className="mb-3 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Notifications</h2>
+        <h2 className="mb-3 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Notifications</h2>
         <Toggle label="Email me about announcements, replies and messages" checked={prefs.notify_email} onChange={(v) => setPrefs({ ...prefs, notify_email: v })} />
         <Toggle label="Send push notifications to my devices" checked={prefs.notify_push} onChange={(v) => setPrefs({ ...prefs, notify_push: v })} />
         <Toggle
@@ -207,7 +207,7 @@ function Appearance() {
   ];
   return (
     <Card className="p-5">
-      <h2 className="mb-1 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Appearance</h2>
+      <h2 className="mb-1 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Appearance</h2>
       <p className="mb-3 text-[13.5px] text-[var(--cm-muted)]">System matches your phone or computer. Saved on this device.</p>
       <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Appearance">
         {options.map(({ value, label, icon: Icon }) => (
@@ -246,7 +246,7 @@ function BlockedMembers() {
   if (!people.length) return null;
   return (
     <Card className="p-5">
-      <h2 className="mb-1 font-display text-[22px] font-semibold text-[var(--cm-ink)]">Blocked members</h2>
+      <h2 className="mb-1 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">Blocked members</h2>
       <p className="mb-3 text-[13.5px] text-[var(--cm-muted)]">You don&rsquo;t see their posts or replies, and you can&rsquo;t message each other. They aren&rsquo;t told.</p>
       <div className="space-y-2">
         {people.map((p) => (

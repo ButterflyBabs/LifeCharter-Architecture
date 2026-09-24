@@ -188,7 +188,7 @@ function Journal() {
           <div className="space-y-4">
             {past.map(([week, list]) => (
               <section key={week}>
-                <h2 className="mb-2 font-display text-[20px] font-semibold text-[var(--cm-ink)]">
+                <h2 className="mb-2 font-editorial text-[20px] font-semibold text-[var(--cm-ink)]">
                   {week === thisWeek ? "This week" : weekLabel(week)}
                 </h2>
                 <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">
@@ -248,7 +248,7 @@ function WeekSlot({ icon, label, filled, cta, onClick, addMore }: { icon: React.
 function Stat({ value, label, small }: { value: string | number; label: string; small?: boolean }) {
   return (
     <Card className="p-3.5">
-      <p className={small ? "truncate font-display text-[20px] font-semibold text-[var(--cm-ink)]" : "font-display text-[28px] font-semibold tabular-nums text-[var(--cm-ink)]"}>{value}</p>
+      <p className={small ? "truncate font-editorial text-[20px] font-semibold text-[var(--cm-ink)]" : "font-editorial text-[28px] font-semibold tabular-nums text-[var(--cm-ink)]"}>{value}</p>
       <p className="text-[12px] leading-snug text-[var(--cm-muted)]">{label}</p>
     </Card>
   );

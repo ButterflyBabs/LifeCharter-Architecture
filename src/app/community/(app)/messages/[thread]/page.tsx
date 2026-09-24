@@ -207,7 +207,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
               onClick={send}
               disabled={sending || (!text.trim() && !media.items.length)}
               aria-label="Send"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#E6C988] via-[#D4AF63] to-[#B8923F] text-[#0F1A38] disabled:opacity-50"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#E9D7A9] via-[#D4AF63] to-[#B8923F] text-[#1F2B3A] disabled:opacity-50"
             >
               <Send className="h-5 w-5" />
             </button>

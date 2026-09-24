@@ -133,7 +133,7 @@ export default function HelpPage() {
       {adminId && (
         <Card className="mt-8 flex flex-col items-start justify-between gap-3 bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-5 sm:flex-row sm:items-center">
           <div>
-            <p className="font-display text-[21px] font-semibold text-[var(--cm-ink)]">Still need help?</p>
+            <p className="font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">Still need help?</p>
             <p className="text-[14px] text-[var(--cm-muted-2)]">Send a private message to a LifeCharter admin.</p>
           </div>
           <Button variant="gold" onClick={messageAdmin}>

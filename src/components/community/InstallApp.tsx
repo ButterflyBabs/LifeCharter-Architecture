@@ -179,7 +179,7 @@ export function InstallAppCard() {
   return (
     <Card className="p-5">
       <div id="app" className="scroll-mt-20" />
-      <h2 className="flex items-center gap-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">
+      <h2 className="flex items-center gap-2 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">
         <Smartphone className="h-5 w-5 text-[var(--cm-gold-text)]" /> Put the Collective on your phone
       </h2>
       <div className="mt-2">{platform && <InstallInstructions platform={platform} />}</div>
@@ -201,7 +201,7 @@ export function InstallBanner() {
   }, []);
   if (hidden || !platform || platform === "installed" || platform === "desktop" || native) return null;
   return (
-    <Card className="relative border-[#E6C988] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-4 pr-10">
+    <Card className="relative border-[#E9D7A9] bg-gradient-to-br from-[var(--cm-fill)] to-[var(--cm-gold-soft)] p-4 pr-10">
       <button
         onClick={() => {
           setHidden(true);
@@ -216,7 +216,7 @@ export function InstallBanner() {
       >
         <X className="h-4 w-4" />
       </button>
-      <p className="flex items-center gap-2 font-display text-[19px] font-semibold text-[var(--cm-ink)]">
+      <p className="flex items-center gap-2 font-editorial text-[19px] font-semibold text-[var(--cm-ink)]">
         <Smartphone className="h-5 w-5 text-[var(--cm-gold-text)]" /> Put the Collective on your phone
       </p>
       <InstallInstructions platform={platform} />

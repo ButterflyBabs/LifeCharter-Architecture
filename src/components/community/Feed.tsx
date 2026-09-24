@@ -314,7 +314,7 @@ export function PostCard({
       </header>
 
       <div className="mt-3">
-        {post.title && <h2 className="mb-1.5 font-display text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{post.title}</h2>}
+        {post.title && <h2 className="mb-1.5 font-editorial text-[22px] font-semibold leading-snug text-[var(--cm-ink)]">{post.title}</h2>}
         {editing ? (
           <div className="space-y-2">
             <MentionTextArea value={draft} onValueChange={setDraft} mentions={editMentions} />

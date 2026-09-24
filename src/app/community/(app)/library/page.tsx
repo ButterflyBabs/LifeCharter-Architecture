@@ -87,7 +87,7 @@ export default function LibraryPage() {
         <div className="space-y-6">
           {Object.entries(byCategory).map(([cat, items]) => (
             <section key={cat}>
-              <h2 className="mb-2 font-display text-[22px] font-semibold text-[var(--cm-ink)]">{cat}</h2>
+              <h2 className="mb-2 font-editorial text-[22px] font-semibold text-[var(--cm-ink)]">{cat}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {items.map((r) => {
                   const Icon = r.kind === "video" ? PlayCircle : r.kind === "file" ? FileText : Link2;
