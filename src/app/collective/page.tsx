@@ -8,9 +8,9 @@ import { InviteForm } from "./InviteForm";
 
 const URL_BASE = "https://lccommandsuite.com";
 const PAGE_URL = `${URL_BASE}/collective`;
-const TITLE = "The LifeCharter Collective — A Free Community for Purpose-Led Coaches & Founders";
+const TITLE = "The LifeCharter Collective — A Free Community for Purpose-Led Lives & Mission-Driven Businesses";
 const DESCRIPTION =
-  "Stop building your life's work alone. Join The LifeCharter Collective — a free community for coaches, consultants and founders: weekly live sessions, accountability, a private alignment journal and aligned action.";
+  "Your life. Your life's work. You don't have to build either alone. Join The LifeCharter Collective — a free community for purpose-led lives and mission-driven businesses: weekly live sessions, accountability, a private alignment journal and aligned action.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(URL_BASE),
@@ -34,15 +34,15 @@ export const metadata: Metadata = {
     type: "website",
     url: PAGE_URL,
     siteName: "LifeCharter",
-    title: "Stop Building Your Life's Work Alone — The LifeCharter Collective",
-    description: "A free community for purpose-led coaches, consultants and founders. Weekly live sessions, real accountability and a private alignment journal.",
+    title: "Your Life. Your Life's Work. You Don't Have to Build Either Alone — The LifeCharter Collective",
+    description: "A free community for purpose-led lives and mission-driven businesses. Weekly live sessions, real accountability and a private alignment journal.",
     locale: "en_US",
-    images: [{ url: `${PAGE_URL}/og`, width: 1200, height: 630, alt: "Stop building your life's work alone — The LifeCharter Collective" }],
+    images: [{ url: `${PAGE_URL}/og`, width: 1200, height: 630, alt: "Your life. Your life's work. You don't have to build either alone — The LifeCharter Collective" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stop Building Your Life's Work Alone — The LifeCharter Collective",
-    description: "A free community for purpose-led coaches, consultants and founders.",
+    title: "Your Life. Your Life's Work. You Don't Have to Build Either Alone — The LifeCharter Collective",
+    description: "A free community for purpose-led lives and mission-driven businesses.",
     images: [`${PAGE_URL}/og`],
   },
   icons: { apple: "/community-icons/apple-touch-icon.png" },
@@ -248,7 +248,7 @@ export default function CollectiveLanding({ searchParams }: { searchParams?: { d
           <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_1fr]">
             <div>
               <p className="text-[11.5px] font-semibold uppercase tracking-[0.22em] text-[#A8873F]">A free community for purpose-led lives and mission-driven businesses</p>
-              <h1 className="mt-3 font-editorial text-[44px] font-semibold leading-[1.02] tracking-[-0.01em] sm:text-[64px]">Stop building your life&rsquo;s work alone.</h1>
+              <h1 className="mt-3 font-editorial text-[44px] font-semibold leading-[1.02] tracking-[-0.01em] sm:text-[56px]">Your life. Your life&rsquo;s work.<span className="mt-3 block text-[28px] leading-[1.15] sm:text-[34px]">You don&rsquo;t have to build either alone.</span></h1>
               <p className="mt-5 max-w-xl font-editorial text-[20px] leading-relaxed text-[#2E3A46] sm:text-[22px]">
                 The LifeCharter Collective is where people who lead with purpose set their intention each week, share what moved, and build alongside others who
                 understand the work.

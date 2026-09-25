@@ -30,8 +30,9 @@ export async function GET(req: Request) {
           ) : (
             <div style={{ fontSize: 22, letterSpacing: 6, textTransform: "uppercase", color: "#A8873F", fontFamily: "sans-serif" }}>The LifeCharter Collective</div>
           )}
-          <div style={{ marginTop: 26, fontSize: 80, lineHeight: 1.04, fontWeight: 600, fontFamily: serifFamily, maxWidth: 980 }}>
-            Stop building your life&rsquo;s work alone.
+          <div style={{ marginTop: 26, fontSize: 64, lineHeight: 1.06, fontWeight: 600, fontFamily: serifFamily, maxWidth: 1020, display: "flex", flexDirection: "column" }}>
+            <span>Your life. Your life&rsquo;s work.</span>
+            <span>You don&rsquo;t have to build either alone.</span>
           </div>
           <div style={{ marginTop: 20, fontSize: 32, color: "#2E3A46", fontFamily: serifFamily }}>Where LifeCharter and LifeCharter Command Suite members gather.</div>
           <div style={{ marginTop: 34, display: "flex" }}>
