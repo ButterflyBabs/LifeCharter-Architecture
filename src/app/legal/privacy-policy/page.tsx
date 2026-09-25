@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
         <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
 
         <p className={`${P} mt-8`}>
-          This Privacy Policy explains how Sacred Kaleidoscope Community, doing business as LifeCharter Command
+          This Privacy Policy explains how Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command
           Suite (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us&rdquo;), collects, uses, and protects information
           when you visit our websites (including lccommandsuite.com and our MasterClass, Challenge, and assessment
           pages) or use the LifeCharter Command Suite platform.
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
         <h2 className={H2}>10. Contact Us</h2>
         <p className={P}>
           Questions about this Privacy Policy can be sent to amilynne@amilynnecarroll.com, or by mail to Sacred
-          Kaleidoscope Community, 5787 S Odessa St, Centennial, Colorado 80015.
+          Kaleidoscope Community LLC, 5787 S Odessa St, Centennial, Colorado 80015.
         </p>
 
         <div className="mt-14 flex flex-wrap gap-6 border-t border-[#F3EEE4]/10 pt-6 text-sm">

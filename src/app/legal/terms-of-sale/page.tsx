@@ -25,7 +25,7 @@ export default function TermsOfSalePage() {
         <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
 
         <p className={`${P} mt-8`}>
-          This Agreement is between Sacred Kaleidoscope Community, doing business as LifeCharter Command Suite
+          This Agreement is between Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command Suite
           (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; &ldquo;us&rdquo;) and the individual or
           business purchasing a LifeCharter Command Suite tier (&ldquo;Client,&rdquo; &ldquo;you&rdquo;).
         </p>
@@ -178,7 +178,7 @@ export default function TermsOfSalePage() {
         <p className={P}>
           Questions about this Agreement can be sent to amilynne@amilynnecarroll.com. Formal legal notices under this
           Agreement should be sent to amilynne@amilynnecarroll.com, with a copy by mail to Sacred Kaleidoscope
-          Community, 5787 S Odessa St, Centennial, Colorado 80015.
+          Community LLC, 5787 S Odessa St, Centennial, Colorado 80015.
         </p>
 
         <div className="mt-14 flex flex-wrap gap-6 border-t border-[#F3EEE4]/10 pt-6 text-sm">
