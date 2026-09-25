@@ -94,6 +94,12 @@ export default function TermsOfSalePage() {
           3.4 Price Changes. Company may change Monthly Fees for future billing periods with at least 30 days&apos;
           notice. Price changes will not apply retroactively to fees already charged.
         </p>
+        <p className={P}>
+          3.5 LifeCharter Alumni Credit. A graduate of the LifeCharter Program who purchases a Command Suite tier within
+          thirty (30) days of completing the LifeCharter Program receives a one-time credit of $500 toward the
+          Implementation Fee. The credit has no cash value, cannot be combined with other discounts unless Company agrees,
+          and does not change the non-refundable status of the Implementation Fee described in Section 5.
+        </p>
 
         <h2 className={H2}>4. Year-1 Commitment</h2>
         <p className={P}>
