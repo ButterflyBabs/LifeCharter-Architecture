@@ -2,7 +2,23 @@
 // sections are the practical minimum for a meaningful plan (strongly guided, not
 // hard-blocked). Each section carries guiding questions and an "assess" hint that
 // tells the AI which assessment evidence to lean on when drafting.
+import {
+  BRAND_VOICE_QUESTIONS, CHANNELS_QUESTIONS, CONTENT_STRATEGY_QUESTIONS, IDEAL_CLIENT_QUESTIONS, OFFER_PROMISE_QUESTIONS, POSITIONING_QUESTIONS,
+} from "./marketingQuestions";
+
 export type PlanKind = "business" | "marketing" | "sales" | "forecasting";
+
+// A section question with an input type. Sections without `questions` ask
+// their `guiding` lines as short text, keyed "0", "1", … (their saved answers
+// use those keys).
+export interface PlanQuestion {
+  id: string;
+  question: string;
+  type: "text" | "textarea" | "choice" | "list";
+  placeholder?: string;
+  hint?: string;
+  options?: string[];
+}
 
 export interface BlueprintSection {
   key: string;
@@ -10,7 +26,12 @@ export interface BlueprintSection {
   description: string; // what this section should capture
   baseline: boolean; // part of the required foundational baseline
   guiding: string[]; // questions to prompt the owner / steer the AI
+  questions?: PlanQuestion[]; // richer question set; replaces `guiding` when present
   assess: string; // which assessment evidence informs it (for the AI prompt)
+}
+
+export function sectionQuestions(s: BlueprintSection): PlanQuestion[] {
+  return s.questions || s.guiding.map((q, i) => ({ id: String(i), question: q, type: "text" as const }));
 }
 
 export interface Blueprint {
@@ -126,10 +147,8 @@ const MARKETING: Blueprint = {
       title: "Ideal Client Profile",
       description: "A vivid picture of the person you most want to serve.",
       baseline: true,
-      guiding: [
-        "Describe your ideal client — their world, goals, and pain.",
-        "What triggers them to look for a solution like yours?",
-      ],
+      guiding: [],
+      questions: IDEAL_CLIENT_QUESTIONS,
       assess: "Brain (marketing), Soul (who you serve), and the Client profit domain.",
     },
     {
@@ -137,7 +156,8 @@ const MARKETING: Blueprint = {
       title: "Positioning & Core Message",
       description: "The one clear idea you want to own in their mind.",
       baseline: true,
-      guiding: ["In one sentence, what do you help people do?", "Why you, and why now?"],
+      guiding: [],
+      questions: POSITIONING_QUESTIONS,
       assess: "Brain (marketing) and Soul (unique gifts and story).",
     },
     {
@@ -145,7 +165,8 @@ const MARKETING: Blueprint = {
       title: "Core Offer & Promise",
       description: "The primary offer you lead with and the transformation it promises.",
       baseline: true,
-      guiding: ["What's the offer you lead with?", "What transformation do you promise?"],
+      guiding: [],
+      questions: OFFER_PROMISE_QUESTIONS,
       assess: "Product and Client profit domains.",
     },
     {
@@ -153,7 +174,8 @@ const MARKETING: Blueprint = {
       title: "Channels & Cadence",
       description: "Where you'll show up and how consistently.",
       baseline: true,
-      guiding: ["Which 2–3 channels fit your clients and your strengths?", "What posting/outreach cadence can you sustain?"],
+      guiding: [],
+      questions: CHANNELS_QUESTIONS,
       assess: "Brain (marketing system) and current capacity.",
     },
     {
@@ -161,7 +183,8 @@ const MARKETING: Blueprint = {
       title: "Content Strategy",
       description: "The themes and formats that build trust and demand.",
       baseline: false,
-      guiding: ["What 3–5 content themes speak to your ideal client?", "What formats will you use?"],
+      guiding: [],
+      questions: CONTENT_STRATEGY_QUESTIONS,
       assess: "Brain (marketing) and Soul (voice).",
     },
     {
@@ -169,7 +192,8 @@ const MARKETING: Blueprint = {
       title: "Brand Voice & Story",
       description: "How you sound and the story that makes you memorable.",
       baseline: false,
-      guiding: ["How would you describe your brand voice?", "What's the origin story worth telling?"],
+      guiding: [],
+      questions: BRAND_VOICE_QUESTIONS,
       assess: "Soul (story, values, voice).",
     },
     {

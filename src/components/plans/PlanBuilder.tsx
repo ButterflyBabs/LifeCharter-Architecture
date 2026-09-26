@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Sparkles, Wand2, Loader2, Check, ChevronDown, ChevronUp, CircleDot, CheckCircle2 } from "lucide-react";
+import type { PlanQuestion } from "@/lib/plans/blueprints";
 
 interface Section {
   key: string;
   title: string;
   description: string;
   baseline: boolean;
-  guiding: string[];
+  questions: PlanQuestion[];
   content: string;
   answers: Record<string, string>;
   status: string;
@@ -40,9 +41,15 @@ export default function PlanBuilder({ planType }: { planType: string }) {
       const d = await res.json().catch(() => ({}));
       if (d.sections) {
         setData(d);
-        // Open the first unfilled baseline section by default.
-        const first = (d.sections as Section[]).find((s) => s.baseline && !s.content.trim());
-        if (first) setOpen({ [first.key]: true });
+        // Open the section named in ?section=, else the first unfilled baseline one.
+        const wanted = new URLSearchParams(window.location.search).get("section");
+        const target =
+          (d.sections as Section[]).find((s) => s.key === wanted) ||
+          (d.sections as Section[]).find((s) => s.baseline && !s.content.trim());
+        if (target) {
+          setOpen({ [target.key]: true });
+          if (target.key === wanted) setTimeout(() => document.getElementById(`section-${target.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }
       }
     } finally {
       setLoaded(true);
@@ -154,7 +161,7 @@ export default function PlanBuilder({ planType }: { planType: string }) {
           const isOpen = open[s.key];
           const filled = s.content.trim().length > 0;
           return (
-            <div key={s.key} className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 overflow-hidden">
+            <div key={s.key} id={`section-${s.key}`} className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 overflow-hidden scroll-mt-4">
               <button
                 onClick={() => setOpen((p) => ({ ...p, [s.key]: !p[s.key] }))}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#2E7C83]/5"
@@ -176,6 +183,11 @@ export default function PlanBuilder({ planType }: { planType: string }) {
                         Optional
                       </span>
                     )}
+                    {s.questions.length > 0 && (
+                      <span className="text-[10px] text-[#7a8a99]">
+                        {s.questions.filter((q) => (s.answers[q.id] || "").trim()).length} of {s.questions.length} answered
+                      </span>
+                    )}
                     {s.source === "ai" && filled && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">
                         <Sparkles className="w-2.5 h-2.5" /> AI draft
@@ -190,20 +202,17 @@ export default function PlanBuilder({ planType }: { planType: string }) {
                 <div className="px-4 pb-4">
                   <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mb-3">{s.description}</p>
 
-                  {/* Guiding questions */}
-                  {s.guiding.length > 0 && (
-                    <div className="space-y-2 mb-3">
-                      {s.guiding.map((q, i) => (
-                        <div key={i}>
-                          <label className="block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">{q}</label>
-                          <input
-                            value={s.answers[String(i)] || ""}
-                            onChange={(e) => patchLocal(s.key, { answers: { ...s.answers, [String(i)]: e.target.value } })}
-                            onBlur={() => saveSection(s.key)}
-                            placeholder="Your answer (optional — helps the AI draft)"
-                            className="w-full px-3 h-9 text-sm rounded-lg border border-[#1a2b4a]/15 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
-                          />
-                        </div>
+                  {/* The section's questions — answers save on their own and steer the AI draft */}
+                  {s.questions.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {s.questions.map((q) => (
+                        <QuestionField
+                          key={q.id}
+                          q={q}
+                          value={s.answers[q.id] || ""}
+                          onChange={(v) => patchLocal(s.key, { answers: { ...s.answers, [q.id]: v } })}
+                          onCommit={(v) => saveSection(s.key, v === undefined ? {} : { answers: { ...s.answers, [q.id]: v } })}
+                        />
                       ))}
                     </div>
                   )}
@@ -248,6 +257,60 @@ export default function PlanBuilder({ planType }: { planType: string }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const FIELD =
+  "w-full px-3 text-sm rounded-lg border border-[#1a2b4a]/15 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]";
+
+// One section question. Text saves when you click away; a choice saves at once.
+// List answers are stored one per line.
+function QuestionField({
+  q, value, onChange, onCommit,
+}: {
+  q: PlanQuestion;
+  value: string;
+  onChange: (v: string) => void;
+  onCommit: (v?: string) => void;
+}) {
+  const id = `q-${q.id}`;
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
+        {q.question}
+      </label>
+      {q.type === "choice" ? (
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            onCommit(e.target.value);
+          }}
+          className={`${FIELD} h-9`}
+        >
+          <option value="">Choose one…</option>
+          {(q.options || []).map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      ) : q.type === "text" ? (
+        <input id={id} value={value} onChange={(e) => onChange(e.target.value)} onBlur={() => onCommit()} placeholder={q.placeholder || "Your answer"} className={`${FIELD} h-9`} />
+      ) : (
+        <textarea
+          id={id}
+          value={value}
+          rows={3}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={() => onCommit()}
+          placeholder={q.type === "list" ? `One per line${q.placeholder ? ` — ${q.placeholder.replace(/^Add an? /, "e.g. ").replace(/\.\.\.$/, "")}` : ""}` : q.placeholder || "Your answer"}
+          className={`${FIELD} py-2 leading-relaxed`}
+        />
+      )}
+      {q.hint && <p className="mt-1 text-[11px] text-[#7a8a99] dark:text-[#b8c2cf]">{q.hint}</p>}
     </div>
   );
 }
