@@ -154,7 +154,27 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  // The sidebar remembers how you left it. With no choice made yet it starts as the
+  // slim icon rail on windows narrower than 1280px, so the page keeps enough room
+  // for its cards instead of squeezing them beside a full-width menu.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sidebar-collapsed");
+      if (saved === "1" || saved === "0") setIsCollapsed(saved === "1");
+      else setIsCollapsed(window.innerWidth < 1280);
+    } catch {
+      setIsCollapsed(window.innerWidth < 1280);
+    }
+  }, []);
+  const toggleSidebar = () => {
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    try {
+      localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+    } catch {
+      /* not remembered */
+    }
+  };
   const toggleMobileSidebar = () => setIsMobileOpen((v) => !v);
   const closeMobileSidebar = () => setIsMobileOpen(false);
 

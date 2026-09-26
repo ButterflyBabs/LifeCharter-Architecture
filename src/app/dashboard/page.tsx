@@ -350,7 +350,7 @@ export default function DashboardPage() {
           items={cards.map((card) => card.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-6 [&>*:last-child:nth-child(odd)]:col-span-full">
             {cards.map((card) => (
               <SortableCard key={card.id} card={card} />
             ))}

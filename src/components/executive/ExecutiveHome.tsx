@@ -1186,7 +1186,7 @@ export default function ExecutiveHome() {
       </header>
 
       {/* Executive Briefing — draggable cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-4 mb-5">
         {/* Your Morning Brief */}
         <div {...briefCardProps("brief")}>
           <button draggable onDragStart={() => setDragId("brief")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>

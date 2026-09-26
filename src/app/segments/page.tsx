@@ -198,7 +198,7 @@ export default function SegmentsPage() {
               </div>
               {biz.segments.length === 0 && <p className="text-sm text-[#7a8a99] mb-3">No segments yet — add one to track what it earns.</p>}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-5">
                 {biz.segments.map((seg) => {
                   const dims = seg.segment_dimensions ?? [];
                   const byKey = new Map(dims.map((d) => [d.dimension_key, d]));

@@ -92,7 +92,7 @@ export default function AssessmentsPage() {
         {/* Recurring check-in rhythm */}
         <CheckinSchedule />
 
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-6 mt-12">
           {alignmentProfiles.map((assessment) => (
             <Card
               key={assessment.id}

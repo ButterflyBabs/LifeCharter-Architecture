@@ -73,7 +73,7 @@ export function DomainScores(props: DomainScoresProps) {
         </button>
       </CardHeader>
       <CardContent className="p-6 pt-0">
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-3">
           {scores.map((domain) => (
             <div
               key={domain.name}
