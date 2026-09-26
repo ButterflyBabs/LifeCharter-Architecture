@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Zap, Sparkles, Pencil, Trash2, Plus, Check, X, Loader2, Wand2 } from "lucide-react";
+import { Zap, Sparkles, Pencil, Trash2, Plus, Check, X, Loader2, Wand2, ChevronDown, ChevronRight } from "lucide-react";
 
 export interface QuickWin {
   id: string;
@@ -38,6 +38,17 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
   const [needsKey, setNeedsKey] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // Collapsible: fold the whole list down to its title. Remembered per device.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(`quick-wins-collapsed-${mode}`) === "1");
+  }, [mode]);
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      localStorage.setItem(`quick-wins-collapsed-${mode}`, c ? "0" : "1");
+      return !c;
+    });
 
   // Inline editor state (for add or edit).
   const [editId, setEditId] = useState<string | null>(null);
@@ -204,11 +215,19 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand Quick Wins" : "Collapse Quick Wins"}
+          className="flex items-center gap-2 text-left rounded-lg -ml-1 px-1 py-0.5 hover:bg-[#1a2b4a]/5"
+        >
+          {collapsed ? <ChevronRight className="w-5 h-5 text-[#7a8a99]" /> : <ChevronDown className="w-5 h-5 text-[#7a8a99]" />}
           <Zap className="w-5 h-5 text-[#c9a227]" />
           <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Quick Wins</h2>
-        </div>
-        {mode === "full" && (
+          {collapsed && loaded && wins.length > 0 && <span className="text-xs font-normal text-[#7a8a99]">({wins.length})</span>}
+        </button>
+        {mode === "full" && !collapsed && (
           <div className="flex items-center gap-2">
             <button
               onClick={generateWin}
@@ -229,6 +248,8 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
         )}
       </div>
 
+      {!collapsed && (
+      <>
       {/* Concise, practical explainer */}
       <p className="text-sm text-[#4a5568] dark:text-[#d5dbe5] mb-4 leading-relaxed">
         {mode === "full" ? (
@@ -354,6 +375,8 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
             </button>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   );

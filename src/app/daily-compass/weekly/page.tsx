@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -14,116 +14,140 @@ import {
   TrendingUp,
   Flame,
   Trophy,
-  Zap,
+  Star,
   Phone,
   Share2,
   MessageSquare,
-  Star,
-  Plus
+  ListChecks,
 } from "lucide-react";
 import Link from "next/link";
 
-interface WeeklyGoal {
+interface DayRow {
+  date: string;
+  dayName: string;
+  isToday: boolean;
+  isFuture: boolean;
+  active: boolean;
+  calls: number;
+  posts: number;
+  followups: number;
+  tasksDone: number;
+}
+interface Goal {
   id: string;
   category: string;
-  target: number;
+  target: number | null;
   current: number;
   unit: string;
 }
-
-interface DayActivity {
-  date: string;
-  dayName: string;
-  completed: boolean;
-  activities: {
-    calls: number;
-    content: number;
-    followups: number;
-  };
+interface Weekly {
+  weekStart: string;
+  weekEnd: string;
+  isCurrentWeek: boolean;
+  today: string;
+  days: DayRow[];
+  goals: Goal[];
+  totals: { calls: number; posts: number; followups: number; tasksDone: number; daysActive: number };
+  streak: { current: number; longest: number };
 }
 
-const weeklyGoals: WeeklyGoal[] = [
-  { id: "1", category: "Sales Calls", target: 25, current: 12, unit: "calls" },
-  { id: "2", category: "Content Posts", target: 15, current: 8, unit: "posts" },
-  { id: "3", category: "Follow-ups", target: 20, current: 15, unit: "messages" },
-  { id: "4", category: "Proposals Sent", target: 3, current: 1, unit: "proposals" }
-];
+const fmt = (day: string, opts: Intl.DateTimeFormatOptions) => {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
+};
 
-const weekData: DayActivity[] = [
-  { date: "2026-07-14", dayName: "Mon", completed: true, activities: { calls: 5, content: 3, followups: 4 } },
-  { date: "2026-07-15", dayName: "Tue", completed: true, activities: { calls: 4, content: 2, followups: 5 } },
-  { date: "2026-07-16", dayName: "Wed", completed: true, activities: { calls: 3, content: 3, followups: 6 } },
-  { date: "2026-07-17", dayName: "Thu", completed: false, activities: { calls: 0, content: 0, followups: 0 } },
-  { date: "2026-07-18", dayName: "Fri", completed: false, activities: { calls: 0, content: 0, followups: 0 } },
-  { date: "2026-07-19", dayName: "Sat", completed: false, activities: { calls: 0, content: 0, followups: 0 } },
-  { date: "2026-07-20", dayName: "Sun", completed: false, activities: { calls: 0, content: 0, followups: 0 } }
-];
+// "Sep 21 – 27, 2026" / "Sep 28 – Oct 4, 2026" / "Dec 28, 2026 – Jan 3, 2027"
+function rangeLabel(a: string, b: string): string {
+  const sameYear = a.slice(0, 4) === b.slice(0, 4);
+  const sameMonth = a.slice(0, 7) === b.slice(0, 7);
+  if (sameMonth) return `${fmt(a, { month: "short", day: "numeric" })} – ${fmt(b, { day: "numeric" })}, ${b.slice(0, 4)}`;
+  if (sameYear) return `${fmt(a, { month: "short", day: "numeric" })} – ${fmt(b, { month: "short", day: "numeric" })}, ${b.slice(0, 4)}`;
+  return `${fmt(a, { month: "short", day: "numeric", year: "numeric" })} – ${fmt(b, { month: "short", day: "numeric", year: "numeric" })}`;
+}
+
+function shiftWeek(weekStart: string, weeks: number): string {
+  const [y, m, d] = weekStart.split("-").map(Number);
+  const n = new Date(Date.UTC(y, m - 1, d + weeks * 7));
+  return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, "0")}-${String(n.getUTCDate()).padStart(2, "0")}`;
+}
 
 export default function WeeklyViewPage() {
-  const [currentWeek] = useState("July 14-20, 2026");
-  const [streak] = useState({
-    current: 12,
-    longest: 28,
-    weeklyStreak: 3
-  });
+  const [data, setData] = useState<Weekly | null>(null);
+  const [week, setWeek] = useState<string>(""); // "" = the current week
+  const [failed, setFailed] = useState(false);
 
-  // Calculate weekly totals for display
-  const weeklyTotals = {
-    totalActivities: weekData.reduce((acc, day) => 
-      acc + day.activities.calls + day.activities.content + day.activities.followups, 0
-    ),
-    completedDays: weekData.filter(day => day.completed).length
-  };
-  
-  // Display weekly stats in summary
-  // Display weekly stats
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  weeklyTotals;
+  const load = useCallback(async (w: string) => {
+    setFailed(false);
+    try {
+      const tz = localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const res = await fetch(`/api/compass-weekly?tz=${encodeURIComponent(tz)}${w ? `&week=${w}` : ""}`);
+      if (!res.ok) throw new Error("load failed");
+      setData(await res.json());
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    load(week);
+  }, [week, load]);
+
+  const goPrev = () => data && setWeek(shiftWeek(data.weekStart, -1));
+  const goNext = () => data && !data.isCurrentWeek && setWeek(shiftWeek(data.weekStart, 1));
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
-      {/* Header */}
       <Link href="/daily-compass" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Compass
       </Link>
 
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-[#c9a227]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                Weekly View
-              </h1>
-              <p className="text-[#b8a898]">
-                Plan your week, track your progress
-              </p>
+              <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Weekly View</h1>
+              <p className="text-[#5a6472] dark:text-[#c3ccd8]">Your real week — what you did, against your goals</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg">
+            <button onClick={goPrev} disabled={!data} aria-label="Previous week" className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg disabled:opacity-40">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{currentWeek}</span>
-            <button className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg">
+            <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] min-w-[9.5rem] text-center">
+              {data ? rangeLabel(data.weekStart, data.weekEnd) : "Loading…"}
+            </span>
+            <button
+              onClick={goNext}
+              disabled={!data || data.isCurrentWeek}
+              aria-label="Next week"
+              className="p-2 hover:bg-[#1a2b4a]/10 rounded-lg disabled:opacity-30"
+            >
               <ChevronRight className="w-5 h-5" />
             </button>
+            {data && !data.isCurrentWeek && (
+              <button onClick={() => setWeek("")} className="text-sm text-[#2E7C83] hover:underline">
+                This week
+              </button>
+            )}
           </div>
         </div>
       </div>
 
+      {failed && <p className="text-sm text-[#8a2f2f] mb-6">Couldn&apos;t load your week — please refresh.</p>}
+
       {/* Streak Banner */}
       <Card className="mb-8 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <div className="flex items-center gap-2 mb-1">
                   <Flame className="w-6 h-6 text-[#c9a227]" />
-                  <span className="text-3xl font-bold">{streak.current}</span>
+                  <span className="text-3xl font-bold">{data ? data.streak.current : "—"}</span>
                 </div>
                 <p className="text-sm text-[#e8e4f0]">Day Streak</p>
               </div>
@@ -131,25 +155,28 @@ export default function WeeklyViewPage() {
               <div className="text-center">
                 <div className="flex items-center gap-2 mb-1">
                   <Trophy className="w-6 h-6 text-[#c9a227]" />
-                  <span className="text-3xl font-bold">{streak.longest}</span>
+                  <span className="text-3xl font-bold">{data ? data.streak.longest : "—"}</span>
                 </div>
                 <p className="text-sm text-[#e8e4f0]">Longest Streak</p>
               </div>
               <div className="h-12 w-px bg-[#e8e4f0]/30" />
               <div className="text-center">
                 <div className="flex items-center gap-2 mb-1">
-                  <Zap className="w-6 h-6 text-[#c9a227]" />
-                  <span className="text-3xl font-bold">{streak.weeklyStreak}</span>
+                  <Star className="w-6 h-6 text-[#c9a227]" />
+                  <span className="text-3xl font-bold">{data ? data.totals.daysActive : "—"}</span>
                 </div>
-                <p className="text-sm text-[#e8e4f0]">Weeks Complete</p>
+                <p className="text-sm text-[#e8e4f0]">Active Days This Week</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-[#e8e4f0] mb-1">Keep it up!</p>
-              <p className="text-xs text-[#c9a227]">
-                {streak.current} more days to beat your record
+            {data && (
+              <p className="text-sm text-[#e8e4f0] max-w-xs text-right">
+                {data.streak.current === 0
+                  ? "Do one thing today — finish a task, log a call, post — to start a streak."
+                  : data.streak.current >= data.streak.longest
+                  ? "This is your longest streak yet."
+                  : `${data.streak.longest - data.streak.current + 1} more day${data.streak.longest - data.streak.current + 1 === 1 ? "" : "s"} to beat your record.`}
               </p>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -157,35 +184,34 @@ export default function WeeklyViewPage() {
       {/* Week Grid */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-lg">This Week</CardTitle>
+          <CardTitle className="text-lg">{data?.isCurrentWeek ? "This Week" : "Week of " + (data ? fmt(data.weekStart, { month: "short", day: "numeric" }) : "")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
-            {weekData.map((day, index) => (
+            {(data?.days ?? []).map((day) => (
               <Link key={day.date} href="/daily-compass">
                 <div
-                  className={`p-4 rounded-lg text-center cursor-pointer transition-all hover:shadow-md ${
-                    day.completed
+                  className={`p-3 sm:p-4 rounded-lg text-center cursor-pointer transition-all hover:shadow-md h-full ${
+                    day.active
                       ? "bg-[#4a9b9b]/20 border-2 border-[#4a9b9b]"
-                      : index < 3
-                      ? "bg-[#1a2b4a]/5 border-2 border-[#1a2b4a]/20"
-                      : "bg-white dark:bg-[#1a2b4a]/30 border-2 border-dashed border-[#1a2b4a]/20"
-                  }`}
+                      : day.isFuture
+                      ? "bg-white dark:bg-[#1a2b4a]/30 border-2 border-dashed border-[#1a2b4a]/20"
+                      : "bg-[#1a2b4a]/5 border-2 border-[#1a2b4a]/20"
+                  } ${day.isToday ? "ring-2 ring-[#c9a227]" : ""}`}
                 >
-                  <p className="text-sm text-[#b8a898] mb-1">{day.dayName}</p>
-                  <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    {new Date(day.date).getDate()}
-                  </p>
-                  {day.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-[#4a9b9b] mx-auto mt-2" />
+                  <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8] mb-1">{day.dayName}</p>
+                  <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{Number(day.date.slice(8, 10))}</p>
+                  {day.active ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#2E7C83] mx-auto mt-2" />
                   ) : (
-                    <Circle className="w-5 h-5 text-[#b8a898] mx-auto mt-2" />
+                    <Circle className="w-5 h-5 text-[#8a94a3] mx-auto mt-2" />
                   )}
-                  {day.completed && (
-                    <div className="mt-2 text-xs text-[#4a9b9b]">
-                      <p>{day.activities.calls}c</p>
-                      <p>{day.activities.content}p</p>
-                      <p>{day.activities.followups}f</p>
+                  {day.active && (
+                    <div className="mt-2 text-xs text-[#1f6a70] dark:text-[#7fd0d6] space-y-0.5">
+                      {day.tasksDone > 0 && <p title="Tasks done">{day.tasksDone} tasks</p>}
+                      {day.calls > 0 && <p title="Calls">{day.calls} calls</p>}
+                      {day.followups > 0 && <p title="Follow-ups">{day.followups} f-ups</p>}
+                      {day.posts > 0 && <p title="Posts">{day.posts} posts</p>}
                     </div>
                   )}
                 </div>
@@ -203,33 +229,35 @@ export default function WeeklyViewPage() {
               <Target className="w-5 h-5 text-[#c9a227]" />
               Weekly Goals
             </CardTitle>
-            <Button variant="outline" size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Goal
-            </Button>
+            <Link href="/daily-compass/sales-activities">
+              <Button variant="outline" size="sm">
+                Set goals
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {weeklyGoals.map((goal) => {
-              const progress = (goal.current / goal.target) * 100;
+            {(data?.goals ?? []).map((goal) => {
+              const pct = goal.target ? (goal.current / goal.target) * 100 : 0;
               return (
                 <div key={goal.id}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                      {goal.category}
-                    </span>
-                    <span className="text-[#b8a898]">
-                      {goal.current}/{goal.target} {goal.unit}
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">{goal.category}</span>
+                    <span className="text-[#5a6472] dark:text-[#c3ccd8]">
+                      {goal.target ? `${goal.current}/${goal.target} ${goal.unit}` : `${goal.current} ${goal.unit} · no goal set`}
                     </span>
                   </div>
                   <div className="w-full bg-[#1a2b4a]/10 rounded-full h-2">
                     <div
                       className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min(progress, 100)}%` }}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
                     />
                   </div>
                 </div>
               );
             })}
+            <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">
+              Goals are the weekly targets you set in Sales Activities. Posting goals live in the Content Calendar.
+            </p>
           </CardContent>
         </Card>
 
@@ -243,58 +271,51 @@ export default function WeeklyViewPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
-                <Phone className="w-6 h-6 text-[#7b6b8d] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">12</p>
-                <p className="text-sm text-[#b8a898]">Sales Calls</p>
-              </div>
-              <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
-                <Share2 className="w-6 h-6 text-[#4a9b9b] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">8</p>
-                <p className="text-sm text-[#b8a898]">Content Posts</p>
-              </div>
-              <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
-                <MessageSquare className="w-6 h-6 text-[#c9a227] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">15</p>
-                <p className="text-sm text-[#b8a898]">Follow-ups</p>
-              </div>
-              <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
-                <Star className="w-6 h-6 text-[#1a2b4a] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">3</p>
-                <p className="text-sm text-[#b8a898]">Days Active</p>
-              </div>
+              {[
+                { icon: <Phone className="w-6 h-6 text-[#7b6b8d] mx-auto mb-2" />, value: data?.totals.calls, label: "Sales Calls" },
+                { icon: <Share2 className="w-6 h-6 text-[#4a9b9b] mx-auto mb-2" />, value: data?.totals.posts, label: "Posts Published" },
+                { icon: <MessageSquare className="w-6 h-6 text-[#c9a227] mx-auto mb-2" />, value: data?.totals.followups, label: "Follow-ups" },
+                { icon: <ListChecks className="w-6 h-6 text-[#1a2b4a] dark:text-[#F8F5F0] mx-auto mb-2" />, value: data?.totals.tasksDone, label: "Tasks Done" },
+              ].map((s) => (
+                <div key={s.label} className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
+                  {s.icon}
+                  <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.value ?? "—"}</p>
+                  <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">{s.label}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* What Populates Streak */}
+      {/* How it's counted */}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Flame className="w-5 h-5 text-[#c9a227]" />
-            How Streaks Work
+            How This Is Counted
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Day Streak</h3>
-              <p className="text-sm text-[#b8a898]">
-                Increases when you complete at least 3 activities in a day (calls, content, or follow-ups). 
-                Breaks if you miss a day entirely.
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Active day &amp; streak</h3>
+              <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">
+                A day is active when you did at least one thing: finished a task, checked off a recurring task, logged a
+                call or follow-up, or published a post. Your streak is the number of active days in a row, ending today.
               </p>
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Weekly Streak</h3>
-              <p className="text-sm text-[#b8a898]">
-                Increases when you hit 80% of your weekly goals. Tracks consecutive weeks of strong performance.
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Where the numbers come from</h3>
+              <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">
+                Calls and follow-ups come from your Global Control contact log, your Sales Activities and follow-up tasks you
+                complete. Posts come from your Content Calendar. Tasks come from your task list and recurring tasks.
               </p>
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Activity Tracking</h3>
-              <p className="text-sm text-[#b8a898]">
-                Each completed task, call made, post published, or follow-up sent counts toward your daily activity total.
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Weeks &amp; time zone</h3>
+              <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">
+                Weeks run Monday to Sunday in your time zone. Use the arrows to look back at earlier weeks.
               </p>
             </div>
           </div>
