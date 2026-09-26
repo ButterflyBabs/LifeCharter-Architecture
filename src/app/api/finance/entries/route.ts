@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 import { periodRange } from "@/lib/finance/period";
 
 export const dynamic = "force-dynamic";
@@ -238,7 +239,7 @@ export async function POST(request: Request) {
       description: typeof body.description === "string" ? body.description.trim() : null,
       occurred_on: occurredOn,
       source: "manual",
-      segment_id: typeof body.segmentId === "string" && body.segmentId ? body.segmentId : null,
+      segment_id: (await validSegment(masterPlanId, body.segmentId)) ?? null,
     })
     .select("id, type, amount, category, description, occurred_on, source, segment_id")
     .single();
@@ -248,4 +249,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Couldn't save the entry." }, { status: 500 });
   }
   return NextResponse.json({ entry: serialize(data as Row) });
+}
+
+// A segment id is only accepted if it belongs to THIS client's own account.
+async function validSegment(masterPlanId: string | null, raw: unknown): Promise<number | null> {
+  const id = Number(raw);
+  if (!masterPlanId || !Number.isFinite(id) || id <= 0) return null;
+  return (await planSegmentIds(masterPlanId)).includes(id) ? id : null;
 }
