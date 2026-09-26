@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Circle,
   ArrowRight,
-  Loader2,
   Compass,
   Calendar,
   Users,
@@ -96,9 +95,8 @@ export default function SetupPage() {
   const requiredDone = steps.filter((x) => x.required && x.done).length;
   const requiredTotal = steps.filter((x) => x.required).length;
 
-  // "Connect your tools" is the fifth step: it counts once at least one tool
-  // (calendar & email, Global Control or PostStream) is connected. It stays
-  // optional — it doesn't hold back entering the Suite.
+  // "Connect your tools" is the fifth required step: it's met once at least one
+  // tool (calendar & email, Global Control or PostStream) is connected.
   const toolStates = [Boolean(s?.integrations.calendar), Boolean(s?.integrations.globalControl), Boolean(s?.integrations.poststream)];
   const toolsConnected = toolStates.filter(Boolean).length;
   const toolsDone = toolsConnected > 0;
@@ -135,7 +133,7 @@ export default function SetupPage() {
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Set up your Command Suite</h1>
           <p className="text-[#7a8a99] dark:text-[#b8c2cf] mt-2 max-w-md mx-auto">
             We start with your assessments — they&apos;re the foundation everything else is built on. Then connect your
-            AI and, if you like, your tools.
+            AI and at least one of your tools.
           </p>
         </div>
 
@@ -215,11 +213,11 @@ export default function SetupPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Plug className="w-5 h-5 text-[#2E7C83]" />
                     <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Connect your tools</h3>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7a8a99]">Optional to enter</span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">Required — any one</span>
                     <span className="text-[11px] text-[#7a8a99]">{toolsConnected} of 3 connected</span>
                   </div>
                   <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">
-                    Hook up your calendar &amp; email, contacts, and social so the Suite can act for you. Connecting any one completes this step.
+                    Hook up your calendar &amp; email, contacts, and social so the Suite can act for you. Connecting any one of them completes this step.
                   </p>
                 </div>
               </div>
@@ -251,11 +249,10 @@ export default function SetupPage() {
                     disabled
                     className="inline-flex items-center gap-2 text-base font-semibold px-8 py-3 rounded-xl bg-[#1a2b4a]/20 text-[#1a2b4a]/50 dark:text-[#F8F5F0]/40 cursor-not-allowed"
                   >
-                    <Loader2 className={requiredDone < requiredTotal ? "hidden" : "w-5 h-5"} />
-                    Finish the foundation to continue
+                    Finish setup to continue
                   </button>
                   <p className="text-xs text-[#b8a898] mt-3">
-                    Complete your three assessments and connect your AI to unlock the Suite — connecting your tools is optional.{" "}
+                    Complete your three assessments, connect your AI, and connect at least one tool to unlock the Suite.{" "}
                     <button onClick={finishLater} className="text-[#2E7C83] hover:underline">
                       I&apos;ll finish later
                     </button>

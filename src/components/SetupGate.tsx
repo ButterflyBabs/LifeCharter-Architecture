@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Compass, ArrowRight, X } from "lucide-react";
 
 // First-run gate: sends brand-new clients to /setup, and shows a gentle banner
-// to anyone who skipped it, until the required foundation (assessments + AI) is done.
+// to anyone who skipped it, until the required setup (assessments, AI and one connected tool) is done.
 export default function SetupGate() {
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -48,7 +48,7 @@ export default function SetupGate() {
       <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-3">
         <Compass className="w-5 h-5 text-[#c9a227] flex-shrink-0" />
         <p className="text-sm flex-1 min-w-0">
-          Finish setting up your Command Suite — your assessments and AI are the foundation for everything.
+          Finish setting up your Command Suite — your assessments, your AI and at least one connected tool.
         </p>
         <Link
           href="/setup"

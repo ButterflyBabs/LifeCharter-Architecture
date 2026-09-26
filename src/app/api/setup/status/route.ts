@@ -9,8 +9,8 @@ import * as microsoft from "@/lib/microsoft";
 export const dynamic = "force-dynamic";
 
 // Live status of every setup step, so the wizard and Travel Partner widget both
-// reflect real progress. Foundation-first: assessments + a connected AI key are
-// what's required to finish; integrations are encouraged but optional.
+// reflect real progress. Required to finish: the three assessments, a connected
+// AI key, and at least one connected tool.
 export async function GET() {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
@@ -95,7 +95,10 @@ export async function GET() {
   }
 
   const assessmentsComplete = brain && soul && profit;
-  const requiredComplete = assessmentsComplete && ai;
+  // Connecting tools is required too — any single connection (calendar & email,
+  // Global Control or PostStream) meets it.
+  const toolsConnected = gConnected || mConnected || globalControl || poststream;
+  const requiredComplete = assessmentsComplete && ai && toolsConnected;
 
   return NextResponse.json({
     assessments: { brain, soul, profit, complete: assessmentsComplete },
@@ -107,6 +110,7 @@ export async function GET() {
       globalControl,
       poststream,
     },
+    tools: { connected: toolsConnected },
     requiredComplete,
     bypass,
   });
