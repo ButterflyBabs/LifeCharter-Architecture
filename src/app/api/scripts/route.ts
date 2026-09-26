@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { SCRIPTS_SEED } from "@/lib/scriptsSeed";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +37,8 @@ function shape(r: Row) {
   };
 }
 
-// GET — this client's scripts & templates. Seeds a starter set on first load.
+// GET — this client's own saved scripts & templates (the shared starter library
+// is browsed separately and copied in with POST).
 export async function GET() {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
@@ -54,23 +54,7 @@ export async function GET() {
     .order("is_favorite", { ascending: false })
     .order("created_at", { ascending: true });
 
-  let rows = (data || []) as Row[];
-
-  if (rows.length === 0) {
-    const seed = SCRIPTS_SEED.map((s) => ({
-      master_plan_id: masterPlanId,
-      title: s.title,
-      description: s.description,
-      item_type: s.itemType,
-      category: s.category,
-      channel: s.channel,
-      content: s.content,
-      tags: s.tags,
-      source: "default",
-    }));
-    const { data: inserted } = await supabase.from("scripts_templates").insert(seed).select(sel);
-    rows = (inserted || []) as Row[];
-  }
+  const rows = (data || []) as Row[];
 
   return NextResponse.json({ items: rows.map(shape) });
 }
@@ -85,8 +69,8 @@ export async function POST(request: Request) {
   if (!masterPlanId) return NextResponse.json({ error: "No workspace." }, { status: 400 });
   const body = await request.json().catch(() => ({}));
 
-  const title = typeof body.title === "string" ? body.title.trim() : "";
-  const content = typeof body.content === "string" ? body.content.trim() : "";
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+  const content = typeof body.content === "string" ? body.content.trim().slice(0, 20000) : "";
   if (!title || !content) return NextResponse.json({ error: "Title and content are required." }, { status: 400 });
 
   const sel =
@@ -102,7 +86,7 @@ export async function POST(request: Request) {
       channel: typeof body.channel === "string" && body.channel.trim() ? body.channel.trim() : "sales",
       content,
       tags: Array.isArray(body.tags) ? body.tags.join(", ") : typeof body.tags === "string" ? body.tags : "",
-      source: body.source === "ai" ? "ai" : "manual",
+      source: body.source === "ai" ? "ai" : body.source === "library" ? "library" : "manual",
     })
     .select(sel)
     .single();

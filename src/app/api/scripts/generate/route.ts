@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
   const keyPoints = typeof body.keyPoints === "string" ? body.keyPoints.trim() : "";
   const itemType = body.itemType === "template" ? "template" : "script";
 
-  const { name, key } = await resolveAiConfig();
+  const { name, key, instructions } = await resolveAiConfig();
   if (!key) return NextResponse.json({ needsKey: true });
 
   const channelLabel: Record<string, string> = {
@@ -34,14 +36,27 @@ export async function POST(request: Request) {
     social: "a social media post",
   };
 
+  // What this client has told the assistant about their business, so the draft
+  // sounds like them and uses their real offer. Never another client's data.
+  let about = "";
+  try {
+    const planId = await resolveMasterPlanId();
+    if (planId) about = (await buildAssistantKnowledge(planId, "America/Denver", { mailOwnerId: null })).text;
+  } catch {
+    /* draft without it */
+  }
+
   const sys =
     `You are ${name}, an expert copywriter and sales coach for a small business owner. ` +
     `Write ${itemType === "template" ? "a reusable template" : "a script"} for ${channelLabel[channel] || "a client conversation"}. ` +
-    "Use clear placeholders in [brackets] for anything personal (names, specifics, prices). " +
+    "Use clear placeholders in [brackets] for anything that changes per person (their name, their company, dates, specifics). Use only [brackets] for fill-in fields — never for stage directions. " +
+    (about ? "Where you know the client's own business details from the notes below (their business, offer, audience, voice), use them directly instead of a placeholder — but never invent details that aren't there. " : "") +
     (channel === "sales" || channel === "objection"
-      ? "Structure it with labeled sections (e.g. OPENING, BRIDGE, PRESENT, CLOSE) and bracketed [stage directions] where a pause or listen is needed. "
+      ? "Structure it with labeled sections (e.g. OPENING, BRIDGE, PRESENT, CLOSE) and (stage directions in parentheses) where a pause or listen is needed. "
       : "Keep it ready to send, with a subject line if it's an email. ") +
     `Match this tone: ${tone}. Be specific and genuinely usable — not generic filler. ` +
+    (instructions ? `The client's standing instructions for how you write (follow for tone and style): ${instructions}\n` : "") +
+    (about ? `\nWHAT YOU KNOW ABOUT THIS CLIENT:\n${about}\n\n` : "") +
     'Return STRICT JSON: {"title":"short descriptive title","description":"one-line summary",' +
     '"category":"one of: Sales, Prospecting, Objections, Onboarding, Follow-up, Content, Nurture, Closing",' +
     '"tags":["3-5","short","tags"],"content":"the full script/template with line breaks"}.';

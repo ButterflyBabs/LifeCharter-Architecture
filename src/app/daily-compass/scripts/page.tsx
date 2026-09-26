@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   ArrowLeft,
@@ -21,9 +21,14 @@ import {
   ChevronUp,
   X,
   Share2,
+  SlidersHorizontal,
+  BookmarkPlus,
+  Library,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { SCRIPT_CATEGORIES, SCRIPT_CHANNELS } from "@/lib/scriptsSeed";
+import { SCRIPT_LIBRARY, extractFields, fillFields } from "@/lib/scriptLibrary";
 
 interface Script {
   id: string;
@@ -39,6 +44,34 @@ interface Script {
   lastUsed: string | null;
   source: string;
 }
+
+// Fields worth remembering between scripts (about you, not about a prospect).
+const REMEMBER = /^(your|my|business|company|website|booking|phone|email|offer|program|service|signature)/i;
+const DEFAULTS_KEY = "script-fill-defaults";
+const loadDefaults = (): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem(DEFAULTS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+};
+const AI_CHIPS = [
+  { label: "Make it mine", text: "Use my business details and voice." },
+  { label: "Shorter", text: "Make it shorter and tighter." },
+  { label: "Warmer", text: "Make it warmer and more personal." },
+  { label: "More direct", text: "Make it more direct and confident." },
+];
+
+type Working = {
+  savedId: string | null; // set when this came from the client's own library
+  title: string;
+  description: string;
+  itemType: "script" | "template";
+  category: string;
+  channel: string;
+  tags: string[];
+  base: string; // the text being filled in (original or AI-rewritten)
+};
 
 const CHANNEL_ICON: Record<string, React.ReactNode> = {
   sales: <Phone className="w-3.5 h-3.5" />,
@@ -78,6 +111,18 @@ export default function ScriptsPage() {
   const [favOnly, setFavOnly] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"mine" | "library">("mine");
+  const [savedLibIds, setSavedLibIds] = useState<Set<string>>(new Set());
+
+  // Fill-in & AI panel.
+  const [work, setWork] = useState<Working | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [aiText, setAiText] = useState("");
+  const [rewriting, setRewriting] = useState(false);
+  const [rewriteNote, setRewriteNote] = useState("");
+  const [workMsg, setWorkMsg] = useState("");
+  const [workNeedsKey, setWorkNeedsKey] = useState(false);
+  const [workSaving, setWorkSaving] = useState(false);
 
   // Editor modal.
   const [editorOpen, setEditorOpen] = useState(false);
@@ -105,8 +150,19 @@ export default function ScriptsPage() {
     load();
   }, [load]);
 
-  const filtered = scripts.filter((s) => {
-    if (favOnly && !s.isFavorite) return false;
+  const libraryAsScripts: Script[] = useMemo(
+    () =>
+      SCRIPT_LIBRARY.map((l) => ({
+        id: l.id, title: l.title, description: l.description, itemType: l.itemType, category: l.category,
+        channel: l.channel, content: l.content, tags: l.tags, isFavorite: false, usageCount: 0, lastUsed: null, source: "library",
+      })),
+    []
+  );
+  const isLib = tab === "library";
+  const pool = isLib ? libraryAsScripts : scripts;
+
+  const filtered = pool.filter((s) => {
+    if (!isLib && favOnly && !s.isFavorite) return false;
     if (cat !== "All" && s.category !== cat) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -125,6 +181,7 @@ export default function ScriptsPage() {
     }
     setCopiedId(s.id);
     setTimeout(() => setCopiedId((c) => (c === s.id ? null : c)), 2000);
+    if (s.id.startsWith("lib-")) return; // starter items aren't tracked
     setScripts((prev) => prev.map((x) => (x.id === s.id ? { ...x, usageCount: x.usageCount + 1 } : x)));
     fetch("/api/scripts", {
       method: "PATCH",
@@ -146,6 +203,126 @@ export default function ScriptsPage() {
   const remove = async (id: string) => {
     setScripts((prev) => prev.filter((x) => x.id !== id));
     fetch(`/api/scripts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  };
+
+  // Copy a starter item into this client's own library (their copy is private).
+  const addToMine = async (s: Script) => {
+    try {
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, content: s.content, tags: s.tags, source: "library" }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d.item) {
+        setScripts((prev) => [d.item, ...prev]);
+        setSavedLibIds((prev) => new Set(prev).add(s.id));
+      }
+    } catch {
+      /* leave the button available to retry */
+    }
+  };
+
+  const openFill = (s: Script) => {
+    const remembered = loadDefaults();
+    const init: Record<string, string> = {};
+    for (const f of extractFields(s.content)) {
+      const k = f.toLowerCase();
+      if (remembered[k]) init[k] = remembered[k];
+    }
+    setValues(init);
+    setAiText("");
+    setRewriteNote("");
+    setWorkMsg("");
+    setWorkNeedsKey(false);
+    setWork({
+      savedId: s.id.startsWith("lib-") ? null : s.id,
+      title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, tags: s.tags, base: s.content,
+    });
+  };
+
+  const workText = work ? aiText || work.base : "";
+  const workFields = useMemo(() => extractFields(workText), [workText]);
+  const filledText = useMemo(() => fillFields(workText, values), [workText, values]);
+  const emptyFields = workFields.filter((f) => !(values[f.toLowerCase()] || "").trim()).length;
+
+  const rememberValues = () => {
+    try {
+      const keep = loadDefaults();
+      for (const f of workFields) {
+        const k = f.toLowerCase();
+        if (REMEMBER.test(f) && (values[k] || "").trim()) keep[k] = values[k].trim();
+      }
+      localStorage.setItem(DEFAULTS_KEY, JSON.stringify(keep));
+    } catch {
+      /* storage blocked — nothing to remember */
+    }
+  };
+
+  const copyFilled = async () => {
+    if (!work) return;
+    try {
+      await navigator.clipboard.writeText(filledText);
+    } catch {
+      /* clipboard may be blocked */
+    }
+    rememberValues();
+    setWorkMsg("Copied.");
+    if (work.savedId) {
+      setScripts((prev) => prev.map((x) => (x.id === work.savedId ? { ...x, usageCount: x.usageCount + 1 } : x)));
+      fetch("/api/scripts", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: work.savedId, action: "use" }) });
+    }
+  };
+
+  const rewrite = async (instruction: string) => {
+    if (!work) return;
+    setRewriting(true);
+    setWorkMsg("");
+    setWorkNeedsKey(false);
+    try {
+      const res = await fetch("/api/scripts/personalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: workText, instruction, title: work.title }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d.needsKey) setWorkNeedsKey(true);
+      else if (d.content) {
+        setAiText(d.content);
+        setRewriteNote(d.note || "Rewritten.");
+      } else setWorkMsg(d.error || "Couldn't rewrite that.");
+    } catch {
+      setWorkMsg("Couldn't reach the AI just now.");
+    } finally {
+      setRewriting(false);
+    }
+  };
+
+  // Keep the current version (fields filled or AI-rewritten) as a new item in
+  // this client's own library.
+  const saveWork = async () => {
+    if (!work) return;
+    setWorkSaving(true);
+    setWorkMsg("");
+    rememberValues();
+    try {
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: work.savedId || tab === "library" ? `${work.title} (mine)` : work.title,
+          description: work.description, itemType: work.itemType, category: work.category, channel: work.channel,
+          content: filledText, tags: work.tags, source: aiText ? "ai" : "manual",
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d.item) {
+        setScripts((prev) => [d.item, ...prev]);
+        setWorkMsg("Saved to My Library.");
+      } else setWorkMsg(d.error || "Couldn't save.");
+    } finally {
+      setWorkSaving(false);
+    }
   };
 
   const openNew = () => {
@@ -280,7 +457,7 @@ export default function ScriptsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Scripts &amp; Templates</h1>
-            <p className="text-[#b8a898]">Your directory of reusable scripts — save, generate with AI, and reuse.</p>
+            <p className="text-[#b8a898]">A starter library of {SCRIPT_LIBRARY.length} ready-to-use scripts and templates, plus your own — fill in, personalize with AI, and save.</p>
           </div>
         </div>
         <button
@@ -290,6 +467,26 @@ export default function ScriptsPage() {
           <Plus className="w-4 h-4" /> New
         </button>
       </div>
+
+      <div className="grid grid-cols-2 gap-1 bg-[#1a2b4a]/5 rounded-xl p-1 mb-4 max-w-md">
+        <button
+          onClick={() => setTab("mine")}
+          className={`inline-flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-lg ${tab === "mine" ? "bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] shadow-sm" : "text-[#7a8a99]"}`}
+        >
+          <BookOpen className="w-4 h-4" /> My Library{loaded ? ` (${scripts.length})` : ""}
+        </button>
+        <button
+          onClick={() => setTab("library")}
+          className={`inline-flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-lg ${tab === "library" ? "bg-white dark:bg-[#1a2b4a] text-[#2E7C83] shadow-sm" : "text-[#7a8a99]"}`}
+        >
+          <Library className="w-4 h-4" /> Starter Library ({SCRIPT_LIBRARY.length})
+        </button>
+      </div>
+      {isLib ? (
+        <p className="text-xs text-[#7a8a99] mb-4">
+          Starter items are shared examples for everyone. Save one to <strong>My Library</strong> to make your own copy — what you save is private to your account.
+        </p>
+      ) : null}
 
       {/* Search + filters */}
       <div className="relative mb-3">
@@ -302,14 +499,14 @@ export default function ScriptsPage() {
         />
       </div>
       <div className="flex flex-wrap items-center gap-2 mb-6">
-        <button
+        {!isLib && <button
           onClick={() => setFavOnly((f) => !f)}
           className={`inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full border ${
             favOnly ? "bg-[#c9a227] text-[#1a2b4a] border-[#c9a227]" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"
           }`}
         >
           <Star className="w-3.5 h-3.5" /> Favorites{favCount ? ` (${favCount})` : ""}
-        </button>
+        </button>}
         {["All", ...SCRIPT_CATEGORIES].map((c) => (
           <button
             key={c}
@@ -325,10 +522,16 @@ export default function ScriptsPage() {
         ))}
       </div>
 
-      {!loaded ? (
+      {!isLib && !loaded ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[#b8a898]">Nothing here yet. Hit <strong>New</strong> to add or generate one.</p>
+        <p className="text-sm text-[#b8a898]">
+          {!isLib && scripts.length === 0 ? (
+            <>Your library is empty. Browse the <button onClick={() => setTab("library")} className="font-medium text-[#2E7C83] underline">Starter Library</button> and save the ones you like, or hit <strong>New</strong> to write or generate your own.</>
+          ) : (
+            <>Nothing matches. Try a different search or category.</>
+          )}
+        </p>
       ) : (
         <div className="space-y-3">
           {filtered.map((s) => (
@@ -353,11 +556,13 @@ export default function ScriptsPage() {
                     </div>
                     {s.description && <p className="text-xs text-[#b8a898] mt-1">{s.description}</p>}
                   </div>
-                  <button onClick={() => toggleFav(s)} aria-label="Favorite" className="flex-shrink-0">
-                    <Star
-                      className={`w-5 h-5 ${s.isFavorite ? "fill-[#c9a227] text-[#c9a227]" : "text-[#b8a898]"}`}
-                    />
-                  </button>
+                  {!isLib && (
+                    <button onClick={() => toggleFav(s)} aria-label="Favorite" className="flex-shrink-0">
+                      <Star
+                        className={`w-5 h-5 ${s.isFavorite ? "fill-[#c9a227] text-[#c9a227]" : "text-[#b8a898]"}`}
+                      />
+                    </button>
+                  )}
                 </div>
 
                 {expanded === s.id && (
@@ -375,31 +580,164 @@ export default function ScriptsPage() {
                     {expanded === s.id ? "Hide" : "View"}
                   </button>
                   <button
+                    onClick={() => openFill(s)}
+                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" /> Fill in &amp; personalize
+                  </button>
+                  <button
                     onClick={() => copy(s)}
                     className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#1a2b4a] text-white hover:bg-[#1a2b4a]/90"
                   >
                     {copiedId === s.id ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedId === s.id ? "Copied" : "Copy"}
                   </button>
-                  <button
-                    onClick={() => openEdit(s)}
-                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
-                  >
-                    <Pencil className="w-3.5 h-3.5" /> Edit
-                  </button>
-                  <button
-                    onClick={() => remove(s.id)}
-                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#8a2f2f]/25 text-[#8a2f2f] hover:bg-[#8a2f2f]/5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                  {s.usageCount > 0 && (
+                  {isLib ? (
+                    <button
+                      onClick={() => addToMine(s)}
+                      disabled={savedLibIds.has(s.id) || scripts.some((x) => x.title === s.title && x.source === "library")}
+                      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5 disabled:opacity-60"
+                    >
+                      {savedLibIds.has(s.id) || scripts.some((x) => x.title === s.title && x.source === "library") ? (
+                        <><CheckCircle className="w-3.5 h-3.5" /> In My Library</>
+                      ) : (
+                        <><BookmarkPlus className="w-3.5 h-3.5" /> Save to My Library</>
+                      )}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => openEdit(s)}
+                        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => remove(s.id)}
+                        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#8a2f2f]/25 text-[#8a2f2f] hover:bg-[#8a2f2f]/5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </>
+                  )}
+                  {!isLib && s.usageCount > 0 && (
                     <span className="ml-auto text-[11px] text-[#b8a898]">Used {s.usageCount}×</span>
                   )}
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Fill in & personalize */}
+      {work && (
+        <div className="fixed inset-0 z-[9998] bg-black/40 flex items-start justify-center overflow-y-auto p-4">
+          <div className="bg-white dark:bg-[#111d33] rounded-2xl shadow-2xl w-full max-w-2xl my-8">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a2b4a]/10">
+              <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{work.title}</h2>
+              <button onClick={() => setWork(null)} aria-label="Close">
+                <X className="w-5 h-5 text-[#b8a898]" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {workFields.length > 0 ? (
+                <div>
+                  <p className="text-xs font-medium text-[#7a8a99] mb-2">
+                    Fill in the blanks{emptyFields > 0 ? ` — ${emptyFields} left` : " — all set"}
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {workFields.map((f) => (
+                      <input
+                        key={f}
+                        id={`fill-${f}`}
+                        aria-label={f}
+                        value={values[f.toLowerCase()] || ""}
+                        onChange={(e) => setValues((v) => ({ ...v, [f.toLowerCase()]: e.target.value }))}
+                        placeholder={f}
+                        className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-[#7a8a99]">This one has no blanks to fill in — it&apos;s ready to use as written.</p>
+              )}
+
+              <div>
+                <p className="text-xs font-medium text-[#7a8a99] mb-2">Preview</p>
+                <pre className="whitespace-pre-wrap font-sans text-sm text-[#3a3630] dark:text-[#d8d2c8] bg-[#1a2b4a]/4 dark:bg-[#0f2530] rounded-lg p-3 leading-relaxed max-h-72 overflow-y-auto">
+                  {filledText}
+                </pre>
+              </div>
+
+              <div className="rounded-xl border border-[#2E7C83]/25 bg-[#2E7C83]/5 p-3 space-y-2">
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2E7C83]">
+                  <Wand2 className="w-3.5 h-3.5" /> Ask your AI assistant to rewrite it
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {AI_CHIPS.map((c) => (
+                    <button
+                      key={c.label}
+                      onClick={() => rewrite(c.text)}
+                      disabled={rewriting}
+                      className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#2E7C83]/30 text-[#2E7C83] hover:bg-[#2E7C83]/10 disabled:opacity-60"
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const v = (new FormData(e.currentTarget).get("instruction") as string) || "";
+                    if (v.trim()) rewrite(v.trim());
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    name="instruction"
+                    aria-label="What to change"
+                    placeholder="Or say what to change — e.g. “for busy new moms”"
+                    className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={rewriting}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium px-3 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
+                  >
+                    {rewriting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Rewrite
+                  </button>
+                </form>
+                {rewriteNote && (
+                  <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">
+                    {rewriteNote}{" "}
+                    <button onClick={() => { setAiText(""); setRewriteNote(""); }} className="underline font-medium">Undo rewrite</button>
+                  </p>
+                )}
+                {workNeedsKey && <p className="text-xs text-[#8a6a15]">Connect your AI key in Settings to use your assistant here.</p>}
+              </div>
+
+              {workMsg && <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">{workMsg}</p>}
+              <div className="flex items-center gap-2 justify-end flex-wrap">
+                <button
+                  onClick={saveWork}
+                  disabled={workSaving}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5 disabled:opacity-60"
+                >
+                  {workSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
+                  Save to My Library
+                </button>
+                <button
+                  onClick={copyFilled}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-[#1a2b4a] text-white hover:bg-[#1a2b4a]/90"
+                >
+                  <Copy className="w-4 h-4" /> Copy
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
