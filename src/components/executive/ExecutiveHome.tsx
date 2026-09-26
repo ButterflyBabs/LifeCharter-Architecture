@@ -1166,18 +1166,8 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/tasks">
-                  <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-start gap-2">
-                      <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-2 h-2 rounded-full bg-[#D83A34]" />
-                        </div>
-                        <p className="text-sm text-[#3F4654] leading-snug">Review LifeCharter Circle applications</p>
-                      </div>
-                    </div>
-                  </div>
+                <Link href="/tasks" className="block text-center text-sm text-gray-400 hover:text-[#6A9EA4] py-3">
+                  Nothing here yet
                 </Link>
               )}
             </div>
@@ -1202,18 +1192,8 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/tasks">
-                  <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-start gap-2">
-                      <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-2 h-2 rounded-full bg-[#F0B400]" />
-                        </div>
-                        <p className="text-sm text-[#3F4654] leading-snug">Draft newsletter for Letterman</p>
-                      </div>
-                    </div>
-                  </div>
+                <Link href="/tasks" className="block text-center text-sm text-gray-400 hover:text-[#6A9EA4] py-3">
+                  Nothing here yet
                 </Link>
               )}
             </div>
@@ -1238,18 +1218,8 @@ export default function ExecutiveHome() {
                   </Link>
                 ))
               ) : (
-                <Link href="/tasks">
-                  <div className="bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-start gap-2">
-                      <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-2 h-2 rounded-full bg-[#54A33B]" />
-                        </div>
-                        <p className="text-sm text-[#3F4654] leading-snug">Approve social media posts</p>
-                      </div>
-                    </div>
-                  </div>
+                <Link href="/tasks" className="block text-center text-sm text-gray-400 hover:text-[#6A9EA4] py-3">
+                  Nothing here yet
                 </Link>
               )}
             </div>
