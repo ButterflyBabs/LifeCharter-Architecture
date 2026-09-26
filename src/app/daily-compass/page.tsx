@@ -11,7 +11,6 @@ import {
   Circle,
   Clock,
   Mail,
-  MessageSquare,
   Phone,
   Share2,
   Sparkles,
@@ -29,6 +28,7 @@ import {
 import Link from "next/link";
 import { GlobalControlContacts } from "./GlobalControlContacts";
 import { TodaysActivity } from "./TodaysActivity";
+import { QuickActions } from "./QuickActions";
 import QuickWins from "@/components/QuickWins";
 
 // A task as returned by /api/tasks.
@@ -58,19 +58,6 @@ interface RealTask {
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-// The 8 operational pillars (from the Operations page) — the operational
-// framework the insights weigh alongside the 12 business dimensions.
-const OPERATIONAL_PILLARS = [
-  "Customer Acquisition",
-  "Sales Journey",
-  "Onboarding",
-  "Support / Customer Service",
-  "Communication",
-  "Fulfillment",
-  "Internal Process & Culture",
-  "Referral Process",
-];
-
 const priorityColor = (p: string) => {
   switch (p) {
     case "critical":
@@ -98,7 +85,6 @@ export default function DailyCompassPage() {
   const [hasAiKey, setHasAiKey] = useState(false);
 
   const [tasks, setTasks] = useState<RealTask[]>([]);
-  const [schedule, setSchedule] = useState<{ connected: boolean; events: { id: string; title: string; time: string }[] } | null>(null);
   const [dataReady, setDataReady] = useState(false);
 
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
@@ -148,21 +134,15 @@ export default function DailyCompassPage() {
 
   // Load the day's data.
   useEffect(() => {
-    const tz =
-      (typeof window !== "undefined" &&
-        (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
-      "UTC";
     Promise.all([
       fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([p, t, s]) => {
+      .then(([p, t]) => {
         if (p?.firstName) setFirstName(p.firstName);
         if (p?.assistantName) setAssistantName(p.assistantName);
         setHasAiKey(Boolean(p?.hasOpenAiKey));
         if (t?.tasks) setTasks(t.tasks as RealTask[]);
-        if (s) setSchedule(s);
       })
       .catch(() => {})
       .finally(() => setDataReady(true));
@@ -324,98 +304,45 @@ export default function DailyCompassPage() {
     return <Target className="w-4 h-4" />;
   };
 
-  // Ask the client's AI bot for 3 short, specific insights from today's data.
-  const buildInsights = useCallback(async () => {
+  // Insights are written on the server from this client's real data (assessments,
+  // scores, pillars, tasks, income, calendar) — see /api/compass-insights. Kept for
+  // 30 minutes so opening the page doesn't re-run the AI every time; the refresh
+  // button always makes a fresh set.
+  const buildInsights = useCallback(async (force = true) => {
+    const cacheKey = "compass-insights-cache";
+    if (!force) {
+      try {
+        const c = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+        if (c && Date.now() - c.at < 30 * 60 * 1000 && Array.isArray(c.lines)) {
+          setAiInsights(c.lines);
+          return;
+        }
+      } catch {
+        /* no cache */
+      }
+    }
     setAiLoading(true);
     setAiInsights(null);
-
-    // Strategic context: 12-dimension business health + the dimension-driven
-    // "next moves", so insights are goal- and benchmark-based, not just a
-    // reaction to today's task list.
-    let health = "";
-    let focus = "";
-    let moves = "";
-    let pillarLine = `My 8 operational pillars: ${OPERATIONAL_PILLARS.join(", ")}. `;
     try {
-      const [al, nm, ops] = await Promise.all([
-        fetch("/api/alignment").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/next-moves").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/operations").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      ]);
-      if (ops && Array.isArray(ops.pillars)) {
-        const attn = ops.pillars.filter((p: { status: string }) => p.status === "needs_attention").map((p: { name: string }) => p.name);
-        const notStarted = ops.pillars.filter((p: { status: string }) => p.status === "not_started").map((p: { name: string }) => p.name);
-        const solid = ops.pillars.filter((p: { status: string }) => p.status === "complete").length;
-        pillarLine =
-          `Operational pillars (of 8): ${solid} solid` +
-          (attn.length ? `; needing attention: ${attn.join(", ")}` : "") +
-          (notStarted.length ? `; not started: ${notStarted.join(", ")}` : "") +
-          `. `;
-      }
-      if (al && typeof al.overall === "number") {
-        health = `overall business health ${al.overall}/100${al.status ? ` (${al.status} phase)` : ""}`;
-        if (Array.isArray(al.domains)) {
-          const weakest = [...al.domains]
-            .filter((d: { score?: number }) => typeof d.score === "number")
-            .sort((a: { score: number }, b: { score: number }) => a.score - b.score)
-            .slice(0, 3)
-            .map((d: { name: string; score: number }) => `${d.name} ${d.score}/100`);
-          if (weakest.length) focus = weakest.join(", ");
-        }
-      }
-      if (nm && Array.isArray(nm.moves)) {
-        moves = nm.moves.map((m: { title: string }) => m.title).slice(0, 3).join("; ");
-      }
-    } catch {
-      /* insights still work without strategic context */
-    }
-
-    const todayList = tasks
-      .filter((t) => t.status === "today" || t.status === "in_progress")
-      .map((t) => t.title);
-    const openOther = tasks
-      .filter((t) => t.status !== "done" && t.status !== "today" && t.status !== "in_progress")
-      .map((t) => t.title);
-    const meetings = schedule?.connected
-      ? schedule.events.length
-        ? `${schedule.events.length} meeting(s), next "${schedule.events[0].title}" at ${schedule.events[0].time}`
-        : "no meetings today"
-      : "calendar not connected";
-    const message =
-      `Give me exactly 3 short, STRATEGIC coaching insights for today, one per line, no preamble or numbering. ` +
-      `Speak directly to me${firstName ? ` (${firstName})` : ""}. Start each line with a single relevant emoji. Keep each under 24 words. ` +
-      (health ? `My ${health}. ` : "") +
-      (focus ? `My weakest business dimensions (where gains matter most right now): ${focus}. ` : "") +
-      (moves ? `Recommended strategic moves derived from those dimensions: ${moves}. ` : "") +
-      pillarLine +
-      `Today's focus tasks: ${todayList.length ? todayList.slice(0, 8).join("; ") : "none flagged"}. ` +
-      (openOther.length ? `Other open tasks: ${openOther.slice(0, 6).join("; ")}. ` : "") +
-      `Meetings: ${meetings}. ` +
-      `Ground the insights in my weakest business dimensions, my recommended moves, and my 8 operational pillars: connect today's work to strengthening those dimensions/pillars and advancing my goals. ` +
-      `Make one about where to focus first (tie it to a weak dimension, a recommended move, or an operational pillar), one flagging a strategic gap or risk (a key dimension or pillar I'm not touching today), and one encouraging about momentum. ` +
-      `If today's tasks don't advance my weakest dimensions or a pillar, gently say so and suggest one goal-driven action that would.`;
-    try {
-      const res = await fetch("/api/mariposa", {
+      const res = await fetch("/api/compass-insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ tz: localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       const data = await res.json();
-      const lines = String(data.reply || "")
-        .split("\n")
-        .map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim())
-        .filter(Boolean)
-        .slice(0, 3);
-      setAiInsights(lines.length ? lines : ["I couldn't put your insights together right now."]);
+      const lines: string[] = (data.insights ?? []).map((i: { emoji?: string; text: string }) => `${i.emoji ? i.emoji + " " : ""}${i.text}`);
+      const out = lines.length ? lines : ["I couldn't put your insights together right now — try the refresh button in a moment."];
+      setAiInsights(out);
+      if (lines.length) sessionStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), lines }));
     } catch {
-      setAiInsights(["I couldn't put your insights together right now."]);
+      setAiInsights(["I couldn't put your insights together right now — try the refresh button in a moment."]);
     }
     setAiLoading(false);
-  }, [tasks, schedule, firstName]);
+  }, []);
 
   // Generate once data has loaded and a key exists.
   useEffect(() => {
-    if (dataReady && hasAiKey && aiInsights === null && !aiLoading) buildInsights();
+    if (dataReady && hasAiKey && aiInsights === null && !aiLoading) buildInsights(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataReady, hasAiKey]);
 
@@ -753,57 +680,8 @@ export default function DailyCompassPage() {
             )}
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href={psConnected === false ? "/settings" : "/daily-compass/content-studio"}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
-                    <Share2 className="w-5 h-5 text-[#4a9b9b]" />
-                  </div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Create Content</p>
-                  <p className="text-xs text-[#b8a898]">
-                    {psConnected === false ? "Connect PostStream" : "Social post via PostStream"}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/daily-compass/sales-activities">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#7b6b8d]/20 flex items-center justify-center mx-auto mb-2">
-                    <Phone className="w-5 h-5 text-[#7b6b8d]" />
-                  </div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Sales Activities</p>
-                  <p className="text-xs text-[#b8a898]">Calls, follow-ups</p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href={psConnected === false && !socialOn ? "/settings" : "/daily-compass/calendar"}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-2">
-                    <Calendar className="w-5 h-5 text-[#c9a227]" />
-                  </div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
-                  <p className="text-xs text-[#b8a898]">
-                    {socialOn ? "Today's posts & habits" : psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/daily-compass/scripts">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
-                    <MessageSquare className="w-5 h-5 text-[#4a9b9b]" />
-                  </div>
-                  <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Scripts &amp; Templates</p>
-                  <p className="text-xs text-[#b8a898]">Sales, emails</p>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
+          {/* Quick Actions — drag to reorder */}
+          <QuickActions psConnected={psConnected} socialOn={socialOn} />
         </div>
 
         {/* Sidebar */}
@@ -866,7 +744,7 @@ export default function DailyCompassPage() {
                 </h3>
                 {dataReady && hasAiKey && (
                   <button
-                    onClick={buildInsights}
+                    onClick={() => buildInsights(true)}
                     disabled={aiLoading}
                     className="inline-flex items-center gap-1 text-xs text-[#e8e4f0] hover:text-white disabled:opacity-50"
                   >
@@ -878,8 +756,8 @@ export default function DailyCompassPage() {
               {dataReady && !hasAiKey ? (
                 <div className="space-y-3 text-sm">
                   <p className="text-[#e8e4f0]">
-                    Bring {assistantName} online with your OpenAI key and your insights write themselves from
-                    today&apos;s tasks and schedule.
+                    Bring {assistantName} online with your OpenAI key and your insights are written from your
+                    own assessments, scores, tasks, income and calendar.
                   </p>
                   <Link href="/settings?tab=ai">
                     <Button

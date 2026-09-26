@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
-import { Users, Search, Save, CheckCircle, Mail, Phone, Circle, Link2, MessageSquare } from "lucide-react";
+import { Users, Search, Save, CheckCircle, Mail, Phone, Circle, Link2, MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
 import { ACTIVITY_EVENT } from "./TodaysActivity";
 
 interface GcContact {
@@ -26,6 +26,17 @@ export function GlobalControlContacts() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  // Collapsible: the card can be folded down to just its title. Remembered on this device.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(localStorage.getItem("compass-gc-contacts-collapsed") === "1");
+  }, []);
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      localStorage.setItem("compass-gc-contacts-collapsed", c ? "0" : "1");
+      return !c;
+    });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<GcContact>>({});
@@ -421,10 +432,23 @@ export function GlobalControlContacts() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="w-5 h-5 text-[#4a9b9b]" />
-          Global Control Contacts
-        </CardTitle>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand Global Control Contacts" : "Collapse Global Control Contacts"}
+          className="flex items-center gap-2 text-left rounded-lg -ml-1 px-1 py-0.5 hover:bg-[#1a2b4a]/5"
+        >
+          {collapsed ? <ChevronRight className="w-5 h-5 text-[#7a8a99]" /> : <ChevronDown className="w-5 h-5 text-[#7a8a99]" />}
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="w-5 h-5 text-[#4a9b9b]" />
+            Global Control Contacts
+            {collapsed && contacts.length > 0 && (
+              <span className="text-xs font-normal text-[#7a8a99]">({contacts.length})</span>
+            )}
+          </CardTitle>
+        </button>
+        {!collapsed && (
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setShowNewTag((v) => !v)}>
             {showNewTag ? "Close" : "+ New tag"}
@@ -445,7 +469,9 @@ export function GlobalControlContacts() {
             />
           </form>
         </div>
+        )}
       </CardHeader>
+      {!collapsed && (
       <CardContent>
         {/* Create a new tag (optionally wired to existing workflows) */}
         {showNewTag && (
@@ -834,6 +860,7 @@ export function GlobalControlContacts() {
           from here is coming next.
         </p>
       </CardContent>
+      )}
     </Card>
   );
 }

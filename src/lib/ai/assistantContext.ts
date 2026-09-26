@@ -4,6 +4,7 @@ import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
 import { nowParts } from "@/lib/finance/period";
 import { isDueOn, type RecurringRule } from "@/lib/recurring";
 import { computePulse } from "@/lib/finance/pulse";
+import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { openMailboxes } from "@/lib/mailboxes";
 import { dayWindowUtc, dayInTz, timeInTz } from "@/lib/tz";
 import * as google from "@/lib/google";
@@ -139,6 +140,25 @@ export async function buildAssistantKnowledge(
       const doneIds = new Set((done ?? []).map((d) => d.recurring_task_id as string));
       const left = dueRec.filter((r) => !doneIds.has(r.id));
       parts.push(`Recurring tasks today: ${left.length} left of ${dueRec.length}${left.length ? ` (${left.slice(0, 6).map((r) => `"${r.title.slice(0, 60)}"`).join(", ")})` : ""}.`);
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Their 8 operational pillars and where each stands.
+  try {
+    const { data } = await supabase.from("operations_pillars").select("pillar_key, status").eq("master_plan_id", masterPlanId);
+    const rows = (data ?? []) as { pillar_key: string; status: string }[];
+    if (rows.length) {
+      const nameOf = (k: string) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? k;
+      const by = (st: string) => rows.filter((r) => r.status === st).map((r) => nameOf(r.pillar_key));
+      const attn = by("needs_attention");
+      const prog = by("in_progress");
+      parts.push(
+        `Operational pillars (8): ${by("complete").length} complete, ${prog.length} in progress` +
+          (attn.length ? `; they flagged as needing attention: ${attn.join(", ")}` : "") +
+          `; the rest not started.`
+      );
     }
   } catch {
     /* optional */

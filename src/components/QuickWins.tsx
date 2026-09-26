@@ -230,27 +230,27 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
       </div>
 
       {/* Concise, practical explainer */}
-      <p className="text-xs text-[#7a8a99] dark:text-[#b8c2cf] mb-3 leading-relaxed">
+      <p className="text-sm text-[#4a5568] dark:text-[#d5dbe5] mb-4 leading-relaxed">
         {mode === "full" ? (
           <>
-            A rotating menu of small, high-impact moves. <strong className="font-medium text-[#2E7C83]">Tap one to add it to today&apos;s tasks</strong> — the win stays so you can use it again. Use <strong className="font-medium">Manage</strong> to edit or delete, and <strong className="font-medium">AI suggest</strong> for a new one tailored to your weakest area.
+            A rotating menu of small, high-impact moves. <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap one to add it to today&apos;s tasks</strong> — the win stays so you can use it again. Use <strong className="font-semibold">Manage</strong> to edit or delete, and <strong className="font-semibold">AI suggest</strong> for a new one tailored to your weakest area.
           </>
         ) : (
           <>
-            <strong className="font-medium text-[#2E7C83]">Tap a win to add it to today&apos;s tasks</strong> — small, high-impact moves you can knock out fast.
+            <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap a win to add it to today&apos;s tasks</strong> — small, high-impact moves you can knock out fast.
           </>
         )}
       </p>
 
       {needsKey && (
-        <p className="text-xs text-[#8a6a15] dark:text-[#e8cf8a] mb-2">
+        <p className="text-sm text-[#7a5a0e] dark:text-[#f0d98f] mb-2">
           Connect your AI key in settings to generate or polish quick wins with AI.
         </p>
       )}
-      {error && <p className="text-xs text-[#8a2f2f] dark:text-[#f0b8b8] mb-2">{error}</p>}
+      {error && <p className="text-sm text-[#8a2f2f] dark:text-[#f0b8b8] mb-2">{error}</p>}
 
       {!loaded ? (
-        <p className="text-sm text-[#b8a898]">Loading…</p>
+        <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">Loading…</p>
       ) : (
         <div className={layout === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 items-start" : "space-y-2"}>
           {visible.map((w) =>
@@ -270,7 +270,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                   onClick={() => doWin(w)}
                   disabled={busyId === w.id}
                   title="Add this to today's tasks"
-                  className={`flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border px-3 py-2.5 transition disabled:opacity-60 ${
+                  className={`flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border px-4 py-3 transition disabled:opacity-60 ${
                     addedId === w.id
                       ? "border-[#2c6b3f]/40 bg-[#d8efdd]"
                       : "border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/30 hover:border-[#2E7C83]/50 hover:bg-[#2E7C83]/5"
@@ -278,25 +278,25 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                 >
                   <span className="text-2xl leading-none flex-shrink-0">{w.emoji}</span>
                   <span className="flex-1 min-w-0">
-                    <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="flex items-start gap-2 min-w-0">
                       <span
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: PRIORITY_DOT[w.priority] || PRIORITY_DOT.medium }}
                       />
-                      <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{w.title}</span>
+                      <span className="text-[15px] font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{w.title}</span>
                     </span>
-                    {w.detail && <span className="block text-xs text-[#b8a898] truncate">{w.detail}</span>}
+                    {w.detail && <span className="block text-sm leading-snug text-[#4a5568] dark:text-[#c9d1dc] mt-1 pl-4">{w.detail}</span>}
                   </span>
                   <span className="flex-shrink-0 ml-1">
                     {addedId === w.id ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2c6b3f] whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#1f5a33] whitespace-nowrap">
                         <Check className="w-3.5 h-3.5" /> Added to today
                       </span>
                     ) : busyId === w.id ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#b8a898]" />
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#2E7C83] whitespace-nowrap bg-[#2E7C83]/10 px-2 py-1 rounded-full">
-                        <Plus className="w-3 h-3" /> Add
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#1f6a70] dark:text-[#7fd0d6] whitespace-nowrap bg-[#2E7C83]/12 px-2.5 py-1 rounded-full">
+                        <Plus className="w-3.5 h-3.5" /> Add
                       </span>
                     )}
                   </span>
