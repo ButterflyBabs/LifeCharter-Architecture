@@ -69,7 +69,7 @@ function taskDimensions(t: TaskRow): DimensionKey[] {
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 const pct = (n: number) => `${Math.round(n * 100)}%`;
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const plural = (n: number, w: string) => `${n} ${n === 1 ? w : /y$/.test(w) ? `${w.slice(0, -1)}ies` : `${w}s`}`;
 
 interface Signal { score: number; n: number; w: number; needs: string[]; wins: string[] }
 

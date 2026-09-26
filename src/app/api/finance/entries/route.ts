@@ -15,7 +15,7 @@ type Row = {
   description: string | null;
   occurred_on: string;
   source: string | null;
-  segment_id: string | null;
+  segment_id: string | number | null;
 };
 
 function serialize(r: Row) {
