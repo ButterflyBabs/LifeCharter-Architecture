@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { TrendingUp, Phone, MessageSquare, Share2, Link2 } from "lucide-react";
+import { TrendingUp, Phone, MessageSquare, Share2 } from "lucide-react";
 
 interface ActivityItem {
   id: string;
@@ -25,6 +25,7 @@ function tz(): string {
 export function TodaysActivity() {
   const [calls, setCalls] = useState(0);
   const [followups, setFollowups] = useState(0);
+  const [posts, setPosts] = useState<{ planned: number; posted: number }>({ planned: 0, posted: 0 });
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -34,6 +35,7 @@ export function TodaysActivity() {
       const d = await res.json().catch(() => ({}));
       setCalls(d.calls || 0);
       setFollowups(d.followups || 0);
+      setPosts({ planned: d.posts?.planned || 0, posted: d.posts?.posted || 0 });
       setItems(Array.isArray(d.items) ? d.items : []);
     } catch {
       /* leave as-is */
@@ -103,7 +105,7 @@ export function TodaysActivity() {
           </div>
         )}
 
-        {/* PostStream seam (posts still pending its integration) */}
+        {/* Posts — today's Social Planner posts */}
         <div className="flex items-center justify-between pt-3 border-t border-[#1a2b4a]/10">
           <div className="flex items-center gap-2">
             <span className="text-[#7b6b8d]">
@@ -111,15 +113,20 @@ export function TodaysActivity() {
             </span>
             <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Posts</span>
           </div>
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#8a7f74] bg-[#1a2b4a]/5 px-2 py-1 rounded-full">
-            <Link2 className="w-3 h-3" />
-            PostStream
+          <span className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] tabular-nums">
+            {!loaded ? "—" : posts.planned > 0 ? `${posts.posted} of ${posts.planned}` : "0"}
           </span>
         </div>
+        {loaded && posts.planned === 0 && (
+          <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8] -mt-2">
+            Nothing planned for today — plan posts in the Content Calendar.
+          </p>
+        )}
 
-        <p className="text-xs text-[#b8a898]">
-          Calls &amp; follow-ups you log against Global Control contacts appear here for today. Social posts are
-          created and scheduled through PostStream in Create Content &amp; the Content Calendar.
+        <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">
+          Today&apos;s counts add up: calls &amp; follow-ups you log on Global Control contacts, entries dated today in Sales
+          Activities, and follow-up tasks you complete today. Posts are today&apos;s posts in the Content Calendar
+          (posted of planned).
         </p>
       </CardContent>
     </Card>

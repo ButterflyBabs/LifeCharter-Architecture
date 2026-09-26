@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { dayWindowUtc } from "@/lib/tz";
+import { dayWindowUtc, dayInTz } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -57,10 +57,82 @@ export async function GET(request: Request) {
 
   const rows = (data || []) as Row[];
   const items = rows.map(serialize);
-  const calls = items.filter((i) => i.type === "call").length;
-  const followups = items.filter((i) => i.type === "followup").length;
+
+  // The other places these things get recorded today, so the counts reflect
+  // ALL of the client's real activity, not just what's logged against a Global
+  // Control contact:
+  //  • Sales Activities entries dated today (calls, follow-ups)
+  //  • follow-up tasks completed today (the follow-up engine)
+  //  • the Social Planner's posts for today (planned vs. posted)
+  const today = dayInTz(new Date(), tz);
+  let salesCalls = 0;
+  let salesFollowups = 0;
+  let taskFollowups = 0;
+  let postsPlanned = 0;
+  let postsPosted = 0;
+  if (masterPlanId) {
+    const [{ data: sales }, { data: fuTasks }, { data: posts }] = await Promise.all([
+      supabase
+        .from("sales_activities")
+        .select("id, type, contact_name, notes, created_at")
+        .eq("master_plan_id", masterPlanId)
+        .eq("occurred_on", today)
+        .in("type", ["call", "followup"]),
+      supabase
+        .from("tasks")
+        .select("id, title, followup, completed_at")
+        .eq("master_plan_id", masterPlanId)
+        .eq("status", "done")
+        .gte("completed_at", startISO)
+        .lt("completed_at", endISO)
+        .not("followup->>channel", "is", null),
+      supabase
+        .from("social_posts")
+        .select("status, posted_at")
+        .eq("master_plan_id", masterPlanId)
+        .eq("planned_date", today),
+    ]);
+    for (const a of (sales || []) as { id: string; type: string; contact_name: string | null; notes: string | null; created_at: string }[]) {
+      if (a.type === "call") salesCalls += 1;
+      else salesFollowups += 1;
+      items.push({
+        id: `sa-${a.id}`,
+        contactId: "",
+        contactName: a.contact_name || "",
+        type: a.type === "call" ? "call" : "followup",
+        note: a.notes || "",
+        createdAt: a.created_at,
+      });
+    }
+    for (const t of (fuTasks || []) as { id: number; title: string; followup: { contactName?: string } | null; completed_at: string }[]) {
+      taskFollowups += 1;
+      items.push({
+        id: `tk-${t.id}`,
+        contactId: "",
+        contactName: t.followup?.contactName || t.title,
+        type: "followup",
+        note: "Completed",
+        createdAt: t.completed_at,
+      });
+    }
+    for (const p of (posts || []) as { status: string; posted_at: string | null }[]) {
+      if (p.status === "idea") continue; // an idea isn't planned yet
+      postsPlanned += 1;
+      if (p.status === "posted") postsPosted += 1;
+    }
+  }
+  items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const calls = rows.filter((r) => r.type !== "followup").length + salesCalls;
+  const followups = rows.filter((r) => r.type === "followup").length + salesFollowups + taskFollowups;
   const contacts = new Set(items.map((i) => i.contactId).filter(Boolean));
-  return NextResponse.json({ calls, followups, contactsTouched: contacts.size, items });
+  return NextResponse.json({
+    calls,
+    followups,
+    contactsTouched: contacts.size,
+    posts: { planned: postsPlanned, posted: postsPosted },
+    items,
+  });
 }
 
 // POST — log a call or follow-up (with an optional note) against a contact.

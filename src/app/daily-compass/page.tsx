@@ -81,6 +81,7 @@ export default function DailyCompassPage() {
   const [now, setNow] = useState<Date | null>(null);
   const [greeting, setGreeting] = useState("Good morning");
   const [firstName, setFirstName] = useState("");
+  const [recurringToday, setRecurringToday] = useState({ total: 0, done: 0 });
   const [assistantName, setAssistantName] = useState(DEFAULT_ASSISTANT_NAME);
   const [hasAiKey, setHasAiKey] = useState(false);
 
@@ -134,11 +135,15 @@ export default function DailyCompassPage() {
 
   // Load the day's data.
   useEffect(() => {
+    const tz = localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     Promise.all([
       fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/recurring-tasks?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([p, t]) => {
+      .then(([p, t, rec]) => {
+        const due = ((rec?.tasks ?? []) as { dueToday: boolean; doneToday: boolean }[]).filter((x) => x.dueToday);
+        setRecurringToday({ total: due.length, done: due.filter((x) => x.doneToday).length });
         if (p?.firstName) setFirstName(p.firstName);
         if (p?.assistantName) setAssistantName(p.assistantName);
         setHasAiKey(Boolean(p?.hasOpenAiKey));
@@ -213,8 +218,9 @@ export default function DailyCompassPage() {
     .sort((a, b) => (dueBy(a)?.getTime() ?? 0) - (dueBy(b)?.getTime() ?? 0))
     .slice(0, 6);
 
-  const completedCount = doneToday.length;
-  const totalCount = focusItems.length;
+  // Today's progress = the focus tasks plus the recurring tasks due today.
+  const completedCount = doneToday.length + recurringToday.done;
+  const totalCount = focusItems.length + recurringToday.total;
   const progress = totalCount ? (completedCount / totalCount) * 100 : 0;
 
   // Toggle a task done/reopen and persist it.
@@ -389,6 +395,7 @@ export default function DailyCompassPage() {
             </span>
             <span className="text-sm text-[#b8a898]">
               {completedCount} of {totalCount} completed
+              {recurringToday.total > 0 ? ` · incl. ${recurringToday.done} of ${recurringToday.total} recurring` : ""}
             </span>
           </div>
           <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
