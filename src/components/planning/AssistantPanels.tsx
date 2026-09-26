@@ -336,3 +336,109 @@ export function BudgetSuggest({ onApplied }: { onApplied: () => void }) {
     </Shell>
   );
 }
+
+/* ───────────── Alignment: one panel for each read ───────────── */
+type Section = { key: string; heading: string; tone?: string };
+type InsightData = { summary: string; assistant?: string; createdAt?: string; moves?: Item[]; [k: string]: unknown };
+
+// A stored read from the client's own assistant (Business Alignment briefing,
+// Progress, Alignment Profile, Segments, Reviews). `moves` render as next steps
+// that can be added straight to the client's task list.
+export function InsightPanel({ url, title, blurb, runLabel, sections, prose, footer }: {
+  url: string; title: string; blurb: string; runLabel: string; sections: Section[];
+  prose?: { key: string; heading: string }[]; // plain-text fields (e.g. the profile's "who you are")
+  footer?: (d: InsightData) => ReactNode;
+}) {
+  const { name, needsKey, data, running, err, run } = useStored<InsightData>(url);
+  const [added, setAdded] = useState<Record<number, "busy" | "done">>({});
+
+  const addTask = async (m: Item, n: number) => {
+    setAdded((a) => ({ ...a, [n]: "busy" }));
+    const { ok } = await post("/api/tasks", { title: (m as { task?: string }).task || m.title, description: m.why || "", status: "today", priority: "medium" });
+    setAdded((a) => ({ ...a, [n]: ok ? "done" : undefined as never }));
+    if (ok) window.dispatchEvent(new Event("tasks-changed"));
+  };
+
+  return (
+    <Shell name={name} title={title} blurb={blurb} onRun={run} running={running} hasResult={!!data} runLabel={runLabel} needsKey={needsKey} stamp={stampOf(data?.assistant || name, data?.createdAt)}>
+      {err && <p className="mt-3 text-sm text-[#8a2f2f]">{err}</p>}
+      {data && (
+        <>
+          <p className="mt-3 text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">{data.summary}</p>
+          {(prose ?? []).map((p) =>
+            data[p.key] ? (
+              <p key={p.key} className="mt-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <span className="font-semibold text-[#2E7C83]">{p.heading}. </span>
+                {String(data[p.key])}
+              </p>
+            ) : null
+          )}
+          {sections.map((s) => (
+            <List key={s.key} heading={s.heading} items={data[s.key] as Item[] | undefined} tone={s.tone} />
+          ))}
+          {data.moves && data.moves.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#2E7C83]">Your next three moves</p>
+              <ol className="mt-1 space-y-2">
+                {data.moves.map((m, n) => (
+                  <li key={n} className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link href={m.href || "/"} className="inline-flex items-center gap-1 font-medium text-[#2E7C83] hover:underline">
+                      {n + 1}. {m.title} <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                    {m.why && <span className="text-[#5a6472] dark:text-[#c3ccd8]">— {m.why}</span>}
+                    <button
+                      onClick={() => addTask(m, n)}
+                      disabled={!!added[n]}
+                      className="ml-auto text-xs font-medium px-2.5 py-1 rounded-lg border border-[#2E7C83]/40 text-[#2E7C83] hover:bg-[#2E7C83]/10 disabled:opacity-70"
+                    >
+                      {added[n] === "done" ? "✓ Added to Today" : added[n] === "busy" ? "Adding…" : "Add to my tasks"}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {footer?.(data)}
+        </>
+      )}
+    </Shell>
+  );
+}
+
+export const AlignmentBriefing = () => (
+  <InsightPanel
+    url="/api/alignment/briefing" title="alignment briefing" runLabel="Brief me"
+    blurb="What your score and phase mean for you, what's driving the weakest areas, and three moves you can add to your tasks."
+    sections={[{ key: "drivers", heading: "What's driving it" }]}
+  />
+);
+export const ProgressRead = () => (
+  <InsightPanel
+    url="/api/progress/read" title="progress read" runLabel="Read my progress"
+    blurb="What has actually moved since your baseline — and why."
+    sections={[{ key: "wins", heading: "Moving forward" }, { key: "slips", heading: "Stalled", tone: "text-[#8a6a15]" }, { key: "next", heading: "To keep it going" }]}
+  />
+);
+export const ProfileRead = () => (
+  <InsightPanel
+    url="/api/assessments/profile" title="alignment profile" runLabel="Write my profile"
+    blurb="A portrait of you and your business, written from your Brain, Soul and Profit answers. Every AI feature in the Suite starts from it."
+    prose={[{ key: "who", heading: "Who you are" }, { key: "business", heading: "How your business runs" }, { key: "money", heading: "The money" }]}
+    sections={[{ key: "strengths", heading: "Strengths" }, { key: "tensions", heading: "Where things pull apart", tone: "text-[#8a6a15]" }]}
+    footer={(d) => (d.unanswered ? <p className="mt-3 text-xs text-[#5a6472] dark:text-[#c3ccd8]">To sharpen it: {String(d.unanswered)}</p> : null)}
+  />
+);
+export const SegmentRead = () => (
+  <InsightPanel
+    url="/api/segments/read" title="segment read" runLabel="Read my segments"
+    blurb="How your businesses and segments compare, and where to put attention."
+    sections={[{ key: "focus", heading: "Focus" }, { key: "risks", heading: "Watch", tone: "text-[#8a6a15]" }, { key: "next", heading: "Next steps" }]}
+  />
+);
+export const SocialProofRead = () => (
+  <InsightPanel
+    url="/api/reviews/read" title="social-proof read" runLabel="Read my reviews"
+    blurb="What your clients say, the lines worth using in your marketing, and what proof is missing."
+    sections={[{ key: "themes", heading: "What clients value" }, { key: "quotes", heading: "Lines to use" }, { key: "gaps", heading: "Missing proof", tone: "text-[#8a6a15]" }, { key: "next", heading: "Next steps" }]}
+  />
+);

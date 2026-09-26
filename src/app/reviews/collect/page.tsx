@@ -1,453 +1,90 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
-import { Input } from "@/components/ui/Input";
-import {
-  Star,
-  Video,
-  Mic,
-  MessageSquare,
-  CheckCircle,
-  Upload,
-  Camera,
-  Sparkles,
-  Heart,
-  Quote
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Star, CheckCircle2, Loader2, Heart } from "lucide-react";
+
+// The page a client's client sees from a personal review link. No account, no
+// navigation, nothing about the sender's business beyond the name on the request.
+
+const input = "w-full px-3 h-11 rounded-xl border border-[#1a2b4a]/20 bg-white text-[#1a2b4a]";
 
 export default function ReviewCollectionPage() {
-  const [step, setStep] = useState(1);
-  const [reviewType, setReviewType] = useState<"text" | "video" | "audio">("text");
+  const [token, setToken] = useState("");
+  const [state, setState] = useState<"loading" | "invalid" | "done-before" | "form" | "thanks">("loading");
+  const [info, setInfo] = useState<{ clientName: string; program: string; fromName: string; message: string }>({ clientName: "", program: "", fromName: "", message: "" });
   const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    program: "",
-    testimonial: "",
-    headline: "",
-    consent: false
-  });
-  const [isRecording, setIsRecording] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hover, setHover] = useState(0);
+  const [f, setF] = useState({ name: "", headline: "", content: "", mediaUrl: "", consent: false });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
-  const programs = [
-    "LifeCharter Circle",
-    "LifeCharter Incubator",
-    "1:1 Coaching with Babs",
-    "Alignment Workshop",
-    "Other"
-  ];
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("t") || "";
+    setToken(t);
+    fetch(`/api/reviews/collect?t=${encodeURIComponent(t)}`)
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) return setState("invalid");
+        setInfo(d);
+        setF((x) => ({ ...x, name: d.clientName || "" }));
+        setState(d.completed ? "done-before" : "form");
+      })
+      .catch(() => setState("invalid"));
+  }, []);
 
-  const handleSubmit = () => {
-    // Handle submission
-    setIsSubmitted(true);
+  const submit = async () => {
+    setErr("");
+    if (!rating) return setErr("Please choose a star rating.");
+    if (!f.content.trim()) return setErr("Please write a few words.");
+    if (!f.consent) return setErr("Please confirm you're happy for this to be shared.");
+    setBusy(true);
+    const res = await fetch("/api/reviews/collect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ t: token, rating, name: f.name, headline: f.headline, content: f.content, mediaUrl: f.mediaUrl, consent: true }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (res.ok) setState("thanks");
+    else setErr(d.error || "Something went wrong — please try again.");
   };
 
-  const renderStars = (count: number, interactive = false) => {
-    return (
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => interactive && setRating(star)}
-            onMouseEnter={() => interactive && setHoverRating(star)}
-            onMouseLeave={() => interactive && setHoverRating(0)}
-            className={`transition-transform ${interactive ? "hover:scale-110" : ""}`}
-            disabled={!interactive}
-          >
-            <Star
-              className={`w-10 h-10 ${
-                star <= (interactive ? hoverRating || rating : count)
-                  ? "fill-[#c9a227] text-[#c9a227]"
-                  : "text-[#b8a898]"
-              }`}
-            />
-          </button>
-        ))}
-      </div>
-    );
-  };
+  const shell = (children: React.ReactNode) => (
+    <main className="min-h-screen bg-[#faf7f2] py-10 px-4">
+      <div className="max-w-xl mx-auto">{children}</div>
+    </main>
+  );
 
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center p-8">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-3">
-            Thank You!
-          </h1>
-          <p className="text-[#b8a898] mb-6">
-            Your testimonial has been submitted successfully. Your story will help 
-            others discover the power of LifeCharter.
-          </p>
-          <div className="bg-[#c9a227]/10 rounded-lg p-4 mb-6">
-            <Heart className="w-6 h-6 text-[#c9a227] mx-auto mb-2" />
-            <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-              We appreciate you taking the time to share your experience!
-            </p>
-          </div>
-          <Button className="w-full">
-            Return to Website
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  if (state === "loading") return shell(<p className="text-center text-[#7a8a99]">Loading…</p>);
+  if (state === "invalid") return shell(<div className="text-center"><h1 className="text-2xl font-bold text-[#1a2b4a]">This link isn&apos;t valid</h1><p className="mt-2 text-[#7a8a99]">It may have been mistyped. Please ask for a fresh link.</p></div>);
+  if (state === "done-before") return shell(<div className="text-center"><CheckCircle2 className="w-12 h-12 text-[#2c6b3f] mx-auto mb-3" /><h1 className="text-2xl font-bold text-[#1a2b4a]">Already received — thank you!</h1><p className="mt-2 text-[#7a8a99]">Your review has been shared with {info.fromName || "them"}.</p></div>);
+  if (state === "thanks") return shell(<div className="text-center"><Heart className="w-12 h-12 text-[#c9a227] mx-auto mb-3" /><h1 className="text-2xl font-bold text-[#1a2b4a]">Thank you{f.name ? `, ${f.name.split(" ")[0]}` : ""}!</h1><p className="mt-2 text-[#7a8a99]">Your words mean a great deal to {info.fromName || "them"}.</p></div>);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8F5F0] to-[#DAD2B9] dark:from-[#1A1A2E] dark:to-[#1a2b4a] py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-4">
-            <Quote className="w-8 h-8 text-[#c9a227]" />
-          </div>
-          <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-            Share Your Story
-          </h1>
-          <p className="text-[#b8a898]">
-            Your testimonial helps others discover LifeCharter
-          </p>
+  return shell(
+    <div className="bg-white rounded-2xl shadow-sm border border-[#1a2b4a]/10 p-6 space-y-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-[#1a2b4a]">{info.fromName ? `Share a few words about ${info.fromName}` : "Share a few words"}</h1>
+        {info.program && <p className="text-sm text-[#7a8a99] mt-1">Regarding: {info.program}</p>}
+      </div>
+      {info.message && <p className="text-sm text-[#3F4654] whitespace-pre-wrap bg-[#faf7f2] rounded-xl p-3">{info.message.replace(/\[review link\]/gi, "").trim()}</p>}
+
+      <div>
+        <p className="block text-sm font-medium text-[#1a2b4a] mb-1">Your rating</p>
+        <div className="flex gap-1" role="radiogroup" aria-label="Rating" onMouseLeave={() => setHover(0)}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <button key={i} type="button" role="radio" aria-checked={rating === i} aria-label={`${i} stars`} onMouseEnter={() => setHover(i)} onClick={() => setRating(i)}>
+              <Star className={`w-9 h-9 ${i <= (hover || rating) ? "fill-[#c9a227] text-[#c9a227]" : "text-[#cdbfae]"}`} />
+            </button>
+          ))}
         </div>
-
-        <Card>
-          <CardContent className="p-8">
-            {/* Progress Steps */}
-            <div className="flex items-center justify-center mb-8">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                      step >= s
-                        ? "bg-[#c9a227] text-[#1a2b4a]"
-                        : "bg-[#1a2b4a]/10 text-[#b8a898]"
-                    }`}
-                  >
-                    {s}
-                  </div>
-                  {s < 3 && (
-                    <div
-                      className={`w-16 h-1 mx-2 ${
-                        step > s ? "bg-[#c9a227]" : "bg-[#1a2b4a]/10"
-                      }`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Step 1: Choose Format */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
-                  How would you like to share your experience?
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => {
-                      setReviewType("text");
-                      setStep(2);
-                    }}
-                    className={`p-6 rounded-xl border-2 transition-all text-center ${
-                      reviewType === "text"
-                        ? "border-[#c9a227] bg-[#c9a227]/10"
-                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
-                    }`}
-                  >
-                    <MessageSquare className="w-10 h-10 text-[#c9a227] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-                      Written Review
-                    </h3>
-                    <p className="text-sm text-[#b8a898]">
-                      Share your thoughts in writing
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setReviewType("video");
-                      setStep(2);
-                    }}
-                    className={`p-6 rounded-xl border-2 transition-all text-center ${
-                      reviewType === "video"
-                        ? "border-[#c9a227] bg-[#c9a227]/10"
-                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
-                    }`}
-                  >
-                    <Video className="w-10 h-10 text-[#4a9b9b] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-                      Video Testimonial
-                    </h3>
-                    <p className="text-sm text-[#b8a898]">
-                      Record a video message
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setReviewType("audio");
-                      setStep(2);
-                    }}
-                    className={`p-6 rounded-xl border-2 transition-all text-center ${
-                      reviewType === "audio"
-                        ? "border-[#c9a227] bg-[#c9a227]/10"
-                        : "border-[#1a2b4a]/20 hover:border-[#c9a227]/50"
-                    }`}
-                  >
-                    <Mic className="w-10 h-10 text-[#7b6b8d] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-                      Audio Message
-                    </h3>
-                    <p className="text-sm text-[#b8a898]">
-                      Record your voice only
-                    </p>
-                  </button>
-                </div>
-
-                <div className="bg-[#1a2b4a]/5 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-[#c9a227] mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-                        Tips for a great testimonial
-                      </h4>
-                      <ul className="text-sm text-[#b8a898] space-y-1">
-                        <li>• Be specific about your transformation</li>
-                        <li>• Mention the program or service you used</li>
-                        <li>• Share results you have achieved</li>
-                        <li>• Keep it authentic and from the heart</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Rating & Basic Info */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
-                  How would you rate your experience?
-                </h2>
-
-                <div className="flex justify-center py-4">
-                  {renderStars(0, true)}
-                </div>
-
-                {rating > 0 && (
-                  <div className="space-y-4 animate-in fade-in">
-                    <div>
-                      <label className="text-sm text-[#b8a898] mb-2 block">Your Name</label>
-                      <Input
-                        placeholder="e.g., Jane Smith"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-[#b8a898] mb-2 block">Email</label>
-                      <Input
-                        type="email"
-                        placeholder="jane@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-[#b8a898] mb-2 block">Which program did you participate in?</label>
-                      <select
-                        className="w-full p-3 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0]"
-                        value={formData.program}
-                        onChange={(e) => setFormData({...formData, program: e.target.value})}
-                      >
-                        <option value="">Select a program...</option>
-                        {programs.map((p) => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                        Back
-                      </Button>
-                      <Button 
-                        onClick={() => setStep(3)} 
-                        className="flex-1"
-                        disabled={!formData.name || !formData.email || !formData.program}
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Step 3: Testimonial Content */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] text-center">
-                  Share your experience
-                </h2>
-
-                {/* Text Review */}
-                {reviewType === "text" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-[#b8a898] mb-2 block">
-                        Headline (Optional)
-                      </label>
-                      <Input
-                        placeholder="e.g., LifeCharter Changed Everything"
-                        value={formData.headline}
-                        onChange={(e) => setFormData({...formData, headline: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-[#b8a898] mb-2 block">
-                        Your Testimonial
-                      </label>
-                      <Textarea
-                        placeholder="Tell us about your experience with LifeCharter. What challenges were you facing? What results have you achieved? How has your life or business changed?"
-                        value={formData.testimonial}
-                        onChange={(e) => setFormData({...formData, testimonial: e.target.value})}
-                        className="min-h-[200px]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Video Review */}
-                {reviewType === "video" && (
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-xl p-8 text-center">
-                      {isRecording ? (
-                        <div className="space-y-4">
-                          <div className="w-20 h-20 rounded-full bg-red-500 animate-pulse flex items-center justify-center mx-auto">
-                            <Video className="w-10 h-10 text-white" />
-                          </div>
-                          <p className="text-red-500 font-medium">Recording...</p>
-                          <Button onClick={() => setIsRecording(false)} variant="outline">
-                            Stop Recording
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <Camera className="w-16 h-16 text-[#b8a898] mx-auto" />
-                          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                            Record your video testimonial
-                          </p>
-                          <p className="text-sm text-[#b8a898]">
-                            2-3 minutes is perfect. Speak from the heart!
-                          </p>
-                          <div className="flex gap-2 justify-center">
-                            <Button onClick={() => setIsRecording(true)}>
-                              <Camera className="w-4 h-4 mr-2" />
-                              Start Recording
-                            </Button>
-                            <Button variant="outline">
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload Video
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="bg-[#1a2b4a]/5 rounded-lg p-4">
-                      <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-                        Suggested talking points:
-                      </h4>
-                      <ul className="text-sm text-[#b8a898] space-y-1">
-                        <li>• What was your situation before LifeCharter?</li>
-                        <li>• What specific results have you achieved?</li>
-                        <li>• What would you tell someone considering LifeCharter?</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {/* Audio Review */}
-                {reviewType === "audio" && (
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-[#1a2b4a]/20 rounded-xl p-8 text-center">
-                      {isRecording ? (
-                        <div className="space-y-4">
-                          <div className="w-20 h-20 rounded-full bg-red-500 animate-pulse flex items-center justify-center mx-auto">
-                            <Mic className="w-10 h-10 text-white" />
-                          </div>
-                          <p className="text-red-500 font-medium">Recording...</p>
-                          <Button onClick={() => setIsRecording(false)} variant="outline">
-                            Stop Recording
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <Mic className="w-16 h-16 text-[#b8a898] mx-auto" />
-                          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                            Record your audio testimonial
-                          </p>
-                          <p className="text-sm text-[#b8a898]">
-                            1-2 minutes is perfect. Just speak naturally!
-                          </p>
-                          <Button onClick={() => setIsRecording(true)}>
-                            <Mic className="w-4 h-4 mr-2" />
-                            Start Recording
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Consent */}
-                <div className="flex items-start gap-3 p-4 bg-[#1a2b4a]/5 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="consent"
-                    checked={formData.consent}
-                    onChange={(e) => setFormData({...formData, consent: e.target.checked})}
-                    className="mt-1"
-                  />
-                  <label htmlFor="consent" className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                    I give permission for LifeCharter to use my testimonial in marketing materials, 
-                    including website, social media, and email campaigns. I understand my name and 
-                    photo may be displayed alongside my testimonial.
-                  </label>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
-                    Back
-                  </Button>
-                  <Button 
-                    onClick={handleSubmit}
-                    className="flex-1"
-                    disabled={reviewType === "text" ? !formData.testimonial || !formData.consent : !formData.consent}
-                  >
-                    Submit Testimonial
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-[#b8a898] mt-8">
-          Questions? Contact us at support@lifecharter.architecture
-        </p>
       </div>
+      <label className="block"><span className="block text-sm font-medium text-[#1a2b4a] mb-1">Your name</span><input className={input} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+      <label className="block"><span className="block text-sm font-medium text-[#1a2b4a] mb-1">A headline (optional)</span><input className={input} placeholder="e.g. “Finally, a clear plan”" value={f.headline} onChange={(e) => setF({ ...f, headline: e.target.value })} /></label>
+      <label className="block"><span className="block text-sm font-medium text-[#1a2b4a] mb-1">Your experience</span><textarea rows={6} className="w-full px-3 py-2 rounded-xl border border-[#1a2b4a]/20 bg-white text-[#1a2b4a]" placeholder="What was it like working together? What changed for you?" value={f.content} onChange={(e) => setF({ ...f, content: e.target.value })} /></label>
+      <label className="block"><span className="block text-sm font-medium text-[#1a2b4a] mb-1">A video or audio link (optional)</span><input className={input} placeholder="https://" value={f.mediaUrl} onChange={(e) => setF({ ...f, mediaUrl: e.target.value })} /></label>
+      <label className="flex items-start gap-2 text-sm text-[#3F4654]"><input type="checkbox" className="mt-1" checked={f.consent} onChange={(e) => setF({ ...f, consent: e.target.checked })} /> I&apos;m happy for {info.fromName || "them"} to share my words and name publicly, for example on their website and social media.</label>
+      {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
+      <button onClick={submit} disabled={busy} className="w-full inline-flex items-center justify-center gap-2 text-base font-semibold py-3 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60">{busy && <Loader2 className="w-5 h-5 animate-spin" />} Send my review</button>
     </div>
   );
 }

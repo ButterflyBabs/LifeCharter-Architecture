@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SegmentRead } from "@/components/planning/AssistantPanels";
 
 interface DimensionScore {
   dimension_key: string;
@@ -15,6 +16,7 @@ interface Segment {
   icon: string | null;
   health: "healthy" | "attention" | "at_risk";
   segment_dimensions: DimensionScore[];
+  financials?: { mtdIncome: number; ytdIncome: number; ytdNet: number } | null;
 }
 interface Business {
   id: number;
@@ -57,6 +59,7 @@ export default function SegmentsPage() {
   const [editScores, setEditScores] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
@@ -74,6 +77,30 @@ export default function SegmentsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const send = async (method: string, url: string, body?: unknown) => {
+    const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(d.error || "Couldn't save that.");
+    else setMsg("");
+    await load();
+  };
+  const addBusiness = () => {
+    const name = window.prompt("Name of the business (e.g. your company, a brand, a practice):");
+    if (name?.trim()) send("POST", "/api/segments", { kind: "business", name });
+  };
+  const addSegment = (businessId: number) => {
+    const name = window.prompt("Name of the segment (a product line, service, program or audience):");
+    if (name?.trim()) send("POST", "/api/segments", { kind: "segment", businessId, name });
+  };
+  const rename = (kind: "business" | "segment", id: number, current: string) => {
+    const name = window.prompt("Rename to:", current);
+    if (name?.trim() && name.trim() !== current) send("PATCH", "/api/segments", { kind, id, name });
+  };
+  const remove = (kind: "business" | "segment", id: number, name: string) => {
+    if (window.confirm(`Delete "${name}"? Its scores go with it. Income, expenses and tasks tagged to it stay, just untagged.`)) send("DELETE", `/api/segments?kind=${kind}&id=${id}`);
+  };
+  const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
   const startEdit = (seg: Segment) => {
     const byKey = new Map((seg.segment_dimensions ?? []).map((d) => [d.dimension_key, d.score]));
@@ -122,20 +149,34 @@ export default function SegmentsPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
-          Sacred Kaleidoscope
-        </h1>
-        <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">
-          Your businesses and segments, each scored across the 12 dimensions.
-          Scores reflect your assessments; use <span className="font-medium">Coach override</span> to adjust a
-          segment by hand — overrides stick and aren&apos;t replaced by the AI.
-        </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">
+              Business Segments
+            </h1>
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0] max-w-3xl">
+              Your businesses and the segments inside them — products, services, programs or audiences. Tag income and
+              expenses to a segment in the Finance Center and each segment shows what it actually earns. The 12-dimension
+              strip is your whole-business alignment; a coach can adjust a segment by hand.
+            </p>
+          </div>
+          <button onClick={addBusiness} className="text-sm font-medium px-4 py-2.5 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71]">
+            + Add a business
+          </button>
+        </div>
+        {msg && <p className="mt-2 text-sm text-[#8a2f2f]">{msg}</p>}
       </div>
+
+      <SegmentRead />
 
       {businesses === null ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : businesses.length === 0 ? (
-        <p className="text-sm text-gray-400">No businesses yet.</p>
+        <div className="rounded-2xl border border-dashed border-[#1a2b4a]/20 p-8 text-center">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">No businesses yet.</p>
+          <p className="text-sm text-[#7a8a99] mt-1 mb-4">Add your business, then the segments inside it (for example: Coaching, Courses, Speaking).</p>
+          <button onClick={addBusiness} className="text-sm font-medium px-4 py-2 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]">Add your first business</button>
+        </div>
       ) : (
         <div className="space-y-10">
           {businesses.map((biz) => (
@@ -149,7 +190,13 @@ export default function SegmentsPage() {
                   {biz.icon ? `${biz.icon} ` : ""}
                   {biz.name}
                 </h2>
+                <div className="ml-auto flex items-center gap-3 text-xs">
+                  <button onClick={() => addSegment(biz.id)} className="text-[#2E7C83] hover:underline">+ Add segment</button>
+                  <button onClick={() => rename("business", biz.id, biz.name)} className="text-[#7a8a99] hover:underline">Rename</button>
+                  <button onClick={() => remove("business", biz.id, biz.name)} className="text-[#b06a5a] hover:underline">Delete</button>
+                </div>
               </div>
+              {biz.segments.length === 0 && <p className="text-sm text-[#7a8a99] mb-3">No segments yet — add one to track what it earns.</p>}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {biz.segments.map((seg) => {
@@ -177,6 +224,12 @@ export default function SegmentsPage() {
                         )}
                       </div>
 
+                      {seg.financials && (
+                        <p className="mb-3 text-xs text-[#3F4654] dark:text-[#e8e4f0]">
+                          <span className="font-semibold">{usd(seg.financials.mtdIncome)}</span> earned this month ·{" "}
+                          <span className="font-semibold">{usd(seg.financials.ytdNet)}</span> net this year
+                        </p>
+                      )}
                       {editingId === seg.id ? (
                         <div className="space-y-1.5">
                           {DIMENSION_ORDER.map((key) => (
@@ -233,7 +286,13 @@ export default function SegmentsPage() {
                             })}
                           </div>
                           <div className="mt-2 flex items-center justify-between">
-                            <p className="text-[11px] text-[#7C7C82]">12 dimensions · hover a bar</p>
+                            <p className="text-[11px] text-[#7C7C82]">
+                              {seg.financials ? "12 dimensions · hover a bar" : "Tag income to this segment in Finance to see what it earns"}
+                            </p>
+                            <span className="flex items-center gap-2 text-[11px]">
+                              <button onClick={() => rename("segment", seg.id, seg.name)} className="text-[#7a8a99] hover:underline">Rename</button>
+                              <button onClick={() => remove("segment", seg.id, seg.name)} className="text-[#b06a5a] hover:underline">Delete</button>
+                            </span>
                             {isSuperAdmin && (
                               <button
                                 onClick={() => startEdit(seg)}

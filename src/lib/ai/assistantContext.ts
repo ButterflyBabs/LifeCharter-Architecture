@@ -1,4 +1,5 @@
 import { planningKnowledge } from "@/lib/ai/planKnowledge";
+import { alignmentKnowledge } from "@/lib/ai/alignKnowledge";
 import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
@@ -236,6 +237,14 @@ export async function buildAssistantKnowledge(
   // everything the assistant helps with.
   try {
     parts.push(await planningKnowledge(masterPlanId));
+  } catch {
+    /* optional */
+  }
+
+  // How they've moved, their segments, what clients say about them, and what
+  // their assistant concluded across the Alignment area.
+  try {
+    parts.push(await alignmentKnowledge(masterPlanId));
   } catch {
     /* optional */
   }

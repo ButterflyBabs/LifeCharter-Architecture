@@ -107,7 +107,18 @@ export default function ContentCalendarPage() {
       const f = localStorage.getItem("lc-calendar-filter");
       if (f) setFilter(f);
     } catch {}
-    if (new URLSearchParams(window.location.search).get("new") === "1") setComposer({});
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      // A draft handed over from another page (e.g. a review turned into a post).
+      let seed: ComposerInitial = {};
+      try {
+        const raw = sessionStorage.getItem("composer-seed");
+        if (raw) {
+          seed = JSON.parse(raw);
+          sessionStorage.removeItem("composer-seed");
+        }
+      } catch {}
+      setComposer(seed);
+    }
     loadPs();
   }, [loadPs]);
 
