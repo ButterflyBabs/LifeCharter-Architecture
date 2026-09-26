@@ -15,7 +15,7 @@ const META: Record<string, { label: string; blurb: string }> = {
 
 type Tab = "build" | "goals" | "reviews";
 
-export default function PlanWorkspace({ planType }: { planType: PlanType }) {
+export default function PlanWorkspace({ planType, extra }: { planType: PlanType; extra?: React.ReactNode }) {
   const [tab, setTab] = useState<Tab>("build");
   const meta = META[planType] || { label: "Plan", blurb: "" };
 
@@ -47,6 +47,8 @@ export default function PlanWorkspace({ planType }: { planType: PlanType }) {
         <Link href="/assessments" className="text-[#2E7C83] hover:underline">Brain, Soul &amp; Profit assessments</Link>{" "}
         — build the sections, let AI draft from what it knows about you, then track goals and run reviews.
       </p>
+
+      {extra}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a2b4a]/5 rounded-xl p-1 mb-6 w-fit">

@@ -125,6 +125,15 @@ export default function DailyCompassPage() {
       .then((d) => setPsConnected(Boolean(d?.connected)))
       .catch(() => setPsConnected(false));
   }, []);
+  // With the Social Planner on, the calendar holds planned posts and daily
+  // habits too, so it opens whether or not PostStream is connected.
+  const [socialOn, setSocialOn] = useState(false);
+  useEffect(() => {
+    fetch("/api/social/access")
+      .then((r) => r.json())
+      .then((d) => setSocialOn(Boolean(d?.enabled)))
+      .catch(() => setSocialOn(false));
+  }, []);
 
   useEffect(() => {
     const d = new Date();
@@ -768,7 +777,7 @@ export default function DailyCompassPage() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href={psConnected === false ? "/settings" : "/daily-compass/calendar"}>
+            <Link href={psConnected === false && !socialOn ? "/settings" : "/daily-compass/calendar"}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 rounded-full bg-[#c9a227]/20 flex items-center justify-center mx-auto mb-2">
@@ -776,7 +785,7 @@ export default function DailyCompassPage() {
                   </div>
                   <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
                   <p className="text-xs text-[#b8a898]">
-                    {psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
+                    {socialOn ? "Today's posts & habits" : psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
                   </p>
                 </CardContent>
               </Card>
