@@ -105,6 +105,22 @@ interface RealTask {
   segment: { name: string; color: string } | null;
 }
 
+type PulsePeriod = "week" | "month" | "year";
+interface PulseStats {
+  income: number;
+  prevIncome: number;
+  changePct: number | null;
+  goal: number | null;
+  goalSource: "set" | "derived" | null;
+  pct: number | null;
+  series: { label: string; value: number }[];
+}
+const PULSE_LABELS: Record<PulsePeriod, { name: string; prev: string; noun: string }> = {
+  week: { name: "This week", prev: "last week", noun: "weekly" },
+  month: { name: "This month", prev: "last month", noun: "monthly" },
+  year: { name: "This year", prev: "last year", noun: "yearly" },
+};
+
 export default function ExecutiveHome() {
   const [aiInput, setAiInput] = useState("");
   const [tasks, setTasks] = useState<RealTask[]>([]);
@@ -113,7 +129,11 @@ export default function ExecutiveHome() {
     thisMonth: number;
     changePct: number | null;
     weekly: number[];
+    periods?: Record<PulsePeriod, PulseStats>;
   } | null>(null);
+  const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState("today");
@@ -219,6 +239,40 @@ export default function ExecutiveHome() {
       .then((d) => d && setFinance(d))
       .catch(() => {});
   }, [userTimezone]);
+
+  // Remember which period the Financial Pulse was last showing.
+  useEffect(() => {
+    const saved = localStorage.getItem("exec-pulse-period");
+    if (saved === "week" || saved === "month" || saved === "year") setPulsePeriod(saved);
+  }, []);
+
+  const choosePulsePeriod = (p: PulsePeriod) => {
+    setPulsePeriod(p);
+    setEditingGoal(false);
+    setGoalInput("");
+    localStorage.setItem("exec-pulse-period", p);
+  };
+
+  // Save (or clear, with 0) the goal for the selected period, then refresh the card.
+  const savePulseGoal = async () => {
+    const amount = Number(goalInput.replace(/[^0-9.]/g, "")) || 0;
+    try {
+      await fetch(pulsePeriod === "month" ? "/api/finance/budgets" : "/api/finance/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          pulsePeriod === "month"
+            ? { type: "income", category: "", amount }
+            : { period: pulsePeriod, amount }
+        ),
+      });
+      const r = await fetch(`/api/financial-pulse?tz=${encodeURIComponent(userTimezone)}`);
+      if (r.ok) setFinance(await r.json());
+    } catch {
+      /* leave the card as it was */
+    }
+    setEditingGoal(false);
+  };
 
   // Fetch owner name + assistant name for the greeting/AI card (from the profile)
   useEffect(() => {
@@ -1101,65 +1155,139 @@ export default function ExecutiveHome() {
           <button draggable onDragStart={() => setDragId("financial")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
-          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-2">
             <h3 className="font-serif text-base text-indigo-900">Financial Pulse</h3>
-            <Link href="/finance">
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreHorizontal className="w-5 h-5 text-gray-400" />
-              </button>
-            </Link>
+            <div className="flex items-center gap-1">
+              <div className="inline-flex rounded-lg border border-gray-200 p-0.5 text-xs" role="tablist" aria-label="Period">
+                {(["week", "month", "year"] as PulsePeriod[]).map((p) => (
+                  <button
+                    key={p}
+                    role="tab"
+                    aria-selected={pulsePeriod === p}
+                    onClick={() => choosePulsePeriod(p)}
+                    className={`px-2.5 py-1 rounded-md capitalize transition-colors ${
+                      pulsePeriod === p ? "bg-[#2E7C83] text-white" : "text-gray-500 hover:bg-gray-100"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <Link href="/finance">
+                <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                </button>
+              </Link>
+            </div>
           </div>
 
+          {(() => {
+            const ps = finance?.periods?.[pulsePeriod];
+            const lbl = PULSE_LABELS[pulsePeriod];
+            const series = ps?.series ?? [];
+            const max = Math.max(1, ...series.map((b) => b.value));
+            return (
           <div className="px-6 pb-6 space-y-4">
-            {/* Main Balance (live) */}
+            {/* Income for the selected period (live) */}
             <div>
-              <p className="text-3xl font-serif text-[#c9a227]">
-                {finance?.hasData ? currency(finance.thisMonth) : "$0"}
-              </p>
+              <p className="text-3xl font-serif text-[#c9a227]">{currency(ps?.income ?? 0)}</p>
               <p className="text-sm text-gray-600 mt-1">
-                {finance?.hasData && finance.changePct !== null ? (
+                {ps && ps.changePct !== null ? (
                   <>
-                    <span
-                      className={
-                        finance.changePct >= 0
-                          ? "text-[#2E7C83] font-medium"
-                          : "text-[#D83A34] font-medium"
-                      }
-                    >
-                      {finance.changePct >= 0 ? "+" : ""}
-                      {finance.changePct}%
+                    <span className={ps.changePct >= 0 ? "text-[#2E7C83] font-medium" : "text-[#D83A34] font-medium"}>
+                      {ps.changePct >= 0 ? "+" : ""}
+                      {ps.changePct}%
                     </span>{" "}
-                    from last month
+                    vs {lbl.prev}
                   </>
+                ) : finance?.hasData ? (
+                  `${lbl.name} · income to date`
                 ) : (
-                  "This month · no revenue recorded yet"
+                  `${lbl.name} · no revenue recorded yet`
                 )}
               </p>
             </div>
 
-            {/* Bar Chart (weekly actuals) */}
-            <div className="space-y-2">
-              <div className="flex items-end gap-1 h-24">
-                {(() => {
-                  const weekly = finance?.weekly ?? [0, 0, 0, 0];
-                  const max = Math.max(1, ...weekly);
-                  return weekly.map((v, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 bg-[#2E7C83] rounded-t"
-                      style={{
-                        height: `${Math.max(4, (v / max) * 100)}%`,
-                        opacity: finance?.hasData ? 0.4 + (v / max) * 0.5 : 0.15,
-                      }}
+            {/* % of goal reached */}
+            <div className="rounded-xl bg-[#F8F5F0] border border-[#E8E4E0] p-3">
+              {editingGoal || !ps?.goal ? (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">
+                    {ps?.goal ? `Edit your ${lbl.noun} income goal` : `Set a ${lbl.noun} income goal to track your progress`}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={goalInput}
+                      onChange={(e) => setGoalInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && savePulseGoal()}
+                      placeholder="Goal in dollars"
+                      aria-label={`${lbl.noun} income goal`}
+                      className="flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg outline-none focus:border-[#84AEB2]"
                     />
-                  ));
-                })()}
+                    <button
+                      onClick={savePulseGoal}
+                      className="px-3 py-1.5 text-sm rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
+                    >
+                      Set
+                    </button>
+                    {editingGoal && (
+                      <button onClick={() => setEditingGoal(false)} className="px-2 text-xs text-gray-400 hover:text-gray-600">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-serif text-[#1a2b4a]">{ps.pct ?? 0}%</span>
+                    <button
+                      onClick={() => {
+                        setGoalInput(String(ps.goal));
+                        setEditingGoal(true);
+                      }}
+                      className="text-xs text-[#2E7C83] hover:underline"
+                    >
+                      Edit goal
+                    </button>
+                  </div>
+                  <div className="mt-1.5 h-2 rounded-full bg-gray-200 overflow-hidden" aria-hidden="true">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${Math.min(100, ps.pct ?? 0)}%`, backgroundColor: (ps.pct ?? 0) >= 100 ? "#2c6b3f" : "#2E7C83" }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    of your {currency(ps.goal)} {lbl.noun} goal
+                    {ps.goalSource === "derived" ? " (worked out from your goals)" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Bar chart for the selected period */}
+            <div className="space-y-2">
+              <div className="flex items-end gap-1 h-20">
+                {(series.length ? series : [{ label: "", value: 0 }]).map((b, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-[#2E7C83] rounded-t"
+                    title={`${b.label}: ${currency(b.value)}`}
+                    style={{
+                      height: `${Math.max(4, (b.value / max) * 100)}%`,
+                      opacity: finance?.hasData ? 0.4 + (b.value / max) * 0.5 : 0.15,
+                    }}
+                  />
+                ))}
               </div>
-              <div className="flex justify-between text-xs text-gray-400 px-1">
-                <span>Week 1</span>
-                <span>Week 2</span>
-                <span>Week 3</span>
-                <span>Week 4</span>
+              <div className="flex text-[10px] text-gray-400">
+                {series.map((b) => (
+                  <span key={b.label} className="flex-1 text-center truncate">
+                    {b.label}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -1174,6 +1302,8 @@ export default function ExecutiveHome() {
               </div>
             </Link>
           </div>
+            );
+          })()}
         </div>
         </div>
 
