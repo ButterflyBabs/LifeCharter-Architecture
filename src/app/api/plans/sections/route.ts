@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { getBlueprint, baselineCompleteness } from "@/lib/plans/blueprints";
+import { getBlueprint, baselineCompleteness, sectionQuestions } from "@/lib/plans/blueprints";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       title: s.title,
       description: s.description,
       baseline: s.baseline,
-      guiding: s.guiding,
+      questions: sectionQuestions(s),
       content: saved?.content || "",
       answers: saved?.answers || {},
       status: saved?.status || "empty",

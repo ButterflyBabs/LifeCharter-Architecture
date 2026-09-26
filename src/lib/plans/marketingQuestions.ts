@@ -1,21 +1,10 @@
-// The Marketing Plan guided questionnaires (Ideal Client, Positioning, Core
-// Messaging, Channels, Content). Shared by the pages, the save route
-// (/api/marketing-plan/answers) and anything that reads a client's answers
-// as context (e.g. the Phase 3 social week writer). Client-safe.
+// The questions each Marketing Plan section asks (Build tab). One home per
+// question: these replaced the five separate guided pages (Ideal Client,
+// Positioning, Core Messaging, Channels, Content) and the sections' old
+// two-line prompts, so nothing is asked twice. Wording kept from those pages.
+import type { PlanQuestion } from "./blueprints";
 
-export interface GuideQuestion {
-  id: string;
-  question: string;
-  type: "text" | "textarea" | "choice" | "list";
-  placeholder?: string;
-  hint?: string;
-  options?: string[];
-}
-
-export type GuideAnswer = string | string[];
-export type GuideAnswers = Record<string, GuideAnswer>;
-
-export const IDEAL_CLIENT_QUESTIONS: GuideQuestion[] = [
+export const IDEAL_CLIENT_QUESTIONS: PlanQuestion[] = [
   {
     id: "demographics",
     question: "Describe your ideal client's demographics",
@@ -86,27 +75,13 @@ export const IDEAL_CLIENT_QUESTIONS: GuideQuestion[] = [
   }
 ];
 
-export const POSITIONING_QUESTIONS: GuideQuestion[] = [
+export const POSITIONING_QUESTIONS: PlanQuestion[] = [
   {
     id: "what-you-do",
     question: "What do you do, in the simplest terms?",
     type: "text",
     placeholder: "e.g., I help working moms lose weight without giving up family dinners",
     hint: "Avoid jargon. Imagine explaining to a 10-year-old."
-  },
-  {
-    id: "who-you-help",
-    question: "Who specifically do you help?",
-    type: "text",
-    placeholder: "e.g., Working moms with kids under 10 who struggle with meal prep",
-    hint: "The more specific, the better. 'Everyone' is not a target."
-  },
-  {
-    id: "transformation",
-    question: "What transformation do you create for them?",
-    type: "textarea",
-    placeholder: "Describe the before and after. What changes in their life after working with you?",
-    hint: "Focus on outcomes, not processes."
   },
   {
     id: "differentiation",
@@ -129,26 +104,6 @@ export const POSITIONING_QUESTIONS: GuideQuestion[] = [
     ]
   },
   {
-    id: "promise",
-    question: "What's the main promise you make to clients?",
-    type: "text",
-    placeholder: "e.g., Lose 20 pounds in 90 days without giving up family dinners",
-    hint: "Make it specific and measurable if possible."
-  },
-  {
-    id: "tagline-ideas",
-    question: "Based on your answers, here are some tagline ideas. Which resonates most?",
-    type: "choice",
-    options: [
-      "[AI will generate options based on previous answers]",
-      "I want to create my own",
-      "None of these feel right yet"
-    ]
-  }
-];
-
-export const MESSAGING_QUESTIONS: GuideQuestion[] = [
-  {
     id: "core-message",
     question: "What is the ONE thing you want people to remember about your business?",
     type: "textarea",
@@ -161,47 +116,30 @@ export const MESSAGING_QUESTIONS: GuideQuestion[] = [
     type: "text",
     placeholder: "e.g., Lose 20 pounds without giving up family dinners",
     hint: "Short, memorable, benefit-focused. Think billboard test."
-  },
+  }
+];
+
+export const OFFER_PROMISE_QUESTIONS: PlanQuestion[] = [
   {
-    id: "brand-voice",
-    question: "How would you describe your brand voice?",
-    type: "choice",
-    options: [
-      "Warm and compassionate",
-      "Direct and no-nonsense",
-      "Professional and authoritative",
-      "Playful and energetic",
-      "Calm and contemplative",
-      "Bold and provocative"
-    ]
-  },
-  {
-    id: "talking-points",
-    question: "What are your 3-5 key talking points?",
-    type: "list",
-    placeholder: "Add a key message...",
-    hint: "These are the core ideas you repeat across all your content."
-  },
-  {
-    id: "origin-story",
-    question: "What is your origin story? Why do you do this work?",
+    id: "lead-offer",
+    question: "What's the offer you lead with?",
     type: "textarea",
-    placeholder: "The journey that led you to this work, the moment you knew this was your calling...",
-    hint: "People connect with stories, not just services. What makes your journey relatable?"
+    placeholder: "Name it, who it's for, and how people start",
+    hint: "The one offer most of your marketing points to."
   },
   {
-    id: "client-transformation",
-    question: "Describe a typical client transformation story",
+    id: "transformation",
+    question: "What transformation do you create for them?",
     type: "textarea",
-    placeholder: "Where they start, the journey, where they end up...",
-    hint: "Before/during/after. Make it concrete and emotional."
+    placeholder: "Describe the before and after. What changes in their life after working with you?",
+    hint: "Focus on outcomes, not processes."
   },
   {
-    id: "objection-handling",
-    question: "How do you address common objections in your messaging?",
-    type: "textarea",
-    placeholder: "Price concerns, time concerns, skepticism... how do you reframe these?",
-    hint: "Anticipate resistance and address it proactively in your content."
+    id: "promise",
+    question: "What's the main promise you make to clients?",
+    type: "text",
+    placeholder: "e.g., Lose 20 pounds in 90 days without giving up family dinners",
+    hint: "Make it specific and measurable if possible."
   },
   {
     id: "call-to-action",
@@ -209,10 +147,17 @@ export const MESSAGING_QUESTIONS: GuideQuestion[] = [
     type: "text",
     placeholder: "e.g., Book a free discovery call, Download the guide, Join the waitlist",
     hint: "What ONE action do you want people to take?"
+  },
+  {
+    id: "objection-handling",
+    question: "How do you address common objections in your messaging?",
+    type: "textarea",
+    placeholder: "Price concerns, time concerns, skepticism... how do you reframe these?",
+    hint: "Anticipate resistance and address it proactively in your content."
   }
 ];
 
-export const CHANNELS_QUESTIONS: GuideQuestion[] = [
+export const CHANNELS_QUESTIONS: PlanQuestion[] = [
   {
     id: "primary-channel",
     question: "What is your PRIMARY marketing channel?",
@@ -245,13 +190,6 @@ export const CHANNELS_QUESTIONS: GuideQuestion[] = [
     hint: "Don't spread too thin. Master one before adding others."
   },
   {
-    id: "content-types",
-    question: "What types of content will you create?",
-    type: "list",
-    placeholder: "e.g., Educational posts, client stories, behind-the-scenes, tips...",
-    hint: "Match content types to your strengths and what your audience consumes."
-  },
-  {
     id: "posting-frequency",
     question: "How often will you post on your primary channel?",
     type: "choice",
@@ -275,13 +213,6 @@ export const CHANNELS_QUESTIONS: GuideQuestion[] = [
     ]
   },
   {
-    id: "content-pillars",
-    question: "What are your 3 content pillars?",
-    type: "list",
-    placeholder: "Add a content pillar...",
-    hint: "These are the 3 main topics you'll rotate through. They should serve your audience AND showcase your expertise."
-  },
-  {
     id: "engagement-strategy",
     question: "How will you engage with your audience?",
     type: "textarea",
@@ -297,7 +228,7 @@ export const CHANNELS_QUESTIONS: GuideQuestion[] = [
   }
 ];
 
-export const CONTENT_QUESTIONS: GuideQuestion[] = [
+export const CONTENT_STRATEGY_QUESTIONS: PlanQuestion[] = [
   {
     id: "content-pillars",
     question: "What are your 3 core content pillars?",
@@ -379,44 +310,39 @@ export const CONTENT_QUESTIONS: GuideQuestion[] = [
   }
 ];
 
-export const GUIDE_PAGES = {
-  "ideal-client": { title: "Ideal Client Profile", questions: IDEAL_CLIENT_QUESTIONS },
-  positioning: { title: "Positioning", questions: POSITIONING_QUESTIONS },
-  messaging: { title: "Core Messaging", questions: MESSAGING_QUESTIONS },
-  channels: { title: "Channel Strategy", questions: CHANNELS_QUESTIONS },
-  content: { title: "Content Strategy", questions: CONTENT_QUESTIONS },
-} as const;
-
-export type GuidePage = keyof typeof GUIDE_PAGES;
-
-export const isGuidePage = (p: unknown): p is GuidePage => typeof p === "string" && p in GUIDE_PAGES;
-
-// Keep only answers to this page's questions, in a safe shape and size.
-export function cleanGuideAnswers(page: GuidePage, raw: unknown): GuideAnswers {
-  const out: GuideAnswers = {};
-  if (!raw || typeof raw !== "object") return out;
-  const src = raw as Record<string, unknown>;
-  for (const q of GUIDE_PAGES[page].questions) {
-    const v = src[q.id];
-    if (typeof v === "string" && v.trim()) out[q.id] = v.slice(0, 5000);
-    else if (Array.isArray(v)) {
-      const list = v.filter((x): x is string => typeof x === "string" && x.trim() !== "").slice(0, 30).map((x) => x.slice(0, 500));
-      if (list.length) out[q.id] = list;
-    }
+export const BRAND_VOICE_QUESTIONS: PlanQuestion[] = [
+  {
+    id: "brand-voice",
+    question: "How would you describe your brand voice?",
+    type: "choice",
+    options: [
+      "Warm and compassionate",
+      "Direct and no-nonsense",
+      "Professional and authoritative",
+      "Playful and energetic",
+      "Calm and contemplative",
+      "Bold and provocative"
+    ]
+  },
+  {
+    id: "talking-points",
+    question: "What are your 3-5 key talking points?",
+    type: "list",
+    placeholder: "Add a key message...",
+    hint: "These are the core ideas you repeat across all your content."
+  },
+  {
+    id: "origin-story",
+    question: "What is your origin story? Why do you do this work?",
+    type: "textarea",
+    placeholder: "The journey that led you to this work, the moment you knew this was your calling...",
+    hint: "People connect with stories, not just services. What makes your journey relatable?"
+  },
+  {
+    id: "client-transformation",
+    question: "Describe a typical client transformation story",
+    type: "textarea",
+    placeholder: "Where they start, the journey, where they end up...",
+    hint: "Before/during/after. Make it concrete and emotional."
   }
-  return out;
-}
-
-// Plain-text version of a client's answers, for AI context.
-export function guideAnswersAsText(answersByPage: Partial<Record<GuidePage, GuideAnswers>>): string {
-  const parts: string[] = [];
-  for (const [page, def] of Object.entries(GUIDE_PAGES) as [GuidePage, (typeof GUIDE_PAGES)[GuidePage]][]) {
-    const a = answersByPage[page];
-    if (!a || !Object.keys(a).length) continue;
-    const lines = def.questions
-      .filter((q) => a[q.id] !== undefined)
-      .map((q) => `- ${q.question} ${Array.isArray(a[q.id]) ? (a[q.id] as string[]).join("; ") : a[q.id]}`);
-    parts.push(`${def.title}:\n${lines.join("\n")}`);
-  }
-  return parts.join("\n\n");
-}
+];

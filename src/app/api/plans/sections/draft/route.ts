@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
-import { getBlueprint } from "@/lib/plans/blueprints";
+import { getBlueprint, sectionQuestions } from "@/lib/plans/blueprints";
 import { getAssessmentContext, contextToText } from "@/lib/plans/assessmentContext";
 
 export const dynamic = "force-dynamic";
@@ -47,8 +47,8 @@ export async function POST(request: Request) {
 
   // The owner's own answers to the guiding questions (optional).
   const answers = body.answers && typeof body.answers === "object" ? (body.answers as Record<string, string>) : {};
-  const answerText = section.guiding
-    .map((q, i) => (answers[String(i)] ? `Q: ${q}\nA: ${answers[String(i)]}` : ""))
+  const answerText = sectionQuestions(section)
+    .map((q) => (typeof answers[q.id] === "string" && answers[q.id].trim() ? `Q: ${q.question}\nA: ${answers[q.id].trim()}` : ""))
     .filter(Boolean)
     .join("\n");
 

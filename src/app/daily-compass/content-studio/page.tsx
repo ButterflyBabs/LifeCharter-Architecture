@@ -42,6 +42,8 @@ export default function CreateContentPage() {
   const [aiIdea, setAiIdea] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [needsKey, setNeedsKey] = useState(false);
+  // What the last AI draft was based on (the account's own answers and voice).
+  const [grounded, setGrounded] = useState<{ plan: boolean; voice: boolean } | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -95,6 +97,7 @@ export default function CreateContentPage() {
       } else if (d.caption !== undefined) {
         const tags = Array.isArray(d.hashtags) && d.hashtags.length ? "\n\n" + d.hashtags.join(" ") : "";
         setCaption((d.caption || "") + tags);
+        setGrounded(d.grounded || null);
         if (!title) setTitle(aiIdea.slice(0, 60));
       } else {
         setMsg({ kind: "err", text: d.error || "Couldn't draft a caption." });
@@ -283,6 +286,24 @@ export default function CreateContentPage() {
               Draft
             </button>
           </div>
+          {grounded && (
+            <p className="mt-2 text-xs text-[#12303a]/80 dark:text-[#F8F5F0]/80" role="status">
+              {grounded.plan || grounded.voice ? (
+                <>
+                  Written using your{" "}
+                  {[grounded.plan && "Marketing Plan", grounded.voice && "Voice & rules"].filter(Boolean).join(" and ")}.
+                </>
+              ) : (
+                <>
+                  Tip: fill in your{" "}
+                  <Link href="/marketing-plan" className="underline">
+                    Marketing Plan
+                  </Link>{" "}
+                  and drafts will sound like you and speak to your clients.
+                </>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Caption */}

@@ -328,7 +328,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Planning",
     question: "How do I build a plan?",
     answer:
-      "Open a plan (Business, Marketing, Sales, or Forecasting) and use the Build tab. Each plan is a set of sections; the foundational ones are marked 'Foundational,' the rest are optional depth. For any section you can answer a guiding question or two and click 'Draft with AI' — it writes that section from your Brain/Soul/Profit assessments, your answers, and your other sections. Edit freely; it autosaves. Two meters show your baseline and overall depth.",
+      "Open a plan (Business, Marketing, Sales, or Forecasting) and use the Build tab. Each plan is a set of sections; the foundational ones are marked 'Foundational,' the rest are optional depth. For any section you can answer its questions (they save on their own) and click 'Draft with AI' — it writes that section from your Brain/Soul/Profit assessments, your answers, and your other sections. Edit freely; it autosaves. Two meters show your baseline and overall depth.",
     keywords: ["build plan", "plan builder", "sections", "draft with ai", "foundational", "baseline", "how to build"],
   },
   {

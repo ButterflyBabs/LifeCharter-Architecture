@@ -1,19 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { Target } from "lucide-react";
-import { GuidedQuestionnaire } from "@/components/marketing/GuidedQuestionnaire";
-
-export default function PositioningPage() {
-  return (
-    <GuidedQuestionnaire
-      page="positioning"
-      subtitle="Define what makes you different and why clients choose you"
-      icon={<Target className="w-6 h-6 text-[#7b6b8d]" />}
-      iconBg="bg-[#7b6b8d]/20"
-      completeTitle="Positioning Complete!"
-      completeText="Your unique value proposition is now defined. Here’s what we captured:"
-      saveLabel="Save Positioning"
-      showRunningSummary
-    />
-  );
+// These questions now live in the Marketing Plan's Build tab; old links land
+// on the matching section.
+export default function Page() {
+  redirect("/marketing-plan?section=positioning");
 }
