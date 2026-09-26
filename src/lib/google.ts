@@ -505,6 +505,8 @@ export type ScheduleEvent = {
   title: string;
   time: string;
   start: string | null;
+  end?: string | null;
+  allDay?: boolean;
 };
 
 // Does the stored Google credential include calendar write access? (Older
@@ -541,12 +543,23 @@ export async function createEvent(
 
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
   const { startISO, endISO } = dayWindowUtc(timeZone);
+  return fetchEventsBetween(accessToken, startISO, endISO, timeZone, 15);
+}
+
+// Events between two instants (e.g. the coming week), oldest first.
+export async function fetchEventsBetween(
+  accessToken: string,
+  startISO: string,
+  endISO: string,
+  timeZone = "UTC",
+  max = 40
+): Promise<ScheduleEvent[]> {
   const params = new URLSearchParams({
     timeMin: startISO,
     timeMax: endISO,
     singleEvents: "true",
     orderBy: "startTime",
-    maxResults: "15",
+    maxResults: String(max),
     timeZone,
   });
   const r = await fetch(
@@ -556,7 +569,7 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
   if (!r.ok) throw new Error(`calendar ${r.status}`);
   const data = await r.json();
   return (data.items ?? []).map(
-    (e: { id: string; summary?: string; start?: { dateTime?: string; date?: string } }) => ({
+    (e: { id: string; summary?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string } }) => ({
       id: e.id,
       title: e.summary ?? "(busy)",
       // dateTime => timed event (format in the viewer's tz); bare date => all-day.
@@ -568,6 +581,8 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
           })
         : "All day",
       start: e.start?.dateTime ?? e.start?.date ?? null,
+      end: e.end?.dateTime ?? e.end?.date ?? null,
+      allDay: !e.start?.dateTime,
     })
   );
 }

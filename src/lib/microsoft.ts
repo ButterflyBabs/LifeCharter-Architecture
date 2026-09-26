@@ -270,12 +270,23 @@ export async function searchInbox(accessToken: string, query: string, max = 20):
 
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
   const { startISO, endISO } = dayWindowUtc(timeZone);
+  return fetchEventsBetween(accessToken, startISO, endISO, timeZone, 15);
+}
+
+// Events between two instants (e.g. the coming week), oldest first.
+export async function fetchEventsBetween(
+  accessToken: string,
+  startISO: string,
+  endISO: string,
+  timeZone = "UTC",
+  max = 40
+): Promise<ScheduleEvent[]> {
   // No Prefer:outlook.timezone header, so Graph interprets the window as UTC
   // and returns start.dateTime in UTC (naive, no offset) — we append "Z".
   const url =
     `${GRAPH}/me/calendarView?startDateTime=${encodeURIComponent(startISO)}` +
     `&endDateTime=${encodeURIComponent(endISO)}` +
-    `&$select=subject,start,isAllDay&$orderby=start/dateTime&$top=15`;
+    `&$select=subject,start,end,isAllDay&$orderby=start/dateTime&$top=${max}`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!r.ok) throw new Error(`graph calendar ${r.status}`);
   const data = await r.json();
@@ -285,18 +296,23 @@ export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): P
       subject?: string;
       isAllDay?: boolean;
       start?: { dateTime?: string };
+      end?: { dateTime?: string };
     }>
   ).map((e) => {
     const iso = e.start?.dateTime ? e.start.dateTime + "Z" : null;
+    const endIso = e.end?.dateTime ? e.end.dateTime + "Z" : null;
+    const clock = iso ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone }) : "";
+    // Some invitations are created as a timed 24-hour block from midnight instead
+    // of a true all-day event; show those as all-day too.
+    const spansDay = iso && endIso ? new Date(endIso).getTime() - new Date(iso).getTime() >= 23 * 3600 * 1000 : false;
+    const allDay = Boolean(e.isAllDay) || !iso || (spansDay && clock === "12:00 AM");
     return {
       id: e.id,
       title: e.subject ?? "(busy)",
-      time: e.isAllDay
-        ? "All day"
-        : iso
-          ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone })
-          : "All day",
+      time: allDay ? "All day" : clock,
       start: iso ? new Date(iso).toISOString() : null,
+      end: endIso ? new Date(endIso).toISOString() : null,
+      allDay,
     };
   });
 }
