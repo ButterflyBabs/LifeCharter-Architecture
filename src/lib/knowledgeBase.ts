@@ -255,6 +255,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- AI & Automation ----
   {
+    id: "segments-autotag",
+    category: "AI & Automation",
+    question: "How do I tie my existing income, tasks and goals to a business segment?",
+    answer:
+      "On Business Segments, once you have a segment, a panel shows how many items aren't tied to one yet. Choose Suggest tags and your assistant reads your income and expenses (repeats are grouped), tasks, plan goals and sales activity, and proposes a segment for each from the wording and what it knows about how your business is organized. You review every suggestion — untick or change any, leave general overhead untagged — then apply. Nothing changes until you confirm, and existing tags are never overwritten. Tagged activity is what lets each segment's score show where work is needed and where it's progressing.",
+    keywords: ["segment", "tag", "untagged", "auto tag", "assistant", "income", "tasks", "goals", "sales", "offering"],
+  },
+  {
     id: "alignment-ai",
     category: "AI & Automation",
     question: "How does my assistant work in the Alignment section?",
