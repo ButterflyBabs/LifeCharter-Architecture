@@ -74,7 +74,7 @@ export default function MorningBriefPage() {
       fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
       fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/financial-pulse").then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/financial-pulse?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
     ])
       .then(([p, s, t, f]) => {
         if (p?.firstName) setFirstName(p.firstName);

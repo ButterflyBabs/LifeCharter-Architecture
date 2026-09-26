@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import type { ScheduleEvent } from "@/lib/google";
-import { createServerClient } from "@/lib/supabase/server";
-import { resolveAiAccount } from "@/lib/ai/config";
+import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { openMailboxes } from "@/lib/mailboxes";
 
 export const dynamic = "force-dynamic";
@@ -12,21 +11,9 @@ type MergedEvent = ScheduleEvent & { account: string };
 
 // Today's events merged across every connected calendar (Google + Microsoft 365).
 export async function GET(request: Request) {
-  // Anchor "today" and displayed times to the viewer's timezone. Priority:
-  // their saved Settings choice (profiles.timezone), then the auto-detected
-  // tz the client sends (?tz=), then UTC.
-  const queryTz = new URL(request.url).searchParams.get("tz") || "";
-  let timeZone = queryTz || "UTC";
-  try {
-    const { profileId, canEdit } = await resolveAiAccount();
-    if (profileId && canEdit) {
-      const { data: prof } = await createServerClient().from("profiles").select("timezone, timezone_chosen").eq("id", profileId).maybeSingle();
-      const profileTz = prof?.timezone_chosen ? (prof?.timezone as string | null)?.trim() : "";
-      if (profileTz) timeZone = profileTz;
-    }
-  } catch {
-    /* fall back to the query tz */
-  }
+  // Anchor "today" and displayed times to the viewer's time zone: their chosen
+  // zone, else the auto-detected one the client sends (?tz=), else UTC.
+  const timeZone = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
 
   const boxes = await openMailboxes();
   const events: MergedEvent[] = [];

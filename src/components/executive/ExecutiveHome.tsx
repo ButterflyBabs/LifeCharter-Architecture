@@ -211,13 +211,14 @@ export default function ExecutiveHome() {
       .catch(() => {});
   }, []);
 
-  // Fetch live financial pulse
+  // Fetch live financial pulse (month boundaries follow the chosen time zone)
   useEffect(() => {
-    fetch("/api/financial-pulse")
+    if (!userTimezone) return;
+    fetch(`/api/financial-pulse?tz=${encodeURIComponent(userTimezone)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFinance(d))
       .catch(() => {});
-  }, []);
+  }, [userTimezone]);
 
   // Fetch owner name + assistant name for the greeting/AI card (from the profile)
   useEffect(() => {
