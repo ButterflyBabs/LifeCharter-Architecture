@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +33,13 @@ const ACTION: Record<string, string> = {
 
 export async function GET() {
   const supabase = createServerClient();
-  const { data, error } = await supabase.from("segment_dimensions").select("dimension_key, score");
+  const masterPlanId = await resolveMasterPlanId();
+  const segmentIds = masterPlanId ? await planSegmentIds(masterPlanId) : [];
+  if (segmentIds.length === 0) return NextResponse.json({ moves: [] });
+  const { data, error } = await supabase
+    .from("segment_dimensions")
+    .select("dimension_key, score")
+    .in("segment_id", segmentIds);
 
   if (error) {
     console.error("GET /api/next-moves:", error.message);

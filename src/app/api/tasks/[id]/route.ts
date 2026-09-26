@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
   const supabase = createServerClient();
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -23,9 +26,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     .from("tasks")
     .update(update)
     .eq("id", params.id)
+    .eq("master_plan_id", masterPlanId)
     .select("id, title, status, priority")
-    .single();
+    .maybeSingle();
 
+  if (!error && !data) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (error) {
     console.error("PATCH /api/tasks/[id]:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -38,7 +43,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
   const supabase = createServerClient();
-  const { error } = await supabase.from("tasks").delete().eq("id", params.id);
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { error } = await supabase.from("tasks").delete().eq("id", params.id).eq("master_plan_id", masterPlanId);
   if (error) {
     console.error("DELETE /api/tasks/[id]:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });

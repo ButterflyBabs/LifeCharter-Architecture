@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 import { scoreDimensionFromProse, ProseAnswer } from "@/lib/scoring/aiScore";
 import { gatherAndCompute } from "@/lib/scoring/gather";
@@ -142,7 +143,7 @@ async function run() {
   let snapshot: { type: string } | null = null;
   try {
     const computed = await gatherAndCompute(planId);
-    segmentsSynced = await syncSegments(supabase, computed.domains);
+    segmentsSynced = await syncSegments(supabase, planId, computed.domains);
     // Record a dated score point (first one becomes the baseline).
     snapshot = await captureSnapshot(supabase, planId, computed.domains, computed.overall);
   } catch (e) {
@@ -168,21 +169,23 @@ function healthFor(score: number): "healthy" | "attention" | "at_risk" {
   return "healthy";
 }
 
-// Writes the AI-computed 12-domain scores into every segment's dimensions,
+// Writes the AI-computed 12-domain scores into the client's own segments' dimensions,
 // leaving coach-overridden rows untouched. Returns rows written.
 async function syncSegments(
   supabase: ReturnType<typeof createServerClient>,
+  planId: string,
   domains: Array<{ key: string; score: number | null }>
 ): Promise<number> {
-  const { data: segs } = await supabase.from("segments").select("id");
-  const segIds = (segs ?? []).map((s: { id: number }) => s.id);
+  // Only this client's own segments — never anyone else's.
+  const segIds = await planSegmentIds(planId);
   if (segIds.length === 0) return 0;
 
   const scored = domains.filter((d) => d.score !== null) as Array<{ key: string; score: number }>;
 
   const { data: existing } = await supabase
     .from("segment_dimensions")
-    .select("segment_id, dimension_key, updated_by");
+    .select("segment_id, dimension_key, updated_by")
+    .in("segment_id", segIds);
   const coach = new Set(
     ((existing ?? []) as Array<{ segment_id: number; dimension_key: string; updated_by: string | null }>)
       .filter((r) => r.updated_by === "coach")

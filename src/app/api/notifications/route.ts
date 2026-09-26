@@ -73,6 +73,7 @@ async function deriveNotifications(
     const { data } = await supabase
       .from("tasks")
       .select("id, title, status, due_at, due_date")
+      .eq("master_plan_id", masterPlanId)
       .neq("status", "done");
     const due = (data || []).filter((t: { due_at: string | null; due_date: string | null }) => {
       const d = t.due_at || t.due_date;
@@ -99,6 +100,7 @@ async function deriveNotifications(
     const { data } = await supabase
       .from("tasks")
       .select("id, title, followup, status")
+      .eq("master_plan_id", masterPlanId)
       .neq("status", "done");
     const dueFollowups = (data || []).filter((t: { followup: unknown }) => {
       const f = t.followup as { dueAt?: string; nextAt?: string } | null;

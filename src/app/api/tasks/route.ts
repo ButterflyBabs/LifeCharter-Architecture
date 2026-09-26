@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -25,11 +27,15 @@ const DIMENSION_COLUMNS: Record<string, string> = {
 
 export async function GET() {
   const supabase = createServerClient();
+  // Each client sees only their own plan's tasks.
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ tasks: [] });
   const { data, error } = await supabase
     .from("tasks")
     .select(
       "id, title, description, status, priority, energy, due_date, due_at, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
     )
+    .eq("master_plan_id", masterPlanId)
     .order("board_position", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -45,20 +51,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
   const supabase = createServerClient();
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
 
   if (!body?.title) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
 
+  // A task can only be linked to the client's own business / segment.
+  const businessId = body.businessId && (await planBusinessIds(masterPlanId)).includes(Number(body.businessId)) ? body.businessId : null;
+  const segmentId = body.segmentId && (await planSegmentIds(masterPlanId)).includes(Number(body.segmentId)) ? body.segmentId : null;
+
   const row: Record<string, unknown> = {
+    master_plan_id: masterPlanId,
     title: body.title,
     description: body.description ?? null,
     status: body.status ?? "today",
     priority: body.priority ?? "medium",
     energy: ["low", "medium", "high"].includes(body.energy) ? body.energy : "medium",
-    business_id: body.businessId ?? null,
-    segment_id: body.segmentId ?? null,
+    business_id: businessId,
+    segment_id: segmentId,
     due_date: body.dueDate ?? null,
     due_at: body.dueAt ?? null,
     followup: body.followup && typeof body.followup === "object" ? body.followup : {},

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   if (!body?.segmentId || !body?.periodStart || !body?.periodEnd) {
     return NextResponse.json({ error: "segmentId, periodStart, periodEnd required" }, { status: 400 });
+  }
+  const masterPlanId = await resolveMasterPlanId();
+  const segmentIds = masterPlanId ? await planSegmentIds(masterPlanId) : [];
+  if (!segmentIds.includes(Number(body.segmentId))) {
+    return NextResponse.json({ error: "unknown segment" }, { status: 404 });
   }
   const { data, error } = await supabase
     .from("segment_revenue")
@@ -36,12 +43,18 @@ export async function POST(request: Request) {
 // with last-month totals for the month-over-month comparison.
 export async function GET() {
   const supabase = createServerClient();
+  const masterPlanId = await resolveMasterPlanId();
+  const segmentIds = masterPlanId ? await planSegmentIds(masterPlanId) : [];
+  if (segmentIds.length === 0) {
+    return NextResponse.json({ thisMonthTotal: 0, lastMonthTotal: 0, changePct: null, businesses: [] });
+  }
   const { data, error } = await supabase
     .from("segment_revenue")
     .select(
       "revenue_actual, revenue_target, period_start, " +
         "segment:segments ( id, name, slug, color, business:businesses ( id, name, slug, color ) )"
-    );
+    )
+    .in("segment_id", segmentIds);
 
   if (error) {
     console.error("GET /api/revenue-by-segment:", error.message);

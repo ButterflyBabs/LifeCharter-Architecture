@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 // businesses -> segments -> 12 dimension health scores.
 export async function GET() {
   const supabase = createServerClient();
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ businesses: [] });
   const { data, error } = await supabase
     .from("businesses")
     .select(
@@ -14,6 +17,7 @@ export async function GET() {
         "segments ( id, name, slug, color, icon, health, sort_order, " +
         "segment_dimensions ( dimension_key, score, health ) )"
     )
+    .eq("master_plan_id", masterPlanId)
     .order("sort_order", { ascending: true });
 
   if (error) {

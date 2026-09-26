@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { housePlanId } from "@/lib/planScope";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 
@@ -34,10 +34,16 @@ async function run(request: Request) {
   const supabase = createServerClient();
   const nowISO = new Date().toISOString();
 
+  // Follow-ups go out from the founding account's mailbox, so only that
+  // account's own tasks are eligible — never another client's.
+  const masterPlanId = await housePlanId();
+  if (!masterPlanId) return NextResponse.json({ sent: 0, skipped: [], note: "no house plan" });
+
   // Candidates: auto-send follow-ups that are due and not yet done.
   const { data, error } = await supabase
     .from("tasks")
     .select("id, title, status, due_at, followup")
+    .eq("master_plan_id", masterPlanId)
     .neq("status", "done")
     .not("due_at", "is", null)
     .lte("due_at", nowISO)
@@ -56,7 +62,6 @@ async function run(request: Request) {
   // Resolve tokens once.
   const msToken = await microsoft.getValidAccessToken({ house: true }).catch(() => null);
   const gToken = msToken ? null : await google.getValidAccessToken({ house: true }).catch(() => null);
-  const masterPlanId = await resolveMasterPlanId().catch(() => null);
 
   for (const t of rows) {
     const fu = (t.followup || {}) as Record<string, unknown>;
