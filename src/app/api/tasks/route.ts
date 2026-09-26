@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
+import { dueFromBody } from "@/lib/taskDueInput";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, energy, due_date, due_at, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
     )
     .eq("master_plan_id", masterPlanId)
     .order("board_position", { ascending: true })
@@ -76,6 +77,12 @@ export async function POST(request: Request) {
     due_at: body.dueAt ?? null,
     followup: body.followup && typeof body.followup === "object" ? body.followup : {},
   };
+  // A due date/time: either the structured fields (day + optional time, read in
+  // the user's zone) or a ready-made ISO instant (follow-ups, tax deadlines).
+  const due = await dueFromBody(body);
+  if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
+  if (due) Object.assign(row, due);
+  else if (body.dueAt) row.due_has_time = true;
   for (const key of Array.isArray(body.dimensions) ? body.dimensions : []) {
     const col = DIMENSION_COLUMNS[key];
     if (col) row[col] = true;
@@ -85,7 +92,7 @@ export async function POST(request: Request) {
     .from("tasks")
     .insert(row)
     .select(
-      "id, title, status, priority, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, status, priority, due_at, due_has_time, time_kind, business:businesses(name, color), segment:segments(name, color)"
     )
     .single();
 

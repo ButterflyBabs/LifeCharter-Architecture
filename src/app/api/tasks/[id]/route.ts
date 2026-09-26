@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { dueFromBody } from "@/lib/taskDueInput";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +22,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     update.completed_at = body.status === "done" ? new Date().toISOString() : null;
   }
   if (typeof body.priority === "string") update.priority = body.priority;
+  const due = await dueFromBody(body);
+  if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
+  if (due) Object.assign(update, due);
+  if (body.timeKind === "scheduled" || body.timeKind === "deadline") update.time_kind = body.timeKind;
 
   const { data, error } = await supabase
     .from("tasks")
     .update(update)
     .eq("id", params.id)
     .eq("master_plan_id", masterPlanId)
-    .select("id, title, status, priority")
+    .select("id, title, status, priority, due_at, due_has_time, time_kind")
     .maybeSingle();
 
   if (!error && !data) return NextResponse.json({ error: "not found" }, { status: 404 });

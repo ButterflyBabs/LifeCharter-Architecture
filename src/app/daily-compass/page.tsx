@@ -40,6 +40,7 @@ interface RealTask {
   energy?: string | null;
   due_date: string | null;
   due_at: string | null;
+  due_has_time?: boolean | null;
   followup: {
     channel?: string;
     contactId?: string;
@@ -841,7 +842,7 @@ export default function DailyCompassPage() {
                                 month: "short",
                                 day: "numeric",
                               }) +
-                              (t.due_at
+                              (t.due_at && t.due_has_time !== false
                                 ? ` · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
                                 : "")
                             : ""}

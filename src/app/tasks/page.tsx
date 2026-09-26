@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, Trash2, Check } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Check, Clock } from "lucide-react";
+import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
+import { dayInTz } from "@/lib/tz";
 
 interface Task {
   id: number;
   title: string;
   status: string;
   priority: string;
+  due_at?: string | null;
+  due_has_time?: boolean | null;
+  time_kind?: "deadline" | "scheduled" | null;
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
 }
@@ -34,6 +39,19 @@ export default function TasksPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
   const [adding, setAdding] = useState(false);
+  const [newDay, setNewDay] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [newKind, setNewKind] = useState<"deadline" | "scheduled">("deadline");
+  const [tz, setTz] = useState("UTC");
+  // Inline due editor for one existing task.
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDay, setEditDay] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editKind, setEditKind] = useState<"deadline" | "scheduled">("deadline");
+
+  useEffect(() => {
+    setTz(localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  }, []);
 
   const load = () =>
     fetch("/api/tasks")
@@ -52,9 +70,19 @@ export default function TasksPage() {
     await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle, status: "today", priority: newPriority }),
+      body: JSON.stringify({
+        title: newTitle,
+        status: "today",
+        priority: newPriority,
+        ...(newDay || newTime
+          ? { dueDay: newDay || dayInTz(new Date(), tz), dueTime: newTime || undefined, timeKind: newKind, tz }
+          : {}),
+      }),
     }).catch(() => {});
     setNewTitle("");
+    setNewDay("");
+    setNewTime("");
+    setNewKind("deadline");
     setAdding(false);
     load();
   };
@@ -66,6 +94,26 @@ export default function TasksPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     }).catch(() => {});
+  };
+
+  const openEditor = (t: Task) => {
+    setEditingId(t.id);
+    setEditDay(t.due_at ? dayInTz(t.due_at, tz) : "");
+    setEditTime(t.due_at && t.due_has_time ? new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(new Date(t.due_at)) : "");
+    setEditKind(t.time_kind === "scheduled" ? "scheduled" : "deadline");
+  };
+
+  const saveDue = async (id: number, clear = false) => {
+    const body = clear
+      ? { clearDue: true }
+      : { dueDay: editDay || dayInTz(new Date(), tz), dueTime: editTime || undefined, timeKind: editKind, tz };
+    await fetch(`/api/tasks/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+    setEditingId(null);
+    load();
   };
 
   const remove = async (id: number) => {
@@ -102,6 +150,31 @@ export default function TasksPage() {
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </select>
+        <input
+          type="date"
+          value={newDay}
+          onChange={(e) => setNewDay(e.target.value)}
+          aria-label="Due date"
+          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+        />
+        <input
+          type="time"
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          aria-label="Time of day"
+          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+        />
+        {newTime && (
+          <select
+            value={newKind}
+            onChange={(e) => setNewKind(e.target.value as "deadline" | "scheduled")}
+            aria-label="What the time means"
+            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+          >
+            <option value="deadline">Due by this time</option>
+            <option value="scheduled">Do it at this time</option>
+          </select>
+        )}
         <button
           type="submit"
           disabled={adding || !newTitle.trim()}
@@ -163,6 +236,69 @@ export default function TasksPage() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      {(() => {
+                        const info = dueInfo(t, tz);
+                        return (
+                          <div className="mt-2 flex items-center gap-2">
+                            {info && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[info.tone]}`}>{info.label}</span>
+                            )}
+                            {t.status !== "done" && (
+                              <button
+                                onClick={() => (editingId === t.id ? setEditingId(null) : openEditor(t))}
+                                className="inline-flex items-center gap-1 text-[10px] text-[#2E7C83] hover:underline"
+                              >
+                                <Clock className="w-3 h-3" /> {info ? "Change" : "Set date / time"}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      {editingId === t.id && (
+                        <div className="mt-2 p-2 rounded-lg bg-[#F8F5F0] dark:bg-white/5 space-y-2">
+                          <div className="flex gap-2">
+                            <input
+                              type="date"
+                              value={editDay}
+                              onChange={(e) => setEditDay(e.target.value)}
+                              aria-label="Due date"
+                              className="flex-1 min-w-0 px-2 py-1.5 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md"
+                            />
+                            <input
+                              type="time"
+                              value={editTime}
+                              onChange={(e) => setEditTime(e.target.value)}
+                              aria-label="Time of day"
+                              className="w-24 px-2 py-1.5 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md"
+                            />
+                          </div>
+                          {editTime && (
+                            <select
+                              value={editKind}
+                              onChange={(e) => setEditKind(e.target.value as "deadline" | "scheduled")}
+                              aria-label="What the time means"
+                              className="w-full px-2 py-1.5 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md"
+                            >
+                              <option value="deadline">Due by this time</option>
+                              <option value="scheduled">Do it at this time</option>
+                            </select>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => saveDue(t.id)}
+                              disabled={!editDay && !editTime}
+                              className="px-3 py-1 text-xs rounded-md bg-[#2E7C83] text-white disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                            {t.due_at && (
+                              <button onClick={() => saveDue(t.id, true)} className="text-xs text-gray-400 hover:text-[#D83A34]">
+                                Remove date
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {t.segment && (
                         <span
                           className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full text-white"

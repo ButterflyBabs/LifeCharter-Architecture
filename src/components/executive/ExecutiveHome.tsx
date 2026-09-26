@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 import { timezoneOptions } from "@/lib/timezones";
+import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
+import { dayInTz, timeInTz } from "@/lib/tz";
 
 // Types
 type Provider = "google" | "microsoft";
@@ -101,6 +103,9 @@ interface RealTask {
   title: string;
   status: string;
   priority: string;
+  due_at?: string | null;
+  due_has_time?: boolean | null;
+  time_kind?: "deadline" | "scheduled" | null;
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
 }
@@ -167,6 +172,9 @@ export default function ExecutiveHome() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState("today");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
+  const [newTaskDay, setNewTaskDay] = useState("");
+  const [newTaskTime, setNewTaskTime] = useState("");
+  const [newTaskKind, setNewTaskKind] = useState<"deadline" | "scheduled">("deadline");
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [userTimezone, setUserTimezone] = useState<string>(""); // chosen zone, else the browser's
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
@@ -1002,12 +1010,23 @@ export default function ExecutiveHome() {
           businessId: null,
           segmentId: null,
           dimensions: [],
-          dueDate: null,
+          // A time with no date means today. tz keeps "3:00 PM" in the user's zone.
+          ...(newTaskDay || newTaskTime
+            ? {
+                dueDay: newTaskDay || dayInTz(new Date(), userTimezone || "UTC"),
+                dueTime: newTaskTime || undefined,
+                timeKind: newTaskKind,
+                tz: userTimezone,
+              }
+            : {}),
         }),
       });
 
       if (res.ok) {
         setNewTaskTitle("");
+        setNewTaskDay("");
+        setNewTaskTime("");
+        setNewTaskKind("deadline");
         setShowAddTask(false);
         fetchTasks(); // Refresh the task list
       }
@@ -1027,9 +1046,34 @@ export default function ExecutiveHome() {
 
   // Get tasks for each column
   const openTaskCount = tasks.filter(t => t.status !== "done").length;
-  const todayTasks = tasks.filter(t => t.status === "today").slice(0, 3);
-  const inProgressTasks = tasks.filter(t => t.status === "in_progress").slice(0, 3);
-  const waitingTasks = tasks.filter(t => t.status === "waiting").slice(0, 3);
+  // Tasks with a due date/time come first, soonest first; the rest keep board order.
+  const byDue = (a: RealTask, b: RealTask) =>
+    (a.due_at ? new Date(a.due_at).getTime() : Infinity) - (b.due_at ? new Date(b.due_at).getTime() : Infinity);
+  const todayTasks = tasks.filter(t => t.status === "today").sort(byDue).slice(0, 3);
+  const inProgressTasks = tasks.filter(t => t.status === "in_progress").sort(byDue).slice(0, 3);
+  const waitingTasks = tasks.filter(t => t.status === "waiting").sort(byDue).slice(0, 3);
+
+  const dueBadge = (task: RealTask) => {
+    const info = dueInfo(
+      { status: task.status, due_at: task.due_at ?? null, due_has_time: task.due_has_time, time_kind: task.time_kind },
+      userTimezone || "UTC"
+    );
+    return info ? (
+      <span className={`inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[info.tone]}`}>{info.label}</span>
+    ) : null;
+  };
+
+  // Timed tasks due today sit in Today's Schedule alongside calendar events.
+  const todayKey = userTimezone && currentTime ? dayInTz(currentTime, userTimezone) : "";
+  const timedTasks = tasks.filter(
+    (t) => t.status !== "done" && t.due_has_time && t.due_at && todayKey && dayInTz(t.due_at, userTimezone) === todayKey
+  );
+  const scheduleItems = [
+    ...(schedule?.events ?? []).map((ev) => ({ key: `e-${ev.id}`, time: ev.time, title: ev.title, start: ev.start, task: null as RealTask | null })),
+    ...timedTasks.map((t) => ({ key: `t-${t.id}`, time: timeInTz(t.due_at as string, userTimezone), title: t.title, start: t.due_at as string | null, task: t })),
+  ].sort(
+    (a, b) => (a.start ? new Date(a.start).getTime() : Infinity) - (b.start ? new Date(b.start).getTime() : Infinity)
+  );
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -1198,7 +1242,7 @@ export default function ExecutiveHome() {
           
           {/* Schedule Items (live Google Calendar) */}
           <div className="px-6 pb-4 space-y-4">
-            {schedule && !schedule.connected ? (
+            {schedule && !schedule.connected && (
               <div className="space-y-2">
                 <a
                   href="/api/google/auth"
@@ -1213,20 +1257,27 @@ export default function ExecutiveHome() {
                   <Calendar className="w-4 h-4" /> Connect Microsoft 365 Calendar
                 </a>
               </div>
-            ) : schedule && schedule.events.length === 0 ? (
-              <p className="text-sm text-gray-400">No meetings today</p>
+            )}
+            {scheduleItems.length === 0 ? (
+              schedule?.connected ? <p className="text-sm text-gray-400">No meetings or timed tasks today</p> : null
             ) : (
-              (schedule?.events ?? []).map((ev, i) => {
+              scheduleItems.map((item, i) => {
                 const dots = ["#2E7C83", "#7B6B8D", "#c9a227", "#1a2b4a"];
                 return (
-                  <div key={ev.id} className="flex items-center gap-3">
-                    <div
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: dots[i % dots.length] }}
-                    />
+                  <div key={item.key} className="flex items-center gap-3">
+                    {item.task ? (
+                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-[#2B5F8A]" aria-label="Task" />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dots[i % dots.length] }} />
+                    )}
                     <span className="text-sm text-[#3F4654]">
-                      {ev.time} - {ev.title}
+                      {item.time} - {item.title}
                     </span>
+                    {item.task && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E6EFF6] text-[#2B5F8A]">
+                        {item.task.time_kind === "scheduled" ? "Task" : "Due by"}
+                      </span>
+                    )}
                   </div>
                 );
               })
@@ -1445,6 +1496,7 @@ export default function ExecutiveHome() {
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
                           <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
+                          {dueBadge(task)}
                         </div>
                       </div>
                     </div>
@@ -1471,6 +1523,7 @@ export default function ExecutiveHome() {
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
                           <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
+                          {dueBadge(task)}
                         </div>
                       </div>
                     </div>
@@ -1497,6 +1550,7 @@ export default function ExecutiveHome() {
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                           </div>
                           <p className="text-sm text-[#3F4654] leading-snug break-words">{task.title}</p>
+                          {dueBadge(task)}
                         </div>
                       </div>
                     </div>
@@ -2069,6 +2123,52 @@ export default function ExecutiveHome() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* When */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  When <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={newTaskDay}
+                    onChange={(e) => setNewTaskDay(e.target.value)}
+                    aria-label="Due date"
+                    className="flex-1 min-w-0 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                  />
+                  <input
+                    type="time"
+                    value={newTaskTime}
+                    onChange={(e) => setNewTaskTime(e.target.value)}
+                    aria-label="Time of day"
+                    className="w-32 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                  />
+                </div>
+                {newTaskTime && (
+                  <div className="flex gap-2 mt-2" role="group" aria-label="What the time means">
+                    {[
+                      { id: "deadline", label: "Due by this time" },
+                      { id: "scheduled", label: "Do it at this time" },
+                    ].map((k) => (
+                      <button
+                        key={k.id}
+                        type="button"
+                        aria-pressed={newTaskKind === k.id}
+                        onClick={() => setNewTaskKind(k.id as "deadline" | "scheduled")}
+                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                          newTaskKind === k.id ? "bg-[#2E7C83] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {k.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  {newTaskTime ? "Timed tasks also appear in Today's Schedule on their day." : "A date alone means it's due by the end of that day."}
+                </p>
               </div>
 
               {/* Submit Button */}

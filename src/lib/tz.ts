@@ -27,3 +27,28 @@ export function dayWindowUtc(timeZone: string): { startISO: string; endISO: stri
     endISO: midnightUtc(y, m, d + 1).toISOString(), // Date.UTC rolls month/year over
   };
 }
+
+// The UTC instant at which the wall clock in `timeZone` reads `day` (YYYY-MM-DD)
+// at `time` (HH:MM).
+export function zonedToUtcISO(day: string, time: string, timeZone: string): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const [hh, mm] = time.split(":").map(Number);
+  const guess = Date.UTC(y, m - 1, d, hh, mm, 0);
+  const asTz = new Date(new Date(guess).toLocaleString("en-US", { timeZone }));
+  const asUtc = new Date(new Date(guess).toLocaleString("en-US", { timeZone: "UTC" }));
+  return new Date(guess - (asTz.getTime() - asUtc.getTime())).toISOString();
+}
+
+// The calendar date (YYYY-MM-DD) an instant falls on in `timeZone`.
+export function dayInTz(iso: string | Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    typeof iso === "string" ? new Date(iso) : iso
+  );
+}
+
+// "3:00 PM" for an instant in `timeZone`.
+export function timeInTz(iso: string | Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" }).format(
+    typeof iso === "string" ? new Date(iso) : iso
+  );
+}
