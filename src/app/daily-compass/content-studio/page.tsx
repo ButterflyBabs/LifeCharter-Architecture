@@ -14,10 +14,9 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Image as ImageIcon,
-  X,
 } from "lucide-react";
 import { PLATFORMS, PLATFORM_LABELS } from "@/lib/postStreamConstants";
+import { MediaPicker, type MediaValue } from "@/components/content/MediaPicker";
 
 interface Account {
   id: string;
@@ -34,8 +33,8 @@ export default function CreateContentPage() {
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [media, setMedia] = useState<MediaValue>({ urls: [], uploading: false });
+  const [mediaReset, setMediaReset] = useState(0);
   const [when, setWhen] = useState<"draft" | "schedule" | "now">("draft");
   const [scheduledAt, setScheduledAt] = useState("");
 
@@ -70,12 +69,6 @@ export default function CreateContentPage() {
 
   const togglePlatform = (p: string) =>
     setSelected((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
-
-  const addMedia = () => {
-    const u = mediaUrl.trim();
-    if (u && !mediaUrls.includes(u)) setMediaUrls((prev) => [...prev, u]);
-    setMediaUrl("");
-  };
 
   const draftWithAi = async () => {
     if (!aiIdea.trim()) {
@@ -118,6 +111,10 @@ export default function CreateContentPage() {
       setMsg({ kind: "err", text: "Pick at least one platform." });
       return;
     }
+    if (media.uploading) {
+      setMsg({ kind: "err", text: "Wait for your images or video to finish uploading." });
+      return;
+    }
     if (when === "schedule" && !scheduledAt) {
       setMsg({ kind: "err", text: "Choose a date and time to schedule." });
       return;
@@ -132,7 +129,8 @@ export default function CreateContentPage() {
         platforms: selected,
         status,
         scheduledAt: when === "schedule" ? new Date(scheduledAt).toISOString() : null,
-        mediaUrls,
+        mediaUrls: media.urls,
+        mediaType: media.mediaType,
       };
       const res = await fetch("/api/content/posts", {
         method: "POST",
@@ -169,7 +167,7 @@ export default function CreateContentPage() {
       setTitle("");
       setCaption("");
       setSelected([]);
-      setMediaUrls([]);
+      setMediaReset((n) => n + 1);
       setScheduledAt("");
       setWhen("draft");
     } finally {
@@ -319,44 +317,7 @@ export default function CreateContentPage() {
         </div>
 
         {/* Media */}
-        <div>
-          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Media (image/video URLs)</label>
-          <div className="flex items-center gap-2">
-            <input
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addMedia();
-                }
-              }}
-              placeholder="https://…"
-              className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
-            />
-            <button
-              onClick={addMedia}
-              className="inline-flex items-center gap-1 text-sm font-medium px-3 h-10 rounded-lg border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
-            >
-              <ImageIcon className="w-4 h-4" /> Add
-            </button>
-          </div>
-          {mediaUrls.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {mediaUrls.map((u) => (
-                <span
-                  key={u}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] max-w-[220px]"
-                >
-                  <span className="truncate">{u}</span>
-                  <button onClick={() => setMediaUrls((prev) => prev.filter((x) => x !== u))} aria-label="Remove">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        <MediaPicker onChange={setMedia} resetKey={mediaReset} />
 
         {/* When */}
         <div>
