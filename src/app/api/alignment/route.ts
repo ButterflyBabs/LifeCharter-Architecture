@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { gatherAndCompute } from "@/lib/scoring/gather";
+import { gatherAndCompute, isMeaningful } from "@/lib/scoring/gather";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ function phase(overall: number): string {
 
 function buildResponse(
   overall: number,
-  domains: Array<{ key: string; name: string; icon: string; score: number }>,
+  domains: Array<{ key: string; name: string; icon: string; score: number; delta?: number | null }>,
   source: "assessments" | "segments",
   extra: Record<string, unknown> = {}
 ) {
@@ -57,7 +58,13 @@ export async function GET() {
   try {
     const planId = await resolveMasterPlanId();
     const computed = await gatherAndCompute(planId);
-    if (computed.hasData && computed.overall !== null) {
+    if (computed.hasData && computed.overall !== null && isMeaningful(computed.domains)) {
+      // Movement since their baseline snapshot (null when there isn't one to compare to).
+      let baseDomains: Record<string, number> = {};
+      if (planId) {
+        const { data: snap } = await createServerClient().from("client_score_snapshots").select("domains").eq("master_plan_id", planId).eq("snapshot_type", "baseline").maybeSingle();
+        baseDomains = ((snap?.domains ?? {}) as Record<string, number>) || {};
+      }
       const domains = computed.domains
         .filter((d) => d.score !== null)
         .map((d) => ({
@@ -65,6 +72,7 @@ export async function GET() {
           name: NAME[d.key] ?? d.label,
           icon: ICON[d.key] ?? "•",
           score: d.score as number,
+          delta: typeof baseDomains[d.key] === "number" ? Math.round(d.score as number) - baseDomains[d.key] : null,
         }));
       return buildResponse(computed.overall, domains, "assessments", {
         partial: computed.partial,

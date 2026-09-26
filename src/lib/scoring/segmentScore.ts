@@ -61,7 +61,7 @@ interface TaskRow {
   [flag: string]: unknown;
 }
 
-function taskDimensions(t: TaskRow): DimensionKey[] {
+export function taskDimensions(t: Pick<TaskRow, "title"> & Record<string, unknown>): DimensionKey[] {
   const flagged = DIMENSION_KEYS.filter((k) => t[`dimension_${k}`] === true);
   if (flagged.length) return flagged;
   return DIMENSION_KEYS.filter((k) => KEYWORDS[k].test(t.title || "")).slice(0, 2);

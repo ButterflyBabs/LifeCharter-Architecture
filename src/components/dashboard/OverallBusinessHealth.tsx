@@ -19,6 +19,7 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
     description: string;
   } | null>(null);
   const [needsAssessment, setNeedsAssessment] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (props.score !== undefined) return;
@@ -28,7 +29,7 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
         if (d?.hasData) setLive(d);
         else setNeedsAssessment(true);
       })
-      .catch(() => {});
+      .catch(() => setFailed(true));
   }, [props.score]);
 
   // No manual fallback: until the client completes assessments, prompt them.
@@ -58,13 +59,21 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
     );
   }
 
-  const score = props.score ?? live?.overall ?? 68;
-  const status = props.status ?? live?.status ?? "Growth";
-  const focusAreas = props.focusAreas ?? live?.focusAreas ?? ["Sales", "Finance", "Systems"];
-  const description =
-    props.description ??
-    live?.description ??
-    "You're building momentum. Align your systems and cash flow to scale with ease and clarity.";
+  // Nothing is shown until real scores arrive — no stand-in numbers while loading or on an error.
+  if (props.score === undefined && !live) {
+    return (
+      <Card className="h-full border-[#c9a227]/30">
+        <CardContent className="p-6 flex flex-col items-start justify-center h-full">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">Overall Business Health</h2>
+          <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">{failed ? "Couldn't load your health score right now." : "Reading your scores…"}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  const score = props.score ?? live!.overall;
+  const status = props.status ?? live!.status;
+  const focusAreas = props.focusAreas ?? live!.focusAreas;
+  const description = props.description ?? live!.description;
 
   // Calculate stroke dasharray for circular progress
   const radius = 52;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { gatherAndCompute } from "@/lib/scoring/gather";
+import { gatherAndCompute, isMeaningful } from "@/lib/scoring/gather";
 import { captureSnapshot } from "@/lib/scoring/snapshot";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 
@@ -25,8 +25,10 @@ export async function GET() {
   // Current (live) scores.
   const computed = await gatherAndCompute(planId);
   const latestDomains: Record<string, number> = {};
-  for (const d of computed.domains) {
-    if (d.score !== null && Number.isFinite(d.score)) latestDomains[d.key] = Math.round(d.score);
+  if (isMeaningful(computed.domains)) {
+    for (const d of computed.domains) {
+      if (d.score !== null && Number.isFinite(d.score)) latestDomains[d.key] = Math.round(d.score);
+    }
   }
 
   // Baseline snapshot — seed from current scores if it doesn't exist yet.
@@ -49,7 +51,7 @@ export async function GET() {
   }
 
   const baseDomains = (baseline?.domains ?? {}) as Record<string, number>;
-  const hasBaseline = Boolean(baseline);
+  const hasBaseline = Boolean(baseline) && Object.keys(latestDomains).length > 0;
 
   // Full dated history for the trend line (baseline + every check-in/recompute).
   const { data: snaps } = await supabase
@@ -57,12 +59,14 @@ export async function GET() {
     .select("snapshot_type, overall, domains, created_at")
     .eq("master_plan_id", planId)
     .order("created_at", { ascending: true });
-  const history = ((snaps ?? []) as Array<{
+  // History belongs to scores that exist. With no current scores (nothing answered,
+  // or the answers were cleared) old points would chart a health that isn't there.
+  const history = (Object.keys(latestDomains).length === 0 ? [] : ((snaps ?? []) as Array<{
     snapshot_type: string;
     overall: number | null;
     domains: Record<string, number>;
     created_at: string;
-  }>).map((s) => ({
+  }>)).map((s) => ({
     at: s.created_at,
     type: s.snapshot_type,
     overall: s.overall,
@@ -70,7 +74,8 @@ export async function GET() {
   }));
 
   // Per-dimension change since baseline (only dimensions with a current score).
-  const dimensions = computed.domains
+  const meaningful = isMeaningful(computed.domains);
+  const dimensions = (meaningful ? computed.domains : [])
     .filter((d) => d.score !== null)
     .map((d) => {
       const latest = latestDomains[d.key];
@@ -84,7 +89,7 @@ export async function GET() {
       };
     });
 
-  const overallLatest = computed.overall;
+  const overallLatest = meaningful ? computed.overall : null;
   const overallBase = typeof baseline?.overall === "number" ? baseline.overall : null;
 
   // Execution axis: active plans and their goal status.

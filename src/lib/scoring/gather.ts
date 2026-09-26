@@ -31,15 +31,14 @@ const NUM_TO_PROFIT: Record<number, string> = {
 type Supa = ReturnType<typeof createServerClient>;
 
 async function latestMasterPlan(supabase: Supa, planId?: string | null) {
-  let query = supabase
+  // Always one specific client's plan. There is no "most recent plan" fallback —
+  // that would show one client another client's scores.
+  if (!planId) return null;
+  const { data } = await supabase
     .from("client_master_plans")
-    .select("id, domain_scores, metadata, last_assessment_at, updated_at");
-  // Scope to a specific plan when given (per-user); otherwise fall back to the
-  // most-recently-updated plan (single-user / auth-off).
-  query = planId
-    ? query.eq("id", planId)
-    : query.order("updated_at", { ascending: false }).limit(1);
-  const { data } = await query.maybeSingle();
+    .select("id, domain_scores, metadata, last_assessment_at, updated_at")
+    .eq("id", planId)
+    .maybeSingle();
   return data as
     | {
         id: string;
@@ -265,22 +264,50 @@ export async function gatherAndCompute(
   ]);
 
   // Merge live metrics over the manual monthly-review blob (live wins where present).
-  const metaOp = (mp?.metadata?.operational ?? null) as Record<string, number> | null;
+  // Only what the app itself measures (ledger, sales, pillars). No screen writes the
+  // old hand-entered "monthly review" blob any more, so a leftover one must not count.
   const hasLive = Object.keys(live).length > 0;
-  const operational = hasLive || metaOp ? { ...(metaOp || {}), ...live } : null;
+  const operational = hasLive ? live : null;
 
   const inputs: ScoringInputs = {
     profitDomains: profitFromMasterPlan(mp),
     brain,
     pulse,
     operational,
-    operationalAt: hasLive ? new Date().toISOString() : mp?.metadata?.operational_at ?? null,
+    operationalAt: hasLive ? new Date().toISOString() : null,
     businessPlanCompleteness: planCompleteness.business,
     planCompleteness,
     aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
     now: new Date().toISOString(),
   };
 
+  // A cached AI score is only valid while the answers it was scored from still
+  // exist. If a client's answers are gone (or they never gave any), their cached
+  // scores must not keep producing a health score.
+  if (inputs.aiScores) {
+    const { data: rows } = await supabase
+      .from("unified_client_responses")
+      .select("assessment_type")
+      .eq("master_plan_id", scopeId as string)
+      .limit(2000);
+    const have = new Set(((rows ?? []) as { assessment_type: string }[]).map((r) => r.assessment_type));
+    const kept: NonNullable<ScoringInputs["aiScores"]> = {};
+    for (const [k, v] of Object.entries(inputs.aiScores)) {
+      const kind = k.split(":")[1];
+      const source = kind === "profit" ? "profit_architecture" : kind;
+      if (have.has(source)) kept[k] = v;
+    }
+    inputs.aiScores = kept;
+  }
+
   const output = computeDimensionScores(inputs);
   return { ...output, masterPlanId: mp?.id ?? null };
 }
+
+
+// A health score means something only when several dimensions have real evidence
+// behind them. One ticked operations pillar, say, must not read as "your overall
+// business health is 12". Below this, callers treat the client as "not scored yet".
+export const MIN_SCORED_DIMENSIONS = 3;
+export const isMeaningful = (domains: Array<{ score: number | null }>) =>
+  domains.filter((d) => d.score !== null).length >= MIN_SCORED_DIMENSIONS;

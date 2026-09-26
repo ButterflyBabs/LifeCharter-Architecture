@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface DomainScore {
   name: string;
   score: number;
-  change: number;
+  change: number | null;
   icon: string;
 }
 
@@ -15,20 +16,6 @@ interface DomainScoresProps {
   scores?: DomainScore[];
 }
 
-const defaultScores: DomainScore[] = [
-  { name: "Marketing", score: 72, change: 6, icon: "M" },
-  { name: "Sales", score: 64, change: 8, icon: "S" },
-  { name: "Operations", score: 58, change: -2, icon: "O" },
-  { name: "Finance", score: 62, change: 5, icon: "F" },
-  { name: "Team", score: 60, change: 4, icon: "T" },
-  { name: "Systems", score: 48, change: -3, icon: "Sy" },
-  { name: "Leadership", score: 70, change: 6, icon: "L" },
-  { name: "Vision", score: 78, change: 7, icon: "V" },
-  { name: "Product", score: 66, change: 3, icon: "P" },
-  { name: "Client Exp", score: 71, change: 6, icon: "C" },
-  { name: "Legal", score: 55, change: -1, icon: "Le" },
-  { name: "Sustainability", score: 74, change: 5, icon: "Su" },
-];
 
 const domainColors: Record<string, string> = {
   Marketing: "#1a2b4a",
@@ -48,6 +35,7 @@ const domainColors: Record<string, string> = {
 export function DomainScores(props: DomainScoresProps) {
   const [live, setLive] = useState<DomainScore[] | null>(null);
   const [needsAssessment, setNeedsAssessment] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (props.scores) return;
@@ -55,24 +43,32 @@ export function DomainScores(props: DomainScoresProps) {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.hasData) {
-          const domains = d.domains as Array<{ name: string; score: number; icon: string }>;
-          setLive(domains.map((x) => ({ name: x.name, score: x.score, change: 0, icon: x.icon })));
+          const domains = d.domains as Array<{ name: string; score: number; icon: string; delta?: number | null }>;
+          setLive(domains.map((x) => ({ name: x.name, score: x.score, change: x.delta ?? null, icon: x.icon })));
         } else setNeedsAssessment(true);
       })
-      .catch(() => {});
+      .catch(() => setFailed(true));
   }, [props.scores]);
 
   // No thin-air fallback: empty until assessments produce real scores.
-  const scores = props.scores ?? live ?? (needsAssessment ? [] : defaultScores);
+  const scores = props.scores ?? live ?? [];
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Domain Scores</CardTitle>
-        <button className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] transition-colors">
-          View All Domains →
-        </button>
+        <Link href="/progress" className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] transition-colors">
+          See your progress →
+        </Link>
       </CardHeader>
       <CardContent className="p-6 pt-0">
+        {scores.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[#1a2b4a]/20 p-5 text-center">
+            <p className="text-sm text-[#7a8a99]">
+              {needsAssessment ? "Your 12 domain scores appear here once you've answered some assessment questions." : failed ? "Couldn't load your scores right now." : "Reading your scores…"}
+            </p>
+            {needsAssessment && <Link href="/assessments" className="mt-2 inline-block text-sm font-medium text-[#2E7C83] hover:underline">Start an assessment →</Link>}
+          </div>
+        ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-3">
           {scores.map((domain) => (
             <div
@@ -97,22 +93,19 @@ export function DomainScores(props: DomainScoresProps) {
                 {domain.score}
               </p>
 
-              {/* Change */}
-              <div
-                className={`flex items-center justify-center gap-0.5 text-xs ${
-                  domain.change >= 0 ? "text-[#4a9b9b]" : "text-red-500"
-                }`}
-              >
-                {domain.change >= 0 ? (
-                  <ArrowUp className="w-3 h-3" />
-                ) : (
-                  <ArrowDown className="w-3 h-3" />
-                )}
-                <span>{Math.abs(domain.change)}</span>
-              </div>
+              {/* Change since baseline — shown only when there is real movement */}
+              {domain.change ? (
+                <div className={`flex items-center justify-center gap-0.5 text-xs ${domain.change >= 0 ? "text-[#4a9b9b]" : "text-red-500"}`} title="Change since your baseline">
+                  {domain.change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                  <span>{Math.abs(domain.change)}</span>
+                </div>
+              ) : (
+                <div className="text-xs text-[#b8a898]">—</div>
+              )}
             </div>
           ))}
         </div>
+        )}
       </CardContent>
     </Card>
   );

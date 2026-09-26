@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    const result = await gatherAndCompute();
+    const result = await gatherAndCompute(await resolveMasterPlanId());
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("GET /api/scoring/compute:", e);

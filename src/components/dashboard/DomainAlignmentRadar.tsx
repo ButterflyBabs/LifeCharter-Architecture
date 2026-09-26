@@ -43,20 +43,6 @@ function ChartSkeleton() {
   );
 }
 
-const data = [
-  { domain: "Marketing", you: 72, ideal: 90 },
-  { domain: "Sales", you: 64, ideal: 85 },
-  { domain: "Operations", you: 58, ideal: 80 },
-  { domain: "Finance", you: 62, ideal: 85 },
-  { domain: "Team", you: 60, ideal: 80 },
-  { domain: "Systems", you: 48, ideal: 85 },
-  { domain: "Leadership", you: 70, ideal: 90 },
-  { domain: "Vision", you: 78, ideal: 95 },
-  { domain: "Product", you: 66, ideal: 85 },
-  { domain: "Client Exp", you: 71, ideal: 90 },
-  { domain: "Legal", you: 55, ideal: 80 },
-  { domain: "Sustainability", you: 74, ideal: 85 },
-];
 
 interface RadarDatum {
   domain: string;
@@ -67,6 +53,7 @@ interface RadarDatum {
 export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }) {
   const [live, setLive] = useState<RadarDatum[] | null>(null);
   const [needsAssessment, setNeedsAssessment] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (propData) return;
@@ -78,11 +65,11 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
           setLive(domains.map((x) => ({ domain: x.name, you: x.score, ideal: 90 })));
         } else setNeedsAssessment(true);
       })
-      .catch(() => {});
+      .catch(() => setFailed(true));
   }, [propData]);
 
   // No thin-air fallback: empty radar until assessments produce real scores.
-  const chartData = propData ?? live ?? (needsAssessment ? [] : data);
+  const chartData = propData ?? live ?? [];
 
   return (
     <Card className="h-full border-[#c9a227]/30">
@@ -90,6 +77,13 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
         <CardTitle>12-Domain Business Alignment</CardTitle>
       </CardHeader>
       <CardContent className="p-6">
+        {chartData.length === 0 ? (
+          <div className="h-[320px] flex items-center justify-center text-center px-4">
+            <p className="text-sm text-[#7a8a99] max-w-xs">
+              {needsAssessment ? "Your alignment chart draws itself as you answer assessment questions — each answer moves it." : failed ? "Couldn't load your alignment right now." : "Reading your scores…"}
+            </p>
+          </div>
+        ) : (
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
@@ -140,6 +134,7 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
             </RadarChart>
           </ResponsiveContainer>
         </div>
+        )}
       </CardContent>
     </Card>
   );
