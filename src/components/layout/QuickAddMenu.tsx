@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, CheckSquare, DollarSign, Share2, CalendarPlus, X, Loader2, Check } from "lucide-react";
+import { dayInTz } from "@/lib/tz";
 
 export function QuickAddMenu() {
   const [open, setOpen] = useState(false);
@@ -13,6 +14,9 @@ export function QuickAddMenu() {
   // Inline "new task" quick form.
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [day, setDay] = useState("");
+  const [time, setTime] = useState("");
+  const [kind, setKind] = useState<"deadline" | "scheduled">("deadline");
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
 
@@ -34,9 +38,16 @@ export function QuickAddMenu() {
     setOpen(false);
     setTitle("");
     setPriority("medium");
+    setDay("");
+    setTime("");
+    setKind("deadline");
     setAdded(false);
     setTaskOpen(true);
   };
+
+  const tz =
+    (typeof window !== "undefined" && (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
+    "UTC";
 
   const saveTask = async () => {
     if (!title.trim()) return;
@@ -45,9 +56,23 @@ export function QuickAddMenu() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), priority, status: "today" }),
+        body: JSON.stringify({
+          title: title.trim(),
+          priority,
+          status: "today",
+          // A time with no date means today, read in the user's own time zone.
+          ...(day || time
+            ? {
+                dueDay: day || dayInTz(new Date(), tz),
+                dueTime: time || undefined,
+                timeKind: kind,
+                tz,
+              }
+            : {}),
+        }),
       });
       if (res.ok) {
+        window.dispatchEvent(new Event("tasks-changed"));
         setAdded(true);
         setTitle("");
         setTimeout(() => setTaskOpen(false), 900);
@@ -117,6 +142,42 @@ export function QuickAddMenu() {
                 className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
               <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={day}
+                  onChange={(e) => setDay(e.target.value)}
+                  aria-label="Due date"
+                  className="flex-1 min-w-0 h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                />
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  aria-label="Time of day"
+                  className="w-28 h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                />
+              </div>
+              {time && (
+                <div className="flex gap-2" role="group" aria-label="What the time means">
+                  {[
+                    { id: "deadline", label: "Due by this time" },
+                    { id: "scheduled", label: "Do it at this time" },
+                  ].map((k) => (
+                    <button
+                      key={k.id}
+                      type="button"
+                      aria-pressed={kind === k.id}
+                      onClick={() => setKind(k.id as "deadline" | "scheduled")}
+                      className={`flex-1 h-9 rounded-lg text-xs font-medium transition-colors ${
+                        kind === k.id ? "bg-[#2E7C83] text-white" : "bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/12"
+                      }`}
+                    >
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
@@ -132,7 +193,7 @@ export function QuickAddMenu() {
                   className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium px-4 h-10 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : added ? <Check className="w-4 h-4" /> : null}
-                  {added ? "Added" : "Add to today"}
+                  {added ? "Added" : day || time ? "Add task" : "Add to today"}
                 </button>
               </div>
             </div>

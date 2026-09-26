@@ -255,9 +255,12 @@ export default function ExecutiveHome() {
     }).catch(() => {});
   };
 
-  // Fetch real tasks
+  // Fetch real tasks (and again when one is added from the quick-add menu)
   useEffect(() => {
     fetchTasks();
+    const refresh = () => fetchTasks();
+    window.addEventListener("tasks-changed", refresh);
+    return () => window.removeEventListener("tasks-changed", refresh);
   }, []);
 
   // How many email accounts the plan allows (null = unlimited)
