@@ -143,57 +143,33 @@ export default function AIGuideWidget() {
     setShowSuggestions(false);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: generateAIResponse(content, currentContext.label),
-        timestamp: new Date(),
-        pageContext: currentContext.label
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
-  };
-
-  const generateAIResponse = (userMessage: string, context: string): string => {
-    // Placeholder AI responses - in production, this would call the actual API
-    const responses: Record<string, string[]> = {
-      "Overview": [
-        "Based on your business data, I recommend focusing on your Marketing Plan next. Your Business Plan is 75% complete, which is excellent!",
-        "Your overall business health is strong at 82%. The main area for improvement is Operations - specifically your onboarding process.",
-        "Looking at your 12 domains, I see strong performance in Vision and Finance. Consider giving more attention to Marketing Systems."
-      ],
-      "Business Plan": [
-        "Your value proposition is solid! Consider adding more specific outcomes for your ideal client. What transformation do they experience?",
-        "For competitive positioning, focus on what makes LifeCharter unique - the spiritual + practical integration is your differentiator.",
-        "Your revenue model looks diversified. Have you considered adding a high-ticket mastermind tier?"
-      ],
-      "Marketing Plan": [
-        "For content ideas, consider creating 'day in the life' stories showing alignment in action. Your audience craves authenticity.",
-        "Your channel strategy should prioritize where your ideal client already spends time. Based on your profile, LinkedIn and Instagram are strong bets.",
-        "For messaging, lead with the transformation: 'Move from fear and overwhelm to clarity and aligned action.'"
-      ],
-      "Sales": [
-        "Your pipeline shows good top-of-funnel activity. Focus on improving your qualification process to increase close rates.",
-        "Consider adding a 'strategy session' offer between your free workshop and Circle membership. This bridges the gap nicely.",
-        "Your offers are well-structured. Test adding payment plans to remove price objections."
-      ],
-      "Finance": [
-        "I analyzed your expenses - you could save $200/month by consolidating your project management tools (Notion + Asana).",
-        "Your cash flow looks healthy. Consider setting aside 3 months of operating expenses as a buffer.",
-        "QuickBooks has a 50% off offer for 6 months. Would you like me to help you claim it?"
-      ],
-      "Operations": [
-        "Your onboarding completion rate is 78%. Adding a Day 3 check-in could push this to 90%.",
-        "For SOPs, start with your top 3: client onboarding, content publishing, and sales follow-up.",
-        "Your referral rate is above average! Formalize an advocate program with tiered rewards."
-      ]
+    // Ask the real assistant — it answers from this client's own assessments,
+    // scores and tasks, and remembers the conversation.
+    let reply = "";
+    try {
+      const res = await fetch("/api/mariposa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: content.trim(),
+          page: currentContext.label,
+          tz: localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      reply = data.reply || "";
+    } catch {
+      /* fall through to the friendly error below */
+    }
+    const aiMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: reply || "I couldn't reach my brain just now — please try again in a moment.",
+      timestamp: new Date(),
+      pageContext: currentContext.label
     };
-
-    const contextResponses = responses[context] || ["I'm here to help! What would you like to know about your business?"];
-    return contextResponses[Math.floor(Math.random() * contextResponses.length)];
+    setMessages(prev => [...prev, aiMessage]);
+    setIsLoading(false);
   };
 
   const handleVoiceInput = () => {

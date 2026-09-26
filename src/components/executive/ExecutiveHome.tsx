@@ -975,7 +975,7 @@ export default function ExecutiveHome() {
       const res = await fetch("/api/mariposa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, page: "Executive Home", tz: userTimezone }),
       });
       const data = await res.json();
       setAiReply(data.reply ?? "Sorry, I couldn't respond right now.");
@@ -1892,7 +1892,20 @@ export default function ExecutiveHome() {
             </div>
             <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
           </div>
-          <span className="text-xs text-gray-400">Powered by {assistantName}</span>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <button
+              onClick={async () => {
+                if (!confirm(`Clear what ${assistantName} remembers from your conversations? Your assessments aren't affected.`)) return;
+                await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
+                setAiReply(null);
+              }}
+              className="hover:text-[#2E7C83] hover:underline"
+              title="Clear the conversation history"
+            >
+              Clear memory
+            </button>
+            <span>Powered by {assistantName}</span>
+          </div>
         </div>
 
         <div className="px-6 pb-6">

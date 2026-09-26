@@ -1,3 +1,4 @@
+import { sessionUser } from '@/lib/authz';
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,7 +8,8 @@ export async function GET(request: NextRequest) {
     const supabase = createClient();
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const user = await sessionUser(); // the signed-in user from the request cookies
+    const userError = user ? null : new Error("not signed in");
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -46,7 +48,8 @@ export async function POST(request: NextRequest) {
     const supabase = createClient();
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const user = await sessionUser(); // the signed-in user from the request cookies
+    const userError = user ? null : new Error("not signed in");
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -91,7 +94,8 @@ export async function PATCH(request: NextRequest) {
     const supabase = createClient();
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const user = await sessionUser(); // the signed-in user from the request cookies
+    const userError = user ? null : new Error("not signed in");
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -134,7 +138,8 @@ export async function DELETE(request: NextRequest) {
     const supabase = createClient();
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const user = await sessionUser(); // the signed-in user from the request cookies
+    const userError = user ? null : new Error("not signed in");
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

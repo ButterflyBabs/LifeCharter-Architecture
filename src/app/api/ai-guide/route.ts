@@ -1,7 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { resolveAiConfig } from "@/lib/ai/config";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { buildAssistantKnowledge, loadHistory, saveTurn, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 
 // System prompt for the AI Business Guide ({name} = the account's assistant).
 const systemPrompt = (name: string) => `You are ${name}, the AI business guide in the LifeCharter Command Suite, a business assessment and optimization platform.
@@ -26,7 +27,7 @@ Provide guidance that is:
 - Focused on one priority at a time
 - Celebratory of progress made
 
-Always sign off simply as "— ${name}".`;
+`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,16 +39,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const supabase = createClient();
-    
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // The client's own plan (fails closed when nobody is signed in).
+    const planId = await resolveMasterPlanId();
+    if (!planId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { message, context } = await request.json();
@@ -83,11 +78,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ground the answer in this client's own assessments and remember the chat.
+    const [knowledge, history] = await Promise.all([buildAssistantKnowledge(planId), loadHistory(planId)]);
+
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt(name) + contextPrompt },
+        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt) },
+        ...history,
         { role: "user", content: message },
       ],
       temperature: 0.7,
@@ -97,6 +96,7 @@ export async function POST(request: NextRequest) {
     const reply = completion.choices[0]?.message?.content || 
       "I'm here to help you align your business with your vision. What would you like to explore today?";
 
+    await saveTurn(planId, "guide", String(message), reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply });
   } catch (error) {
     console.error("AI Guide Error:", error);

@@ -36,7 +36,9 @@ export async function POST(request: Request) {
     if (!ALLOWED_TYPES.has(type)) {
       return NextResponse.json({ error: "invalid or missing type" }, { status: 400 });
     }
-    if (responses.length === 0) {
+    const partial = body?.partial === true;
+    const removedIds: string[] = Array.isArray(body?.removedIds) ? body.removedIds.map(String).slice(0, 1000) : [];
+    if (responses.length === 0 && !(partial && removedIds.length > 0)) {
       return NextResponse.json({ error: "no responses to save" }, { status: 400 });
     }
 
@@ -47,6 +49,44 @@ export async function POST(request: Request) {
 
     const supabase = createServerClient();
     const now = new Date().toISOString();
+
+    // Progressive save: as each answer is given (or cleared) the assessment
+    // pages send just what changed, so the client's AI assistant learns from
+    // every answer without waiting for the assessment to be finished. Only the
+    // named questions are replaced; everything else stays. No re-scoring here —
+    // that still runs once, when the assessment is completed.
+    if (partial) {
+      const toRow = (r: IncomingResponse) => ({
+        master_plan_id: planId,
+        assessment_type: type,
+        question_id: r.questionId,
+        question_text: r.questionText,
+        section_name: r.section ?? null,
+        answer_value: { value: r.value ?? r.answerText ?? "", sensitive: Boolean(r.sensitive) },
+        answer_text: typeof r.answerText === "string" ? r.answerText : null,
+        score: typeof r.score === "number" ? r.score : null,
+        max_score: typeof r.maxScore === "number" ? r.maxScore : null,
+        answered_at: now,
+      });
+      const changed = responses.filter((r) => r.questionId && r.questionText).slice(0, 1000).map(toRow);
+      const ids = Array.from(new Set([...changed.map((r) => r.question_id), ...removedIds]));
+      for (let i = 0; i < ids.length; i += 200) {
+        await supabase
+          .from("unified_client_responses")
+          .delete()
+          .eq("master_plan_id", planId)
+          .eq("assessment_type", type)
+          .in("question_id", ids.slice(i, i + 200));
+      }
+      for (let i = 0; i < changed.length; i += 200) {
+        const { error } = await supabase.from("unified_client_responses").insert(changed.slice(i, i + 200));
+        if (error) {
+          console.error("POST /api/assessments/save partial insert:", error.message);
+          return NextResponse.json({ error: "failed to save responses" }, { status: 500 });
+        }
+      }
+      return NextResponse.json({ ok: true, partial: true, saved: changed.length, removed: removedIds.length });
+    }
 
     // Replace any prior answers for this assessment type (clean re-take).
     await supabase
