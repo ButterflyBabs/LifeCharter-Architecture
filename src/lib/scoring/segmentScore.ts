@@ -224,8 +224,8 @@ export async function computeSegmentScores(planId: string): Promise<SegmentResul
       let source: DimResult["source"];
       const coachScore = coach.get(`${seg.id}:${key}`);
       if (typeof coachScore === "number") { score = coachScore; source = "coach"; }
-      else if (evScore !== null && baseScore !== null) { score = Math.round(baseScore * (1 - alpha) + evScore * alpha); source = W >= 0.3 ? "activity" : "business"; }
-      else if (evScore !== null) { score = Math.round(evScore); source = W >= 0.3 ? "activity" : "none"; }
+      else if (evScore !== null && baseScore !== null) { score = Math.round(baseScore * (1 - alpha) + evScore * alpha); source = W >= 0.19 ? "activity" : "business"; }
+      else if (evScore !== null) { score = Math.round(evScore); source = W >= 0.19 ? "activity" : "none"; }
       else if (baseScore !== null) { score = baseScore; source = "business"; }
       else { score = null; source = "none"; }
 
