@@ -72,7 +72,7 @@ export default function MorningBriefPage() {
         (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
       "UTC";
     Promise.all([
-      fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/profile", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
       fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/financial-pulse?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),

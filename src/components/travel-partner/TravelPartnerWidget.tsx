@@ -144,8 +144,8 @@ const journeyStages: JourneyStage[] = [
       },
       {
         id: "content-studio",
-        title: "Create First Content",
-        description: "Use AI to create your first social post or email",
+        title: "Plan Your First Post",
+        description: "Write and schedule your first post in the Content Calendar",
         icon: <MessageSquare className="w-5 h-5" />,
         path: "/daily-compass/calendar?new=1",
         section: "daily",

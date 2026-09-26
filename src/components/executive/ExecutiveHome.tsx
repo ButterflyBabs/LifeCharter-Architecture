@@ -212,6 +212,16 @@ export default function ExecutiveHome() {
   const [searchResults, setSearchResults] = useState<Email[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [inboxLimit, setInboxLimit] = useState(12);
+  // The inbox card can be folded down to just its title. Remembered on this device.
+  const [inboxCollapsed, setInboxCollapsed] = useState(false);
+  useEffect(() => {
+    try { setInboxCollapsed(localStorage.getItem("exec-inbox-collapsed") === "1"); } catch { /* not remembered */ }
+  }, []);
+  const toggleInbox = () =>
+    setInboxCollapsed((c) => {
+      try { localStorage.setItem("exec-inbox-collapsed", c ? "0" : "1"); } catch { /* not remembered */ }
+      return !c;
+    });
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
@@ -398,7 +408,7 @@ export default function ExecutiveHome() {
 
   // Fetch owner name + assistant name for the greeting/AI card (from the profile)
   useEffect(() => {
-    fetch("/api/profile")
+    fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.firstName) setFirstName(d.firstName);
@@ -1678,6 +1688,14 @@ export default function ExecutiveHome() {
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-[#E8E4E0]">
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleInbox}
+                aria-expanded={!inboxCollapsed}
+                aria-label={inboxCollapsed ? "Expand inbox" : "Collapse inbox"}
+                className="p-1 rounded-md text-indigo-900/60 hover:bg-[#F8F5F0]"
+              >
+                <ChevronRight className={`w-4 h-4 transition-transform ${inboxCollapsed ? "" : "rotate-90"}`} />
+              </button>
               <h3 className="font-serif text-base text-indigo-900">Inbox</h3>
               {googleConnected && (
                 <span className="px-2.5 py-1 bg-[#6F4A7C] text-white text-xs font-medium rounded-full">
@@ -1699,6 +1717,7 @@ export default function ExecutiveHome() {
             )}
           </div>
 
+          {!inboxCollapsed && (<>
           {/* Add-another-account chips (shown while the plan has room for more email accounts) */}
           {googleConnected && (
             <div className="px-6 pt-4 flex flex-wrap items-center gap-2">
@@ -1883,6 +1902,7 @@ export default function ExecutiveHome() {
               Mark Read
             </button>
           </div>
+          </>)}
         </div>
         </div>
       </div>

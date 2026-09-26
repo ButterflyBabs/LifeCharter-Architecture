@@ -137,7 +137,7 @@ export default function DailyCompassPage() {
   useEffect(() => {
     const tz = localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     Promise.all([
-      fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/profile", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
       fetch("/api/tasks").then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/recurring-tasks?tz=${encodeURIComponent(tz)}`).then((r) => (r.ok ? r.json() : null)),
     ])

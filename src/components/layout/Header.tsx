@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
@@ -52,9 +52,18 @@ function titleForPath(pathname: string | null): string {
 
 export function Header({
   title,
-  workspace = "Sacred Kaleidoscope",
+  workspace: workspaceProp,
 }: HeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
+  // The signed-in account's own workspace name — never a fixed one.
+  const [workspaceName, setWorkspaceName] = useState("");
+  useEffect(() => {
+    fetch("/api/profile", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setWorkspaceName(((d?.workspaceName as string) || "").trim()))
+      .catch(() => {});
+  }, []);
+  const workspace = workspaceProp ?? workspaceName;
   const { mounted } = useTheme();
   const pathname = usePathname();
   const resolvedTitle = title ?? titleForPath(pathname);
@@ -88,7 +97,7 @@ export function Header({
       </div>
 
       {/* Center: Workspace Selector */}
-      <div className="hidden md:flex items-center gap-2">
+      <div className={workspace ? "hidden md:flex items-center gap-2" : "hidden"}>
         <span className="text-xs text-[#b8a898] uppercase tracking-wider">
           Workspace
         </span>

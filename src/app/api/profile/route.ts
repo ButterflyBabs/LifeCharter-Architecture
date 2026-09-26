@@ -19,11 +19,17 @@ export async function GET() {
   const firstName = fullName ? fullName.split(/\s+/)[0] : "";
   const assistantName = ((data?.assistant_name as string) || "").trim() || DEFAULT_ASSISTANT_NAME;
   const hasOpenAiKey = Boolean(await readAccountKey(profileId));
+  // The account's own workspace name (never another account's).
+  let workspaceName = "";
+  if (profileId) {
+    const { data: ws } = await createServerClient().from("workspaces").select("name").eq("owner_id", profileId).order("created_at").limit(1).maybeSingle();
+    workspaceName = ((ws?.name as string) || "").trim();
+  }
   const avatarUrl = ((data?.avatar_url as string) || "").trim() || null;
   const timezone = data?.timezone_chosen ? ((data?.timezone as string) || "").trim() || null : null;
   const taskReminderEmail = data?.task_reminder_email !== false;
   const taskReminderLeadMin = Number(data?.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
-  return NextResponse.json({ fullName, firstName, assistantName, hasOpenAiKey, avatarUrl, timezone, taskReminderEmail, taskReminderLeadMin });
+  return NextResponse.json({ fullName, firstName, workspaceName, assistantName, hasOpenAiKey, avatarUrl, timezone, taskReminderEmail, taskReminderLeadMin });
 }
 
 // Saves the signed-in owner's settings: the time zone they chose (dashboard

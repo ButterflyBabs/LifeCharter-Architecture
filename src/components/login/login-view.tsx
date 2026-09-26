@@ -48,7 +48,21 @@ export function LoginView() {
   const [mfaChallengeId, setMfaChallengeId] = useState("");
   const [mfaCode, setMfaCode] = useState("");
 
-  function enter() {
+  // Anything this browser remembered for a previous account (drafts, card order,
+  // chat history, time zone) must not show up for the next person who signs in.
+  async function enter() {
+    try {
+      const { data } = await createClient().auth.getUser();
+      const id = data.user?.id;
+      const last = localStorage.getItem("lc_last_user");
+      if (id && last && last !== id) {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      if (id) localStorage.setItem("lc_last_user", id);
+    } catch {
+      /* storage unavailable — nothing to clear */
+    }
     router.push(POST_LOGIN_ROUTE);
     router.refresh();
   }
@@ -92,7 +106,7 @@ export function LoginView() {
       /* if the MFA probe fails, fall through to normal entry */
     }
 
-    enter();
+    await enter();
   }
 
   async function handleVerifyMfa(e: FormEvent<HTMLFormElement>) {
@@ -110,7 +124,7 @@ export function LoginView() {
       setLoading(false);
       return;
     }
-    enter();
+    await enter();
   }
 
   return (

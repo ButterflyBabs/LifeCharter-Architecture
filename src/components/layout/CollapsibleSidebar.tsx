@@ -327,22 +327,23 @@ export function CollapsibleSidebar() {
       }
       return next;
     });
-  const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null }>({
+  const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null; workspaceName: string }>({
     fullName: "",
     avatarUrl: null,
+    workspaceName: "",
   });
 
   // Load the profile name + headshot for the footer block.
   useEffect(() => {
-    fetch("/api/profile")
+    fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d) setProfile({ fullName: (d.fullName || "").trim(), avatarUrl: d.avatarUrl ?? null });
+        if (d) setProfile({ fullName: (d.fullName || "").trim(), avatarUrl: d.avatarUrl ?? null, workspaceName: (d.workspaceName || "").trim() });
       })
       .catch(() => {});
   }, []);
 
-  const displayName = profile.fullName || "AmiLynne Carroll";
+  const displayName = profile.fullName || "Your account";
   const initials =
     displayName
       .split(/\s+/)
@@ -618,9 +619,9 @@ export function CollapsibleSidebar() {
         </Link>
 
         {/* Workspace Selector - only when expanded */}
-        {!isCollapsed && (
+        {!isCollapsed && profile.workspaceName && (
           <div className="px-4 py-1 text-xs text-white/40">
-            <span className="text-white/30">Workspace:</span> Sacred Kaleidoscope
+            <span className="text-white/30">Workspace:</span> {profile.workspaceName}
           </div>
         )}
       </div>

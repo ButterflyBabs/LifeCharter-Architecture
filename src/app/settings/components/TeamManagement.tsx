@@ -117,7 +117,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
 
   // Load the owner (once) and this workspace's members (on workspace change).
   useEffect(() => {
-    fetch("/api/profile")
+    fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d) setOwner({ name: (d.fullName as string) || "Owner", avatar: d.avatarUrl || null });

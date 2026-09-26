@@ -354,11 +354,11 @@ export default function SettingsPage() {
 
   // Profile settings
   const [profile, setProfile] = useState({
-    fullName: "AmiLynne Carroll",
-    email: "babs@lifecharter.architecture",
+    fullName: "",
+    email: "",
     phone: "",
     timezone: "America/Denver",
-    bio: "Alignment Architect | Founder of Sacred Kaleidoscope Community",
+    bio: "",
     avatar: null as string | null
   });
 
@@ -367,7 +367,7 @@ export default function SettingsPage() {
   const [reminderLead, setReminderLead] = useState(30);
   const [reminderEmail, setReminderEmail] = useState(true);
   useEffect(() => {
-    fetch("/api/profile")
+    fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
