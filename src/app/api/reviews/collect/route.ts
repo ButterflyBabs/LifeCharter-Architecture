@@ -37,19 +37,28 @@ export async function POST(request: Request) {
   if (!r) return NextResponse.json({ error: "This link isn't valid." }, { status: 404 });
   if (r.status === "completed") return NextResponse.json({ error: "Thank you — this review has already been received." }, { status: 409 });
 
+  // Claim the request first — only one submission can ever win, so a double-click
+  // or a reused link can't create a second review.
+  const { data: claimed } = await db
+    .from("review_requests")
+    .update({ status: "completed", completed_at: new Date().toISOString() })
+    .eq("id", r.id)
+    .neq("status", "completed")
+    .select("id");
+  if (!claimed?.length) return NextResponse.json({ error: "Thank you — this review has already been received." }, { status: 409 });
+
   const media = str(b.mediaUrl, 500);
-  const { data: tm, error } = await db
-    .from("testimonials")
-    .insert({
-      master_plan_id: r.master_plan_id, request_id: r.id,
-      client_name: str(b.name, 120) || r.client_name, client_email: r.client_email, program: str(b.program, 120) || r.program,
-      rating, headline: str(b.headline, 200), content, media_url: /^https?:\/\//i.test(media) ? media : "",
-      type: /^https?:\/\//i.test(media) ? (["video", "audio"].includes(b.mediaType) ? b.mediaType : "video") : "text",
-      status: "pending", consent: true, source: "collected",
-    })
-    .select("id")
-    .single();
-  if (error || !tm) return NextResponse.json({ error: "Couldn't save your review — please try again." }, { status: 500 });
-  await db.from("review_requests").update({ status: "completed", completed_at: new Date().toISOString(), testimonial_id: null }).eq("id", r.id);
+  const { error } = await db.from("testimonials").insert({
+    master_plan_id: r.master_plan_id, request_id: r.id,
+    client_name: str(b.name, 120) || r.client_name, client_email: r.client_email, program: str(b.program, 120) || r.program,
+    rating, headline: str(b.headline, 200), content, media_url: /^https?:\/\//i.test(media) ? media : "",
+    type: /^https?:\/\//i.test(media) ? (["video", "audio"].includes(b.mediaType) ? b.mediaType : "video") : "text",
+    status: "pending", consent: true, source: "collected",
+  });
+  if (error) {
+    // Give the link back so they can try again.
+    await db.from("review_requests").update({ status: "opened", completed_at: null }).eq("id", r.id);
+    return NextResponse.json({ error: "Couldn't save your review — please try again." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
