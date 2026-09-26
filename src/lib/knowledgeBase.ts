@@ -258,6 +258,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     id: "scripts-templates",
     category: "AI & Automation",
     question: "What are Scripts & Templates, and can I make my own?",
+    keywords: ["scripts", "templates", "library", "starter library", "my library", "fill in", "personalize", "sales script", "email template", "save"],
     answer:
       "Scripts & Templates (Daily Compass) has a Starter Library of 56 ready-to-use scripts and emails across Sales, Prospecting, Objections, Onboarding, Follow-up, Content, Nurture and Closing. Open one and use Fill in & personalize to type in the blanks, or ask your AI assistant to rewrite it in your voice using what you've told it about your business (shorter, warmer, more direct, or your own instruction). Save any of them to My Library to keep your own copy, or write or generate new ones. What you save in My Library is private to your account — no other client can see it.",
   },
