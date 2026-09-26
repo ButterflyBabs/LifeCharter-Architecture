@@ -17,6 +17,7 @@ import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
+import { timezoneOptions } from "@/lib/timezones";
 import {
   User,
   Building2,
@@ -686,13 +687,23 @@ export default function SettingsPage() {
           </label>
           <select
             value={profile.timezone}
-            onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
+            onChange={(e) => {
+              const tz = e.target.value;
+              setProfile({ ...profile, timezone: tz });
+              localStorage.setItem("userTimezone", tz);
+              fetch("/api/profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ timezone: tz }),
+              }).catch(() => {});
+            }}
             className="w-full h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-[#1a2b4a] dark:text-[#F8F5F0]"
           >
-            <option value="America/Denver">Mountain Time (Denver)</option>
-            <option value="America/Los_Angeles">Pacific Time</option>
-            <option value="America/Chicago">Central Time</option>
-            <option value="America/New_York">Eastern Time</option>
+            {timezoneOptions(profile.timezone).map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -3,6 +3,7 @@ import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import type { ScheduleEvent } from "@/lib/google";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolveAiAccount } from "@/lib/ai/config";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,12 @@ export async function GET(request: Request) {
   const queryTz = new URL(request.url).searchParams.get("tz") || "";
   let timeZone = queryTz || "UTC";
   try {
-    const supabase = createServerClient();
-    const { data: prof } = await supabase.from("profiles").select("timezone").limit(1).maybeSingle();
-    const profileTz = (prof?.timezone as string | null)?.trim();
-    if (profileTz) timeZone = profileTz;
+    const { profileId, canEdit } = await resolveAiAccount();
+    if (profileId && canEdit) {
+      const { data: prof } = await createServerClient().from("profiles").select("timezone, timezone_chosen").eq("id", profileId).maybeSingle();
+      const profileTz = prof?.timezone_chosen ? (prof?.timezone as string | null)?.trim() : "";
+      if (profileTz) timeZone = profileTz;
+    }
   } catch {
     /* fall back to the query tz */
   }

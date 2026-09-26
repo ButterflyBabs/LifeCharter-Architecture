@@ -27,6 +27,7 @@ import {
   Tag,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
+import { timezoneOptions } from "@/lib/timezones";
 
 // Types
 type Provider = "google" | "microsoft";
@@ -116,7 +117,7 @@ export default function ExecutiveHome() {
   const [newTaskStatus, setNewTaskStatus] = useState("today");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
-  const [userTimezone, setUserTimezone] = useState("America/Denver"); // Default to Babs' timezone
+  const [userTimezone, setUserTimezone] = useState<string>(""); // chosen zone, else the browser's
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -180,13 +181,23 @@ export default function ExecutiveHome() {
     return () => clearInterval(timer);
   }, []);
 
-  // Load user's timezone preference
+  // Time zone: this device's saved choice, else the browser's own zone. The
+  // profile fetch below overrides with the zone saved to the account.
   useEffect(() => {
-    const savedTimezone = localStorage.getItem("userTimezone");
-    if (savedTimezone) {
-      setUserTimezone(savedTimezone);
-    }
+    setUserTimezone(
+      localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    );
   }, []);
+
+  const changeTimezone = (tz: string) => {
+    setUserTimezone(tz);
+    localStorage.setItem("userTimezone", tz);
+    fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timezone: tz }),
+    }).catch(() => {});
+  };
 
   // Fetch real tasks
   useEffect(() => {
@@ -208,6 +219,10 @@ export default function ExecutiveHome() {
       .then((d) => {
         if (d?.firstName) setFirstName(d.firstName);
         if (d?.assistantName) setAssistantName(d.assistantName);
+        if (d?.timezone) {
+          setUserTimezone(d.timezone);
+          localStorage.setItem("userTimezone", d.timezone);
+        }
       })
       .catch(() => {});
   }, []);
@@ -282,16 +297,12 @@ export default function ExecutiveHome() {
   // Fetch live calendars (today), merged across providers. Anchor "today" and
   // the times to the viewer's timezone: their saved choice, else auto-detected.
   useEffect(() => {
-    const tz =
-      (typeof window !== "undefined" &&
-        (localStorage.getItem("userTimezone") ||
-          Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
-      "UTC";
-    fetch(`/api/schedule?tz=${encodeURIComponent(tz)}`)
+    if (!userTimezone) return;
+    fetch(`/api/schedule?tz=${encodeURIComponent(userTimezone)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setSchedule(d))
       .catch(() => {});
-  }, []);
+  }, [userTimezone]);
 
   const unreadCount = emails.filter((e) => e.unread).length;
   const visibleEmails = emails.filter(
@@ -840,6 +851,15 @@ export default function ExecutiveHome() {
     }
   };
 
+  // Greeting follows the hour in the user's own time zone.
+  const hour =
+    currentTime && userTimezone
+      ? Number(
+          new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: userTimezone }).format(currentTime)
+        ) % 24
+      : null;
+  const greeting = hour === null ? "" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   // Get tasks for each column
   const openTaskCount = tasks.filter(t => t.status !== "done").length;
   const todayTasks = tasks.filter(t => t.status === "today").slice(0, 3);
@@ -853,16 +873,40 @@ export default function ExecutiveHome() {
         {/* Left side - Text */}
         <div>
           <h1 className="text-3xl font-serif font-bold text-indigo-900 mb-0.5">
-            {firstName ? `Good morning, ${firstName}` : "Good morning"}
+            {greeting ? (firstName ? `${greeting}, ${firstName}` : greeting) : firstName ? `Hello, ${firstName}` : "Hello"}
           </h1>
-          <p className="text-sm text-gray-500 mb-0.5">
-            {currentTime ? new Intl.DateTimeFormat("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: userTimezone,
-            }).format(currentTime) : "Loading..."}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-2 text-sm text-gray-500 mb-0.5">
+            <span>
+              {currentTime && userTimezone
+                ? `${new Intl.DateTimeFormat("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    timeZone: userTimezone,
+                  }).format(currentTime)} · ${new Intl.DateTimeFormat("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    timeZoneName: "short",
+                    timeZone: userTimezone,
+                  }).format(currentTime)}`
+                : "Loading..."}
+            </span>
+            {userTimezone && (
+              <select
+                value={userTimezone}
+                onChange={(e) => changeTimezone(e.target.value)}
+                aria-label="Time zone"
+                title="Change your time zone"
+                className="text-xs text-[#2E7C83] bg-transparent border border-gray-200 rounded-md px-1.5 py-0.5 max-w-[200px] cursor-pointer hover:border-[#84AEB2] focus:outline-none focus:border-[#84AEB2]"
+              >
+                {timezoneOptions(userTimezone).map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           <p className="text-sm text-gray-400">
             Here&apos;s your executive briefing for today
           </p>
