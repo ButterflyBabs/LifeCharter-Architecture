@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { currentMailOwner } from "@/lib/mailOwner";
+import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { buildAssistantKnowledge, loadHistory, saveTurn, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 
 // System prompt for the AI Business Guide ({name} = the account's assistant).
@@ -79,7 +81,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Ground the answer in this client's own assessments and remember the chat.
-    const [knowledge, history] = await Promise.all([buildAssistantKnowledge(planId), loadHistory(planId)]);
+    const [knowledge, history] = await Promise.all([
+      buildAssistantKnowledge(planId, await resolveUserTimeZone(null), { mailOwnerId: await currentMailOwner() }),
+      loadHistory(planId),
+    ]);
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({

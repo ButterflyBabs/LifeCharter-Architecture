@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
+import { currentMailOwner } from "@/lib/mailOwner";
 import { buildAssistantKnowledge, loadHistory, saveTurn, clearHistory, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     const planId = await resolveMasterPlanId();
     const tz = await resolveUserTimeZone(typeof body?.tz === "string" ? body.tz : null);
     const [knowledge, history] = planId
-      ? await Promise.all([buildAssistantKnowledge(planId, tz), loadHistory(planId)])
+      ? await Promise.all([buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() }), loadHistory(planId)])
       : [{ text: "", answered: 0 }, []];
 
     const openai = new OpenAI({ apiKey: key });

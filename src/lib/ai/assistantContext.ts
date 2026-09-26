@@ -3,6 +3,10 @@ import { gatherAndCompute } from "@/lib/scoring/gather";
 import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
 import { nowParts } from "@/lib/finance/period";
 import { isDueOn, type RecurringRule } from "@/lib/recurring";
+import { computePulse } from "@/lib/finance/pulse";
+import { openMailboxes } from "@/lib/mailboxes";
+import * as google from "@/lib/google";
+import * as microsoft from "@/lib/microsoft";
 
 // Everything the client's AI assistant knows about them, built fresh on every
 // question from THEIR OWN data: what they've answered so far in the Brain, Soul
@@ -24,7 +28,21 @@ const TYPE_LABEL: Record<string, string> = {
   profit_architecture: "Profit (financial health)",
 };
 
-export async function buildAssistantKnowledge(masterPlanId: string, tz = "America/Denver"): Promise<AssistantKnowledge> {
+const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+// Never let a slow outside service (a calendar) hold up the answer.
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
+// `mailOwnerId` is the signed-in account's own profile id (from currentMailOwner);
+// only that account's connected calendars are ever read. Without it (team
+// members, signed-out) the calendar is skipped.
+export async function buildAssistantKnowledge(
+  masterPlanId: string,
+  tz = "America/Denver",
+  opts: { mailOwnerId?: string | null } = {}
+): Promise<AssistantKnowledge> {
   const supabase = createServerClient();
   const parts: string[] = [];
   let answered = 0;
@@ -111,6 +129,54 @@ export async function buildAssistantKnowledge(masterPlanId: string, tz = "Americ
       const doneIds = new Set((done ?? []).map((d) => d.recurring_task_id as string));
       const left = dueRec.filter((r) => !doneIds.has(r.id));
       parts.push(`Recurring tasks today: ${left.length} left of ${dueRec.length}${left.length ? ` (${left.slice(0, 6).map((r) => `"${r.title.slice(0, 60)}"`).join(", ")})` : ""}.`);
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Their income against their goals (same numbers as the Financial Pulse card).
+  try {
+    const pulse = await computePulse(masterPlanId, tz);
+    if (!("error" in pulse)) {
+      if (!pulse.hasData) {
+        parts.push("Income: nothing recorded yet in their Finance Center.");
+      } else {
+        const one = (label: string, p: (typeof pulse.periods)["week"]) =>
+          `${label} ${money(p.income)}` +
+          (p.goal ? ` of a ${money(p.goal)} goal (${p.pct ?? 0}%)` : "") +
+          (p.changePct !== null ? `, ${p.changePct >= 0 ? "+" : ""}${p.changePct}% vs the previous period` : "");
+        parts.push(`Income so far (their ledger): ${[one("this week", pulse.periods.week), one("this month", pulse.periods.month), one("this year", pulse.periods.year)].join("; ")}.`);
+      }
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Today's calendar, from the calendars THIS account connected.
+  try {
+    if (opts.mailOwnerId) {
+      const boxes = await withTimeout(openMailboxes({ ownerId: opts.mailOwnerId }), 4000, []);
+      if (boxes.length === 0) {
+        parts.push("Calendar: not connected.");
+      } else {
+        const lists = await Promise.all(
+          boxes.map((b) =>
+            withTimeout(
+              (b.provider === "google" ? google.fetchTodayEvents(b.token, tz) : microsoft.fetchTodayEvents(b.token, tz)).catch(() => []),
+              4000,
+              []
+            )
+          )
+        );
+        const events = lists
+          .flat()
+          .sort((a, b) => (a.start ? new Date(a.start).getTime() : Infinity) - (b.start ? new Date(b.start).getTime() : Infinity));
+        parts.push(
+          events.length
+            ? `Today's calendar (${events.length}): ${events.slice(0, 12).map((e) => `${e.time} ${e.title.slice(0, 70)}`).join("; ")}.`
+            : "Today's calendar: nothing scheduled."
+        );
+      }
     }
   } catch {
     /* optional */
