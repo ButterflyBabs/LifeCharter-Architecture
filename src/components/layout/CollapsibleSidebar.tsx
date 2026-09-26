@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, createContext, useContext, ReactNode, useRef, useEffect } from "react";
+import { useState, createContext, useContext, ReactNode, useRef, useEffect, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
@@ -157,7 +157,12 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
   // The sidebar remembers how you left it. With no choice made yet it starts as the
   // slim icon rail on windows narrower than 1280px, so the page keeps enough room
   // for its cards instead of squeezing them beside a full-width menu.
-  useEffect(() => {
+  // Applied before the first paint, with animations off, so the page doesn't
+  // visibly slide from the wide menu to the rail as it loads.
+  const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+  useIsoLayoutEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("no-anim");
     try {
       const saved = localStorage.getItem("sidebar-collapsed");
       if (saved === "1" || saved === "0") setIsCollapsed(saved === "1");
@@ -165,6 +170,7 @@ export function CollapsibleSidebarProvider({ children }: CollapsibleSidebarProps
     } catch {
       setIsCollapsed(window.innerWidth < 1280);
     }
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("no-anim")));
   }, []);
   const toggleSidebar = () => {
     const next = !isCollapsed;
