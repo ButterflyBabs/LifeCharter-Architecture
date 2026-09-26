@@ -4,6 +4,8 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz, zonedToUtcISO } from "@/lib/tz";
 import { publishedPostCounts } from "@/lib/social/postCounts";
+import { isMirroredLog } from "@/lib/activityRules";
+import { ACTIVITY_TYPES } from "@/lib/salesActivities";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +37,20 @@ interface DayCounts {
   followups: number;
   posts: number;
   other: number; // other sales outreach (emails, DMs, meetings, demos, proposals)
-  proposals: number;
+  sales: Record<string, number>; // Sales Activities entries by type (for the goals)
 }
-const empty = (): DayCounts => ({ tasks: 0, recurring: 0, calls: 0, followups: 0, posts: 0, other: 0, proposals: 0 });
+const empty = (): DayCounts => ({ tasks: 0, recurring: 0, calls: 0, followups: 0, posts: 0, other: 0, sales: {} });
+
+// Goal rows: the label and unit for each Sales Activities type.
+const GOAL_META: Record<string, { category: string; unit: string }> = {
+  call: { category: "Sales Calls", unit: "calls" },
+  followup: { category: "Follow-ups", unit: "follow-ups" },
+  email: { category: "Emails", unit: "emails" },
+  dm: { category: "DMs", unit: "DMs" },
+  meeting: { category: "Meetings", unit: "meetings" },
+  demo: { category: "Demos", unit: "demos" },
+  proposal: { category: "Proposals Sent", unit: "proposals" },
+};
 
 export async function GET(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
@@ -64,7 +77,7 @@ export async function GET(request: Request) {
   const [{ data: tasks }, { data: rec }, { data: gc }, { data: sales }, { data: goalRows }, postCounts] = await Promise.all([
     supabase.from("tasks").select("completed_at, followup").eq("master_plan_id", masterPlanId).eq("status", "done").gte("completed_at", sinceISO).limit(5000),
     supabase.from("recurring_tasks").select("id").eq("master_plan_id", masterPlanId),
-    supabase.from("contact_activity_log").select("type, created_at").eq("master_plan_id", masterPlanId).gte("created_at", sinceISO).limit(5000),
+    supabase.from("contact_activity_log").select("type, note, created_at").eq("master_plan_id", masterPlanId).gte("created_at", sinceISO).limit(5000),
     supabase.from("sales_activities").select("type, occurred_on").eq("master_plan_id", masterPlanId).gte("occurred_on", sinceDay).limit(5000),
     supabase.from("sales_goals").select("activity_type, weekly_target").eq("master_plan_id", masterPlanId),
     publishedPostCounts(masterPlanId, tz, sinceDay),
@@ -80,19 +93,23 @@ export async function GET(request: Request) {
     const { data: done } = await supabase.from("recurring_task_completions").select("done_on").in("recurring_task_id", recIds).gte("done_on", sinceDay).limit(5000);
     for (const d of (done ?? []) as { done_on: string }[]) at(String(d.done_on).slice(0, 10)).recurring += 1;
   }
-  for (const g of (gc ?? []) as { type: string; created_at: string }[]) {
+  // Calls and follow-ups logged against Global Control contacts. An auto-sent
+  // follow-up is also a completed task (counted above), so its log row is skipped.
+  for (const g of (gc ?? []) as { type: string; note: string | null; created_at: string }[]) {
+    if (isMirroredLog(g.note)) continue;
     const c = at(dayInTz(g.created_at, tz));
     if (g.type === "followup") c.followups += 1;
-    else c.calls += 1;
+    else if (g.type === "call") c.calls += 1;
   }
+  // Sales Activities count on the day they happened — never before it.
   for (const s of (sales ?? []) as { type: string; occurred_on: string }[]) {
-    const c = at(String(s.occurred_on).slice(0, 10));
+    const day = String(s.occurred_on).slice(0, 10);
+    if (day > today) continue;
+    const c = at(day);
+    c.sales[s.type] = (c.sales[s.type] ?? 0) + 1;
     if (s.type === "call") c.calls += 1;
     else if (s.type === "followup") c.followups += 1;
-    else {
-      c.other += 1;
-      if (s.type === "proposal") c.proposals += 1;
-    }
+    else c.other += 1;
   }
   // Posts published — Social Planner posts plus posts made only in PostStream.
   postCounts.byDay.forEach((n, day) => {
@@ -119,15 +136,21 @@ export async function GET(request: Request) {
     };
   });
   const sum = (k: "calls" | "posts" | "followups" | "tasksDone") => week.reduce((t, d) => t + d[k], 0);
-  const proposals = Array.from({ length: 7 }, (_, i) => days.get(addDays(weekStart, i))?.proposals ?? 0).reduce((a, b) => a + b, 0);
+  // This week's Sales Activities entries by type (DMs, emails, meetings, proposals…).
+  const salesThisWeek = (type: string) => Array.from({ length: 7 }, (_, i) => days.get(addDays(weekStart, i))?.sales[type] ?? 0).reduce((a, b) => a + b, 0);
 
   const targets: Record<string, number> = {};
   for (const g of (goalRows ?? []) as { activity_type: string; weekly_target: number }[]) targets[g.activity_type] = g.weekly_target;
-  const goals = [
-    { id: "call", category: "Sales Calls", target: targets.call ?? null, current: sum("calls"), unit: "calls" },
-    { id: "followup", category: "Follow-ups", target: targets.followup ?? null, current: sum("followups"), unit: "follow-ups" },
-    { id: "proposal", category: "Proposals Sent", target: targets.proposal ?? null, current: proposals, unit: "proposals" },
-  ];
+  // Calls, follow-ups and proposals always show; any other activity type shows
+  // once the client has set a weekly goal for it (so a DM goal appears here too).
+  const goals = ACTIVITY_TYPES.filter((t) => ["call", "followup", "proposal"].includes(t.id) || targets[t.id] != null).map((t) => ({
+    id: t.id,
+    category: GOAL_META[t.id]?.category ?? t.label,
+    target: targets[t.id] ?? null,
+    // Calls and follow-ups also include what's logged elsewhere (Global Control, completed follow-up tasks).
+    current: t.id === "call" ? sum("calls") : t.id === "followup" ? sum("followups") : salesThisWeek(t.id),
+    unit: GOAL_META[t.id]?.unit ?? "",
+  }));
 
   // Streaks: consecutive active days ending today (or yesterday, so a quiet
   // morning doesn't zero it), and the longest run in the last year.

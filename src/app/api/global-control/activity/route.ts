@@ -4,6 +4,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dayWindowUtc, dayInTz } from "@/lib/tz";
 import { publishedPostCounts } from "@/lib/social/postCounts";
+import { resolveUserTimeZone } from "@/lib/userTimezone";
+import { isMirroredLog } from "@/lib/activityRules";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +37,8 @@ export async function GET(request: Request) {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
 
-  const tz = new URL(request.url).searchParams.get("tz") || "UTC";
+  // The client's chosen time zone, else the browser's, so "today" matches theirs.
+  const tz = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
   let startISO: string, endISO: string;
   try {
     ({ startISO, endISO } = dayWindowUtc(tz));
@@ -56,7 +59,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ calls: 0, followups: 0, items: [] }, { status: 200 });
   }
 
-  const rows = (data || []) as Row[];
+  // An auto-sent follow-up is also a completed task (counted below) — skip its log row.
+  const rows = ((data || []) as Row[]).filter((r) => !isMirroredLog(r.note));
   const items = rows.map(serialize);
 
   // The other places these things get recorded today, so the counts reflect
@@ -128,7 +132,7 @@ export async function GET(request: Request) {
   }
   items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const calls = rows.filter((r) => r.type !== "followup").length + salesCalls;
+  const calls = rows.filter((r) => r.type === "call").length + salesCalls;
   const followups = rows.filter((r) => r.type === "followup").length + salesFollowups + taskFollowups;
   const contacts = new Set(items.map((i) => i.contactId).filter(Boolean));
   return NextResponse.json({

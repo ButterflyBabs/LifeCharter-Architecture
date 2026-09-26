@@ -1,3 +1,4 @@
+import { AUTO_FOLLOWUP_NOTE } from "@/lib/activityRules";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { housePlanId } from "@/lib/planScope";
@@ -107,7 +108,7 @@ async function run(request: Request) {
       contact_id: (fu.contactId as string) || null,
       contact_name: (fu.contactName as string) || null,
       type: "followup",
-      note: "Auto-sent follow-up email",
+      note: AUTO_FOLLOWUP_NOTE,
     });
 
     sent += 1;

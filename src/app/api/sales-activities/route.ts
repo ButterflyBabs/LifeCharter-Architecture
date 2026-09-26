@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { resolveUserTimeZone } from "@/lib/userTimezone";
+import { dayInTz } from "@/lib/tz";
 import { ACTIVITY_TYPE_IDS, OUTCOME_IDS, PRIORITIES } from "@/lib/salesActivities";
 
 export const dynamic = "force-dynamic";
@@ -36,12 +38,12 @@ function shape(r: Row) {
   };
 }
 
-function startOfWeekUTC(): string {
-  const now = new Date();
-  const day = now.getUTCDay(); // 0 Sun..6 Sat
-  const diff = (day + 6) % 7; // days since Monday
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - diff));
-  return monday.toISOString().slice(0, 10);
+// Monday of the current week in the client's own time zone (matches the Weekly View).
+async function startOfWeek(): Promise<string> {
+  const tz = await resolveUserTimeZone(null);
+  const [y, m, d] = dayInTz(new Date(), tz).split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 Sun..6 Sat
+  return new Date(Date.UTC(y, m - 1, d - ((dow + 6) % 7))).toISOString().slice(0, 10);
 }
 
 // GET — activities + aggregates + weekly goals.
@@ -60,7 +62,7 @@ export async function GET() {
   const rows = (data || []) as Row[];
   const activities = rows.map(shape);
 
-  const weekStart = startOfWeekUTC();
+  const weekStart = await startOfWeek();
   const byType: Record<string, number> = {};
   const byOutcome: Record<string, number> = {};
   const thisWeekByType: Record<string, number> = {};
