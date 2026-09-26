@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { sessionUser } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +29,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "image must be under 5MB" }, { status: 400 });
   }
 
+  // The signed-in person's own profile — never someone else's.
+  const user = await sessionUser();
+  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const supabase = createServerClient();
-  const { data: prof } = await supabase.from("profiles").select("id").limit(1).maybeSingle();
+  const { data: prof } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
   if (!prof?.id) return NextResponse.json({ error: "no profile" }, { status: 400 });
 
   const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
@@ -57,11 +61,13 @@ export async function DELETE(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   }
+  const user = await sessionUser();
+  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const supabase = createServerClient();
   const { data: prof } = await supabase
     .from("profiles")
     .select("id, avatar_url")
-    .limit(1)
+    .eq("id", user.id)
     .maybeSingle();
   if (prof?.id) {
     const url = (prof.avatar_url as string) || "";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { ASSESSMENT_CADENCES, CADENCE_LABEL, statusFor } from "@/lib/scoring/cadence";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,15 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const supabase = createServerClient();
   const now = Date.now();
+  // Only THIS client's own answers decide when a check-in was last taken.
+  const planId = await resolveMasterPlanId();
+  if (!planId) return NextResponse.json({ checkins: [] }, { headers: { "Cache-Control": "no-store" } });
 
   // Latest answered_at per assessment type from the response log.
   const { data: resp } = await supabase
     .from("unified_client_responses")
-    .select("assessment_type, answered_at");
+    .select("assessment_type, answered_at")
+    .eq("master_plan_id", planId);
   const lastByType = new Map<string, number>();
   for (const r of (resp ?? []) as Array<{ assessment_type: string; answered_at: string | null }>) {
     if (!r.answered_at) continue;
@@ -27,6 +32,7 @@ export async function GET() {
   const { data: pulse } = await supabase
     .from("quick_pulse_checkins")
     .select("created_at")
+    .eq("master_plan_id", planId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
