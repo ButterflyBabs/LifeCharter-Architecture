@@ -368,8 +368,8 @@ export function CollapsibleSidebar() {
     return (
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300 w-64 -translate-x-full lg:translate-x-0",
-          isCollapsedDesktop ? "lg:w-16" : "lg:w-64"
+          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 transition-all duration-300 w-56 -translate-x-full lg:translate-x-0",
+          isCollapsedDesktop ? "lg:w-16" : "lg:w-56"
         )}
       >
         <div className="p-4 border-b border-white/10">
@@ -393,9 +393,9 @@ export function CollapsibleSidebar() {
       )}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 lg:z-50 transition-all duration-300 ease-in-out shadow-xl w-64",
+          "fixed left-0 top-0 h-full bg-[#1a2b4a] flex flex-col z-50 lg:z-50 transition-all duration-300 ease-in-out shadow-xl w-56",
           isMobileOpen && "z-[65]",
-          isCollapsed ? "lg:w-16" : "lg:w-64",
+          isCollapsed ? "lg:w-16" : "lg:w-56",
           isMobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0"
         )}

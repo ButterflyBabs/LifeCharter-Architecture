@@ -50,7 +50,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
           an off-canvas drawer rather than a permanent column. */}
       <main className={cn(
         "min-h-screen transition-all duration-300 ease-in-out flex flex-col",
-        isCollapsed ? "lg:ml-16" : "lg:ml-64"
+        isCollapsed ? "lg:ml-16" : "lg:ml-56"
       )}>
         <DemoBanner />
         <Header />
