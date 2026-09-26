@@ -18,7 +18,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { ChevronRight, GripVertical } from "lucide-react";
 import Link from "next/link";
 
 const DIMENSIONS: { key: string; name: string }[] = [
@@ -81,6 +81,16 @@ function SortableDimension({ id, name, score }: { id: string; name: string; scor
 export default function DimensionCards() {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [order, setOrder] = useState<string[]>(DIMENSIONS.map((d) => d.key));
+  // The section can be folded down to just its title. Remembered on this device.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem("exec-dimensions-collapsed") === "1"); } catch { /* not remembered */ }
+  }, []);
+  const toggle = () =>
+    setCollapsed((c) => {
+      try { localStorage.setItem("exec-dimensions-collapsed", c ? "0" : "1"); } catch { /* not remembered */ }
+      return !c;
+    });
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -127,9 +137,17 @@ export default function DimensionCards() {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-serif text-base text-indigo-900 dark:text-[#F8F5F0]">12 Business Dimensions</h2>
-        <span className="text-[11px] text-gray-400">Drag to reorder</span>
+        <button
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          className="flex items-center gap-1.5 font-serif text-base text-indigo-900 dark:text-[#F8F5F0]"
+        >
+          <ChevronRight className={`w-4 h-4 transition-transform ${collapsed ? "" : "rotate-90"}`} />
+          12 Business Dimensions
+        </button>
+        {!collapsed && <span className="text-[11px] text-gray-400">Drag to reorder</span>}
       </div>
+      {!collapsed && (
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={orderedKeys} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
@@ -139,6 +157,7 @@ export default function DimensionCards() {
           </div>
         </SortableContext>
       </DndContext>
+      )}
     </div>
   );
 }
