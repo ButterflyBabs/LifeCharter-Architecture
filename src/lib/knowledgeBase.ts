@@ -255,6 +255,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- AI & Automation ----
   {
+    id: "alignment-ai",
+    category: "AI & Automation",
+    question: "How does my assistant work in the Alignment section?",
+    answer:
+      "Each Alignment page has a read written by your own assistant, saved to your account: Business Alignment gives a briefing on what your score and phase mean and three moves you can add to your tasks with one click; Progress reads what has moved since your baseline and why; the Alignment Profile is a written portrait of you and your business from your Brain, Soul and Profit answers (private answers are never included); Business Segments compares your businesses and segments using the income you tag to each; Reviews reads what your clients say and finds lines worth using in your marketing. All of it feeds back into your assistant, so Daily Compass insights, Quick Wins and Scripts know it too.",
+    keywords: ["alignment", "progress", "segments", "profile", "reviews", "testimonials", "briefing", "assistant", "baseline"],
+  },
+  {
+    id: "reviews-collect",
+    category: "Content & Social",
+    question: "How do I collect client reviews and testimonials?",
+    answer:
+      "Open Reviews and choose Request a review. Enter the client's name (and email if you want a one-click email), and your assistant can draft the note. You get a personal link to send yourself — nothing is emailed for you. When they open it they see a simple form for a rating, a few words, and permission to share; their review lands in your list as Pending for you to Approve, Feature or Hide. Approved reviews can become a post in your Content Calendar with one click, and your assistant reads them to find your strongest proof. Each link takes exactly one review.",
+    keywords: ["reviews", "testimonials", "collect", "request a review", "client feedback", "social proof"],
+  },
+  {
     id: "planning-ai",
     category: "AI & Automation",
     question: "How does my AI assistant help with Strategic Planning?",

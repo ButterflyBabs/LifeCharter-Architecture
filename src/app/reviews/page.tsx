@@ -108,7 +108,7 @@ export default function ReviewsPage() {
 
       {err && <p className="mb-4 text-sm text-[#8a2f2f]">{err}</p>}
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,170px),1fr))] gap-3 mb-6">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,150px),1fr))] gap-3 mb-6">
         {[
           { label: "Reviews", value: stats ? String(stats.total) : "—", sub: stats ? `${stats.thisMonth} this month` : "" },
           { label: "Average rating", value: stats?.averageRating ? `${stats.averageRating} / 5` : "—", sub: stats?.averageRating ? "from rated reviews" : "no ratings yet" },
