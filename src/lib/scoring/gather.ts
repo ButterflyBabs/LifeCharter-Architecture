@@ -11,6 +11,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
 import { baselineCompleteness } from "@/lib/plans/blueprints";
+import { PULSE_LABEL_BY_ID } from "./pulseLabels";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -96,9 +97,16 @@ async function pulseAnswers(supabase: Supa, planId?: string | null): Promise<Sco
   if (!row?.responses) return [];
   const out: ScoringInputs["pulse"] = [];
   try {
-    // responses is expected as an array of { label/dimensionLabel, score(1-5 or 0-100) }.
-    const arr = Array.isArray(row.responses) ? row.responses : [];
-    for (const r of arr as Array<Record<string, unknown>>) {
+    // The check-in page stores { questionId: "1"–"5" }; older/other writers use an array
+    // of { label/dimensionLabel, score(1-5 or 0-100) }. Accept both.
+    let arr: Array<Record<string, unknown>>;
+    if (Array.isArray(row.responses)) arr = row.responses as Array<Record<string, unknown>>;
+    else if (row.responses && typeof row.responses === "object") {
+      arr = Object.entries(row.responses as Record<string, unknown>)
+        .filter(([id]) => PULSE_LABEL_BY_ID[id])
+        .map(([id, v]) => ({ label: PULSE_LABEL_BY_ID[id], score: v }));
+    } else arr = [];
+    for (const r of arr) {
       const label = (r.dimensionLabel ?? r.label) as string | undefined;
       const rawScore = Number(r.score ?? r.value);
       if (!label || Number.isNaN(rawScore)) continue;
