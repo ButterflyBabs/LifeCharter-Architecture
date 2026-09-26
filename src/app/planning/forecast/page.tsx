@@ -1,5 +1,6 @@
 "use client";
 
+import { ForecastRead } from "@/components/planning/AssistantPanels";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, LineChart, Loader2, RefreshCw, Sliders, TrendingUp } from "lucide-react";
@@ -101,6 +102,8 @@ export default function ForecastPage() {
           <p className="text-[#b8a898]">Revenue projections from your ledger trend + open pipeline.</p>
         </div>
       </div>
+
+      <ForecastRead />
 
       {!loaded ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>

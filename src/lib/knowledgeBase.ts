@@ -255,6 +255,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- AI & Automation ----
   {
+    id: "planning-ai",
+    category: "AI & Automation",
+    question: "How does my AI assistant help with Strategic Planning?",
+    answer:
+      "Every planning area runs on your own assistant, using your own AI key and following your standing instructions. It reads everything it knows about you — assessments, your Business, Marketing, Sales and Forecasting plans, goals, budgets, forecast, pipeline and tasks — so what it drafts stays consistent across them. Planning Hub: a briefing on where your plans stand and your next three moves. Plans: draft each section, review on a schedule, generate goals, and build proposals. Sales Plan: suggests weekly activity targets that become your goals in Sales Activities and the Weekly View. Forecasting: reads the forecast and suggests income goals that feed the Financial Pulse. Finance: assesses your financial health and suggests a budget from what you actually spend. Everything it writes is saved to your account under your assistant's name, and every other part of the Suite — Daily Compass insights, Quick Wins, Scripts — draws on the same plans.",
+    keywords: ["planning", "assistant", "business plan", "marketing plan", "sales plan", "forecast", "finance", "budget", "briefing", "goals", "strategic"],
+  },
+  {
     id: "scripts-templates",
     category: "AI & Automation",
     question: "What are Scripts & Templates, and can I make my own?",

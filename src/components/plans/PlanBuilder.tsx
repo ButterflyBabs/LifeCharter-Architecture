@@ -14,6 +14,7 @@ interface Section {
   answers: Record<string, string>;
   status: string;
   source: string;
+  aiBy?: string; // the assistant that drafted it
 }
 
 interface Data {
@@ -119,7 +120,7 @@ export default function PlanBuilder({ planType }: { planType: string }) {
       if (d.needsKey) {
         setNeedsKey(true);
       } else if (d.content) {
-        patchLocal(key, { content: d.content, source: "ai" });
+        patchLocal(key, { content: d.content, source: "ai", aiBy: d.assistant || "" });
         await saveSection(key, { content: d.content, source: "ai" });
       } else {
         setErr(d.error || "Couldn't draft that.");
@@ -190,7 +191,7 @@ export default function PlanBuilder({ planType }: { planType: string }) {
                     )}
                     {s.source === "ai" && filled && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">
-                        <Sparkles className="w-2.5 h-2.5" /> AI draft
+                        <Sparkles className="w-2.5 h-2.5" /> {s.aiBy ? `Drafted by ${s.aiBy}` : "AI draft"}
                       </span>
                     )}
                   </div>

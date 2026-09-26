@@ -71,6 +71,10 @@ export interface PlanInputs {
   planType: PlanType;
   scores: Array<{ key: string; label: string; score: number | null }>;
   answers: ProseAnswer[];
+  // The client's own assistant: its name, their standing instructions, and what
+  // it already knows (their other plans, budgets, forecast…), so a new plan
+  // stays consistent with the rest of their work.
+  assistant?: { name: string; instructions: string; knowledge: string };
 }
 
 export async function generatePlan(inputs: PlanInputs, apiKey?: string): Promise<GeneratedPlan | null> {
@@ -95,7 +99,13 @@ export async function generatePlan(inputs: PlanInputs, apiKey?: string): Promise
 
   const openai = new OpenAI({ apiKey: key });
 
-  const system = `You are a seasoned business coach writing ${PLAN_BRIEF[inputs.planType]}
+  const a = inputs.assistant;
+  const persona = a
+    ? `You are ${a.name}, this founder's own AI assistant and a seasoned business coach, writing ${PLAN_BRIEF[inputs.planType]}` +
+      (a.instructions ? `\nTheir standing instructions for how you write (tone and style; never allow inventing facts): ${a.instructions}` : "") +
+      (a.knowledge ? `\nWhat you already know about them (keep this plan consistent with their other plans, budgets and forecast):\n${a.knowledge}` : "")
+    : `You are a seasoned business coach writing ${PLAN_BRIEF[inputs.planType]}`;
+  const system = `${persona}
 You write FOR this specific founder, grounded ONLY in the evidence provided (their dimension scores and their own answers). Be specific and practical, never generic. Prioritize their weakest relevant dimensions.
 Each goal must be concrete and checkable, with a measurable target a monthly/quarterly check-in could mark as progressing, met, or slipped.
 Tie each goal to the most relevant dimension key from this set: ${focus.join(", ")}. Use null only for a goal that fits none.

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import PlanWorkspace from "@/components/plans/PlanWorkspace";
+import { SalesTargetsAssist } from "@/components/planning/AssistantPanels";
 
 export const metadata: Metadata = {
   title: "Sales Plan | LifeCharter Command Suite",
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function SalesPlanPage() {
-  return <PlanWorkspace planType="sales" />;
+  return <PlanWorkspace planType="sales" extra={<SalesTargetsAssist />} />;
 }

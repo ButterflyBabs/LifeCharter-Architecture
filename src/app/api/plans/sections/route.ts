@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { getBlueprint, baselineCompleteness, sectionQuestions } from "@/lib/plans/blueprints";
+import { resolveAiConfig } from "@/lib/ai/config";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ interface Saved {
   answers: Record<string, unknown> | null;
   status: string | null;
   source: string | null;
+  ai_by: string | null;
   updated_at: string | null;
 }
 
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
   if (masterPlanId) {
     const { data } = await supabase
       .from("plan_sections")
-      .select("section_key, content, answers, status, source, updated_at")
+      .select("section_key, content, answers, status, source, ai_by, updated_at")
       .eq("master_plan_id", masterPlanId)
       .eq("plan_type", type);
     for (const r of (data || []) as Saved[]) {
@@ -52,6 +54,7 @@ export async function GET(request: Request) {
       answers: saved?.answers || {},
       status: saved?.status || "empty",
       source: saved?.source || "client",
+      aiBy: saved?.source === "ai" ? saved?.ai_by || "" : "",
     };
   });
 
@@ -90,7 +93,11 @@ export async function PATCH(request: Request) {
   if (typeof body.content === "string") update.content = body.content;
   if (body.answers && typeof body.answers === "object") update.answers = body.answers;
   if (["empty", "drafted", "edited", "done"].includes(body.status)) update.status = body.status;
-  if (body.source === "ai" || body.source === "client") update.source = body.source;
+  if (body.source === "ai" || body.source === "client") {
+    update.source = body.source;
+    // Remember which assistant (this client's, by name) drafted it.
+    update.ai_by = body.source === "ai" ? (await resolveAiConfig()).name : null;
+  }
 
   const { data: existing } = await supabase
     .from("plan_sections")

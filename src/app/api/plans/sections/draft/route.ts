@@ -3,9 +3,8 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { getBlueprint, sectionQuestions } from "@/lib/plans/blueprints";
-import { getAssessmentContext, contextToText } from "@/lib/plans/assessmentContext";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +24,9 @@ export async function POST(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "no workspace" }, { status: 400 });
 
-  const { name, key } = await resolveAiConfig();
-  if (!key) return NextResponse.json({ needsKey: true });
-
-  const ctx = await getAssessmentContext(masterPlanId);
+  const assistant = await planningAssistant();
+  if (!assistant?.key) return NextResponse.json({ needsKey: true });
+  const key = assistant.key;
 
   // Other sections already written, for coherence.
   const supabase = createServerClient();
@@ -52,21 +50,22 @@ export async function POST(request: Request) {
     .filter(Boolean)
     .join("\n");
 
-  const sys =
-    `You are ${name}, a seasoned business strategist helping a founder build a legacy business — ` +
-    "not a bare-minimum operation. Write ONE section of their " +
-    `${bp.label}: "${section.title}". ${section.description} ` +
-    "Ground it in the founder's real assessment evidence and scores below — reflect their actual voice, market, and situation; never generic filler. " +
-    "Be practical and specific: concrete, usable, and honest about where they are. Where you make an assumption, phrase it so they can confirm or correct. " +
-    "Return STRICT JSON: {\"content\":\"the section, in clear prose with short paragraphs or bullet lines\"}. " +
-    "Aim for 120–250 words — substantial but not padded.";
+  const sys = planningSystem(
+    assistant,
+    "a seasoned business strategist helping this founder build a legacy business, not a bare-minimum operation.",
+    `Write ONE section of their ${bp.label}: "${section.title}". ${section.description} ` +
+      "Ground it in their real assessments, scores and the rest of their plans above — reflect their actual voice, market and situation; never generic filler. " +
+      "Stay consistent with their other plans, budgets and forecast. " +
+      "Be practical and specific: concrete, usable, and honest about where they are. Where you make an assumption, phrase it so they can confirm or correct. " +
+      'Return STRICT JSON: {"content":"the section, in clear prose with short paragraphs or bullet lines"}. ' +
+      "Aim for 120–250 words — substantial but not padded."
+  );
 
   const userText =
     `${bp.label} — section: ${section.title}\n` +
     `What this section captures: ${section.description}\n` +
     `Draw especially on: ${section.assess}\n\n` +
     (answerText ? `The founder's answers to the guiding questions:\n${answerText}\n\n` : "") +
-    `--- ASSESSMENT CONTEXT ---\n${contextToText(ctx)}\n\n` +
     (otherText ? `--- OTHER SECTIONS ALREADY WRITTEN ---\n${otherText}\n` : "");
 
   try {
@@ -90,7 +89,7 @@ export async function POST(request: Request) {
     }
     const content = String(parsed.content || "").trim();
     if (!content) return NextResponse.json({ error: "Couldn't draft that — add a guiding answer and retry." }, { status: 502 });
-    return NextResponse.json({ content });
+    return NextResponse.json({ content, assistant: assistant.name });
   } catch (e) {
     console.error("POST /api/plans/sections/draft:", e);
     return NextResponse.json({ error: "Couldn't reach the AI just now — try again." }, { status: 502 });

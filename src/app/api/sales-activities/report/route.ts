@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { typeLabel, outcomeLabel } from "@/lib/salesActivities";
 
 export const dynamic = "force-dynamic";
@@ -113,7 +113,8 @@ export async function POST(request: Request) {
     } else if (r.outcome !== "lost") pipeline += v;
   }
 
-  const { name, key } = await resolveAiConfig();
+  const assistant = await planningAssistant();
+  const key = assistant?.key || "";
   const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
   const stats =
     `Range: ${from || "start"} to ${to || "now"}. ${rows.length} activities. ` +
@@ -132,12 +133,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const sys =
-    `You are ${name}, a sharp sales coach for a small business owner. ` +
-    "From the activity aggregates, write a short performance report. " +
+  const sys = planningSystem(
+    assistant!,
+    "a sharp sales coach for this small business owner.",
+    "From the activity aggregates, write a short performance report, measured against their Sales Plan, weekly targets and pipeline above. " +
     'Return STRICT JSON: {"summary":"2-3 sentence plain-language read on their sales activity and momentum",' +
     '"insights":[{"title":"short","detail":"specific, actionable observation"}]}. ' +
-    "2-4 insights: what's working, where the gaps are (e.g. lots of calls but few booked), and the single highest-leverage next move. Do not invent numbers.";
+    "2-4 insights: what's working, where the gaps are (e.g. lots of calls but few booked), and the single highest-leverage next move. Do not invent numbers."
+  );
 
   try {
     const openai = new OpenAI({ apiKey: key });

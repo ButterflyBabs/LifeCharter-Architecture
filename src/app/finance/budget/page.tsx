@@ -1,5 +1,6 @@
 "use client";
 
+import { BudgetSuggest } from "@/components/planning/AssistantPanels";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -93,6 +94,8 @@ export default function BudgetPlannerPage() {
           <p className="text-[#b8a898]">As minimal or detailed as you like</p>
         </div>
       </div>
+
+      <BudgetSuggest onApplied={load} />
 
       {/* Overall */}
       <Card className="mb-6">

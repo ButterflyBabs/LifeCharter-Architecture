@@ -1,3 +1,4 @@
+import { planningKnowledge } from "@/lib/ai/planKnowledge";
 import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
@@ -227,6 +228,14 @@ export async function buildAssistantKnowledge(
         }
       }
     }
+  } catch {
+    /* optional */
+  }
+
+  // Their four plans, budgets, forecast and sales targets — so the plans inform
+  // everything the assistant helps with.
+  try {
+    parts.push(await planningKnowledge(masterPlanId));
   } catch {
     /* optional */
   }

@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { BLUEPRINTS, PLAN_KINDS } from "@/lib/plans/blueprints";
 import { buildForecast } from "@/lib/planning/forecastData";
 
@@ -71,8 +71,9 @@ export async function POST(request: Request) {
 
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "no workspace" }, { status: 400 });
-  const { name, key } = await resolveAiConfig();
-  if (!key) return NextResponse.json({ needsKey: true });
+  const assistant = await planningAssistant();
+  if (!assistant?.key) return NextResponse.json({ needsKey: true });
+  const key = assistant.key;
 
   const supabase = createServerClient();
 
@@ -130,13 +131,15 @@ export async function POST(request: Request) {
     /* optional */
   }
 
-  const sys =
-    `You are ${name}, an expert grant writer and business-proposal strategist. ` +
+  const sys = planningSystem(
+    assistant,
+    "an expert grant writer and business-proposal strategist.",
     `Write a complete, compelling ${PROPOSAL_TYPES[proposalType]} for this founder, assembled from their own plans and numbers below. ` +
     "This is a legacy business — convey vision, credibility, and impact, backed by specifics. " +
     "Structure it properly for its type (e.g. a grant: executive summary, organization background, statement of need, project description, goals & measurable outcomes, budget/use of funds, sustainability, and a closing). " +
     "Use the founder's real plan content and figures; where a detail is missing, insert a clearly-marked [bracketed placeholder] for them to fill. " +
-    'Return STRICT JSON: {"title":"a fitting proposal title","content":"the full proposal in Markdown"}. Make the content thorough and ready to edit.';
+    'Return STRICT JSON: {"title":"a fitting proposal title","content":"the full proposal in Markdown"}. Make the content thorough and ready to edit.'
+  );
 
   const userText =
     `Proposal type: ${PROPOSAL_TYPES[proposalType]}.` +

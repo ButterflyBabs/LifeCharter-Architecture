@@ -3,9 +3,8 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { getBlueprint } from "@/lib/plans/blueprints";
-import { getAssessmentContext, contextToText } from "@/lib/plans/assessmentContext";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +46,9 @@ export async function POST(request: Request) {
 
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "no workspace" }, { status: 400 });
-  const { name, key } = await resolveAiConfig();
-  if (!key) return NextResponse.json({ needsKey: true });
+  const assistant = await planningAssistant();
+  if (!assistant?.key) return NextResponse.json({ needsKey: true });
+  const key = assistant.key;
 
   const supabase = createServerClient();
 
@@ -115,27 +115,26 @@ export async function POST(request: Request) {
     else if (a.outcome !== "lost") pipeline += v;
   }
 
-  const ctx = await getAssessmentContext(masterPlanId, 16);
-
   const metrics =
     `YTD income ${usd(inc)}, expenses ${usd(exp)}, net ${usd(inc - exp)}. ` +
     `Open pipeline ${usd(pipeline)}, won ${usd(won)}. ${goalLine}`;
 
-  const sys =
-    `You are ${name}, a candid, supportive business advisor doing a ${CADENCES[cadence]} review of a founder's ${bp.label}. ` +
+  const sys = planningSystem(
+    assistant,
+    `a candid, supportive business advisor doing a ${CADENCES[cadence]} review of their ${bp.label}.`,
     "These are legacy-minded owners building something lasting — hold them to that standard with warmth. " +
     "Read their plan, their real numbers, and their assessment scores. " +
     'Return STRICT JSON: {"summary":"2-3 sentence honest read on how this plan is tracking",' +
     '"strengths":[{"area":"short","detail":"a specific strength showing up, tied to evidence"}],' +
     '"attention":[{"area":"short","detail":"what needs attention and why","suggestion":"a specific, doable change to get back on track"}],' +
     '"focus":"the single highest-leverage thing to do before the next review"}. ' +
-    "2-4 strengths, 2-4 attention items. Be specific and tie to their goals and numbers — never generic.";
+    "2-4 strengths, 2-4 attention items. Be specific and tie to their goals and numbers — never generic."
+  );
 
   const userText =
     `Cadence: ${CADENCES[cadence]} review of the ${bp.label}.\n\n` +
     `--- THE PLAN ---\n${sectionText || "(few sections written yet)"}\n\n` +
-    `--- REAL METRICS ---\n${metrics}\n\n` +
-    `--- ASSESSMENT CONTEXT ---\n${contextToText(ctx)}`;
+    `--- REAL METRICS ---\n${metrics}`;
 
   try {
     const openai = new OpenAI({ apiKey: key });
@@ -162,6 +161,7 @@ export async function POST(request: Request) {
       attention: Array.isArray(parsed.attention) ? parsed.attention.slice(0, 6) : [],
       focus: String(parsed.focus || "").trim(),
       cadence,
+      assistant: assistant.name, // which assistant wrote it (stored with the review)
       generatedAt: new Date().toISOString(),
     };
     if (!report.summary && report.strengths.length === 0) {

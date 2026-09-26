@@ -16,6 +16,8 @@ interface Analysis {
   score: number | null;
   assessment: string;
   insights: Insight[];
+  assistant?: string; // the client's own assistant that wrote it
+  createdAt?: string;
 }
 
 const sevIcon = (s: string) =>
@@ -28,7 +30,8 @@ const sevIcon = (s: string) =>
   );
 
 export function FinanceAI() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [needsKey, setNeedsKey] = useState(false);
   const [empty, setEmpty] = useState(false);
   const [data, setData] = useState<Analysis | null>(null);
@@ -53,9 +56,17 @@ export function FinanceAI() {
     }
   }, []);
 
+  // Show the last assessment this client's assistant made (stored with their
+  // account) instead of re-running the AI every visit; they refresh it on demand.
   useEffect(() => {
-    run();
-  }, [run]);
+    fetch("/api/finance/analysis")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.latest) setData(d.latest);
+      })
+      .catch(() => undefined)
+      .finally(() => setChecked(true));
+  }, []);
 
   return (
     <Card className="mb-6 bg-gradient-to-br from-[#f6f1fa] to-[#eef4f4] border-[#E8E4F0]">
@@ -65,12 +76,12 @@ export function FinanceAI() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <h3 className="font-serif text-lg text-indigo-900">AI Health Assessment</h3>
+            <h3 className="font-serif text-lg text-indigo-900">{data?.assistant ? `${data.assistant}'s ` : ""}Health Assessment</h3>
             {data?.score != null && (
               <span className="ml-1 text-sm font-semibold text-[#7b6b8d]">· {data.score}/100</span>
             )}
           </div>
-          {!needsKey && !empty && (
+          {!needsKey && !empty && data && (
             <button
               onClick={run}
               disabled={loading}
@@ -97,11 +108,21 @@ export function FinanceAI() {
           </p>
         ) : loading && !data ? (
           <p className="text-sm text-[#3F4654]">Reading your numbers…</p>
+        ) : !data && checked && !error ? (
+          <div className="text-sm">
+            <p className="text-[#3F4654] mb-2">Your assistant can grade your financial health, flag where expenses look high, and suggest specific steps — using your plans, budgets and goals.</p>
+            <Button variant="outline" size="sm" onClick={run}>Run my assessment</Button>
+          </div>
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : data ? (
           <div className="space-y-4">
             <p className="text-[#3F4654] leading-relaxed">{data.assessment}</p>
+            {data.createdAt && (
+              <p className="text-[11px] text-[#7a8a99]">
+                {data.assistant ? `Read by ${data.assistant}` : "Read"} on {new Date(data.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · saved to your account
+              </p>
+            )}
             {data.insights.map((ins, i) => (
               <div key={i} className="bg-white/70 rounded-lg border border-[#E8E4F0] p-3">
                 <div className="flex items-center gap-2 mb-1">

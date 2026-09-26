@@ -1,5 +1,6 @@
 "use client";
 
+import { PlanningBriefing } from "@/components/planning/AssistantPanels";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -224,6 +225,8 @@ export default function PlanningHubPage() {
       </div>
 
       {proposalOpen && <ProposalModal onClose={() => setProposalOpen(false)} />}
+
+      <PlanningBriefing />
 
       {/* Rollup cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">

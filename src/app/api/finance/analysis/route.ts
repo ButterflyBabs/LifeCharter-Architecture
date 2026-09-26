@@ -3,9 +3,18 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
+import { saveInsight, latestInsight } from "@/lib/ai/planKnowledge";
 
 export const dynamic = "force-dynamic";
+
+// GET — the last assessment this client's assistant made (so it's there when they come back).
+export async function GET() {
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ latest: null });
+  const i = await latestInsight(masterPlanId, "finance");
+  return NextResponse.json({ latest: i ? { ...i.content, assistant: i.assistant, createdAt: i.createdAt } : null });
+}
 
 // AI health assessment of the finance section: reads the client's ledger +
 // budgets, computes a compact summary, and asks the bot to grade financial
@@ -56,8 +65,9 @@ export async function POST(request: Request) {
     .eq("master_plan_id", masterPlanId);
   const budgets = (bData || []) as { type: string; category: string; amount: number | string | null }[];
 
-  const { name, key } = await resolveAiConfig();
-  if (!key) return NextResponse.json({ needsKey: true });
+  const assistant = await planningAssistant();
+  if (!assistant?.key || !masterPlanId) return NextResponse.json({ needsKey: true });
+  const key = assistant.key;
 
   const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
   const dataText =
@@ -70,13 +80,15 @@ export async function POST(request: Request) {
         : "none set"
     }.`;
 
-  const sys =
-    `You are ${name}, a sharp, supportive financial analyst for a small business owner. ` +
+  const sys = planningSystem(
+    assistant,
+    "a sharp, supportive financial analyst for this small business owner.",
     "Assess financial health from the data and be specific and practical. " +
     'Return STRICT JSON: {"score":<0-100 integer>,"assessment":"2-3 sentence plain-language health summary",' +
     '"insights":[{"title":"short","severity":"high|medium|low","detail":"what\'s off and why it matters","steps":["specific action", "..."]}]}. ' +
     "Focus insights on where expenses look high or out of line (vs income, vs budget, or vs typical small-business norms) and concrete ways to improve. " +
-    "2-4 insights. Steps must be specific and doable. If things look healthy, say so and give 1-2 optimization ideas. Do not invent numbers not provided.";
+    "2-4 insights. Steps must be specific and doable. If things look healthy, say so and give 1-2 optimization ideas. Tie advice to their plans, budgets and goals where you can. Do not invent numbers not provided."
+  );
 
   try {
     const openai = new OpenAI({ apiKey: key });
@@ -97,11 +109,14 @@ export async function POST(request: Request) {
     } catch {
       parsed = {};
     }
-    return NextResponse.json({
+    const result = {
       score: typeof parsed.score === "number" ? Math.max(0, Math.min(100, Math.round(parsed.score))) : null,
       assessment: String(parsed.assessment || "").trim() || "I couldn't summarize your health just now.",
       insights: Array.isArray(parsed.insights) ? parsed.insights.slice(0, 5) : [],
-    });
+    };
+    // Stored with this client's plan, under their assistant's name.
+    await saveInsight(masterPlanId, "finance", assistant.name, { ...result, summary: result.assessment });
+    return NextResponse.json({ ...result, assistant: assistant.name });
   } catch (e) {
     console.error("POST /api/finance/analysis:", e);
     return NextResponse.json({ error: "Couldn't run the analysis — try again in a moment." }, { status: 502 });
