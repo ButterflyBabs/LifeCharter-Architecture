@@ -596,24 +596,26 @@ export function IntegrationsPanel({ planId, currentIntegrationCount }: Integrati
 }
 
 // Real Google / Microsoft calendar + email connections (actual OAuth, not the
-// mock directory below). Shows live status and a Connect / Reconnect action.
-interface ProviderStatus {
-  connected: boolean;
+// mock directory above). Lists this account's connected email accounts, how
+// many its plan allows, and lets it add or disconnect one.
+interface ConnectedMailbox {
+  provider: "google" | "microsoft";
+  accountKey: string;
   email: string | null;
-  canWriteCalendar: boolean;
 }
 
 function CalendarConnections() {
-  const [google, setGoogle] = useState<ProviderStatus | null>(null);
-  const [microsoft, setMicrosoft] = useState<ProviderStatus | null>(null);
+  const [accounts, setAccounts] = useState<ConnectedMailbox[]>([]);
+  const [limit, setLimit] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/calendar/status");
+      const res = await fetch("/api/mail/accounts");
       const d = await res.json().catch(() => ({}));
-      if (d.google) setGoogle(d.google);
-      if (d.microsoft) setMicrosoft(d.microsoft);
+      setAccounts(Array.isArray(d.accounts) ? d.accounts : []);
+      setLimit(typeof d.limit === "number" ? d.limit : null);
     } finally {
       setLoaded(true);
     }
@@ -621,93 +623,92 @@ function CalendarConnections() {
 
   useEffect(() => {
     load();
+    setLimitHit(new URLSearchParams(window.location.search).get("mail") === "limit");
   }, [load]);
 
-  const Row = ({
-    name,
-    icon,
-    color,
-    authHref,
-    status,
-    writeNote,
-  }: {
-    name: string;
-    icon: string;
-    color: string;
-    authHref: string;
-    status: ProviderStatus | null;
-    writeNote?: boolean;
-  }) => {
-    const connected = status?.connected;
-    const canWrite = status?.canWriteCalendar;
-    return (
-      <div
-        className={`flex items-center justify-between p-3 rounded-lg border ${
-          loaded && connected ? "border-green-500/30 bg-green-500/5" : "border-[#1a2b4a]/10"
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${color}20` }}>
-            {icon}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{name}</p>
-              {loaded && connected && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-700 dark:text-green-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Connected
-                </span>
-              )}
-              {loaded && !connected && (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7a8a99]">
-                  Not connected
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[#b8a898]">
-              {!loaded
-                ? "Checking…"
-                : connected
-                ? status?.email || "Email + calendar"
-                : "Email + calendar (read & write)"}
-            </p>
-            {loaded && connected && writeNote && !canWrite && (
-              <p className="text-xs text-[#8a6a15] mt-0.5">Calendar is read-only — reconnect to add write access.</p>
-            )}
-            {loaded && connected && canWrite && (
-              <p className="text-xs text-[#2c6b3f] mt-0.5">Calendar write enabled ✓</p>
-            )}
-          </div>
-        </div>
-        {loaded && connected ? (
-          <a
-            href={authHref}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#1a2b4a]/20 text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
-          >
-            Reconnect
-          </a>
-        ) : (
-          <a
-            href={authHref}
-            className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
-          >
-            Connect
-          </a>
-        )}
-      </div>
-    );
+  const disconnect = async (a: ConnectedMailbox) => {
+    if (!confirm(`Disconnect ${a.email || (a.provider === "google" ? "this Google account" : "this Microsoft account")}?`)) return;
+    await fetch("/api/mail/accounts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: a.provider, accountKey: a.accountKey }),
+    });
+    load();
   };
+
+  const atLimit = limit !== null && accounts.length >= limit;
+  const addBtn = "text-sm font-medium px-3 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]";
 
   return (
     <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
-      <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Calendar &amp; Email</h3>
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Calendar &amp; Email</h3>
+        {loaded && limit !== null && (
+          <span className="text-xs font-medium text-[#7a8a99]">
+            {accounts.length} of {limit} email {limit === 1 ? "account" : "accounts"} used
+          </span>
+        )}
+      </div>
       <p className="text-xs text-[#b8a898] mb-3">
         Connect Google or Microsoft to read your inbox &amp; calendar and let the app add events (like planning sessions).
+        Each connected email account counts toward your plan&apos;s limit.
       </p>
+      {limitHit && (
+        <p className="text-xs text-[#8a6a15] mb-3">
+          You&apos;ve reached your plan&apos;s email account limit. Disconnect one below, or upgrade your plan to add more.
+        </p>
+      )}
       <div className="space-y-2">
-        <Row name="Google Workspace" icon="📧" color="#4285F4" authHref="/api/google/auth" status={google} writeNote />
-        <Row name="Microsoft 365" icon="🏢" color="#D83B01" authHref="/api/microsoft/auth" status={microsoft} />
+        {!loaded && <p className="text-xs text-[#b8a898]">Checking…</p>}
+        {loaded && accounts.length === 0 && (
+          <p className="text-xs text-[#b8a898]">No email accounts connected yet.</p>
+        )}
+        {accounts.map((a) => (
+          <div
+            key={a.accountKey}
+            className="flex items-center justify-between p-3 rounded-lg border border-green-500/30 bg-green-500/5"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                style={{ backgroundColor: a.provider === "google" ? "#4285F420" : "#D83B0120" }}
+              >
+                {a.provider === "google" ? "📧" : "🏢"}
+              </div>
+              <div>
+                <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                  {a.email || (a.provider === "google" ? "Google account" : "Microsoft 365 account")}
+                </p>
+                <p className="text-xs text-[#b8a898]">
+                  {a.provider === "google" ? "Google Workspace / Gmail" : "Microsoft 365"} · email + calendar
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => disconnect(a)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#1a2b4a]/20 text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+            >
+              Disconnect
+            </button>
+          </div>
+        ))}
       </div>
+      {loaded && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {atLimit ? (
+            <p className="text-xs text-[#7a8a99]">Email account limit reached — upgrade your plan to connect more.</p>
+          ) : (
+            <>
+              <a href="/api/google/auth" className={addBtn}>
+                Add Google account
+              </a>
+              <a href="/api/microsoft/auth" className={addBtn}>
+                Add Microsoft 365 account
+              </a>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

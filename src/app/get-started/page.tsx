@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { StarterSignupForm } from "./StarterSignupForm";
+import { emailAccountsLabel } from "@/lib/planLabels";
 
 export const metadata: Metadata = {
   title: "Get Started — LifeCharter Command Suite",
@@ -15,6 +16,7 @@ interface PlanRow {
   description: string | null;
   price_monthly: number;
   onboarding_fee: number | null;
+  capabilities: { mailboxes?: number } | null;
 }
 
 function usd(cents: number): string {
@@ -35,7 +37,7 @@ async function getPlans(): Promise<PlanRow[]> {
   );
   const { data } = await supabase
     .from("plans")
-    .select("id, name, description, price_monthly, onboarding_fee")
+    .select("id, name, description, price_monthly, onboarding_fee, capabilities")
     .eq("is_active", true)
     .order("price_monthly", { ascending: true });
   return data ?? [];
@@ -86,6 +88,7 @@ export default async function GetStartedPage({
               <p className="text-xs text-[#b8a898] mt-1">
                 + {usd(starter.onboarding_fee ?? 0)} one-time implementation
               </p>
+              <p className="text-xs text-[#E3C27C] mt-3">{emailAccountsLabel(starter.capabilities?.mailboxes)}</p>
               <div className="mt-6">
                 <StarterSignupForm sessionSource={src} />
               </div>
@@ -105,6 +108,7 @@ export default async function GetStartedPage({
               <p className="text-xs text-[#b8a898] mt-1">
                 + {usd(plan.onboarding_fee ?? 0)} one-time implementation
               </p>
+              <p className="text-xs text-[#E3C27C] mt-3">{emailAccountsLabel(plan.capabilities?.mailboxes)}</p>
               <a
                 href={websiteConsultHref}
                 className="mt-6 block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2.5 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"

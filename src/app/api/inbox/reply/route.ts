@@ -19,12 +19,12 @@ export async function POST(request: Request) {
 
   try {
     if (provider === "microsoft") {
-      const token = await microsoft.getValidAccessToken();
+      const token = await microsoft.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       if (!body?.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
       await microsoft.replyToMessage(token, String(body.id), String(body.body), attachments);
     } else {
-      const token = await google.getValidAccessToken();
+      const token = await google.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       if (!body?.to) return NextResponse.json({ error: "to is required" }, { status: 400 });
       await google.sendReply(token, {

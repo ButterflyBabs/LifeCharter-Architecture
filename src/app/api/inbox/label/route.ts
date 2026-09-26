@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const lib = provider === "microsoft" ? microsoft : google;
 
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     await lib.modifyLabels(token, id, add, remove);
     return NextResponse.json({ ok: true });

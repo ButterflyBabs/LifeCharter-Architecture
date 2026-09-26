@@ -44,6 +44,7 @@ interface Email {
   unread: boolean;
   provider?: Provider;
   account?: string;
+  accountKey?: string;
   labels?: MailLabel[];
 }
 
@@ -51,6 +52,7 @@ interface MailAccount {
   provider: Provider;
   email: string;
   label: string;
+  accountKey: string;
 }
 
 interface AttachmentMeta {
@@ -129,12 +131,9 @@ export default function ExecutiveHome() {
   const [composeBody, setComposeBody] = useState("");
   const [sending, setSending] = useState(false);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
-  const [providers, setProviders] = useState<{ google: boolean; microsoft: boolean }>({
-    google: false,
-    microsoft: false,
-  });
   const [accounts, setAccounts] = useState<MailAccount[]>([]);
-  const [composeProvider, setComposeProvider] = useState<Provider>("google");
+  const [composeAccountKey, setComposeAccountKey] = useState<string>("");
+  const [mailLimit, setMailLimit] = useState<number | null>(null);
   const [composeFiles, setComposeFiles] = useState<FileDraft[]>([]);
   const [replyFiles, setReplyFiles] = useState<FileDraft[]>([]);
   const [forwardFiles, setForwardFiles] = useState<FileDraft[]>([]);
@@ -149,7 +148,7 @@ export default function ExecutiveHome() {
   const [inboxLimit, setInboxLimit] = useState(12);
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [accountFilter, setAccountFilter] = useState<Provider | null>(null);
+  const [accountFilter, setAccountFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [newLabelFor, setNewLabelFor] = useState<string | null>(null);
   const [newLabelName, setNewLabelName] = useState("");
@@ -202,6 +201,14 @@ export default function ExecutiveHome() {
   // Fetch real tasks
   useEffect(() => {
     fetchTasks();
+  }, []);
+
+  // How many email accounts the plan allows (null = unlimited)
+  useEffect(() => {
+    fetch("/api/mail/accounts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setMailLimit(typeof d.limit === "number" ? d.limit : null))
+      .catch(() => {});
   }, []);
 
   // Fetch live financial pulse
@@ -267,15 +274,14 @@ export default function ExecutiveHome() {
       .then((d) => {
         if (!d) return;
         setGoogleConnected(Boolean(d.connected));
-        if (d.providers) setProviders(d.providers);
         if (Array.isArray(d.accounts)) {
           setAccounts(d.accounts);
           // Default the compose "From" to the first connected account, but keep
           // the user's pick if it's still a connected account.
-          setComposeProvider((prev) =>
-            d.accounts.some((a: MailAccount) => a.provider === prev)
+          setComposeAccountKey((prev) =>
+            d.accounts.some((a: MailAccount) => a.accountKey === prev)
               ? prev
-              : (d.accounts[0]?.provider ?? prev)
+              : (d.accounts[0]?.accountKey ?? prev)
           );
         }
         if (Array.isArray(d.emails)) setEmails(d.emails);
@@ -308,7 +314,7 @@ export default function ExecutiveHome() {
   const visibleEmails = emails.filter(
     (e) =>
       (!unreadOnly || e.unread) &&
-      (!accountFilter || (e.provider ?? "google") === accountFilter) &&
+      (!accountFilter || e.accountKey === accountFilter) &&
       (!labelFilter || (e.labels ?? []).some((l) => l.id === labelFilter))
   );
   // Distinct labels present across the loaded inbox, for the label filter.
@@ -324,7 +330,7 @@ export default function ExecutiveHome() {
 
   const emailRow = (email: Email) => (
     <div
-      key={`${email.provider ?? "google"}-${email.id}`}
+      key={`${email.accountKey ?? email.provider ?? "google"}-${email.id}`}
       onClick={() => openEmail(email)}
       className={`flex items-start gap-3 p-3 rounded-xl border border-[#E8E4E0] cursor-pointer transition-all ${
         selectedEmail === email.id ? "bg-white ring-2 ring-[#84AEB2]" : "bg-[#F8F5F0] hover:bg-white"
@@ -370,7 +376,7 @@ export default function ExecutiveHome() {
       await fetch("/api/inbox/mark-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: firstUnread.provider ?? "google", id: firstUnread.id }),
+        body: JSON.stringify({ provider: firstUnread.provider ?? "google", accountKey: firstUnread.accountKey, id: firstUnread.id }),
       });
     } catch {
       /* optimistic — leave marked read locally */
@@ -390,20 +396,20 @@ export default function ExecutiveHome() {
       fetch("/api/inbox/mark-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: prov, id: email.id }),
+        body: JSON.stringify({ provider: prov, accountKey: email.accountKey, id: email.id }),
       }).catch(() => {});
     }
     try {
       let msgs: MsgDetail[] = [];
       if (email.threadId) {
         const res = await fetch(
-          `/api/inbox/thread?provider=${prov}&id=${encodeURIComponent(email.threadId)}`
+          `/api/inbox/thread?provider=${prov}&accountKey=${encodeURIComponent(email.accountKey ?? "")}&id=${encodeURIComponent(email.threadId)}`
         );
         if (res.ok) msgs = (await res.json()).messages ?? [];
       }
       if (msgs.length === 0) {
         const res = await fetch(
-          `/api/inbox/message?provider=${prov}&id=${encodeURIComponent(email.id)}`
+          `/api/inbox/message?provider=${prov}&accountKey=${encodeURIComponent(email.accountKey ?? "")}&id=${encodeURIComponent(email.id)}`
         );
         if (res.ok) msgs = [await res.json()];
       }
@@ -414,7 +420,7 @@ export default function ExecutiveHome() {
     }
     setReadingLoading(false);
     // Load this provider's labels/categories for the add-label menu.
-    fetch(`/api/inbox/labels?provider=${prov}`)
+    fetch(`/api/inbox/labels?provider=${prov}&accountKey=${encodeURIComponent(email.accountKey ?? "")}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && Array.isArray(d.labels) && setAvailableLabels(d.labels))
       .catch(() => {});
@@ -442,6 +448,7 @@ export default function ExecutiveHome() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
+          accountKey: readingSource?.accountKey,
           id: msg.id,
           add: action === "add" ? [label.id] : [],
           remove: action === "remove" ? [label.id] : [],
@@ -463,7 +470,7 @@ export default function ExecutiveHome() {
       const res = await fetch("/api/inbox/labels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, name }),
+        body: JSON.stringify({ provider, accountKey: readingSource?.accountKey, name }),
       });
       if (!res.ok) {
         alert("Couldn't create that label.");
@@ -542,6 +549,7 @@ export default function ExecutiveHome() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: forwardSource.provider ?? "google",
+          accountKey: forwardSource.accountKey,
           id: forwardSource.id,
           to: forwardTo.trim(),
           comment: forwardNote,
@@ -582,7 +590,7 @@ export default function ExecutiveHome() {
       await fetch("/api/inbox/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: email.provider ?? "google", id: email.id, action }),
+        body: JSON.stringify({ provider: email.provider ?? "google", accountKey: email.accountKey, id: email.id, action }),
       });
     } catch {
       /* optimistic — leave the local change in place */
@@ -610,8 +618,8 @@ export default function ExecutiveHome() {
     return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const attachmentHref = (provider: Provider, messageId: string, a: AttachmentMeta) =>
-    `/api/inbox/attachment?provider=${provider}&messageId=${encodeURIComponent(messageId)}` +
+  const attachmentHref = (provider: Provider, accountKey: string | undefined, messageId: string, a: AttachmentMeta) =>
+    `/api/inbox/attachment?provider=${provider}&accountKey=${encodeURIComponent(accountKey ?? "")}&messageId=${encodeURIComponent(messageId)}` +
     `&attachmentId=${encodeURIComponent(a.id)}&name=${encodeURIComponent(a.name)}` +
     `&mime=${encodeURIComponent(a.mimeType)}`;
 
@@ -623,6 +631,7 @@ export default function ExecutiveHome() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: replyingTo.provider ?? "google",
+          accountKey: replyingTo.accountKey,
           id: replyingTo.id,
           threadId: replyingTo.threadId,
           to: replyingTo.fromEmail,
@@ -741,6 +750,8 @@ export default function ExecutiveHome() {
 
   const onComposeFiles = (files: FileList | null) => readFilesInto(files, setComposeFiles);
 
+  const composeAccount = accounts.find((a) => a.accountKey === composeAccountKey) ?? accounts[0];
+
   const handleSendCompose = async () => {
     if (!composeTo.trim() || !composeBody.trim()) return;
     setSending(true);
@@ -749,7 +760,8 @@ export default function ExecutiveHome() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider: composeProvider,
+          provider: composeAccount?.provider ?? "google",
+          accountKey: composeAccount?.accountKey,
           to: composeTo.trim(),
           subject: composeSubject.trim() || "(no subject)",
           body: composeBody,
@@ -1299,24 +1311,31 @@ export default function ExecutiveHome() {
             )}
           </div>
 
-          {/* Add-another-account chips (shown when at least one account is connected) */}
-          {googleConnected && (!providers.google || !providers.microsoft) && (
-            <div className="px-6 pt-4 flex flex-wrap gap-2">
-              {!providers.google && (
-                <a
-                  href="/api/google/auth"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Connect Gmail
-                </a>
+          {/* Add-another-account chips (shown while the plan has room for more email accounts) */}
+          {googleConnected && (
+            <div className="px-6 pt-4 flex flex-wrap items-center gap-2">
+              {mailLimit === null || accounts.length < mailLimit ? (
+                <>
+                  <a
+                    href="/api/google/auth"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Add Gmail
+                  </a>
+                  <a
+                    href="/api/microsoft/auth"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Add Microsoft 365
+                  </a>
+                </>
+              ) : (
+                <span className="text-xs text-gray-400">Your plan&apos;s email account limit is reached.</span>
               )}
-              {!providers.microsoft && (
-                <a
-                  href="/api/microsoft/auth"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#84AEB2] text-[#2E7C83] text-xs hover:bg-[#84AEB2]/5 transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Connect Microsoft 365
-                </a>
+              {mailLimit !== null && (
+                <span className="text-xs text-gray-400">
+                  {accounts.length} of {mailLimit} email {mailLimit === 1 ? "account" : "accounts"}
+                </span>
               )}
             </div>
           )}
@@ -1372,9 +1391,9 @@ export default function ExecutiveHome() {
               {accounts.length > 1 &&
                 accounts.map((a) => (
                   <button
-                    key={a.provider}
-                    onClick={() => setAccountFilter((p) => (p === a.provider ? null : a.provider))}
-                    className={chipCls(accountFilter === a.provider)}
+                    key={a.accountKey}
+                    onClick={() => setAccountFilter((p) => (p === a.accountKey ? null : a.accountKey))}
+                    className={chipCls(accountFilter === a.accountKey)}
                   >
                     {a.label}
                   </button>
@@ -1788,7 +1807,7 @@ export default function ExecutiveHome() {
                               {m.attachments.map((a) => (
                                 <a
                                   key={a.id}
-                                  href={attachmentHref(readingSource?.provider ?? "google", m.id, a)}
+                                  href={attachmentHref(readingSource?.provider ?? "google", readingSource?.accountKey, m.id, a)}
                                   download={a.name}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E8E4E0] bg-white text-xs text-[#3F4654] hover:border-[#84AEB2] transition-colors"
                                 >
@@ -2036,12 +2055,12 @@ export default function ExecutiveHome() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">From</label>
                   <select
-                    value={composeProvider}
-                    onChange={(e) => setComposeProvider(e.target.value as Provider)}
+                    value={composeAccount?.accountKey ?? ""}
+                    onChange={(e) => setComposeAccountKey(e.target.value)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
                   >
                     {accounts.map((a) => (
-                      <option key={a.provider} value={a.provider}>
+                      <option key={a.accountKey} value={a.accountKey}>
                         {a.label}
                       </option>
                     ))}

@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 
 // Available labels (Gmail) / categories (Outlook) for one provider.
 export async function GET(request: Request) {
-  const provider =
-    new URL(request.url).searchParams.get("provider") === "microsoft" ? "microsoft" : "google";
+  const url = new URL(request.url);
+  const provider = url.searchParams.get("provider") === "microsoft" ? "microsoft" : "google";
   const lib = provider === "microsoft" ? microsoft : google;
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: url.searchParams.get("accountKey") || undefined });
     if (!token) return NextResponse.json({ labels: [] });
     return NextResponse.json({ labels: await lib.listLabels(token) });
   } catch (e) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const provider = body?.provider === "microsoft" ? "microsoft" : "google";
   const lib = provider === "microsoft" ? microsoft : google;
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     return NextResponse.json({ label: await lib.createLabel(token, name) });
   } catch (e) {

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const attachments = normalizeAttachments(body?.attachments);
 
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     await lib.forwardMessage(token, id, to, comment, attachments);
     return NextResponse.json({ ok: true });

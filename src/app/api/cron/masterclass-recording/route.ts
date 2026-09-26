@@ -52,7 +52,7 @@ async function run(request: Request) {
     }
   }
 
-  const driveToken = await google.getValidAccessToken();
+  const driveToken = await google.getValidAccessToken({ house: true });
   if (!driveToken) {
     return NextResponse.json({ error: "Google not connected (Settings → Integrations)" }, { status: 500 });
   }

@@ -54,8 +54,8 @@ async function run(request: Request) {
   const skipped: { id: number; reason: string }[] = [];
 
   // Resolve tokens once.
-  const msToken = await microsoft.getValidAccessToken().catch(() => null);
-  const gToken = msToken ? null : await google.getValidAccessToken().catch(() => null);
+  const msToken = await microsoft.getValidAccessToken({ house: true }).catch(() => null);
+  const gToken = msToken ? null : await google.getValidAccessToken({ house: true }).catch(() => null);
   const masterPlanId = await resolveMasterPlanId().catch(() => null);
 
   for (const t of rows) {

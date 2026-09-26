@@ -172,7 +172,7 @@ export async function middleware(request: NextRequest) {
   if (
     !authed &&
     isDemo &&
-    ["/api/inbox", "/api/schedule", "/api/calendar", "/api/google", "/api/microsoft"].some((p) => path.startsWith(p))
+    ["/api/inbox", "/api/schedule", "/api/calendar", "/api/google", "/api/microsoft", "/api/mail"].some((p) => path.startsWith(p))
   ) {
     if (path === "/api/inbox" && request.method === "GET") {
       return NextResponse.json({ connected: false, providers: { google: false, microsoft: false }, accounts: [], emails: [] });

@@ -13,11 +13,11 @@ export async function GET(request: Request) {
 
   try {
     if (provider === "microsoft") {
-      const token = await microsoft.getValidAccessToken();
+      const token = await microsoft.getValidAccessToken({ accountKey: url.searchParams.get("accountKey") || undefined });
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       return NextResponse.json(await microsoft.fetchMessage(token, id));
     }
-    const token = await google.getValidAccessToken();
+    const token = await google.getValidAccessToken({ accountKey: url.searchParams.get("accountKey") || undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     return NextResponse.json(await google.fetchMessage(token, id));
   } catch (e) {

@@ -4,6 +4,7 @@ import * as microsoft from "@/lib/microsoft";
 import type { ScheduleEvent } from "@/lib/google";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveAiAccount } from "@/lib/ai/config";
+import { openMailboxes } from "@/lib/mailboxes";
 
 export const dynamic = "force-dynamic";
 
@@ -27,33 +28,23 @@ export async function GET(request: Request) {
     /* fall back to the query tz */
   }
 
-  const [gToken, mToken] = await Promise.all([
-    google.getValidAccessToken(),
-    microsoft.getValidAccessToken(),
-  ]);
-
+  const boxes = await openMailboxes();
   const events: MergedEvent[] = [];
-  let connected = false;
+  const connected = boxes.length > 0;
 
-  if (gToken) {
-    connected = true;
-    try {
-      const g = await google.fetchTodayEvents(gToken, timeZone);
-      events.push(...g.map((e) => ({ ...e, account: "Gmail" })));
-    } catch (e) {
-      console.error("schedule google:", e);
-    }
-  }
-  if (mToken) {
-    connected = true;
-    const mEmail = (await microsoft.connectedEmail()) ?? "Microsoft 365";
-    try {
-      const m = await microsoft.fetchTodayEvents(mToken, timeZone);
-      events.push(...m.map((e) => ({ ...e, account: mEmail })));
-    } catch (e) {
-      console.error("schedule microsoft:", e);
-    }
-  }
+  await Promise.all(
+    boxes.map(async (box) => {
+      try {
+        const rows =
+          box.provider === "google"
+            ? await google.fetchTodayEvents(box.token, timeZone)
+            : await microsoft.fetchTodayEvents(box.token, timeZone);
+        events.push(...rows.map((e) => ({ ...e, account: box.label })));
+      } catch (e) {
+        console.error(`schedule ${box.provider}:`, e);
+      }
+    })
+  );
 
   events.sort((a, b) => {
     const ta = a.start ? new Date(a.start).getTime() : Infinity;

@@ -7,16 +7,16 @@ import type {
   MailLabel,
 } from "@/lib/google";
 import { dayWindowUtc } from "@/lib/tz";
+import { scopeOwner, type MailScope } from "@/lib/mailOwner";
 
 // Microsoft 365 (Graph) OAuth + Mail/Calendar helpers — the Microsoft twin of
-// lib/google.ts (raw fetch, no SDK). Single stored credential keyed by
-// ACCOUNT_KEY. Uses the "common" endpoint so work/school (incl. GoDaddy-sold
+// lib/google.ts (raw fetch, no SDK). Connections belong to an account
+// (owner_id); several mailboxes per account. Uses the "common" endpoint so work/school (incl. GoDaddy-sold
 // M365) and personal Microsoft accounts can sign in to a multi-tenant app.
 
 const MS_AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const MS_TOKEN = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 const GRAPH = "https://graph.microsoft.com/v1.0";
-const ACCOUNT_KEY = "primary";
 
 const SCOPES = [
   "openid",
@@ -48,7 +48,7 @@ export function redirectUri(origin?: string): string {
   );
 }
 
-export function getAuthUrl(origin?: string): string {
+export function getAuthUrl(origin?: string, state?: string): string {
   const params = new URLSearchParams({
     client_id: clientId(),
     redirect_uri: redirectUri(origin),
@@ -56,6 +56,7 @@ export function getAuthUrl(origin?: string): string {
     response_mode: "query",
     scope: SCOPES,
     prompt: "select_account",
+    ...(state ? { state } : {}),
   });
   return `${MS_AUTH}?${params.toString()}`;
 }
@@ -114,11 +115,13 @@ export async function getConnectedEmail(accessToken: string): Promise<string | n
   }
 }
 
-export async function storeCredential(tokens: TokenResponse, email?: string): Promise<void> {
+export async function storeCredential(ownerId: string, tokens: TokenResponse, email?: string | null): Promise<string> {
   const supabase = createServerClient();
   const expiry = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
+  const accountKey = `${ownerId}:${(email || "unknown").toLowerCase()}`;
   const row: Record<string, unknown> = {
-    account_key: ACCOUNT_KEY,
+    account_key: accountKey,
+    owner_id: ownerId,
     access_token: tokens.access_token ?? null,
     scope: tokens.scope ?? null,
     expiry,
@@ -127,47 +130,77 @@ export async function storeCredential(tokens: TokenResponse, email?: string): Pr
   if (tokens.refresh_token) row.refresh_token = tokens.refresh_token;
   if (email) row.email = email;
   await supabase.from("microsoft_credentials").upsert(row, { onConflict: "account_key" });
+  return accountKey;
 }
 
-export async function isConnected(): Promise<boolean> {
-  const supabase = createServerClient();
-  const { data } = await supabase
+// Refreshed tokens for a connection that already exists.
+async function updateTokens(accountKey: string, tokens: TokenResponse, keepRefresh: string): Promise<void> {
+  const expiry = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
+  await createServerClient()
     .from("microsoft_credentials")
-    .select("account_key")
-    .eq("account_key", ACCOUNT_KEY)
-    .maybeSingle();
-  return Boolean(data);
+    .update({
+      access_token: tokens.access_token ?? null,
+      refresh_token: keepRefresh,
+      scope: tokens.scope ?? null,
+      expiry,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("account_key", accountKey);
 }
 
-export async function connectedEmail(): Promise<string | null> {
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from("microsoft_credentials")
-    .select("email")
-    .eq("account_key", ACCOUNT_KEY)
-    .maybeSingle();
-  return (data?.email as string) ?? null;
+// One connected mailbox belonging to the scope's account: the named one, else
+// the oldest. Returns null when the requester has no account or no mailbox.
+async function loadRow(scope: MailScope | undefined, columns: string): Promise<Record<string, unknown> | null> {
+  const owner = await scopeOwner(scope);
+  if (!owner) return null;
+  let q = createServerClient().from("microsoft_credentials").select(columns).eq("owner_id", owner);
+  if (scope?.accountKey) q = q.eq("account_key", scope.accountKey);
+  else q = q.order("created_at", { ascending: true }).limit(1);
+  const { data } = await q.maybeSingle();
+  return (data as unknown as Record<string, unknown>) ?? null;
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
-  const supabase = createServerClient();
-  const { data } = await supabase
+export async function listConnections(scope?: MailScope): Promise<{ accountKey: string; email: string | null }[]> {
+  const owner = await scopeOwner(scope);
+  if (!owner) return [];
+  const { data } = await createServerClient()
     .from("microsoft_credentials")
-    .select("access_token, refresh_token, expiry")
-    .eq("account_key", ACCOUNT_KEY)
-    .maybeSingle();
+    .select("account_key, email")
+    .eq("owner_id", owner)
+    .order("created_at", { ascending: true });
+  return (data ?? []).map((r) => ({ accountKey: r.account_key as string, email: (r.email as string) ?? null }));
+}
+
+export async function removeConnection(ownerId: string, accountKey: string): Promise<void> {
+  await createServerClient().from("microsoft_credentials").delete().eq("owner_id", ownerId).eq("account_key", accountKey);
+}
+
+export async function isConnected(scope?: MailScope): Promise<boolean> {
+  return Boolean(await loadRow(scope, "account_key"));
+}
+
+export async function connectedEmail(scope?: MailScope): Promise<string | null> {
+  const row = await loadRow(scope, "email");
+  return (row?.email as string) ?? null;
+}
+
+export async function getValidAccessToken(scope?: MailScope): Promise<string | null> {
+  const data = await loadRow(scope, "account_key, access_token, refresh_token, expiry");
   if (!data) return null;
+  const accountKey = data.account_key as string;
+  const expiry = data.expiry as string | null;
 
-  const stillValid = data.expiry && new Date(data.expiry).getTime() > Date.now() + 60_000;
-  if (stillValid) return data.access_token ?? null;
-  if (!data.refresh_token) return data.access_token ?? null;
+  const stillValid = expiry && new Date(expiry).getTime() > Date.now() + 60_000;
+  if (stillValid) return (data.access_token as string) ?? null;
+  const refreshToken = data.refresh_token as string | null;
+  if (!refreshToken) return (data.access_token as string) ?? null;
 
   try {
-    const refreshed = await refreshAccessToken(data.refresh_token);
-    await storeCredential({ ...refreshed, refresh_token: refreshed.refresh_token ?? data.refresh_token });
+    const refreshed = await refreshAccessToken(refreshToken);
+    await updateTokens(accountKey, refreshed, refreshed.refresh_token ?? refreshToken);
     return refreshed.access_token ?? null;
   } catch {
-    return data.access_token ?? null;
+    return (data.access_token as string) ?? null;
   }
 }
 

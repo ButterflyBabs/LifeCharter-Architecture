@@ -27,11 +27,11 @@ export async function POST(request: Request) {
 
   try {
     if (provider === "microsoft") {
-      const token = await microsoft.getValidAccessToken();
+      const token = await microsoft.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       await microsoft.sendEmail(token, opts);
     } else {
-      const token = await google.getValidAccessToken();
+      const token = await google.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
       if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
       await google.sendEmail(token, opts);
     }

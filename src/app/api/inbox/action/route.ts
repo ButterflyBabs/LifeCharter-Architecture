@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const lib = provider === "microsoft" ? microsoft : google;
 
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: body?.accountKey ? String(body.accountKey) : undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     if (action === "read") await lib.markRead(token, id);
     else if (action === "unread") await lib.setUnread(token, id);

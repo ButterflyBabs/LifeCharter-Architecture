@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const lib = provider === "microsoft" ? microsoft : google;
   try {
-    const token = await lib.getValidAccessToken();
+    const token = await lib.getValidAccessToken({ accountKey: url.searchParams.get("accountKey") || undefined });
     if (!token) return NextResponse.json({ error: "not connected" }, { status: 401 });
     const bytes = await lib.getAttachmentBytes(token, messageId, attachmentId);
     // Sanitize the filename for the header.

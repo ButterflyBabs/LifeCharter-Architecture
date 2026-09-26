@@ -17,6 +17,7 @@ interface Tier {
   tagline: string;
   monthly: string;
   implementation: string;
+  emailAccounts: string;
   implementationUrl: string;
   monthlyUrl: string;
 }
@@ -33,6 +34,7 @@ const TIERS: Tier[] = [
     tagline: "Find your clarity in the cohort — self-driven, running one business.",
     monthly: "$347/mo",
     implementation: "$2,497",
+    emailAccounts: "1 connected email account",
     implementationUrl: "https://buy.stripe.com/6oUbJ22JxeB511caGS4ow05",
     monthlyUrl: "https://buy.stripe.com/6oUeVeesfgJdbFQcP04ow02",
   },
@@ -42,6 +44,7 @@ const TIERS: Tier[] = [
     tagline: "Get hands-on help implementing it — a monthly hand on the wheel.",
     monthly: "$497/mo",
     implementation: "$2,997",
+    emailAccounts: "3 connected email accounts",
     implementationUrl: "https://buy.stripe.com/fZu5kE0BpgJd39k4iu4ow04",
     monthlyUrl: "https://buy.stripe.com/eVq4gA83RboT8tE5my4ow01",
   },
@@ -51,6 +54,7 @@ const TIERS: Tier[] = [
     tagline: "Have it built with you, at your side — white-glove, room to run everything.",
     monthly: "$997/mo",
     implementation: "$4,997",
+    emailAccounts: "Unlimited connected email accounts",
     implementationUrl: "https://buy.stripe.com/fZu3cw83R78D7pAdT44ow03",
     monthlyUrl: "https://buy.stripe.com/6oUcN6ck7boTaBMaGS4ow00",
   },
@@ -99,6 +103,7 @@ export default function SalesReferencePage() {
                 <span className="text-xs uppercase tracking-wide text-[#b8a898]">Implementation (one-time)</span>
                 <div className="text-3xl font-bold text-[#F8F5F0] mt-0.5">{tier.implementation}</div>
                 <p className="text-xs text-[#b8a898] mt-0.5">+ {tier.monthly} after implementation</p>
+                <p className="text-xs text-[#E3C27C] mt-2">{tier.emailAccounts}</p>
               </div>
 
               <CombinedCheckoutButton
