@@ -55,10 +55,14 @@ export interface PostRow {
   series: string;
   invite_level: string | null;
   offer_key: string | null;
+  poststream_post_id?: string | null;
+  scheduled_at?: string | null;
+  media_urls?: unknown;
+  media_type?: string | null;
 }
 
 export const POST_COLUMNS =
-  "id, planned_date, platform, format, status, title, notes, image_prompt, link, series, invite_level, offer_key";
+  "id, planned_date, platform, format, status, title, notes, image_prompt, link, series, invite_level, offer_key, poststream_post_id, scheduled_at, media_urls, media_type";
 
 export function shapePost(r: PostRow): PlannedPost {
   return {
@@ -74,5 +78,9 @@ export function shapePost(r: PostRow): PlannedPost {
     series: r.series || "",
     inviteLevel: (r.invite_level as PlannedPost["inviteLevel"]) ?? null,
     offerKey: r.offer_key ?? null,
+    psId: r.poststream_post_id ?? null,
+    scheduledAt: r.scheduled_at ?? null,
+    mediaUrls: Array.isArray(r.media_urls) ? (r.media_urls as unknown[]).map(String) : [],
+    mediaType: r.media_type || "",
   };
 }

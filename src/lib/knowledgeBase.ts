@@ -291,7 +291,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "How do Create Content and the Content Calendar work?",
     answer:
-      "Both are live through PostStream. Create Content lets you compose a post, pick platforms from your connected accounts, draft the caption + hashtags with AI, add media, and save as draft / schedule / publish now. The Content Calendar shows every post on its date, color-coded by status (draft, scheduled, published), where you can publish or delete.",
+      "They're one place now: the Content Calendar. Use Create content to write a post, pick platforms from your connected accounts, draft the caption + hashtags with AI, add media, and save as draft, schedule, or publish now through PostStream. Every post shows on its day, color-coded by status. Open any planned post and choose Schedule or publish to send it through PostStream from the calendar — the two stay linked, so a post that goes out (or one you make directly in PostStream) shows up as posted on the calendar and counts once.",
     keywords: ["content", "create content", "content calendar", "poststream", "social", "posts", "schedule", "publish"],
   },
 
@@ -439,7 +439,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Content & Social",
     question: "How do I schedule or publish a post?",
     answer:
-      "In Create Content, write your post, pick platforms, add media if you like, then choose Save as draft, Schedule (with a date and time), or Publish now. Scheduled and published posts appear on the Content Calendar on their day, where you can also publish or delete.",
+      "On the Content Calendar, click Create content (or open a planned post and choose Schedule or publish). Pick platforms, add media if you like, then choose Save as draft, Schedule (with a date and time), or Publish now. Scheduled and published posts stay on the calendar on their day; deleting a scheduled post there also cancels it in PostStream.",
     keywords: ["schedule post", "publish", "draft", "content calendar", "post"],
   },
   {

@@ -14,15 +14,16 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Share2, Phone, Calendar, MessageSquare, GripVertical } from "lucide-react";
+import { Phone, Calendar, MessageSquare, GripVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 
-// The four Daily Compass quick-action cards. Drag any card to reorder them —
+// The three Daily Compass quick-action cards (Create Content lives inside the
+// Content Calendar now). Drag any card to reorder them —
 // the order is remembered on this device. Cards still open on a normal click or
 // tap; on a touch screen, press and hold a card a moment, then drag.
 
-type CardId = "content" | "sales" | "calendar" | "scripts";
-const DEFAULT_ORDER: CardId[] = ["content", "sales", "calendar", "scripts"];
+type CardId = "sales" | "calendar" | "scripts";
+const DEFAULT_ORDER: CardId[] = ["calendar", "sales", "scripts"];
 const STORAGE_KEY = "compass-quick-actions-order";
 
 interface Props {
@@ -94,18 +95,6 @@ export function QuickActions({ psConnected, socialOn }: Props) {
   };
 
   const cards: Record<CardId, { href: string; body: React.ReactNode }> = {
-    content: {
-      href: psConnected === false ? "/settings" : "/daily-compass/content-studio",
-      body: (
-        <>
-          <div className="w-10 h-10 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center mx-auto mb-2">
-            <Share2 className="w-5 h-5 text-[#4a9b9b]" />
-          </div>
-          <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Create Content</p>
-          <p className="text-xs text-[#b8a898]">{psConnected === false ? "Connect PostStream" : "Social post via PostStream"}</p>
-        </>
-      ),
-    },
     sales: {
       href: "/daily-compass/sales-activities",
       body: (
@@ -127,7 +116,7 @@ export function QuickActions({ psConnected, socialOn }: Props) {
           </div>
           <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
           <p className="text-xs text-[#b8a898]">
-            {socialOn ? "Today's posts & habits" : psConnected === false ? "Connect PostStream" : "Schedule PostStream posts"}
+            {psConnected === false && !socialOn ? "Connect PostStream" : "Plan, create & schedule posts"}
           </p>
         </>
       ),
@@ -150,7 +139,7 @@ export function QuickActions({ psConnected, socialOn }: Props) {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={order} strategy={rectSortingStrategy}>
         <div
-          className="grid grid-cols-2 md:grid-cols-4 gap-3"
+          className="grid grid-cols-2 md:grid-cols-3 gap-3"
           onClickCapture={(e) => {
             if (justDragged.current) {
               e.preventDefault();

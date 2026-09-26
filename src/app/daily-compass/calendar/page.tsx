@@ -23,6 +23,8 @@ import {
 } from "@/lib/social/planner";
 import { useSocialPlanner } from "@/components/social/useSocialPlanner";
 import { PostDetail, PostForm } from "@/components/social/PostDetail";
+import { PostComposer, type ComposerInitial } from "@/components/content/PostComposer";
+import { captionOf } from "@/lib/social/planner";
 import { PlatformChip, Ring, StatusBadge, StatusSelect, Tabs, Tip, cx } from "@/components/social/ui";
 
 // PostStream posts (the scheduling service). Planned posts live in the Social
@@ -76,6 +78,7 @@ export default function ContentCalendarPage() {
   const [filter, setFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null); // date for a new post
+  const [composer, setComposer] = useState<ComposerInitial | null>(null); // create / send through PostStream
 
   const loadPs = useCallback(async () => {
     try {
@@ -104,6 +107,7 @@ export default function ContentCalendarPage() {
       const f = localStorage.getItem("lc-calendar-filter");
       if (f) setFilter(f);
     } catch {}
+    if (new URLSearchParams(window.location.search).get("new") === "1") setComposer({});
     loadPs();
   }, [loadPs]);
 
@@ -134,16 +138,19 @@ export default function ContentCalendarPage() {
     return m;
   }, [posts, visible]);
 
+  // A calendar post that's been sent to PostStream shows once, as the calendar post.
+  const linkedPsIds = useMemo(() => new Set(posts.map((p) => p.psId).filter((x): x is string => Boolean(x))), [posts]);
+
   const psByDay = useMemo(() => {
     const m = new Map<string, PsPost[]>();
     for (const p of psPosts) {
       const k = psDateKey(p);
-      if (!k || !psVisible(p)) continue;
+      if (!k || !psVisible(p) || linkedPsIds.has(p.id)) continue;
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(p);
     }
     return m;
-  }, [psPosts, psVisible]);
+  }, [psPosts, psVisible, linkedPsIds]);
 
   const openPost = posts.find((p) => p.id === openId) || null;
 
@@ -184,6 +191,7 @@ export default function ContentCalendarPage() {
         {showDate && <span className="ml-1 text-xs font-normal text-[#64748B]">· {fmtDate(p.date, { weekday: "short", month: "short", day: "numeric" })}</span>}
       </button>
       {p.imagePrompt && <span title="Has a ChatGPT graphic prompt" className="text-[11px] text-[#8C6D24]">✦ graphic</span>}
+      {p.psId && <span title="Linked to PostStream" className="text-[11px] text-[#2E7C83]">PostStream</span>}
       <StatusSelect value={p.status} onChange={(status) => planner.savePost(p.id, { status })} />
       <button onClick={() => setOpenId(p.id)} className={`${cx.btn} ${cx.secondary} !px-2.5 !py-1`}>Open</button>
     </div>
@@ -461,7 +469,7 @@ export default function ContentCalendarPage() {
             {!dayPlanned.length && !dayPs.length && (
               <p className={cx.muted}>
                 Nothing on this day.{" "}
-                <Link href="/daily-compass/content-studio" className="underline">Create a post</Link>.
+                <button className="underline" onClick={() => setComposer({ date: selectedDay })}>Create a post</button>.
               </p>
             )}
           </div>
@@ -495,9 +503,9 @@ export default function ContentCalendarPage() {
               <Sparkles className="h-3.5 w-3.5" /> Social Planner
             </Link>
           )}
-          <Link href="/daily-compass/content-studio" className={`${cx.btn} ${cx.primary}`}>
+          <button onClick={() => setComposer({})} className={`${cx.btn} ${cx.primary}`}>
             <Plus className="h-3.5 w-3.5" /> Create content
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -562,6 +570,29 @@ export default function ContentCalendarPage() {
             setOpenId(null);
           }}
           onClose={() => setOpenId(null)}
+          onSend={() =>
+            setComposer({
+              title: openPost.title,
+              caption: captionOf(openPost.notes),
+              platforms: [openPost.platform],
+              date: openPost.date,
+              plannedIds: [openPost.id],
+              mediaUrls: openPost.mediaUrls,
+              scheduledAt: openPost.scheduledAt || undefined,
+            })
+          }
+        />
+      )}
+
+      {composer && (
+        <PostComposer
+          plannerOn={plannerOn}
+          initial={composer}
+          onClose={() => setComposer(null)}
+          onSent={() => {
+            if (plannerOn) planner.reloadPosts();
+            loadPs();
+          }}
         />
       )}
 

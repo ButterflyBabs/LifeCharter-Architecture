@@ -1165,7 +1165,7 @@ export default function ExecutiveHome() {
 
           {/* Create Content - Lavender */}
           <button 
-            onClick={() => window.location.href = "/daily-compass/content-studio"}
+            onClick={() => window.location.href = "/daily-compass/calendar?new=1"}
             className="flex items-center gap-1 px-2 py-1.5 bg-[#f8f4fb] text-[#6b4b7c] border border-[#e8e0f0] rounded-md text-xs font-medium hover:bg-[#f0e8f8] transition-colors"
           >
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

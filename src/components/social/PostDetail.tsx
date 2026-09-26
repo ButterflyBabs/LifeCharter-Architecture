@@ -168,7 +168,7 @@ export function PostForm({
 }
 
 export function PostDetail({
-  post, platforms, offers, onSave, onDelete, onClose,
+  post, platforms, offers, onSave, onDelete, onClose, onSend,
 }: {
   post: PlannedPost;
   platforms: PlatformDef[];
@@ -176,6 +176,7 @@ export function PostDetail({
   onSave: (patch: Partial<PlannedPost>) => void;
   onDelete: () => void;
   onClose: () => void;
+  onSend?: () => void; // opens the composer to schedule/publish this post through PostStream
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -244,6 +245,28 @@ export function PostDetail({
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </button>
             </div>
+
+            {onSend && (
+              <div className={`${cx.card} !p-4 flex flex-wrap items-center justify-between gap-3`}>
+                <div>
+                  <p className={cx.h3}>PostStream</p>
+                  <p className={cx.muted}>
+                    {post.status === "posted" && post.psId
+                      ? "Published through PostStream."
+                      : post.psId && post.scheduledAt
+                      ? `Scheduled for ${new Date(post.scheduledAt).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`
+                      : post.psId
+                      ? "Saved as a draft in PostStream."
+                      : "Not sent yet — schedule it or publish it right from here."}
+                  </p>
+                </div>
+                {post.status !== "posted" && (
+                  <button className={`${cx.btn} ${cx.primary}`} onClick={onSend}>
+                    {post.psId ? "Change schedule or publish" : "Schedule or publish"}
+                  </button>
+                )}
+              </div>
+            )}
 
             <FillIns notes={post.notes} onFill={(notes) => onSave({ notes })} />
 

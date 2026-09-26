@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { socialContext, isYmd, isStatus, str, shapePost, POST_COLUMNS, type PostRow } from "@/lib/social/server";
 import { inviteLevelOf } from "@/lib/social/planner";
+import { getClientKey, deletePost } from "@/lib/postStream";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +96,22 @@ export async function DELETE(request: Request) {
   if (!ctx.ok) return ctx.res;
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+  // A post that's been sent to PostStream: if nothing else shares it and it
+  // hasn't gone out yet, cancel it there too (deleting a scheduled post must
+  // stop it publishing). Either way, remember it so the calendar sync doesn't
+  // bring it back.
+  const { data: row } = await ctx.supabase.from("social_posts").select("poststream_post_id, status").eq("id", id).eq("master_plan_id", ctx.masterPlanId).maybeSingle();
+  const psId = (row?.poststream_post_id as string | null) || null;
+  if (psId) {
+    const { count } = await ctx.supabase.from("social_posts").select("id", { count: "exact", head: true }).eq("master_plan_id", ctx.masterPlanId).eq("poststream_post_id", psId).neq("id", id);
+    if (!count) {
+      if (row?.status !== "posted") {
+        const key = await getClientKey();
+        if (key) await deletePost(key, psId).catch(() => undefined);
+      }
+      await ctx.supabase.from("social_ps_ignored").upsert({ master_plan_id: ctx.masterPlanId, poststream_post_id: psId });
+    }
+  }
   const { error } = await ctx.supabase.from("social_posts").delete().eq("id", id).eq("master_plan_id", ctx.masterPlanId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

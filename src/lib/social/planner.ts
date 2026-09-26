@@ -32,6 +32,11 @@ export interface PlannedPost {
   series: string;
   inviteLevel: "give" | "light" | "invite" | null;
   offerKey: string | null;
+  // Set once the post is sent to PostStream (drafted, scheduled or published there).
+  psId?: string | null;
+  scheduledAt?: string | null; // when it's set to go out (ISO)
+  mediaUrls?: string[];
+  mediaType?: string;
 }
 
 export interface WeekDoc {

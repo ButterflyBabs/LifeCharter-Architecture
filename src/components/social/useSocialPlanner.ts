@@ -56,6 +56,14 @@ export function useSocialPlanner() {
       setPosts(p.posts);
       setWeeks(Object.fromEntries(w.weeks.map((x) => [x.weekStart, x])));
       setSnapshots(au.snapshots);
+      // Bring in what happened in PostStream (published, or posted there directly).
+      // Quiet in the background; the calendar refreshes only if something changed.
+      fetch("/api/social/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) })
+        .then((r) => r.json())
+        .then(async (d: { changed?: number }) => {
+          if (d?.changed) setPosts((await json<{ posts: PlannedPost[] }>(await fetch("/api/social/posts"))).posts);
+        })
+        .catch(() => undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load the planner.");
     } finally {
@@ -68,6 +76,14 @@ export function useSocialPlanner() {
   }, [load]);
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : "Couldn't save.");
+
+  const reloadPosts = useCallback(async () => {
+    try {
+      setPosts((await json<{ posts: PlannedPost[] }>(await fetch("/api/social/posts"))).posts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't refresh.");
+    }
+  }, []);
 
   /* ---- posts ---- */
   const savePost = useCallback(async (id: string, patch: Partial<PlannedPost>) => {
@@ -202,7 +218,7 @@ export function useSocialPlanner() {
 
   return {
     enabled, loaded, error, setError, settings, posts, weeks, snapshots,
-    savePost, addPost, deletePost, toggleHabit, setActual, setWeekNotes,
+    reloadPosts, savePost, addPost, deletePost, toggleHabit, setActual, setWeekNotes,
     saveSettings, offersApi, saveSnapshot, setBaseline, deleteSnapshot,
   };
 }

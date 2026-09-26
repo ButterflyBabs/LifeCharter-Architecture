@@ -85,7 +85,7 @@ export function QuickAddMenu() {
   const items = [
     { label: "New task", icon: <CheckSquare className="w-4 h-4" />, action: openTask, desc: "Add to today" },
     { label: "Log a sale", icon: <DollarSign className="w-4 h-4" />, action: () => go("/daily-compass/sales-activities?add=1"), desc: "Record a sales activity" },
-    { label: "Create content", icon: <Share2 className="w-4 h-4" />, action: () => go("/daily-compass/content-studio"), desc: "Compose a post" },
+    { label: "Create content", icon: <Share2 className="w-4 h-4" />, action: () => go("/daily-compass/calendar?new=1"), desc: "Compose a post" },
     { label: "Schedule planning session", icon: <CalendarPlus className="w-4 h-4" />, action: () => go("/planning?session=1"), desc: "Add to your calendar" },
   ];
 
