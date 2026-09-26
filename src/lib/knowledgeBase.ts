@@ -562,6 +562,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "The LifeCharter Collective is LifeCharter's community — channels and conversations, events, direct messages, an Alignment Journal, and resources. Open it from 'The Collective' in the left navigation. It has its own look and menu, and a 'Command Suite' button takes you back to the dashboard. It's a separate space from your business data — nothing from your Command Suite is shared with the community.",
     keywords: ["collective", "community", "lifecharter collective", "channels", "events", "journal", "members", "switch"],
   },
+  {
+    id: "ai-assistant-learns",
+    category: "AI & Automation",
+    question: "Does my AI assistant learn from my assessments?",
+    answer:
+      "Yes. Your assistant reads your own Brain, Soul and Profit assessment answers — each one counts as soon as you give it (the Brain and Soul assessments save as you go; you don't have to finish) — along with your live dimension scores, your open and recurring tasks for today, and your recent conversation with it, so its advice is about your business rather than generic. Anything you mark sensitive in the Soul assessment is never shown to it. Your data is only ever used for your own account. You can wipe its memory of your conversations any time with 'Clear memory' on the dashboard's AI Assistant card; that doesn't touch your assessments.",
+    keywords: ["assistant", "ai", "learn", "learns", "assessments", "memory", "remember", "personalized", "sensitive", "private", "clear memory", "brain", "soul", "profit"],
+  },
 ];
 
 // Lightweight keyword-overlap retrieval: score each entry against the query and
