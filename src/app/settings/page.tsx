@@ -358,6 +358,29 @@ export default function SettingsPage() {
   });
 
 
+  // Task reminder preferences (saved as they change)
+  const [reminderLead, setReminderLead] = useState(30);
+  const [reminderEmail, setReminderEmail] = useState(true);
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        if (typeof d.taskReminderLeadMin === "number") setReminderLead(d.taskReminderLeadMin);
+        if (typeof d.taskReminderEmail === "boolean") setReminderEmail(d.taskReminderEmail);
+      })
+      .catch(() => {});
+  }, []);
+  const saveReminderPrefs = (patch: { taskReminderLeadMin?: number; taskReminderEmail?: boolean }) => {
+    if (patch.taskReminderLeadMin !== undefined) setReminderLead(patch.taskReminderLeadMin);
+    if (patch.taskReminderEmail !== undefined) setReminderEmail(patch.taskReminderEmail);
+    fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).catch(() => {});
+  };
+
   // Load profile data on mount
   useEffect(() => {
     async function loadProfile() {
@@ -705,6 +728,36 @@ export default function SettingsPage() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+            Task reminders
+          </label>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <span>Remind me</span>
+            <select
+              value={reminderLead}
+              onChange={(e) => saveReminderPrefs({ taskReminderLeadMin: Number(e.target.value) })}
+              aria-label="How long before a timed task is due"
+              className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3"
+            >
+              {[10, 15, 30, 60, 120].map((m) => (
+                <option key={m} value={m}>
+                  {m < 60 ? `${m} minutes` : m === 60 ? "1 hour" : "2 hours"} before
+                </option>
+              ))}
+            </select>
+            <span>a timed task is due, in the app</span>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={reminderEmail}
+                onChange={(e) => saveReminderPrefs({ taskReminderEmail: e.target.checked })}
+                className="h-4 w-4 rounded border-[#1a2b4a]/30"
+              />
+              and by email
+            </label>
+          </div>
         </div>
       </div>
 

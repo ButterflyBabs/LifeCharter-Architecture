@@ -20,6 +20,7 @@ const PUBLIC_APIS = [
   "/api/cron/journal-review", // secured by its own CRON_SECRET check, not a session
   "/api/cron/moderate", // secured by its own CRON_SECRET check, not a session
   "/api/cron/weekly-offer-thread", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/task-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
   "/api/auth/forgot", // public — password-reset request; always answers the same way
   "/api/collective/request-invite", // public — landing-page invitation requests; rate-limited + honeypot

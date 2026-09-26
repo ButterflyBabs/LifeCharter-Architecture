@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { OPERATIONS_PILLARS } from "@/lib/operations";
+import { reminderLeadFor, minutesUntil, inMinutes } from "@/lib/taskReminders";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,32 @@ async function deriveNotifications(
           due.length === 1
             ? `"${String((due[0] as { title: string }).title).slice(0, 60)}" is due.`
             : "You have tasks due today or overdue — knock them out.",
+        href: "/tasks",
+      });
+    }
+  } catch {
+    /* best effort */
+  }
+
+  // 3b. Deadline reminders: timed tasks coming up within the client's lead time.
+  try {
+    const lead = await reminderLeadFor(masterPlanId);
+    const nowMs = Date.now();
+    const { data } = await supabase
+      .from("tasks")
+      .select("id, title, due_at, time_kind")
+      .eq("master_plan_id", masterPlanId)
+      .eq("due_has_time", true)
+      .neq("status", "done")
+      .gt("due_at", new Date(nowMs).toISOString())
+      .lte("due_at", new Date(nowMs + lead * 60000).toISOString());
+    for (const t of (data || []) as { id: number; title: string; due_at: string; time_kind: string }[]) {
+      const mins = Math.max(1, minutesUntil(t.due_at));
+      out.push({
+        nkey: `task-soon-${t.id}-${new Date(t.due_at).getTime()}`,
+        type: "action",
+        title: t.time_kind === "scheduled" ? `Starts in ${inMinutes(mins)}` : `Due in ${inMinutes(mins)}`,
+        body: `"${String(t.title).slice(0, 80)}"`,
         href: "/tasks",
       });
     }

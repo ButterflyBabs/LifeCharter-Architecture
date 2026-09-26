@@ -53,7 +53,7 @@ export function NotificationsBell() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 120000); // refresh every 2 min
+    const t = setInterval(load, 60000); // refresh every minute so deadline reminders land on time
     return () => clearInterval(t);
   }, [load]);
 
