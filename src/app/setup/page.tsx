@@ -95,7 +95,16 @@ export default function SetupPage() {
 
   const requiredDone = steps.filter((x) => x.required && x.done).length;
   const requiredTotal = steps.filter((x) => x.required).length;
-  const pct = requiredTotal ? Math.round((requiredDone / requiredTotal) * 100) : 0;
+
+  // "Connect your tools" is the fifth step: it counts once at least one tool
+  // (calendar & email, Global Control or PostStream) is connected. It stays
+  // optional — it doesn't hold back entering the Suite.
+  const toolStates = [Boolean(s?.integrations.calendar), Boolean(s?.integrations.globalControl), Boolean(s?.integrations.poststream)];
+  const toolsConnected = toolStates.filter(Boolean).length;
+  const toolsDone = toolsConnected > 0;
+  const stepsDone = requiredDone + (toolsDone ? 1 : 0);
+  const stepsTotal = requiredTotal + 1;
+  const pct = Math.round((stepsDone / stepsTotal) * 100);
 
   const enterSuite = () => {
     try {
@@ -133,9 +142,9 @@ export default function SetupPage() {
         {/* Progress */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-[#7a8a99] dark:text-[#b8c2cf]">Foundation</span>
+            <span className="text-[#7a8a99] dark:text-[#b8c2cf]">Setup progress</span>
             <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-              {requiredDone} of {requiredTotal}
+              {stepsDone} of {stepsTotal}
             </span>
           </div>
           <div className="h-2.5 rounded-full bg-[#1a2b4a]/8 overflow-hidden">
@@ -187,25 +196,43 @@ export default function SetupPage() {
             </div>
 
             {/* Integrations (optional) */}
-            <div className="mt-4 rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/20 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Plug className="w-5 h-5 text-[#7b6b8d]" />
-                <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Connect your tools</h3>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7a8a99]">Optional</span>
+            <div
+              className={`mt-3 rounded-2xl border p-4 ${
+                toolsDone ? "border-green-500/30 bg-green-500/5" : "border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/20"
+              }`}
+            >
+              <div className="flex items-center gap-4 mb-2">
+                <div className="flex-shrink-0">
+                  {toolsDone ? (
+                    <CheckCircle2 className="w-8 h-8 text-[#2c6b3f]" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#2E7C83]/10 text-[#2E7C83] flex items-center justify-center font-semibold">
+                      {requiredTotal + 1}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Plug className="w-5 h-5 text-[#2E7C83]" />
+                    <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Connect your tools</h3>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7a8a99]">Optional to enter</span>
+                    <span className="text-[11px] text-[#7a8a99]">{toolsConnected} of 3 connected</span>
+                  </div>
+                  <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">
+                    Hook up your calendar &amp; email, contacts, and social so the Suite can act for you. Connecting any one completes this step.
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mb-3">
-                Hook up your calendar, contacts, and social so the Suite can act for you. You can always do this later.
-              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                <IntegrationChip icon={<Calendar className="w-4 h-4" />} label="Calendar & Email" done={Boolean(s?.integrations.calendar)} />
-                <IntegrationChip icon={<Users className="w-4 h-4" />} label="Global Control" done={Boolean(s?.integrations.globalControl)} />
-                <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={Boolean(s?.integrations.poststream)} />
+                <IntegrationChip icon={<Calendar className="w-4 h-4" />} label="Calendar & Email" done={toolStates[0]} />
+                <IntegrationChip icon={<Users className="w-4 h-4" />} label="Global Control" done={toolStates[1]} />
+                <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[2]} />
               </div>
               <Link
                 href="/settings"
                 className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
               >
-                Open Integrations <ArrowRight className="w-4 h-4" />
+                {toolsDone ? "Manage integrations" : "Connect your tools"} <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
@@ -228,7 +255,7 @@ export default function SetupPage() {
                     Finish the foundation to continue
                   </button>
                   <p className="text-xs text-[#b8a898] mt-3">
-                    Complete your three assessments and connect your AI to unlock the Suite.{" "}
+                    Complete your three assessments and connect your AI to unlock the Suite — connecting your tools is optional.{" "}
                     <button onClick={finishLater} className="text-[#2E7C83] hover:underline">
                       I&apos;ll finish later
                     </button>

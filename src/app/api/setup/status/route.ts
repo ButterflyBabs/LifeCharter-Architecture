@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
+import { sessionUser } from "@/lib/authz";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 
@@ -82,9 +83,13 @@ export async function GET() {
   // Per-account setup bypass (set on the profile) — skips the gate while building.
   let bypass = false;
   try {
-    const { data: prof } = await supabase.from("profiles").select("preferences").limit(1).maybeSingle();
-    const prefs = (prof?.preferences as Record<string, unknown>) || {};
-    bypass = prefs.setupBypass === true || prefs.setupBypass === "true";
+    // The signed-in account's own setting (never another profile's).
+    const user = await sessionUser();
+    if (user) {
+      const { data: prof } = await supabase.from("profiles").select("preferences").eq("id", user.id).maybeSingle();
+      const prefs = (prof?.preferences as Record<string, unknown>) || {};
+      bypass = prefs.setupBypass === true || prefs.setupBypass === "true";
+    }
   } catch {
     /* optional */
   }

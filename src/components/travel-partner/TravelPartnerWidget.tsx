@@ -210,7 +210,7 @@ export default function TravelPartnerWidget() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  // Live setup progress (foundation: 3 assessments + AI), from the same source
+  // Live setup progress (3 assessments, AI, and connecting tools), from the same source
   // the /setup wizard uses — so the widget reflects real status.
   const [setupStatus, setSetupStatus] = useState<{ done: number; total: number; complete: boolean } | null>(null);
   useEffect(() => {
@@ -219,9 +219,11 @@ export default function TravelPartnerWidget() {
       .then((d) => {
         if (!d) return;
         const a = d.assessments || {};
-        const done = [a.brain, a.soul, a.profit, d.ai?.connected].filter(Boolean).length;
+        const i = d.integrations || {};
+        const toolsConnected = Boolean(i.calendar || i.globalControl || i.poststream);
+        const done = [a.brain, a.soul, a.profit, d.ai?.connected, toolsConnected].filter(Boolean).length;
         // Treat a bypassed account as complete so the setup banner stays hidden.
-        setSetupStatus({ done, total: 4, complete: Boolean(d.requiredComplete || d.bypass) });
+        setSetupStatus({ done, total: 5, complete: Boolean(d.requiredComplete || d.bypass) });
       })
       .catch(() => {});
   }, []);
@@ -504,7 +506,7 @@ export default function TravelPartnerWidget() {
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-                Finish setup — foundation {setupStatus.done}/{setupStatus.total}
+                Finish setup — {setupStatus.done}/{setupStatus.total}
               </span>
               <span className="text-xs text-[#2E7C83] font-medium">Continue →</span>
             </div>
