@@ -9,8 +9,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PAGES = ["/.well-known", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/get-started", "/demo", "/schedule", "/legal"];
 const PUBLIC_APIS = [
-  "/api/google/callback",
-  "/api/microsoft/callback",
   "/auth/callback",
   "/api/invite",
   "/api/cron/masterclass-recording", // secured by its own CRON_SECRET check, not a session
@@ -164,6 +162,26 @@ export async function middleware(request: NextRequest) {
   const isDemo = request.cookies.get("lc_demo")?.value === "1";
 
   if (isPublicApi) return response;
+
+  // Mailbox + calendar + OAuth-connect APIs are never available to the /demo
+  // cookie. They act on the connected Google / Microsoft account, and a demo
+  // visitor is not signed in — without this, anyone opening /demo could read
+  // the owner's inbox and calendar, or re-point the connection at their own
+  // account. Answers with the "not connected" shape so the demo dashboard just
+  // shows its connect prompts.
+  if (
+    !authed &&
+    isDemo &&
+    ["/api/inbox", "/api/schedule", "/api/calendar", "/api/google", "/api/microsoft"].some((p) => path.startsWith(p))
+  ) {
+    if (path === "/api/inbox" && request.method === "GET") {
+      return NextResponse.json({ connected: false, providers: { google: false, microsoft: false }, accounts: [], emails: [] });
+    }
+    if (path === "/api/schedule" && request.method === "GET") {
+      return NextResponse.json({ connected: false, events: [] });
+    }
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   if (path.startsWith("/api/")) {
     if (!authed && !isDemo) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
