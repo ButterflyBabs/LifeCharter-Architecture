@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SegmentRead } from "@/components/planning/AssistantPanels";
 import { resetSegmentOptions } from "@/components/segments/SegmentSelect";
+import { AutoTagPanel } from "@/components/segments/AutoTagPanel";
 
 interface DimensionScore {
   dimension_key: string;
@@ -99,11 +100,11 @@ export default function SegmentsPage() {
     await load();
   };
   const addBusiness = () => {
-    const name = window.prompt("Name of the business (e.g. your company, a brand, a practice):");
+    const name = window.prompt("Name of the business or brand (e.g. your company, a brand, a practice):");
     if (name?.trim()) send("POST", "/api/segments", { kind: "business", name });
   };
   const addSegment = (businessId: number) => {
-    const name = window.prompt("Name of the segment (a product line, service, program or audience):");
+    const name = window.prompt("Name of the segment or offering (a product line, service, program or audience):");
     if (name?.trim()) send("POST", "/api/segments", { kind: "segment", businessId, name });
   };
   const rename = (kind: "business" | "segment", id: number, current: string) => {
@@ -168,14 +169,26 @@ export default function SegmentsPage() {
               Business Segments
             </h1>
             <p className="text-[#7b6b8d] dark:text-[#e8e4f0] max-w-3xl">
-              Your businesses and the segments inside them — products, services, programs or audiences. Tag income and
+              Your businesses or brands, and the segments (offerings) inside each — products, services, programs or audiences. Tag income and
               expenses to a segment in the Finance Center and each segment shows what it actually earns. The 12-dimension
               strip is your whole-business alignment; a coach can adjust a segment by hand.
             </p>
           </div>
-          <button onClick={addBusiness} className="text-sm font-medium px-4 py-2.5 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71]">
-            + Add a business
-          </button>
+          {/* One business: the everyday action is adding an offering inside it. Otherwise: add a business or brand. */}
+          <div className="flex flex-col items-end gap-1">
+            {businesses && businesses.length === 1 ? (
+              <>
+                <button onClick={() => addSegment(businesses[0].id)} className="text-sm font-medium px-4 py-2.5 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71]">
+                  + Add a segment or offering
+                </button>
+                <button onClick={addBusiness} className="text-xs text-[#2E7C83] hover:underline">or add another business or brand</button>
+              </>
+            ) : (
+              <button onClick={addBusiness} className="text-sm font-medium px-4 py-2.5 rounded-xl bg-[#2E7C83] text-white hover:bg-[#256b71]">
+                + Add a business or brand
+              </button>
+            )}
+          </div>
         </div>
         {msg && <p className="mt-2 text-sm text-[#8a2f2f]">{msg}</p>}
       </div>
@@ -193,6 +206,8 @@ export default function SegmentsPage() {
         </div>
       </details>
 
+      <AutoTagPanel onApplied={load} />
+
       <SegmentRead />
 
       {businesses === null ? (
@@ -200,8 +215,8 @@ export default function SegmentsPage() {
       ) : businesses.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#1a2b4a]/20 p-8 text-center">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">No businesses yet.</p>
-          <p className="text-sm text-[#7a8a99] mt-1 mb-4">Add your business, then the segments inside it (for example: Coaching, Courses, Speaking).</p>
-          <button onClick={addBusiness} className="text-sm font-medium px-4 py-2 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]">Add your first business</button>
+          <p className="text-sm text-[#7a8a99] mt-1 mb-4">Start with your business or brand, then add the segments (offerings) inside it — for example Coaching, Courses, Speaking.</p>
+          <button onClick={addBusiness} className="text-sm font-medium px-4 py-2 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]">Add your business or brand</button>
         </div>
       ) : (
         <div className="space-y-10">
@@ -217,7 +232,7 @@ export default function SegmentsPage() {
                   {biz.name}
                 </h2>
                 <div className="ml-auto flex items-center gap-3 text-xs">
-                  <button onClick={() => addSegment(biz.id)} className="text-[#2E7C83] hover:underline">+ Add segment</button>
+                  <button onClick={() => addSegment(biz.id)} className="text-[#2E7C83] hover:underline">+ Add segment or offering</button>
                   <button onClick={() => rename("business", biz.id, biz.name)} className="text-[#7a8a99] hover:underline">Rename</button>
                   <button onClick={() => remove("business", biz.id, biz.name)} className="text-[#b06a5a] hover:underline">Delete</button>
                 </div>
