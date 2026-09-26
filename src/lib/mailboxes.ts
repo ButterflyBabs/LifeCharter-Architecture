@@ -10,6 +10,7 @@ export interface MailAccountRef {
   provider: Provider;
   accountKey: string;
   email: string | null;
+  canWriteCalendar?: boolean; // Google only; Microsoft always can
 }
 
 // Every mailbox the account has connected, across both providers, oldest first.

@@ -1,6 +1,7 @@
 // LifeCharter knowledge base — the comprehensive Q&A behind the Help page and
 // the Travel Partner "Ask" widget. This is the single source of truth for how
-// every feature works. As new features ship, add their Q&A here (and clients can
+// every feature works. Update it whenever a feature ships or changes (last full
+// refresh: Sept 2026). As new features ship, add their Q&A here (and clients can
 // add their own entries via the Help page, stored in the qa_entries table).
 export interface KbEntry {
   id: string;
@@ -84,16 +85,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Daily Rhythm",
     question: "What do the notifications (the bell) show?",
     answer:
-      "The bell in the top navigation is a live feed of things that need your attention: expenses that still need categorizing, operational pillars you've flagged as needing attention, tasks due today or overdue, and follow-ups that are ready. Click any notification to jump straight to the relevant page. You can mark items read, dismiss them, or mark all read; the unread count on the bell is real.",
-    keywords: ["notifications", "bell", "alerts", "unread", "top nav"],
+      "The bell in the top navigation is a live feed of things that need your attention: expenses that still need categorizing, operational pillars you've flagged as needing attention, tasks that are overdue, follow-ups that are ready, and deadline reminders — a timed task shows up as 'Due in 20 min' (or 'Starts in 20 min') once it's inside your reminder window. The bell refreshes every minute. Click any notification to jump to the relevant page, mark items read, dismiss them, or mark all read. You can also get deadline reminders by email — choose how far ahead and turn email on or off in Settings → Profile → Task reminders.",
+    keywords: ["notifications", "bell", "alerts", "unread", "top nav", "reminder", "reminders", "due soon"],
   },
   {
     id: "dr-tasks",
     category: "Daily Rhythm",
     question: "How do tasks work?",
     answer:
-      "Tasks flow through statuses: backlog, today, in progress, waiting, and done. You can add them manually, and many parts of the app create them for you — Quick Wins, the follow-up engine, and the tax module (which adds a task to pay estimated quarterly taxes). Tasks can carry a due date and be tagged to any of your 12 business dimensions.",
-    keywords: ["tasks", "todo", "task list", "due", "status"],
+      "Tasks flow through statuses: backlog, today, in progress, waiting, and done. You can add them manually (from the dashboard, the Tasks page, or the + quick-add button), and many parts of the app create them for you — Quick Wins, the follow-up engine, and the tax module. A task can carry a due date and an optional time of day, and can be tagged to any of your 12 business dimensions. Your tasks are private to your own account. For things that repeat, use Recurring tasks in the Priority Tasks card on the dashboard.",
+    keywords: ["tasks", "todo", "task list", "due", "status", "priority tasks", "private"],
   },
 
   // ---- Business Alignment ----
@@ -172,8 +173,8 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Finance",
     question: "What is the Financial Pulse?",
     answer:
-      "The Financial Pulse is your at-a-glance cash-flow dashboard: income, expenses, and net for week-to-date, month-to-date, and year-to-date, plus your budget status and an AI-graded health score. It pulls live from your Finance Center ledger.",
-    keywords: ["financial pulse", "pulse", "cash flow", "dashboard", "mtd", "ytd", "health"],
+      "The Financial Pulse has two faces. On your dashboard it's a card you can switch between Week, Month and Year: it shows your income so far, how that compares with the previous week/month/year, the percentage of your income goal reached, and bars for the period (days, weeks or months). The Finance Center's Financial Pulse page goes deeper: income, expenses and net for week-to-date, month-to-date and year-to-date, your budget status, and an AI-graded health score. Both pull live from your Finance Center ledger, and the periods follow your time zone.",
+    keywords: ["financial pulse", "pulse", "cash flow", "dashboard", "mtd", "ytd", "health", "week", "month", "year", "goal"],
   },
   {
     id: "fi-segments",
@@ -310,8 +311,8 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Account & Settings",
     question: "What can I manage in Settings?",
     answer:
-      "Settings is where you connect integrations (Global Control, PostStream, your AI key), configure your AI Guide, and manage your account and workspace. If a feature needs a key or a connection, Settings is where you add it.",
-    keywords: ["settings", "account", "workspace", "manage", "configure", "integrations panel"],
+      "Settings is where you connect integrations (Global Control, PostStream, your AI key), connect your Google and Microsoft email and calendar accounts, configure your AI Guide, choose your time zone and task-reminder preferences (Profile), and manage your account, team and workspace. If a feature needs a key or a connection, Settings is where you add it.",
+    keywords: ["settings", "account", "workspace", "manage", "configure", "integrations panel", "profile", "time zone", "reminders"],
   },
 
   // ---- Planning (Hub + plan builders + reviews + proposals) ----
@@ -448,15 +449,15 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Calendar & Connections",
     question: "How do I connect my calendar and email?",
     answer:
-      "In Settings → Integrations, the Calendar & Email card at the top lets you connect Google Workspace or Microsoft 365 with real sign-in. Each shows a clear Connected / Not connected status. This powers reading your inbox and calendar, and lets the app add events for you.",
-    keywords: ["connect calendar", "google", "microsoft", "email", "outlook", "calendar email"],
+      "In Settings → Integrations, the Calendar & Email card lists every email account you've connected and how many your plan allows (for example '1 of 3 used'). Use 'Add Google account' or 'Add Microsoft 365 account' to sign in with real Google or Microsoft credentials, and Disconnect to remove one. Connected accounts power your dashboard inbox and Today's Schedule, and let the app add events for you. Your connections are private to your account.",
+    keywords: ["connect calendar", "google", "microsoft", "email", "outlook", "calendar email", "add account", "disconnect", "gmail"],
   },
   {
     id: "cal-write",
     category: "Calendar & Connections",
     question: "Why does it say my Google calendar is read-only?",
     answer:
-      "Your original Google connection granted read-only calendar access, so the app can show your events but not add them. To let it write events, click Reconnect on the Google Workspace card in Settings → Integrations and approve the calendar permission. Once done, the card shows 'Calendar write enabled ✓.' Microsoft has write access by default.",
+      "Your original Google connection granted read-only calendar access, so the app can show your events but not add them. To let it write events, go to Settings → Integrations, and use 'Add Google account' to sign in with that same Google account again, approving the calendar permission. The read-only note under the account disappears once it's done. Microsoft has write access by default.",
     keywords: ["read-only", "calendar write", "reconnect google", "add events", "permission", "scope"],
   },
   {
@@ -474,8 +475,8 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What does the + button in the top bar do?",
     answer:
-      "The '+' is a quick-add menu. It opens a short list to instantly create a new task (a small form right there), log a sale, create content, or schedule a planning session — each takes you straight to the right place with the form ready. The bell next to it is your notifications, and the '?' opens Help & Q&A.",
-    keywords: ["plus button", "quick add", "top bar", "new task", "shortcut", "navigation"],
+      "The '+' is a quick-add menu. It opens a short list to instantly create a new task (a small form right there, with an optional due date, time and 'due by' or 'do it at' choice), log a sale, create content, or schedule a planning session. The bell next to it is your notifications, and the '?' opens Help & Q&A.",
+    keywords: ["plus button", "quick add", "top bar", "new task", "shortcut", "navigation", "due date", "time"],
   },
 
   // ---- Business Alignment (scoring + plans) ----
@@ -494,6 +495,72 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Brain maps your business systems — marketing, sales, operations, finance, team, and more — in your own words. Soul captures your identity, values, calling, and story. Profit scores your 12 business dimensions. Together they seed your scores and give the AI the context it uses to draft your plans, reviews, and proposals in your real voice and situation.",
     keywords: ["brain", "soul", "profit", "assessment", "what covers", "identity", "systems"],
+  },
+
+  // ---- Tasks, time zone, reminders, plans (added Sept 2026) ----
+  {
+    id: "dr-task-time",
+    category: "Daily Rhythm",
+    question: "Can I give a task a due date and a time?",
+    answer:
+      "Yes. When you add a task (dashboard Add Task, the Tasks page, or the + quick-add), set an optional date and time of day. Choose 'Due by this time' for a deadline, or 'Do it at this time' to set it aside on your schedule. A date with no time means due by the end of that day. The task card shows a label like 'Due by 3:00 PM', 'At 11:00 AM', 'Due today' or 'Overdue', tasks with times sort soonest first, and timed tasks due today also appear in Today's Schedule next to your calendar events. On the Tasks page you can change or remove a task's date and time later.",
+    keywords: ["due date", "time", "deadline", "due by", "schedule a task", "set time", "task time", "overdue", "at this time"],
+  },
+  {
+    id: "dr-recurring",
+    category: "Daily Rhythm",
+    question: "How do recurring tasks work?",
+    answer:
+      "Recurring tasks live in the fourth column of the Priority Tasks card on the dashboard. Click the + next to RECURRING to add one: give it a title, choose how often it repeats (every day, certain days of the week — with a 'Weekdays only' shortcut — or once a month on a day you pick; a task set for the 31st lands on the last day of shorter months), and optionally a time of day ('due by' or 'do it at'). The column shows only what's due today; check a task off and it stays ticked for the day, then resets on its next day. Timed recurring tasks also appear in Today's Schedule and trigger reminders. Use the same + box to see or delete your recurring tasks.",
+    keywords: ["recurring", "repeat", "repeating", "daily task", "weekly task", "monthly task", "habit", "check off", "cadence", "routine"],
+  },
+  {
+    id: "dr-task-reminders",
+    category: "Daily Rhythm",
+    question: "How do deadline reminders work?",
+    answer:
+      "Any task or recurring task with a time of day gets a reminder before it's due. In the app, the bell shows 'Due in 20 min' (or 'Starts in 20 min') once it's inside your reminder window. If email reminders are on, you also get one email — once per task — at that point. Change how far ahead (10 minutes to 2 hours) or turn the email off in Settings → Profile → Task reminders. Tasks with only a date (no time) don't send reminders; the bell flags them once they're overdue.",
+    keywords: ["reminder", "reminders", "remind me", "notify", "email reminder", "deadline", "due soon", "lead time", "alert"],
+  },
+  {
+    id: "fi-goals",
+    category: "Finance",
+    question: "How do I set an income goal and see my progress?",
+    answer:
+      "Your monthly income goal is the income target in Finance → Budget (you can also set it right on the dashboard's Financial Pulse card). Switch the card to Month to see the percentage of it reached. Yearly defaults to 12 times your monthly goal and weekly to the yearly goal divided by 52 — or click 'Edit goal' on the Week or Year view to set your own number for that period. The percentage is your income so far in that period divided by its goal. Goals are private to your account.",
+    keywords: ["goal", "income goal", "revenue goal", "target", "percent", "progress", "financial pulse", "weekly goal", "yearly goal", "monthly goal"],
+  },
+  {
+    id: "as-timezone",
+    category: "Account & Settings",
+    question: "How do I set my time zone?",
+    answer:
+      "Use the small time zone menu next to the date at the top of your dashboard, or Settings → Profile → Timezone. Your choice is saved to your account and sets your greeting (morning, afternoon, evening), the clock, Today's Schedule, when tasks are due, and where 'this week/month/year' start in the Financial Pulse. Until you choose one, the app uses your browser's time zone.",
+    keywords: ["time zone", "timezone", "clock", "greeting", "wrong time", "morning", "evening", "local time"],
+  },
+  {
+    id: "cal-limit",
+    category: "Calendar & Connections",
+    question: "How many email accounts can I connect?",
+    answer:
+      "It depends on your plan: Starter includes 1 connected email account, Growth includes 3, and VIP is unlimited. Each Google or Microsoft 365 account you connect counts as one. Settings → Integrations → Calendar & Email shows how many you've used, lets you disconnect one to free a spot, and hides the Add buttons once you're at your limit. Your dashboard inbox and calendar combine every account you've connected.",
+    keywords: ["how many", "email accounts", "limit", "multiple accounts", "second email", "add another", "plan limit", "mailboxes", "connect more"],
+  },
+  {
+    id: "as-plans",
+    category: "Account & Settings",
+    question: "What's the difference between Starter, Growth and VIP?",
+    answer:
+      "Starter is built for one business running lean (1 business workspace, 1 seat, 1 connected email account). Growth gives you room to grow — up to 3 business workspaces, 2 seats, 3 connected email accounts, monthly 1:1 coaching, and expanded AI limits. VIP removes the limits — unlimited workspaces, seats and email accounts, priority AI, and white-glove support. Everything in the Command Suite is included in every plan; the plans differ in capacity and hands-on help. Your current plan and billing are under Settings, where 'Manage billing' opens your billing portal.",
+    keywords: ["plans", "tiers", "starter", "growth", "vip", "difference", "upgrade", "limits", "pricing", "billing", "what's included"],
+  },
+  {
+    id: "as-collective",
+    category: "Account & Settings",
+    question: "What is The Collective and how do I get to it?",
+    answer:
+      "The LifeCharter Collective is LifeCharter's community — channels and conversations, events, direct messages, an Alignment Journal, and resources. Open it from 'The Collective' in the left navigation. It has its own look and menu, and a 'Command Suite' button takes you back to the dashboard. It's a separate space from your business data — nothing from your Command Suite is shared with the community.",
+    keywords: ["collective", "community", "lifecharter collective", "channels", "events", "journal", "members", "switch"],
   },
 ];
 

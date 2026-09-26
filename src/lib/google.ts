@@ -142,15 +142,25 @@ async function loadRow(scope: MailScope | undefined, columns: string): Promise<R
   return (data as unknown as Record<string, unknown>) ?? null;
 }
 
-export async function listConnections(scope?: MailScope): Promise<{ accountKey: string; email: string | null }[]> {
+export async function listConnections(
+  scope?: MailScope
+): Promise<{ accountKey: string; email: string | null; canWriteCalendar: boolean }[]> {
   const owner = await scopeOwner(scope);
   if (!owner) return [];
   const { data } = await createServerClient()
     .from("google_credentials")
-    .select("account_key, email")
+    .select("account_key, email, scope")
     .eq("owner_id", owner)
     .order("created_at", { ascending: true });
-  return (data ?? []).map((r) => ({ accountKey: r.account_key as string, email: (r.email as string) ?? null }));
+  return (data ?? []).map((r) => {
+    const granted = (r.scope as string) || "";
+    return {
+      accountKey: r.account_key as string,
+      email: (r.email as string) ?? null,
+      // Older connections only granted calendar.readonly.
+      canWriteCalendar: granted.includes("calendar.events") || granted.includes("auth/calendar"),
+    };
+  });
 }
 
 export async function removeConnection(ownerId: string, accountKey: string): Promise<void> {

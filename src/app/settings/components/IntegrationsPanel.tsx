@@ -602,6 +602,7 @@ interface ConnectedMailbox {
   provider: "google" | "microsoft";
   accountKey: string;
   email: string | null;
+  canWriteCalendar?: boolean;
 }
 
 function CalendarConnections() {
@@ -682,6 +683,11 @@ function CalendarConnections() {
                 <p className="text-xs text-[#b8a898]">
                   {a.provider === "google" ? "Google Workspace / Gmail" : "Microsoft 365"} · email + calendar
                 </p>
+                {a.provider === "google" && a.canWriteCalendar === false && (
+                  <p className="text-xs text-[#8a6a15] mt-0.5">
+                    Calendar is read-only — add this Google account again to let the app add events.
+                  </p>
+                )}
               </div>
             </div>
             <button
