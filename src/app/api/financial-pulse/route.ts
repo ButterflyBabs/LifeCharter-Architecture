@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 // Always query live data per request (never prerender/cache the aggregate).
 export const dynamic = "force-dynamic";
@@ -18,10 +19,15 @@ export async function GET() {
   const supabase = createServerClient();
   // Revenue = income entries from the finance ledger, so the Home card and
   // Morning Brief agree with the Financial Pulse dashboard.
+  // Scoped to the signed-in client's own plan (or the demo plan under /demo) —
+  // never every account's income added together.
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ hasData: false });
   const { data, error } = await supabase
     .from("finance_entries")
     .select("amount, occurred_on")
-    .eq("type", "income");
+    .eq("type", "income")
+    .eq("master_plan_id", masterPlanId);
 
   if (error) {
     console.error("GET /api/financial-pulse:", error.message);
