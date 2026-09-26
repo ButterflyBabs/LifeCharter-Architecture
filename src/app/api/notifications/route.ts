@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { OPERATIONS_PILLARS } from "@/lib/operations";
-import { reminderLeadFor, minutesUntil, inMinutes } from "@/lib/taskReminders";
+import { reminderLeadFor, minutesUntil, inMinutes, ownerTimezone, upcomingRecurringToday } from "@/lib/taskReminders";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +116,19 @@ async function deriveNotifications(
         title: t.time_kind === "scheduled" ? `Starts in ${inMinutes(mins)}` : `Due in ${inMinutes(mins)}`,
         body: `"${String(t.title).slice(0, 80)}"`,
         href: "/tasks",
+      });
+    }
+    // Timed recurring tasks due today, still open, coming up within the lead time.
+    const tz = await ownerTimezone(masterPlanId);
+    for (const r of await upcomingRecurringToday(masterPlanId, tz)) {
+      if (new Date(r.dueAt).getTime() > nowMs + lead * 60000) continue;
+      const mins = Math.max(1, minutesUntil(r.dueAt));
+      out.push({
+        nkey: `rtask-soon-${r.id}-${r.today}`,
+        type: "action",
+        title: r.timeKind === "scheduled" ? `Starts in ${inMinutes(mins)}` : `Due in ${inMinutes(mins)}`,
+        body: `"${r.title.slice(0, 80)}" (recurring)`,
+        href: "/",
       });
     }
   } catch {

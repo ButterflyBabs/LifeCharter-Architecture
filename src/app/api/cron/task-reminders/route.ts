@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { REMINDER_LEADS, DEFAULT_LEAD_MIN, minutesUntil, inMinutes } from "@/lib/taskReminders";
+import { REMINDER_LEADS, DEFAULT_LEAD_MIN, minutesUntil, inMinutes, upcomingRecurringToday } from "@/lib/taskReminders";
 import { timeInTz } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +56,12 @@ async function run(request: Request) {
   const byPlan = new Map<string, TaskRow[]>();
   for (const t of (data ?? []) as TaskRow[]) byPlan.set(t.master_plan_id, [...(byPlan.get(t.master_plan_id) ?? []), t]);
 
+  // Plans that also have timed recurring tasks (checked per plan below).
+  const { data: recurringPlans } = await supabase.from("recurring_tasks").select("master_plan_id").not("time_of_day", "is", null);
+  for (const r of (recurringPlans ?? []) as { master_plan_id: string }[]) {
+    if (!byPlan.has(r.master_plan_id)) byPlan.set(r.master_plan_id, []);
+  }
+
   let emailed = 0;
   let marked = 0;
   for (const [planId, tasks] of Array.from(byPlan.entries())) {
@@ -70,16 +76,34 @@ async function run(request: Request) {
 
     const lead = Number(prof.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
     const due = tasks.filter((t) => minutesUntil(t.due_at, now) <= lead);
-    if (due.length === 0) continue;
-
     const tz = prof.timezone || "America/Denver";
+
+    // Timed recurring tasks due today inside the lead time, not yet reminded today.
+    const recurringSoon = (await upcomingRecurringToday(planId, tz, now)).filter(
+      (r) => minutesUntil(r.dueAt, now) <= lead
+    );
+    let recurringDue = recurringSoon;
+    if (recurringSoon.length) {
+      const { data: sent } = await supabase
+        .from("recurring_task_reminders")
+        .select("recurring_task_id")
+        .eq("remind_on", recurringSoon[0].today)
+        .in("recurring_task_id", recurringSoon.map((r) => r.id));
+      const sentIds = new Set((sent ?? []).map((x) => x.recurring_task_id as string));
+      recurringDue = recurringSoon.filter((r) => !sentIds.has(r.id));
+    }
+    if (due.length === 0 && recurringDue.length === 0) continue;
+
     const first = String(prof.full_name || "").trim().split(/\s+/)[0] || "there";
-    const line = (t: TaskRow) => {
-      const when = timeInTz(t.due_at, tz);
-      const verb = t.time_kind === "scheduled" ? "At" : "Due by";
-      return { verb, when, mins: Math.max(1, minutesUntil(t.due_at, now)), title: t.title };
+    const line = (title: string, dueAt: string, kind: string, recurring: boolean) => {
+      const when = timeInTz(dueAt, tz);
+      const verb = kind === "scheduled" ? "At" : "Due by";
+      return { verb, when, mins: Math.max(1, minutesUntil(dueAt, now)), title, recurring, at: new Date(dueAt).getTime() };
     };
-    const items = due.map(line);
+    const items = [
+      ...due.map((t) => line(t.title, t.due_at, t.time_kind, false)),
+      ...recurringDue.map((r) => line(r.title, r.dueAt, r.timeKind, true)),
+    ].sort((a, b) => a.at - b.at);
     const subject =
       items.length === 1
         ? `${items[0].verb} ${items[0].when}: ${items[0].title.slice(0, 70)}`
@@ -88,7 +112,7 @@ async function run(request: Request) {
       .map(
         (i) => `<tr><td style="padding:12px 0;border-bottom:1px solid #EEE7DA">
           <div style="font-weight:600;color:#23255C">${esc(i.title)}</div>
-          <div style="color:#6E6F8C;font-size:14px;margin-top:3px">${i.verb} ${esc(i.when)} · in ${esc(inMinutes(i.mins))}</div>
+          <div style="color:#6E6F8C;font-size:14px;margin-top:3px">${i.verb} ${esc(i.when)} · in ${esc(inMinutes(i.mins))}${i.recurring ? " · recurring" : ""}</div>
         </td></tr>`
       )
       .join("");
@@ -112,8 +136,13 @@ async function run(request: Request) {
       continue; // leave unmarked so the next run retries
     }
     emailed += 1;
-    await supabase.from("tasks").update({ reminded_at: now.toISOString() }).in("id", due.map((t) => t.id));
-    marked += due.length;
+    if (due.length) await supabase.from("tasks").update({ reminded_at: now.toISOString() }).in("id", due.map((t) => t.id));
+    if (recurringDue.length) {
+      await supabase
+        .from("recurring_task_reminders")
+        .upsert(recurringDue.map((r) => ({ recurring_task_id: r.id, remind_on: r.today })), { onConflict: "recurring_task_id,remind_on" });
+    }
+    marked += due.length + recurringDue.length;
   }
 
   return NextResponse.json({ candidates: data?.length ?? 0, emailed, marked });

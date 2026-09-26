@@ -118,6 +118,10 @@ interface RecurringTask {
   daysOfWeek: number[];
   dayOfMonth: number | null;
   schedule: string;
+  timeOfDay?: string | null;
+  timeLabel?: string | null;
+  timeKind?: "deadline" | "scheduled";
+  dueAt?: string | null;
   dueToday: boolean;
   doneToday: boolean;
 }
@@ -164,6 +168,8 @@ export default function ExecutiveHome() {
   const [rtCadence, setRtCadence] = useState<"daily" | "weekly" | "monthly">("daily");
   const [rtDays, setRtDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [rtDom, setRtDom] = useState("1");
+  const [rtTime, setRtTime] = useState("");
+  const [rtKind, setRtKind] = useState<"deadline" | "scheduled">("deadline");
   const [rtError, setRtError] = useState("");
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
   const [editingGoal, setEditingGoal] = useState(false);
@@ -329,6 +335,8 @@ export default function ExecutiveHome() {
           cadence: rtCadence,
           daysOfWeek: rtDays,
           dayOfMonth: Number(rtDom),
+          timeOfDay: rtTime || undefined,
+          timeKind: rtKind,
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -337,6 +345,8 @@ export default function ExecutiveHome() {
         return;
       }
       setRtTitle("");
+      setRtTime("");
+      setRtKind("deadline");
       loadRecurring();
     } catch {
       setRtError("Couldn't save that.");
@@ -1072,8 +1082,23 @@ export default function ExecutiveHome() {
     (t) => t.status !== "done" && t.due_has_time && t.due_at && todayKey && dayInTz(t.due_at, userTimezone) === todayKey
   );
   const scheduleItems = [
-    ...(schedule?.events ?? []).map((ev) => ({ key: `e-${ev.id}`, time: ev.time, title: ev.title, start: ev.start, task: null as RealTask | null })),
-    ...timedTasks.map((t) => ({ key: `t-${t.id}`, time: timeInTz(t.due_at as string, userTimezone), title: t.title, start: t.due_at as string | null, task: t })),
+    ...(schedule?.events ?? []).map((ev) => ({ key: `e-${ev.id}`, time: ev.time, title: ev.title, start: ev.start as string | null, chip: null as string | null })),
+    ...timedTasks.map((t) => ({
+      key: `t-${t.id}`,
+      time: timeInTz(t.due_at as string, userTimezone),
+      title: t.title,
+      start: t.due_at as string | null,
+      chip: (t.time_kind === "scheduled" ? "Task" : "Due by") as string | null,
+    })),
+    ...recurring
+      .filter((r) => r.dueToday && !r.doneToday && r.dueAt)
+      .map((r) => ({
+        key: `r-${r.id}`,
+        time: timeInTz(r.dueAt as string, userTimezone),
+        title: r.title,
+        start: r.dueAt as string | null,
+        chip: (r.timeKind === "scheduled" ? "Recurring" : "Recurring · due by") as string | null,
+      })),
   ].sort(
     (a, b) => (a.start ? new Date(a.start).getTime() : Infinity) - (b.start ? new Date(b.start).getTime() : Infinity)
   );
@@ -1268,7 +1293,7 @@ export default function ExecutiveHome() {
                 const dots = ["#2E7C83", "#7B6B8D", "#c9a227", "#1a2b4a"];
                 return (
                   <div key={item.key} className="flex items-center gap-3">
-                    {item.task ? (
+                    {item.chip ? (
                       <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-[#2B5F8A]" aria-label="Task" />
                     ) : (
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dots[i % dots.length] }} />
@@ -1276,10 +1301,8 @@ export default function ExecutiveHome() {
                     <span className="text-sm text-[#3F4654]">
                       {item.time} - {item.title}
                     </span>
-                    {item.task && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E6EFF6] text-[#2B5F8A]">
-                        {item.task.time_kind === "scheduled" ? "Task" : "Due by"}
-                      </span>
+                    {item.chip && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E6EFF6] text-[#2B5F8A]">{item.chip}</span>
                     )}
                   </div>
                 );
@@ -1587,6 +1610,7 @@ export default function ExecutiveHome() {
               {recurring.filter((t) => t.dueToday).length > 0 ? (
                 recurring
                   .filter((t) => t.dueToday)
+                  .sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : Infinity) - (b.dueAt ? new Date(b.dueAt).getTime() : Infinity))
                   .map((t) => (
                     <div
                       key={t.id}
@@ -1614,6 +1638,18 @@ export default function ExecutiveHome() {
                           <p className={`text-sm text-[#3F4654] leading-snug break-words ${t.doneToday ? "line-through" : ""}`}>
                             {t.title}
                           </p>
+                          {t.dueAt &&
+                            (() => {
+                              const info = dueInfo(
+                                { status: t.doneToday ? "done" : "today", due_at: t.dueAt, due_has_time: true, time_kind: t.timeKind },
+                                userTimezone || "UTC"
+                              );
+                              return info ? (
+                                <span className={`inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[t.doneToday ? "later" : info.tone]}`}>
+                                  {t.doneToday ? (t.timeKind === "scheduled" ? `At ${t.timeLabel}` : `Due by ${t.timeLabel}`) : info.label}
+                                </span>
+                              ) : null;
+                            })()}
                         </div>
                       </div>
                     </div>
@@ -1938,7 +1974,10 @@ export default function ExecutiveHome() {
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(t.priority)}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-[#3F4654] truncate">{t.title}</p>
-                      <p className="text-xs text-gray-400">{t.schedule}</p>
+                      <p className="text-xs text-gray-400">
+                        {t.schedule}
+                        {t.timeLabel ? ` · ${t.timeKind === "scheduled" ? "at" : "by"} ${t.timeLabel}` : ""}
+                      </p>
                     </div>
                     <button
                       onClick={() => deleteRecurring(t)}
@@ -2016,6 +2055,46 @@ export default function ExecutiveHome() {
                   <span className="text-xs text-gray-400">(shorter months use their last day)</span>
                 </div>
               )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Time of day <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={rtTime}
+                    onChange={(e) => setRtTime(e.target.value)}
+                    aria-label="Time of day"
+                    className="w-32 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2]"
+                  />
+                  {rtTime && (
+                    <button type="button" onClick={() => setRtTime("")} className="text-xs text-gray-400 hover:text-gray-600">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {rtTime && (
+                  <div className="flex gap-2 mt-2" role="group" aria-label="What the time means">
+                    {[
+                      { id: "deadline", label: "Due by this time" },
+                      { id: "scheduled", label: "Do it at this time" },
+                    ].map((k) => (
+                      <button
+                        key={k.id}
+                        type="button"
+                        aria-pressed={rtKind === k.id}
+                        onClick={() => setRtKind(k.id as "deadline" | "scheduled")}
+                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                          rtKind === k.id ? "bg-[#2E7C83] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {k.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Priority</label>

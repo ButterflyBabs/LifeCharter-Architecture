@@ -4,7 +4,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { nowParts } from "@/lib/finance/period";
-import { isDueOn, scheduleLabel, type Cadence } from "@/lib/recurring";
+import { isDueOn, scheduleLabel, clockLabel, type Cadence } from "@/lib/recurring";
+import { zonedToUtcISO } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,8 @@ type Row = {
   cadence: Cadence;
   days_of_week: number[] | null;
   day_of_month: number | null;
+  time_of_day: string | null;
+  time_kind: string;
 };
 
 // GET — this client's recurring tasks, with whether each is due today (in the
@@ -31,7 +34,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("recurring_tasks")
-    .select("id, title, priority, cadence, days_of_week, day_of_month")
+    .select("id, title, priority, cadence, days_of_week, day_of_month, time_of_day, time_kind")
     .eq("master_plan_id", masterPlanId)
     .order("created_at", { ascending: true });
   if (error) {
@@ -59,13 +62,19 @@ export async function GET(request: Request) {
       daysOfWeek: r.days_of_week ?? [],
       dayOfMonth: r.day_of_month,
       schedule: scheduleLabel(r),
+      timeOfDay: r.time_of_day,
+      timeLabel: r.time_of_day ? clockLabel(r.time_of_day) : null,
+      timeKind: r.time_kind === "scheduled" ? "scheduled" : "deadline",
+      // Today's due moment (only for timed tasks), as an instant in the viewer's zone.
+      dueAt: r.time_of_day ? zonedToUtcISO(today, r.time_of_day, tz) : null,
       dueToday: isDueOn(r, year, month, day),
       doneToday: doneIds.has(r.id),
     })),
   });
 }
 
-// POST — add a recurring task: { title, priority?, cadence, daysOfWeek?, dayOfMonth? }.
+// POST — add a recurring task: { title, priority?, cadence, daysOfWeek?, dayOfMonth?,
+// timeOfDay? (HH:MM), timeKind? (deadline | scheduled) }.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
@@ -91,6 +100,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Pick a day of the month (1–31)." }, { status: 400 });
   }
 
+  const timeOfDay =
+    typeof body.timeOfDay === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(body.timeOfDay) ? body.timeOfDay : null;
+
   const { data, error } = await createServerClient()
     .from("recurring_tasks")
     .insert({
@@ -100,6 +112,8 @@ export async function POST(request: Request) {
       cadence,
       days_of_week: daysOfWeek,
       day_of_month: dayOfMonth,
+      time_of_day: timeOfDay,
+      time_kind: body.timeKind === "scheduled" ? "scheduled" : "deadline",
     })
     .select("id")
     .single();

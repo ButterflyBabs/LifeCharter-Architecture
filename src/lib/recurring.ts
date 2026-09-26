@@ -33,6 +33,12 @@ function ordinal(n: number): string {
   return `${n}${["th", "st", "nd", "rd"][n % 10 > 3 ? 0 : n % 10] ?? "th"}`;
 }
 
+// "09:30" → "9:30 AM"
+export function clockLabel(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
 export function scheduleLabel(rule: RecurringRule): string {
   if (rule.cadence === "daily") return "Every day";
   if (rule.cadence === "monthly") return `Monthly on the ${ordinal(rule.day_of_month ?? 1)}`;
