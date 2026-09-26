@@ -105,6 +105,27 @@ interface RealTask {
   segment: { name: string; color: string } | null;
 }
 
+interface RecurringTask {
+  id: string;
+  title: string;
+  priority: string;
+  cadence: "daily" | "weekly" | "monthly";
+  daysOfWeek: number[];
+  dayOfMonth: number | null;
+  schedule: string;
+  dueToday: boolean;
+  doneToday: boolean;
+}
+const WEEKDAY_CHIPS = [
+  { d: 0, l: "S", n: "Sunday" },
+  { d: 1, l: "M", n: "Monday" },
+  { d: 2, l: "T", n: "Tuesday" },
+  { d: 3, l: "W", n: "Wednesday" },
+  { d: 4, l: "T", n: "Thursday" },
+  { d: 5, l: "F", n: "Friday" },
+  { d: 6, l: "S", n: "Saturday" },
+];
+
 type PulsePeriod = "week" | "month" | "year";
 interface PulseStats {
   income: number;
@@ -131,6 +152,14 @@ export default function ExecutiveHome() {
     weekly: number[];
     periods?: Record<PulsePeriod, PulseStats>;
   } | null>(null);
+  const [recurring, setRecurring] = useState<RecurringTask[]>([]);
+  const [showRecurring, setShowRecurring] = useState(false);
+  const [rtTitle, setRtTitle] = useState("");
+  const [rtPriority, setRtPriority] = useState("medium");
+  const [rtCadence, setRtCadence] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [rtDays, setRtDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [rtDom, setRtDom] = useState("1");
+  const [rtError, setRtError] = useState("");
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
@@ -239,6 +268,75 @@ export default function ExecutiveHome() {
       .then((d) => d && setFinance(d))
       .catch(() => {});
   }, [userTimezone]);
+
+  // Recurring tasks: what's due today in the chosen time zone. Refreshed every
+  // few minutes and when the tab regains focus so a new day rolls over on its own.
+  const loadRecurring = useCallback(() => {
+    if (!userTimezone) return;
+    fetch(`/api/recurring-tasks?tz=${encodeURIComponent(userTimezone)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && Array.isArray(d.tasks) && setRecurring(d.tasks))
+      .catch(() => {});
+  }, [userTimezone]);
+
+  useEffect(() => {
+    loadRecurring();
+    const timer = setInterval(loadRecurring, 5 * 60 * 1000);
+    const onVisible = () => document.visibilityState === "visible" && loadRecurring();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [loadRecurring]);
+
+  const toggleRecurring = async (t: RecurringTask) => {
+    const done = !t.doneToday;
+    setRecurring((prev) => prev.map((x) => (x.id === t.id ? { ...x, doneToday: done } : x)));
+    try {
+      const res = await fetch(`/api/recurring-tasks/${t.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done, tz: userTimezone }),
+      });
+      if (!res.ok) throw new Error("save failed");
+    } catch {
+      setRecurring((prev) => prev.map((x) => (x.id === t.id ? { ...x, doneToday: t.doneToday } : x)));
+    }
+  };
+
+  const addRecurring = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRtError("");
+    try {
+      const res = await fetch("/api/recurring-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: rtTitle,
+          priority: rtPriority,
+          cadence: rtCadence,
+          daysOfWeek: rtDays,
+          dayOfMonth: Number(rtDom),
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRtError(d.error || "Couldn't save that.");
+        return;
+      }
+      setRtTitle("");
+      loadRecurring();
+    } catch {
+      setRtError("Couldn't save that.");
+    }
+  };
+
+  const deleteRecurring = async (t: RecurringTask) => {
+    if (!confirm(`Stop repeating "${t.title}"?`)) return;
+    setRecurring((prev) => prev.filter((x) => x.id !== t.id));
+    await fetch(`/api/recurring-tasks/${t.id}`, { method: "DELETE" }).catch(() => {});
+  };
 
   // Remember which period the Financial Pulse was last showing.
   useEffect(() => {
@@ -1332,7 +1430,7 @@ export default function ExecutiveHome() {
           </div>
 
           {/* Three Columns with dotted dividers */}
-          <div className="p-6 grid grid-cols-3 gap-0 divide-x divide-dashed divide-gray-300">
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-6 lg:gap-y-0 lg:divide-x lg:divide-dashed lg:divide-gray-300">
             {/* TODAY Column */}
             <div className="px-4 first:pl-0 last:pr-0">
               <h4 className="text-xs font-medium text-[#5E8C97] uppercase tracking-wider mb-4 text-center">TODAY</h4>
@@ -1408,6 +1506,68 @@ export default function ExecutiveHome() {
                 <Link href="/tasks" className="block text-center text-sm text-gray-400 hover:text-[#6A9EA4] py-3">
                   Nothing here yet
                 </Link>
+              )}
+            </div>
+
+            {/* RECURRING Column — due today, checked off day by day */}
+            <div className="px-4 first:pl-0 last:pr-0">
+              <div className="mb-4 flex items-center justify-center gap-2">
+                <h4 className="text-xs font-medium text-[#2E7C83] uppercase tracking-wider text-center">RECURRING</h4>
+                {recurring.some((t) => t.dueToday) && (
+                  <span className="text-[10px] text-gray-400">
+                    {recurring.filter((t) => t.dueToday && t.doneToday).length}/{recurring.filter((t) => t.dueToday).length}
+                  </span>
+                )}
+                <button
+                  onClick={() => setShowRecurring(true)}
+                  className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-[#2E7C83]"
+                  aria-label="Add or manage recurring tasks"
+                  title="Add or manage recurring tasks"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {recurring.filter((t) => t.dueToday).length > 0 ? (
+                recurring
+                  .filter((t) => t.dueToday)
+                  .map((t) => (
+                    <div
+                      key={t.id}
+                      className={`mb-2.5 last:mb-0 bg-[#F8F5F0] rounded-xl p-3 border border-[#E8E4E0] shadow-sm transition-opacity ${
+                        t.doneToday ? "opacity-60" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <button
+                          onClick={() => toggleRecurring(t)}
+                          role="checkbox"
+                          aria-checked={t.doneToday}
+                          aria-label={`${t.doneToday ? "Uncheck" : "Check off"} ${t.title}`}
+                          className={`mt-0.5 w-5 h-5 flex-shrink-0 rounded-md border-2 flex items-center justify-center transition-colors ${
+                            t.doneToday ? "bg-[#2E7C83] border-[#2E7C83] text-white" : "bg-white border-gray-300 hover:border-[#2E7C83]"
+                          }`}
+                        >
+                          {t.doneToday && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-2 h-2 rounded-full ${getPriorityColor(t.priority)}`} />
+                            <span className="text-[10px] text-gray-400">{t.schedule}</span>
+                          </div>
+                          <p className={`text-sm text-[#3F4654] leading-snug break-words ${t.doneToday ? "line-through" : ""}`}>
+                            {t.title}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <button
+                  onClick={() => setShowRecurring(true)}
+                  className="block w-full text-center text-sm text-gray-400 hover:text-[#6A9EA4] py-3"
+                >
+                  {recurring.length > 0 ? "Nothing recurring today" : "Add a recurring task"}
+                </button>
               )}
             </div>
           </div>
@@ -1696,6 +1856,145 @@ export default function ExecutiveHome() {
 
       {/* 12 Business Dimensions (draggable) */}
       <DimensionCards />
+
+      {/* Recurring Tasks Modal */}
+      {showRecurring && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowRecurring(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-serif text-indigo-900">Recurring tasks</h3>
+              <button onClick={() => setShowRecurring(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {recurring.length > 0 && (
+              <ul className="mb-5 divide-y divide-gray-100 border border-gray-100 rounded-xl">
+                {recurring.map((t) => (
+                  <li key={t.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(t.priority)}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-[#3F4654] truncate">{t.title}</p>
+                      <p className="text-xs text-gray-400">{t.schedule}</p>
+                    </div>
+                    <button
+                      onClick={() => deleteRecurring(t)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-[#D83A34] hover:bg-gray-50"
+                      aria-label={`Delete ${t.title}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={addRecurring} className="space-y-4">
+              <p className="text-sm font-medium text-gray-700">Add a recurring task</p>
+              <input
+                type="text"
+                value={rtTitle}
+                onChange={(e) => setRtTitle(e.target.value)}
+                placeholder="e.g. Review yesterday's sales"
+                aria-label="Recurring task title"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 placeholder-gray-400 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+              />
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">Repeats</label>
+                <select
+                  value={rtCadence}
+                  onChange={(e) => setRtCadence(e.target.value as "daily" | "weekly" | "monthly")}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2] focus:ring-1 focus:ring-[#84AEB2]"
+                >
+                  <option value="daily">Every day</option>
+                  <option value="weekly">On certain days of the week</option>
+                  <option value="monthly">Once a month</option>
+                </select>
+              </div>
+
+              {rtCadence === "weekly" && (
+                <div>
+                  <div className="flex gap-1.5" role="group" aria-label="Days of the week">
+                    {WEEKDAY_CHIPS.map((c) => (
+                      <button
+                        key={c.d}
+                        type="button"
+                        aria-label={c.n}
+                        aria-pressed={rtDays.includes(c.d)}
+                        onClick={() => setRtDays((prev) => (prev.includes(c.d) ? prev.filter((x) => x !== c.d) : [...prev, c.d]))}
+                        className={`flex-1 h-9 rounded-lg text-xs font-medium transition-colors ${
+                          rtDays.includes(c.d) ? "bg-[#2E7C83] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {c.l}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => setRtDays([1, 2, 3, 4, 5])} className="mt-1.5 text-xs text-[#2E7C83] hover:underline">
+                    Weekdays only
+                  </button>
+                </div>
+              )}
+
+              {rtCadence === "monthly" && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  On day
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={rtDom}
+                    onChange={(e) => setRtDom(e.target.value)}
+                    aria-label="Day of the month"
+                    className="w-20 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-indigo-900 outline-none focus:border-[#84AEB2]"
+                  />
+                  of each month
+                  <span className="text-xs text-gray-400">(shorter months use their last day)</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">Priority</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: "critical", label: "Critical", color: "bg-red-500" },
+                    { id: "high", label: "High", color: "bg-orange-500" },
+                    { id: "medium", label: "Medium", color: "bg-yellow-500" },
+                    { id: "low", label: "Low", color: "bg-blue-500" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setRtPriority(p.id)}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                        rtPriority === p.id ? `${p.color} text-white` : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {rtError && <p className="text-sm text-[#D83A34]">{rtError}</p>}
+              <button
+                type="submit"
+                disabled={!rtTitle.trim()}
+                className="w-full py-2.5 rounded-lg bg-[#2E7C83] text-white text-sm font-medium hover:bg-[#256b71] disabled:opacity-50 transition-colors"
+              >
+                Add recurring task
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Task Modal */}
       {showAddTask && (
