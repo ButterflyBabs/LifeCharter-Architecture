@@ -12,38 +12,39 @@ interface Message {
   suggestions?: string[];
 }
 
-interface AIBusinessGuideProps {
-  brainScore?: number;
-  soulScore?: number;
-  profitScore?: number;
-  overallScore?: number;
-}
-
-export function AIBusinessGuide({
-  brainScore,
-  soulScore,
-  profitScore,
-  overallScore,
-}: AIBusinessGuideProps) {
+export function AIBusinessGuide() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initial welcome message
+  // The client's own assistant: its name, and a greeting and starting points built
+  // from THEIR data (alignment score, and their next moves) — never canned text.
+  const [assistantName, setAssistantName] = useState("Your assistant");
   useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          content: getInitialMessage(overallScore),
-          suggestions: getInitialSuggestions(brainScore, soulScore, profitScore),
-        },
-      ]);
-    }
-  }, [brainScore, soulScore, profitScore, overallScore]);
+    let live = true;
+    Promise.all([
+      fetch("/api/ai-settings").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/alignment?ts=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/next-moves?ts=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([settings, alignment, moves]) => {
+      if (!live) return;
+      const name = (settings?.assistantName as string) || "Your assistant";
+      setAssistantName(name);
+      const score: number | undefined = alignment?.hasData ? alignment.overall : undefined;
+      const greeting =
+        score === undefined
+          ? `I'm ${name}, your AI business guide. Once you answer some questions in your Brain, Soul and Profit assessments I'll start learning your business and can guide you from real data. Until then, ask me anything.`
+          : `I'm ${name}. Your alignment is ${score}/100 (${alignment.status}). ${getInitialMessage(score)}`;
+      const fromMoves: string[] = moves?.hasData ? (moves.moves as { title: string }[]).map((m) => m.title).filter(Boolean).slice(0, 3) : [];
+      const suggestions = fromMoves.length ? fromMoves : ["Where should I start?", "What does my score mean?", "What should I focus on this week?"];
+      setMessages((prev) => (prev.length === 0 ? [{ id: "welcome", role: "assistant", content: greeting, suggestions }] : prev));
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -65,34 +66,6 @@ export function AIBusinessGuide({
     }
   };
 
-  const getInitialSuggestions = (
-    brain?: number,
-    soul?: number,
-    profit?: number
-  ): string[] => {
-    const suggestions: string[] = [];
-
-    if (brain !== undefined && brain < 50) {
-      suggestions.push("Document your core processes");
-    }
-    if (soul !== undefined && soul < 50) {
-      suggestions.push("Reconnect with your mission");
-    }
-    if (profit !== undefined && profit < 50) {
-      suggestions.push("Review pricing and cash flow");
-    }
-
-    if (suggestions.length === 0) {
-      suggestions.push(
-        "Improve cash flow forecasting",
-        "Document and automate key processes",
-        "Nurture warm leads into paying clients"
-      );
-    }
-
-    return suggestions.slice(0, 3);
-  };
-
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -110,14 +83,7 @@ export function AIBusinessGuide({
       const response = await fetch("/api/ai-guide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage.content,
-          brainScore,
-          soulScore,
-          profitScore,
-          overallScore,
-          context: "User is viewing their business dashboard and seeking guidance.",
-        }),
+        body: JSON.stringify({ message: userMessage.content }),
       });
 
       if (!response.ok) {
@@ -129,7 +95,7 @@ export function AIBusinessGuide({
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response,
+        content: data.reply ?? data.response ?? "",
         suggestions: data.suggestions,
       };
 
@@ -171,20 +137,14 @@ export function AIBusinessGuide({
       fetch("/api/ai-guide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: question,
-          brainScore,
-          soulScore,
-          profitScore,
-          overallScore,
-        }),
+        body: JSON.stringify({ message: question }),
       })
         .then((res) => res.json())
         .then((data) => {
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: data.response,
+            content: data.reply ?? data.response ?? "",
             suggestions: data.suggestions,
           };
           setMessages((prev) => [...prev, assistantMessage]);
@@ -220,7 +180,7 @@ export function AIBusinessGuide({
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-[#c9a227]" />
             <h2 className="text-xs font-semibold tracking-wider uppercase text-[#7b6b8d] dark:text-[#e8e4f0]">
-              AI Business Guide
+              {assistantName} · AI Business Guide
             </h2>
           </div>
 
@@ -247,7 +207,7 @@ export function AIBusinessGuide({
           </div>
 
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium mb-6 leading-relaxed">
-            {messages[0]?.content || getInitialMessage(overallScore)}
+            {messages[0]?.content || "Reading your business…"}
           </p>
 
           {messages[0]?.suggestions && (
@@ -272,7 +232,7 @@ export function AIBusinessGuide({
           <div className="flex flex-col gap-3">
             <Button variant="primary" className="w-full" onClick={() => setIsOpen(true)}>
               <Sparkles className="w-4 h-4 mr-2" />
-              Ask AI Guide
+              Ask {assistantName}
             </Button>
             <button
               onClick={() => setIsOpen(true)}
@@ -307,7 +267,7 @@ export function AIBusinessGuide({
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#c9a227]" />
           <h2 className="text-sm font-semibold text-[#7b6b8d] dark:text-[#e8e4f0]">
-            AI Business Guide
+            {assistantName} · AI Business Guide
           </h2>
         </div>
         <button
