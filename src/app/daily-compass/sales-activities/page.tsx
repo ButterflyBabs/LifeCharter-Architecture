@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ACTIVITY_TYPES, OUTCOMES, PRIORITIES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
+import { SegmentSelect } from "@/components/segments/SegmentSelect";
 
 interface Activity {
   id: string;
@@ -39,6 +40,7 @@ interface Activity {
   estimatedValue: number;
   occurredOn: string | null;
   notes: string;
+  segmentId?: number | null;
 }
 
 interface Aggregates {
@@ -86,6 +88,7 @@ const EMPTY = {
   estimatedValue: "",
   occurredOn: todayStr(),
   notes: "",
+  segmentId: null as number | null,
 };
 
 export default function SalesActivitiesPage() {
@@ -180,6 +183,7 @@ export default function SalesActivitiesPage() {
       estimatedValue: a.estimatedValue ? String(a.estimatedValue) : "",
       occurredOn: a.occurredOn || todayStr(),
       notes: a.notes,
+      segmentId: a.segmentId ?? null,
     });
     setEditorOpen(true);
   };
@@ -519,6 +523,7 @@ export default function SalesActivitiesPage() {
                   </select>
                 </div>
               </div>
+              <SegmentSelect value={form.segmentId} onChange={(id) => setForm({ ...form, segmentId: id })} />
               <div className="grid grid-cols-2 gap-2">
                 <input
                   value={form.contactName}

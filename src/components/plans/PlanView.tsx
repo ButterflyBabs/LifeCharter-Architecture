@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useEffect, useState } from "react";
 import { Sparkles, RefreshCw, Target, AlertCircle } from "lucide-react";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
@@ -13,6 +14,7 @@ interface Goal {
   detail: string | null;
   target: string | null;
   status: "not_started" | "in_progress" | "met" | "slipped";
+  segment_id?: number | null;
   sort_order: number;
 }
 interface Plan {
@@ -237,6 +239,18 @@ export default function PlanView({ planType }: { planType: PlanType }) {
                   {g.detail && (
                     <p className="text-sm text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mt-1.5">{g.detail}</p>
                   )}
+                  <div className="mt-2 max-w-xs">
+                    <SegmentSelect
+                      compact
+                      value={g.segment_id ?? null}
+                      label="Business segment this goal is for"
+                      onChange={async (id) => {
+                        setData((prev) => (prev && prev.goals ? { ...prev, goals: prev.goals.map((x) => (x.id === g.id ? { ...x, segment_id: id } : x)) } : prev));
+                        await fetch("/api/plans/goals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goalId: g.id, segmentId: id }) });
+                      }}
+                      className="w-full text-[11px] bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]"
+                    />
+                  </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px]">
                     {dl && (
                       <span className="px-2 py-0.5 rounded-full bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#e8e4f0]">

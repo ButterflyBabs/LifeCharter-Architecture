@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz } from "@/lib/tz";
 import { ACTIVITY_TYPE_IDS, OUTCOME_IDS, PRIORITIES } from "@/lib/salesActivities";
@@ -20,6 +21,7 @@ interface Row {
   estimated_value: number | string | null;
   occurred_on: string | null;
   notes: string | null;
+  segment_id?: number | null;
 }
 
 function shape(r: Row) {
@@ -35,6 +37,7 @@ function shape(r: Row) {
     estimatedValue: Number(r.estimated_value ?? 0),
     occurredOn: r.occurred_on,
     notes: r.notes || "",
+    segmentId: r.segment_id ?? null,
   };
 }
 
@@ -54,7 +57,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from("sales_activities")
-    .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes")
+    .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes, segment_id")
     .eq("master_plan_id", masterPlanId)
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });
@@ -147,12 +150,13 @@ export async function POST(request: Request) {
         ? body.occurredOn
         : new Date().toISOString().slice(0, 10),
     notes: typeof body.notes === "string" ? body.notes.trim() : "",
+    segment_id: body.segmentId && (await planSegmentIds(masterPlanId)).includes(Number(body.segmentId)) ? Number(body.segmentId) : null,
   };
 
   const { data, error } = await supabase
     .from("sales_activities")
     .insert(insert)
-    .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes")
+    .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes, segment_id")
     .single();
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   return NextResponse.json({ activity: shape(data as Row) });
@@ -212,6 +216,9 @@ export async function PATCH(request: Request) {
     if (typeof body.occurredOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.occurredOn))
       update.occurred_on = body.occurredOn;
     if (typeof body.notes === "string") update.notes = body.notes.trim();
+    // Tag (or untag) to one of this client's own segments.
+    if (body.segmentId === null || body.segmentId === "") update.segment_id = null;
+    else if (body.segmentId !== undefined && (await planSegmentIds(masterPlanId)).includes(Number(body.segmentId))) update.segment_id = Number(body.segmentId);
   }
 
   const { error } = await supabase

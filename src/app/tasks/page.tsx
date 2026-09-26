@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Plus, Trash2, Check, Clock } from "lucide-react";
@@ -16,6 +17,7 @@ interface Task {
   time_kind?: "deadline" | "scheduled" | null;
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
+  segment_id?: number | null;
 }
 
 const COLUMNS: { key: string; label: string }[] = [
@@ -299,6 +301,17 @@ export default function TasksPage() {
                           </div>
                         </div>
                       )}
+                      <div className="mt-2">
+                        <SegmentSelect
+                          compact
+                          value={t.segment_id ?? null}
+                          onChange={async (id) => {
+                            await fetch(`/api/tasks/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ segmentId: id }) });
+                            load();
+                          }}
+                          className="w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]"
+                        />
+                      </div>
                       {t.segment && (
                         <span
                           className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full text-white"

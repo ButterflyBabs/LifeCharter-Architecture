@@ -2,11 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { SegmentRead } from "@/components/planning/AssistantPanels";
+import { resetSegmentOptions } from "@/components/segments/SegmentSelect";
 
 interface DimensionScore {
   dimension_key: string;
   score: number;
   health: "healthy" | "attention" | "at_risk";
+  source?: "activity" | "business" | "coach" | "none";
+  delta?: number | null;
+}
+interface SegmentInsight {
+  overall: number | null;
+  overallDelta: number | null;
+  coverage: { tasks: number; goals: number; ledger: number; sales: number; total: number };
+  scoredOnActivity: boolean;
+  needs: { dimension: string; label: string; score: number; why: string[] }[];
+  progress: { dimension: string; label: string; delta: number | null; why: string[] }[];
 }
 interface Segment {
   id: number;
@@ -17,6 +28,7 @@ interface Segment {
   health: "healthy" | "attention" | "at_risk";
   segment_dimensions: DimensionScore[];
   financials?: { mtdIncome: number; ytdIncome: number; ytdNet: number } | null;
+  insight?: SegmentInsight;
 }
 interface Business {
   id: number;
@@ -83,6 +95,7 @@ export default function SegmentsPage() {
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setMsg(d.error || "Couldn't save that.");
     else setMsg("");
+    resetSegmentOptions();
     await load();
   };
   const addBusiness = () => {
@@ -167,6 +180,19 @@ export default function SegmentsPage() {
         {msg && <p className="mt-2 text-sm text-[#8a2f2f]">{msg}</p>}
       </div>
 
+      <details className="mb-6 rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/20 p-4 text-sm text-[#3F4654] dark:text-[#e8e4f0]">
+        <summary className="cursor-pointer font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">How segment scores work</summary>
+        <div className="mt-2 space-y-2">
+          <p>You don&apos;t rate anything. Each segment starts from your business-wide score for every dimension (from your assessments) and moves with what&apos;s actually tied to that segment:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Finance</strong> — income and expenses you tag to it: margin, income against its monthly target, and the trend over the last 30 days.</li>
+            <li><strong>Sales</strong> — sales activities logged for it: how many in the last 30 days and how they turn out.</li>
+            <li><strong>Any dimension</strong> — plan goals assigned to it (met, in progress, slipped) and tasks assigned to it (finished versus overdue), placed by their tags or by what the task is about.</li>
+          </ul>
+          <p>With little tagged to a segment it simply keeps the business-wide score and says so. The more you tag, the more its own picture emerges. Scores are saved weekly, so you can see which segments are improving and which need work.</p>
+        </div>
+      </details>
+
       <SegmentRead />
 
       {businesses === null ? (
@@ -220,7 +246,14 @@ export default function SegmentsPage() {
                           </h3>
                         </div>
                         {score !== null && (
-                          <span className="text-2xl font-serif text-[#c9a227] leading-none">{score}</span>
+                          <span className="flex flex-col items-end">
+                            <span className="text-2xl font-serif text-[#c9a227] leading-none">{score}</span>
+                            {seg.insight?.overallDelta != null && seg.insight.overallDelta !== 0 && (
+                              <span className={`text-[11px] font-medium ${seg.insight.overallDelta > 0 ? "text-[#2c6b3f]" : "text-[#b06a5a]"}`} title="Change over about four weeks">
+                                {seg.insight.overallDelta > 0 ? "▲" : "▼"} {Math.abs(seg.insight.overallDelta)}
+                              </span>
+                            )}
+                          </span>
                         )}
                       </div>
 
@@ -278,13 +311,47 @@ export default function SegmentsPage() {
                               return (
                                 <div
                                   key={key}
-                                  title={d ? `${label(key)}: ${d.score}` : label(key)}
+                                  title={d ? `${label(key)}: ${d.score}${d.source === "activity" ? " · from this segment's activity" : d.source === "coach" ? " · set by a coach" : " · business-wide score"}${d.delta ? ` · ${d.delta > 0 ? "+" : ""}${d.delta} in ~4 weeks` : ""}` : label(key)}
                                   className="h-6 rounded"
                                   style={{ backgroundColor: color, opacity: d ? 0.35 + (d.score / 100) * 0.65 : 0.3 }}
                                 />
                               );
                             })}
                           </div>
+                          {seg.insight && (
+                            <div className="mt-3 space-y-2 text-[12px]">
+                              <p className={seg.insight.scoredOnActivity ? "text-[#2c6b3f]" : "text-[#7a8a99]"}>
+                                {seg.insight.scoredOnActivity
+                                  ? `Scored on this segment's own activity — ${[
+                                      seg.insight.coverage.tasks && `${seg.insight.coverage.tasks} task${seg.insight.coverage.tasks === 1 ? "" : "s"}`,
+                                      seg.insight.coverage.goals && `${seg.insight.coverage.goals} goal${seg.insight.coverage.goals === 1 ? "" : "s"}`,
+                                      seg.insight.coverage.ledger && `${seg.insight.coverage.ledger} ledger entr${seg.insight.coverage.ledger === 1 ? "y" : "ies"}`,
+                                      seg.insight.coverage.sales && `${seg.insight.coverage.sales} sales activit${seg.insight.coverage.sales === 1 ? "y" : "ies"}`,
+                                    ].filter(Boolean).join(" · ")}.`
+                                  : "Business-wide score. Tag tasks, goals, income or sales activity to this segment to score it on its own."}
+                              </p>
+                              {seg.insight.needs.length > 0 && (
+                                <div>
+                                  <p className="font-semibold text-[#8a6a15]">Needs work</p>
+                                  <ul className="mt-0.5 space-y-0.5 text-[#3F4654] dark:text-[#e8e4f0]">
+                                    {seg.insight.needs.slice(0, 2).map((n) => (
+                                      <li key={n.dimension}><span className="font-medium">{n.label} {n.score}</span>{n.why[0] ? ` — ${n.why[0]}` : ""}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {seg.insight.progress.length > 0 && (
+                                <div>
+                                  <p className="font-semibold text-[#2c6b3f]">Showing progress</p>
+                                  <ul className="mt-0.5 space-y-0.5 text-[#3F4654] dark:text-[#e8e4f0]">
+                                    {seg.insight.progress.slice(0, 2).map((n) => (
+                                      <li key={n.dimension}><span className="font-medium">{n.label}{n.delta ? ` +${n.delta}` : ""}</span>{n.why[0] ? ` — ${n.why[0]}` : ""}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="mt-2 flex items-center justify-between">
                             <p className="text-[11px] text-[#7C7C82]">
                               {seg.financials ? "12 dimensions · hover a bar" : "Tag income to this segment in Finance to see what it earns"}

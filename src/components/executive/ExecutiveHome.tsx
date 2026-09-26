@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
@@ -182,6 +183,7 @@ export default function ExecutiveHome() {
   const [newTaskDay, setNewTaskDay] = useState("");
   const [newTaskTime, setNewTaskTime] = useState("");
   const [newTaskKind, setNewTaskKind] = useState<"deadline" | "scheduled">("deadline");
+  const [newTaskSegment, setNewTaskSegment] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [userTimezone, setUserTimezone] = useState<string>(""); // chosen zone, else the browser's
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
@@ -1022,7 +1024,7 @@ export default function ExecutiveHome() {
           priority: newTaskPriority,
           description: "",
           businessId: null,
-          segmentId: null,
+          segmentId: newTaskSegment,
           dimensions: [],
           // A time with no date means today. tz keeps "3:00 PM" in the user's zone.
           ...(newTaskDay || newTaskTime
@@ -1041,6 +1043,7 @@ export default function ExecutiveHome() {
         setNewTaskDay("");
         setNewTaskTime("");
         setNewTaskKind("deadline");
+        setNewTaskSegment(null);
         setShowAddTask(false);
         fetchTasks(); // Refresh the task list
       }
@@ -2179,6 +2182,8 @@ export default function ExecutiveHome() {
                   autoFocus
                 />
               </div>
+
+              <SegmentSelect value={newTaskSegment} onChange={setNewTaskSegment} label="Business segment (optional) — lets it count toward that segment's score" />
 
               {/* Status */}
               <div>

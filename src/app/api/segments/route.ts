@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { crossOriginBlocked } from "@/lib/security";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
+import { computeSegmentScores, persistSegmentScores } from "@/lib/scoring/segmentScore";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +64,31 @@ export async function GET() {
       fin.set(e.segment_id, c);
     }
   }
+  // Scores from what's really happening in each segment (see segmentScore.ts).
+  const scores = await computeSegmentScores(masterPlanId).catch((e) => {
+    console.error("segment scoring:", e);
+    return [];
+  });
+  const byId = new Map(scores.map((r) => [r.id, r]));
+  await persistSegmentScores(masterPlanId, scores).catch(() => undefined);
+
   const withFin = businesses.map((b) => ({
     ...b,
-    segments: ((b.segments as Array<Record<string, unknown>>) ?? []).map((s) => ({ ...s, financials: fin.get(Number(s.id)) ?? null })),
+    segments: ((b.segments as Array<Record<string, unknown>>) ?? []).map((s) => {
+      const r = byId.get(Number(s.id));
+      return {
+        ...s,
+        financials: fin.get(Number(s.id)) ?? null,
+        ...(r
+          ? {
+              segment_dimensions: Object.entries(r.dims)
+                .filter(([, d]) => d.score !== null)
+                .map(([k, d]) => ({ dimension_key: k, score: d.score, health: (d.score as number) < 60 ? "at_risk" : (d.score as number) < 80 ? "attention" : "healthy", source: d.source, evidence: d.evidence, needs: d.needs, wins: d.wins, delta: d.delta })),
+              insight: { overall: r.overall, overallDelta: r.overallDelta, coverage: r.coverage, scoredOnActivity: r.scoredOnActivity, needs: r.needs, progress: r.progress },
+            }
+          : {}),
+      };
+    }),
   }));
 
   return NextResponse.json({ businesses: withFin }, { headers: { "Cache-Control": "no-store" } });

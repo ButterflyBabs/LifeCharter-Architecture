@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, CheckSquare, DollarSign, Share2, CalendarPlus, X, Loader2, Check } from "lucide-react";
 import { dayInTz } from "@/lib/tz";
+import { SegmentSelect } from "@/components/segments/SegmentSelect";
 
 export function QuickAddMenu() {
   const [open, setOpen] = useState(false);
@@ -17,6 +18,7 @@ export function QuickAddMenu() {
   const [day, setDay] = useState("");
   const [time, setTime] = useState("");
   const [kind, setKind] = useState<"deadline" | "scheduled">("deadline");
+  const [segmentId, setSegmentId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
 
@@ -60,6 +62,7 @@ export function QuickAddMenu() {
           title: title.trim(),
           priority,
           status: "today",
+          segmentId,
           // A time with no date means today, read in the user's own time zone.
           ...(day || time
             ? {
@@ -75,6 +78,7 @@ export function QuickAddMenu() {
         window.dispatchEvent(new Event("tasks-changed"));
         setAdded(true);
         setTitle("");
+        setSegmentId(null);
         setTimeout(() => setTaskOpen(false), 900);
       }
     } finally {
@@ -141,6 +145,7 @@ export function QuickAddMenu() {
                 placeholder="What needs doing?"
                 className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
+              <SegmentSelect value={segmentId} onChange={setSegmentId} />
               <div className="flex items-center gap-2">
                 <input
                   type="date"

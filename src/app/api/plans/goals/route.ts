@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { planSegmentIds } from "@/lib/planScope";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,9 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const goalId = body?.goalId as string | undefined;
   const status = body?.status as GoalStatus | undefined;
-  if (!goalId || !status || !STATUSES.includes(status)) {
-    return NextResponse.json({ error: "goalId and a valid status are required" }, { status: 400 });
+  const settingSegment = body && Object.prototype.hasOwnProperty.call(body, "segmentId");
+  if (!goalId || (!settingSegment && (!status || !STATUSES.includes(status)))) {
+    return NextResponse.json({ error: "goalId and a valid status (or a segmentId) are required" }, { status: 400 });
   }
 
   const planId = await resolveMasterPlanId();
@@ -45,11 +47,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "goal not found" }, { status: 404 });
   }
 
+  // Assign the goal to one of this client's segments (or clear it).
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (status) patch.status = status;
+  if (settingSegment) {
+    if (body.segmentId === null || body.segmentId === "") patch.segment_id = null;
+    else {
+      const sid = Number(body.segmentId);
+      if (!(await planSegmentIds(planId)).includes(sid)) return NextResponse.json({ error: "Unknown segment." }, { status: 404 });
+      patch.segment_id = sid;
+    }
+  }
+
   const { data: updated, error } = await supabase
     .from("client_plan_goals")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq("id", goalId)
-    .select("id, dimension_key, title, detail, target, status, sort_order")
+    .select("id, dimension_key, title, detail, target, status, sort_order, segment_id")
     .single();
 
   if (error || !updated) {

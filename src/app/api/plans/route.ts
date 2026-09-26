@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
   const { data: goals } = await supabase
     .from("client_plan_goals")
-    .select("id, dimension_key, title, detail, target, status, sort_order, added_at")
+    .select("id, dimension_key, title, detail, target, status, sort_order, added_at, segment_id")
     .eq("plan_id", plan.id)
     .order("sort_order", { ascending: true });
 

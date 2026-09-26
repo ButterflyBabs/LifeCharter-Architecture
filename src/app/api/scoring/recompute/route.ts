@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { planSegmentIds } from "@/lib/planScope";
 import { DIMENSION_MODEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 import { scoreDimensionFromProse, ProseAnswer } from "@/lib/scoring/aiScore";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { captureSnapshot } from "@/lib/scoring/snapshot";
 import { resolveOpenAiKey } from "@/lib/ai/config";
+import { computeSegmentScores, persistSegmentScores } from "@/lib/scoring/segmentScore";
 import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
@@ -143,7 +143,7 @@ async function run() {
   let snapshot: { type: string } | null = null;
   try {
     const computed = await gatherAndCompute(planId);
-    segmentsSynced = await syncSegments(supabase, planId, computed.domains);
+    segmentsSynced = await syncSegments(planId);
     // Record a dated score point (first one becomes the baseline).
     snapshot = await captureSnapshot(supabase, planId, computed.domains, computed.overall);
   } catch (e) {
@@ -163,58 +163,12 @@ async function run() {
   });
 }
 
-function healthFor(score: number): "healthy" | "attention" | "at_risk" {
-  if (score < 60) return "at_risk";
-  if (score < 80) return "attention";
-  return "healthy";
-}
-
-// Writes the AI-computed 12-domain scores into the client's own segments' dimensions,
-// leaving coach-overridden rows untouched. Returns rows written.
-async function syncSegments(
-  supabase: ReturnType<typeof createServerClient>,
-  planId: string,
-  domains: Array<{ key: string; score: number | null }>
-): Promise<number> {
-  // Only this client's own segments — never anyone else's.
-  const segIds = await planSegmentIds(planId);
-  if (segIds.length === 0) return 0;
-
-  const scored = domains.filter((d) => d.score !== null) as Array<{ key: string; score: number }>;
-
-  const { data: existing } = await supabase
-    .from("segment_dimensions")
-    .select("segment_id, dimension_key, updated_by")
-    .in("segment_id", segIds);
-  const coach = new Set(
-    ((existing ?? []) as Array<{ segment_id: number; dimension_key: string; updated_by: string | null }>)
-      .filter((r) => r.updated_by === "coach")
-      .map((r) => `${r.segment_id}:${r.dimension_key}`)
-  );
-
-  let written = 0;
-  for (const segId of segIds) {
-    // Clear this segment's non-coach rows, then write fresh AI values.
-    await supabase
-      .from("segment_dimensions")
-      .delete()
-      .eq("segment_id", segId)
-      .or("updated_by.is.null,updated_by.neq.coach");
-    const rows = scored
-      .filter((d) => !coach.has(`${segId}:${d.key}`))
-      .map((d) => ({
-        segment_id: segId,
-        dimension_key: d.key,
-        score: d.score,
-        health: healthFor(d.score),
-        updated_by: "ai",
-      }));
-    if (rows.length) {
-      await supabase.from("segment_dimensions").insert(rows);
-      written += rows.length;
-    }
-  }
-  return written;
+// Recomputes each of the client's segments from what's actually tied to it (income,
+// tasks, goals, sales) on top of the business-wide scores; coach overrides stay.
+async function syncSegments(planId: string): Promise<number> {
+  const results = await computeSegmentScores(planId);
+  await persistSegmentScores(planId, results, true);
+  return results.reduce((n, r) => n + Object.values(r.dims).filter((d) => d.score !== null).length, 0);
 }
 
 function overallOf(scores: Array<{ score: number }>): number | null {

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dueFromBody } from "@/lib/taskDueInput";
+import { planSegmentIds } from "@/lib/planScope";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
   if (due) Object.assign(update, due);
   if (body.timeKind === "scheduled" || body.timeKind === "deadline") update.time_kind = body.timeKind;
+  // Tag (or untag) the task to one of THIS client's segments.
+  if (body.segmentId === null || body.segmentId === "") update.segment_id = null;
+  else if (body.segmentId !== undefined) {
+    const sid = Number(body.segmentId);
+    const { data: seg } = (await planSegmentIds(masterPlanId)).includes(sid) ? await supabase.from("segments").select("id, business_id").eq("id", sid).maybeSingle() : { data: null };
+    if (!seg) return NextResponse.json({ error: "Unknown segment." }, { status: 404 });
+    update.segment_id = seg.id;
+    update.business_id = seg.business_id;
+  }
 
   const { data, error } = await supabase
     .from("tasks")

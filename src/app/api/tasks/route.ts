@@ -34,7 +34,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, segment_id, business:businesses(name, color), segment:segments(name, color)"
     )
     .eq("master_plan_id", masterPlanId)
     .order("board_position", { ascending: true })
@@ -61,8 +61,12 @@ export async function POST(request: Request) {
   }
 
   // A task can only be linked to the client's own business / segment.
-  const businessId = body.businessId && (await planBusinessIds(masterPlanId)).includes(Number(body.businessId)) ? body.businessId : null;
+  let businessId = body.businessId && (await planBusinessIds(masterPlanId)).includes(Number(body.businessId)) ? body.businessId : null;
   const segmentId = body.segmentId && (await planSegmentIds(masterPlanId)).includes(Number(body.segmentId)) ? body.segmentId : null;
+  if (segmentId && !businessId) {
+    const { data: seg } = await supabase.from("segments").select("business_id").eq("id", segmentId).maybeSingle();
+    businessId = seg?.business_id ?? null;
+  }
 
   const row: Record<string, unknown> = {
     master_plan_id: masterPlanId,

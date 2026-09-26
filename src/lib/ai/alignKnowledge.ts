@@ -69,15 +69,37 @@ export async function alignmentKnowledge(masterPlanId: string): Promise<string> 
         }
       }
       const total = Array.from(revBySeg.values()).reduce((s, v) => s + v.actual, 0);
+
+      // Each segment's alignment score (built from the income, tasks, goals and sales
+      // tied to it) — overall, its two weakest dimensions, and movement over ~4 weeks.
+      const scoreBySeg = new Map<number, string>();
+      if (segIds.length) {
+        const [{ data: dimRows }, { data: snapRows }] = await Promise.all([
+          db.from("segment_dimensions").select("segment_id, dimension_key, score").in("segment_id", segIds),
+          db.from("segment_score_snapshots").select("segment_id, overall, created_at").in("segment_id", segIds).order("created_at", { ascending: false }).limit(600),
+        ]);
+        for (const id of segIds) {
+          const dims = ((dimRows ?? []) as { segment_id: number; dimension_key: string; score: number }[]).filter((d) => d.segment_id === id);
+          if (!dims.length) continue;
+          const overall = Math.round(dims.reduce((a, d) => a + d.score, 0) / dims.length);
+          const weakest = [...dims].sort((a, b) => a.score - b.score).slice(0, 2).map((d) => `${label(d.dimension_key)} ${d.score}`);
+          const snaps = ((snapRows ?? []) as { segment_id: number; overall: number | null; created_at: string }[]).filter((x) => x.segment_id === id);
+          const ref = snaps.filter((x) => Date.now() - new Date(x.created_at).getTime() >= 6 * 86400000)[0];
+          const delta = ref && typeof ref.overall === "number" ? overall - ref.overall : null;
+          scoreBySeg.set(id, `alignment ${overall}${delta ? ` (${delta > 0 ? "+" : ""}${delta} since ${ref!.created_at.slice(0, 10)})` : ""}, weakest ${weakest.join(", ")}`);
+        }
+      }
       const lines = list.map((b) => {
         const segs = b.segments.map((s) => {
           const r = revBySeg.get(s.id);
-          return r && (r.actual || r.target) ? `${s.name} ${usd(r.actual)}${r.target ? ` of ${usd(r.target)}` : ""}` : s.name;
+          const sc = scoreBySeg.get(s.id);
+          const money = r && (r.actual || r.target) ? `${usd(r.actual)}${r.target ? ` of ${usd(r.target)}` : ""}` : "";
+          return `${s.name}${money || sc ? ` [${[money, sc].filter(Boolean).join("; ")}]` : ""}`;
         });
         const bizActual = b.segments.reduce((s, x) => s + (revBySeg.get(x.id)?.actual ?? 0), 0);
         return `${b.name}${bizActual ? ` (${usd(bizActual)} this month${total ? `, ${Math.round((bizActual / total) * 100)}% of revenue` : ""})` : ""}: ${segs.join("; ") || "no segments yet"}`;
       });
-      parts.push(`Businesses & segments (income tagged to each segment this month):\n${lines.map((l) => `  • ${l}`).join("\n")}`);
+      parts.push(`Businesses & segments (income tagged to each this month; segment alignment scores blend the business-wide score with the income, tasks, goals and sales tied to that segment):\n${lines.map((l) => `  • ${l}`).join("\n")}`);
     } else {
       parts.push("Businesses & segments: none set up yet.");
     }
