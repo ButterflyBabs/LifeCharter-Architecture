@@ -8,7 +8,7 @@ import { OffersEditor } from "./OffersEditor";
 import { RulesEditor } from "./RulesEditor";
 import { cx } from "./ui";
 
-const STEPS = ["Platforms", "Weekly goals", "Offers & events", "Voice"];
+const STEPS = ["Platforms", "Weekly goals", "Offers & events", "Voice & rules"];
 
 // First-run setup for an account with no planner settings yet. Everything it
 // collects can be changed later on the planner's tabs.
@@ -128,7 +128,7 @@ export function SetupFlow({ settings, api }: { settings: PlannerSettings; api: S
               }}
             />
             <button className={`${cx.btn} ${cx.ghost}`} onClick={() => api.saveSettings({ completeSetup: true })}>
-              Finish without saving voice
+              Finish without saving rules
             </button>
           </div>
         )}

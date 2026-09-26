@@ -325,6 +325,13 @@ export const BRAND_VOICE_QUESTIONS: PlanQuestion[] = [
     ]
   },
   {
+    id: "voice-notes",
+    question: "In your own words, how do you sound?",
+    type: "textarea",
+    placeholder: "e.g., Practical and warm, never salesy. Short sentences. Gentle humor.",
+    hint: "The tone, attitude and values that should come through in everything you write. Every AI writer in Command Suite follows this."
+  },
+  {
     id: "talking-points",
     question: "What are your 3-5 key talking points?",
     type: "list",
