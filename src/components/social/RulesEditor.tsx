@@ -4,13 +4,46 @@ import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { ContentRules } from "@/lib/social/planner";
 import { cx } from "./ui";
+import { PlanSectionSummary, loadMarketingSections } from "./PlanSectionSummary";
 
-// The account's voice and content rules. These are what the week writer
-// (Phase 3) follows, so every client's posts sound like them.
+// The account's content rules. How the owner sounds (their voice and story)
+// lives in the Marketing Plan's Brand Voice & Story section and is shown here
+// read-only; this tab keeps the practical rules: sign-off, invitation ratio,
+// series, words to avoid, personal-detail policy and graphic style.
 export function RulesEditor({ rules, onSave, compact }: { rules: ContentRules; onSave: (r: ContentRules) => Promise<void> | void; compact?: boolean }) {
   const [r, setR] = useState(rules);
   const [saved, setSaved] = useState(false);
+  const [summaryKey, setSummaryKey] = useState(0);
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState("");
   useEffect(() => setR(rules), [rules]);
+
+  // Voice notes typed here before they moved to the Marketing Plan (or loaded by
+  // the prototype import). Move them across on request; nothing is dropped.
+  const legacyVoice = rules.voice.trim();
+  const moveVoice = async () => {
+    setMoving(true);
+    setMoveError("");
+    try {
+      const all = await loadMarketingSections(true);
+      const answers = { ...(all.find((x) => x.key === "brand_voice")?.answers || {}) };
+      const existing = (answers["voice-notes"] || "").trim();
+      answers["voice-notes"] = existing && existing !== legacyVoice ? `${existing}\n\n${legacyVoice}` : legacyVoice;
+      const res = await fetch("/api/plans/sections", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "marketing", sectionKey: "brand_voice", answers }),
+      });
+      if (!res.ok) throw new Error();
+      await onSave({ ...rules, voice: "" });
+      await loadMarketingSections(true);
+      setSummaryKey((k) => k + 1);
+    } catch {
+      setMoveError("Couldn't move them. Try again.");
+    } finally {
+      setMoving(false);
+    }
+  };
   const dirty = JSON.stringify(r) !== JSON.stringify(rules);
 
   return (
@@ -32,20 +65,33 @@ export function RulesEditor({ rules, onSave, compact }: { rules: ContentRules; o
         <div className="max-w-3xl">
           <p className={cx.eyebrow}>How your posts sound</p>
           <h2 className={cx.h2}>Voice &amp; rules</h2>
-          <p className={cx.body}>Everything written for you follows these. Be as specific as you like.</p>
+          <p className={cx.body}>Everything written for you follows these. Your voice comes from your Marketing Plan; the rules below are the practical details.</p>
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <label className="block">
-          <span className={cx.label}>Your voice</span>
-          <textarea rows={4} className={cx.input} value={r.voice} onChange={(e) => setR({ ...r, voice: e.target.value })} placeholder="e.g. Warm, practical and direct. Short sentences. Never salesy." />
-        </label>
-        <label className="block">
-          <span className={cx.label}>Sign-off on every post</span>
-          <textarea rows={4} className={cx.input} value={r.signOff} onChange={(e) => setR({ ...r, signOff: e.target.value })} placeholder={"e.g. With you,\nSam"} />
-        </label>
-      </div>
+      <PlanSectionSummary
+        key={summaryKey}
+        sectionKey="brand_voice"
+        questionIds={["brand-voice", "voice-notes", "talking-points"]}
+        heading="Your voice"
+        emptyText="You haven't described your voice yet."
+      >
+        {legacyVoice && (
+          <div className="mt-3 rounded-xl border border-[#D4AF63]/50 bg-white p-3 dark:bg-[#0E162A]">
+            <p className={cx.muted}>Voice notes saved here earlier:</p>
+            <p className="my-1 whitespace-pre-wrap text-sm text-[#0F1A38] dark:text-[#FAF8F3]">{legacyVoice}</p>
+            <button type="button" onClick={moveVoice} disabled={moving} className={`${cx.btn} ${cx.primary}`}>
+              {moving ? "Moving…" : "Move to my Marketing Plan"}
+            </button>
+            {moveError && <p className="mt-1 text-xs text-[#9b2620]">{moveError}</p>}
+          </div>
+        )}
+      </PlanSectionSummary>
+
+      <label className="block max-w-xl">
+        <span className={cx.label}>Sign-off on every post</span>
+        <textarea rows={3} className={cx.input} value={r.signOff} onChange={(e) => setR({ ...r, signOff: e.target.value })} placeholder={"e.g. With you,\nSam"} />
+      </label>
 
       <label className="block max-w-md">
         <span className={cx.label}>Give-only posts for every invitation</span>
@@ -103,7 +149,7 @@ export function RulesEditor({ rules, onSave, compact }: { rules: ContentRules; o
       </label>
 
       <div className="flex items-center gap-3">
-        <button type="submit" disabled={!dirty} className={`${cx.btn} ${cx.primary}`}>Save voice &amp; rules</button>
+        <button type="submit" disabled={!dirty} className={`${cx.btn} ${cx.primary}`}>Save rules</button>
         {saved && <span className={cx.muted}>Saved.</span>}
       </div>
     </form>

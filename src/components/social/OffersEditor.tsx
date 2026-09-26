@@ -5,6 +5,7 @@ import { Plus, X } from "lucide-react";
 import { fmtDate, todayYmd, type Offer, type SocialEvent } from "@/lib/social/planner";
 import type { SocialPlannerApi } from "./useSocialPlanner";
 import { cx } from "./ui";
+import { PlanSectionSummary } from "./PlanSectionSummary";
 
 const KINDS: { id: Offer["kind"]; label: string; hint: string }[] = [
   { id: "always-open", label: "Open any day", hint: "People can join or buy whenever they like." },
@@ -49,6 +50,13 @@ export function OffersEditor({ offers, events, api, compact }: { offers: Offer[]
           </p>
         </div>
       )}
+
+      <PlanSectionSummary
+        sectionKey="offers_promise"
+        questionIds={["lead-offer", "promise", "call-to-action"]}
+        heading="Your core offer"
+        emptyText="You haven't described the offer you lead with yet."
+      />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

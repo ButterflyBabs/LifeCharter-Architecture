@@ -4,12 +4,13 @@ import { normalizeRules } from "@/lib/social/planner";
 
 // What an account has told Command Suite about its business and voice, as
 // plain text for AI writers: its Marketing Plan (each Build-tab section's
-// answers and written text) and the Social Planner's Voice & rules. Each
-// account only ever gets its own.
+// answers and written text, including how the owner sounds under Brand Voice &
+// Story) and the Social Planner's practical rules (sign-off, word rules, …).
+// Each account only ever gets its own.
 export interface BusinessContext {
   text: string; // "" when the account hasn't filled anything in
   hasPlan: boolean;
-  hasVoice: boolean;
+  hasVoice: boolean; // a voice is described (Marketing Plan Brand Voice, or older planner voice notes)
   signOff: string;
 }
 
@@ -69,5 +70,7 @@ export function buildBusinessContext(rows: Row[], rules: unknown): BusinessConte
   let text = parts.join("\n\n");
   if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS) + "\n…";
 
-  return { text, hasPlan: planParts.length > 0, hasVoice: voiceLines.length > 0, signOff };
+  const voiceAnswers = byKey.get("brand_voice")?.answers || {};
+  const planVoice = ["brand-voice", "voice-notes"].some((id) => typeof voiceAnswers[id] === "string" && (voiceAnswers[id] as string).trim());
+  return { text, hasPlan: planParts.length > 0, hasVoice: planVoice || voiceLines.length > 0, signOff };
 }
