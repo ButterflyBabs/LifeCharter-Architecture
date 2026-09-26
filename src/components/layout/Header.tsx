@@ -29,6 +29,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/assessments": "Alignment Profile",
   "/business-plan": "Business Plan",
   "/marketing-plan": "Marketing Plan",
+  "/marketing-plan/social-planner": "Social Planner",
+  "/daily-compass/calendar": "Content Calendar",
   "/sales": "Sales",
   "/finance": "Finance",
   "/planning": "Planning Hub",
