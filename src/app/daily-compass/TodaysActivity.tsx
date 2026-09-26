@@ -25,7 +25,7 @@ function tz(): string {
 export function TodaysActivity() {
   const [calls, setCalls] = useState(0);
   const [followups, setFollowups] = useState(0);
-  const [posts, setPosts] = useState<{ planned: number; posted: number }>({ planned: 0, posted: 0 });
+  const [posts, setPosts] = useState<{ posted: number; remaining: number; fromPostStream: number }>({ posted: 0, remaining: 0, fromPostStream: 0 });
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -35,7 +35,7 @@ export function TodaysActivity() {
       const d = await res.json().catch(() => ({}));
       setCalls(d.calls || 0);
       setFollowups(d.followups || 0);
-      setPosts({ planned: d.posts?.planned || 0, posted: d.posts?.posted || 0 });
+      setPosts({ posted: d.posts?.posted || 0, remaining: d.posts?.remaining || 0, fromPostStream: d.posts?.fromPostStream || 0 });
       setItems(Array.isArray(d.items) ? d.items : []);
     } catch {
       /* leave as-is */
@@ -114,19 +114,21 @@ export function TodaysActivity() {
             <span className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Posts</span>
           </div>
           <span className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] tabular-nums">
-            {!loaded ? "—" : posts.planned > 0 ? `${posts.posted} of ${posts.planned}` : "0"}
+            {loaded ? posts.posted : "—"}
           </span>
         </div>
-        {loaded && posts.planned === 0 && (
+        {loaded && (posts.remaining > 0 || posts.posted === 0) && (
           <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8] -mt-2">
-            Nothing planned for today — plan posts in the Content Calendar.
+            {posts.remaining > 0
+              ? `${posts.remaining} more planned for today in the Content Calendar.`
+              : "Nothing posted or planned yet today."}
           </p>
         )}
 
         <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">
           Today&apos;s counts add up: calls &amp; follow-ups you log on Global Control contacts, entries dated today in Sales
-          Activities, and follow-up tasks you complete today. Posts are today&apos;s posts in the Content Calendar
-          (posted of planned).
+          Activities, and follow-up tasks you complete today. Posts are what you published today — from the Content
+          Calendar and any posts made directly in PostStream.
         </p>
       </CardContent>
     </Card>

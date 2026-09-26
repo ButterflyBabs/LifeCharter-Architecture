@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz, zonedToUtcISO } from "@/lib/tz";
+import { publishedPostCounts } from "@/lib/social/postCounts";
 
 export const dynamic = "force-dynamic";
 
@@ -60,13 +61,13 @@ export async function GET(request: Request) {
     return c;
   };
 
-  const [{ data: tasks }, { data: rec }, { data: gc }, { data: sales }, { data: posts }, { data: goalRows }] = await Promise.all([
+  const [{ data: tasks }, { data: rec }, { data: gc }, { data: sales }, { data: goalRows }, postCounts] = await Promise.all([
     supabase.from("tasks").select("completed_at, followup").eq("master_plan_id", masterPlanId).eq("status", "done").gte("completed_at", sinceISO).limit(5000),
     supabase.from("recurring_tasks").select("id").eq("master_plan_id", masterPlanId),
     supabase.from("contact_activity_log").select("type, created_at").eq("master_plan_id", masterPlanId).gte("created_at", sinceISO).limit(5000),
     supabase.from("sales_activities").select("type, occurred_on").eq("master_plan_id", masterPlanId).gte("occurred_on", sinceDay).limit(5000),
-    supabase.from("social_posts").select("posted_at, planned_date").eq("master_plan_id", masterPlanId).eq("status", "posted").gte("planned_date", sinceDay).limit(5000),
     supabase.from("sales_goals").select("activity_type, weekly_target").eq("master_plan_id", masterPlanId),
+    publishedPostCounts(masterPlanId, tz, sinceDay),
   ]);
 
   for (const t of (tasks ?? []) as { completed_at: string; followup: { channel?: string } | null }[]) {
@@ -93,9 +94,10 @@ export async function GET(request: Request) {
       if (s.type === "proposal") c.proposals += 1;
     }
   }
-  for (const p of (posts ?? []) as { posted_at: string | null; planned_date: string }[]) {
-    at(p.posted_at ? dayInTz(p.posted_at, tz) : String(p.planned_date).slice(0, 10)).posts += 1;
-  }
+  // Posts published — Social Planner posts plus posts made only in PostStream.
+  postCounts.byDay.forEach((n, day) => {
+    at(day).posts += n;
+  });
 
   const activeCount = (c?: DayCounts) => (c ? c.tasks + c.recurring + c.calls + c.followups + c.posts + c.other : 0);
   const isActive = (day: string) => activeCount(days.get(day)) > 0;

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dayWindowUtc, dayInTz } from "@/lib/tz";
+import { publishedPostCounts } from "@/lib/social/postCounts";
 
 export const dynamic = "force-dynamic";
 
@@ -68,10 +69,11 @@ export async function GET(request: Request) {
   let salesCalls = 0;
   let salesFollowups = 0;
   let taskFollowups = 0;
-  let postsPlanned = 0;
+  let postsRemaining = 0; // planned for today, not posted yet
   let postsPosted = 0;
+  let postsFromPostStream = 0;
   if (masterPlanId) {
-    const [{ data: sales }, { data: fuTasks }, { data: posts }] = await Promise.all([
+    const [{ data: sales }, { data: fuTasks }, { data: posts }, postCounts] = await Promise.all([
       supabase
         .from("sales_activities")
         .select("id, type, contact_name, notes, created_at")
@@ -88,9 +90,10 @@ export async function GET(request: Request) {
         .not("followup->>channel", "is", null),
       supabase
         .from("social_posts")
-        .select("status, posted_at")
+        .select("status")
         .eq("master_plan_id", masterPlanId)
         .eq("planned_date", today),
+      publishedPostCounts(masterPlanId, tz, today),
     ]);
     for (const a of (sales || []) as { id: string; type: string; contact_name: string | null; notes: string | null; created_at: string }[]) {
       if (a.type === "call") salesCalls += 1;
@@ -115,11 +118,13 @@ export async function GET(request: Request) {
         createdAt: t.completed_at,
       });
     }
-    for (const p of (posts || []) as { status: string; posted_at: string | null }[]) {
-      if (p.status === "idea") continue; // an idea isn't planned yet
-      postsPlanned += 1;
-      if (p.status === "posted") postsPosted += 1;
+    // Still to go: planned for today but not posted (an idea isn't planned yet).
+    for (const p of (posts || []) as { status: string }[]) {
+      if (p.status === "draft" || p.status === "scheduled") postsRemaining += 1;
     }
+    // Posted: Social Planner posts plus posts published only in PostStream.
+    postsPosted = postCounts.byDay.get(today) ?? 0;
+    postsFromPostStream = postCounts.fromPostStream.get(today) ?? 0;
   }
   items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
@@ -130,7 +135,7 @@ export async function GET(request: Request) {
     calls,
     followups,
     contactsTouched: contacts.size,
-    posts: { planned: postsPlanned, posted: postsPosted },
+    posts: { posted: postsPosted, remaining: postsRemaining, fromPostStream: postsFromPostStream },
     items,
   });
 }
