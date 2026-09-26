@@ -129,7 +129,8 @@ export async function sendToPostStream(
 // Reads the caption a planned post would send.
 export const captionFor = (row: Pick<PostRow, "notes">) => captionOf(row.notes || "");
 
-const ADOPT_DAYS = 90; // rolling window: bring in PostStream posts from the last 90 days onward
+// Posts made directly in PostStream come onto the calendar month to date —
+// from the 1st of the current month — since activity is tracked monthly.
 const ADOPT_MAX = 100;
 
 // Brings the calendar in line with PostStream. Returns how many rows changed.
@@ -147,7 +148,7 @@ export async function syncFromPostStream(masterPlanId: string, key: string, tz: 
   }
   const skip = new Set(((ignored || []) as { poststream_post_id: string }[]).map((r) => r.poststream_post_id));
 
-  const cutoff = dayInTz(new Date(Date.now() - ADOPT_DAYS * 86400000), tz);
+  const cutoff = `${dayInTz(new Date(), tz).slice(0, 8)}01`; // first of this month, in their time zone
   let changed = 0;
   let adopted = 0;
 
