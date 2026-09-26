@@ -129,7 +129,7 @@ export async function sendToPostStream(
 // Reads the caption a planned post would send.
 export const captionFor = (row: Pick<PostRow, "notes">) => captionOf(row.notes || "");
 
-const ADOPT_DAYS = 60; // bring in PostStream posts from the last two months onward
+const ADOPT_DAYS = 90; // rolling window: bring in PostStream posts from the last 90 days onward
 const ADOPT_MAX = 100;
 
 // Brings the calendar in line with PostStream. Returns how many rows changed.
