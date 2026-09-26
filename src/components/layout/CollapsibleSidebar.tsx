@@ -39,7 +39,7 @@ import {
   LineChart,
   Rocket,
   LogOut,
-  Users,
+  ArrowLeftRight,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -54,7 +54,6 @@ const navigationSections = [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
-      { id: "community", label: "The Collective", icon: Users, href: "/community" },
     ],
   },
   {
@@ -507,6 +506,19 @@ export function CollapsibleSidebar() {
 
       {/* User Profile & Theme Toggle */}
       <div className={cn("border-t border-white/10 space-y-2", isCollapsed ? "p-2" : "p-4")}>
+        {/* Switch to The Collective — pinned here (not in the scrolling nav) so it is always visible */}
+        <Link
+          href="/community"
+          title="Switch to The Collective"
+          className={cn(
+            "flex items-center rounded-lg text-sm font-semibold text-[#c9a227] bg-[#c9a227]/10 border border-[#c9a227]/30 hover:bg-[#c9a227]/20 transition-colors",
+            isCollapsed ? "justify-center w-full p-2" : "gap-2 px-4 py-2.5"
+          )}
+        >
+          <ArrowLeftRight className="w-4 h-4" />
+          {!isCollapsed && "Switch to The Collective"}
+        </Link>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
