@@ -2,16 +2,23 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { readAccountKey, resolveAiAccount } from "@/lib/ai/config";
+import { DEFAULT_ASSISTANT_NAME, MAX_ASSISTANT_INSTRUCTIONS } from "@/lib/ai/defaults";
 
 export const dynamic = "force-dynamic";
 
 async function current(profileId: string | null) {
-  let assistantName = "Mariposa";
+  let assistantName = DEFAULT_ASSISTANT_NAME;
+  let assistantInstructions = "";
   if (profileId) {
-    const { data } = await createServerClient().from("profiles").select("assistant_name").eq("id", profileId).maybeSingle();
+    const { data } = await createServerClient()
+      .from("profiles")
+      .select("assistant_name, assistant_instructions")
+      .eq("id", profileId)
+      .maybeSingle();
     assistantName = ((data?.assistant_name as string) || "").trim() || assistantName;
+    assistantInstructions = ((data?.assistant_instructions as string) || "").trim();
   }
-  return { assistantName, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
+  return { assistantName, assistantInstructions, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
 }
 
 // Returns this account's AI assistant name + whether its own OpenAI key is set
@@ -21,7 +28,8 @@ export async function GET() {
   return NextResponse.json({ ...(await current(account.profileId)), canEdit: account.canEdit });
 }
 
-// Saves the assistant name and/or the OpenAI key for the signed-in account.
+// Saves the assistant name, its standing reply instructions and/or the OpenAI key
+// for the signed-in account.
 // Send openaiApiKey:"" to clear. The key is stored encrypted in Vault.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
@@ -35,7 +43,11 @@ export async function POST(request: Request) {
   }
   const supabase = createServerClient();
 
-  if (typeof body?.assistantName !== "string" && typeof body?.openaiApiKey !== "string") {
+  if (
+    typeof body?.assistantName !== "string" &&
+    typeof body?.openaiApiKey !== "string" &&
+    typeof body?.assistantInstructions !== "string"
+  ) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
   if (typeof body?.assistantName === "string") {
@@ -45,6 +57,17 @@ export async function POST(request: Request) {
       .eq("id", account.profileId);
     if (error) {
       console.error("POST /api/ai-settings name:", error);
+      return NextResponse.json({ error: "save failed" }, { status: 500 });
+    }
+  }
+  if (typeof body?.assistantInstructions === "string") {
+    const text = body.assistantInstructions.trim();
+    if (text.length > MAX_ASSISTANT_INSTRUCTIONS) {
+      return NextResponse.json({ error: `Keep instructions under ${MAX_ASSISTANT_INSTRUCTIONS} characters.` }, { status: 400 });
+    }
+    const { error } = await supabase.from("profiles").update({ assistant_instructions: text || null }).eq("id", account.profileId);
+    if (error) {
+      console.error("POST /api/ai-settings instructions:", error);
       return NextResponse.json({ error: "save failed" }, { status: 500 });
     }
   }

@@ -1,5 +1,6 @@
 import { authEnabled, isOwnerEmail, sessionUser, superAdminEmails } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 
 // Every Command Suite account connects its own AI. This resolves whose account
 // a request belongs to and returns that account's assistant name + OpenAI key
@@ -60,20 +61,26 @@ export async function readAccountKey(profileId: string | null): Promise<string> 
   return ((data as string | null) || "").trim();
 }
 
-export async function resolveAiConfig(): Promise<{ name: string; key: string }> {
+export async function resolveAiConfig(): Promise<{ name: string; key: string; instructions: string }> {
   const envKey = process.env.OPENAI_API_KEY || process.env.openai_api_key || "";
   try {
     const account = await resolveAiAccount();
-    let name = "Mariposa";
+    let name = DEFAULT_ASSISTANT_NAME;
+    let instructions = "";
     if (account.profileId) {
-      const { data } = await createServerClient().from("profiles").select("assistant_name").eq("id", account.profileId).maybeSingle();
+      const { data } = await createServerClient()
+        .from("profiles")
+        .select("assistant_name, assistant_instructions")
+        .eq("id", account.profileId)
+        .maybeSingle();
       name = ((data?.assistant_name as string) || "").trim() || name;
+      instructions = ((data?.assistant_instructions as string) || "").trim();
     }
     const own = await readAccountKey(account.profileId);
-    return { name, key: own || (account.isOwner ? envKey : "") };
+    return { name, key: own || (account.isOwner ? envKey : ""), instructions };
   } catch (e) {
     console.error("resolveAiConfig:", e);
-    return { name: "Mariposa", key: "" };
+    return { name: DEFAULT_ASSISTANT_NAME, key: "", instructions: "" };
   }
 }
 

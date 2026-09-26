@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -121,6 +122,7 @@ export default function SettingsPage() {
 
   // AI Assistant state
   const [aiName, setAiName] = useState("");
+  const [aiInstructions, setAiInstructions] = useState("");
   const [aiKey, setAiKey] = useState("");
   const [aiHasKey, setAiHasKey] = useState(false);
   const [aiSaving, setAiSaving] = useState(false);
@@ -263,7 +265,8 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
-        setAiName(d.assistantName === "Mariposa" ? "" : d.assistantName || "");
+        setAiName(d.assistantName === DEFAULT_ASSISTANT_NAME ? "" : d.assistantName || "");
+        setAiInstructions(d.assistantInstructions || "");
         setAiHasKey(Boolean(d.hasOpenAiKey));
       })
       .catch(() => {});
@@ -273,8 +276,9 @@ export default function SettingsPage() {
     setAiMsg(null);
     setAiSaving(true);
     try {
-      const payload: { assistantName: string; openaiApiKey?: string } = {
+      const payload: { assistantName: string; assistantInstructions: string; openaiApiKey?: string } = {
         assistantName: aiName.trim(),
+        assistantInstructions: aiInstructions.trim(),
       };
       // Only send the key if the user typed a new one (blank keeps the existing).
       if (aiKey.trim()) payload.openaiApiKey = aiKey.trim();
@@ -291,6 +295,7 @@ export default function SettingsPage() {
       const d = await res.json();
       setAiHasKey(Boolean(d.hasOpenAiKey));
       setAiKey("");
+      setAiInstructions(d.assistantInstructions || "");
       setAiMsg({
         ok: true,
         text: `Saved — your AI bot${d.assistantName ? ` (${d.assistantName})` : ""} has been updated.`,
@@ -2045,12 +2050,51 @@ export default function SettingsPage() {
             <Input
               value={aiName}
               onChange={(e) => setAiName(e.target.value)}
-              placeholder="Mariposa"
+              placeholder={DEFAULT_ASSISTANT_NAME}
               className="max-w-sm"
             />
             <p className="text-xs text-[#b8a898] mt-1.5">
               What your assistant is called across the app (e.g. on your Morning Brief). Leave blank to
-              use the default, Mariposa.
+              use the default, {DEFAULT_ASSISTANT_NAME}.
+            </p>
+          </div>
+
+          {/* How the assistant replies */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              How should {aiName.trim() || DEFAULT_ASSISTANT_NAME} reply?
+            </label>
+            <textarea
+              value={aiInstructions}
+              onChange={(e) => setAiInstructions(e.target.value.slice(0, 1500))}
+              rows={5}
+              placeholder="e.g. Be direct and skip the pep talk. Keep answers under 80 words. Use short bullet points. Always end with one next step. Call me by my first name."
+              aria-label="Standing instructions for your assistant"
+              className="w-full max-w-2xl rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] placeholder:text-[#b8a898]"
+            />
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {[
+                "Keep answers under 80 words.",
+                "Use short bullet points.",
+                "Be direct — skip the pep talk.",
+                "Always end with one clear next step.",
+                "Ask me a question before giving advice.",
+              ].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setAiInstructions((cur) => (cur.includes(s) ? cur : (cur ? cur.trimEnd() + " " : "") + s).slice(0, 1500))}
+                  className="text-xs px-2.5 py-1 rounded-full border border-[#1a2b4a]/15 text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+                >
+                  + {s}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[#b8a898] mt-1.5">
+              Standing instructions your assistant follows every time — tone, length, format, what to focus on.
+              They shape how it replies; it still only uses your own information and never makes things up.
+              {" "}
+              {aiInstructions.length}/1500
             </p>
           </div>
 

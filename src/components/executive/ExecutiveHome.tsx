@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
 import {
   CheckSquare,
@@ -224,7 +225,7 @@ export default function ExecutiveHome() {
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
-  const [assistantName, setAssistantName] = useState<string>("Mariposa");
+  const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
   const [briefOrder, setBriefOrder] = useState<string[]>([
     "brief",
     "schedule",

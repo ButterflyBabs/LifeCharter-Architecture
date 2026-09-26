@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { readAccountKey, resolveAiAccount } from "@/lib/ai/config";
 import { isValidTimeZone } from "@/lib/timezones";
 import { REMINDER_LEADS, DEFAULT_LEAD_MIN } from "@/lib/taskReminders";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET() {
     : { data: null };
   const fullName = ((data?.full_name as string) || "").trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : "";
-  const assistantName = ((data?.assistant_name as string) || "").trim() || "Mariposa";
+  const assistantName = ((data?.assistant_name as string) || "").trim() || DEFAULT_ASSISTANT_NAME;
   const hasOpenAiKey = Boolean(await readAccountKey(profileId));
   const avatarUrl = ((data?.avatar_url as string) || "").trim() || null;
   const timezone = data?.timezone_chosen ? ((data?.timezone as string) || "").trim() || null : null;

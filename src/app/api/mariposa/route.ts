@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 // The assistant persona — {name} is the account's configured assistant name.
 function persona(name: string): string {
-  return `You are ${name}, the executive-assistant AI in the LifeCharter Command Suite — the butterfly to Brújula's strategic compass: daily execution and momentum.
+  return `You are ${name}, the executive-assistant AI in the LifeCharter Command Suite, focused on daily execution and momentum.
 
 You help the founder run their day across their ventures.
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   }
   const page = typeof body?.page === "string" ? body.page.slice(0, 60) : "";
 
-  const { name, key } = await resolveAiConfig();
+  const { name, key, instructions } = await resolveAiConfig();
 
   if (!key) {
     return NextResponse.json({
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : ""),
+          content: assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions),
         },
         ...history,
         { role: "user", content: message },

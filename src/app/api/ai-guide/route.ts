@@ -33,7 +33,7 @@ Provide guidance that is:
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, key } = await resolveAiConfig();
+    const { name, key, instructions } = await resolveAiConfig();
     // Check if an OpenAI API key is configured (per-account or env)
     if (!key) {
       return NextResponse.json({
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt) },
+        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions) },
         ...history,
         { role: "user", content: message },
       ],

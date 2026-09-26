@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -93,7 +94,7 @@ export default function DailyCompassPage() {
   const [now, setNow] = useState<Date | null>(null);
   const [greeting, setGreeting] = useState("Good morning");
   const [firstName, setFirstName] = useState("");
-  const [assistantName, setAssistantName] = useState("Mariposa");
+  const [assistantName, setAssistantName] = useState(DEFAULT_ASSISTANT_NAME);
   const [hasAiKey, setHasAiKey] = useState(false);
 
   const [tasks, setTasks] = useState<RealTask[]>([]);

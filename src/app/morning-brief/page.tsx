@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
 import QuickWins from "@/components/QuickWins";
 import {
@@ -49,7 +50,7 @@ const currency = (n: number) =>
 
 export default function MorningBriefPage() {
   const [firstName, setFirstName] = useState("");
-  const [assistantName, setAssistantName] = useState("Mariposa");
+  const [assistantName, setAssistantName] = useState(DEFAULT_ASSISTANT_NAME);
   const [hasAiKey, setHasAiKey] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
   const [tasks, setTasks] = useState<RealTask[]>([]);

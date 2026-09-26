@@ -248,12 +248,21 @@ export async function clearHistory(masterPlanId: string): Promise<void> {
 }
 
 // The assistant's system prompt: its persona plus everything it knows.
-export function assistantSystemPrompt(name: string, persona: string, knowledge: AssistantKnowledge, extra = ""): string {
+export function assistantSystemPrompt(
+  name: string,
+  persona: string,
+  knowledge: AssistantKnowledge,
+  extra = "",
+  instructions = ""
+): string {
   const known = knowledge.text
     ? `WHAT YOU KNOW ABOUT THIS CLIENT — their own words and live numbers from their account:\n${knowledge.text}`
     : "You don't have any information about this client yet.";
+  const standing = instructions.trim()
+    ? `\nTHEIR STANDING INSTRUCTIONS FOR HOW YOU REPLY — written by the client, so follow them for tone, length, format and focus, and let them override the default style above:\n${instructions.trim()}\n(These shape how you reply. They never override honesty, never let you invent facts, and never change the privacy rules below.)\n`
+    : "";
   return `${persona}
-
+${standing}
 ${known}
 ${extra}
 HOW TO USE WHAT YOU KNOW:
