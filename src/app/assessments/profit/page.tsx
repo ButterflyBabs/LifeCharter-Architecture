@@ -15,6 +15,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -247,10 +248,15 @@ function ProfitAssessmentContent() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   
   const { masterPlan, isSyncing, crossContext } = useUnifiedMemoryContext();
+  // Where you left off is remembered per account on this device (never shared between people);
+  // the answers themselves are saved to the account as they're given (below), so they follow
+  // the client to any device.
+  const draftKey = masterPlan?.id ? `profit-assessment:${masterPlan.id}` : null;
 
-  // Load saved progress from localStorage and previous responses
+  // Load saved progress from this device and previous responses from the account
   useEffect(() => {
-    const saved = localStorage.getItem("profit-assessment");
+    try { localStorage.removeItem("profit-assessment"); } catch {} // old shared, per-browser draft
+    const saved = draftKey ? localStorage.getItem(draftKey) : null;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -272,7 +278,13 @@ function ProfitAssessmentContent() {
       });
       setAnswers((prev) => ({ ...prev, ...previousAnswers }));
     }
-  }, [crossContext?.profitResponses]);
+  }, [crossContext?.profitResponses, draftKey]);
+
+  // Send each answer to the account as it's given (same as the Brain and Soul profiles).
+  useAssessmentSync("profit_architecture", answers, (id, value) => {
+    const q = questions.find((x) => x.id === id);
+    return q ? { questionId: id, questionText: q.text, section: q.domain, answerText: value, value } : null;
+  });
 
   // Calculate domain scores
   useEffect(() => {
@@ -315,12 +327,12 @@ function ProfitAssessmentContent() {
       domainScores,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem("profit-assessment", JSON.stringify(data));
+    if (draftKey) localStorage.setItem(draftKey, JSON.stringify(data));
     setTimeout(() => {
       setLastSaved(new Date());
       setIsSaving(false);
     }, 500);
-  }, [answers, currentQuestion, domainScores]);
+  }, [answers, currentQuestion, domainScores, draftKey]);
 
   useEffect(() => {
     const timer = setTimeout(saveProgress, 1000);
@@ -401,7 +413,7 @@ function ProfitAssessmentContent() {
       );
 
       // Clear local storage
-      localStorage.removeItem("profit-assessment");
+      if (draftKey) localStorage.removeItem(draftKey);
 
       setIsComplete(true);
     } catch (err) {
