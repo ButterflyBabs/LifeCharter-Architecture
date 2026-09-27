@@ -530,7 +530,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       size="sm"
                       disabled={isBusy || invitingId === member.id}
                       onClick={() => handleCreateLogin(member.id)}
-                      title="Create a login link to send this member"
+                      title="Email this person their invitation (or send it again)"
                     >
                       {invitingId === member.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
