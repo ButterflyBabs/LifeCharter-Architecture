@@ -7,6 +7,7 @@
 import { sessionUser } from '@/lib/authz';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMasterPlanId } from '@/lib/scoring/masterPlan';
 
 interface SyncResponseRequest {
   masterPlanId: string;
@@ -64,7 +65,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Check permissions
-    const hasAccess = masterPlan.user_id === user.id || await checkWorkspaceAccess(supabase, body.workspaceId, user.id);
+    // Only ever the signed-in person's own account (owner or team member) — never an id taken on trust from the request.
+    const hasAccess = masterPlan.id === (await resolveMasterPlanId());
     if (!hasAccess) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -117,23 +119,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to check workspace access
-async function checkWorkspaceAccess(
-  supabase: ReturnType<typeof createClient>, 
-  workspaceId: string, 
-  userId: string
-): Promise<boolean> {
-  // Since we don't have workspace_memberships table in this schema,
-  // we'll check if the user has access through the master plan
-  const { data: membership } = await supabase
-    .from('client_master_plans')
-    .select('id')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .single();
-  
-  return !!membership;
-}
 
 // Helper function to update master plan stats
 async function updateMasterPlanStats(

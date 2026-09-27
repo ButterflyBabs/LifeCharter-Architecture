@@ -8,6 +8,7 @@
 import { sessionUser } from '@/lib/authz';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMasterPlanId } from '@/lib/scoring/masterPlan';
 
 interface InsightEvidence {
   responseId: string;
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Check permissions
-    const hasAccess = masterPlan.user_id === user.id || await checkWorkspaceAccess(supabase, body.workspaceId, user.id);
+    // Only ever the signed-in person's own account (owner or team member) — never an id taken on trust from the request.
+    const hasAccess = masterPlan.id === (await resolveMasterPlanId());
     if (!hasAccess) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -141,7 +143,8 @@ export async function GET(request: NextRequest) {
     }
     
     // Check permissions
-    const hasAccess = masterPlan.user_id === user.id || await checkWorkspaceAccess(supabase, masterPlan.workspace_id, user.id);
+    // Only ever the signed-in person's own account (owner or team member) — never an id taken on trust from the request.
+    const hasAccess = masterPlan.id === (await resolveMasterPlanId());
     if (!hasAccess) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -182,18 +185,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper function to check workspace access
-async function checkWorkspaceAccess(
-  supabase: ReturnType<typeof createClient>, 
-  workspaceId: string, 
-  userId: string
-): Promise<boolean> {
-  const { data: membership } = await supabase
-    .from('client_master_plans')
-    .select('id')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .single();
-  
-  return !!membership;
-}
