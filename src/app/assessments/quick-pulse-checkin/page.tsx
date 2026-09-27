@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { QuickPulseAbout } from "@/components/assessments/QuickPulseAbout";
 import { 
   UnifiedMemoryProvider, 
   useUnifiedMemoryContext 
@@ -516,58 +517,26 @@ function QuickPulseCheckinContent() {
       const scores = calculateScores();
       setResult(scores);
 
-      const { error: checkinError } = await supabase
-        .from('quick_pulse_checkins')
-        .insert({
-          master_plan_id: masterPlan.id,
-          workspace_id: masterPlan.workspace_id,
-          brain_score: scores.brainScore,
-          soul_score: scores.soulScore,
-          profit_score: scores.profitScore,
-          total_score: scores.totalScore,
-          health_level: scores.healthLevel,
-          responses: answers,
-        });
-
-      if (checkinError) throw checkinError;
-
-      const responsePromises = Object.entries(answers).map(([questionId, value]) => {
-        const question = questions.find(q => q.id === questionId);
-        if (!question) return Promise.resolve();
-        
-        return supabase.from('unified_client_responses').insert({
-          master_plan_id: masterPlan.id,
-          workspace_id: masterPlan.workspace_id,
-          assessment_type: 'quick_pulse',
-          question_id: questionId,
-          section_name: question.dimensionLabel,
-          section_type: question.dimension,
-          answer_value: value,
-          answer_text: question.options.find(o => o.value === value)?.description,
-          score: parseInt(value, 10) * 20,
-          answered_at: new Date().toISOString(),
-        });
-      });
-
-      await Promise.all(responsePromises);
-
       const steps = generateActionSteps(scores);
       setActionSteps(steps);
 
-      const actionPromises = steps.map(step => 
-        supabase.from('client_action_items').insert({
-          master_plan_id: masterPlan.id,
-          workspace_id: masterPlan.workspace_id,
-          title: step.title,
-          description: step.description,
-          category: step.dimension,
-          priority: step.priority,
-          source: 'quick_pulse_checkin',
-          status: 'pending',
-        })
-      );
-
-      await Promise.all(actionPromises);
+      // One server step saves the check-in, the latest answers and the action steps together.
+      const res = await fetch("/api/checkins/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scores,
+          answers: Object.entries(answers).flatMap(([questionId, value]) => {
+            const question = questions.find((q) => q.id === questionId);
+            return question
+              ? [{ questionId, value, section: question.dimensionLabel, dimension: question.dimension, text: question.options.find((o) => o.value === value)?.description ?? null }]
+              : [];
+          }),
+          steps: steps.map((step) => ({ title: step.title, description: step.description, dimension: step.dimension, priority: step.priority })),
+        }),
+      });
+      const saved = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(saved.error || "Failed to save your check-in");
 
       // Record a dated progress point for the trajectory (best-effort; never
       // block completion on it).
@@ -813,6 +782,8 @@ function QuickPulseCheckinContent() {
             </div>
           </div>
         </div>
+
+        {currentQuestion === 0 && <QuickPulseAbout />}
 
         {/* Question Card */}
         <Card className="border-[#c9a227]/20">
