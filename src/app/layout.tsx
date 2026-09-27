@@ -1,3 +1,4 @@
+import { PublicTracking } from "@/components/PublicTracking";
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -21,6 +22,7 @@ export default function RootLayout({
           <AppLayout>
             {children}
           </AppLayout>
+          <PublicTracking />
           <TravelPartnerWidget />
         </ThemeProvider>
       </body>

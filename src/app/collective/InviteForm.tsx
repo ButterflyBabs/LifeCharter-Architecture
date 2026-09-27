@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/tracking";
 
 // "Request your invitation" — emails the visitor their personal join link and
 // invite code. Records where they came from (utm/ref + referrer).
@@ -33,6 +34,7 @@ export function InviteForm({ source, dark = false }: { source: string; dark?: bo
     const out = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setError(out.error ?? "Something went wrong — please try again.");
+    trackEvent("Lead", { content_name: "collective_invitation" });
     setSentTo(email);
   }
 

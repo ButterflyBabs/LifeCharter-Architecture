@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/tracking";
 
 import { useState } from "react";
 
@@ -72,7 +73,9 @@ export function ScheduleQuestionnaireForm({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
-      window.location.href = bookingUrl;
+      trackEvent("Lead", { content_name: "executive_consultation_request" });
+      // Give the tracking beacons a moment before leaving the page.
+      setTimeout(() => { window.location.href = bookingUrl; }, 300);
     } catch (err) {
       setState("error");
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong");

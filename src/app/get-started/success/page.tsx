@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/tracking";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -24,7 +25,8 @@ function GetStartedSuccessContent() {
       .then((r) => r.json())
       .then((data) => {
         if (!data.redirectUrl) throw new Error(data.error || "Could not finish setting up your account");
-        window.location.href = data.redirectUrl;
+        trackEvent("Purchase", { content_name: "command_suite_starter", currency: "USD" });
+        setTimeout(() => { window.location.href = data.redirectUrl; }, 300);
       })
       .catch((err) => {
         setStatus("error");

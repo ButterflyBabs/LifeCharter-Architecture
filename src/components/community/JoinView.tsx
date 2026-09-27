@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/tracking";
 
 // The Collective's front door — modelled on a private-group join page:
 // "New here" creates an account with an invite code; "Already a member"
@@ -66,6 +67,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
 
   // Brand-new members land on the welcome; returning members go straight home.
   function enter(isNew = false) {
+    if (isNew) trackEvent("CompleteRegistration", { content_name: "collective_join" });
     router.push(isNew ? "/community?welcome=1" : "/community");
     router.refresh();
   }
