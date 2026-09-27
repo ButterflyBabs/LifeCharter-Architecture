@@ -8,6 +8,7 @@ import { eventWhen, timeAgo } from "@/lib/community/format";
 import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Card, EmptyState, Eyebrow, Avatar } from "@/components/community/ui";
 import { JoinSpaceBanner } from "@/components/community/JoinSpaceBanner";
+import { LeaveSpaceButton } from "@/components/community/LeaveSpaceButton";
 import { useProfiles } from "@/lib/community/context";
 
 export default function SpacePage({ params }: { params: { space: string } }) {
@@ -56,6 +57,11 @@ export default function SpacePage({ params }: { params: { space: string } }) {
         </h1>
         {space.tagline && <p className="mt-1 font-editorial text-[18px] italic text-[var(--cm-gold-text)]">{space.tagline}</p>}
         {space.description && <p className="mt-2 max-w-2xl text-[15px] text-[var(--cm-muted-2)]">{space.description}</p>}
+        {isMember(space.id) && !space.is_default && (
+          <div className="mt-3">
+            <LeaveSpaceButton spaceId={space.id} name={space.name} isPrivate={space.visibility === "private"} />
+          </div>
+        )}
       </div>
 
       {!isMember(space.id) && <JoinSpaceBanner spaceId={space.id} name={space.name} />}

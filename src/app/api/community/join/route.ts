@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { sendCollectiveWelcome } from "@/lib/community/welcome-email";
 
 // New-member sign-up for The LifeCharter Collective (/join/<slug>, "New here").
 // The invite code is checked here, server-side, before any account exists —
@@ -86,6 +87,8 @@ export async function POST(req: Request) {
   if (phone) await supabase.from("cm_private_profiles").upsert({ user_id: uid, phone });
   // If they came through the landing page, mark the invitation as accepted.
   await supabase.from("cm_invite_requests").update({ joined_user_id: uid, joined_at: new Date().toISOString() }).eq("email", email.toLowerCase()).is("joined_at", null);
+
+  await sendCollectiveWelcome({ email, name, base: new URL(req.url).origin });
 
   return NextResponse.json({ ok: true });
 }
