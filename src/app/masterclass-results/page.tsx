@@ -82,6 +82,17 @@ export default async function MasterclassResultsPage() {
             </table>
           </div>
         )}
+        {sessions.some((s) => s.noShows.length > 0) && (
+          <div className="mt-6 space-y-2">
+            <h3 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Registered but didn&rsquo;t come</h3>
+            {[...sessions].reverse().filter((s) => s.noShows.length > 0).map((s) => (
+              <details key={s.date} className="rounded-xl border border-[#1a2b4a]/10 px-4 py-2 dark:border-white/10">
+                <summary className="cursor-pointer text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{day(s.date)} · {s.noShows.length} {s.noShows.length === 1 ? "person" : "people"}</summary>
+                <p className="mt-2 select-all break-words text-sm text-[#5b5f73] dark:text-[#b8a898]">{s.noShows.join(", ")}</p>
+              </details>
+            ))}
+          </div>
+        )}
         <p className="mt-4 text-[12.5px] text-[#7b6b8d] dark:text-[#b8a898]">
           Show rate = people who registered for that session and attended it. &ldquo;Returning&rdquo; = attendees who registered for an earlier session. Attendance fills in the morning after each session.
         </p>

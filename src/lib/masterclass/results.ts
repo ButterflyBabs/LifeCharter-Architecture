@@ -37,12 +37,13 @@ export type SessionRow = {
   attended: number;
   attendedNew: number;
   showRate: number | null; // attendedNew / newRegistrations
+  noShows: string[]; // registered for this session, didn't attend (emails)
   consultRequests: number;
   newClients: { starter: number; growth: number; vip: number };
   firstYearRevenue: number;
 };
 
-export async function masterclassResults(): Promise<{ sessions: SessionRow[]; totals: Omit<SessionRow, "date" | "showRate"> & { showRate: number | null; sessions: number } }> {
+export async function masterclassResults(): Promise<{ sessions: SessionRow[]; totals: Omit<SessionRow, "date" | "showRate" | "noShows"> & { showRate: number | null; sessions: number } }> {
   const today = todayMT();
   const dates: string[] = [];
   for (let d = FIRST_SESSION; d <= LAST_SESSION && d <= today; d = addDays(d, 7)) if (!SKIP.includes(d)) dates.push(d);
@@ -86,6 +87,8 @@ export async function masterclassResults(): Promise<{ sessions: SessionRow[]; to
     const newEmails = new Set(newRegs.map((r) => r.email.toLowerCase()));
     const came = attendance.filter((a) => a.session_date === date);
     const attendedNew = came.filter((a) => newEmails.has(a.email.toLowerCase())).length;
+    const cameEmails = new Set(came.map((a) => a.email.toLowerCase()));
+    const noShows = Array.from(newEmails).filter((e) => !cameEmails.has(e)).sort();
 
     const tiers = { starter: 0, growth: 0, vip: 0 };
     let revenue = 0;
@@ -104,6 +107,7 @@ export async function masterclassResults(): Promise<{ sessions: SessionRow[]; to
       attended: came.length,
       attendedNew,
       showRate: newRegs.length ? attendedNew / newRegs.length : null,
+      noShows,
       consultRequests: consults.filter((q) => inCredit(q.created_at)).length,
       newClients: tiers,
       firstYearRevenue: revenue,
