@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight, Compass } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
@@ -352,7 +352,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         )}
         {apps.program && (
           <a href="https://lifecharter.life/app" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
-            <Compass className="h-4 w-4" /> LifeCharter Program
+            <ArrowLeftRight className="h-4 w-4" /> LifeCharter Program
           </a>
         )}
         <button onClick={signOut} className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
