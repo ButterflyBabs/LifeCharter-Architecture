@@ -529,7 +529,7 @@ function QuickPulseCheckinContent() {
           answers: Object.entries(answers).flatMap(([questionId, value]) => {
             const question = questions.find((q) => q.id === questionId);
             return question
-              ? [{ questionId, value, section: question.dimensionLabel, dimension: question.dimension, text: question.options.find((o) => o.value === value)?.description ?? null }]
+              ? [{ questionId, questionText: question.text, value, section: question.dimensionLabel, dimension: question.dimension, text: question.options.find((o) => o.value === value)?.description ?? null }]
               : [];
           }),
           steps: steps.map((step) => ({ title: step.title, description: step.description, dimension: step.dimension, priority: step.priority })),

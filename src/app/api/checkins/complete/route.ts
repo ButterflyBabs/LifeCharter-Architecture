@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // (for the assistant and scoring), and the suggested action steps. Replaces three separate
 // browser writes that failed silently (wrong column, rejected labels, duplicate answers).
 
-type Answer = { questionId: string; value: string; section: string; dimension: string; text: string | null };
+type Answer = { questionId: string; questionText?: string; value: string; section: string; dimension: string; text: string | null };
 type Step = { title: string; description?: string; dimension?: string; priority?: string };
 
 const CATEGORIES = new Set(["brain", "soul", "profit", "integration", "general"]);
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       workspace_id: workspaceId,
       assessment_type: "quick_pulse",
       question_id: String(a.questionId),
+      question_text: String(a.questionText || a.questionId).slice(0, 1000),
       section_name: a.section,
       section_type: a.dimension,
       answer_value: a.value,
