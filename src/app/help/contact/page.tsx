@@ -106,10 +106,10 @@ export default function ContactSupportPage() {
               Best for detailed questions
             </p>
             <a 
-              href="mailto:support@lifecharter.architecture"
+              href="mailto:support@amilynnecarroll.com"
               className="text-[#c9a227] hover:underline font-medium"
             >
-              support@lifecharter.architecture
+              support@amilynnecarroll.com
             </a>
           </CardContent>
         </Card>

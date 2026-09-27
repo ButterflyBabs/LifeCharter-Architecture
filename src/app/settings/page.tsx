@@ -1123,7 +1123,7 @@ export default function SettingsPage() {
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b8a898]">
-                  lifecharter.architecture/
+                  lccommandsuite.com/
                 </span>
                 <Input
                   value={activeWorkspace.slug}
