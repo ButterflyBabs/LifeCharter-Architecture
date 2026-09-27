@@ -118,7 +118,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
 
   // Invite-link ("Create login") state.
   const [invitingId, setInvitingId] = useState<string | null>(null);
-  const [inviteLink, setInviteLink] = useState<{ id: string; url: string } | null>(null);
+  const [inviteLink, setInviteLink] = useState<{ id: string; url: string; emailed: boolean; hasLogin: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +175,8 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
       setMembers((prev) => [...prev, data.member]);
       setNewMember({ email: "", name: "", role: "editor" });
       setIsAdding(false);
-      flash(true, "Team member added.");
+      // Send their invitation straight away.
+      void handleCreateLogin(data.member.id);
     } catch (e) {
       flash(false, (e as Error)?.message || "Couldn't add the member.");
     } finally {
@@ -235,7 +236,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data?.error);
-      setInviteLink({ id, url: data.url });
+      setInviteLink({ id, url: data.url, emailed: Boolean(data.emailed), hasLogin: Boolean(data.hasLogin) });
     } catch (e) {
       flash(false, (e as Error)?.message || "Couldn't create the login link.");
     } finally {
@@ -536,7 +537,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       ) : (
                         <KeyRound className="w-4 h-4" />
                       )}
-                      <span className="ml-2 hidden sm:inline">Create login</span>
+                      <span className="ml-2 hidden sm:inline">Send invitation</span>
                     </Button>
 
                     <Button
@@ -551,12 +552,23 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                   </div>
                 </div>
 
-                {/* Copyable login link — owner delivers it themselves (no email). */}
+                {/* Invitation sent by email; the link is shown too, in case it needs sending by hand. */}
                 {inviteLink?.id === member.id && (
                   <div className="mt-4 rounded-lg border border-[#2E7C83]/30 bg-[#2E7C83]/5 p-3">
                     <p className="text-xs text-[#5c5348] dark:text-[#b8c2cf] mb-2">
-                      Send this link to <span className="font-medium">{member.email}</span>. It lets them
-                      set a password and sign in. It&apos;s single-use and expires in 7 days.
+                      {inviteLink.emailed ? (
+                        <>
+                          Invitation emailed to <span className="font-medium">{member.email}</span>.{" "}
+                          {inviteLink.hasLogin
+                            ? "They already have a LifeCharter login, so they'll sign in with their usual password."
+                            : "If it doesn't arrive, send them this link yourself. It lets them set a password and sign in, works once, and expires in 7 days."}
+                        </>
+                      ) : (
+                        <>
+                          The email didn&apos;t go out. Send this link to <span className="font-medium">{member.email}</span> yourself. It lets them
+                          set a password and sign in. It&apos;s single-use and expires in 7 days.
+                        </>
+                      )}
                     </p>
                     <div className="flex items-center gap-2">
                       <input

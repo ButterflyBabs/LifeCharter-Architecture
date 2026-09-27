@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { sendTeamInvite } from "@/lib/email/teamInvite";
 
 export const dynamic = "force-dynamic";
 
@@ -24,22 +25,28 @@ async function ownedMember(workspaceId: string, memberId: string) {
   const masterPlanId = await resolveMasterPlanId();
   const { data: ws } = await supabase
     .from("workspaces")
-    .select("id, master_plan_id")
+    .select("id, master_plan_id, name")
     .eq("id", workspaceId)
     .maybeSingle();
   if (!ws || ws.master_plan_id !== masterPlanId) return null;
   const { data: m } = await supabase
     .from("workspace_members")
-    .select("id, workspace_id, email, name, user_id")
+    .select("id, workspace_id, email, name, user_id, role")
     .eq("id", memberId)
     .maybeSingle();
   if (!m || m.workspace_id !== workspaceId) return null;
-  return { supabase, member: m as { id: string; email: string | null; name: string | null; user_id: string | null } };
+  return {
+    supabase,
+    masterPlanId: masterPlanId as string,
+    workspaceName: (ws.name as string) || "their team",
+    member: m as { id: string; email: string | null; name: string | null; user_id: string | null; role: string | null },
+  };
 }
 
-// POST — create (or re-issue) a login for a team member and return a link the
-// owner delivers themselves. No email is sent. The link lets the member set a
-// password and sign in; it expires in 7 days and is single-use.
+// POST — create (or re-issue) a login for a team member, email them the invitation, and
+// return the link too (so it can still be copied by hand). New logins get a set-password
+// link (single-use, 7 days); someone who already has a LifeCharter login (Collective,
+// Command Shift, LifeCharter Program) is told to sign in with their usual password instead.
 export async function POST(
   request: Request,
   { params }: { params: { id: string; memberId: string } }
@@ -53,7 +60,7 @@ export async function POST(
 
   const owned = await ownedMember(params.id, params.memberId);
   if (!owned) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const { supabase, member } = owned;
+  const { supabase, member, masterPlanId, workspaceName } = owned;
 
   const email = (member.email || "").trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "member has no email" }, { status: 400 });
@@ -73,10 +80,9 @@ export async function POST(
     if (created.data?.user?.id) {
       userId = created.data.user.id;
     } else if (created.error?.message?.toLowerCase().includes("already been registered")) {
-      // Email already has an auth user — find and reuse it.
-      const list = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const existing = list.data?.users?.find((u) => (u.email || "").toLowerCase() === email);
-      userId = existing?.id || null;
+      // Email already has a login (one login everywhere) — find and reuse it.
+      const { data: existingId } = await admin.rpc("auth_user_id_by_email", { p_email: email });
+      userId = (existingId as string) || null;
     }
     if (!userId) {
       console.error("invite create user:", created.error?.message);
@@ -101,5 +107,21 @@ export async function POST(
   const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
   const url = `${origin}/accept-invite?token=${token}`;
 
-  return NextResponse.json({ url, email, expiresAt });
+  // Someone who has signed in before already has a password; don't make them replace it.
+  const { data: authUser } = await admin.auth.admin.getUserById(userId);
+  const hasLogin = Boolean(authUser?.user?.last_sign_in_at);
+  const { data: plan } = await supabase.from("client_master_plans").select("client_name").eq("id", masterPlanId).maybeSingle();
+  const inviterName = (plan?.client_name as string) && plan?.client_name !== "Primary" ? (plan!.client_name as string) : "AmiLynne Carroll";
+  const emailed = await sendTeamInvite({
+    to: email,
+    name: member.name,
+    inviterName,
+    workspaceName,
+    role: member.role || "editor",
+    link: hasLogin ? `${origin}/login` : url,
+    hasLogin,
+    base: origin,
+  });
+
+  return NextResponse.json({ url, email, expiresAt, emailed, hasLogin });
 }
