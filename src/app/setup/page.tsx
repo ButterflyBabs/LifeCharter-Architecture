@@ -17,6 +17,7 @@ import {
   Users,
   Share2,
 } from "lucide-react";
+import WebsiteQuestion from "@/components/website/WebsiteQuestion";
 
 interface SetupStatus {
   assessments: { brain: boolean; soul: boolean; profit: boolean; complete: boolean };
@@ -232,6 +233,11 @@ export default function SetupPage() {
               >
                 {toolsDone ? "Manage integrations" : "Connect your tools"} <ArrowRight className="w-4 h-4" />
               </Link>
+            </div>
+
+            {/* Website (optional): feeds the Website Alignment Review */}
+            <div className="mt-3">
+              <WebsiteQuestion />
             </div>
 
             {/* Finish */}

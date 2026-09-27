@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Globe,
   Compass,
   ClipboardList,
   Briefcase,
@@ -78,6 +79,7 @@ const navigationSections = [
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
+      { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
   {
