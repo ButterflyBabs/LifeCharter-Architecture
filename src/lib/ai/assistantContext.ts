@@ -30,6 +30,7 @@ const TYPE_LABEL: Record<string, string> = {
   brain: "Brain (systems & operations)",
   soul: "Soul (purpose, values & story)",
   profit_architecture: "Profit (financial health)",
+  command_shift: "Command Shift (21-Day Challenge answers)",
 };
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -84,7 +85,7 @@ export async function buildAssistantKnowledge(
       .from("unified_client_responses")
       .select("assessment_type, section_name, question_text, answer_text, answer_value, score, max_score, answered_at")
       .eq("master_plan_id", masterPlanId)
-      .in("assessment_type", ["brain", "soul", "profit_architecture"])
+      .in("assessment_type", ["brain", "soul", "profit_architecture", "command_shift"])
       .order("answered_at", { ascending: false })
       .limit(800);
     const rows = (data ?? []) as AnswerRow[];
@@ -94,7 +95,7 @@ export async function buildAssistantKnowledge(
       counts.set(r.assessment_type, (counts.get(r.assessment_type) ?? 0) + 1);
     }
     answered = Array.from(counts.values()).reduce((a, b) => a + b, 0);
-    const progress = Object.keys(TYPE_LABEL).map((t) => `${TYPE_LABEL[t]}: ${counts.get(t) ? `${counts.get(t)} answers so far` : "not started"}`);
+    const progress = Object.keys(TYPE_LABEL).filter((t) => t !== "command_shift" || counts.get(t)).map((t) => `${TYPE_LABEL[t]}: ${counts.get(t) ? `${counts.get(t)} answers so far` : "not started"}`);
     parts.push(`Assessment progress — ${progress.join("; ")}.`);
     parts.push(formatAnswerSections(rows));
   } catch {

@@ -36,7 +36,7 @@ export async function getAssessmentContext(masterPlanId: string, evidenceLimit =
       .from("unified_client_responses")
       .select("section_name, answer_text, answer_value")
       .eq("master_plan_id", masterPlanId)
-      .in("assessment_type", ["brain", "soul"])
+      .in("assessment_type", ["brain", "soul", "command_shift"])
       .limit(400);
     for (const r of (data || []) as { section_name: string | null; answer_text: string | null; answer_value: unknown }[]) {
       const av = r.answer_value as { sensitive?: boolean } | null;

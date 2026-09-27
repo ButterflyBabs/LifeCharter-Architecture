@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 import CheckinSchedule from "@/components/assessments/CheckinSchedule";
+import { CommandShiftCard } from "@/components/assessments/CommandShiftCard";
 
 export const metadata: Metadata = {
   title: "Alignment Profile | LifeCharter Command Suite",
@@ -167,6 +168,7 @@ export default function AssessmentsPage() {
               </CardContent>
             </Card>
           ))}
+          <CommandShiftCard />
         </div>
 
         {/* Quick Pulse Check-in Option */}

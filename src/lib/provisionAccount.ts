@@ -57,16 +57,24 @@ export async function provisionAccountForEmail(
     throw new Error(`Failed to create workspace: ${wsError?.message}`);
   }
 
-  const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-    email: normalizedEmail,
-    email_confirm: true,
-    user_metadata: { full_name: displayName },
-  });
-
-  if (authError || !authUser?.user) {
-    throw new Error(`Failed to create auth user: ${authError?.message}`);
+  // One login everywhere: someone from the Command Shift Challenge, the Collective or the
+  // LifeCharter Program already has a login with this email. Reuse it instead of failing on
+  // "already registered", so they sign in to Command Suite with the password they already have.
+  const { data: existingUserId } = await supabase.rpc("auth_user_id_by_email", { p_email: normalizedEmail });
+  let userId: string;
+  if (existingUserId) {
+    userId = existingUserId as string;
+  } else {
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: normalizedEmail,
+      email_confirm: true,
+      user_metadata: { full_name: displayName },
+    });
+    if (authError || !authUser?.user) {
+      throw new Error(`Failed to create auth user: ${authError?.message}`);
+    }
+    userId = authUser.user.id;
   }
-  const userId = authUser.user.id;
 
   // Back-fill the workspace's owner now that the user exists.
   await supabase.from("workspaces").update({ owner_id: userId }).eq("id", workspace.id);
