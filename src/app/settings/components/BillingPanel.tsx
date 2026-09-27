@@ -278,7 +278,7 @@ export default function BillingPanel() {
                       </Button>
                     ) : (
                       <a
-                        href={`mailto:babs@lifecharter.architecture?subject=${encodeURIComponent(plan.name + " plan")}`}
+                        href={`/schedule/website?src=${encodeURIComponent("billing-upgrade-" + plan.id)}`}
                         className="block mt-6"
                       >
                         <Button className="w-full" variant={copy.popular ? "primary" : "outline"}>

@@ -10,6 +10,12 @@ const nextConfig = {
     // shouldn't also gate whether a correct build can ship.
     ignoreDuringBuilds: true,
   },
+  // /dashboard and /business-alignment rendered the same page under two
+  // addresses (Command Suite Audit, Q1). The sidebar uses /business-alignment,
+  // so older /dashboard links now forward there.
+  async redirects() {
+    return [{ source: "/dashboard", destination: "/business-alignment", permanent: false }];
+  },
   experimental: {
     // Disable the client-side Router Cache so navigating between pages always
     // re-renders and re-fetches live data (segment scores, alignment, etc.)
