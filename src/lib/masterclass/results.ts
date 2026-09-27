@@ -38,6 +38,7 @@ export type SessionRow = {
   attendedNew: number;
   showRate: number | null; // attendedNew / newRegistrations
   noShows: string[]; // registered for this session, didn't attend (emails)
+  websiteBuilds: number; // Website Alignment Builds sold in this session's credit window
   consultRequests: number;
   newClients: { starter: number; growth: number; vip: number };
   firstYearRevenue: number;
@@ -56,6 +57,8 @@ export async function masterclassResults(): Promise<{ sessions: SessionRow[]; to
     supabase.from("subscriptions").select("user_id, plan_id, created_at"),
     supabase.from("client_intake_submissions").select("user_id, email, tier, created_at"),
   ]);
+  const { data: builds } = await supabase.from("website_build_orders").select("email, created_at");
+  const buildRows = ((builds ?? []) as { email: string | null; created_at: string }[]).filter((b) => !TEST_EMAIL.test(b.email || ""));
 
   const registrants = ((regs.data ?? []) as { email: string; synced_at: string }[]).filter((r) => !TEST_EMAIL.test(r.email));
   const attendance = (att.data ?? []) as { session_date: string; email: string }[];
@@ -108,6 +111,7 @@ export async function masterclassResults(): Promise<{ sessions: SessionRow[]; to
       attendedNew,
       showRate: newRegs.length ? attendedNew / newRegs.length : null,
       noShows,
+      websiteBuilds: buildRows.filter((b) => inCredit(b.created_at)).length,
       consultRequests: consults.filter((q) => inCredit(q.created_at)).length,
       newClients: tiers,
       firstYearRevenue: revenue,
@@ -132,6 +136,7 @@ export async function masterclassResults(): Promise<{ sessions: SessionRow[]; to
         vip: sum((s) => s.newClients.vip),
       },
       firstYearRevenue: sum((s) => s.firstYearRevenue),
+      websiteBuilds: sum((s) => s.websiteBuilds),
     },
   };
 }

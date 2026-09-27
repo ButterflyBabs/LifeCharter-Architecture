@@ -26,6 +26,7 @@ export default async function MasterclassResultsPage() {
     { label: "Show rate", value: pct(totals.showRate) },
     { label: "Consultation requests", value: String(totals.consultRequests) },
     { label: "New clients", value: String(newClientCount) },
+    { label: "Website Builds", value: String(totals.websiteBuilds) },
     { label: "First-year revenue", value: usd(totals.firstYearRevenue) },
   ];
 
@@ -39,7 +40,7 @@ export default async function MasterclassResultsPage() {
         </p>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
             <p className="text-2xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{t.value}</p>
@@ -63,6 +64,7 @@ export default async function MasterclassResultsPage() {
                   <th className="pr-4">Show rate</th>
                   <th className="pr-4">Consultation requests</th>
                   <th className="pr-4">New clients</th>
+                  <th className="pr-4">Website Builds</th>
                   <th>First-year revenue</th>
                 </tr>
               </thead>
@@ -75,6 +77,7 @@ export default async function MasterclassResultsPage() {
                     <td className="pr-4">{pct(s.showRate)}</td>
                     <td className="pr-4">{s.consultRequests}</td>
                     <td className="pr-4">{clientsLine(s.newClients)}</td>
+                    <td className="pr-4">{s.websiteBuilds || "—"}</td>
                     <td>{s.firstYearRevenue ? usd(s.firstYearRevenue) : "—"}</td>
                   </tr>
                 ))}

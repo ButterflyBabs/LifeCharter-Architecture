@@ -3,6 +3,7 @@
  * Processes Stripe events and updates subscriptions
  */
 
+import { WEBSITE_BUILD } from "@/lib/websiteBuild";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
@@ -45,6 +46,10 @@ export async function POST(req: NextRequest) {
     // Collective Plus subscriptions are handled on their own and never touch
     // Command Suite plans/profiles below.
     if (await handlePlusEvent(stripe, event)) {
+      return NextResponse.json({ received: true });
+    }
+    // Website Alignment Build sales are recorded on their own and never touch plans/profiles.
+    if (await handleWebsiteBuildEvent(stripe, supabase, event)) {
       return NextResponse.json({ received: true });
     }
 
@@ -223,6 +228,35 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Returns true when the event belonged to a Website Alignment Build checkout or its 2-payment plan.
+async function handleWebsiteBuildEvent(stripe: Stripe, supabase: ReturnType<typeof createClient>, event: Stripe.Event): Promise<boolean> {
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const meta = session.metadata || {};
+    if (meta.flow !== WEBSITE_BUILD.flow) return false;
+    await supabase.from("website_build_orders").upsert({
+      stripe_checkout_session_id: session.id,
+      email: session.customer_details?.email || session.customer_email || null,
+      full_name: meta.fullName || session.customer_details?.name || null,
+      payment_plan: meta.plan || "full",
+      amount_total_cents: meta.plan === "two_pay" ? WEBSITE_BUILD.foundingInstallmentCents * 2 : session.amount_total ?? null,
+      session_source: meta.sessionSource || null,
+    }, { onConflict: "stripe_checkout_session_id" });
+    // 2 payments: end the subscription after the second charge (about 6 weeks from now).
+    if (meta.plan === "two_pay" && session.subscription) {
+      const cancelAt = Math.floor(Date.now() / 1000) + 45 * 86400;
+      await stripe.subscriptions.update(session.subscription as string, { cancel_at: cancelAt, proration_behavior: "none" });
+    }
+    return true;
+  }
+  if (event.type.startsWith("customer.subscription.") || event.type.startsWith("invoice.")) {
+    const obj = event.data.object as { metadata?: Stripe.Metadata; subscription?: string; parent?: { subscription_details?: { metadata?: Stripe.Metadata } } };
+    const meta = obj.metadata ?? obj.parent?.subscription_details?.metadata;
+    return meta?.flow === WEBSITE_BUILD.flow;
+  }
+  return false;
 }
 
 // Returns true when the event belonged to a Collective Plus subscription.

@@ -4,6 +4,7 @@ import { SalesScript } from "./SalesScript";
 import { NewClientForm } from "./NewClientForm";
 import { ContactLookup } from "./ContactLookup";
 import { ContactsTab } from "./ContactsTab";
+import { WebsiteAlignment } from "./WebsiteAlignment";
 import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 
@@ -155,6 +156,7 @@ export default function SalesReferencePage() {
         </p>
 
         <NewClientForm />
+        <WebsiteAlignment />
         </ProspectProvider>
       </div>
     </main>
