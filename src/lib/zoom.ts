@@ -80,3 +80,55 @@ export async function listMasterclassRegistrants(): Promise<ZoomRegistrant[]> {
 
   return registrants;
 }
+
+// ---------- Attendance (past occurrences) ----------
+// Needs the Server-to-Server app scopes meeting:read:list_past_instances:admin and
+// meeting:read:list_past_participants:admin (added in the Zoom App Marketplace).
+
+export interface ZoomPastInstance {
+  uuid: string;
+  startTime: string; // ISO
+}
+
+/** The occurrences of the recurring MasterClass meeting that have already happened. */
+export async function listMasterclassPastInstances(): Promise<ZoomPastInstance[]> {
+  const token = await getAccessToken();
+  const res = await fetch(`https://api.zoom.us/v2/past_meetings/${encodeURIComponent(masterclassMeetingId())}/instances`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Zoom past instances request failed: ${res.status} ${await res.text()}`);
+  const data = (await res.json()) as { meetings?: Array<{ uuid: string; start_time: string }> };
+  return (data.meetings || []).map((m) => ({ uuid: m.uuid, startTime: m.start_time }));
+}
+
+export interface ZoomParticipant {
+  email: string;
+  name: string;
+  joinTime: string;
+  durationSeconds: number;
+}
+
+/** Everyone who joined one past occurrence (one entry per join; people who rejoin appear more than once). */
+export async function listPastParticipants(meetingUuid: string): Promise<ZoomParticipant[]> {
+  const token = await getAccessToken();
+  // UUIDs that start with "/" or contain "//" must be double-encoded.
+  const id = meetingUuid.startsWith("/") || meetingUuid.includes("//") ? encodeURIComponent(encodeURIComponent(meetingUuid)) : encodeURIComponent(meetingUuid);
+  const out: ZoomParticipant[] = [];
+  let next = "";
+  do {
+    const url = new URL(`https://api.zoom.us/v2/past_meetings/${id}/participants`);
+    url.searchParams.set("page_size", "300");
+    if (next) url.searchParams.set("next_page_token", next);
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Zoom participants request failed: ${res.status} ${await res.text()}`);
+    const data = (await res.json()) as {
+      next_page_token?: string;
+      participants?: Array<{ user_email?: string; name?: string; join_time?: string; duration?: number }>;
+    };
+    for (const p of data.participants || []) {
+      out.push({ email: (p.user_email || "").toLowerCase(), name: p.name || "", joinTime: p.join_time || "", durationSeconds: p.duration || 0 });
+    }
+    next = data.next_page_token || "";
+  } while (next);
+  return out;
+}
