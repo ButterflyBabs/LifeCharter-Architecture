@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SalesScript } from "./SalesScript";
 import { NewClientForm } from "./NewClientForm";
 import { ContactLookup } from "./ContactLookup";
+import { ContactsTab } from "./ContactsTab";
 import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 
@@ -84,6 +85,7 @@ export default function SalesReferencePage() {
         <Suspense fallback={null}>
           <ContactLookup />
         </Suspense>
+        <ContactsTab />
 
         <SalesScript />
 

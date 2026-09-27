@@ -18,6 +18,7 @@ import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
 import { createClient } from "@/lib/supabase/client";
+import { hiddenSettingsTabs } from "@/lib/teamRoles";
 import { timezoneOptions } from "@/lib/timezones";
 import {
   User,
@@ -108,6 +109,20 @@ const settingsSections: SettingsSection[] = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
+  // Invited team members only see the settings their role allows (src/lib/teamRoles.ts);
+  // the same rules are enforced on the server.
+  const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => {
+        const hide = hiddenSettingsTabs(me?.teamRole ?? null);
+        setHiddenTabs(hide);
+        setActiveTab((t) => (hide.includes(t) ? "profile" : t));
+      })
+      .catch(() => {});
+  }, []);
+  const visibleSections = settingsSections.filter((s) => !hiddenTabs.includes(s.id));
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [userId, setUserId] = useState<string>("demo-user-123");
@@ -2162,7 +2177,7 @@ export default function SettingsPage() {
   );
 
   const renderContent = () => {
-    switch (activeTab) {
+    switch (hiddenTabs.includes(activeTab) ? "profile" : activeTab) {
       case "profile": return renderProfileSettings();
       case "workspace": return renderWorkspaceSettings();
       case "notifications": return renderNotificationSettings();
@@ -2194,7 +2209,7 @@ export default function SettingsPage() {
           <Card>
             <CardContent className="p-4">
               <nav className="space-y-1">
-                {settingsSections.map((section) => (
+                {visibleSections.map((section) => (
                   <button
                     key={section.id}
                     onClick={() => setActiveTab(section.id)}

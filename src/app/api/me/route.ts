@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isSuperAdmin } from "@/lib/authz";
+import { isSuperAdmin, resolveActor } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 // coach-override control). The authoritative gate is server-side on the
 // privileged routes themselves.
 export async function GET() {
+  const [superAdmin, actor] = await Promise.all([isSuperAdmin(), resolveActor()]);
   return NextResponse.json(
-    { superAdmin: await isSuperAdmin() },
+    // teamRole is set only for an invited team member; owners and clients get null.
+    { superAdmin, teamRole: actor.kind === "member" ? actor.role : null },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

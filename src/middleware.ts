@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
 // window: until you set AUTH_ENABLED=true (after creating your Supabase user),
@@ -29,17 +30,47 @@ const PUBLIC_APIS = [
   "/api/consultation/qualify", // public — anonymous prospects submit this from /schedule/masterclass and /schedule/website before ever having an account
 ]; // external redirects + invite acceptance + cron/bootstrap land here without our session
 
-// A member with this role is scoped to exactly these pages/APIs and nothing
-// else in the app — built for Marcello, who needs to run the sales-reference
-// form but shouldn't see client data, the dashboard, or anything else.
+// Invited team members are limited by role (src/lib/teamRoles.ts). The Sales role is
+// scoped to the sales page and its own APIs — built for Marcello, who runs the
+// sales-reference form but shouldn't see client data, the dashboard, or anything else.
 const SALES_ROLE = "sales";
-const SALES_ONLY_PAGES = ["/sales-reference"];
-const SALES_ONLY_APIS = ["/api/sales/onboard-client", "/api/sales/lookup-contact", "/api/sales/search-contacts", "/api/sales/checkout-session"];
+
+// The owner's own sales page and the APIs behind it read the owner's Global Control
+// contacts with the house key. Only the owner (super admin) and the owner's own team may
+// reach them — never a client or anyone on a client's team. (Babs, 2026-09-27: clients
+// must never have access to her Global Control contacts.)
+const HOUSE_ONLY_PAGES = ["/sales-reference"];
+const HOUSE_ONLY_APIS = ["/api/sales"];
 
 // A LifeCharter Collective member (community-only login) may reach the
 // community and nothing else in the app.
 const COMMUNITY_PAGES = ["/community", "/join", "/logout", "/reset-password", "/legal"];
 const COMMUNITY_APIS = ["/api/community"];
+
+// A paying Command Suite client: someone with their own client plan or workspace
+// (created by checkout or the New Client Onboarding form). They get full access to
+// their own account; data is scoped to it by resolveMasterPlanId and RLS.
+async function isClientAccount(userId: string): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !svc) return false;
+  const headers = { apikey: svc, Authorization: `Bearer ${svc}` };
+  const id = encodeURIComponent(userId);
+  try {
+    const [plans, spaces] = await Promise.all([
+      fetch(`${url}/rest/v1/client_master_plans?select=id&limit=1&user_id=eq.${id}`, { headers, cache: "no-store" }),
+      fetch(`${url}/rest/v1/workspaces?select=id&limit=1&owner_id=eq.${id}`, { headers, cache: "no-store" }),
+    ]);
+    for (const res of [plans, spaces]) {
+      if (!res.ok) continue;
+      const rows = (await res.json()) as unknown[];
+      if (Array.isArray(rows) && rows.length > 0) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 async function isCommunityMember(userId: string): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,21 +94,43 @@ async function isCommunityMember(userId: string): Promise<boolean> {
 // edge middleware stays dependency-free. Admits active or pending members (a
 // member is still "pending" on their very first request, before resolveActor
 // flips them to active).
-async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null }> {
+async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null }> {
+  const none = { isMember: false, role: null, workspaceId: null };
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !svc) return { isMember: false, role: null };
+  if (!url || !svc) return none;
   try {
     const res = await fetch(
-      `${url}/rest/v1/workspace_members?select=id,role&status=in.(active,pending)&email=ilike.${encodeURIComponent(email)}`,
+      `${url}/rest/v1/workspace_members?select=id,role,workspace_id&status=in.(active,pending)&email=ilike.${encodeURIComponent(email)}`,
       { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
     );
-    if (!res.ok) return { isMember: false, role: null };
-    const rows = (await res.json()) as { role?: string }[];
-    if (!Array.isArray(rows) || rows.length === 0) return { isMember: false, role: null };
-    return { isMember: true, role: rows[0].role ?? null };
+    if (!res.ok) return none;
+    const rows = (await res.json()) as { role?: string; workspace_id?: string }[];
+    if (!Array.isArray(rows) || rows.length === 0) return none;
+    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null };
   } catch {
-    return { isMember: false, role: null };
+    return none;
+  }
+}
+
+// Is this workspace the owner's own (the super admin's)? The Sales role opens the owner's
+// internal sales page and Global Control contacts, so it is honored only there — never in
+// a client's workspace.
+async function isHouseWorkspace(workspaceId: string | null): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const admins = (process.env.SUPER_ADMIN_EMAILS || process.env.ALLOWED_EMAIL || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (!url || !svc || !workspaceId || admins.length === 0) return false;
+  const headers = { apikey: svc, Authorization: `Bearer ${svc}` };
+  try {
+    const ws = await fetch(`${url}/rest/v1/workspaces?select=master_plan_id&id=eq.${encodeURIComponent(workspaceId)}`, { headers, cache: "no-store" });
+    const planId = ws.ok ? ((await ws.json()) as { master_plan_id?: string }[])[0]?.master_plan_id : null;
+    if (!planId) return false;
+    const plan = await fetch(`${url}/rest/v1/client_master_plans?select=client_email&id=eq.${encodeURIComponent(planId)}`, { headers, cache: "no-store" });
+    const owner = plan.ok ? ((await plan.json()) as { client_email?: string }[])[0]?.client_email : null;
+    return Boolean(owner && admins.includes(owner.toLowerCase()));
+  } catch {
+    return false;
   }
 }
 
@@ -125,14 +178,22 @@ export async function middleware(request: NextRequest) {
   const allowed = process.env.ALLOWED_EMAIL?.toLowerCase();
   const email = user?.email?.toLowerCase() || null;
   let authed = Boolean(user) && (!allowed || email === allowed);
-  const isOwner = authed;
+  const isSuperOwner = authed;
   let memberRole: string | null = null;
+  let isTeamMember = false;
+  let isHouseMember = false;
+  // A paying client owns their own account: full access, no role limits.
+  if (user && !authed && (await isClientAccount(user.id))) authed = true;
   if (user && !authed && email) {
     const info = await getMemberInfo(email);
     authed = info.isMember;
+    isTeamMember = info.isMember;
     memberRole = info.role;
+    isHouseMember = info.isMember && (await isHouseWorkspace(info.workspaceId));
+    // Sales outside the owner's own workspace falls back to view-only.
+    if (memberRole === SALES_ROLE && !isHouseMember) memberRole = "viewer";
   }
-  const isSalesOnly = authed && !isOwner && memberRole === SALES_ROLE;
+  const isSalesOnly = authed && isTeamMember && memberRole === SALES_ROLE;
   let isCommunityOnly = false;
   if (user && !authed && (await isCommunityMember(user.id))) {
     authed = true;
@@ -185,11 +246,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const mayUseHouseSales = isSuperOwner || isHouseMember;
+  const housePath = (list: string[]) => list.some((p) => path === p || path.startsWith(p + "/"));
+
   if (path.startsWith("/api/")) {
     if (!authed && !isDemo) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (housePath(HOUSE_ONLY_APIS) && !mayUseHouseSales) return NextResponse.json({ error: "forbidden" }, { status: 403 });
     if (needsMfa) return NextResponse.json({ error: "2fa required" }, { status: 401 });
-    if (isSalesOnly && !SALES_ONLY_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
+    if (isSalesOnly && !SALES_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    if (isTeamMember) {
+      const verdict = memberApiAccess(memberRole, path, request.method);
+      if (!verdict.allow) {
+        // Pages that show the owner's inbox/calendar read "not connected" instead of erroring.
+        if (request.method === "GET" && path === "/api/inbox") {
+          return NextResponse.json({ connected: false, providers: { google: false, microsoft: false }, accounts: [], emails: [] });
+        }
+        if (request.method === "GET" && path === "/api/schedule") return NextResponse.json({ connected: false, events: [] });
+        return NextResponse.json({ error: verdict.reason }, { status: verdict.status });
+      }
     }
     if (isCommunityOnly && !COMMUNITY_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -224,8 +300,15 @@ export async function middleware(request: NextRequest) {
   // A sales-only member is confined to their own pages — anything else
   // (dashboard, client data, settings, ...) bounces back to sales-reference
   // rather than 404ing or leaking that the route exists.
-  if (isSalesOnly && !SALES_ONLY_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
+  if (housePath(HOUSE_ONLY_PAGES) && !mayUseHouseSales) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+  if (isSalesOnly && !SALES_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
+  }
+  if (isTeamMember) {
+    const dest = memberPageRedirect(memberRole, path);
+    if (dest) return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return response;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
@@ -66,7 +67,13 @@ export async function PATCH(
   const body = await request.json().catch(() => ({}));
   const update: Record<string, unknown> = {};
   if (typeof body.name === "string") update.name = body.name.trim();
-  if (typeof body.role === "string" && ROLES.includes(body.role as Role)) update.role = body.role;
+  if (typeof body.role === "string" && ROLES.includes(body.role as Role)) {
+    // Sales opens the owner's own sales page and contacts, so only the owner (super admin) may grant it.
+    if (body.role === "sales" && !(await isSuperAdmin())) {
+      return NextResponse.json({ error: "The Sales role isn't available for this account. Choose Admin, Editor or Viewer." }, { status: 400 });
+    }
+    update.role = body.role;
+  }
   if (typeof body.avatar === "string" || body.avatar === null) update.avatar_url = body.avatar || null;
   if (typeof body.status === "string") update.status = body.status;
 

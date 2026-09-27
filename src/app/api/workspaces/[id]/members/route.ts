@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { withinStandingLimit } from "@/lib/capabilities";
@@ -79,6 +80,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!email) return NextResponse.json({ error: "email is required" }, { status: 400 });
 
   const role: Role = ROLES.includes(body.role as Role) ? (body.role as Role) : "editor";
+  // Sales opens the owner's own sales page and contacts, so only the owner (super admin) may grant it.
+  if (role === "sales" && !(await isSuperAdmin())) {
+    return NextResponse.json({ error: "The Sales role isn't available for this account. Choose Admin, Editor or Viewer." }, { status: 400 });
+  }
   const name =
     (typeof body.name === "string" && body.name.trim()) || email.split("@")[0];
 

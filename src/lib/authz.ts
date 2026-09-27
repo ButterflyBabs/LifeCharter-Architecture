@@ -73,6 +73,7 @@ export interface Actor {
   email: string | null;
   memberId: string | null;
   workspaceId: string | null;
+  role: string | null; // team role for kind "member" (admin | editor | viewer | sales)
   permissions: Record<string, string>;
 }
 
@@ -83,6 +84,7 @@ export async function resolveActor(): Promise<Actor> {
     email: null,
     memberId: null,
     workspaceId: null,
+    role: null,
     permissions: {},
   };
 
@@ -105,7 +107,7 @@ export async function resolveActor(): Promise<Actor> {
     const supabase = createServiceClient();
     const { data: m } = await supabase
       .from("workspace_members")
-      .select("id, workspace_id, permissions, status")
+      .select("id, workspace_id, role, permissions, status")
       .ilike("email", email)
       .in("status", ["active", "pending"])
       .maybeSingle();
@@ -121,6 +123,7 @@ export async function resolveActor(): Promise<Actor> {
         email: user.email,
         memberId: m.id as string,
         workspaceId: (m.workspace_id as string) ?? null,
+        role: (m.role as string) ?? null,
         permissions: (m.permissions as Record<string, string>) || {},
       };
     }

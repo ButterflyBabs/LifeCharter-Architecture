@@ -61,10 +61,10 @@ const roleLabels: Record<Role, string> = {
 
 const roleDescriptions: Record<string, string> = {
   owner: "Full access including billing and workspace deletion",
-  admin: "Can manage team, settings, and all content",
-  editor: "Can create and edit content, view analytics",
-  viewer: "View-only access to reports and dashboards",
-  sales: "Restricted to the Sales Call Reference page only — no dashboard, no client data",
+  admin: "Runs the account day to day and manages the team. No billing, connected accounts or account deletion",
+  editor: "Works on the business: tasks, plans, content, finance and sales activity. No team, settings, billing or inbox",
+  viewer: "Sees what an Editor sees, but can't change anything",
+  sales: "The sales page only, with its contacts. No dashboard or client data",
 };
 
 export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: TeamManagementProps) {
@@ -106,6 +106,15 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   const [isAdding, setIsAdding] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", name: "", role: "editor" as Role });
+
+  // The Sales role opens the owner's own sales page, so only the owner (super admin) can grant it.
+  const [canGrantSales, setCanGrantSales] = useState(false);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => setCanGrantSales(Boolean(me?.superAdmin)))
+      .catch(() => {});
+  }, []);
 
   // Invite-link ("Create login") state.
   const [invitingId, setInvitingId] = useState<string | null>(null);
@@ -377,7 +386,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                 Role
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {(["admin", "editor", "viewer", "sales"] as const).map((role) => (
+                {(canGrantSales ? (["admin", "editor", "viewer", "sales"] as const) : (["admin", "editor", "viewer"] as const)).map((role) => (
                   <button
                     key={role}
                     onClick={() => setNewMember({ ...newMember, role })}
@@ -512,7 +521,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       <option value="admin">Admin</option>
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>
-                      <option value="sales">Sales (restricted)</option>
+                      {(canGrantSales || member.role === "sales") && <option value="sales">Sales (restricted)</option>}
                     </select>
 
                     <Button
