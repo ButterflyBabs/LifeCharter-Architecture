@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
@@ -153,6 +153,13 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const { supabase, spaces, channelsFor, isMember, isAdmin, profile, memberships, unreadDms, unreadNotifications, isPlus } = useCommunity();
   const pathname = usePathname() || "";
   const native = useIsNativeApp();
+  // The other LifeCharter apps this member can open (shown at the bottom).
+  const [apps, setApps] = useState<{ suite: boolean; program: boolean }>({ suite: false, program: false });
+  useEffect(() => {
+    void supabase.rpc("cm_my_apps").then(({ data }: { data: { suite?: boolean; program?: boolean } | null }) =>
+      setApps({ suite: Boolean(data?.suite), program: Boolean(data?.program) })
+    );
+  }, [supabase]);
   // The Library only appears once there's something in it (admins always see it, to stock it).
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   useEffect(() => {
@@ -338,10 +345,15 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </span>
           <Settings2 className="h-4 w-4 text-[#F3EEE4]/50" />
         </Link>
-        {isAdmin && (
+        {apps.suite && (
           <Link href="/" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
             <ArrowLeftRight className="h-4 w-4" /> Command Suite
           </Link>
+        )}
+        {apps.program && (
+          <a href="https://lifecharter.life/app" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
+            <Compass className="h-4 w-4" /> LifeCharter Program
+          </a>
         )}
         <button onClick={signOut} className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
           <LogOut className="h-4 w-4" /> Sign out
