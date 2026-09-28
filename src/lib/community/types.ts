@@ -116,6 +116,7 @@ export interface DmThread {
   id: string;
   is_group: boolean;
   title: string | null;
+  created_by: string | null;
   last_message_at: string;
 }
 
@@ -125,6 +126,7 @@ export interface DmMessage {
   sender_id: string;
   body: string;
   attachments: Attachment[];
+  kind?: "message" | "system"; // system = "Amy added Beth" lines in a group
   created_at: string;
   deleted_at: string | null;
 }
