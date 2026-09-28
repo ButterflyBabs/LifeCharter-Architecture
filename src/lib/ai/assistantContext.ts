@@ -211,6 +211,18 @@ export async function buildAssistantKnowledge(
     /* optional */
   }
 
+  // Their first-30-days path (while it's in play), so advice lines up with their next steps.
+  try {
+    const { first30Status } = await import("@/lib/first30");
+    const f = await first30Status(masterPlanId);
+    if (f.done < f.total && f.day <= 60) {
+      const open = f.steps.filter((x) => !x.done).sort((a, b) => Number(!!b.focus) - Number(!!a.focus)).slice(0, 4);
+      parts.push(`First 30 days: day ${Math.min(f.day, 30)}, ${f.done} of ${f.total} setup steps done. Next: ${open.map((x) => `${x.title}${x.focus ? ` (strengthens ${x.focus})` : ""}`).join("; ")}.`);
+    }
+  } catch {
+    /* optional */
+  }
+
   // Legal & Compliance checklist: how far along, and renewals coming up.
   try {
     const { LEGAL_ITEMS, legalCompletion } = await import("@/lib/legalChecklist");

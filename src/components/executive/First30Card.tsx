@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle } from "lucide-react";
 
 export interface First30 {
-  steps: { key: string; week: number; title: string; href: string; done: boolean }[];
+  steps: { key: string; week: number; title: string; why?: string; href: string; done: boolean; focus?: string }[];
   done: number;
   total: number;
   day: number;
@@ -25,7 +25,8 @@ export function useFirst30(): First30 | null {
 }
 
 export default function First30Card({ data }: { data: First30 }) {
-  const next = data.steps.filter((s) => !s.done).slice(0, 3);
+  // Open steps that strengthen their weakest areas come first.
+  const next = data.steps.filter((s) => !s.done).sort((a, b) => Number(!!b.focus) - Number(!!a.focus)).slice(0, 3);
   const pct = Math.round((data.done / Math.max(data.total, 1)) * 100);
   return (
     <div className="h-full overflow-hidden rounded-2xl border border-[#c9a227]/40 bg-[#FFFFFF] shadow-sm">
@@ -47,6 +48,7 @@ export default function First30Card({ data }: { data: First30 }) {
             <li key={s.key}>
               <Link href={s.href} className="flex items-center gap-2 text-indigo-900 hover:underline">
                 <Circle className="h-4 w-4 shrink-0 text-[#c9a227]" /> {s.title}
+                {s.focus && <span className="ml-1 rounded-full bg-[#c9a227]/15 px-1.5 text-[10px] font-semibold text-[#8a6a15]">focus</span>}
               </Link>
             </li>
           ))}

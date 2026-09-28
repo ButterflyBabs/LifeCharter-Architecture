@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Scale, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Plus, Scale, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -28,6 +28,9 @@ export default function CompliancePage() {
   const [open, setOpen] = useState<string | null>(null);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [custom, setCustom] = useState("");
+  const [sugg, setSugg] = useState<{ items: { key: string; verdict: "priority" | "na"; reason: string }[]; summary: string } | null>(null);
+  const [suggBusy, setSuggBusy] = useState(false);
+  const [suggMsg, setSuggMsg] = useState("");
 
   const load = useCallback(async () => {
     const d = await fetch("/api/legal-checklist", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -35,7 +38,20 @@ export default function CompliancePage() {
   }, []);
   useEffect(() => {
     void load();
+    fetch("/api/legal-checklist/suggest").then((r) => r.json()).then((d) => d.suggestions && setSugg(d.suggestions)).catch(() => {});
   }, [load]);
+
+  async function suggest() {
+    setSuggBusy(true);
+    setSuggMsg("");
+    const r = await fetch("/api/legal-checklist/suggest", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const d = await r.json().catch(() => ({}));
+    setSuggBusy(false);
+    if (d.needsKey) return setSuggMsg("Connect your AI in Settings → AI and your assistant will tailor this checklist to your business.");
+    if (!r.ok) return setSuggMsg(d.error || "Couldn't review the checklist just now.");
+    setSugg(d.suggestions);
+  }
+  const suggFor = (key: string) => sugg?.items.find((x) => x.key === key);
 
   const byKey = useMemo(() => new Map((states ?? []).map((s) => [s.item_key, s])), [states]);
   const rows: Row[] = useMemo(
@@ -106,6 +122,17 @@ export default function CompliancePage() {
         A general guide for small businesses, not legal advice. Rules vary by state and industry, so check anything you&apos;re unsure of with your attorney or accountant.
       </p>
 
+      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-[#1a2b4a]/10 p-4">
+        <p className="min-w-0 flex-1 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+          {sugg?.summary || "Your assistant can read what it knows about your business and mark what matters most for you, and what likely doesn't apply."}
+        </p>
+        <Button size="sm" variant="outline" onClick={suggest} disabled={suggBusy}>
+          {suggBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+          {sugg ? "Check again" : "What applies to my business?"}
+        </Button>
+        {suggMsg && <p className="w-full text-sm text-[#8a6a15]">{suggMsg}</p>}
+      </div>
+
       {!!renewals.length && (
         <Card className="mb-5 border-[#b06a5a]/30">
           <CardContent className="p-4">
@@ -151,7 +178,18 @@ export default function CompliancePage() {
                               <button onClick={() => setOpen(expanded ? null : r.key)} className={`min-w-0 flex-1 text-left text-sm ${s?.status === "na" ? "text-[#9aa3ad] line-through" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
                                 {r.title}
                                 {s?.due_date && <span className="ml-2 text-xs text-[#7a8a99]">· due {s.due_date}</span>}
+                                {suggFor(r.key)?.verdict === "priority" && s?.status !== "done" && (
+                                  <span className="ml-2 rounded-full bg-[#c9a227]/15 px-2 py-0.5 text-[11px] font-semibold text-[#8a6a15]">Priority for you</span>
+                                )}
+                                {suggFor(r.key) && s?.status !== "done" && s?.status !== "na" && (
+                                  <span className="block text-xs text-[#7a8a99]">{suggFor(r.key)!.reason}</span>
+                                )}
                               </button>
+                              {suggFor(r.key)?.verdict === "na" && (s?.status ?? "not_started") === "not_started" && (
+                                <Button size="sm" variant="ghost" onClick={() => save(r.key, { status: "na" })} title={suggFor(r.key)!.reason}>
+                                  Likely doesn&apos;t apply · mark it
+                                </Button>
+                              )}
                               <select
                                 value={s?.status ?? "not_started"}
                                 onChange={(e) => save(r.key, { status: e.target.value })}

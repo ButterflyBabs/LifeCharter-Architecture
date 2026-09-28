@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 
 // The first 30 days after setup: twelve small steps over four weeks that turn
 // the Suite's tools into habits. Each step is checked live from the client's own
@@ -11,55 +12,57 @@ export interface First30Step {
   why: string;
   href: string;
   done: boolean;
+  dims: string[]; // business dimensions this step strengthens
+  focus?: string; // set when it strengthens one of their weakest areas, e.g. "Finance 42"
 }
 
-type Def = Omit<First30Step, "done"> & { check: (id: string, db: ReturnType<typeof createServerClient>) => Promise<boolean> };
+type Def = Omit<First30Step, "done" | "focus"> & { check: (id: string, db: ReturnType<typeof createServerClient>) => Promise<boolean> };
 
 const count = async (q: PromiseLike<{ count: number | null }>) => ((await q).count ?? 0);
 
 const STEPS: Def[] = [
   {
-    key: "vision", week: 1, title: "Write your vision in the Business Plan", why: "Everything else in the Suite points back to it.", href: "/business-plan",
+    key: "vision", week: 1, dims: ["vision","leadership"], title: "Write your vision in the Business Plan", why: "Everything else in the Suite points back to it.", href: "/business-plan",
     check: async (id, db) => (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "business").not("content", "is", null))) > 0,
   },
   {
-    key: "offers", week: 1, title: "Add your offers and prices", why: "So your assistant, scripts and forecast use your real offers.", href: "/sales/offers",
+    key: "offers", week: 1, dims: ["product","sales"], title: "Add your offers and prices", why: "So your assistant, scripts and forecast use your real offers.", href: "/sales/offers",
     check: async (id, db) => (await count(db.from("sales_offers").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "deals", week: 1, title: "Put your open opportunities in the Pipeline", why: "Your forecast and daily nudges come from it.", href: "/sales/pipeline",
+    key: "deals", week: 1, dims: ["sales"], title: "Put your open opportunities in the Pipeline", why: "Your forecast and daily nudges come from it.", href: "/sales/pipeline",
     check: async (id, db) => (await count(db.from("pipeline_deals").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "income-goal", week: 1, title: "Set your monthly income goal", why: "The Financial Pulse measures every month against it.", href: "/finance/budget",
+    key: "income-goal", week: 1, dims: ["finance"], title: "Set your monthly income goal", why: "The Financial Pulse measures every month against it.", href: "/finance/budget",
     check: async (id, db) => (await count(db.from("finance_budgets").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("type", "income").eq("category", "").gt("amount", 0))) > 0,
   },
   {
-    key: "ledger", week: 2, title: "Record this month's income and expenses", why: "Real numbers make every score and briefing honest.", href: "/finance/import",
+    key: "ledger", week: 2, dims: ["finance"], title: "Record this month's income and expenses", why: "Real numbers make every score and briefing honest.", href: "/finance/import",
     check: async (id, db) => (await count(db.from("finance_entries").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) >= 3,
   },
   {
-    key: "bills", week: 2, title: "Add your regular bills", why: "So nothing due sneaks up on you.", href: "/finance/bills",
+    key: "bills", week: 2, dims: ["finance","sustainability"], title: "Add your regular bills", why: "So nothing due sneaks up on you.", href: "/finance/bills",
     check: async (id, db) => (await count(db.from("finance_bills").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "weekly-review", week: 2, title: "Do your first weekly review", why: "Ten minutes that set up next week.", href: "/planning/review",
+    key: "weekly-review", week: 2, dims: ["leadership","sustainability"], title: "Do your first weekly review", why: "Ten minutes that set up next week.", href: "/planning/review",
     check: async (id, db) => (await count(db.from("business_reviews").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("status", "completed"))) > 0,
   },
   {
-    key: "sop", week: 3, title: "Write down your first SOP", why: "Start with the process you explain most often.", href: "/operations/sops",
+    key: "sop", week: 3, dims: ["systems","operations"], title: "Write down your first SOP", why: "Start with the process you explain most often.", href: "/operations/sops",
     check: async (id, db) => (await count(db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "pillars", week: 3, title: "Rate your 8 operational pillars", why: "Shows where operations need attention.", href: "/operations",
+    key: "pillars", week: 3, dims: ["operations","customer_experience"], title: "Rate your 8 operational pillars", why: "Shows where operations need attention.", href: "/operations",
     check: async (id, db) => (await count(db.from("operations_pillars").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) >= 4,
   },
   {
-    key: "legal", week: 3, title: "Work through the Legal & Compliance checklist", why: "Contracts, insurance and filings, handled once.", href: "/compliance",
+    key: "legal", week: 3, dims: ["legal"], title: "Work through the Legal & Compliance checklist", why: "Contracts, insurance and filings, handled once.", href: "/compliance",
     check: async (id, db) => (await count(db.from("legal_checklist").select("id", { count: "exact", head: true }).eq("master_plan_id", id).in("status", ["done", "na"]))) >= 5,
   },
   {
-    key: "goal-ladder", week: 4, title: "Break a yearly goal into this quarter", why: "Connects the big picture to this week.", href: "/planning/goals",
+    key: "goal-ladder", week: 4, dims: ["vision","leadership"], title: "Break a yearly goal into this quarter", why: "Connects the big picture to this week.", href: "/planning/goals",
     check: async (id, db) => {
       const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", id);
       const ids = ((plans ?? []) as { id: string }[]).map((p) => p.id);
@@ -67,7 +70,7 @@ const STEPS: Def[] = [
     },
   },
   {
-    key: "pulse", week: 4, title: "Take your first monthly Quick Pulse", why: "Starts your trend line so you can see yourself grow.", href: "/assessments/quick-pulse-checkin",
+    key: "pulse", week: 4, dims: ["sustainability","team"], title: "Take your first monthly Quick Pulse", why: "Starts your trend line so you can see yourself grow.", href: "/assessments/quick-pulse-checkin",
     check: async (id, db) => (await count(db.from("quick_pulse_checkins").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
 ];
@@ -75,10 +78,24 @@ const STEPS: Def[] = [
 export async function first30Status(masterPlanId: string): Promise<{ steps: First30Step[]; done: number; total: number; day: number; startedAt: string | null }> {
   const db = createServerClient();
   const results = await Promise.all(STEPS.map((s) => s.check(masterPlanId, db).catch(() => false)));
-  const steps = STEPS.map(({ check: _check, ...s }, i) => {
+  const steps: First30Step[] = STEPS.map(({ check: _check, ...s }, i) => {
     void _check;
     return { ...s, done: results[i] };
   });
+  // Their three weakest areas (latest scores): steps that strengthen them are marked "Focus for you".
+  try {
+    const { data: snap } = await db.from("client_score_snapshots").select("domains").eq("master_plan_id", masterPlanId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const weakest = Object.entries((snap?.domains as Record<string, number>) ?? {})
+      .filter(([, v]) => typeof v === "number")
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 3);
+    for (const st of steps) {
+      const hit = weakest.find(([k]) => st.dims.includes(k));
+      if (hit) st.focus = `${(DIMENSION_LABEL as Record<string, string>)[hit[0]] ?? hit[0]} ${Math.round(hit[1])}`;
+    }
+  } catch {
+    /* optional */
+  }
   const { data: mp } = await db.from("client_master_plans").select("created_at").eq("id", masterPlanId).maybeSingle();
   const startedAt = (mp?.created_at as string) ?? null;
   const day = startedAt ? Math.max(1, Math.floor((Date.now() - new Date(startedAt).getTime()) / 86400000) + 1) : 1;

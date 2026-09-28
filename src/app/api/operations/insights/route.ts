@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveAiConfig } from "@/lib/ai/config";
+import { planningAssistant } from "@/lib/ai/planningAi";
 import { OPERATIONS_PILLARS, STATUS_LABEL, type PillarStatus } from "@/lib/operations";
 import { answersText, type DeeperAnswers } from "@/lib/operationsDeeper";
 import { latestInsight, saveInsight } from "@/lib/ai/planKnowledge";
@@ -46,8 +46,11 @@ export async function POST(request: Request) {
     };
   });
 
-  const { name, key } = await resolveAiConfig();
-  if (!key) return NextResponse.json({ needsKey: true });
+  // Their own assistant, knowing everything about their business (assessment
+  // answers, scores, plans, tasks, SOPs…), not just the pillar ratings.
+  const a = await planningAssistant();
+  if (!a?.key) return NextResponse.json({ needsKey: true });
+  const { name, key } = a;
 
   const dataText = rows
     .map(
@@ -58,6 +61,8 @@ export async function POST(request: Request) {
 
   const sys =
     `You are ${name}, a sharp, supportive operations advisor for a small business owner. ` +
+    (a.instructions ? `Their standing instructions for how you write: ${a.instructions}\n` : "") +
+    `What you know about them (their own words and live numbers):\n${a.knowledge || "(nothing recorded yet)"}\n` +
     "You're looking at their 8 operational pillars: each pillar's status, notes, and their answers to deeper questions about it. " +
     "Assess overall operational health and tell them where to focus next. " +
     'Return STRICT JSON: {"headline":"1-sentence read on operational health",' +

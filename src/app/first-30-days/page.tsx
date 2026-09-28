@@ -14,7 +14,7 @@ const WEEK_TITLES: Record<number, string> = {
 
 export default function First30Page() {
   const d = useFirst30();
-  const steps = (d?.steps ?? []) as { key: string; week: number; title: string; why?: string; href: string; done: boolean }[];
+  const steps = d?.steps ?? [];
   const pct = d ? Math.round((d.done / Math.max(d.total, 1)) * 100) : 0;
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
@@ -24,7 +24,7 @@ export default function First30Page() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your First 30 Days</h1>
-          <p className="text-[#7a8a99]">Twelve small steps that turn the Suite into how you run your business. Each one ticks itself off when it&apos;s done.</p>
+          <p className="text-[#7a8a99]">Twelve small steps that turn the Suite into how you run your business. Each one ticks itself off when it&apos;s done, and the ones that strengthen your lowest scores are marked for you.</p>
         </div>
       </div>
       {d && (
@@ -48,11 +48,17 @@ export default function First30Page() {
                 <div className="divide-y divide-[#1a2b4a]/10">
                   {steps
                     .filter((s) => s.week === w)
+                    .sort((a, b) => Number(!!b.focus && !b.done) - Number(!!a.focus && !a.done))
                     .map((s) => (
                       <Link key={s.key} href={s.href} className="flex items-start gap-3 py-3 hover:bg-[#1a2b4a]/5 rounded-lg px-2">
                         {s.done ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#2c6b3f]" /> : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-[#c9a227]" />}
                         <span>
-                          <span className={`block font-medium ${s.done ? "text-[#7a8a99] line-through" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{s.title}</span>
+                          <span className={`block font-medium ${s.done ? "text-[#7a8a99] line-through" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+                            {s.title}
+                            {s.focus && !s.done && (
+                              <span className="ml-2 rounded-full bg-[#c9a227]/15 px-2 py-0.5 text-[11px] font-semibold text-[#8a6a15]">Focus for you · {s.focus}</span>
+                            )}
+                          </span>
                           {s.why && <span className="block text-xs text-[#7a8a99]">{s.why}</span>}
                         </span>
                       </Link>
