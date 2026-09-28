@@ -246,7 +246,7 @@ export function LoginView() {
                   href="/forgot-password"
                   className="border-b border-transparent text-brand-lavender transition hover:border-brand-gold hover:text-brand-gold-soft"
                 >
-                  Forgot password?
+                  Forgot or set your password?
                 </a>
               </div>
 

@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
     return (
       <AuthShell
         title="Check your email"
-        subtitle="If an account exists for that address, we've sent a link to reset your password. It expires in an hour."
+        subtitle="If an account exists for that address, we've sent a link to choose your password. It works once and expires in an hour."
       >
         <p className="rounded-lg border border-brand-teal/40 bg-brand-teal/10 px-4 py-3 text-center text-[12.5px] text-brand-lavender">
           Didn&apos;t get it? It comes from community@lccommandsuite.com — check Other, Promotions and Spam, or wait a moment and try again.
@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell title="Reset your password" subtitle="Enter your email and we'll send you a link to set a new one.">
+    <AuthShell title="Set or reset your password" subtitle="First time signing in, or forgot your password? Enter your email and we'll send you a link to choose one.">
       <form onSubmit={handleSubmit} className="flex flex-col gap-[18px]">
         <div>
           <label htmlFor="email" className={authLabelClass}>
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <button type="submit" disabled={loading} className={authButtonClass}>
-          {loading ? "Sending…" : "Send reset link"}
+          {loading ? "Sending…" : "Send my link"}
         </button>
       </form>
     </AuthShell>
