@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
-import { IntegrationsPanel } from "./components/IntegrationsPanel";
+import { IntegrationsPanel, IntegrationUsage } from "./components/IntegrationsPanel";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
@@ -495,11 +495,10 @@ export default function SettingsPage() {
     };
   }, []);
 
-  // Real plan id + workspace limit, straight from /api/billing (the same
+  // Real workspace limit for the current plan, straight from /api/billing (the same
   // source BillingPanel and TeamManagement already use) — not a hardcoded
   // map, so it can never drift from what's actually sold. Defaults to
   // Starter (the most restrictive real tier) until it loads.
-  const [currentPlanId, setCurrentPlanId] = useState<string>("starter");
   const [maxWorkspaces, setMaxWorkspaces] = useState<number>(1);
   useEffect(() => {
     fetch("/api/billing")
@@ -507,7 +506,6 @@ export default function SettingsPage() {
       .then((d) => {
         if (!d) return;
         const id = d.current?.planId || "starter";
-        setCurrentPlanId(id);
         const plan = (d.plans || []).find((p: { id: string }) => p.id === id);
         const cap = plan?.capabilities?.workspaces;
         if (typeof cap === "number") setMaxWorkspaces(cap === -1 ? Infinity : cap);
@@ -1437,11 +1435,11 @@ export default function SettingsPage() {
   };
 
   const renderIntegrationSettings = () => {
-    // currentPlanId comes from the real /api/billing fetch above.
-    const connectedCount = 0; // TODO: calculate from actual connected integrations
-
     return (
       <div className="space-y-6">
+        {/* Plan integration spots used (re-read whenever a connection changes) */}
+        <IntegrationUsage refreshKey={Number(gcConnected) + 2 * Number(psConnected)} />
+
         {/* Global Control (Titanium Suite) — per-client connection */}
         <Card className="border-[#4a9b9b]/30">
           <CardContent className="p-6">
@@ -1625,7 +1623,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <IntegrationsPanel planId={currentPlanId} currentIntegrationCount={connectedCount} />
+        <IntegrationsPanel />
       </div>
     );
   };

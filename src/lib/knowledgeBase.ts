@@ -591,7 +591,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Account & Settings",
     question: "What's the difference between Starter, Growth and VIP?",
     answer:
-      "Starter is built for one business running lean (1 business workspace, 1 seat, 1 connected email account). Growth gives you room to grow — up to 3 business workspaces, 2 seats, 3 connected email accounts, monthly 1:1 coaching, and expanded AI limits. VIP removes the limits — unlimited workspaces, seats and email accounts, priority AI, and white-glove support. Everything in the Command Suite is included in every plan; the plans differ in capacity and hands-on help. Your current plan and billing are under Settings, where 'Manage billing' opens your billing portal.",
+      "Starter is built for one business running lean (1 business workspace, 1 seat, 1 connected email account, up to 5 integrations). Growth gives you room to grow — up to 3 business workspaces, 2 seats, 3 connected email accounts, up to 10 integrations, monthly 1:1 coaching, and expanded AI limits. VIP removes the limits — unlimited workspaces, seats, email accounts and integrations, customized to you, priority AI, and white-glove support. Everything in the Command Suite is included in every plan; the plans differ in capacity and hands-on help. Your current plan and billing are under Settings, where 'Manage billing' opens your billing portal.",
     keywords: ["plans", "tiers", "starter", "growth", "vip", "difference", "upgrade", "limits", "pricing", "billing", "what's included"],
   },
   {

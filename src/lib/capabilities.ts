@@ -69,7 +69,7 @@ export const AI_LIMIT_BODY = {
  * doesn't expire at the end of the month the way an AI action does.
  */
 
-export type StandingCapability = "workspaces" | "seats";
+export type StandingCapability = "workspaces" | "seats" | "integrations";
 
 // The plan capabilities for whoever owns this master plan: master plan ->
 // its user -> their active subscription -> that plan's capabilities. Returns
@@ -124,3 +124,22 @@ export async function withinStandingLimit(
   if (limit === null || limit < 0) return { allowed: true, limit };
   return { allowed: currentCount < limit, limit };
 }
+
+// Tool integrations (Global Control, PostStream, …) this account has connected.
+// Email accounts (their own "mailboxes" limit) and the AI key don't count.
+export async function integrationUsage(masterPlanId: string | null): Promise<{ count: number; limit: number | null }> {
+  if (!masterPlanId) return { count: 0, limit: null };
+  const { count } = await createServerClient()
+    .from("client_integrations")
+    .select("id", { count: "exact", head: true })
+    .eq("master_plan_id", masterPlanId)
+    .eq("status", "connected");
+  const caps = await planCapabilities(masterPlanId);
+  const raw = caps?.integrations;
+  return { count: count ?? 0, limit: typeof raw === "number" ? raw : null };
+}
+
+export const INTEGRATION_LIMIT_BODY = {
+  error: "You've used every integration spot on your plan. Disconnect one, or upgrade under Settings → Billing, to add another.",
+  limitReached: true,
+};

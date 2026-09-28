@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { withinStandingLimit, integrationUsage, INTEGRATION_LIMIT_BODY } from "@/lib/capabilities";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { validateKey } from "@/lib/postStream";
@@ -62,6 +63,12 @@ export async function POST(request: Request) {
     .eq("master_plan_id", masterPlanId)
     .eq("provider", PROVIDER)
     .maybeSingle();
+
+  // A new connection needs a free integration spot on their plan (updating a key doesn't).
+  if (!existing?.id) {
+    const { allowed } = await withinStandingLimit("integrations", masterPlanId, (await integrationUsage(masterPlanId)).count);
+    if (!allowed) return NextResponse.json(INTEGRATION_LIMIT_BODY, { status: 403 });
+  }
 
   const row = {
     master_plan_id: masterPlanId,
