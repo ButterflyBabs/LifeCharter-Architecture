@@ -73,17 +73,31 @@ export async function POST(req: NextRequest) {
         if (meta.flow === "life_shift") {
           // The Life Shift ($25 Payment Link on amilynnecarroll.com): tag the buyer in
           // Global Control so the challenge workflow starts. No Suite account.
+          // Paying is registering (one step), so both tags fire:
+          // 21day-challenge-registered and 21day-challenge-paid (Babs, 2026-09-28).
           const email = session.customer_details?.email || session.customer_email;
-          const tagId = process.env.GC_LIFE_SHIFT_TAG_ID;
-          if (email && tagId) {
+          const tags = [
+            process.env.GC_LIFE_SHIFT_REGISTERED_TAG_ID || "6a1875949623b6235fea217d",
+            process.env.GC_LIFE_SHIFT_PAID_TAG_ID || "6a1875949623b6235fea2231",
+          ];
+          if (email) {
             const [firstName, ...rest] = (session.customer_details?.name || "").trim().split(/\s+/);
-            await fetch(`https://api.globalcontrol.io/api/tag-form-submission/${encodeURIComponent(tagId)}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...(process.env.GLOBAL_CONTROL_API_KEY ? { "X-API-KEY": process.env.GLOBAL_CONTROL_API_KEY } : {}) },
-              body: JSON.stringify({ email, firstName: firstName || "", lastName: rest.join(" "), ...(session.customer_details?.phone ? { phone: session.customer_details.phone } : {}) }),
-            }).catch((e) => console.error("life shift GC tag:", e));
+            const person = { email, firstName: firstName || "", lastName: rest.join(" "), ...(session.customer_details?.phone ? { phone: session.customer_details.phone } : {}) };
+            for (const tagId of tags) {
+              const res = await fetch(`https://api.globalcontrol.io/api/tag-form-submission/${encodeURIComponent(tagId)}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...(process.env.GLOBAL_CONTROL_API_KEY ? { "X-API-KEY": process.env.GLOBAL_CONTROL_API_KEY } : {}) },
+                body: JSON.stringify(person),
+              }).catch((e) => {
+                console.error("life shift GC tag:", tagId, e);
+                return null;
+              });
+              // Global Control answers 200 even on failure; success must be explicit.
+              const out = res ? await res.json().catch(() => null) : null;
+              if (!(res?.ok && out?.data?.success === true)) console.error(`life shift GC tag ${tagId} failed for ${email}:`, JSON.stringify(out));
+            }
           } else {
-            console.warn(`life_shift purchase ${session.id}: ${tagId ? "no email" : "GC_LIFE_SHIFT_TAG_ID not set"}`);
+            console.warn(`life_shift purchase ${session.id}: no email`);
           }
           break;
         }
