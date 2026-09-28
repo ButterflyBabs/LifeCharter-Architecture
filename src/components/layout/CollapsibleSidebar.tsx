@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Mail,
   Package,
   KanbanSquare,
   Globe,
@@ -123,6 +124,7 @@ const ownerSection = {
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
+    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
   ],
 };

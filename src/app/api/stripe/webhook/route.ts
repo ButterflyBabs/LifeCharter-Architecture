@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
+import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -95,6 +96,27 @@ export async function POST(req: NextRequest) {
               // Global Control answers 200 even on failure; success must be explicit.
               const out = res ? await res.json().catch(() => null) : null;
               if (!(res?.ok && out?.data?.success === true)) console.error(`life shift GC tag ${tagId} failed for ${email}:`, JSON.stringify(out));
+            }
+            // Then enrol them in The Life Shift emails (sent from the Suite, not GC).
+            try {
+              const planId = await ownerMasterPlanId();
+              if (planId) {
+                const r = await enrolContact({
+                  masterPlanId: planId,
+                  sequenceKey: "life-shift",
+                  email,
+                  firstName: person.firstName,
+                  lastName: person.lastName,
+                  phone: session.customer_details?.phone || null,
+                  timezone: timezoneFor(session.customer_details?.address),
+                  source: "stripe",
+                  sourceRef: session.id,
+                  tags: ["life-shift", "paid"],
+                });
+                if (!r.enrollmentId) console.warn(`life shift enrol ${email}: ${r.reason}`);
+              }
+            } catch (e) {
+              console.error("life shift enrol:", e);
             }
           } else {
             console.warn(`life_shift purchase ${session.id}: no email`);

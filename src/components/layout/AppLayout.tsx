@@ -22,6 +22,7 @@ interface AppLayoutProps {
 // unusable before the sidebar got an off-canvas mobile state.
 const BARE_ROUTES = [
   "/reviews/collect",
+  "/unsubscribe",
   "/login",
   "/logout",
   "/forgot-password",
