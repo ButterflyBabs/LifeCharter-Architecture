@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, useSidebar } from "./CollapsibleSidebar";
 import { Header } from "./Header";
@@ -65,6 +65,10 @@ function AppLayoutContent({ children }: AppLayoutProps) {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
+  // Makes the Suite installable as a phone app (same service worker as the Collective).
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) navigator.serviceWorker.register("/community-sw.js").catch(() => {});
+  }, []);
   // Login / logout render standalone (no sidebar, header, or widgets).
   if (pathname && BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return <>{children}</>;

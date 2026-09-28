@@ -2006,21 +2006,27 @@ export default function SettingsPage() {
           Export Your Data
         </h4>
         <p className="text-sm text-[#b8a898] mb-4">
-          Download all your assessments, business plan, and account data
+          Download your account data. The full backup includes everything you&apos;ve put into the Suite (never your passwords or API keys).
         </p>
         <div className="space-y-3">
-          <Button variant="outline" className="w-full justify-start">
-            <Database className="w-4 h-4 mr-2" />
-            Export All Data (JSON)
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            <FileText className="w-4 h-4 mr-2" />
-            Export Business Plan (PDF)
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            <Globe className="w-4 h-4 mr-2" />
-            Export Assessment Results (CSV)
-          </Button>
+          <a href="/api/export/account" className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <Database className="w-4 h-4 mr-2" />
+              Full account backup (JSON)
+            </Button>
+          </a>
+          <a href="/api/planning/export" className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <FileText className="w-4 h-4 mr-2" />
+              Your plans, goals and reviews (document)
+            </Button>
+          </a>
+          <a href={`/api/finance/export?period=year&tz=${encodeURIComponent(typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC")}`} className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <Globe className="w-4 h-4 mr-2" />
+              This year&apos;s ledger (CSV)
+            </Button>
+          </a>
         </div>
       </div>
 

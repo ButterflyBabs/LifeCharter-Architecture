@@ -50,6 +50,7 @@ import {
   Sprout,
   GraduationCap,
   Inbox,
+  Smartphone,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -65,6 +66,7 @@ const navigationSections = [
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
+      { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
     ],
   },
