@@ -50,8 +50,9 @@ export function embedFor(text: string): { src: string; provider: string } | null
   for (const u of url) {
     let m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
     if (m) return { src: `https://www.youtube-nocookie.com/embed/${m[1]}`, provider: "YouTube" };
-    m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-    if (m) return { src: `https://player.vimeo.com/video/${m[1]}`, provider: "Vimeo" };
+    // Unlisted Vimeo links carry a privacy hash (vimeo.com/123/abc123), which the player needs.
+    m = u.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([a-f0-9]{6,}))?/i);
+    if (m) return { src: `https://player.vimeo.com/video/${m[1]}${m[2] ? `?h=${m[2]}` : ""}`, provider: "Vimeo" };
     m = u.match(/loom\.com\/share\/([\w]+)/);
     if (m) return { src: `https://www.loom.com/embed/${m[1]}`, provider: "Loom" };
   }
