@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
@@ -89,6 +90,9 @@ export async function POST(
       return NextResponse.json({ error: "could not create the login" }, { status: 500 });
     }
   }
+
+  // Team members join the Command Suite community space too (group coaching lives there).
+  await joinCommandSuiteCommunity(admin, userId, member.name);
 
   // Mint a single-use token; store only its hash.
   const token = crypto.randomBytes(32).toString("base64url");

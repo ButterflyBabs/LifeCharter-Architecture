@@ -1,4 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
 
 // Service-role client — bypasses RLS. Only ever used server-side (webhook,
 // checkout-confirm route), never exposed to the browser.
@@ -41,6 +42,7 @@ export async function provisionAccountForEmail(
     // Don't blank out a name that's already on file with an empty resubmit.
     if (fullName?.trim()) update.full_name = fullName.trim();
     await supabase.from("profiles").update(update).eq("id", existingProfile.id);
+    await joinCommandSuiteCommunity(supabase, existingProfile.id, fullName);
     return { userId: existingProfile.id, workspaceId: existingProfile.workspace_id, isNewAccount: false };
   }
 
@@ -104,6 +106,8 @@ export async function provisionAccountForEmail(
     // table's own trigger/UI code re-creates a plan on first real use.
     console.error("client_master_plans creation failed (non-fatal):", planError.message);
   }
+
+  await joinCommandSuiteCommunity(supabase, userId, displayName);
 
   return { userId, workspaceId: workspace.id, isNewAccount: true };
 }
