@@ -94,10 +94,10 @@ const navigationSections = [
   },
 ];
 
-// Owner-only pages (Babs). Shown only when /api/me says super admin; the pages and their
-// APIs enforce this on the server too.
+// Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
+// so; the pages and their APIs enforce the same check on the server.
 const ownerSection = {
-  title: "OWNER",
+  title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
@@ -351,7 +351,7 @@ export function CollapsibleSidebar() {
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setSuperAdmin(!!d?.superAdmin))
+      .then((d) => setSuperAdmin(d?.architect === true))
       .catch(() => {});
   }, []);
   const sections = superAdmin ? [...navigationSections, ownerSection] : navigationSections;

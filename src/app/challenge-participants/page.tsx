@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isSuperAdmin } from "@/lib/authz";
+import { isAlignmentArchitect } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Command Shift participants" };
@@ -12,7 +12,7 @@ type Participant = { user_id: string; first_name: string | null; last_name: stri
 // Owner-only: every Command Shift (21-Day Challenge) participant, with progress, so Babs can coach
 // them. Babs decided 2026-09-27 to see ALL of their entries (open a participant for the detail).
 export default async function ChallengeParticipantsPage() {
-  if (!(await isSuperAdmin())) notFound();
+  if (!(await isAlignmentArchitect())) notFound();
   const supabase = createServerClient();
   const [{ data: people }, { data: progress }, { data: journal }, { data: outputs }] = await Promise.all([
     supabase.from("cs_participants").select("user_id, first_name, last_name, email, start_date, created_at").order("created_at", { ascending: false }),

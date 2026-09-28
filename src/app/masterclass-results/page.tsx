@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isSuperAdmin } from "@/lib/authz";
+import { isAlignmentArchitect } from "@/lib/authz";
 import { FIRST_YEAR_VALUE, masterclassResults, type SessionRow } from "@/lib/masterclass/results";
 
 export const metadata: Metadata = { title: "MasterClass results" };
@@ -16,7 +16,7 @@ const clientsLine = (c: SessionRow["newClients"]) => {
 
 // Owner-only: how each weekly MasterClass performs, and whether the series is compounding.
 export default async function MasterclassResultsPage() {
-  if (!(await isSuperAdmin())) notFound();
+  if (!(await isAlignmentArchitect())) notFound();
   const { sessions, totals } = await masterclassResults();
   const newClientCount = totals.newClients.starter + totals.newClients.growth + totals.newClients.vip;
 

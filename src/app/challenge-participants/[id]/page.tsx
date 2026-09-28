@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isSuperAdmin } from "@/lib/authz";
+import { isAlignmentArchitect } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { COMMAND_SHIFT_DAYS } from "@/lib/commandShiftDays";
 import { COMMAND_SHIFT_OUTPUTS } from "@/lib/commandShift";
@@ -13,7 +13,7 @@ const ENTRY_LABEL: Record<string, string> = { reflection: "Reflection", evening:
 
 // Owner-only: everything one participant has written in The Command Shift, day by day.
 export default async function ChallengeParticipantPage({ params }: { params: { id: string } }) {
-  if (!(await isSuperAdmin())) notFound();
+  if (!(await isAlignmentArchitect())) notFound();
   if (!/^[0-9a-f-]{36}$/i.test(params.id)) notFound();
   const supabase = createServerClient();
   const [{ data: person }, { data: progress }, { data: journal }, { data: outputs }] = await Promise.all([

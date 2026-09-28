@@ -58,6 +58,16 @@ export async function isSuperAdmin(): Promise<boolean> {
   return isOwnerEmail(user.email);
 }
 
+// The Alignment Architect: Babs alone. Hard-wired to her email (not the SUPER_ADMIN_EMAILS list),
+// so her private pages (Website Reviews, Command Shift participants, MasterClass results) can
+// never be opened by anyone else, even someone later added as an admin.
+export const ALIGNMENT_ARCHITECT_EMAIL = "amilynne@amilynnecarroll.com";
+
+export async function isAlignmentArchitect(): Promise<boolean> {
+  const user = await sessionUser();
+  return (user?.email || "").toLowerCase() === ALIGNMENT_ARCHITECT_EMAIL;
+}
+
 // Who is making this request, and what may they do?
 //   - owner  : the account owner (or single-user mode) — full access
 //   - member : an invited team member — scoped to the owner's data, limited by

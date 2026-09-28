@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isSuperAdmin, superAdminEmails } from "@/lib/authz";
+import { isAlignmentArchitect, superAdminEmails } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { DEMO_PLAN_NAME } from "@/lib/scoring/masterPlan";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // Publish puts it in the client's account and emails them.
 
 export async function GET() {
-  if (!(await isSuperAdmin())) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "not found" }, { status: 404 });
   const supabase = createServerClient();
   const admins = superAdminEmails();
   const [{ data: plans }, { data: spaces }, { data: reviews }] = await Promise.all([
@@ -41,7 +41,7 @@ export async function GET() {
 // PUT { masterPlanId, content, publish }: save a draft, or publish it and email the client.
 export async function PUT(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
-  if (!(await isSuperAdmin())) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "not found" }, { status: 404 });
   const body = await request.json().catch(() => ({}));
   const masterPlanId = typeof body.masterPlanId === "string" ? body.masterPlanId : "";
   const content = typeof body.content === "string" ? body.content.trim().slice(0, 40000) : "";
