@@ -31,6 +31,7 @@ import {
 import DimensionCards from "@/components/executive/DimensionCards";
 import PipelineCard from "@/components/executive/PipelineCard";
 import CollectiveCard from "@/components/executive/CollectiveCard";
+import First30Card, { useFirst30 } from "@/components/executive/First30Card";
 import { timezoneOptions } from "@/lib/timezones";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz, timeInTz } from "@/lib/tz";
@@ -240,8 +241,10 @@ export default function ExecutiveHome() {
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
+  const first30 = useFirst30();
   const [briefOrder, setBriefOrder] = useState<string[]>([
     "brief",
+    "first30",
     "schedule",
     "financial",
     "pipeline",
@@ -437,7 +440,7 @@ export default function ExecutiveHome() {
             const next = arr.filter((x: unknown) => typeof x === "string" && defaults.includes(x as string)) as string[];
             for (const id of defaults) {
               if (next.includes(id)) continue;
-              const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : null;
+              const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : id === "first30" ? "brief" : null;
               next.splice(after && next.includes(after) ? next.indexOf(after) + 1 : next.length, 0, id);
             }
             return next;
@@ -1352,6 +1355,14 @@ export default function ExecutiveHome() {
           </div>
         </div>
         </div>
+
+        {/* First 30 days (only while it's useful) */}
+        {first30?.show && (
+          <div {...briefCardProps("first30")}>
+            <button draggable onDragStart={() => setDragId("first30")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
+            <First30Card data={first30} />
+          </div>
+        )}
 
         {/* Pipeline & Offers (from /sales/pipeline and /sales/offers) */}
         <div {...briefCardProps("pipeline")}>
