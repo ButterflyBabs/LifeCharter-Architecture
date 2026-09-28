@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const { profileId } = await resolveAiAccount();
   const { data } = profileId
-    ? await createServerClient().from("profiles").select("full_name, assistant_name, avatar_url, timezone, timezone_chosen, task_reminder_email, task_reminder_lead_min").eq("id", profileId).maybeSingle()
+    ? await createServerClient().from("profiles").select("full_name, assistant_name, avatar_url, timezone, timezone_chosen, task_reminder_email, task_reminder_lead_min, alert_email").eq("id", profileId).maybeSingle()
     : { data: null };
   const fullName = ((data?.full_name as string) || "").trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : "";
@@ -29,7 +29,8 @@ export async function GET() {
   const timezone = data?.timezone_chosen ? ((data?.timezone as string) || "").trim() || null : null;
   const taskReminderEmail = data?.task_reminder_email !== false;
   const taskReminderLeadMin = Number(data?.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
-  return NextResponse.json({ fullName, firstName, workspaceName, assistantName, hasOpenAiKey, avatarUrl, timezone, taskReminderEmail, taskReminderLeadMin });
+  const alertEmail = data?.alert_email !== false;
+  return NextResponse.json({ fullName, firstName, workspaceName, assistantName, hasOpenAiKey, avatarUrl, timezone, taskReminderEmail, taskReminderLeadMin, alertEmail });
 }
 
 // Saves the signed-in owner's settings: the time zone they chose (dashboard
@@ -48,6 +49,7 @@ export async function PATCH(req: Request) {
     update.timezone_chosen = true;
   }
   if (body.taskReminderEmail !== undefined) update.task_reminder_email = Boolean(body.taskReminderEmail);
+  if (body.alertEmail !== undefined) update.alert_email = Boolean(body.alertEmail);
   if (body.taskReminderLeadMin !== undefined) {
     const lead = Number(body.taskReminderLeadMin);
     if (!(REMINDER_LEADS as readonly number[]).includes(lead)) {

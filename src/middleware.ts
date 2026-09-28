@@ -27,6 +27,7 @@ const PUBLIC_APIS = [
   "/api/cron/masterclass-attendance", // secured by its own CRON_SECRET check, not a session
   "/api/cron/demo-reset", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/alert-digest", // secured by its own CRON_SECRET check, not a session
   "/api/auth/forgot", // public — password-reset request; always answers the same way
   "/api/collective/request-invite", // public — landing-page invitation requests; rate-limited + honeypot
   "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code

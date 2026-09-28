@@ -381,6 +381,7 @@ export default function SettingsPage() {
   // Task reminder preferences (saved as they change)
   const [reminderLead, setReminderLead] = useState(30);
   const [reminderEmail, setReminderEmail] = useState(true);
+  const [alertEmail, setAlertEmail] = useState(true);
   useEffect(() => {
     fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -388,10 +389,12 @@ export default function SettingsPage() {
         if (!d) return;
         if (typeof d.taskReminderLeadMin === "number") setReminderLead(d.taskReminderLeadMin);
         if (typeof d.taskReminderEmail === "boolean") setReminderEmail(d.taskReminderEmail);
+        if (typeof d.alertEmail === "boolean") setAlertEmail(d.alertEmail);
       })
       .catch(() => {});
   }, []);
-  const saveReminderPrefs = (patch: { taskReminderLeadMin?: number; taskReminderEmail?: boolean }) => {
+  const saveReminderPrefs = (patch: { taskReminderLeadMin?: number; taskReminderEmail?: boolean; alertEmail?: boolean }) => {
+    if (patch.alertEmail !== undefined) setAlertEmail(patch.alertEmail);
     if (patch.taskReminderLeadMin !== undefined) setReminderLead(patch.taskReminderLeadMin);
     if (patch.taskReminderEmail !== undefined) setReminderEmail(patch.taskReminderEmail);
     fetch("/api/profile", {
@@ -776,6 +779,15 @@ export default function SettingsPage() {
               and by email
             </label>
           </div>
+          <label className="mt-3 flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <input
+              type="checkbox"
+              checked={alertEmail}
+              onChange={(e) => saveReminderPrefs({ alertEmail: e.target.checked })}
+              className="h-4 w-4 rounded border-[#1a2b4a]/30"
+            />
+            Email me once a day when something needs attention (a score drop, a slipped goal, a stalled pipeline, a bill coming due)
+          </label>
         </div>
       </div>
 
