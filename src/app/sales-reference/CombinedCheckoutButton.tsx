@@ -13,6 +13,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
   const { prefill, version } = useProspect();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [alumni, setAlumni] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
       const res = await fetch("/api/sales/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined }),
+        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
@@ -60,9 +61,20 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         One link, both charges
       </p>
       <p className="text-xs text-[#b8a898] mt-1">
-        {implementationDisplay} today + {monthlyDisplay} starting in one billing cycle — FIRSTMONTHFREE
-        applied automatically, nothing for the client to type.
+        {implementationDisplay} today + {monthlyDisplay} starting in one billing cycle —{" "}
+        {alumni ? "$500 alumni implementation credit" : "FIRSTMONTHFREE"} applied automatically, nothing for the
+        client to type.
       </p>
+
+      <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
+        <input
+          type="checkbox"
+          checked={alumni}
+          onChange={(e) => setAlumni(e.target.checked)}
+          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
+        />
+        I&apos;m a LifeCharter graduate — $500 off implementation instead of FIRSTMONTHFREE
+      </label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
         <input

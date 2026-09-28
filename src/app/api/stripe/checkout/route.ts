@@ -1,6 +1,17 @@
 /**
  * Stripe Checkout API Route
  * Creates checkout sessions for plan subscriptions
+ *
+ * No caller in the app uses this route today (unlike
+ * /api/sales/checkout-session and /api/stripe/starter-checkout) — grep finds
+ * it referenced only in a comment. It also never puts an Implementation Fee
+ * line item in the cart, only a dynamically-created monthly-subscription
+ * price, so there's nothing here for the LCALUMNI500 alumni credit (which
+ * Stripe restricts to the three Implementation Fee products) to discount.
+ * An `alumni` flag is still accepted and recorded in metadata below, in case
+ * this route is wired up later to also sell the implementation fee — but no
+ * discount is applied here. Flag this to Babs if this route turns out to be
+ * live somewhere this search didn't find.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,7 +31,8 @@ export async function POST(req: NextRequest) {
         { status: 503 }
       );
     }
-    const { planId, userId, userEmail, successUrl, cancelUrl } = await req.json();
+    const { planId, userId, userEmail, successUrl, cancelUrl, alumni } = await req.json();
+    const isAlumni = alumni === true;
 
     if (!planId || !userId || !userEmail) {
       return NextResponse.json(
@@ -120,6 +132,7 @@ export async function POST(req: NextRequest) {
         userId,
         planId,
         onboardingFee: plan.onboarding_fee?.toString() || "0",
+        alumni: isAlumni ? "true" : "false",
       },
       subscription_data: {
         metadata: {

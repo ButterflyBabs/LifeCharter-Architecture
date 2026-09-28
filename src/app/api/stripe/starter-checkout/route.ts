@@ -7,15 +7,34 @@
  * already-authenticated user changing plans from Settings).
  *
  * Pricing is read from the `plans` table at request time, never hardcoded,
- * so it always matches whatever the Billing tab is currently showing.
+ * so it always matches whatever the Billing tab is currently showing —
+ * EXCEPT on the alumni path (below), which must use the real catalog
+ * Implementation Fee price so the LCALUMNI500 promotion code's product
+ * restriction can match it.
+ *
+ * LifeCharter alumni get a $500 implementation credit (LCALUMNI500, Terms
+ * of Sale 3.5), requested with { alumni: true } in the body (the
+ * /get-started page sets this from ?alumni=1 or its own checkbox). The
+ * catalog Implementation price here is billed at its list price, dynamic
+ * per-cart pricing given up on the alumni path in exchange for the promo
+ * code applying (Stripe restricts it by product, which price_data's inline,
+ * ad-hoc product would never match) — so a graduate who's also a current
+ * Collective Plus member won't get their Plus credit alongside the alumni
+ * credit through this route. Flag that to Babs if it needs to be solved.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
+import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
+// The Starter Implementation Fee's real catalog price — same id as
+// checkout-session's TIER_PRICES.starter.implementationPriceId (confirmed
+// against the live Stripe dashboard, not generated dynamically). Used only
+// on the alumni path so LCALUMNI500's product restriction can match it.
+const STARTER_IMPLEMENTATION_PRICE_ID = "price_1UFx60LtotgP5J18Vih3WrJs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,10 +42,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { email, fullName, sessionSource } = await req.json();
+    const { email, fullName, sessionSource, alumni } = await req.json();
     if (!email || typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
     }
+    const isAlumni = alumni === true;
 
     const supabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,28 +64,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Starter plan is not configured" }, { status: 500 });
     }
 
-    // Collective Plus members get their last month of Plus credited.
-    const credit = Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
+    // Collective Plus members get their last month of Plus credited — not
+    // available on the alumni path (see the file header note above).
+    const credit = isAlumni ? 0 : Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
     const amount = plan.onboarding_fee - Math.max(0, credit);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            unit_amount: amount,
-            product_data: {
-              name: `LifeCharter Command Suite — ${plan.name} Implementation`,
-              description:
-                "One-time implementation fee. Monthly billing begins once implementation is complete." +
-                (credit > 0 ? ` Includes a $${(credit / 100).toFixed(2)} credit for your last month of Collective Plus.` : ""),
+      line_items: isAlumni
+        ? [{ price: STARTER_IMPLEMENTATION_PRICE_ID, quantity: 1 }]
+        : [
+            {
+              price_data: {
+                currency: "usd",
+                unit_amount: amount,
+                product_data: {
+                  name: `LifeCharter Command Suite — ${plan.name} Implementation`,
+                  description:
+                    "One-time implementation fee. Monthly billing begins once implementation is complete." +
+                    (credit > 0 ? ` Includes a $${(credit / 100).toFixed(2)} credit for your last month of Collective Plus.` : ""),
+                },
+              },
+              quantity: 1,
             },
-          },
-          quantity: 1,
-        },
-      ],
+          ],
+      // Alumni get the $500 implementation credit instead of the free month
+      // — never both (Terms of Sale 3.5).
+      discounts: isAlumni ? [{ promotion_code: ALUMNI_PROMOTION_CODE_ID }] : undefined,
       success_url: `${APP_URL}/get-started/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_URL}/get-started`,
       metadata: {
@@ -74,6 +100,7 @@ export async function POST(req: NextRequest) {
         fullName: fullName || "",
         sessionSource: typeof sessionSource === "string" ? sessionSource : "",
         plusCredit: String(credit > 0 ? credit : 0),
+        alumni: isAlumni ? "true" : "false",
       },
     });
 

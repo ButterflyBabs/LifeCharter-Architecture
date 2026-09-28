@@ -46,12 +46,13 @@ async function getPlans(): Promise<PlanRow[]> {
 export default async function GetStartedPage({
   searchParams,
 }: {
-  searchParams: { src?: string };
+  searchParams: { src?: string; alumni?: string };
 }) {
   const plans = await getPlans();
   const starter = plans.find((p) => p.id === "starter");
   const others = plans.filter((p) => p.id !== "starter");
   const src = searchParams.src;
+  const alumni = searchParams.alumni === "1";
   const websiteConsultHref = src ? `/schedule/website?src=${encodeURIComponent(src)}` : "/schedule/website";
 
   return (
@@ -90,7 +91,7 @@ export default async function GetStartedPage({
               </p>
               <p className="text-xs text-[#E3C27C] mt-3">{emailAccountsLabel(starter.capabilities?.mailboxes)}</p>
               <div className="mt-6">
-                <StarterSignupForm sessionSource={src} />
+                <StarterSignupForm sessionSource={src} initialAlumni={alumni} />
               </div>
             </div>
           )}

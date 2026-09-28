@@ -8,6 +8,12 @@
  * products, so it can never accidentally discount the implementation fee
  * line item in the same cart.
  *
+ * A LifeCharter graduate gets the $500 alumni implementation credit
+ * (LCALUMNI500) INSTEAD of FIRSTMONTHFREE — Terms of Sale 3.5: alumni get
+ * this credit, never both. LCALUMNI500 is scoped via applies_to.products to
+ * only the three Implementation Fee products, so it only ever discounts
+ * that line item. Checkout requests this with { alumni: true } in the body.
+ *
  * Replaces sending two separate links (implementation fee, then a monthly
  * link with a hand-typed coupon code) with one link that does both.
  *
@@ -18,6 +24,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { tier, email, fullName, sessionSource } = await req.json();
+    const { tier, email, fullName, sessionSource, alumni } = await req.json();
     const prices = TIER_PRICES[tier as string];
     if (!prices) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -52,6 +59,7 @@ export async function POST(req: NextRequest) {
     if (email && (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email))) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
+    const isAlumni = alumni === true;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -60,7 +68,10 @@ export async function POST(req: NextRequest) {
         { price: prices.monthlyPriceId, quantity: 1 },
         { price: prices.implementationPriceId, quantity: 1 },
       ],
-      discounts: [{ coupon: FIRST_MONTH_FREE_COUPON_ID }],
+      // Alumni get the $500 implementation credit instead of the free month —
+      // never both (Terms of Sale 3.5). Stripe checkout only accepts one
+      // `discounts` entry, so the two paths are mutually exclusive here too.
+      discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }],
       success_url: `${APP_URL}/sales-reference?checkout=success`,
       cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
       metadata: {
@@ -68,6 +79,7 @@ export async function POST(req: NextRequest) {
         tier,
         fullName: fullName || "",
         sessionSource: sessionSource || "",
+        alumni: isAlumni ? "true" : "false",
       },
     });
 
