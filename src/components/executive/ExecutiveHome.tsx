@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 import PipelineCard from "@/components/executive/PipelineCard";
+import CollectiveCard from "@/components/executive/CollectiveCard";
 import { timezoneOptions } from "@/lib/timezones";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz, timeInTz } from "@/lib/tz";
@@ -244,6 +245,7 @@ export default function ExecutiveHome() {
     "schedule",
     "financial",
     "pipeline",
+    "collective",
     "tasks",
     "inbox",
   ]);
@@ -433,7 +435,11 @@ export default function ExecutiveHome() {
         if (Array.isArray(arr))
           setBriefOrder((defaults) => {
             const next = arr.filter((x: unknown) => typeof x === "string" && defaults.includes(x as string)) as string[];
-            for (const id of defaults) if (!next.includes(id)) next.splice(id === "pipeline" && next.includes("financial") ? next.indexOf("financial") + 1 : next.length, 0, id);
+            for (const id of defaults) {
+              if (next.includes(id)) continue;
+              const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : null;
+              next.splice(after && next.includes(after) ? next.indexOf(after) + 1 : next.length, 0, id);
+            }
             return next;
           });
       } catch {
@@ -1351,6 +1357,12 @@ export default function ExecutiveHome() {
         <div {...briefCardProps("pipeline")}>
           <button draggable onDragStart={() => setDragId("pipeline")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
           <PipelineCard />
+        </div>
+
+        {/* The Collective (community) */}
+        <div {...briefCardProps("collective")}>
+          <button draggable onDragStart={() => setDragId("collective")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
+          <CollectiveCard />
         </div>
 
         {/* Financial Pulse */}

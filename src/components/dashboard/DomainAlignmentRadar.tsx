@@ -25,10 +25,6 @@ const PolarRadiusAxis = dynamic(
   () => import("recharts").then((mod) => mod.PolarRadiusAxis),
   { ssr: false }
 );
-const Legend = dynamic(
-  () => import("recharts").then((mod) => mod.Legend),
-  { ssr: false }
-);
 const ResponsiveContainer = dynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false }
@@ -47,7 +43,8 @@ function ChartSkeleton() {
 interface RadarDatum {
   domain: string;
   you: number;
-  ideal: number;
+  /** No longer drawn: the old "Ideal" line was a fixed 90 for every client (audit Q1, cs167). */
+  ideal?: number;
 }
 
 export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }) {
@@ -62,7 +59,7 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
       .then((d) => {
         if (d?.hasData) {
           const domains = d.domains as Array<{ name: string; score: number }>;
-          setLive(domains.map((x) => ({ domain: x.name, you: x.score, ideal: 90 })));
+          setLive(domains.map((x) => ({ domain: x.name, you: x.score })));
         } else setNeedsAssessment(true);
       })
       .catch(() => setFailed(true));
@@ -112,24 +109,6 @@ export function DomainAlignmentRadar({ data: propData }: { data?: RadarDatum[] }
                 strokeWidth={2}
                 fill="#7b6b8d"
                 fillOpacity={0.3}
-              />
-              <Radar
-                name="Ideal"
-                dataKey="ideal"
-                stroke="#c9a227"
-                strokeWidth={2}
-                strokeDasharray="4 4"
-                fill="#c9a227"
-                fillOpacity={0.1}
-              />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-                wrapperStyle={{
-                  fontSize: "12px",
-                  color: "#7b6b8d",
-                }}
               />
             </RadarChart>
           </ResponsiveContainer>
