@@ -6,7 +6,6 @@ import { Card, CardContent, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
   Compass,
-  MapPin,
   CheckCircle2,
   Circle,
   ChevronRight,
@@ -20,7 +19,6 @@ import {
   Users,
   BarChart3,
   Share2,
-  Phone,
   MessageSquare,
   Lightbulb,
   Award,
@@ -55,155 +53,34 @@ interface JourneyStage {
   steps: OnboardingStep[];
 }
 
+// The setup checklist, in the same order as Set up Suite (Babs, 2026-09-28): AI first, then the three
+// assessments, a tool and the website. Setup steps tick themselves from /api/setup/status; the
+// "Get going" steps are ticked by hand.
 const journeyStages: JourneyStage[] = [
   {
     id: "foundation",
-    name: "Foundation",
-    description: "Set up your business core",
+    name: "Set up your Suite",
+    description: "The same steps as Set up Suite",
     steps: [
-      {
-        id: "domain-assessment",
-        title: "Complete Domain Assessment",
-        description: "Rate your 12 business domains to establish your baseline",
-        icon: <BarChart3 className="w-5 h-5" />,
-        path: "/assessments",
-        section: "business",
-        estimatedTime: 15,
-        completed: false
-      },
-      {
-        id: "business-plan",
-        title: "Create Business Plan",
-        description: "Define your vision, goals, and strategic priorities",
-        icon: <FileText className="w-5 h-5" />,
-        path: "/business-plan",
-        section: "business",
-        estimatedTime: 30,
-        completed: false
-      },
-      {
-        id: "marketing-plan",
-        title: "Build Marketing Plan",
-        description: "Clarify your positioning, ideal client, and messaging",
-        icon: <Share2 className="w-5 h-5" />,
-        path: "/marketing-plan",
-        section: "business",
-        estimatedTime: 25,
-        completed: false
-      }
-    ]
+      { id: "ai", title: "Connect your AI", description: "Add your OpenAI key so your assistant can work from your own answers", icon: <Sparkles className="w-5 h-5" />, path: "/settings?tab=ai", section: "business", estimatedTime: 5, completed: false },
+      { id: "brain", title: "Brain Assessment", description: "Map how your business runs, in your own words", icon: <BarChart3 className="w-5 h-5" />, path: "/assessments/brain", section: "business", estimatedTime: 20, completed: false },
+      { id: "soul", title: "Soul Assessment", description: "Your identity, values, calling and story", icon: <Target className="w-5 h-5" />, path: "/assessments/soul", section: "business", estimatedTime: 15, completed: false },
+      { id: "profit", title: "Profit Assessment", description: "Score your 12 business dimensions for your baseline", icon: <TrendingUp className="w-5 h-5" />, path: "/assessments/profit", section: "business", estimatedTime: 15, completed: false },
+      { id: "tools", title: "Connect one tool", description: "Calendar and email, Global Control, or PostStream", icon: <Calendar className="w-5 h-5" />, path: "/settings", section: "business", estimatedTime: 5, completed: false },
+      { id: "website", title: "Add your website", description: "For your free Website Alignment Review", icon: <FileText className="w-5 h-5" />, path: "/setup", section: "business", estimatedTime: 1, completed: false },
+    ],
   },
   {
-    id: "systems",
-    name: "Systems",
-    description: "Set up your operational infrastructure",
+    id: "get-going",
+    name: "Get going",
+    description: "Put the Suite to work",
     steps: [
-      {
-        id: "sales-system",
-        title: "Configure Sales System",
-        description: "Set up your pipeline, offers, and sales process",
-        icon: <Target className="w-5 h-5" />,
-        path: "/sales",
-        section: "business",
-        estimatedTime: 20,
-        completed: false
-      },
-      {
-        id: "finance-setup",
-        title: "Connect Finance Suite",
-        description: "Link your accounts and set up expense tracking",
-        icon: <TrendingUp className="w-5 h-5" />,
-        path: "/finance",
-        section: "business",
-        estimatedTime: 15,
-        completed: false
-      },
-      {
-        id: "operations",
-        title: "Map Operations",
-        description: "Define your customer journey and operational pillars",
-        icon: <MapPin className="w-5 h-5" />,
-        path: "/operations",
-        section: "business",
-        estimatedTime: 25,
-        completed: false
-      }
-    ]
+      { id: "offers", title: "Add your offers", description: "Offers & Packages: price, what's included, who it's for", icon: <Share2 className="w-5 h-5" />, path: "/sales/offers", section: "business", estimatedTime: 10, completed: false },
+      { id: "pipeline", title: "Add the deals you're working", description: "Pipeline: value and odds for each deal", icon: <Users className="w-5 h-5" />, path: "/sales/pipeline", section: "business", estimatedTime: 10, completed: false },
+      { id: "compass", title: "Start your day in Daily Compass", description: "Today's focus, deals to move and follow-ups", icon: <Compass className="w-5 h-5" />, path: "/daily-compass", section: "daily", estimatedTime: 5, completed: false },
+      { id: "community", title: "Say hello in The Collective", description: "Introduce yourself in the Command Suite space", icon: <MessageSquare className="w-5 h-5" />, path: "/community", section: "daily", estimatedTime: 5, completed: false },
+    ],
   },
-  {
-    id: "daily",
-    name: "Daily Practice",
-    description: "Establish your daily execution rhythm",
-    steps: [
-      {
-        id: "daily-compass",
-        title: "Set Up Daily Compass",
-        description: "Configure your daily focus and activity tracking",
-        icon: <Compass className="w-5 h-5" />,
-        path: "/daily-compass",
-        section: "daily",
-        estimatedTime: 10,
-        completed: false
-      },
-      {
-        id: "content-studio",
-        title: "Plan Your First Post",
-        description: "Write and schedule your first post in the Content Calendar",
-        icon: <MessageSquare className="w-5 h-5" />,
-        path: "/daily-compass/calendar?new=1",
-        section: "daily",
-        estimatedTime: 15,
-        completed: false
-      },
-      {
-        id: "scripts",
-        title: "Save Key Scripts",
-        description: "Create or generate scripts for common conversations",
-        icon: <Phone className="w-5 h-5" />,
-        path: "/daily-compass/scripts",
-        section: "daily",
-        estimatedTime: 20,
-        completed: false
-      }
-    ]
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    description: "Optimize and scale",
-    steps: [
-      {
-        id: "reviews",
-        title: "Set Up Reviews",
-        description: "Configure testimonial collection system",
-        icon: <Users className="w-5 h-5" />,
-        path: "/reviews",
-        section: "business",
-        estimatedTime: 10,
-        completed: false
-      },
-      {
-        id: "ai-guide",
-        title: "Connect your AI",
-        description: "Add your OpenAI key and name your assistant in Settings › AI Assistant",
-        icon: <Sparkles className="w-5 h-5" />,
-        path: "/settings?tab=ai",
-        section: "business",
-        estimatedTime: 10,
-        completed: false
-      },
-      {
-        id: "integrations",
-        title: "Connect Integrations",
-        description: "Link your favorite tools and platforms",
-        icon: <Calendar className="w-5 h-5" />,
-        path: "/settings",
-        section: "business",
-        estimatedTime: 15,
-        completed: false
-      }
-    ]
-  }
 ];
 
 export default function TravelPartnerWidget() {
@@ -216,6 +93,13 @@ export default function TravelPartnerWidget() {
   // Live setup progress (3 assessments, AI, and connecting tools), from the same source
   // the /setup wizard uses — so the widget reflects real status.
   const [setupStatus, setSetupStatus] = useState<{ done: number; total: number; complete: boolean } | null>(null);
+  const [autoDone, setAutoDone] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/website-review", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.website && setAutoDone((x) => (x.includes("website") ? x : [...x, "website"])))
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     fetch("/api/setup/status")
       .then((r) => r.json())
@@ -225,6 +109,7 @@ export default function TravelPartnerWidget() {
         const i = d.integrations || {};
         const toolsConnected = Boolean(i.calendar || i.globalControl || i.poststream);
         const done = [a.brain, a.soul, a.profit, d.ai?.connected, toolsConnected].filter(Boolean).length;
+        setAutoDone([d.ai?.connected && "ai", a.brain && "brain", a.soul && "soul", a.profit && "profit", toolsConnected && "tools"].filter(Boolean) as string[]);
         // Treat a bypassed account as complete so the setup banner stays hidden.
         setSetupStatus({ done, total: 5, complete: Boolean(d.requiredComplete || d.bypass) });
       })
@@ -423,6 +308,10 @@ export default function TravelPartnerWidget() {
     localStorage.removeItem("travelPartnerPos");
   };
 
+  // Done = ticked by hand, or finished for real (setup status / website on file).
+  const allStepIds = journeyStages.flatMap((st) => st.steps.map((x) => x.id));
+  const doneIds = Array.from(new Set([...completedSteps.filter((id) => allStepIds.includes(id)), ...autoDone]));
+
   const toggleStep = (stepId: string) => {
     const newCompleted = completedSteps.includes(stepId)
       ? completedSteps.filter(id => id !== stepId)
@@ -432,18 +321,18 @@ export default function TravelPartnerWidget() {
     localStorage.setItem("travelPartnerCompleted", JSON.stringify(newCompleted));
     
     const totalSteps = journeyStages.reduce((acc, stage) => acc + stage.steps.length, 0);
-    if (newCompleted.length === totalSteps) setShowCelebration(true);
+    if (new Set([...newCompleted.filter((id) => allStepIds.includes(id)), ...autoDone]).size === totalSteps) setShowCelebration(true);
   };
 
   const getProgress = () => {
     const totalSteps = journeyStages.reduce((acc, stage) => acc + stage.steps.length, 0);
-    return Math.round((completedSteps.length / totalSteps) * 100);
+    return Math.round((doneIds.length / totalSteps) * 100);
   };
 
   const getCurrentStep = () => {
     for (const stage of journeyStages) {
       for (const step of stage.steps) {
-        if (!completedSteps.includes(step.id)) return step;
+        if (!doneIds.includes(step.id)) return step;
       }
     }
     return null;
@@ -768,9 +657,9 @@ export default function TravelPartnerWidget() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      stage.steps.every(s => completedSteps.includes(s.id)) ? "bg-green-500 text-white" : "bg-[#1a2b4a] text-[#F8F5F0]"
+                      stage.steps.every(s => doneIds.includes(s.id)) ? "bg-green-500 text-white" : "bg-[#1a2b4a] text-[#F8F5F0]"
                     }`}>
-                      {stage.steps.every(s => completedSteps.includes(s.id)) ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                      {stage.steps.every(s => doneIds.includes(s.id)) ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                     </div>
                     <div className="text-left">
                       <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{stage.name}</h4>
@@ -783,7 +672,7 @@ export default function TravelPartnerWidget() {
                 {currentStage === idx && (
                   <div className="mt-2 ml-4 space-y-2">
                     {stage.steps.map((step) => {
-                      const isDone = completedSteps.includes(step.id);
+                      const isDone = doneIds.includes(step.id);
                       return (
                         <div key={step.id} className="flex items-start gap-3 p-3 bg-white dark:bg-[#1a2b4a]/30 rounded-lg border border-[#1a2b4a]/10">
                           <button onClick={() => toggleStep(step.id)} className="mt-0.5">
