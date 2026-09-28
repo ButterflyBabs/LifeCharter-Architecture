@@ -25,7 +25,7 @@ function slugify(s: string) {
 }
 
 export default function AdminPage() {
-  const { isAdmin, loading } = useCommunity();
+  const { isAdmin, loading, spaces, memberships } = useCommunity();
   const [tab, setTab] = useState<Tab>("invites");
   // Report notifications link to ?tab=reports.
   useEffect(() => {
@@ -33,7 +33,12 @@ export default function AdminPage() {
     if (t === "reports" || t === "requests" || t === "members") setTab(t);
   }, []);
   if (loading) return <PageLoading />;
-  if (!isAdmin) return <EmptyState icon="🔒" title="Admins only" />;
+  if (!isAdmin) {
+    // Channel admins and moderators get their own channels' invite link, code and members.
+    const mine = spaces.filter((sp) => memberships.some((m) => m.space_id === sp.id && (m.role === "admin" || m.role === "moderator")));
+    if (!mine.length) return <EmptyState icon="🔒" title="Admins only" />;
+    return <ChannelAdmin spaces={mine} />;
+  }
 
   return (
     <div>
@@ -857,5 +862,83 @@ function Reports() {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Channel admin (for channel admins/moderators who aren't Collective admins) ───
+
+function ChannelAdmin({ spaces }: { spaces: Space[] }) {
+  return (
+    <div>
+      <Heading sub="Invite people to the channels you run and see who's in them.">Channel admin</Heading>
+      <div className="space-y-5">
+        {spaces.map((s) => (
+          <ChannelAdminCard key={s.id} space={s} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChannelAdminCard({ space }: { space: Space }) {
+  const { supabase } = useCommunity();
+  const [code, setCode] = useState<string | null>(null);
+  const [rows, setRows] = useState<{ user_id: string; role: string; joined_at: string }[] | null>(null);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const link = `${origin}/join/${space.slug === "start-here" ? "collective" : space.slug}`;
+  useEffect(() => {
+    void (async () => {
+      const [c, m] = await Promise.all([
+        supabase.from("cm_space_codes").select("code").eq("space_id", space.id).maybeSingle(),
+        supabase.from("cm_space_members").select("user_id, role, joined_at").eq("space_id", space.id).order("joined_at", { ascending: false }),
+      ]);
+      setCode((c.data as { code: string } | null)?.code ?? null);
+      setRows((m.data as { user_id: string; role: string; joined_at: string }[]) ?? []);
+    })();
+  }, [supabase, space.id]);
+  const profiles = useProfiles((rows ?? []).map((r) => r.user_id));
+
+  return (
+    <Card className="p-4">
+      <p className="font-semibold text-[var(--cm-ink)]">
+        {space.emoji} {space.name}{" "}
+        <span className="ml-1 text-[12.5px] font-normal text-[var(--cm-muted)]">
+          {rows ? `${rows.length} ${rows.length === 1 ? "member" : "members"}` : "…"}
+          {space.join_enabled ? "" : " · not accepting new members"}
+        </span>
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <code className="rounded-lg bg-[var(--cm-fill-2)] px-2.5 py-1.5 text-[13px] text-[var(--cm-ink)]">{link.replace(/^https?:\/\//, "")}</code>
+        <CopyButton text={link} label="Link" />
+        <code className="rounded-lg bg-[var(--cm-navy)] px-2.5 py-1.5 font-mono text-[13px] tracking-[0.15em] text-[#E9D7A9]">{code ?? "—"}</code>
+        {code && <CopyButton text={code} label="Code" />}
+        {code && <CopyButton text={`Join ${space.name}: ${link}\nInvite code: ${code}`} label="Both" />}
+      </div>
+      <p className="mt-2 text-[12.5px] text-[var(--cm-muted)]">
+        Share the link <em>and</em> the code. New people create their account there; existing members use &ldquo;Already a member&rdquo;. To change the code, message a Collective admin.
+      </p>
+      {rows === null ? (
+        <PageLoading />
+      ) : rows.length === 0 ? (
+        <p className="mt-3 text-[13.5px] text-[var(--cm-muted-2)]">No members yet.</p>
+      ) : (
+        <div className="mt-3 divide-y divide-[var(--cm-line-soft)] rounded-xl border border-[var(--cm-line-soft)]">
+          {rows.map((r) => {
+            const p = profiles[r.user_id];
+            const name = p?.display_name || "Member";
+            return (
+              <Link key={r.user_id} href={`/community/members/${r.user_id}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--cm-fill)]">
+                <Avatar name={name} url={p?.avatar_url ?? null} size={32} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-[var(--cm-ink)]">{name}</span>
+                  <span className="block text-[12.5px] text-[var(--cm-muted)]">Joined {timeAgo(r.joined_at)}</span>
+                </span>
+                {r.role !== "member" && <Badge tone="gray">{r.role === "admin" ? "Admin" : "Moderator"}</Badge>}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </Card>
   );
 }

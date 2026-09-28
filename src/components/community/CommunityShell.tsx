@@ -177,6 +177,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   // Only channels this person belongs to — plus public ones — ever appear
   // here. A super admin belongs to everything, so "member view" hides the
   // channels they were only added to as an admin.
+  // Channel admins/moderators (not Collective admins) get a "Channel admin" page for their own channels.
+  const runsAChannel = memberships.some((m) => m.role === "admin" || m.role === "moderator");
   const adminOnly = new Set(memberships.filter((m) => m.joined_via === "admin").map((m) => m.space_id));
   const visible = spaces.filter((s) => {
     if (s.visibility === "public" || s.is_default) return true;
@@ -227,7 +229,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           { href: "/community/members", icon: Users, label: "Members", active: pathname.startsWith("/community/members") },
           ...(!native || isPlus ? [{ href: "/community/plus", icon: Sparkles, label: isPlus ? "My Plus" : "Collective Plus", active: pathname.startsWith("/community/plus") }] : []),
           { href: "/community/help", icon: HelpCircle, label: "Help & FAQ", active: pathname.startsWith("/community/help") },
-          ...(isAdmin ? [{ href: "/community/admin", icon: Shield, label: "Admin", active: pathname.startsWith("/community/admin") }] : []),
+          ...(isAdmin || runsAChannel
+            ? [{ href: "/community/admin", icon: Shield, label: isAdmin ? "Admin" : "Channel admin", active: pathname.startsWith("/community/admin") }]
+            : []),
         ];
         const folded = isCollapsed("section:menu");
         // A folded menu keeps the page you're on — and anything with unread items — in view.
