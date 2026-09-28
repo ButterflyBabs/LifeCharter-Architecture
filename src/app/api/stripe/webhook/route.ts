@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { logEvent } from "@/lib/crm";
+import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -59,6 +60,13 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const meta = session.metadata || {};
+
+        // Bought the Command Suite: their booked-consultation deals in Babs's Pipeline are won.
+        if (meta.flow !== "life_shift") {
+          const buyer = session.customer_details?.email || session.customer_email;
+          const housePlan = buyer ? await ownerMasterPlanId().catch(() => null) : null;
+          if (buyer && housePlan) await winBookingDeals(housePlan, buyer).catch((e) => console.error("win booking deals:", e));
+        }
 
         if (meta.flow === "self_serve_starter") {
           // Safety-net duplicate of what /api/stripe/starter-checkout/confirm

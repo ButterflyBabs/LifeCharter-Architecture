@@ -13,6 +13,7 @@ interface Cal {
   id: string; slug: string; name: string; description: string | null; duration_min: number; slot_step_min: number; buffer_before_min: number; buffer_after_min: number;
   min_notice_hours: number; max_days_ahead: number; daily_cap: number | null; assignment: "single" | "round_robin"; host_ids: string[]; cc_emails: string[];
   location: "zoom" | "phone" | "custom"; location_detail: string | null; questions: Q[]; tags: string[]; sequence_key: string | null; confirmation_note: string | null; active: boolean;
+  create_deal: boolean; deal_value: number | null; noshow_subject: string | null; noshow_body: string | null;
 }
 interface Booking { id: string; calendar_id: string; host_id: string | null; start_at: string; invitee_name: string; invitee_email: string; invitee_phone: string | null; answers: Record<string, string>; status: string; meeting_url: string | null; cancel_reason: string | null }
 interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean } }
@@ -155,6 +156,7 @@ function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; 
     name: cal.name, slug: cal.slug, description: cal.description ?? "", duration: cal.duration_min, step: cal.slot_step_min, bufferBefore: cal.buffer_before_min, bufferAfter: cal.buffer_after_min,
     minNotice: cal.min_notice_hours, maxDays: cal.max_days_ahead, dailyCap: cal.daily_cap ?? 0, assignment: cal.assignment, hostIds: cal.host_ids, cc: cal.cc_emails.join(", "),
     location: cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
+    createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
     questions: cal.questions.map((q) => `${q.label}${q.required ? " *" : ""}${q.type === "textarea" ? " (textarea)" : ""}${q.options?.length ? `: ${q.options.join(" | ")}` : ""}`).join("\n"),
   });
   const link = `${ORIGIN}/book/${cal.slug}`;
@@ -171,6 +173,7 @@ function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; 
       action: "update-calendar", id: cal.id, name: f.name, slug: f.slug, description: f.description, duration: f.duration, step: f.step, bufferBefore: f.bufferBefore, bufferAfter: f.bufferAfter,
       minNotice: f.minNotice, maxDays: f.maxDays, dailyCap: f.dailyCap || null, assignment: f.assignment, hostIds: f.hostIds, ccEmails: f.cc.split(",").map((s) => s.trim()).filter(Boolean),
       location: f.location, locationDetail: f.locationDetail, confirmationNote: f.confirmationNote, tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean), questions: parseQs(),
+      createDeal: f.createDeal, dealValue: f.dealValue || null, noshowSubject: f.noshowSubject, noshowBody: f.noshowBody,
     }, "Calendar saved.");
   const noCalendars = f.hostIds.filter((id) => !(hosts.find((h) => h.id === id)?.connections.length));
   return (
@@ -240,6 +243,19 @@ function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; 
           </label>
           <label className="block">Note in the confirmation email<textarea rows={2} value={f.confirmationNote} onChange={(e) => setF({ ...f, confirmationNote: e.target.value })} className={field} /></label>
           <label className="block">Tags for people who book<Input value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} /></label>
+          <div className="rounded-lg border border-[#1a2b4a]/10 p-3 space-y-2">
+            <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={f.createDeal} onChange={(e) => setF({ ...f, createDeal: e.target.checked })} /> Add each booking to the Pipeline as a deal</label>
+            {f.createDeal && (
+              <label className="block">Deal value ($)<Input type="number" value={f.dealValue} onChange={(e) => setF({ ...f, dealValue: Number(e.target.value) || 0 })} /></label>
+            )}
+            <p className="text-xs text-[#7a8a99]">The deal starts in your first open stage (Discovery call), moves to Won when they buy the Command Suite, and to Lost if they cancel or don&rsquo;t show. Booking again reopens it.</p>
+          </div>
+          <div className="rounded-lg border border-[#1a2b4a]/10 p-3 space-y-2">
+            <p className="font-medium">No-show follow-up email</p>
+            <p className="text-xs text-[#7a8a99]">Sent when you mark someone No-show on the Bookings tab, with a button to choose a new time. Leave it blank to send nothing. You can use {"{{first_name}}"}, {"{{host}}"} and {"{{meeting}}"}.</p>
+            <Input placeholder="Subject" value={f.noshowSubject} onChange={(e) => setF({ ...f, noshowSubject: e.target.value })} />
+            <textarea rows={5} value={f.noshowBody} onChange={(e) => setF({ ...f, noshowBody: e.target.value })} className={field} placeholder="The email (blank lines make paragraphs)" />
+          </div>
           <Button onClick={save}>Save calendar</Button>
         </CardContent>
       </Card>

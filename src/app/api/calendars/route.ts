@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { cleanFields } from "../crm/forms/clean";
-import { cancelBooking } from "@/lib/booking/engine";
+import { cancelBooking, markNoShow } from "@/lib/booking/engine";
 import { isValidTz } from "@/lib/sequences/engine";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
 import { canCreateZoomMeetings, isZoomConfigured } from "@/lib/zoom";
@@ -162,6 +162,10 @@ export async function POST(request: Request) {
       if (Array.isArray(b.tags)) p.tags = b.tags.map((t: unknown) => str(t, 60).toLowerCase()).filter(Boolean);
       if (b.sequenceKey !== undefined) p.sequence_key = str(b.sequenceKey, 60) || null;
       if (b.confirmationNote !== undefined) p.confirmation_note = str(b.confirmationNote, 1000) || null;
+      if (typeof b.createDeal === "boolean") p.create_deal = b.createDeal;
+      if (b.dealValue !== undefined) p.deal_value = Number.isFinite(Number(b.dealValue)) && Number(b.dealValue) > 0 ? Math.round(Number(b.dealValue) * 100) / 100 : null;
+      if (b.noshowSubject !== undefined) p.noshow_subject = str(b.noshowSubject, 200) || null;
+      if (b.noshowBody !== undefined) p.noshow_body = str(b.noshowBody, 5000) || null;
       if (typeof b.active === "boolean") p.active = b.active;
       const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id);
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken." : "Couldn't save." }, { status: 400 });
@@ -172,6 +176,7 @@ export async function POST(request: Request) {
       const { data: bk } = await db.from("bookings").select("id, contact_id, calendar_id, status").eq("id", str(b.id, 60)).eq("master_plan_id", a.planId).maybeSingle();
       if (!bk) return NextResponse.json({ error: "Not found." }, { status: 404 });
       await db.from("bookings").update({ status: b.status }).eq("id", bk.id);
+      if (b.status === "no_show" && bk.status === "confirmed") await markNoShow(bk.id as string).catch((e) => console.error("no-show follow-up:", e));
       if (bk.contact_id) {
         const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).maybeSingle();
         await logEvent(a.planId, bk.contact_id, "booking", `${b.status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });

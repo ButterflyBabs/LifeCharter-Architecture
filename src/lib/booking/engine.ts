@@ -5,6 +5,7 @@ import { busyFor, createHostEvent, cancelHostEvent, type Busy, type Connection }
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/zoom";
 import { upsertContact, logEvent, EMAIL_RE, type FormField } from "@/lib/crm";
 import { enrolContact, isValidTz } from "@/lib/sequences/engine";
+import { dealForBooking, moveDeal } from "@/lib/booking/deals";
 
 // The booking engine. A calendar offers a time when at least one of its hosts is
 // inside their working hours, clear of every connected calendar (plus buffers),
@@ -36,6 +37,10 @@ export interface Calendar {
   sequence_key: string | null;
   confirmation_note: string | null;
   active: boolean;
+  create_deal: boolean;
+  deal_value: number | null;
+  noshow_subject: string | null;
+  noshow_body: string | null;
 }
 export interface Host {
   id: string;
@@ -220,7 +225,7 @@ export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; boo
   if (!bookingId) return { ok: false, error: "That time was just taken. Please choose another." };
 
   // Everything after this point is best-effort: the booking itself is saved.
-  await afterBooking(db, cal, bookingId, hostId, { name, email, phone: i.phone || null, tz, answers, token, start, end, rescheduled: Boolean(i.rescheduleOf) }).catch((e) => console.error("booking follow-up:", e));
+  await afterBooking(db, cal, bookingId, hostId, { name, email, phone: i.phone || null, tz, answers, token, start, end, rescheduled: Boolean(i.rescheduleOf), rescheduleOf: i.rescheduleOf || null }).catch((e) => console.error("booking follow-up:", e));
   return { ok: true, bookingId, manageToken: token };
 }
 
@@ -229,7 +234,7 @@ async function afterBooking(
   cal: Calendar,
   bookingId: string,
   hostId: string,
-  b: { name: string; email: string; phone: string | null; tz: string; answers: Record<string, string>; token: string; start: number; end: number; rescheduled: boolean }
+  b: { name: string; email: string; phone: string | null; tz: string; answers: Record<string, string>; token: string; start: number; end: number; rescheduled: boolean; rescheduleOf: string | null }
 ) {
   const { data: host } = await db.from("booking_hosts").select("*").eq("id", hostId).maybeSingle();
   if (!host) return;
@@ -269,6 +274,18 @@ async function afterBooking(
     await db.from("bookings").update({ contact_id: contact.id }).eq("id", bookingId);
     await logEvent(cal.master_plan_id, contact.id, "booking", `${b.rescheduled ? "Rescheduled" : "Booked"} ${cal.name} with ${host.name} for ${fmt(startISO, b.tz)}`, { booking: bookingId, answers: b.answers }, db);
     if (cal.sequence_key && !b.rescheduled) await enrolContact({ masterPlanId: cal.master_plan_id, sequenceKey: cal.sequence_key, email: b.email, source: `booking:${cal.slug}` }).catch(() => {});
+  }
+
+  // Pipeline: one deal per person per calendar (a reschedule keeps its deal).
+  if (cal.create_deal) {
+    let dealId: string | null = null;
+    if (b.rescheduleOf) {
+      const { data: old } = await db.from("bookings").select("deal_id").eq("id", b.rescheduleOf).maybeSingle();
+      dealId = (old?.deal_id as string) ?? null;
+      if (dealId) await db.from("pipeline_deals").update({ next_step_due: startISO.slice(0, 10), expected_close: startISO.slice(0, 10), updated_at: new Date().toISOString() }).eq("id", dealId);
+    }
+    if (!dealId) dealId = await dealForBooking(db, cal, { name: b.name, email: b.email, startISO, answers: b.answers }).catch(() => null);
+    if (dealId) await db.from("bookings").update({ deal_id: dealId }).eq("id", bookingId);
   }
 
   // Emails: the invitee's confirmation; the host and anyone copied get the details.
@@ -320,6 +337,7 @@ export async function cancelBooking(bookingId: string, reason: string, by: "invi
     db.from("booking_calendars").select("*").eq("id", b.calendar_id).maybeSingle(),
     db.from("booking_hosts").select("*").eq("id", b.host_id).maybeSingle(),
   ]);
+  if (b.deal_id && status === "canceled") await moveDeal(db, b.master_plan_id, b.deal_id, "lost", `Canceled ${cal?.name ?? "meeting"}${reason ? `: ${reason}` : ""}`).catch(() => {});
   if (b.contact_id && cal && status === "canceled") await logEvent(b.master_plan_id, b.contact_id, "booking", `Canceled ${cal.name} (${by === "invitee" ? "by them" : "by you"})${reason ? `: ${reason}` : ""}`, { booking: bookingId }, db);
   if (opts.notify !== false && cal && host && status === "canceled") {
     const tz = b.invitee_timezone || host.timezone;
@@ -404,4 +422,31 @@ async function sendMail(m: { to: string | string[]; replyTo?: string; fromName: 
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from: `${m.fromName.replace(/[<>"]/g, "")} <reminders@lccommandsuite.com>`, to: m.to, reply_to: m.replyTo, subject: m.subject, html }),
   }).catch((e) => console.error("booking mail:", e));
+}
+
+// The host marked a meeting as missed: the deal is lost for now (it reopens if
+// they book again) and, if the calendar has a follow-up written, it goes out.
+export async function markNoShow(bookingId: string): Promise<void> {
+  const db = createServerClient();
+  const { data: b } = await db.from("bookings").select("*").eq("id", bookingId).maybeSingle();
+  if (!b) return;
+  const [{ data: cal }, { data: host }] = await Promise.all([
+    db.from("booking_calendars").select("*").eq("id", b.calendar_id).maybeSingle(),
+    db.from("booking_hosts").select("*").eq("id", b.host_id).maybeSingle(),
+  ]);
+  if (b.deal_id) await moveDeal(db, b.master_plan_id, b.deal_id, "lost", `Missed ${cal?.name ?? "meeting"}.`).catch(() => {});
+  if (!cal?.noshow_body || !host) return;
+  const first = String(b.invitee_name || "").split(/\s+/)[0] || "there";
+  const fill = (t: string) => t.replace(/\{\{\s*first_name\s*\}\}/gi, first).replace(/\{\{\s*host\s*\}\}/gi, host.name).replace(/\{\{\s*meeting\s*\}\}/gi, cal.name);
+  const paras = fill(cal.noshow_body).split(/\n{2,}/).map((p: string) => esc(p).replace(/\n/g, "<br>"));
+  await sendMail({
+    to: b.invitee_email,
+    replyTo: host.email,
+    fromName: host.name,
+    subject: fill(cal.noshow_subject || "We missed you"),
+    heading: fill(cal.noshow_subject || "We missed you"),
+    lines: paras,
+    button: { label: "Choose a new time", url: `${APP()}/book/${cal.slug}` },
+  });
+  if (b.contact_id) await logEvent(b.master_plan_id, b.contact_id, "email", `Sent the missed-meeting follow-up for ${cal.name}`, {}, db);
 }
