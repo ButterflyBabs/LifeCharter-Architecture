@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, useSidebar } from "./CollapsibleSidebar";
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
-import AIGuideWidget from "@/components/ai-guide/AIGuideWidget";
+import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget";
 import DemoBanner from "./DemoBanner";
 
 interface AppLayoutProps {
@@ -57,8 +57,8 @@ function AppLayoutContent({ children }: AppLayoutProps) {
         <div className="flex-1">{children}</div>
       </main>
 
-      {/* AI Guide Widget - appears on all pages */}
-      <AIGuideWidget />
+      {/* Travel Partner: the one floating button (Ask the assistant, or Help & setup) */}
+      <TravelPartnerWidget />
     </div>
   );
 }
