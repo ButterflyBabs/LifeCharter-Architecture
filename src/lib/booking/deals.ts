@@ -7,6 +7,19 @@ import { ensureStages, type Stage } from "@/lib/sales/pipeline";
 
 type Db = ReturnType<typeof createServerClient>;
 
+// Where this person first came from, from their contact record's original source.
+export function originLabel(source: string | null | undefined): string {
+  const s = source || "";
+  if (s === "zoom:masterclass") return "Command Shift MasterClass";
+  if (s === "zoom:incubator") return "LifeCharter Incubator";
+  if (s === "executive-assessment") return "Executive Business Assessment";
+  if (s === "stripe") return "The Life Shift";
+  if (s === "manual") return "Added by hand";
+  if (s.startsWith("form:")) return ({ contact: "Contact form", speaking: "Speaking request", "lifecharter-program-waitlist": "LifeCharter Program waitlist", "coc-sample": "Conversations of Consequence sample" } as Record<string, string>)[s.slice(5)] || `Form: ${s.slice(5)}`;
+  if (s.startsWith("booking:")) return "Booked directly";
+  return s || "Unknown";
+}
+
 const openStage = (stages: Stage[]) => stages.find((s) => s.kind === "open" && /discovery|call|consult/i.test(s.name)) ?? stages.find((s) => s.kind === "open");
 
 export async function dealForBooking(
@@ -17,16 +30,18 @@ export async function dealForBooking(
   const stages = await ensureStages(db, cal.master_plan_id);
   const stage = openStage(stages);
   if (!stage) return null;
-  const source = `booking:${cal.slug}`;
+  const key = `booking:${cal.slug}`; // internal link to the calendar (deals.origin)
   const day = b.startISO.slice(0, 10);
   const now = new Date().toISOString();
-  const notes = Object.entries(b.answers).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join("\n") || null;
+  const { data: contact } = await db.from("seq_contacts").select("source").eq("master_plan_id", cal.master_plan_id).eq("email", b.email.toLowerCase()).maybeSingle();
+  const origin = originLabel(contact?.source as string | null);
+  const notes = [...Object.entries(b.answers).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)].join("\n");
   // Same person booking this calendar again: reopen their deal instead of duplicating it.
   const { data: existing } = await db
     .from("pipeline_deals")
     .select("id, stage_id")
     .eq("master_plan_id", cal.master_plan_id)
-    .eq("source", source)
+    .eq("origin", key)
     .ilike("email", b.email)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -50,7 +65,8 @@ export async function dealForBooking(
       expected_close: day,
       next_step: cal.name,
       next_step_due: day,
-      source,
+      source: origin, // shown in the Pipeline as "Where they came from"
+      origin: key,
       notes,
     })
     .select("id")
@@ -78,6 +94,6 @@ export async function winBookingDeals(masterPlanId: string, email: string) {
   const db = createServerClient();
   const stages = await ensureStages(db, masterPlanId);
   const open = new Set(stages.filter((s) => s.kind !== "won").map((s) => s.id));
-  const { data } = await db.from("pipeline_deals").select("id, stage_id").eq("master_plan_id", masterPlanId).like("source", "booking:%").ilike("email", email);
+  const { data } = await db.from("pipeline_deals").select("id, stage_id").eq("master_plan_id", masterPlanId).like("origin", "booking:%").ilike("email", email);
   for (const d of data ?? []) if (open.has(d.stage_id as string)) await moveDeal(db, masterPlanId, d.id as string, "won", "Bought the Command Suite.");
 }

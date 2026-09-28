@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId } from "@/lib/zoom";
+import { upsertContact, logEvent } from "@/lib/crm";
+import { ownerMasterPlanId } from "@/lib/sequences/engine";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +79,9 @@ async function run(request: Request) {
     { key: "incubator", meetingId: incubatorMeetingId(), tagId: INCUBATOR_TAG_ID },
   ];
   const results: Record<string, unknown>[] = [];
+  // Registrants also land in the Suite CRM (Babs's Contacts), tagged, with no deal value:
+  // a deal is only opened when they book an Executive Consultation (cs025).
+  const housePlan = await ownerMasterPlanId().catch(() => null);
 
   for (const ev of events) {
     let registrants;
@@ -108,6 +113,10 @@ async function run(request: Request) {
 
     for (const r of toSync) {
       const status = await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
+      if (housePlan) {
+        const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags: [`${ev.key}-registered`] }).catch(() => null);
+        if (c) await logEvent(housePlan, c.id, "form", `Registered for the ${ev.key === "incubator" ? "LifeCharter Incubator" : "Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
+      }
       await supabase.from("zoom_registrant_syncs").upsert(
         {
           zoom_registrant_id: r.id,
