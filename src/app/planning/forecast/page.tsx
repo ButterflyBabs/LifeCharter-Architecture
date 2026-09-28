@@ -29,6 +29,7 @@ interface Forecast {
   derivedExpenseRatio: number;
   assumptions: { horizonMonths: number; monthlyGrowthPct: number; pipelineClosePct: number; expenseRatioPct: number };
   scenarios: Scenario[];
+  pipeline?: { source: "pipeline" | "sales_activities"; openValue: number; weightedValue: number | null; deals: number | null; closePct: number };
 }
 
 const SCENARIO_COLOR: Record<string, string> = {
@@ -125,11 +126,34 @@ export default function ForecastPage() {
                 onChange={(v) => setForm({ ...form, horizonMonths: v })} />
               <Field label="Growth %/mo" value={form.monthlyGrowthPct} min={-50} max={100}
                 onChange={(v) => setForm({ ...form, monthlyGrowthPct: v })} />
-              <Field label="Pipeline close %" value={form.pipelineClosePct} min={0} max={100}
-                onChange={(v) => setForm({ ...form, pipelineClosePct: v })} />
+              {forecast.pipeline?.source === "pipeline" ? (
+                <div className="text-xs">
+                  <p className="font-medium text-[#7a8a99] mb-1">Pipeline close %</p>
+                  <p className="text-[#1a2b4a] dark:text-[#F8F5F0] text-sm font-semibold">{forecast.pipeline.closePct}%</p>
+                  <p className="text-[#b8a898]">from your deals&rsquo; probabilities</p>
+                </div>
+              ) : (
+                <Field label="Pipeline close %" value={form.pipelineClosePct} min={0} max={100}
+                  onChange={(v) => setForm({ ...form, pipelineClosePct: v })} />
+              )}
               <Field label="Expense % (0=auto)" value={form.expenseRatioPct} min={0} max={150}
                 onChange={(v) => setForm({ ...form, expenseRatioPct: v })} />
             </div>
+            {forecast.pipeline && (
+              <p className="mt-3 text-xs text-[#7a8a99]">
+                {forecast.pipeline.source === "pipeline" ? (
+                  <>
+                    Pipeline: {forecast.pipeline.deals} open deal{forecast.pipeline.deals === 1 ? "" : "s"} expected to close within {forecast.assumptions.horizonMonths} months, {usd(forecast.pipeline.openValue)} open, {usd(forecast.pipeline.weightedValue ?? 0)} weighted by each deal&rsquo;s probability, from your{" "}
+                    <a href="/sales/pipeline" className="underline text-[#2E7C83]">Pipeline</a>. Conservative and Optimistic scale that up and down.
+                  </>
+                ) : (
+                  <>
+                    Pipeline: {usd(forecast.pipeline.openValue)} open, from Sales Activities. Add your deals to the{" "}
+                    <a href="/sales/pipeline" className="underline text-[#2E7C83]">Pipeline</a> and the forecast will use each deal&rsquo;s own value and probability.
+                  </>
+                )}
+              </p>
+            )}
             <button
               onClick={save}
               disabled={saving}

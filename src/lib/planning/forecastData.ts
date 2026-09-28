@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { computeForecast, type ForecastAssumptions, type ForecastResult } from "@/lib/forecast";
+import { DEAL_COLUMNS, shapeDeal, shapeStage } from "@/lib/sales/pipeline";
 
 const DEFAULTS: ForecastAssumptions = {
   horizonMonths: 6,
@@ -66,7 +67,36 @@ export async function buildForecast(
   const monthlyIncome = monthKeys.map((k) => incomeByMonth[k]);
   const monthlyExpense = monthKeys.map((k) => expenseByMonth[k]);
 
-  // Open pipeline value (still-live opportunities).
+  const base = await loadAssumptions(masterPlanId);
+  const assumptions: ForecastAssumptions = { ...base, ...(overrides || {}) };
+
+  // Open pipeline: this account's Pipeline board when it has deals (each deal's own value and
+  // probability; only deals expected to close within the forecast period, or undated).
+  const [{ data: stageRows }, { data: dealRows }] = await Promise.all([
+    supabase.from("pipeline_stages").select("id, name, kind, probability, sort_order").eq("master_plan_id", masterPlanId),
+    supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", masterPlanId),
+  ]);
+  const stageMap = new Map(((stageRows ?? []) as Record<string, unknown>[]).map(shapeStage).map((s) => [s.id, s]));
+  const horizonEnd = new Date();
+  horizonEnd.setUTCMonth(horizonEnd.getUTCMonth() + Math.max(1, Math.round(assumptions.horizonMonths)));
+  const horizonEndStr = horizonEnd.toISOString().slice(0, 10);
+  const openDeals = ((dealRows ?? []) as Record<string, unknown>[])
+    .map((r) => shapeDeal(r, stageMap))
+    .filter((d) => stageMap.get(d.stageId)?.kind === "open" && (!d.expectedClose || d.expectedClose <= horizonEndStr));
+  if (openDeals.length > 0) {
+    return computeForecast(
+      {
+        monthlyIncome,
+        monthlyExpense,
+        openPipelineValue: openDeals.reduce((s, d) => s + (d.value ?? 0), 0),
+        weightedPipelineValue: openDeals.reduce((s, d) => s + d.weightedValue, 0),
+        pipelineDeals: openDeals.length,
+      },
+      assumptions
+    );
+  }
+
+  // No Pipeline deals yet: open value from Sales Activities, with the flat close % assumption.
   const { data: acts } = await supabase
     .from("sales_activities")
     .select("estimated_value, outcome")
@@ -76,9 +106,6 @@ export async function buildForecast(
     if (a.outcome === "won" || a.outcome === "lost") continue;
     openPipelineValue += Number(a.estimated_value ?? 0);
   }
-
-  const base = await loadAssumptions(masterPlanId);
-  const assumptions: ForecastAssumptions = { ...base, ...(overrides || {}) };
 
   return computeForecast({ monthlyIncome, monthlyExpense, openPipelineValue }, assumptions);
 }

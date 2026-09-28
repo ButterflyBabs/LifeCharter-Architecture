@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { offersKnowledge } from "@/lib/sales/knowledge";
 import { getBlueprint, sectionQuestions } from "@/lib/plans/blueprints";
 import { normalizeRules } from "@/lib/social/planner";
 
@@ -25,11 +26,14 @@ export interface Row {
 export async function loadBusinessContext(masterPlanId: string | null): Promise<BusinessContext> {
   if (!masterPlanId) return { text: "", hasPlan: false, hasVoice: false, signOff: "" };
   const supabase = createServerClient();
-  const [{ data: rows }, { data: settings }] = await Promise.all([
+  const [{ data: rows }, { data: settings }, offers] = await Promise.all([
     supabase.from("plan_sections").select("section_key, content, answers").eq("master_plan_id", masterPlanId).eq("plan_type", "marketing"),
     supabase.from("social_settings").select("rules").eq("master_plan_id", masterPlanId).maybeSingle(),
+    offersKnowledge(masterPlanId).catch(() => ""),
   ]);
-  return buildBusinessContext((rows || []) as Row[], settings?.rules ?? null);
+  const ctx = buildBusinessContext((rows || []) as Row[], settings?.rules ?? null);
+  // Their offers (Offers & Packages), so captions name real offers, prices and links.
+  return offers ? { ...ctx, text: [ctx.text, offers].filter(Boolean).join("\n\n") } : ctx;
 }
 
 // Pure assembly, separate from loading so it can be checked without a database.

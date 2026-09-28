@@ -15,6 +15,10 @@ export interface ForecastInputs {
   monthlyExpense: number[];
   // Sum of open (still-live) pipeline value.
   openPipelineValue: number;
+  // When the client uses the Pipeline board: value x each deal's own probability. The Expected
+  // case then uses the deals' probabilities instead of the flat close % assumption.
+  weightedPipelineValue?: number;
+  pipelineDeals?: number;
 }
 
 export interface MonthProjection {
@@ -39,6 +43,7 @@ export interface ForecastResult {
   derivedExpenseRatio: number;
   assumptions: ForecastAssumptions;
   scenarios: ScenarioProjection[];
+  pipeline: { source: "pipeline" | "sales_activities"; openValue: number; weightedValue: number | null; deals: number | null; closePct: number };
 }
 
 function avg(nums: number[]): number {
@@ -109,13 +114,20 @@ export function computeForecast(inputs: ForecastInputs, a: ForecastAssumptions):
   const GROWTH_DELTA = 3; // percentage points
   const CLOSE_DELTA = 12; // percentage points
 
+  // With real deals, the expected close rate is the deals' own weighted probability; the other
+  // scenarios scale it down/up. Otherwise, the client's flat close % assumption.
+  const fromDeals = inputs.weightedPipelineValue !== undefined && inputs.openPipelineValue > 0;
+  const expectedClose = fromDeals ? ((inputs.weightedPipelineValue ?? 0) / inputs.openPipelineValue) * 100 : a.pipelineClosePct;
+  const lowClose = fromDeals ? expectedClose * 0.6 : Math.max(0, a.pipelineClosePct - CLOSE_DELTA);
+  const highClose = fromDeals ? Math.min(100, expectedClose * 1.4) : Math.min(100, a.pipelineClosePct + CLOSE_DELTA);
+
   const scenarios: ScenarioProjection[] = [
     projectScenario(
       "conservative",
       "Conservative",
       base,
       a.monthlyGrowthPct - GROWTH_DELTA,
-      Math.max(0, a.pipelineClosePct - CLOSE_DELTA),
+      lowClose,
       expenseRatio,
       inputs.openPipelineValue,
       horizon
@@ -125,7 +137,7 @@ export function computeForecast(inputs: ForecastInputs, a: ForecastAssumptions):
       "Expected",
       base,
       a.monthlyGrowthPct,
-      a.pipelineClosePct,
+      expectedClose,
       expenseRatio,
       inputs.openPipelineValue,
       horizon
@@ -135,7 +147,7 @@ export function computeForecast(inputs: ForecastInputs, a: ForecastAssumptions):
       "Optimistic",
       base,
       a.monthlyGrowthPct + GROWTH_DELTA,
-      Math.min(100, a.pipelineClosePct + CLOSE_DELTA),
+      highClose,
       expenseRatio,
       inputs.openPipelineValue,
       horizon
@@ -147,5 +159,12 @@ export function computeForecast(inputs: ForecastInputs, a: ForecastAssumptions):
     derivedExpenseRatio: Math.round(expenseRatio * 100),
     assumptions: { ...a, horizonMonths: horizon },
     scenarios,
+    pipeline: {
+      source: inputs.weightedPipelineValue !== undefined ? "pipeline" : "sales_activities",
+      openValue: Math.round(inputs.openPipelineValue),
+      weightedValue: inputs.weightedPipelineValue !== undefined ? Math.round(inputs.weightedPipelineValue) : null,
+      deals: inputs.pipelineDeals ?? null,
+      closePct: Math.round(expectedClose),
+    },
   };
 }

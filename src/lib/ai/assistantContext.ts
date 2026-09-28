@@ -1,4 +1,5 @@
 import { planningKnowledge } from "@/lib/ai/planKnowledge";
+import { offersKnowledge, pipelineKnowledge } from "@/lib/sales/knowledge";
 import { alignmentKnowledge } from "@/lib/ai/alignKnowledge";
 import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
@@ -61,6 +62,15 @@ export async function buildAssistantKnowledge(
       .filter(Boolean);
     if (plan?.client_name && plan.client_name !== "Primary") parts.push(`Client: ${plan.client_name}.`);
     if (facts.length) parts.push(`Business snapshot — ${facts.join("; ")}.`);
+  } catch {
+    /* optional */
+  }
+
+  // Their offers (Offers & Packages) and open Pipeline, so drafts and advice use the real ones.
+  try {
+    const [offers, pipeline] = await Promise.all([offersKnowledge(masterPlanId), pipelineKnowledge(masterPlanId)]);
+    if (offers) parts.push(offers);
+    if (pipeline) parts.push(pipeline);
   } catch {
     /* optional */
   }
