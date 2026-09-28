@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { SCRIPT_CATEGORIES, SCRIPT_CHANNELS } from "@/lib/scriptsSeed";
 import { SCRIPT_LIBRARY, extractFields, fillFields } from "@/lib/scriptLibrary";
+import SalesNav from "@/components/sales/SalesNav";
 
 interface Script {
   id: string;
@@ -449,6 +450,7 @@ export default function ScriptsPage() {
       >
         <ArrowLeft className="w-4 h-4" /> Back to Daily Compass
       </Link>
+      <SalesNav className="mb-5" />
 
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div className="flex items-center gap-3">

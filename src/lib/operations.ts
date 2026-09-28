@@ -26,3 +26,11 @@ export const STATUS_LABEL: Record<string, string> = {
   needs_attention: "Needs attention",
   complete: "Solid",
 };
+
+// Pillars that are also planned in a strategic plan: link there instead of
+// repeating the planning (audit Q1).
+export const PILLAR_PLAN_LINK: Record<string, { href: string; plan: string; section: string }> = {
+  acquisition: { href: "/marketing-plan", plan: "Marketing Plan", section: "Channels & Cadence" },
+  "sales-journey": { href: "/sales", plan: "Sales Plan", section: "Pipeline & Sales Process" },
+  referral: { href: "/sales", plan: "Sales Plan", section: "Referral Strategy" },
+};

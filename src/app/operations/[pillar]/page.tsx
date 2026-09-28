@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
-import { OPERATIONS_PILLARS } from "@/lib/operations";
+import { OPERATIONS_PILLARS, PILLAR_PLAN_LINK } from "@/lib/operations";
 import type { DeeperAnswers, DeeperQuestion } from "@/lib/operationsDeeper";
 
 const input = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
@@ -65,6 +65,12 @@ export default function PillarDeeperPage({ params }: { params: { pillar: string 
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{def.name}</h1>
         <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">{def.description}. Answer what you can; skip what doesn&rsquo;t apply. Your answers stay with this pillar and shape your Operations insights.</p>
         {questions && <p className="mt-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{answered} of {questions.length} answered</p>}
+        {PILLAR_PLAN_LINK[def.key] && (
+          <p className="mt-3 rounded-xl bg-[#c9a227]/10 px-4 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            You plan this in your {PILLAR_PLAN_LINK[def.key].plan} (&ldquo;{PILLAR_PLAN_LINK[def.key].section}&rdquo;). Here you rate how well it&apos;s running.{" "}
+            <Link href={PILLAR_PLAN_LINK[def.key].href} className="font-semibold text-[#2E7C83] underline">Open the {PILLAR_PLAN_LINK[def.key].plan} →</Link>
+          </p>
+        )}
       </header>
 
       {!questions ? (

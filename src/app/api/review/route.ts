@@ -158,6 +158,14 @@ export async function POST(request: Request) {
       (nextQ && answers[nextQ.id] ? `Their focus next: ${answers[nextQ.id].slice(0, 200)}. ` : "") +
       (created.length ? `Committed to: ${created.map((c) => c.title).join("; ")}.` : "");
     await db.from("business_reviews").update({ tasks: created, summary: summary.trim(), status: "completed", completed_at: new Date().toISOString() }).eq("id", id);
+    // Started from a scheduled Planning Session: close it, with this review as its notes.
+    if (typeof body.sessionId === "string" && body.sessionId) {
+      await db
+        .from("planning_reviews")
+        .update({ status: "completed", completed_at: new Date().toISOString(), notes: summary.trim().slice(0, 2000) })
+        .eq("id", body.sessionId)
+        .eq("master_plan_id", masterPlanId);
+    }
     try {
       await saveInsight(masterPlanId, "review", (review.briefing as { assistant?: string })?.assistant || "", { summary: summary.trim(), cadence });
     } catch {

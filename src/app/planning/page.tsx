@@ -361,6 +361,13 @@ export default function PlanningHubPage() {
                     )}
                   </p>
                 </div>
+                <Link
+                  href={`/planning/review?session=${r.id}`}
+                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#1a2b4a] text-white hover:bg-[#1a2b4a]/90"
+                  title="Run this session as a guided review: briefing, three questions, three tasks"
+                >
+                  <ClipboardCheck className="w-3.5 h-3.5" /> Start session
+                </Link>
                 <button
                   onClick={() => completeReview(r.id)}
                   className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"

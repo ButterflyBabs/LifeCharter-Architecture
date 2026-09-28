@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Package, Pencil, Trash2, X, ExternalLink, Users } from "lucide-react";
 import { OFFER_BILLING, OFFER_FORMATS, OFFER_STATUSES, offerPriceLabel, type Offer } from "@/lib/sales/offers";
+import SalesNav from "@/components/sales/SalesNav";
 
 type Business = { id: number; name: string };
 type Form = {
@@ -115,6 +116,7 @@ export default function OffersPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+      <SalesNav />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Strategic Planning</p>

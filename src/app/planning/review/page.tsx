@@ -79,9 +79,11 @@ export default function ReviewPage() {
   const [busy, setBusy] = useState<string>("");
   const [err, setErr] = useState("");
 
+  const [sessionId, setSessionId] = useState<string | null>(null);
   useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get("cadence");
-    if (c === "monthly") setCadence("monthly");
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("cadence") === "monthly") setCadence("monthly");
+    setSessionId(q.get("session"));
   }, []);
 
   const load = useCallback(async (c: Cadence) => {
@@ -143,7 +145,7 @@ export default function ReviewPage() {
     setBusy("complete");
     setErr("");
     try {
-      await post({ action: "complete", id: review.id, tasks: picks.filter((p) => p.keep && p.title.trim()) });
+      await post({ action: "complete", id: review.id, tasks: picks.filter((p) => p.keep && p.title.trim()), sessionId });
       await load(cadence);
     } catch (e) {
       setErr(String((e as Error).message));
@@ -303,6 +305,7 @@ export default function ReviewPage() {
         <Card className="mb-6 border-[#2c6b3f]/30">
           <CardContent className="p-6 space-y-3">
             <p className="text-lg font-semibold text-[#2c6b3f]">Review done for {period?.label}. 🦋</p>
+            {sessionId && <p className="text-sm text-[#7a8a99]">Your planning session is marked complete, with this review as its notes.</p>}
             {!!review.tasks?.length && (
               <div>
                 <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Added to your tasks:</p>

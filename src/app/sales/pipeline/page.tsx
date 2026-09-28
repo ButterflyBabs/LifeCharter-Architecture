@@ -8,6 +8,7 @@ import type { Deal, Stage } from "@/lib/sales/pipeline";
 import { STALE_DAYS } from "@/lib/sales/pipeline";
 import { formatMoney } from "@/lib/sales/offers";
 import { ACTIVITY_TYPES, OUTCOMES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
+import SalesNav from "@/components/sales/SalesNav";
 
 type OfferLite = { id: string; name: string; price: number | null; status: string };
 type Business = { id: number; name: string };
@@ -24,9 +25,12 @@ const shortDate = (iso: string | null) => (iso ? new Date(iso + "T12:00:00").toL
 
 export default function PipelinePage() {
   return (
-    <Suspense fallback={<p className="p-8 text-sm text-[#7b6b8d]">Loading…</p>}>
-      <PipelineBoard />
-    </Suspense>
+    <>
+      <SalesNav className="mx-auto max-w-7xl px-4 pt-6 sm:px-6" />
+      <Suspense fallback={<p className="p-8 text-sm text-[#7b6b8d]">Loading…</p>}>
+        <PipelineBoard />
+      </Suspense>
+    </>
   );
 }
 

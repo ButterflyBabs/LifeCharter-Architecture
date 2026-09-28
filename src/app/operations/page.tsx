@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Settings, CheckCircle2, Clock, AlertTriangle, Circle, Sparkles, Loader2 } from "lucide-react";
-import { STATUS_LABEL } from "@/lib/operations";
+import { STATUS_LABEL, PILLAR_PLAN_LINK } from "@/lib/operations";
 
 interface Pillar {
   key: string;
@@ -254,6 +254,11 @@ export default function OperationsPage() {
                     placeholder="What's working, what needs attention…"
                     className="w-full p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                   />
+                  {PILLAR_PLAN_LINK[p.key] && (
+                    <Link href={PILLAR_PLAN_LINK[p.key].href} className="mt-2 block text-xs text-[#7a8a99] hover:underline">
+                      Planned in your {PILLAR_PLAN_LINK[p.key].plan} · {PILLAR_PLAN_LINK[p.key].section} →
+                    </Link>
+                  )}
                   <Link href={`/operations/${p.key}`} className="mt-3 flex items-center justify-between rounded-lg border border-[#2E7C83]/25 px-3 py-2 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
                     <span>Go deeper</span>
                     <span className="text-xs font-normal text-[#7b6b8d]">

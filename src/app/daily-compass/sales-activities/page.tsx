@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { ACTIVITY_TYPES, OUTCOMES, PRIORITIES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
+import SalesNav from "@/components/sales/SalesNav";
 
 interface Activity {
   id: string;
@@ -251,6 +252,7 @@ export default function SalesActivitiesPage() {
       <Link href="/daily-compass" className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:underline mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Daily Compass
       </Link>
+      <SalesNav className="mb-5" />
 
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div className="flex items-center gap-3">
