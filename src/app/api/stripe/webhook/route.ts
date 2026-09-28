@@ -70,6 +70,24 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        if (meta.flow === "life_shift") {
+          // The Life Shift ($25 Payment Link on amilynnecarroll.com): tag the buyer in
+          // Global Control so the challenge workflow starts. No Suite account.
+          const email = session.customer_details?.email || session.customer_email;
+          const tagId = process.env.GC_LIFE_SHIFT_TAG_ID;
+          if (email && tagId) {
+            const [firstName, ...rest] = (session.customer_details?.name || "").trim().split(/\s+/);
+            await fetch(`https://api.globalcontrol.io/api/tag-form-submission/${encodeURIComponent(tagId)}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...(process.env.GLOBAL_CONTROL_API_KEY ? { "X-API-KEY": process.env.GLOBAL_CONTROL_API_KEY } : {}) },
+              body: JSON.stringify({ email, firstName: firstName || "", lastName: rest.join(" "), ...(session.customer_details?.phone ? { phone: session.customer_details.phone } : {}) }),
+            }).catch((e) => console.error("life shift GC tag:", e));
+          } else {
+            console.warn(`life_shift purchase ${session.id}: ${tagId ? "no email" : "GC_LIFE_SHIFT_TAG_ID not set"}`);
+          }
+          break;
+        }
+
         if (!meta.userId) {
           // No app-set metadata at all — e.g. a real static Stripe Payment
           // Link purchase (Marcello's sales calls use these directly).
