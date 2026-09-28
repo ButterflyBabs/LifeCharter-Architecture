@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId } from "@/lib/zoom";
+import { incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
 
@@ -26,13 +26,17 @@ const GC_FORM_BASE =
 // carries no workflow tied to the actual confirmation/reminder sequence).
 const MASTERCLASS_TAG_ID = process.env.GC_MASTERCLASS_TAG_ID || "6a73c0f94c33c83e76795cdc";
 
-async function fireMasterclassTag(email: string, firstName: string, lastName: string): Promise<string> {
+// The Incubator's Global Control tag (the one its confirmation/reminder workflow runs on).
+// Until it's set, Incubator registrants are left unsynced so they're picked up once it is.
+const INCUBATOR_TAG_ID = process.env.GC_INCUBATOR_TAG_ID || "";
+
+async function fireMasterclassTag(email: string, firstName: string, lastName: string, tagId: string = MASTERCLASS_TAG_ID): Promise<string> {
   const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["X-API-KEY"] = apiKey;
 
   try {
-    const res = await fetch(`${GC_FORM_BASE}/${encodeURIComponent(MASTERCLASS_TAG_ID)}`, {
+    const res = await fetch(`${GC_FORM_BASE}/${encodeURIComponent(tagId)}`, {
       method: "POST",
       headers,
       body: JSON.stringify({ email, firstName, lastName }),
@@ -67,47 +71,58 @@ async function run(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  let registrants;
-  try {
-    registrants = await listMasterclassRegistrants();
-  } catch (err) {
-    console.error("[masterclass-zoom-sync] Zoom fetch failed:", err);
-    return NextResponse.json({ error: "Zoom fetch failed", detail: String(err) }, { status: 502 });
+  // Every Zoom meeting whose registrants feed a Global Control tag.
+  const events = [
+    { key: "masterclass", meetingId: masterclassMeetingId(), tagId: MASTERCLASS_TAG_ID },
+    { key: "incubator", meetingId: incubatorMeetingId(), tagId: INCUBATOR_TAG_ID },
+  ];
+  const results: Record<string, unknown>[] = [];
+
+  for (const ev of events) {
+    let registrants;
+    try {
+      registrants = await listMasterclassRegistrants(ev.meetingId);
+    } catch (err) {
+      console.error(`[zoom-sync] ${ev.key}: Zoom fetch failed:`, err);
+      results.push({ event: ev.key, meetingId: ev.meetingId, error: "Zoom fetch failed", detail: String(err) });
+      continue;
+    }
+    if (!ev.tagId) {
+      if (registrants.length) console.error(`[zoom-sync] ${ev.key}: ${registrants.length} registrants waiting — set GC_${ev.key.toUpperCase()}_TAG_ID`);
+      results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, synced: 0, tag: "not_configured" });
+      continue;
+    }
+    if (!registrants.length) {
+      results.push({ event: ev.key, meetingId: ev.meetingId, checked: 0, synced: 0 });
+      continue;
+    }
+
+    const { data: already } = await supabase
+      .from("zoom_registrant_syncs")
+      .select("zoom_registrant_id")
+      .in("zoom_registrant_id", registrants.map((r) => r.id));
+    const alreadySynced = new Set((already || []).map((r) => r.zoom_registrant_id as string));
+
+    const toSync = registrants.filter((r) => !alreadySynced.has(r.id));
+    let syncedCount = 0;
+
+    for (const r of toSync) {
+      const status = await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
+      await supabase.from("zoom_registrant_syncs").upsert(
+        {
+          zoom_registrant_id: r.id,
+          zoom_meeting_id: ev.meetingId,
+          email: r.email,
+          gc_tag_status: status,
+        },
+        { onConflict: "zoom_registrant_id" }
+      );
+      if (status === "tagged") syncedCount++;
+    }
+    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount });
   }
 
-  if (!registrants.length) {
-    return NextResponse.json({ meetingId: masterclassMeetingId(), checked: 0, synced: 0 });
-  }
-
-  const { data: already } = await supabase
-    .from("zoom_registrant_syncs")
-    .select("zoom_registrant_id")
-    .in("zoom_registrant_id", registrants.map((r) => r.id));
-  const alreadySynced = new Set((already || []).map((r) => r.zoom_registrant_id as string));
-
-  const toSync = registrants.filter((r) => !alreadySynced.has(r.id));
-  let syncedCount = 0;
-
-  for (const r of toSync) {
-    const status = await fireMasterclassTag(r.email, r.firstName, r.lastName);
-    await supabase.from("zoom_registrant_syncs").upsert(
-      {
-        zoom_registrant_id: r.id,
-        zoom_meeting_id: masterclassMeetingId(),
-        email: r.email,
-        gc_tag_status: status,
-      },
-      { onConflict: "zoom_registrant_id" }
-    );
-    if (status === "tagged") syncedCount++;
-  }
-
-  return NextResponse.json({
-    meetingId: masterclassMeetingId(),
-    checked: registrants.length,
-    newRegistrants: toSync.length,
-    synced: syncedCount,
-  });
+  return NextResponse.json({ results });
 }
 
 export async function GET(request: Request) {

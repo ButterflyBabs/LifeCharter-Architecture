@@ -5,6 +5,11 @@
 //   ZOOM_MASTERCLASS_MEETING_ID                             defaults below
 
 export const DEFAULT_MASTERCLASS_MEETING_ID = "89905406248";
+// The Nov 12, 2026 LifeCharter Incubator (registration on Zoom; created 2026-09-28).
+export const DEFAULT_INCUBATOR_MEETING_ID = "86873557607";
+export function incubatorMeetingId(): string {
+  return process.env.ZOOM_INCUBATOR_MEETING_ID || DEFAULT_INCUBATOR_MEETING_ID;
+}
 
 export function isZoomConfigured(): boolean {
   return Boolean(
@@ -47,9 +52,8 @@ export interface ZoomRegistrant {
 // All approved registrants for the recurring MasterClass meeting (register
 // once, attend any occurrence — Zoom's default for a fixed-time recurring
 // meeting). Paginated defensively even though this list should stay small.
-export async function listMasterclassRegistrants(): Promise<ZoomRegistrant[]> {
+export async function listMasterclassRegistrants(meetingId: string = masterclassMeetingId()): Promise<ZoomRegistrant[]> {
   const token = await getAccessToken();
-  const meetingId = masterclassMeetingId();
   const registrants: ZoomRegistrant[] = [];
   let nextPageToken = "";
 
