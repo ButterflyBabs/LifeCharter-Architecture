@@ -32,7 +32,8 @@ export async function GET() {
     const { data: goals } = await supabase
       .from("client_plan_goals")
       .select("plan_id, status")
-      .in("plan_id", planIds);
+      .in("plan_id", planIds)
+      .eq("period", "year");
     for (const g of (goals || []) as { plan_id: string; status: string | null }[]) {
       const c = goalCounts.get(g.plan_id) || { total: 0, done: 0 };
       c.total += 1;

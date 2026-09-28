@@ -50,6 +50,7 @@ export async function GET() {
       .from("client_plan_goals")
       .select("title, detail, target, status")
       .eq("plan_id", p.id)
+      .eq("period", "year")
       .order("sort_order", { ascending: true });
     const gl = (goals || []) as { title: string | null; detail: string | null; target: string | null; status: string | null }[];
     if (gl.length) {

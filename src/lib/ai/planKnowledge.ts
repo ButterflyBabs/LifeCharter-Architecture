@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { BLUEPRINTS, PLAN_KINDS, sectionQuestions } from "@/lib/plans/blueprints";
 import { buildForecast } from "@/lib/planning/forecastData";
+import { currentStart, periodLabel, type GoalPeriod } from "@/lib/goalLadder";
 
 // What a client's Strategic Planning work says — their four plans, the goals
 // under them, the latest reviews, budgets, forecast, sales targets and pipeline,
@@ -51,7 +52,7 @@ export async function planningKnowledge(masterPlanId: string): Promise<string> {
     const goalsByPlan = new Map<string, { title: string; target: string | null; status: string | null }[]>();
     const planIds = ((plans ?? []) as { id: string }[]).map((p) => p.id);
     if (planIds.length) {
-      const { data: goals } = await db.from("client_plan_goals").select("plan_id, title, target, status").in("plan_id", planIds).order("sort_order");
+      const { data: goals } = await db.from("client_plan_goals").select("plan_id, title, target, status").in("plan_id", planIds).eq("period", "year").order("sort_order");
       for (const g of (goals ?? []) as { plan_id: string; title: string; target: string | null; status: string | null }[]) {
         goalsByPlan.set(g.plan_id, [...(goalsByPlan.get(g.plan_id) ?? []), g]);
       }
@@ -139,6 +140,32 @@ export async function planningKnowledge(masterPlanId: string): Promise<string> {
     parts.push(
       `Sales: weekly targets — ${g.length ? g.map((x) => `${x.activity_type} ${x.weekly_target}`).join(", ") : "none set"}; open pipeline ${usd(pipeline)} across ${open} opportunit${open === 1 ? "y" : "ies"}.`
     );
+  } catch {
+    /* optional */
+  }
+
+  // Their goal ladder for right now: this quarter's, month's and week's goals.
+  try {
+    const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", masterPlanId).eq("status", "active");
+    const ids = ((plans ?? []) as { id: string }[]).map((p) => p.id);
+    if (ids.length) {
+      const now = (["quarter", "month", "week"] as GoalPeriod[]).map((p) => ({ p, start: currentStart(p) }));
+      const { data: g } = await db
+        .from("client_plan_goals")
+        .select("period, period_start, title, target, status")
+        .in("plan_id", ids)
+        .in("period", now.map((x) => x.p))
+        .in("period_start", now.map((x) => x.start));
+      const rows = ((g ?? []) as { period: GoalPeriod; period_start: string; title: string; target: string | null; status: string | null }[]).filter((r) =>
+        now.some((x) => x.p === r.period && x.start === r.period_start)
+      );
+      if (rows.length) {
+        parts.push(
+          "Current goal ladder:\n" +
+            rows.map((r) => `  • ${periodLabel(r.period, r.period_start)}: ${clip(oneLine(r.title), 120)}${r.target ? ` (target: ${clip(r.target, 60)})` : ""} [${(r.status || "not_started").replace("_", " ")}]`).join("\n")
+        );
+      }
+    }
   } catch {
     /* optional */
   }

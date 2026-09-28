@@ -37,6 +37,7 @@ export async function GET(request: Request) {
     .from("client_plan_goals")
     .select("id, dimension_key, title, detail, target, status, sort_order, added_at, segment_id")
     .eq("plan_id", plan.id)
+    .eq("period", "year")
     .order("sort_order", { ascending: true });
 
   return NextResponse.json(

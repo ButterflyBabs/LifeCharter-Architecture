@@ -110,7 +110,8 @@ export async function GET() {
     const { data: goals } = await supabase
       .from("client_plan_goals")
       .select("plan_id, status")
-      .in("plan_id", planIds);
+      .in("plan_id", planIds)
+      .eq("period", "year");
     for (const g of (goals ?? []) as Array<{ plan_id: string; status: GoalStatus }>) {
       const st = STATUSES.includes(g.status) ? g.status : "not_started";
       const bucket = goalsByPlan.get(g.plan_id) ?? { not_started: 0, in_progress: 0, met: 0, slipped: 0 };

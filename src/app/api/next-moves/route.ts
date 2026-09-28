@@ -60,7 +60,7 @@ export async function GET() {
     db.from("client_plans").select("id").eq("master_plan_id", planId).eq("status", "active"),
   ]);
   const planIds = ((planRows ?? []) as { id: string }[]).map((p) => p.id);
-  const { data: goalRows } = planIds.length ? await db.from("client_plan_goals").select("dimension_key, title, status").in("plan_id", planIds) : { data: [] };
+  const { data: goalRows } = planIds.length ? await db.from("client_plan_goals").select("dimension_key, title, status").in("plan_id", planIds).eq("period", "year") : { data: [] };
   const goals = (goalRows ?? []) as { dimension_key: string | null; title: string; status: string | null }[];
   const tasks = ((taskRows ?? []) as Record<string, unknown>[]).map((t) => ({
     open: t.status !== "done",

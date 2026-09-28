@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       .eq("status", "active")
       .maybeSingle();
     if (plan?.id) {
-      const { data: goals } = await supabase.from("client_plan_goals").select("status").eq("plan_id", plan.id);
+      const { data: goals } = await supabase.from("client_plan_goals").select("status").eq("plan_id", plan.id).eq("period", "year");
       const gs = (goals || []) as { status: string | null }[];
       const met = gs.filter((g) => g.status === "met").length;
       const prog = gs.filter((g) => g.status === "in_progress").length;
