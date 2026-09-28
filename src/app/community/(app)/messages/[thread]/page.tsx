@@ -9,6 +9,7 @@ import type { DmMessage } from "@/lib/community/types";
 import { Avatar, EmptyState, PageLoading, RichText } from "@/components/community/ui";
 import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
 import { ReportDialog } from "@/components/community/ReportDialog";
+import { SayThis } from "@/components/community/MemberAi";
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -184,6 +185,7 @@ export default function ThreadPage({ params }: { params: { thread: string } }) {
           {sendError && <p className="border-t border-[var(--cm-line)] pt-2 text-[13px] text-red-700">{sendError}</p>}
       <div className="border-t border-[var(--cm-line)] pt-3">
             <DraftStrip draft={media} size={64} />
+            <SayThis text={text} where="dm" onUse={setText} />
           </div>
           <div className="flex items-end gap-2 pt-2">
             <AttachButton draft={media} accept="image/*,video/*" className="h-11 w-11 justify-center rounded-full px-0">

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { sessionUser } from "@/lib/authz";
-import { aiJson, aiUnavailableMessage, collectiveAiFor, hasAiConsent, logAiUse } from "@/lib/community/ai";
+import { aiJson, aiUnavailableMessage, collectiveAiFor, logAiUse, memberAiGate } from "@/lib/community/ai";
 import { createServerClient } from "@/lib/supabase/server";
-import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -62,15 +61,9 @@ async function activeFocus(userId: string): Promise<string> {
 }
 
 export async function POST(request: Request) {
-  if (crossOriginBlocked(request)) {
-    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
-  }
-  const user = await sessionUser();
-  if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
-
-  const ai = await collectiveAiFor(user);
-  if (!ai.key) return NextResponse.json({ error: aiUnavailableMessage(ai), needsPlus: !ai.plus && !ai.source }, { status: 402 });
-  if (!(await hasAiConsent(user.id))) return NextResponse.json({ error: "Please allow Mariposa first.", needsConsent: true }, { status: 428 });
+  const gate = await memberAiGate(request);
+  if (!gate.ok) return gate.response;
+  const { user, ai } = gate;
 
   const body = await request.json().catch(() => ({}));
   const action = body.action as Action;

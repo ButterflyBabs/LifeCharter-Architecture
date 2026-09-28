@@ -22,6 +22,7 @@ import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
 import { useIsNativeApp } from "@/lib/community/native";
 import { CollectiveSearch } from "@/components/community/CollectiveSearch";
+import { WhatYouMissed } from "@/components/community/MemberAi";
 
 function greeting() {
   const h = new Date().getHours();
@@ -156,6 +157,8 @@ function CommunityHome() {
         <CollectiveSearch />
 
         <InstallBanner />
+
+        <WhatYouMissed />
 
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-4">
           <MiniCard

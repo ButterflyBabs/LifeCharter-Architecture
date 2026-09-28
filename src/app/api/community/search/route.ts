@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { memberSupabase } from "@/lib/community/memberDb";
 
 export const dynamic = "force-dynamic";
 
@@ -44,22 +43,12 @@ function snippet(text: string, q: string): string {
 }
 
 export async function GET(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.json({ error: "Search isn't available right now." }, { status: 503 });
+  const supabase = memberSupabase();
+  if (!supabase) return NextResponse.json({ error: "Search isn't available right now." }, { status: 503 });
 
   const q = (new URL(request.url).searchParams.get("q") ?? "").trim().slice(0, 120);
   if (q.length < 2) return NextResponse.json({ results: [] });
 
-  const cookieStore = cookies();
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      get: (name: string) => cookieStore.get(name)?.value,
-      set() {},
-      remove() {},
-    },
-    global: { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: "no-store" }) },
-  });
   const {
     data: { user },
   } = await supabase.auth.getUser();

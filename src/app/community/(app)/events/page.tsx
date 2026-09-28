@@ -8,6 +8,7 @@ import { eventWhen } from "@/lib/community/format";
 import { sessionsBetween, upcomingEvents, type Session } from "@/lib/community/events";
 import { describeRule, icsLocal, rrule, ruleChoices, type RecurFreq } from "@/lib/community/recurrence";
 import { EVENT_KIND_LABELS, type CommunityEvent, type EventKind } from "@/lib/community/types";
+import { EventAfter, useEventAfterData } from "@/components/community/MemberAi";
 import { Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, RichText, TextArea } from "@/components/community/ui";
 
 type Rsvp = "going" | "maybe" | "not_going";
@@ -97,6 +98,7 @@ export default function EventsPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const canCreate = isAdmin || spaces.some((s) => canModerate(s.id));
   const { rsvps, going, rsvp } = useRsvps(view === "calendar" ? null : sessions);
+  const after = useEventAfterData(view === "past" ? sessions : null);
 
   const load = useCallback(async () => {
     if (view === "calendar") return;
@@ -169,7 +171,7 @@ export default function EventsPage() {
       ) : (
         <div className="space-y-3">
           {sessions.map((s) => (
-            <EventCard key={`${s.event.id}-${s.date}`} s={s} rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={setEditing} onChanged={reload} />
+            <EventCard key={`${s.event.id}-${s.date}`} s={s} rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={setEditing} onChanged={reload} after={view === "past" ? after : undefined} />
           ))}
         </div>
       )}
@@ -196,6 +198,7 @@ function EventCard({
   onEdit,
   onChanged,
   compact,
+  after,
 }: {
   s: Session;
   rsvp?: Rsvp;
@@ -204,6 +207,7 @@ function EventCard({
   onEdit: (e: CommunityEvent) => void;
   onChanged: () => void;
   compact?: boolean;
+  after?: ReturnType<typeof useEventAfterData>;
 }) {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
   const e = s.event;
@@ -317,6 +321,7 @@ function EventCard({
               </span>
             )}
           </div>
+          {after && !upcoming && !compact && <EventAfter s={s} manage={manage} recap={after.recapFor(s)} note={after.noteFor(s)} onChanged={after.reload} />}
         </div>
       </div>
     </Card>
