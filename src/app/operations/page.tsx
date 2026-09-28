@@ -124,6 +124,9 @@ export default function OperationsPage() {
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Operations</h1>
           <p className="text-[#b8a898]">Your 8 operational pillars</p>
         </div>
+        <Link href="/operations/sops" className="ml-auto rounded-full border border-[#1a2b4a]/15 px-4 py-2 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] hover:border-[#c9a227]">
+          Playbook & SOPs →
+        </Link>
       </div>
 
       {/* Summary */}

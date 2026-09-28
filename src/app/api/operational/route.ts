@@ -80,14 +80,11 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  // Only ever the signed-in client's own numbers.
+  const planId = await resolveMasterPlanId();
+  if (!planId) return NextResponse.json({ operational: null, operationalAt: null }, { headers: { "Cache-Control": "no-store" } });
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from("client_master_plans")
-    .select("metadata")
-    .eq("client_name", "Primary")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const { data } = await supabase.from("client_master_plans").select("metadata").eq("id", planId).maybeSingle();
   const meta = (data?.metadata ?? {}) as { operational?: Record<string, number>; operational_at?: string };
   return NextResponse.json(
     { operational: meta.operational ?? null, operationalAt: meta.operational_at ?? null },
