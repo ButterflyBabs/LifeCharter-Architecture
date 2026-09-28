@@ -121,6 +121,9 @@ export default function FinanceImportPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Import transactions</h1>
           <p className="text-[#b8a898]">Upload a CSV statement or paste text — AI extracts the transactions.</p>
+          <p className="text-sm text-[#7a8a99] mt-1">
+            Take payments through Stripe? <Link href="/settings?tab=integrations" className="text-[#2E7C83] underline">Connect it</Link> and they&apos;ll arrive here automatically.
+          </p>
         </div>
       </div>
 

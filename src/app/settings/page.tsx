@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
 import { IntegrationsPanel, IntegrationUsage } from "./components/IntegrationsPanel";
+import StripeConnectCard from "./components/StripeConnectCard";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
@@ -1634,6 +1635,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <StripeConnectCard />
 
         <IntegrationsPanel />
       </div>
