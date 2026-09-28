@@ -177,8 +177,6 @@ export default function ExecutiveHome() {
   const [rtKind, setRtKind] = useState<"deadline" | "scheduled">("deadline");
   const [rtError, setRtError] = useState("");
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [goalInput, setGoalInput] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState("today");
@@ -387,30 +385,7 @@ export default function ExecutiveHome() {
 
   const choosePulsePeriod = (p: PulsePeriod) => {
     setPulsePeriod(p);
-    setEditingGoal(false);
-    setGoalInput("");
     localStorage.setItem("exec-pulse-period", p);
-  };
-
-  // Save (or clear, with 0) the goal for the selected period, then refresh the card.
-  const savePulseGoal = async () => {
-    const amount = Number(goalInput.replace(/[^0-9.]/g, "")) || 0;
-    try {
-      await fetch(pulsePeriod === "month" ? "/api/finance/budgets" : "/api/finance/goals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          pulsePeriod === "month"
-            ? { type: "income", category: "", amount }
-            : { period: pulsePeriod, amount }
-        ),
-      });
-      const r = await fetch(`/api/financial-pulse?tz=${encodeURIComponent(userTimezone)}`);
-      if (r.ok) setFinance(await r.json());
-    } catch {
-      /* leave the card as it was */
-    }
-    setEditingGoal(false);
   };
 
   // Fetch owner name + assistant name for the greeting/AI card (from the profile)
@@ -1436,48 +1411,21 @@ export default function ExecutiveHome() {
 
             {/* % of goal reached */}
             <div className="rounded-xl bg-[#F8F5F0] border border-[#E8E4E0] p-3">
-              {editingGoal || !ps?.goal ? (
+              {/* Income goals are set in one place: the Budget Planner. */}
+              {!ps?.goal ? (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1.5">
-                    {ps?.goal ? `Edit your ${lbl.noun} income goal` : `Set a ${lbl.noun} income goal to track your progress`}
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      value={goalInput}
-                      onChange={(e) => setGoalInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && savePulseGoal()}
-                      placeholder="Goal in dollars"
-                      aria-label={`${lbl.noun} income goal`}
-                      className="flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg outline-none focus:border-[#84AEB2]"
-                    />
-                    <button
-                      onClick={savePulseGoal}
-                      className="px-3 py-1.5 text-sm rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]"
-                    >
-                      Set
-                    </button>
-                    {editingGoal && (
-                      <button onClick={() => setEditingGoal(false)} className="px-2 text-xs text-gray-400 hover:text-gray-600">
-                        Cancel
-                      </button>
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-500 mb-1.5">Set a {lbl.noun} income goal to track your progress.</p>
+                  <Link href="/finance/budget#income-goals" className="inline-block px-3 py-1.5 text-sm rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]">
+                    Set my income goals
+                  </Link>
                 </div>
               ) : (
                 <div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-serif text-[#1a2b4a]">{ps.pct ?? 0}%</span>
-                    <button
-                      onClick={() => {
-                        setGoalInput(String(ps.goal));
-                        setEditingGoal(true);
-                      }}
-                      className="text-xs text-[#2E7C83] hover:underline"
-                    >
-                      Edit goal
-                    </button>
+                    <Link href="/finance/budget#income-goals" className="text-xs text-[#2E7C83] hover:underline">
+                      Edit goals
+                    </Link>
                   </div>
                   <div className="mt-1.5 h-2 rounded-full bg-gray-200 overflow-hidden" aria-hidden="true">
                     <div

@@ -181,8 +181,9 @@ export function ForecastRead() {
                   {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : applied ? <CheckCircle2 className="w-4 h-4" /> : null}
                   {applied ? "Goals set" : "Use as my income goals"}
                 </button>
-                {applied && <span className="text-xs text-[#2c6b3f]">Your Financial Pulse now tracks {usd(applied.week)}/week, {usd(applied.monthly)}/month and {usd(applied.year)}/year.</span>}
-                {!applied && <span className="text-xs text-[#7a8a99]">Feeds the Financial Pulse on your dashboard.</span>}
+                {applied && <span className="text-xs text-[#2c6b3f]">Your income goals are now {usd(applied.week)}/week, {usd(applied.monthly)}/month and {usd(applied.year)}/year.</span>}
+                {!applied && <span className="text-xs text-[#7a8a99]">Saves to your income goals in the Budget Planner.</span>}
+                <a href="/finance/budget#income-goals" className="text-xs text-[#2E7C83] hover:underline">See or change my income goals</a>
               </div>
               {applyErr && <p className="text-xs text-[#8a2f2f] mt-1">{applyErr}</p>}
             </div>

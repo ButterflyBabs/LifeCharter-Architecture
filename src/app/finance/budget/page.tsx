@@ -35,6 +35,8 @@ export default function BudgetPlannerPage() {
   const [cats, setCats] = useState<CatRow[]>([]);
   const [expInput, setExpInput] = useState("");
   const [incInput, setIncInput] = useState("");
+  const [weekInput, setWeekInput] = useState("");
+  const [yearInput, setYearInput] = useState("");
   const [newCat, setNewCat] = useState("");
   const [newCatAmt, setNewCatAmt] = useState("");
   const [saving, setSaving] = useState(false);
@@ -50,7 +52,37 @@ export default function BudgetPlannerPage() {
       setExpInput(b.expense?.monthly ? String(b.expense.monthly) : "");
       setIncInput(b.income?.monthly ? String(b.income.monthly) : "");
     }
+    const g = await fetch("/api/finance/goals", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    setWeekInput(g.week ? String(g.week) : "");
+    setYearInput(g.year ? String(g.year) : "");
   }, []);
+
+  // Weekly and yearly income goals (the monthly one is the income budget).
+  const saveGoal = async (period: "week" | "year", amount: number) => {
+    setSaving(true);
+    try {
+      await fetch("/api/finance/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period, amount }),
+      });
+      await load();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Arriving from the dashboard's "Edit goals" link: bring the goals card into view.
+  useEffect(() => {
+    if (window.location.hash === "#income-goals") setTimeout(() => document.getElementById("income-goals")?.scrollIntoView({ behavior: "smooth" }), 300);
+  }, []);
+
+  // Forecasting's "Use as my income goals" writes the goals too; stay in step.
+  useEffect(() => {
+    const onChange = () => void load();
+    window.addEventListener("finance-goals-changed", onChange);
+    return () => window.removeEventListener("finance-goals-changed", onChange);
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -97,13 +129,62 @@ export default function BudgetPlannerPage() {
 
       <BudgetSuggest onApplied={load} />
 
+      {/* Income goals: the one place they're set. The dashboard's Financial
+          Pulse and Forecasting read them and link back here. */}
+      <div id="income-goals" className="scroll-mt-6" />
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Income goals</CardTitle>
+          <p className="text-xs text-[#b8a898]">Your Financial Pulse on the dashboard tracks these. Leave week or year blank and they&rsquo;re worked out from your monthly goal.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div>
+              <label className="block text-xs font-medium text-[#b8a898] mb-1">Weekly</label>
+              <div className="flex gap-2">
+                <Input type="number" min="0" value={weekInput} onChange={(e) => setWeekInput(e.target.value)} placeholder="From monthly" />
+                <Button variant="outline" size="sm" disabled={saving} onClick={() => saveGoal("week", Number(weekInput) || 0)}>
+                  Set
+                </Button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly</label>
+              <div className="flex gap-2">
+                <Input type="number" min="0" value={incInput} onChange={(e) => setIncInput(e.target.value)} placeholder="Revenue goal" />
+                <Button variant="outline" size="sm" disabled={saving} onClick={() => save("income", "", Number(incInput) || 0)}>
+                  Set
+                </Button>
+              </div>
+              {income && income.monthly > 0 && (
+                <div className="mt-2">
+                  {bar(income.mtdActual, income.monthly)}
+                  <p className="text-[11px] text-[#b8a898] mt-1">
+                    {usd(income.mtdActual)} of {usd(income.monthly)} this month
+                  </p>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#b8a898] mb-1">Yearly</label>
+              <div className="flex gap-2">
+                <Input type="number" min="0" value={yearInput} onChange={(e) => setYearInput(e.target.value)} placeholder="From monthly" />
+                <Button variant="outline" size="sm" disabled={saving} onClick={() => saveGoal("year", Number(yearInput) || 0)}>
+                  Set
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Overall */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Overall monthly targets</CardTitle>
+          <CardTitle className="text-base">Overall monthly spending</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-5">
             <div>
               <label className="block text-xs font-medium text-[#b8a898] mb-1">Expense budget (monthly)</label>
               <div className="flex gap-2">
@@ -117,23 +198,6 @@ export default function BudgetPlannerPage() {
                   {bar(expense.mtdActual, expense.monthly)}
                   <p className="text-[11px] text-[#b8a898] mt-1">
                     {usd(expense.mtdActual)} of {usd(expense.monthly)} this month
-                  </p>
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[#b8a898] mb-1">Income target (monthly)</label>
-              <div className="flex gap-2">
-                <Input type="number" min="0" value={incInput} onChange={(e) => setIncInput(e.target.value)} placeholder="Revenue goal" />
-                <Button variant="outline" size="sm" disabled={saving} onClick={() => save("income", "", Number(incInput) || 0)}>
-                  Set
-                </Button>
-              </div>
-              {income && income.monthly > 0 && (
-                <div className="mt-2">
-                  {bar(income.mtdActual, income.monthly)}
-                  <p className="text-[11px] text-[#b8a898] mt-1">
-                    {usd(income.mtdActual)} of {usd(income.monthly)} this month
                   </p>
                 </div>
               )}

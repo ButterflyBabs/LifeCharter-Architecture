@@ -5,6 +5,16 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 export const dynamic = "force-dynamic";
 
+// GET → { week, year } explicit goals (null when unset). The Budget Planner is
+// where income goals are set; the dashboard and Forecasting link there.
+export async function GET() {
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { data } = await createServerClient().from("finance_goals").select("period, amount").eq("master_plan_id", masterPlanId);
+  const get = (p: string) => Number((data ?? []).find((g) => g.period === p)?.amount) || null;
+  return NextResponse.json({ week: get("week"), year: get("year") });
+}
+
 // Set (or clear, with 0) the weekly or yearly income goal for this client.
 // The monthly goal is set through /api/finance/budgets (income, category "").
 export async function POST(request: Request) {
