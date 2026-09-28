@@ -32,12 +32,13 @@ const PAGE_TITLES: Record<string, string> = {
   "/marketing-plan/social-planner": "Social Planner",
   "/daily-compass/calendar": "Content Calendar",
   "/sales": "Sales",
+  "/sales/offers": "Offers & Packages",
+  "/sales/pipeline": "Pipeline",
   "/finance": "Finance",
   "/planning": "Planning Hub",
   "/planning/forecast": "Forecasting",
   "/operations": "Operations",
   "/reviews": "Reviews",
-  "/ai-guide": "AI Guide",
   "/settings": "Settings",
 };
 
