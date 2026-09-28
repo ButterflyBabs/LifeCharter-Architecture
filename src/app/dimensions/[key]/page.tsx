@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import DimensionLessons from "@/components/lessons/DimensionLessons";
+import MilestoneAssessment from "@/components/goals/MilestoneAssessment";
+import { isDimension } from "@/lib/milestoneAssessment";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Clock, HelpCircle } from "lucide-react";
 
@@ -170,6 +172,11 @@ export default function DimensionDetailPage() {
           </div>
 
           <DimensionLessons dimension={key} label={dim.label} score={dim.score} />
+          {isDimension(key) && (
+            <div className="mt-6">
+              <MilestoneAssessment dimension={key} label={dim.label} />
+            </div>
+          )}
         </>
       )}
     </div>

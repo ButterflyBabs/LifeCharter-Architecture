@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Mountain, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Flag, Loader2, Mountain, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CHILD_OF, PERIOD_LABEL, currentStart, periodLabel, startOptions, type GoalPeriod } from "@/lib/goalLadder";
+import MilestoneAssessment from "@/components/goals/MilestoneAssessment";
+import { isDimension } from "@/lib/milestoneAssessment";
+import { DIMENSION_KEYS, DIMENSION_LABEL, type DimensionKey } from "@/lib/scoring/dimensionModel";
 
 interface Plan {
   id: string;
@@ -42,6 +45,13 @@ export default function GoalLadderPage() {
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const [onlyNow, setOnlyNow] = useState(false);
+  const [milestoneDim, setMilestoneDim] = useState<DimensionKey | null>(null);
+
+  // /planning/goals?milestones=<dimension> opens the milestone assessment for that area.
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("milestones");
+    if (isDimension(d)) setMilestoneDim(d);
+  }, []);
 
   const load = useCallback(async () => {
     const d = await fetch("/api/goals/ladder", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -199,7 +209,11 @@ export default function GoalLadderPage() {
     );
   }
 
-  const roots = goals.filter((g) => !g.parent_id && g.period === "year");
+  // Year goals, plus any goal that stands on its own (a quarter milestone not
+  // tied to a year goal).
+  const roots = goals
+    .filter((g) => !g.parent_id)
+    .sort((a, b) => (a.period === "year" ? 0 : 1) - (b.period === "year" ? 0 : 1) || (a.period_start ?? "").localeCompare(b.period_start ?? ""));
 
   return (
     <div className="py-8 px-4 max-w-5xl mx-auto">
@@ -222,6 +236,31 @@ export default function GoalLadderPage() {
         </label>
       </div>
       {msg && <p className="mb-4 rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm">{msg}</p>}
+      <Card className="mb-5">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Flag className="w-4 h-4 text-[#2E7C83]" />
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Milestone assessment</p>
+          </div>
+          <p className="text-sm text-[#7a8a99] mb-3">Choose an area. Answer four short questions and your assistant proposes this quarter&apos;s milestones for it.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {DIMENSION_KEYS.map((k) => (
+              <button
+                key={k}
+                onClick={() => setMilestoneDim(milestoneDim === k ? null : k)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${milestoneDim === k ? "border-[#1a2b4a] bg-[#1a2b4a] text-white" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
+              >
+                {DIMENSION_LABEL[k]}
+              </button>
+            ))}
+          </div>
+          {milestoneDim && (
+            <div className="mt-4">
+              <MilestoneAssessment dimension={milestoneDim} label={DIMENSION_LABEL[milestoneDim]} onAdded={load} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
       {plans === null ? (
         <p className="text-[#7a8a99]">Loading…</p>
       ) : !roots.length ? (
