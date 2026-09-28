@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { CalendarPlus, CalendarX, ChevronLeft, ChevronRight, Pencil, PlayCircle, Plus, Repeat, Trash2, Video } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CalendarPlus, CalendarX, ChevronLeft, ChevronRight, Film, Paperclip, Pencil, PlayCircle, Plus, Repeat, Trash2, Video, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommunity } from "@/lib/community/context";
-import { eventWhen } from "@/lib/community/format";
-import { sessionsBetween, upcomingEvents, type Session } from "@/lib/community/events";
+import { dayRange, daysCovered, eventWhen, fileSize, isMultiDay, lastDay } from "@/lib/community/format";
+import { replayKey, replaysFor, sessionsBetween, upcomingEvents, type Session } from "@/lib/community/events";
 import { describeRule, icsLocal, rrule, ruleChoices, type RecurFreq } from "@/lib/community/recurrence";
-import { EVENT_KIND_LABELS, type CommunityEvent, type EventKind } from "@/lib/community/types";
+import { uploadCommunityFile, useFileUrl } from "@/lib/community/storage";
+import { EVENT_KIND_LABELS, type CommunityEvent, type EventKind, type EventReplay } from "@/lib/community/types";
 import { Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, RichText, TextArea } from "@/components/community/ui";
 
 type Rsvp = "going" | "maybe" | "not_going";
@@ -89,14 +90,32 @@ function useRsvps(sessions: Session[] | null) {
   return { rsvps, going, rsvp };
 }
 
+// Replays attached to individual sessions of these events.
+function useReplays(sessions: Session[] | null, reloadKey: number) {
+  const { supabase } = useCommunity();
+  const [replays, setReplays] = useState<Record<string, EventReplay>>({});
+  const key = Array.from(new Set((sessions ?? []).map((s) => s.event.id))).join(",");
+  useEffect(() => {
+    if (!key) return setReplays({});
+    let live = true;
+    void replaysFor(supabase, key.split(",")).then((r) => live && setReplays(r));
+    return () => {
+      live = false;
+    };
+  }, [supabase, key, reloadKey]);
+  return replays;
+}
+
 export default function EventsPage() {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
   const [view, setView] = useState<View>("upcoming");
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [editing, setEditing] = useState<Partial<CommunityEvent> | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [replaySession, setReplaySession] = useState<{ s: Session; replay?: EventReplay } | null>(null);
   const canCreate = isAdmin || spaces.some((s) => canModerate(s.id));
   const { rsvps, going, rsvp } = useRsvps(view === "calendar" ? null : sessions);
+  const replays = useReplays(view === "calendar" ? null : sessions, reloadKey);
 
   const load = useCallback(async () => {
     if (view === "calendar") return;
@@ -158,6 +177,7 @@ export default function EventsPage() {
             setEditing({ kind: "session", space_ids: [], starts_at: start.toISOString() });
           }}
           onEdit={setEditing}
+          onReplay={(s, replay) => setReplaySession({ s, replay })}
           onChanged={reload}
         />
       ) : sessions === null ? (
@@ -169,9 +189,31 @@ export default function EventsPage() {
       ) : (
         <div className="space-y-3">
           {sessions.map((s) => (
-            <EventCard key={`${s.event.id}-${s.date}`} s={s} rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={setEditing} onChanged={reload} />
+            <EventCard
+              key={`${s.event.id}-${s.date}`}
+              s={s}
+              replay={replays[replayKey(s.event.id, s.date)]}
+              rsvp={rsvps[s.event.id]}
+              goingCount={going[s.event.id]}
+              onRsvp={rsvp}
+              onEdit={setEditing}
+              onReplay={(s, replay) => setReplaySession({ s, replay })}
+              onChanged={reload}
+            />
           ))}
         </div>
+      )}
+
+      {replaySession && (
+        <ReplayEditor
+          s={replaySession.s}
+          initial={replaySession.replay}
+          onClose={() => setReplaySession(null)}
+          onSaved={() => {
+            setReplaySession(null);
+            reload();
+          }}
+        />
       )}
 
       {editing && (
@@ -188,38 +230,65 @@ export default function EventsPage() {
   );
 }
 
+// "Watch the replay" — a link, or an uploaded recording read through a signed URL.
+function WatchReplay({ replay }: { replay: EventReplay }) {
+  const href = useFileUrl(replay.url || replay.storage_path);
+  if (!href) return null;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      <Button size="sm" variant="gold">
+        <PlayCircle className="h-4 w-4" /> Watch the replay
+      </Button>
+    </a>
+  );
+}
+
 function EventCard({
   s,
+  replay,
   rsvp,
   goingCount,
   onRsvp,
   onEdit,
+  onReplay,
   onChanged,
   compact,
 }: {
   s: Session;
+  replay?: EventReplay;
   rsvp?: Rsvp;
   goingCount?: number;
   onRsvp: (e: CommunityEvent, st: Rsvp) => void;
   onEdit: (e: CommunityEvent) => void;
+  onReplay: (s: Session, replay?: EventReplay) => void;
   onChanged: () => void;
   compact?: boolean;
 }) {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
   const e = s.event;
   const upcoming = s.end.getTime() > Date.now();
+  const started = s.start.getTime() <= Date.now();
   const soon = s.start.getTime() - Date.now() < 30 * 60_000 && upcoming;
   const ids = e.space_ids ?? [];
   const audience = ids.map((id) => spaces.find((x) => x.id === id)).filter(Boolean) as typeof spaces;
   const manage = isAdmin || (ids.length > 0 && ids.every((id) => canModerate(id)));
   const repeats = describeRule(e) ?? e.recurrence;
+  const multiDay = isMultiDay(s.start, s.end);
+  const last = lastDay(s.start, s.end);
+  const sameMonth = last.getMonth() === s.start.getMonth();
 
   return (
     <Card className={cn("scroll-mt-24", compact ? "p-4" : "p-4 sm:p-5")}>
       <div id={e.id} className="flex gap-4">
-        <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#123F47] via-[#1A2E44] to-[#1F2B59] text-white">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E9D7A9]">{s.start.toLocaleDateString(undefined, { month: "short" })}</span>
-          <span className="font-editorial text-[26px] font-semibold leading-none">{s.start.getDate()}</span>
+        <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#123F47] via-[#1A2E44] to-[#1F2B59] px-1 text-white">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E9D7A9]">
+            {s.start.toLocaleDateString(undefined, { month: "short" })}
+            {multiDay && !sameMonth && `–${last.toLocaleDateString(undefined, { month: "short" })}`}
+          </span>
+          <span className={cn("font-editorial font-semibold leading-none", multiDay ? "text-[18px]" : "text-[26px]")}>
+            {s.start.getDate()}
+            {multiDay && `–${last.getDate()}`}
+          </span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -242,6 +311,15 @@ function EventCard({
             </p>
           )}
           {e.description && !compact && <RichText text={e.description} className="mt-2 text-[14.5px]" />}
+          {replay && (replay.title || replay.notes) && (
+            <div className="mt-3 rounded-xl border border-[var(--cm-line-soft)] bg-[var(--cm-fill)] px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--cm-muted-2)]">
+                <Film className="h-3.5 w-3.5" /> This session&rsquo;s replay
+              </p>
+              {replay.title && <p className="mt-1 text-[14.5px] font-semibold text-[var(--cm-ink)]">{replay.title}</p>}
+              {replay.notes && <RichText text={replay.notes} className="mt-1 text-[14px]" />}
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {upcoming && e.join_url && (
@@ -251,12 +329,22 @@ function EventCard({
                 </Button>
               </a>
             )}
-            {e.replay_url && !e.recur_freq && (
-              <a href={e.replay_url} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" variant="gold">
-                  <PlayCircle className="h-4 w-4" /> Watch replay
-                </Button>
-              </a>
+            {replay ? (
+              <WatchReplay replay={replay} />
+            ) : (
+              e.replay_url &&
+              !e.recur_freq && (
+                <a href={e.replay_url} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="gold">
+                    <PlayCircle className="h-4 w-4" /> Watch the replay
+                  </Button>
+                </a>
+              )
+            )}
+            {manage && started && (
+              <Button size="sm" variant="outline" onClick={() => onReplay(s, replay)}>
+                <Film className="h-4 w-4" /> {replay ? "Edit replay" : "Add replay"}
+              </Button>
             )}
             {upcoming && (
               <>
@@ -340,12 +428,14 @@ function MonthCalendar({
   canCreate,
   onNew,
   onEdit,
+  onReplay,
   onChanged,
 }: {
   reloadKey: number;
   canCreate: boolean;
   onNew: (day: Date) => void;
   onEdit: (e: CommunityEvent) => void;
+  onReplay: (s: Session, replay?: EventReplay) => void;
   onChanged: () => void;
 }) {
   const { supabase } = useCommunity();
@@ -354,6 +444,7 @@ function MonthCalendar({
   const [selected, setSelected] = useState<Date>(today);
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const { rsvps, going, rsvp } = useRsvps(sessions);
+  const replays = useReplays(sessions, reloadKey);
 
   // Six-week grid starting on the Sunday on or before the 1st.
   const gridStart = new Date(month);
@@ -372,12 +463,21 @@ function MonthCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, month.getTime(), reloadKey]);
 
+  // Multi-day events (a Summit) sit on every day they cover.
   const byDay = new Map<string, Session[]>();
   for (const s of sessions ?? []) {
-    const k = dayKey(s.start);
-    if (!byDay.has(k)) byDay.set(k, []);
-    byDay.get(k)!.push(s);
+    for (const day of daysCovered(s.start, s.end)) {
+      const k = dayKey(day);
+      if (!byDay.has(k)) byDay.set(k, []);
+      byDay.get(k)!.push(s);
+    }
   }
+  // "9am" on the first day; "Day 2" on the days after.
+  const chipLead = (s: Session, day: Date) => {
+    if (dayKey(day) === dayKey(s.start)) return time(s.start);
+    const first = new Date(s.start.getFullYear(), s.start.getMonth(), s.start.getDate());
+    return `Day ${Math.round((day.getTime() - first.getTime()) / 86_400_000) + 1}`;
+  };
   const selectedSessions = byDay.get(dayKey(selected)) ?? [];
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
   const time = (d: Date) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }).replace(":00", "").replace(" ", "").toLowerCase();
@@ -459,10 +559,10 @@ function MonthCalendar({
                   {list.slice(0, 2).map((s) => (
                     <span
                       key={`${s.event.id}-${s.date}`}
-                      title={`${time(s.start)} ${s.event.title}`}
+                      title={`${chipLead(s, d)} ${s.event.title}`}
                       className={cn("truncate rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold", CHIP[s.event.kind] ?? "bg-[var(--cm-gold-soft)] text-[var(--cm-gold-ink)]")}
                     >
-                      {time(s.start)} {s.event.title}
+                      {chipLead(s, d)} {s.event.title}
                     </span>
                   ))}
                   {list.length > 2 && <span className="px-1 text-[11px] font-semibold text-[var(--cm-muted)]">+{list.length - 2} more</span>}
@@ -489,7 +589,18 @@ function MonthCalendar({
         ) : (
           <div className="space-y-3">
             {selectedSessions.map((s) => (
-              <EventCard key={`${s.event.id}-${s.date}`} s={s} compact rsvp={rsvps[s.event.id]} goingCount={going[s.event.id]} onRsvp={rsvp} onEdit={onEdit} onChanged={onChanged} />
+              <EventCard
+                key={`${s.event.id}-${s.date}`}
+                s={s}
+                compact
+                replay={replays[replayKey(s.event.id, s.date)]}
+                rsvp={rsvps[s.event.id]}
+                goingCount={going[s.event.id]}
+                onRsvp={rsvp}
+                onEdit={onEdit}
+                onReplay={onReplay}
+                onChanged={onChanged}
+              />
             ))}
           </div>
         )}
@@ -538,7 +649,7 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
     const end = f.ends ? new Date(f.ends) : null;
     if (end && end <= start) return setError("The end time needs to be after the start time.");
     if (repeating && end && end.getTime() - start.getTime() > 24 * 3600_000) {
-      return setError("For a repeating event, set when this first session ends (the same day), and use “Repeat until” for the last date.");
+      return setError("Repeating events can’t span several days. Set when this first session ends (the same day), and use “Repeat until” for the last date.");
     }
     if (repeating && f.until && f.until < f.starts.slice(0, 10)) return setError("“Repeat until” needs to be on or after the first session.");
     setBusy(true);
@@ -629,8 +740,15 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
         </div>
         <div>
           <Label>{repeating ? "First session ends" : "Ends"}</Label>
-          <Input type="datetime-local" value={f.ends} onChange={set("ends")} />
+          <Input type="datetime-local" value={f.ends} onChange={set("ends")} min={f.starts || undefined} />
         </div>
+        {!repeating && (
+          <p className="-mt-1 text-[12.5px] text-[var(--cm-muted)] sm:col-span-2">
+            {f.starts && f.ends && new Date(f.ends) > new Date(f.starts) && isMultiDay(new Date(f.starts), new Date(f.ends))
+              ? `Runs ${dayRange(new Date(f.starts), new Date(f.ends))} — it will show on every one of those days.`
+              : "For a multi-day event like a Summit, set the end on the last day."}
+          </p>
+        )}
         <div>
           <Label>Repeats</Label>
           <select value={f.repeat} onChange={set("repeat")} className={selectClass} disabled={!f.starts}>
@@ -679,6 +797,145 @@ function EventEditor({ initial, onClose, onSaved }: { initial: Partial<Community
         </Button>
         <Button variant="gold" onClick={save} disabled={busy}>
           {busy ? "Saving…" : initial.recur_freq || repeating ? "Save series" : "Save event"}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Replay for one session ────────────────────────────────────────────────
+
+const MAX_UPLOAD = 50 * 1024 * 1024; // the Collective's file bucket limit
+
+function ReplayEditor({ s, initial, onClose, onSaved }: { s: Session; initial?: EventReplay; onClose: () => void; onSaved: () => void }) {
+  const { supabase, userId } = useCommunity();
+  const [url, setUrl] = useState(initial?.url ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [file, setFile] = useState<File | null>(null);
+  const [keepFile, setKeepFile] = useState(!!initial?.storage_path);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const label = s.start.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+  async function save() {
+    const link = url.trim();
+    if (link && !/^https?:\/\//i.test(link)) return setError("The replay link needs to start with https://");
+    if (!link && !file && !keepFile) return setError("Add a replay link or upload the recording.");
+    setError(null);
+    let media: Pick<EventReplay, "storage_path" | "file_name" | "file_size" | "mime_type"> = keepFile
+      ? { storage_path: initial?.storage_path ?? null, file_name: initial?.file_name ?? null, file_size: initial?.file_size ?? null, mime_type: initial?.mime_type ?? null }
+      : { storage_path: null, file_name: null, file_size: null, mime_type: null };
+    try {
+      if (file) {
+        setBusy("Uploading…");
+        const a = await uploadCommunityFile(file, `${userId}/replays`);
+        media = { storage_path: a.path ?? null, file_name: a.name, file_size: a.size ?? null, mime_type: a.type || null };
+      }
+    } catch (err) {
+      setBusy(null);
+      return setError(err instanceof Error ? err.message : "Upload failed.");
+    }
+    setBusy("Saving…");
+    const { error } = await supabase.from("cm_event_replays").upsert(
+      {
+        event_id: s.event.id,
+        occurs_on: s.date,
+        url: link || null,
+        ...media,
+        title: title.trim() || null,
+        notes: notes.trim() || null,
+        created_by: initial ? undefined : userId,
+      },
+      { onConflict: "event_id,occurs_on" }
+    );
+    setBusy(null);
+    if (error) return setError(error.message);
+    onSaved();
+  }
+
+  async function remove() {
+    if (!initial || !confirm(`Remove the replay for ${label}?`)) return;
+    setBusy("Removing…");
+    const { error } = await supabase.from("cm_event_replays").delete().eq("id", initial.id);
+    setBusy(null);
+    if (error) return setError(error.message);
+    onSaved();
+  }
+
+  return (
+    <Modal open onClose={onClose} title={initial ? "Edit replay" : "Add replay"}>
+      <p className="-mt-1 mb-3 text-[14px] text-[var(--cm-muted-2)]">
+        <span className="font-semibold text-[var(--cm-ink)]">{s.event.title}</span> · {label}
+        {s.event.recur_freq && <span className="block text-[12.5px] text-[var(--cm-muted)]">Only this session gets this replay.</span>}
+      </p>
+      <div className="space-y-3">
+        <div>
+          <Label>Replay link (Vimeo, Zoom, YouTube…)</Label>
+          <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://vimeo.com/…" inputMode="url" />
+        </div>
+        <div>
+          <Label>Or upload the recording (up to 50 MB)</Label>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="video/*,audio/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              e.target.value = "";
+              if (f && f.size > MAX_UPLOAD) return setError("That file is over 50 MB. Upload it to Vimeo or YouTube and paste the link instead.");
+              setError(null);
+              setFile(f);
+            }}
+          />
+          {file || keepFile ? (
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--cm-line-strong)] bg-[var(--cm-surface)] px-3 py-2 text-[14px] text-[var(--cm-ink)]">
+              <Paperclip className="h-4 w-4 shrink-0 text-[var(--cm-muted)]" />
+              <span className="min-w-0 flex-1 truncate">{file ? file.name : initial?.file_name ?? "Uploaded recording"}</span>
+              <span className="shrink-0 text-[12.5px] text-[var(--cm-muted)]">{fileSize(file ? file.size : initial?.file_size)}</span>
+              <button
+                type="button"
+                aria-label="Remove file"
+                onClick={() => {
+                  setFile(null);
+                  setKeepFile(false);
+                }}
+                className="rounded-lg p-1 text-[var(--cm-muted)] hover:bg-black/5"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" type="button" onClick={() => fileRef.current?.click()}>
+              <Paperclip className="h-4 w-4" /> Choose a file
+            </Button>
+          )}
+        </div>
+        <div>
+          <Label>Title (optional)</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Week 3 — Clearing the runway" />
+        </div>
+        <div>
+          <Label>Notes (optional)</Label>
+          <TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What we covered, timestamps, links…" />
+        </div>
+      </div>
+      <div className="mt-3">
+        <ErrorNote>{error}</ErrorNote>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        {initial && (
+          <Button variant="danger" onClick={remove} disabled={!!busy} className="mr-auto">
+            <Trash2 className="h-4 w-4" /> Remove
+          </Button>
+        )}
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="gold" onClick={save} disabled={!!busy}>
+          {busy ?? "Save replay"}
         </Button>
       </div>
     </Modal>

@@ -151,6 +151,21 @@ export interface CommunityEvent {
   recur_exdates: string[] | null;
 }
 
+// A recording attached to one session of an event (keyed by the session's
+// local date in the event's time zone).
+export interface EventReplay {
+  id: string;
+  event_id: string;
+  occurs_on: string; // YYYY-MM-DD
+  url: string | null;
+  storage_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  mime_type: string | null;
+  title: string | null;
+  notes: string | null;
+}
+
 export interface Resource {
   id: string;
   space_id: string | null;
