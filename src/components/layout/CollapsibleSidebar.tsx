@@ -103,6 +103,7 @@ const ownerSection = {
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
     { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
+    { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
   ],
 };
 
