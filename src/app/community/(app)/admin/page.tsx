@@ -11,8 +11,10 @@ import { timeAgo } from "@/lib/community/format";
 import { SECTION_LABELS, type Channel, type DiscoverCard, type Profile, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
 import { SpaceBrandingEditor, SpaceLogo } from "@/components/community/SpaceBranding";
+import { EngagementDashboard } from "@/components/community/admin/EngagementDashboard";
+import { PurchaseAccess } from "@/components/community/admin/PurchaseAccess";
 
-type Tab = "reports" | "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
+type Tab = "engagement" | "purchases" | "reports" | "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
 
 function newCode() {
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -31,7 +33,7 @@ export default function AdminPage() {
   // Report notifications link to ?tab=reports.
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    if (t === "reports" || t === "requests" || t === "members") setTab(t);
+    if (t === "reports" || t === "requests" || t === "members" || t === "engagement" || t === "purchases") setTab(t);
   }, []);
   if (loading) return <PageLoading />;
   if (!isAdmin) {
@@ -48,7 +50,9 @@ export default function AdminPage() {
         {(
           [
             ["reports", "Reports"],
+            ["engagement", "Engagement"],
             ["invites", "Invite links"],
+            ["purchases", "Purchase access"],
             ["requests", "Invitation requests"],
             ["welcome", "Welcome message"],
             ["spaces", "Channels & pathways"],
@@ -69,6 +73,8 @@ export default function AdminPage() {
         ))}
       </div>
       {tab === "reports" && <Reports />}
+      {tab === "engagement" && <EngagementDashboard />}
+      {tab === "purchases" && <PurchaseAccess />}
       {tab === "invites" && <Invites />}
       {tab === "requests" && <InviteRequests />}
       {tab === "welcome" && <WelcomeMessage />}

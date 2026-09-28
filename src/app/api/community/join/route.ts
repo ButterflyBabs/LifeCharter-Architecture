@@ -41,11 +41,13 @@ export async function POST(req: Request) {
   const phone = String(body.phone ?? "").trim().slice(0, 32);
   const password = String(body.password ?? "");
   const code = String(body.code ?? "").trim().toUpperCase();
+  // Purchase-access emails link here with ?claim=<token>: the purchase is the invitation.
+  const claim = String(body.claim ?? "").trim().slice(0, 128);
 
   if (!name) return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   if (password.length < 8) return NextResponse.json({ error: "Please choose a password of at least 8 characters." }, { status: 400 });
-  if (!code) return NextResponse.json({ error: "Please enter your invite code." }, { status: 400 });
+  if (!code && !claim) return NextResponse.json({ error: "Please enter your invite code." }, { status: 400 });
 
   const supabase = createServerClient();
 
@@ -55,11 +57,21 @@ export async function POST(req: Request) {
     .eq("slug", slug)
     .maybeSingle();
   if (!space || space.archived) return NextResponse.json({ error: "This community link is no longer active." }, { status: 404 });
-  if (!space.join_enabled) return NextResponse.json({ error: "This community isn't accepting new members right now." }, { status: 403 });
 
-  const { data: codeRow } = await supabase.from("cm_space_codes").select("code").eq("space_id", space.id).maybeSingle();
-  if (!codeRow || String(codeRow.code).toUpperCase() !== code) {
-    return NextResponse.json({ error: "That invite code doesn't match. Please check it and try again." }, { status: 403 });
+  let claimed = false;
+  if (claim) {
+    const { data: grant } = await supabase.from("cm_purchase_grants").select("email, status").eq("claim_token", claim).maybeSingle();
+    if (!grant) return NextResponse.json({ error: "This access link isn't valid. Please use the link in your purchase email." }, { status: 403 });
+    if (String(grant.email).toLowerCase() !== email) {
+      return NextResponse.json({ error: "Please use the email address you bought with, so your access finds you." }, { status: 403 });
+    }
+    claimed = true;
+  } else {
+    if (!space.join_enabled) return NextResponse.json({ error: "This community isn't accepting new members right now." }, { status: 403 });
+    const { data: codeRow } = await supabase.from("cm_space_codes").select("code").eq("space_id", space.id).maybeSingle();
+    if (!codeRow || String(codeRow.code).toUpperCase() !== code) {
+      return NextResponse.json({ error: "That invite code doesn't match. Please check it and try again." }, { status: 403 });
+    }
   }
 
   const { data: created, error: createErr } = await supabase.auth.admin.createUser({
@@ -83,7 +95,13 @@ export async function POST(req: Request) {
   const uid = created.user.id;
   const { error: memberErr } = await supabase.rpc("cm_ensure_member", { p_user: uid, p_name: name });
   if (memberErr) console.error("community join ensure_member:", memberErr.message);
-  await supabase.from("cm_space_members").upsert({ space_id: space.id, user_id: uid, joined_via: "code" }, { onConflict: "space_id,user_id", ignoreDuplicates: true });
+  if (claimed) {
+    // The new profile already picked up their purchases (database trigger); this is a safety net.
+    const { error: applyErr } = await supabase.rpc("cm_apply_purchase_grants", { p_user: uid });
+    if (applyErr) console.error("community join apply purchases:", applyErr.message);
+  } else {
+    await supabase.from("cm_space_members").upsert({ space_id: space.id, user_id: uid, joined_via: "code" }, { onConflict: "space_id,user_id", ignoreDuplicates: true });
+  }
   if (phone) await supabase.from("cm_private_profiles").upsert({ user_id: uid, phone });
   // If they came through the landing page, mark the invitation as accepted.
   await supabase.from("cm_invite_requests").update({ joined_user_id: uid, joined_at: new Date().toISOString() }).eq("email", email.toLowerCase()).is("joined_at", null);

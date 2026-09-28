@@ -85,6 +85,12 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    // Bought something that includes a channel but never joined? That purchase
+    // makes them a member now (a no-op for everyone else).
+    await supabase.rpc("cm_claim_purchase_access").then(
+      () => undefined,
+      () => undefined
+    );
     const [prof, admin, sp, ch, mem, blk] = await Promise.all([
       supabase.from("cm_profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.rpc("cm_is_admin"),
