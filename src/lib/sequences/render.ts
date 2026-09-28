@@ -37,7 +37,7 @@ export function toHtml(text: string) {
       const lines = block.split("\n").filter((l) => l.trim() !== "");
       if (!lines.length) return "";
       if (lines.every((l) => /^- /.test(l))) return `<ul ${L}>${lines.map((b) => `<li style="margin-bottom:4px">${inline(b.slice(2))}</li>`).join("")}</ul>`;
-      if (lines.every((l) => /^\d+\. /.test(l))) return `<ol ${L}>${lines.map((b) => `<li style="margin-bottom:6px">${inline(b.replace(/^\d+\. /, ""))}</li>`).join("")}</ol>`;
+      if (lines.every((l) => /^\d+\. /.test(l))) return `<ol start="${parseInt(lines[0], 10)}" ${L}>${lines.map((b) => `<li style="margin-bottom:6px">${inline(b.replace(/^\d+\. /, ""))}</li>`).join("")}</ol>`;
       if (lines.length > 1 && lines.slice(1).every((l) => /^- /.test(l)))
         return `<p ${P.replace("14px", "6px")}>${inline(lines[0])}</p><ul ${L}>${lines.slice(1).map((b) => `<li style="margin-bottom:4px">${inline(b.slice(2))}</li>`).join("")}</ul>`;
       if (/^## /.test(lines[0])) return `<h2 style="margin:6px 0 10px;font-family:Georgia,serif;font-size:20px;color:#0F5B63">${inline(lines[0].slice(3))}</h2>${lines.length > 1 ? `<p ${P}>${lines.slice(1).map(inline).join("<br>")}</p>` : ""}`;
