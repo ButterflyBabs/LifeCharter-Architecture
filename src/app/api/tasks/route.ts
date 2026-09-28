@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { currentBusiness } from "@/lib/businessScope";
+import { planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ const DIMENSION_COLUMNS: Record<string, string> = {
   sustainability: "dimension_sustainability",
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createServerClient();
   // Each client sees only their own plan's tasks.
   const masterPlanId = await resolveMasterPlanId();
@@ -37,10 +38,17 @@ export async function GET() {
   let q = supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, segment_id, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, segment_id, assignee_member_id, business:businesses(name, color), segment:segments(name, color)"
     )
     .eq("master_plan_id", masterPlanId);
   if (scope) q = q.eq("business_id", scope.businessId);
+  // ?assignee=me (the signed-in member's; the owner's = unassigned) | none | <member id>
+  const who = new URL(request.url).searchParams.get("assignee");
+  if (who === "me") {
+    const me = await myMemberId();
+    q = me ? q.eq("assignee_member_id", me) : q.is("assignee_member_id", null);
+  } else if (who === "none") q = q.is("assignee_member_id", null);
+  else if (who && /^[0-9a-f-]{36}$/i.test(who)) q = q.eq("assignee_member_id", who);
   const { data, error } = await q
     .order("board_position", { ascending: true })
     .order("created_at", { ascending: true });
@@ -99,6 +107,14 @@ export async function POST(request: Request) {
     if (col) row[col] = true;
   }
 
+  // Assigned to a team member of this account (checked), or left as the owner's.
+  let assignee = null as Awaited<ReturnType<typeof planMembers>>[number] | null;
+  if (typeof body.assigneeId === "string" && body.assigneeId) {
+    assignee = (await planMembers(masterPlanId)).find((m) => m.id === body.assigneeId) ?? null;
+    if (!assignee) return NextResponse.json({ error: "That person isn't on this account's team." }, { status: 400 });
+    row.assignee_member_id = assignee.id;
+  }
+
   const { data, error } = await supabase
     .from("tasks")
     .insert(row)
@@ -110,6 +126,9 @@ export async function POST(request: Request) {
   if (error) {
     console.error("POST /api/tasks:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (assignee && assignee.id !== (await myMemberId())) {
+    await notifyAssignee(assignee, { title: String(body.title), due_at: (row.due_at as string) ?? null }, await actorName()).catch(() => {});
   }
   return NextResponse.json({ task: data, persisted: true });
 }

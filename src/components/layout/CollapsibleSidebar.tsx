@@ -66,6 +66,7 @@ const navigationSections = [
     items: [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
+      { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },

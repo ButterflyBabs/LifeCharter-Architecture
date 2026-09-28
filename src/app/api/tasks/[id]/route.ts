@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { planSegmentIds } from "@/lib/planScope";
+import { planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
 
 export const dynamic = "force-dynamic";
 
@@ -37,18 +38,31 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     update.business_id = seg.business_id;
   }
 
+  // (Re)assign: a team member of this account, or "" / null for the owner.
+  let newAssignee = null as Awaited<ReturnType<typeof planMembers>>[number] | null;
+  if (body.assigneeId === null || body.assigneeId === "") update.assignee_member_id = null;
+  else if (typeof body.assigneeId === "string") {
+    newAssignee = (await planMembers(masterPlanId)).find((m) => m.id === body.assigneeId) ?? null;
+    if (!newAssignee) return NextResponse.json({ error: "That person isn't on this account's team." }, { status: 400 });
+    update.assignee_member_id = newAssignee.id;
+  }
+  const { data: before } = newAssignee ? await supabase.from("tasks").select("assignee_member_id").eq("id", params.id).eq("master_plan_id", masterPlanId).maybeSingle() : { data: null };
+
   const { data, error } = await supabase
     .from("tasks")
     .update(update)
     .eq("id", params.id)
     .eq("master_plan_id", masterPlanId)
-    .select("id, title, status, priority, due_at, due_has_time, time_kind")
+    .select("id, title, status, priority, due_at, due_has_time, time_kind, assignee_member_id")
     .maybeSingle();
 
   if (!error && !data) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (error) {
     console.error("PATCH /api/tasks/[id]:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (data && newAssignee && before?.assignee_member_id !== newAssignee.id && newAssignee.id !== (await myMemberId())) {
+    await notifyAssignee(newAssignee, { title: data.title as string, due_at: data.due_at as string | null }, await actorName()).catch(() => {});
   }
   return NextResponse.json({ task: data });
 }

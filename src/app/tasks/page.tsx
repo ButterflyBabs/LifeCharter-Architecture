@@ -18,6 +18,11 @@ interface Task {
   business: { name: string; color: string } | null;
   segment: { name: string; color: string } | null;
   segment_id?: number | null;
+  assignee_member_id?: string | null;
+}
+interface Member {
+  id: string;
+  name: string;
 }
 
 const COLUMNS: { key: string; label: string }[] = [
@@ -50,20 +55,47 @@ export default function TasksPage() {
   const [editDay, setEditDay] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editKind, setEditKind] = useState<"deadline" | "scheduled">("deadline");
+  // Team: who tasks can go to, who's looking, and whose tasks are shown.
+  const [members, setMembers] = useState<Member[]>([]);
+  const [me, setMe] = useState<string | null>(null);
+  const [view, setView] = useState<string | null>(null); // "all" | "mine" | "none" | member id
+  const [newAssignee, setNewAssignee] = useState("");
 
   useEffect(() => {
     setTz(localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
   }, []);
 
+  useEffect(() => {
+    fetch("/api/tasks/assignees")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        setMembers(d?.members ?? []);
+        setMe(d?.me ?? null);
+        const asked = new URLSearchParams(window.location.search).get("view");
+        // A team member lands on their own tasks; the owner sees everything.
+        setView(asked || (d?.me ? "mine" : "all"));
+      })
+      .catch(() => setView("all"));
+  }, []);
+
   const load = () =>
-    fetch("/api/tasks")
+    view === null
+      ? Promise.resolve()
+      : fetch(view === "all" ? "/api/tasks" : `/api/tasks?assignee=${encodeURIComponent(view)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setTasks(d?.tasks ?? []))
       .catch(() => setTasks([]));
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  const nameOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.name ?? "Team member" : me ? "Owner" : "Me");
+  const assign = async (id: number, assigneeId: string) => {
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assigneeId: assigneeId || null }) }).catch(() => {});
+    void load();
+  };
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +108,7 @@ export default function TasksPage() {
         title: newTitle,
         status: "today",
         priority: newPriority,
+        ...(newAssignee ? { assigneeId: newAssignee } : view && view !== "all" && view !== "none" && view !== "mine" ? { assigneeId: view } : me && view === "mine" ? { assigneeId: me } : {}),
         ...(newDay || newTime
           ? { dueDay: newDay || dayInTz(new Date(), tz), dueTime: newTime || undefined, timeKind: newKind, tz }
           : {}),
@@ -85,6 +118,7 @@ export default function TasksPage() {
     setNewDay("");
     setNewTime("");
     setNewKind("deadline");
+    setNewAssignee("");
     setAdding(false);
     load();
   };
@@ -134,6 +168,20 @@ export default function TasksPage() {
         <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Everything across your businesses, by status.</p>
       </div>
 
+      {members.length > 0 && view && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          {[["all", "Everyone"], ["mine", "Assigned to me"], ...(me ? [] : [["none", "Unassigned (mine)"]]), ...members.filter((m) => m.id !== me).map((m) => [m.id, m.name])].map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => setView(k)}
+              className={`rounded-full px-3.5 py-1.5 text-sm ${view === k ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Add task */}
       <form onSubmit={addTask} className="flex flex-wrap gap-2 mb-8">
         <input
@@ -175,6 +223,21 @@ export default function TasksPage() {
           >
             <option value="deadline">Due by this time</option>
             <option value="scheduled">Do it at this time</option>
+          </select>
+        )}
+        {members.length > 0 && (
+          <select
+            value={newAssignee}
+            onChange={(e) => setNewAssignee(e.target.value)}
+            aria-label="Assign to"
+            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+          >
+            <option value="">{me ? "Assign to…" : "Assign to me"}</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.id === me ? `${m.name} (me)` : m.name}
+              </option>
+            ))}
           </select>
         )}
         <button
@@ -319,6 +382,24 @@ export default function TasksPage() {
                         >
                           {t.segment.name}
                         </span>
+                      )}
+                      {members.length > 0 && (
+                        <select
+                          value={t.assignee_member_id ?? ""}
+                          onChange={(e) => assign(t.id, e.target.value)}
+                          aria-label="Assigned to"
+                          className="mt-2 w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]"
+                        >
+                          <option value="">{me ? "Owner" : "Me"}</option>
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.id === me ? `${m.name} (me)` : m.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {t.assignee_member_id && view === "all" && (
+                        <span className="inline-block mt-2 ml-1 text-[10px] px-2 py-0.5 rounded-full bg-[#2E7C83]/10 text-[#1F5E63]">{nameOf(t.assignee_member_id)}</span>
                       )}
                       <select
                         value={t.status}
