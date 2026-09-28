@@ -442,3 +442,18 @@ export const SocialProofRead = () => (
     sections={[{ key: "themes", heading: "What clients value" }, { key: "quotes", heading: "Lines to use" }, { key: "gaps", heading: "Missing proof", tone: "text-[#8a6a15]" }, { key: "next", heading: "Next steps" }]}
   />
 );
+
+// Finance detail pages: the assistant's read from the client's own ledger.
+const FIN_SECTIONS = [{ key: "notice", heading: "What stands out" }, { key: "next", heading: "What to do next" }];
+export const FinancePnlRead = () => (
+  <InsightPanel url="/api/finance/read/pnl" title="profit read" runLabel="Read my P&L" blurb="Your margin, your biggest costs, and where profit is growing or leaking." sections={FIN_SECTIONS} />
+);
+export const FinanceTaxRead = () => (
+  <InsightPanel url="/api/finance/read/tax" title="tax-readiness read" runLabel="Check my tax readiness" blurb="What to categorize, what you might be missing, and what to set aside. An estimate, not tax advice." sections={FIN_SECTIONS} />
+);
+export const FinanceMonthlyRead = () => (
+  <InsightPanel url="/api/finance/read/monthly" title="monthly money read" runLabel="Read my month" blurb="What changed this month, what drove it, and the one money decision worth making now." sections={FIN_SECTIONS} />
+);
+export const FinanceLedgerRead = () => (
+  <InsightPanel url="/api/finance/read/ledger" title="money-flow read" runLabel="Read my income & spending" blurb="Where your money comes from, where it goes, and what to change." sections={FIN_SECTIONS} />
+);

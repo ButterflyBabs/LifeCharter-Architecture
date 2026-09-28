@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Printer, ChevronLeft, ChevronRight, FileText, Download, FileDown } from "lucide-react";
 import Link from "next/link";
+import { FinancePnlRead } from "@/components/planning/AssistantPanels";
 
 type Period = "week" | "month" | "quarter" | "year" | "custom";
 interface Line {
@@ -286,6 +287,9 @@ export default function PnLPage() {
           )}
         </CardContent>
       </Card>
+      <div className="mt-6 print:hidden">
+        <FinancePnlRead />
+      </div>
     </div>
   );
 }

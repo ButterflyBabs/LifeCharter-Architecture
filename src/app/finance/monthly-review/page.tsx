@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import Link from "next/link";
+import { FinanceMonthlyRead } from "@/components/planning/AssistantPanels";
 
 interface Line {
   category: string;
@@ -158,6 +159,9 @@ export default function MonthlyReviewPage() {
           </div>
         </>
       )}
+      <div className="mt-6 print:hidden">
+        <FinanceMonthlyRead />
+      </div>
     </div>
   );
 }

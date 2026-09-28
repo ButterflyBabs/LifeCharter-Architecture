@@ -14,7 +14,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trim()}…` : s.trim());
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 
-export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews" | "operations" | "review" | "lesson" | "legal";
+export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews" | "operations" | "review" | "lesson" | "legal" | "fin-pnl" | "fin-tax" | "fin-monthly" | "fin-ledger";
 
 // The latest thing this client's assistant concluded about an area.
 export async function latestInsight(masterPlanId: string, area: InsightArea) {
@@ -172,7 +172,7 @@ export async function planningKnowledge(masterPlanId: string): Promise<string> {
 
   // What their assistant last concluded (so it stays consistent with itself).
   try {
-    for (const [area, label] of [["hub", "Planning briefing"], ["forecast", "Forecast read"], ["finance", "Finance read"], ["review", "Their latest weekly/monthly review"]] as const) {
+    for (const [area, label] of [["hub", "Planning briefing"], ["forecast", "Forecast read"], ["finance", "Finance read"], ["review", "Their latest weekly/monthly review"], ["fin-pnl", "P&L read"], ["fin-tax", "Tax-readiness read"], ["fin-monthly", "Monthly money read"], ["fin-ledger", "Money-flow read"]] as const) {
       const i = await latestInsight(masterPlanId, area);
       const summary = typeof i?.content?.summary === "string" ? i.content.summary : "";
       if (summary) parts.push(`${label} (${i!.createdAt.slice(0, 10)}): ${clip(oneLine(summary), 260)}`);

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ArrowLeft, Receipt, Download, PiggyBank, AlertTriangle, CheckCircle, CalendarClock } from "lucide-react";
 import Link from "next/link";
+import { FinanceTaxRead } from "@/components/planning/AssistantPanels";
 
 interface Line {
   category: string;
@@ -250,6 +251,9 @@ export default function TaxPrepPage() {
           </Card>
         </>
       )}
+      <div className="mt-6 print:hidden">
+        <FinanceTaxRead />
+      </div>
     </div>
   );
 }

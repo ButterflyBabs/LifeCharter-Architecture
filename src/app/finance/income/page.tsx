@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { ArrowLeft, TrendingUp, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
+import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
 
 interface Entry {
   id: string;
@@ -260,6 +261,9 @@ export default function IncomePage() {
             )}
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6 print:hidden">
+        <FinanceLedgerRead />
       </div>
     </div>
   );
