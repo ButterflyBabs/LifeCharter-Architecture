@@ -125,7 +125,9 @@ export async function grantAccessForFirstInvoice(stripe: Stripe, invoice: Stripe
 }
 
 async function grant(db: Db, maps: AccessRow[], keys: Set<string>, buyer: Buyer, stripeRef: string, stripeObject: string) {
-  const matched = maps.filter((m) => keys.has(m.match_key));
+  // A Payment Link id pasted from the dashboard URL can lose its last character;
+  // a plink_ key also matches the full id it starts (ids are long and unique).
+  const matched = maps.filter((m) => keys.has(m.match_key) || (m.match_key.startsWith("plink_") && m.match_key.length >= 20 && Array.from(keys).some((k) => k.startsWith(m.match_key))));
   if (!matched.length || !stripeRef) return;
   const email = buyer.email.trim().toLowerCase();
 
