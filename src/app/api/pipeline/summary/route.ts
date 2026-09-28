@@ -12,5 +12,5 @@ export async function GET() {
   if (!a) return NextResponse.json({ summary: null });
   const tz = await resolveUserTimeZone(null);
   const today = dayInTz(new Date(), tz);
-  return NextResponse.json({ summary: await pipelineSummary(a.supabase, a.masterPlanId, today), today });
+  return NextResponse.json({ summary: await pipelineSummary(a.supabase, a.masterPlanId, today, a.businessId), today });
 }

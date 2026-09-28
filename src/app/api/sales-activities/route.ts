@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planSegmentIds } from "@/lib/planScope";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz } from "@/lib/tz";
+import { currentBusiness } from "@/lib/businessScope";
 import { ACTIVITY_TYPE_IDS, OUTCOME_IDS, PRIORITIES } from "@/lib/salesActivities";
 
 export const dynamic = "force-dynamic";
@@ -55,10 +56,13 @@ export async function GET() {
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ activities: [], aggregates: null, goals: {} });
 
-  const { data } = await supabase
+  const scope = await currentBusiness(masterPlanId);
+  let q = supabase
     .from("sales_activities")
     .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes, segment_id")
-    .eq("master_plan_id", masterPlanId)
+    .eq("master_plan_id", masterPlanId);
+  if (scope) q = q.in("segment_id", scope.segmentIds.length ? scope.segmentIds : [-1]);
+  const { data } = await q
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });
 

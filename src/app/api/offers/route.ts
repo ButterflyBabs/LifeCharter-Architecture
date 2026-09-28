@@ -9,11 +9,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const a = await salesAccount();
   if (!a) return NextResponse.json({ offers: [], businesses: [] });
-  const [{ data }, businesses] = await Promise.all([
-    a.supabase.from("sales_offers").select(OFFER_COLUMNS).eq("master_plan_id", a.masterPlanId).order("sort_order").order("created_at"),
-    planBusinesses(a.masterPlanId),
-  ]);
-  return NextResponse.json({ offers: ((data ?? []) as Record<string, unknown>[]).map(shapeOffer), businesses });
+  let q = a.supabase.from("sales_offers").select(OFFER_COLUMNS).eq("master_plan_id", a.masterPlanId);
+  if (a.businessId) q = q.or(`business_id.eq.${a.businessId},business_id.is.null`);
+  const [{ data }, businesses] = await Promise.all([q.order("sort_order").order("created_at"), planBusinesses(a.masterPlanId)]);
+  return NextResponse.json({ offers: ((data ?? []) as Record<string, unknown>[]).map(shapeOffer), businesses, currentBusinessId: a.businessId });
 }
 
 // POST: add an offer.
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const v = offerRow(body);
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
-  v.row.business_id = await ownBusinessId(a.masterPlanId, body.businessId);
+  v.row.business_id = body.businessId ? await ownBusinessId(a.masterPlanId, body.businessId) : null;
   const { count } = await a.supabase.from("sales_offers").select("id", { count: "exact", head: true }).eq("master_plan_id", a.masterPlanId);
   if ((count ?? 0) >= 200) return NextResponse.json({ error: "That's the most offers one account can hold." }, { status: 400 });
   const { data, error } = await a.supabase

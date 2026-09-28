@@ -40,6 +40,7 @@ function PipelineBoard() {
   const [offers, setOffers] = useState<OfferLite[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [bizFilter, setBizFilter] = useState("");
+  const [currentBiz, setCurrentBiz] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const [form, setForm] = useState<DealForm | null>(null);
   const [editStages, setEditStages] = useState<Stage[] | null>(null);
@@ -59,6 +60,7 @@ function PipelineBoard() {
     setDeals(d.deals ?? []);
     setOffers(d.offers ?? []);
     setBusinesses(d.businesses ?? []);
+    setCurrentBiz(d.currentBusinessId ?? null);
     return d as { deals?: Deal[] };
   }, []);
 
@@ -73,7 +75,7 @@ function PipelineBoard() {
     setTouch({ type: "call", title: "", outcome: "", notes: "" });
     if (!d) {
       const first = stageId || stages.find((s) => s.kind === "open")?.id || stages[0]?.id || "";
-      setForm({ id: null, stageId: first, contactName: "", company: "", email: "", offerId: "", value: "", probability: "", useStageDefault: true, expectedClose: "", nextStep: "", nextStepDue: "", source: "", notes: "", businessId: "" });
+      setForm({ id: null, stageId: first, contactName: "", company: "", email: "", offerId: "", value: "", probability: "", useStageDefault: true, expectedClose: "", nextStep: "", nextStepDue: "", source: "", notes: "", businessId: currentBiz ? String(currentBiz) : "" });
       return;
     }
     setForm({
@@ -82,7 +84,7 @@ function PipelineBoard() {
       expectedClose: d.expectedClose ?? "", nextStep: d.nextStep, nextStepDue: d.nextStepDue ?? "", source: d.source, notes: d.notes, businessId: d.businessId ? String(d.businessId) : "",
     });
     fetch(`/api/pipeline/deals/${d.id}/activities`, { cache: "no-store" }).then((r) => r.json()).then((t) => setTouches({ linked: t.linked ?? [], recent: t.recent ?? [] })).catch(() => {});
-  }, [stages]);
+  }, [stages, currentBiz]);
 
   // Deep link from Executive Home / Daily Compass: /sales/pipeline?deal=<id>
   useEffect(() => {
@@ -240,7 +242,7 @@ function PipelineBoard() {
 
       <div className="flex flex-wrap items-center gap-3">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search deals" aria-label="Search deals" className={`${input} max-w-xs`} />
-        {businesses.length > 1 && (
+        {businesses.length > 1 && !currentBiz && (
           <select value={bizFilter} onChange={(e) => setBizFilter(e.target.value)} aria-label="Business" className={`${input} max-w-xs`}>
             <option value="">All businesses</option>
             {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}

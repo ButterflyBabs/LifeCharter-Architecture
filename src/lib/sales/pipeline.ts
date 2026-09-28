@@ -96,11 +96,18 @@ export type PipelineSummary = {
 };
 
 // Everything Executive Home and Daily Compass show. `today` is the client's own date (YYYY-MM-DD).
-export async function pipelineSummary(supabase: SupabaseClient, masterPlanId: string, today: string): Promise<PipelineSummary> {
+// businessId: only that business's deals and offers (offers for "All businesses" always count).
+export async function pipelineSummary(supabase: SupabaseClient, masterPlanId: string, today: string, businessId?: number | null): Promise<PipelineSummary> {
+  let dq = supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", masterPlanId);
+  let oq = supabase.from("sales_offers").select("id, name, status").eq("master_plan_id", masterPlanId);
+  if (businessId) {
+    dq = dq.eq("business_id", businessId);
+    oq = oq.or(`business_id.eq.${businessId},business_id.is.null`);
+  }
   const [{ data: st }, { data: dl }, { data: of }] = await Promise.all([
     supabase.from("pipeline_stages").select("id, name, kind, probability, sort_order").eq("master_plan_id", masterPlanId).order("sort_order"),
-    supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", masterPlanId),
-    supabase.from("sales_offers").select("id, name, status").eq("master_plan_id", masterPlanId),
+    dq,
+    oq,
   ]);
   const stages = ((st ?? []) as Record<string, unknown>[]).map(shapeStage);
   const smap = new Map(stages.map((s) => [s.id, s]));

@@ -8,10 +8,10 @@ import {
   Search,
   HelpCircle,
   Sparkles,
-  ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "./NotificationsBell";
 import { QuickAddMenu } from "./QuickAddMenu";
+import { BusinessSwitcher } from "./BusinessSwitcher";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -97,18 +97,8 @@ export function Header({
         <Sparkles className="w-4 h-4 text-[#c9a227]" />
       </div>
 
-      {/* Center: Workspace Selector */}
-      <div className={workspace ? "hidden md:flex items-center gap-2" : "hidden"}>
-        <span className="text-xs text-[#b8a898] uppercase tracking-wider">
-          Workspace
-        </span>
-        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors">
-          <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-            {workspace}
-          </span>
-          <ChevronDown className="w-4 h-4 text-[#b8a898]" />
-        </button>
-      </div>
+      {/* Center: business switcher (or the account name when there's only one business) */}
+      <BusinessSwitcher workspace={workspace} />
 
       {/* Right: Search & Actions */}
       <div className="flex items-center gap-3">

@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 import { dueFromBody } from "@/lib/taskDueInput";
+import { currentBusiness } from "@/lib/businessScope";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -31,12 +32,16 @@ export async function GET() {
   // Each client sees only their own plan's tasks.
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ tasks: [] });
-  const { data, error } = await supabase
+  // Header business switcher: only that business's tasks.
+  const scope = await currentBusiness(masterPlanId);
+  let q = supabase
     .from("tasks")
     .select(
       "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, segment_id, business:businesses(name, color), segment:segments(name, color)"
     )
-    .eq("master_plan_id", masterPlanId)
+    .eq("master_plan_id", masterPlanId);
+  if (scope) q = q.eq("business_id", scope.businessId);
+  const { data, error } = await q
     .order("board_position", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -67,6 +72,8 @@ export async function POST(request: Request) {
     const { data: seg } = await supabase.from("segments").select("business_id").eq("id", segmentId).maybeSingle();
     businessId = seg?.business_id ?? null;
   }
+  // Created while one business is chosen in the header: it belongs to that business.
+  if (!businessId && !segmentId) businessId = (await currentBusiness(masterPlanId))?.businessId ?? null;
 
   const row: Record<string, unknown> = {
     master_plan_id: masterPlanId,

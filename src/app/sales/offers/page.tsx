@@ -46,6 +46,7 @@ const formatLabel = (id: string) => OFFER_FORMATS.find((f) => f.id === id)?.labe
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[] | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [currentBiz, setCurrentBiz] = useState<number | null>(null);
   const [filter, setFilter] = useState<"active" | "draft" | "retired" | "all">("active");
   const [form, setForm] = useState<Form | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,6 +58,7 @@ export default function OffersPage() {
     const d = await res.json().catch(() => ({}));
     setOffers(d.offers ?? []);
     setBusinesses(d.businesses ?? []);
+    setCurrentBiz(d.currentBusinessId ?? null);
   }, []);
   useEffect(() => {
     load();
@@ -123,7 +125,7 @@ export default function OffersPage() {
           </p>
         </div>
         <button
-          onClick={() => { setForm({ ...EMPTY }); setError(""); setConfirmDelete(false); }}
+          onClick={() => { setForm({ ...EMPTY, businessId: currentBiz ? String(currentBiz) : "" }); setError(""); setConfirmDelete(false); }}
           className="inline-flex items-center gap-2 rounded-lg bg-[#1a2b4a] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Add an offer

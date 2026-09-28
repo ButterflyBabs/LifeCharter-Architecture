@@ -1,12 +1,15 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { currentBusiness } from "@/lib/businessScope";
 
 // The signed-in account for Offers & Pipeline routes. Every query must filter by masterPlanId
 // (the service-role client bypasses RLS).
 export async function salesAccount() {
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return null;
-  return { supabase: createServerClient(), masterPlanId };
+  // The business chosen in the header switcher (null = all businesses).
+  const scope = await currentBusiness(masterPlanId);
+  return { supabase: createServerClient(), masterPlanId, businessId: scope?.businessId ?? null };
 }
 
 export async function planBusinesses(masterPlanId: string) {

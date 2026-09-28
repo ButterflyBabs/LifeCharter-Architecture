@@ -12,16 +12,19 @@ export async function GET() {
   if (!a) return NextResponse.json({ stages: [], deals: [], offers: [], businesses: [] });
   const stages = await ensureStages(a.supabase, a.masterPlanId);
   const smap = new Map(stages.map((s) => [s.id, s]));
-  const [{ data: deals }, { data: offers }, businesses] = await Promise.all([
-    a.supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", a.masterPlanId).order("sort_order").order("created_at"),
-    a.supabase.from("sales_offers").select("id, name, price, status").eq("master_plan_id", a.masterPlanId).order("sort_order"),
-    planBusinesses(a.masterPlanId),
-  ]);
+  let dq = a.supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", a.masterPlanId);
+  let oq = a.supabase.from("sales_offers").select("id, name, price, status").eq("master_plan_id", a.masterPlanId);
+  if (a.businessId) {
+    dq = dq.eq("business_id", a.businessId);
+    oq = oq.or(`business_id.eq.${a.businessId},business_id.is.null`);
+  }
+  const [{ data: deals }, { data: offers }, businesses] = await Promise.all([dq.order("sort_order").order("created_at"), oq.order("sort_order"), planBusinesses(a.masterPlanId)]);
   return NextResponse.json({
     stages,
     deals: ((deals ?? []) as Record<string, unknown>[]).map((r) => shapeDeal(r, smap)),
     offers: ((offers ?? []) as { id: string; name: string; price: number | string | null; status: string }[]).map((o) => ({ id: o.id, name: o.name, price: o.price === null ? null : Number(o.price), status: o.status })),
     businesses,
+    currentBusinessId: a.businessId,
   });
 }
 
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
       if (row.value === undefined || row.value === null) row.value = offer.price;
     }
   }
-  row.business_id = await ownBusinessId(a.masterPlanId, body.businessId);
+  row.business_id = "businessId" in body ? await ownBusinessId(a.masterPlanId, body.businessId) : a.businessId;
   if (stage.kind !== "open") row.closed_at = new Date().toISOString();
   const { count } = await a.supabase.from("pipeline_deals").select("id", { count: "exact", head: true }).eq("master_plan_id", a.masterPlanId);
   if ((count ?? 0) >= 5000) return NextResponse.json({ error: "That's the most deals one account can hold." }, { status: 400 });
