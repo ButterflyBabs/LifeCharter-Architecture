@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 // Emails a reminder before a timed task is due. Runs every 5 minutes. For each
 // client who has email reminders on, any open task with a time that falls
 // within their lead time (default 30 min) and hasn't been reminded yet goes out
-// in one email to the account owner, then is marked reminded so it never repeats.
+// in one email, then is marked reminded so it never repeats. A task assigned to a
+// team member goes to them (on their own reminder settings); the rest go to the owner.
 // Changing a task's due time resets it. Needs RESEND_API_KEY; skips without it.
 // Same CRON_SECRET convention as the other crons.
 
@@ -23,6 +24,15 @@ interface TaskRow {
   due_at: string;
   time_kind: string;
   master_plan_id: string;
+  assignee_member_id: string | null;
+}
+interface Item {
+  verb: string;
+  when: string;
+  mins: number;
+  title: string;
+  recurring: boolean;
+  at: number;
 }
 
 async function run(request: Request) {
@@ -39,7 +49,7 @@ async function run(request: Request) {
 
   const { data, error } = await supabase
     .from("tasks")
-    .select("id, title, due_at, time_kind, master_plan_id")
+    .select("id, title, due_at, time_kind, master_plan_id, assignee_member_id")
     .eq("due_has_time", true)
     .is("reminded_at", null)
     .neq("status", "done")
@@ -64,46 +74,9 @@ async function run(request: Request) {
 
   let emailed = 0;
   let marked = 0;
-  for (const [planId, tasks] of Array.from(byPlan.entries())) {
-    const { data: plan } = await supabase.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
-    if (!plan?.user_id) continue; // demo / unowned plans never get email
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("email, full_name, timezone, timezone_chosen, task_reminder_email, task_reminder_lead_min")
-      .eq("id", plan.user_id)
-      .maybeSingle();
-    if (!prof?.email || prof.task_reminder_email === false) continue;
 
-    const lead = Number(prof.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
-    const due = tasks.filter((t) => minutesUntil(t.due_at, now) <= lead);
-    const tz = prof.timezone || "America/Denver";
-
-    // Timed recurring tasks due today inside the lead time, not yet reminded today.
-    const recurringSoon = (await upcomingRecurringToday(planId, tz, now)).filter(
-      (r) => minutesUntil(r.dueAt, now) <= lead
-    );
-    let recurringDue = recurringSoon;
-    if (recurringSoon.length) {
-      const { data: sent } = await supabase
-        .from("recurring_task_reminders")
-        .select("recurring_task_id")
-        .eq("remind_on", recurringSoon[0].today)
-        .in("recurring_task_id", recurringSoon.map((r) => r.id));
-      const sentIds = new Set((sent ?? []).map((x) => x.recurring_task_id as string));
-      recurringDue = recurringSoon.filter((r) => !sentIds.has(r.id));
-    }
-    if (due.length === 0 && recurringDue.length === 0) continue;
-
-    const first = String(prof.full_name || "").trim().split(/\s+/)[0] || "there";
-    const line = (title: string, dueAt: string, kind: string, recurring: boolean) => {
-      const when = timeInTz(dueAt, tz);
-      const verb = kind === "scheduled" ? "At" : "Due by";
-      return { verb, when, mins: Math.max(1, minutesUntil(dueAt, now)), title, recurring, at: new Date(dueAt).getTime() };
-    };
-    const items = [
-      ...due.map((t) => line(t.title, t.due_at, t.time_kind, false)),
-      ...recurringDue.map((r) => line(r.title, r.dueAt, r.timeKind, true)),
-    ].sort((a, b) => a.at - b.at);
+  // One reminder email. Returns true when it went out.
+  const send = async (to: string, first: string, tz: string, items: Item[], forMember: boolean) => {
     const subject =
       items.length === 1
         ? `${items[0].verb} ${items[0].when}: ${items[0].title.slice(0, 70)}`
@@ -122,20 +95,88 @@ async function run(request: Request) {
         <tr><td style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#C9A227;font-weight:700">LifeCharter Command Suite</td></tr>
         <tr><td style="font-size:22px;color:#23255C;padding:8px 0 4px;font-family:Georgia,serif">Hi ${esc(first)}, heads up</td></tr>
         <tr><td><table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px">${rows}</table></td></tr>
-        <tr><td style="padding-top:20px"><a href="${APP_URL}/tasks" style="display:inline-block;background:#23255C;color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none">Open my tasks</a></td></tr>
-        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">You get this because task reminders are on. Change or turn them off in Settings → Profile.</td></tr>
+        <tr><td style="padding-top:20px"><a href="${APP_URL}/tasks${forMember ? "?view=mine" : ""}" style="display:inline-block;background:#23255C;color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none">Open my tasks</a></td></tr>
+        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">${forMember ? "You get this because these tasks are assigned to you." : "You get this because task reminders are on."} Change or turn them off in Settings → Profile.</td></tr>
       </table></td></tr></table></body></html>`;
-
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: prof.email, subject, html }),
+      body: JSON.stringify({ from: FROM, to, subject, html }),
     });
-    if (!res.ok) {
-      console.error("task reminder email:", res.status, await res.text().catch(() => ""));
-      continue; // leave unmarked so the next run retries
+    if (!res.ok) console.error("task reminder email:", res.status, await res.text().catch(() => ""));
+    else emailed += 1;
+    return res.ok;
+  };
+  const line = (title: string, dueAt: string, kind: string, recurring: boolean, tz: string): Item => ({
+    verb: kind === "scheduled" ? "At" : "Due by",
+    when: timeInTz(dueAt, tz),
+    mins: Math.max(1, minutesUntil(dueAt, now)),
+    title,
+    recurring,
+    at: new Date(dueAt).getTime(),
+  });
+
+  for (const [planId, tasks] of Array.from(byPlan.entries())) {
+    const { data: plan } = await supabase.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
+    if (!plan?.user_id) continue; // demo / unowned plans never get email
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("email, full_name, timezone, timezone_chosen, task_reminder_email, task_reminder_lead_min")
+      .eq("id", plan.user_id)
+      .maybeSingle();
+    const ownerTz = prof?.timezone || "America/Denver";
+
+    // Assigned tasks go to the person they're assigned to, on their own settings.
+    const assigned = tasks.filter((t) => t.assignee_member_id);
+    const memberIds = Array.from(new Set(assigned.map((t) => t.assignee_member_id as string)));
+    if (memberIds.length) {
+      const { data: members } = await supabase.from("workspace_members").select("id, name, email, user_id, status").in("id", memberIds);
+      for (const m of (members ?? []) as { id: string; name: string | null; email: string | null; user_id: string | null; status: string | null }[]) {
+        if (!m.email || m.status === "inactive") continue;
+        const { data: mp } = m.user_id
+          ? await supabase.from("profiles").select("timezone, task_reminder_email, task_reminder_lead_min").eq("id", m.user_id).maybeSingle()
+          : { data: null };
+        if (mp?.task_reminder_email === false) continue;
+        const lead = Number(mp?.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
+        const tz = mp?.timezone || ownerTz;
+        const mine = assigned.filter((t) => t.assignee_member_id === m.id && minutesUntil(t.due_at, now) <= lead);
+        if (!mine.length) continue;
+        const items = mine.map((t) => line(t.title, t.due_at, t.time_kind, false, tz)).sort((a, b) => a.at - b.at);
+        if (await send(m.email, String(m.name || "").trim().split(/\s+/)[0] || "there", tz, items, true)) {
+          await supabase.from("tasks").update({ reminded_at: now.toISOString() }).in("id", mine.map((t) => t.id));
+          marked += mine.length;
+        }
+      }
     }
-    emailed += 1;
+
+    // The owner: unassigned tasks and recurring tasks.
+    if (!prof?.email || prof.task_reminder_email === false) continue;
+    const lead = Number(prof.task_reminder_lead_min) || DEFAULT_LEAD_MIN;
+    const tz = ownerTz;
+    const due = tasks.filter((t) => !t.assignee_member_id && minutesUntil(t.due_at, now) <= lead);
+
+    // Timed recurring tasks due today inside the lead time, not yet reminded today.
+    const recurringSoon = (await upcomingRecurringToday(planId, tz, now)).filter(
+      (r) => minutesUntil(r.dueAt, now) <= lead
+    );
+    let recurringDue = recurringSoon;
+    if (recurringSoon.length) {
+      const { data: sent } = await supabase
+        .from("recurring_task_reminders")
+        .select("recurring_task_id")
+        .eq("remind_on", recurringSoon[0].today)
+        .in("recurring_task_id", recurringSoon.map((r) => r.id));
+      const sentIds = new Set((sent ?? []).map((x) => x.recurring_task_id as string));
+      recurringDue = recurringSoon.filter((r) => !sentIds.has(r.id));
+    }
+    if (due.length === 0 && recurringDue.length === 0) continue;
+
+    const first = String(prof.full_name || "").trim().split(/\s+/)[0] || "there";
+    const items = [
+      ...due.map((t) => line(t.title, t.due_at, t.time_kind, false, tz)),
+      ...recurringDue.map((r) => line(r.title, r.dueAt, r.timeKind, true, tz)),
+    ].sort((a, b) => a.at - b.at);
+    if (!(await send(prof.email, first, tz, items, false))) continue; // leave unmarked so the next run retries
     if (due.length) await supabase.from("tasks").update({ reminded_at: now.toISOString() }).in("id", due.map((t) => t.id));
     if (recurringDue.length) {
       await supabase
