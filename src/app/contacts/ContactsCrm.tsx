@@ -5,6 +5,7 @@ import { Users, Search, Plus, X, FileText, Copy, ExternalLink, StickyNote, Mail,
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import BroadcastsTab from "./BroadcastsTab";
 
 interface Contact {
   id: string;
@@ -71,7 +72,7 @@ const chip = "inline-flex items-center gap-1 rounded-full bg-[#2E7C83]/10 px-2.5
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
 
 export default function ContactsCrm() {
-  const [tab, setTab] = useState<"contacts" | "forms">("contacts");
+  const [tab, setTab] = useState<"contacts" | "forms" | "broadcasts">("contacts");
   const [msg, setMsg] = useState("");
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
@@ -85,9 +86,9 @@ export default function ContactsCrm() {
         </div>
       </div>
       <div className="flex gap-2 mb-5">
-        {(["contacts", "forms"] as const).map((t) => (
+        {(["contacts", "forms", "broadcasts"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "contacts" ? "Contacts" : "Forms"}
+            {t === "contacts" ? "Contacts" : t === "forms" ? "Forms" : "Broadcasts"}
           </button>
         ))}
       </div>
@@ -96,7 +97,7 @@ export default function ContactsCrm() {
           {msg}
         </button>
       )}
-      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : <FormsTab setMsg={setMsg} />}
+      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : tab === "forms" ? <FormsTab setMsg={setMsg} /> : <BroadcastsTab setMsg={setMsg} />}
     </div>
   );
 }

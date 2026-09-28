@@ -129,7 +129,7 @@ export async function sendRendered(
   to: string,
   contactId: string,
   mail: { subject: string; html: string; text: string }
-): Promise<{ ok: boolean; id?: string; error?: string }> {
+): Promise<{ ok: boolean; id?: string; error?: string; status?: number }> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { ok: false, error: "RESEND_API_KEY not set" };
   const res = await fetch("https://api.resend.com/emails", {
@@ -146,7 +146,7 @@ export async function sendRendered(
     }),
   });
   const out = await res.json().catch(() => ({}));
-  return res.ok ? { ok: true, id: out?.id } : { ok: false, error: out?.message || `Resend ${res.status}` };
+  return res.ok ? { ok: true, id: out?.id, status: res.status } : { ok: false, error: out?.message || `Resend ${res.status}`, status: res.status };
 }
 
 // Sends whatever is due for one enrollment: day 0 immediately, then at most one
