@@ -142,16 +142,13 @@ export async function middleware(request: NextRequest) {
   // /certificationportal/ and needs its slash for relative links; every other address drops it.
   {
     const p = request.nextUrl.pathname;
+    // Plain URL objects: NextURL would re-apply Next's own trailing-slash rule to the target.
     if (p === "/certificationportal") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/certificationportal/";
-      return NextResponse.redirect(url, 308);
+      return NextResponse.redirect(new URL("/certificationportal/" + request.nextUrl.search, request.url), 308);
     }
     if (p.startsWith("/certificationportal/")) return NextResponse.next();
     if (p.length > 1 && p.endsWith("/")) {
-      const url = request.nextUrl.clone();
-      url.pathname = p.replace(/\/+$/, "");
-      return NextResponse.redirect(url, 308);
+      return NextResponse.redirect(new URL(p.replace(/\/+$/, "") + request.nextUrl.search, request.url), 308);
     }
   }
 
