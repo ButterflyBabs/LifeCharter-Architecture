@@ -15,6 +15,7 @@ const BY_SLUG: Record<string, string> = {
   "command-suite": "31, 43, 89", // indigo
   "command-shift-masterclass": "31, 43, 89", // indigo
   "command-shift-challenge": "31, 43, 89", // indigo
+  // Coaching Certification wears Command Suite indigo, matching the portal (Babs confirmed 2026-09-28).
   "coaching-certification": "31, 43, 89", // indigo
   "certified-coaches": "31, 43, 89", // indigo
 };
