@@ -52,8 +52,18 @@ export default function SetupPage() {
   const s = status;
   const steps = [
     {
-      key: "brain",
+      key: "ai",
       n: 1,
+      icon: <Sparkles className="w-5 h-5" />,
+      title: "Connect your AI",
+      desc: "Add your OpenAI key so your guide can draft plans, insights, reviews, captions, and proposals.",
+      href: "/settings?tab=ai",
+      required: true,
+      done: Boolean(s?.ai.connected),
+    },
+    {
+      key: "brain",
+      n: 2,
       icon: <Brain className="w-5 h-5" />,
       title: "Brain Assessment",
       desc: "Map your business systems — marketing, sales, operations, finance, and more — in your own words.",
@@ -63,7 +73,7 @@ export default function SetupPage() {
     },
     {
       key: "soul",
-      n: 2,
+      n: 3,
       icon: <Heart className="w-5 h-5" />,
       title: "Soul Assessment",
       desc: "Capture your identity, values, calling, and story — the heart the AI writes from.",
@@ -73,23 +83,13 @@ export default function SetupPage() {
     },
     {
       key: "profit",
-      n: 3,
+      n: 4,
       icon: <BarChart3 className="w-5 h-5" />,
       title: "Profit Assessment",
       desc: "Score your 12 business dimensions to establish your baseline and business-health starting point.",
       href: "/assessments/profit",
       required: true,
       done: Boolean(s?.assessments.profit),
-    },
-    {
-      key: "ai",
-      n: 4,
-      icon: <Sparkles className="w-5 h-5" />,
-      title: "Connect your AI",
-      desc: "Add your OpenAI key so your guide can draft plans, insights, reviews, captions, and proposals.",
-      href: "/settings?tab=ai",
-      required: true,
-      done: Boolean(s?.ai.connected),
     },
   ];
 
@@ -133,8 +133,8 @@ export default function SetupPage() {
           </div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Set up your Command Suite</h1>
           <p className="text-[#7a8a99] dark:text-[#b8c2cf] mt-2 max-w-md mx-auto">
-            We start with your assessments — they&apos;re the foundation everything else is built on. Then connect your
-            AI and at least one of your tools.
+            Connect your AI first (about five minutes), so your insights are ready the moment you finish. Then your
+            three assessments, the foundation everything else is built on, and at least one of your tools.
           </p>
         </div>
 
@@ -258,7 +258,7 @@ export default function SetupPage() {
                     Finish setup to continue
                   </button>
                   <p className="text-xs text-[#b8a898] mt-3">
-                    Complete your three assessments, connect your AI, and connect at least one tool to unlock the Suite.{" "}
+                    Connect your AI, complete your three assessments, and connect at least one tool to unlock the Suite.{" "}
                     <button onClick={finishLater} className="text-[#2E7C83] hover:underline">
                       I&apos;ll finish later
                     </button>
