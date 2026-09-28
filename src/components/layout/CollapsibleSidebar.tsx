@@ -2,6 +2,7 @@
 
 import { useState, createContext, useContext, ReactNode, useRef, useEffect, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
+import { featureForPage, type FeatureMap } from "@/lib/teamRoles";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -375,13 +376,25 @@ export function CollapsibleSidebar() {
   });
 
   const [superAdmin, setSuperAdmin] = useState(false);
+  const [features, setFeatures] = useState<FeatureMap | null>(null);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setSuperAdmin(d?.architect === true))
+      .then((d) => {
+        setSuperAdmin(d?.architect === true);
+        setFeatures(d?.features ?? null);
+      })
       .catch(() => {});
   }, []);
-  const sections = superAdmin ? [...navigationSections, ownerSection] : navigationSections;
+  // A team member with feature limits only sees the areas they can open.
+  const visible = (href: string) => {
+    if (!features) return true;
+    const key = featureForPage(href.split("?")[0]);
+    return !key || (features[key] ?? "none") !== "none";
+  };
+  const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
+    .filter((s) => s.items.length > 0);
 
   // Load the profile name + headshot for the footer block.
   useEffect(() => {

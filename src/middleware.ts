@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect } from "@/lib/teamRoles";
+import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, type FeatureMap } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
 // window: until you set AUTH_ENABLED=true (after creating your Supabase user),
@@ -107,20 +107,20 @@ async function isCommunityMember(userId: string): Promise<boolean> {
 // edge middleware stays dependency-free. Admits active or pending members (a
 // member is still "pending" on their very first request, before resolveActor
 // flips them to active).
-async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null }> {
-  const none = { isMember: false, role: null, workspaceId: null };
+async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null }> {
+  const none = { isMember: false, role: null, workspaceId: null, features: null };
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !svc) return none;
   try {
     const res = await fetch(
-      `${url}/rest/v1/workspace_members?select=id,role,workspace_id&status=in.(active,pending)&email=ilike.${encodeURIComponent(email)}`,
+      `${url}/rest/v1/workspace_members?select=id,role,workspace_id,permissions&status=in.(active,pending)&email=ilike.${encodeURIComponent(email)}`,
       { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
     );
     if (!res.ok) return none;
-    const rows = (await res.json()) as { role?: string; workspace_id?: string }[];
+    const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown } | null }[];
     if (!Array.isArray(rows) || rows.length === 0) return none;
-    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null };
+    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features) };
   } catch {
     return none;
   }
@@ -209,6 +209,7 @@ export async function middleware(request: NextRequest) {
   let memberRole: string | null = null;
   let isTeamMember = false;
   let isHouseMember = false;
+  let memberFeatures: FeatureMap | null = null;
   // A paying client owns their own account: full access, no role limits.
   if (user && !authed && (await isClientAccount(user.id))) authed = true;
   if (user && !authed && email) {
@@ -216,6 +217,7 @@ export async function middleware(request: NextRequest) {
     authed = info.isMember;
     isTeamMember = info.isMember;
     memberRole = info.role;
+    memberFeatures = info.features;
     isHouseMember = info.isMember && (await isHouseWorkspace(info.workspaceId));
     // Sales outside the owner's own workspace falls back to view-only.
     if (memberRole === SALES_ROLE && !isHouseMember) memberRole = "viewer";
@@ -284,7 +286,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     if (isTeamMember) {
-      const verdict = memberApiAccess(memberRole, path, request.method);
+      const roleVerdict = memberApiAccess(memberRole, path, request.method, memberFeatures);
+      const verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method) : roleVerdict;
       if (!verdict.allow) {
         // Pages that show the owner's inbox/calendar read "not connected" instead of erroring.
         if (request.method === "GET" && path === "/api/inbox") {
@@ -334,7 +337,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
   }
   if (isTeamMember) {
-    const dest = memberPageRedirect(memberRole, path);
+    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path);
     if (dest) return NextResponse.redirect(new URL(dest, request.url));
   }
 

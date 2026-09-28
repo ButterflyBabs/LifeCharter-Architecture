@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cleanFeatureMap } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -19,6 +20,7 @@ type MemberRow = {
   status: string | null;
   avatar_url: string | null;
   joined_at: string | null;
+  permissions?: { preset?: string | null; features?: unknown } | null;
 };
 
 function serialize(m: MemberRow) {
@@ -30,10 +32,12 @@ function serialize(m: MemberRow) {
     status: (m.status as string) || "active",
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
+    // Per-feature access (null = the role's defaults).
+    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions";
 
 // Confirms the workspace exists and belongs to the current client.
 async function ownedWorkspace(id: string) {

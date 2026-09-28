@@ -24,6 +24,8 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import MemberAccess from "./MemberAccess";
+import type { FeatureMap } from "@/lib/teamRoles";
 
 type Role = "admin" | "editor" | "viewer" | "sales";
 
@@ -35,7 +37,10 @@ interface TeamMember {
   status: "active" | "pending" | "inactive";
   avatar?: string | null;
   joinedAt?: string | null;
+  access?: { preset: string | null; features: FeatureMap } | null;
 }
+
+const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", custom: "Custom access" };
 
 interface TeamManagementProps {
   workspaceId: string;
@@ -221,6 +226,12 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   };
 
   const handleChangeRole = (id: string, role: Role) => patchMember(id, { role });
+  const [accessOpen, setAccessOpen] = useState<string | null>(null);
+  const saveAccess = async (id: string, access: { preset: string; features: FeatureMap } | null) => {
+    await patchMember(id, { access } as Partial<TeamMember>);
+    setAccessOpen(null);
+    flash(true, access ? "Access saved. It applies the next time they open a page." : "Access set back to their role's defaults.");
+  };
 
   // Mint (or re-issue) a login link the owner delivers themselves — no email sent.
   const handleCreateLogin = async (id: string) => {
@@ -525,6 +536,12 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       {(canGrantSales || member.role === "sales") && <option value="sales">Sales (restricted)</option>}
                     </select>
 
+                    {member.role !== "admin" && member.role !== "sales" && (
+                      <Button variant="outline" size="sm" disabled={isBusy} onClick={() => setAccessOpen(accessOpen === member.id ? null : member.id)} title="Choose which features they can reach">
+                        {member.access ? PRESET_LABEL[member.access.preset ?? "custom"] ?? "Custom access" : "Access"}
+                      </Button>
+                    )}
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -551,6 +568,8 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                     </Button>
                   </div>
                 </div>
+
+                {accessOpen === member.id && <MemberAccess access={member.access ?? null} busy={isBusy} onSave={(a) => saveAccess(member.id, a)} />}
 
                 {/* Invitation sent by email; the link is shown too, in case it needs sending by hand. */}
                 {inviteLink?.id === member.id && (

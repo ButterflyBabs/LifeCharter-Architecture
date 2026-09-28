@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cleanFeatureMap, PRESETS } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -18,6 +19,7 @@ type MemberRow = {
   status: string | null;
   avatar_url: string | null;
   joined_at: string | null;
+  permissions?: { preset?: string | null; features?: unknown } | null;
 };
 
 function serialize(m: MemberRow) {
@@ -29,10 +31,12 @@ function serialize(m: MemberRow) {
     status: (m.status as string) || "active",
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
+    // Per-feature access (null = the role's defaults).
+    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions";
 
 // Confirms the member belongs to a workspace owned by the current client.
 async function ownedMember(workspaceId: string, memberId: string) {
@@ -76,6 +80,14 @@ export async function PATCH(
   }
   if (typeof body.avatar === "string" || body.avatar === null) update.avatar_url = body.avatar || null;
   if (typeof body.status === "string") update.status = body.status;
+  // Per-feature access: { preset, features } to narrow the member, or null for the role's defaults.
+  if (body.access === null) update.permissions = {};
+  else if (body.access && typeof body.access === "object") {
+    const features = cleanFeatureMap(body.access.features);
+    if (!features) return NextResponse.json({ error: "Choose what they can reach." }, { status: 400 });
+    const preset = PRESETS.some((p) => p.key === body.access.preset) ? body.access.preset : "custom";
+    update.permissions = { preset, features };
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
