@@ -94,7 +94,19 @@ const navigationSections = [
   },
 ];
 
-const navigationItems = navigationSections.flatMap((s) => s.items);
+// Owner-only pages (Babs). Shown only when /api/me says super admin; the pages and their
+// APIs enforce this on the server too.
+const ownerSection = {
+  title: "OWNER",
+  color: "text-[#c9a227]",
+  items: [
+    { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
+    { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
+    { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
+  ],
+};
+
+const navigationItems = [...navigationSections, ownerSection].flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -335,6 +347,15 @@ export function CollapsibleSidebar() {
     workspaceName: "",
   });
 
+  const [superAdmin, setSuperAdmin] = useState(false);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setSuperAdmin(!!d?.superAdmin))
+      .catch(() => {});
+  }, []);
+  const sections = superAdmin ? [...navigationSections, ownerSection] : navigationSections;
+
   // Load the profile name + headshot for the footer block.
   useEffect(() => {
     fetch("/api/profile", { cache: "no-store" })
@@ -465,7 +486,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        {navigationSections.map((section, sectionIndex) => (
+        {sections.map((section, sectionIndex) => (
           <div key={section.title} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
             {!isCollapsed ? (
