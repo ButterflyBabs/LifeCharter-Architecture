@@ -90,7 +90,7 @@ When you're ready for what comes next, two doors are open:
 - **See the LifeCharter Command Suite and pricing:** ${MASTERCLASS_PRICING_URL}
 - **Book your Executive Consultation:** ${MASTERCLASS_CONSULT_URL}
 
-The Executive Consultation is a focused conversation about where your business stands today and what it needs so you can lead it from strength, not from overwhelm. Bring your questions. Bring your big ideas. I'll bring my full attention.
+The Executive Consultation is a focused conversation with Marcello about where your business stands today and what it needs so you can lead it from strength, not from overwhelm. Bring your questions. Bring your big ideas. He'll bring his full attention.
 
 You have built something real. You deserve a business that gives you back the time, clarity and freedom you pour into it. I'm cheering for you, and I'd love to hear what landed. Just hit reply.`,
     buttonLabel: "Watch the replay",
