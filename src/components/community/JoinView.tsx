@@ -54,9 +54,14 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   // Invitation emails link here with ?code=… so the code is already filled in.
   const [prefill, setPrefill] = useState("");
+  // Purchase emails link here with ?claim=… instead: buying is the invitation, no code needed.
+  const [claim, setClaim] = useState("");
   useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get("code");
+    const params = new URLSearchParams(window.location.search);
+    const c = params.get("code");
     if (c) setPrefill(c.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 32));
+    const k = params.get("claim");
+    if (k) setClaim(k.replace(/[^a-f0-9]/gi, "").slice(0, 128));
   }, []);
 
   const isMain = !space || space.slug === "start-here";
@@ -78,6 +83,9 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
 
   async function joinSpace(code: string): Promise<boolean> {
     if (!space) return true;
+    // Anything this email has bought unlocks its channels first (no code needed for those).
+    const { data: claimed } = await createClient().rpc("cm_claim_purchase_access");
+    if (claim && typeof claimed === "number" && claimed > 0) return true;
     const { error } = await createClient().rpc("cm_join_with_code", { p_slug: space.slug, p_code: code });
     if (error) {
       setError(error.message);
@@ -99,6 +107,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
       phone: String(f.get("phone") ?? ""),
       password: String(f.get("password") ?? ""),
       code: String(f.get("code") ?? ""),
+      claim,
     };
     const res = await fetch("/api/community/join", {
       method: "POST",
@@ -160,7 +169,7 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
     );
   }
 
-  const closed = !signinOnly && space && !space.join_enabled;
+  const closed = !signinOnly && space && !space.join_enabled && !claim;
 
   return (
     <Shell>
@@ -261,7 +270,13 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
               <input name="email" required type="email" placeholder="Email" autoComplete="email" className={field} />
               <input name="phone" type="tel" placeholder="Phone number (optional)" autoComplete="tel" className={field} />
               <input name="password" required type="password" minLength={8} placeholder="Create a password" autoComplete="new-password" className={field} />
-              <input key={`c2-${prefill}`} defaultValue={prefill} name="code" required placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
+              {claim ? (
+                <p className="rounded-xl bg-[var(--cm-gold-soft)] px-4 py-2.5 text-center text-[13.5px] text-[var(--cm-gold-ink)]">
+                  Your purchase includes this channel &mdash; no invite code needed. Use the email you bought with.
+                </p>
+              ) : (
+                <input key={`c2-${prefill}`} defaultValue={prefill} name="code" required placeholder="Invite code" autoComplete="off" className={cn(field, "uppercase tracking-[0.12em]")} />
+              )}
               {error && <ErrorLine>{error}</ErrorLine>}
               <button disabled={busy} className={goldButton}>
                 {busy ? "Creating your account…" : joinLabel}

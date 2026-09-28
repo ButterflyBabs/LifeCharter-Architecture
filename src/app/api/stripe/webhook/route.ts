@@ -12,6 +12,7 @@ import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/en
 import { logEvent } from "@/lib/crm";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
+import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -60,6 +61,10 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const meta = session.metadata || {};
+
+        // Whatever was bought, unlock any Collective channels mapped to it
+        // (Admin → Purchase access). Never throws; idempotent on retries.
+        await grantAccessForCheckout(stripe, session);
 
         // Bought the Command Suite: their booked-consultation deals in Babs's Pipeline are won.
         if (meta.flow !== "life_shift") {
@@ -182,6 +187,9 @@ export async function POST(req: NextRequest) {
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = (invoice as unknown as { subscription?: string }).subscription;
+
+        // First invoice of a new subscription: Collective channel access (no-op if Checkout already granted it).
+        await grantAccessForFirstInvoice(stripe, invoice);
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);

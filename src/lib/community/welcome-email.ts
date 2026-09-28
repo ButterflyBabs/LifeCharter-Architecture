@@ -64,3 +64,96 @@ export async function sendCollectiveWelcome({ email, name, base }: { email: stri
     return false;
   }
 }
+
+// ─── Purchase access (co022) ───────────────────────────────────────────────
+// Sent once per purchase that unlocks a channel. Existing members get a link
+// straight into the channel; new people get a one-time link to create their
+// login with no invite code (the claim token ties it to this purchase).
+
+export interface AccessChannel {
+  slug: string;
+  name: string;
+  claimToken: string;
+  nextEvent: { title: string; when: string | null; recurrence: string | null } | null;
+}
+
+export async function sendPurchaseAccessEmail({
+  email,
+  name,
+  base,
+  hasAccount,
+  purchase,
+  channels,
+}: {
+  email: string;
+  name: string;
+  base: string;
+  hasAccount: boolean;
+  purchase: string;
+  channels: AccessChannel[];
+}) {
+  const resendKey = process.env.RESEND_API_KEY;
+  const fromEnv = process.env.COMMUNITY_EMAIL_FROM;
+  if (!resendKey || !fromEnv) {
+    console.error("purchase access email: RESEND_API_KEY / COMMUNITY_EMAIL_FROM not set");
+    return false;
+  }
+  const address = fromEnv.match(/<([^>]+)>/)?.[1] ?? fromEnv;
+  const first = name.trim().split(/\s+/)[0] || "";
+  const main = channels[0];
+  const names = channels.map((c) => c.name).join(" and ");
+  const cta = hasAccount ? `${base}/community/s/${main.slug}` : `${base}/join/${main.slug}?claim=${encodeURIComponent(main.claimToken)}`;
+  const ctaLabel = hasAccount ? `Open ${main.name}` : "Create your login";
+  const events = `${base}/community/events`;
+  const help = `${base}/community/help`;
+  const ev = channels.find((c) => c.nextEvent)?.nextEvent ?? null;
+
+  const eventHtml = ev
+    ? `<strong style="color:#1F2B3A">Your next live session</strong><br>${esc(ev.title)}${ev.when ? ` &middot; ${esc(ev.when)}` : ""}${ev.recurrence ? `<br><span style="color:#56616E">${esc(ev.recurrence)}</span>` : ""}<br>The join link is on the <a href="${events}" style="color:#2E7C83">Events page</a> once you&rsquo;re signed in.`
+    : `<strong style="color:#1F2B3A">Live sessions</strong><br>The date and join link for each live session are posted in your channel and on the <a href="${events}" style="color:#2E7C83">Events page</a>.`;
+  const eventText = ev
+    ? `Your next live session: ${ev.title}${ev.when ? `, ${ev.when}` : ""}${ev.recurrence ? ` (${ev.recurrence})` : ""}. The join link is on the Events page once you're signed in: ${events}`
+    : `The date and join link for each live session are posted in your channel and on the Events page: ${events}`;
+  const accessHtml = hasAccount
+    ? `Your <strong>${esc(names)}</strong> channel is open in The LifeCharter Collective. Sign in with your usual LifeCharter email and password and you&rsquo;ll find it in your sidebar.`
+    : `Your <strong>${esc(names)}</strong> channel in The LifeCharter Collective is ready and waiting. Tap below to create your login &mdash; no invite code needed. Please use this email address (${esc(email)}) so your access finds you.`;
+  const accessText = hasAccount
+    ? `Your ${names} channel is open in The LifeCharter Collective. Sign in with your usual LifeCharter email and password: ${cta}`
+    : `Your ${names} channel in The LifeCharter Collective is ready. Create your login here (no invite code needed; use this email address, ${email}): ${cta}`;
+
+  const html = `<!doctype html><html><body style="margin:0;background:#FAF8F3;font-family:Georgia,serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3;padding:28px 12px"><tr><td align="center">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#fff;border-radius:18px;padding:30px;border:1px solid #E6DDCB">
+    <tr><td style="padding-bottom:6px"><img src="${base}/collective-logo.png" width="240" alt="The LifeCharter Collective" style="display:block;width:240px;max-width:100%;height:auto;border:0"></td></tr>
+    <tr><td style="font-size:27px;color:#1F2B3A;padding:8px 0 12px">You&rsquo;re in. Welcome to ${esc(purchase)}.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:15px;line-height:1.65;color:#2E3A46">
+      ${first ? `Hi ${esc(first)},<br><br>` : ""}Thank you for saying yes. ${accessHtml}
+    </td></tr>
+    <tr><td style="padding:24px 0 8px"><a href="${cta}" style="display:inline-block;background:#D4AF63;color:#1F2B3A;font-family:Arial,sans-serif;font-weight:700;padding:14px 26px;border-radius:10px;text-decoration:none">${esc(ctaLabel)}</a></td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:14px;line-height:1.65;color:#2E3A46;border-top:1px solid #F1EBDF;padding-top:16px">${eventHtml}</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#56616E;padding-top:16px">Questions? The <a href="${help}" style="color:#2E7C83">Help &amp; FAQ</a> page has quick answers, or just reply to this email.</td></tr>
+    <tr><td style="font-size:17px;font-style:italic;color:#1F2B3A;padding-top:22px">Head up - Wings out<br>Babs 🦋</td></tr>
+  </table></td></tr></table></body></html>`;
+
+  const text = `${first ? `Hi ${first},\n\n` : ""}You're in. Welcome to ${purchase}.\n\nThank you for saying yes. ${accessText}\n\n${eventText}\n\nQuestions? ${help}, or just reply to this email.\n\nHead up - Wings out\nBabs 🦋`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `The LifeCharter Collective <${address}>`,
+        to: email,
+        reply_to: "support@amilynnecarroll.com",
+        subject: hasAccount ? `Your ${names} channel is open` : `Your ${names} access is ready`,
+        html,
+        text,
+      }),
+    });
+    if (!res.ok) console.error("purchase access email:", res.status, await res.text().catch(() => ""));
+    return res.ok;
+  } catch (e) {
+    console.error("purchase access email:", (e as Error).message);
+    return false;
+  }
+}
