@@ -87,7 +87,7 @@ const navigationSections = [
     color: "text-[#b8a898]",
     items: [
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
-      { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
+      { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
     ],
   },

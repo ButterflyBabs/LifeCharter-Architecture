@@ -233,7 +233,7 @@ export default function AIGuideWidget() {
               >
                 {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
               </button>
-              <Link href="/ai-guide">
+              <Link href="/settings?tab=ai">
                 <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                   <Settings className="w-4 h-4" />
                 </button>
@@ -345,9 +345,6 @@ export default function AIGuideWidget() {
                   <Plus className="w-3 h-3 rotate-45" />
                   New conversation
                 </button>
-                <Link href="/ai-guide" className="text-xs text-[#c9a227] hover:underline">
-                  View all history
-                </Link>
               </div>
             )}
             <div className="flex gap-2">

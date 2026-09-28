@@ -181,10 +181,10 @@ const journeyStages: JourneyStage[] = [
       },
       {
         id: "ai-guide",
-        title: "Configure AI Guide",
-        description: "Set up your AI assistant preferences and API keys",
+        title: "Connect your AI",
+        description: "Add your OpenAI key and name your assistant in Settings › AI Assistant",
         icon: <Sparkles className="w-5 h-5" />,
-        path: "/ai-guide",
+        path: "/settings?tab=ai",
         section: "business",
         estimatedTime: 10,
         completed: false

@@ -457,13 +457,13 @@ export default function AIGuideHelpPage() {
           <h2 className="text-2xl font-bold mb-3">Ready to Get Started?</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             The AI Business Guide is available on every page. Look for the Bot icon in the bottom-right corner, 
-            or configure your settings and API keys in the AI Guide section.
+            or configure your settings and API keys in Settings › AI Assistant.
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/ai-guide">
+            <Link href="/settings?tab=ai">
               <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <Settings className="w-4 h-4 mr-2" />
-                Configure AI Guide
+                AI Assistant settings
               </Button>
             </Link>
             <Link href="/dashboard">
