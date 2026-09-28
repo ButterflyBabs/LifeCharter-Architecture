@@ -119,6 +119,21 @@ export default async function GetStartedPage({
           ))}
         </div>
 
+        {/* Website Alignment: the free Review every client gets, and the optional Build (Babs, 2026-09-28). */}
+        <div className="mt-12 rounded-2xl border border-[#c9a227]/30 bg-[#1C2236]/60 p-6 sm:p-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Included with every plan</p>
+          <h2 className="mt-2 text-2xl font-semibold text-[#F8F5F0]">Website Alignment Review</h2>
+          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-[#b8a898]">
+            Within 14 days of joining, we read your website against the positioning, voice and offer you build in the
+            Suite, and give you the five changes that matter most. It&rsquo;s yours to keep and act on.
+          </p>
+          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-[#b8a898]">
+            Want it done for you? The <span className="text-[#F8F5F0]">Website Alignment Build</span> rewrites and rebuilds up to
+            five pages to match, live within 30 days: $1,997 founding price for clients who enroll by December 17
+            (or 2 &times; $998.50). Only five Builds a month.
+          </p>
+        </div>
+
         <p className="text-center text-xs text-[#b8a898] mt-10">
           Already have an account? <a href="/login" className="underline">Sign in</a>
         </p>
