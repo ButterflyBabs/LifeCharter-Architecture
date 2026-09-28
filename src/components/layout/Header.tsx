@@ -38,7 +38,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/planning": "Planning Hub",
   "/planning/forecast": "Forecasting",
   "/operations": "Operations",
-  "/reviews": "Reviews",
+  "/reviews": "Testimonials",
   "/settings": "Settings",
 };
 

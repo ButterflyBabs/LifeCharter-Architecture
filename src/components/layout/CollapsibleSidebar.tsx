@@ -82,7 +82,7 @@ const navigationSections = [
       { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
-      { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
+      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },

@@ -96,7 +96,7 @@ export default function ReviewsPage() {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center"><Star className="w-6 h-6 text-[#c9a227]" /></div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Reviews &amp; Testimonials</h1>
+            <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Testimonials</h1>
             <p className="text-[#7a8a99]">Ask your clients for a few words, approve what comes in, and put it to work in your marketing.</p>
           </div>
         </div>
@@ -110,8 +110,8 @@ export default function ReviewsPage() {
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,150px),1fr))] gap-3 mb-6">
         {[
-          { label: "Reviews", value: stats ? String(stats.total) : "—", sub: stats ? `${stats.thisMonth} this month` : "" },
-          { label: "Average rating", value: stats?.averageRating ? `${stats.averageRating} / 5` : "—", sub: stats?.averageRating ? "from rated reviews" : "no ratings yet" },
+          { label: "Testimonials", value: stats ? String(stats.total) : "—", sub: stats ? `${stats.thisMonth} this month` : "" },
+          { label: "Average rating", value: stats?.averageRating ? `${stats.averageRating} / 5` : "—", sub: stats?.averageRating ? "from rated testimonials" : "no ratings yet" },
           { label: "Waiting for you", value: stats ? String(stats.pending) : "—", sub: `${stats?.approved ?? 0} approved · ${stats?.featured ?? 0} featured` },
           { label: "Response rate", value: stats?.responseRate != null ? `${stats.responseRate}%` : "—", sub: stats ? `${stats.requestsCompleted} of ${stats.requestsSent} requests answered` : "" },
         ].map((c) => (
@@ -133,7 +133,7 @@ export default function ReviewsPage() {
       </div>
       {!loaded ? <p className="text-sm text-[#7a8a99]">Loading…</p> : shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#1a2b4a]/20 p-8 text-center mb-8">
-          <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{items.length === 0 ? "No reviews yet." : "Nothing here."}</p>
+          <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{items.length === 0 ? "No testimonials yet." : "Nothing here."}</p>
           <p className="text-sm text-[#7a8a99] mt-1">{items.length === 0 ? "Request a review from a client you've served well — they get a personal link, and their words land here for you to approve." : "Try a different filter."}</p>
         </div>
       ) : (

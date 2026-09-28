@@ -22,7 +22,7 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "build", label: "Build", icon: <FileText className="w-4 h-4" /> },
     { id: "goals", label: "Goals", icon: <Target className="w-4 h-4" /> },
-    { id: "reviews", label: "Reviews", icon: <Sparkles className="w-4 h-4" /> },
+    { id: "reviews", label: "Check-ins", icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (

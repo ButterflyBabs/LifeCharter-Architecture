@@ -313,13 +313,13 @@ export default function PlanningHubPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#2E7C83]" />
-            <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Upcoming Reviews</h2>
+            <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Upcoming Planning Sessions</h2>
           </div>
           <button
             onClick={() => setShowHistory((s) => !s)}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
           >
-            <History className="w-3.5 h-3.5" /> {showHistory ? "Hide history" : "Review History"}
+            <History className="w-3.5 h-3.5" /> {showHistory ? "Hide history" : "Planning Session History"}
           </button>
         </div>
 
@@ -369,9 +369,9 @@ export default function PlanningHubPage() {
 
         {showHistory && (
           <div className="mt-4 pt-4 border-t border-[#1a2b4a]/10">
-            <h3 className="text-sm font-semibold text-[#7a8a99] mb-2">Review History</h3>
+            <h3 className="text-sm font-semibold text-[#7a8a99] mb-2">Planning Session History</h3>
             {history.length === 0 ? (
-              <p className="text-sm text-[#b8a898]">No completed reviews yet.</p>
+              <p className="text-sm text-[#b8a898]">No completed planning sessions yet.</p>
             ) : (
               <div className="space-y-2">
                 {history.map((r) => (
@@ -408,7 +408,7 @@ export default function PlanningHubPage() {
               <input
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="e.g. Q3 Marketing Review"
+                placeholder="e.g. Q3 Marketing Planning Session"
                 className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
               />
               <div className="grid grid-cols-3 gap-2">

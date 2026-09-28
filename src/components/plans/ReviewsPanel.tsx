@@ -72,7 +72,7 @@ export default function ReviewsPanel({ planType }: { planType: string }) {
       <div className="rounded-2xl border border-[#2E7C83]/25 bg-[#F1F7F7] dark:bg-[#12303a] p-5 mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-[#2E7C83]" />
-          <h2 className="text-lg font-semibold text-[#12303a] dark:text-[#F8F5F0]">AI Plan Review</h2>
+          <h2 className="text-lg font-semibold text-[#12303a] dark:text-[#F8F5F0]">AI Plan Check-in</h2>
         </div>
         <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8] mb-3">
           A candid read on how this plan is tracking against your real numbers and goals — strengths to celebrate and
@@ -97,7 +97,7 @@ export default function ReviewsPanel({ planType }: { planType: string }) {
             Generate review
           </button>
         </div>
-        {needsKey && <p className="text-xs text-[#8a6a15] mt-2">Connect your AI key in settings to run reviews.</p>}
+        {needsKey && <p className="text-xs text-[#8a6a15] mt-2">Connect your AI key in settings to run check-ins.</p>}
         {err && <p className="text-xs text-[#8a2f2f] mt-2">{err}</p>}
       </div>
 
@@ -105,7 +105,7 @@ export default function ReviewsPanel({ planType }: { planType: string }) {
 
       {history.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold text-[#7a8a99] mb-2">Past reviews</h3>
+          <h3 className="text-sm font-semibold text-[#7a8a99] mb-2">Past check-ins</h3>
           <div className="space-y-3">
             {history.map((h) => (
               <ReportCard key={h.id} report={h.report} date={h.created_at} />

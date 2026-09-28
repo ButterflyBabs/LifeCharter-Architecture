@@ -47,7 +47,7 @@ function sourceInfo(kind: string, dim: string): { label: string; href: string; h
       if (dim === "finance") return { label: "Live finances (your ledger)", href: "/finance", how: "Computed from real income, expenses, and your budget target." };
       if (dim === "sales") return { label: "Live sales activity", href: "/daily-compass/sales-activities", how: "Computed from your pipeline — conversion and recent activity." };
       if (dim === "operations") return { label: "Operational pillars", href: "/operations", how: "How many of your 8 pillars are solid or in progress." };
-      if (dim === "systems") return { label: "Operating metrics", href: "/finance/monthly-review", how: "From your monthly review — hours, delegation, and documentation." };
+      if (dim === "systems") return { label: "Operating metrics", href: "/finance/monthly-review", how: "From your Monthly Money Review — hours, delegation, and documentation." };
       return { label: "Operating metrics", href: "/operations", how: "Computed from your live operating data." };
     default:
       return { label: kind, href: "/", how: "" };

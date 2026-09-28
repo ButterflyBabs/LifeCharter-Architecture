@@ -437,7 +437,7 @@ export const SegmentRead = () => (
 );
 export const SocialProofRead = () => (
   <InsightPanel
-    url="/api/reviews/read" title="social-proof read" runLabel="Read my reviews"
+    url="/api/reviews/read" title="social-proof read" runLabel="Read my testimonials"
     blurb="What your clients say, the lines worth using in your marketing, and what proof is missing."
     sections={[{ key: "themes", heading: "What clients value" }, { key: "quotes", heading: "Lines to use" }, { key: "gaps", heading: "Missing proof", tone: "text-[#8a6a15]" }, { key: "next", heading: "Next steps" }]}
   />

@@ -1,4 +1,28 @@
 import type { Metadata } from "next";
+import { createServerClient } from "@/lib/supabase/server";
+
+// The tier table reads the live plan settings, so it never goes stale when pricing changes (Babs,
+// 2026-09-28). The figures below are only a fallback if the plans can't be read.
+export const dynamic = "force-dynamic";
+const FALLBACK_TIERS = [
+  { name: "Starter", onboarding_fee: 249700, price_monthly: 34700 },
+  { name: "Growth", onboarding_fee: 299700, price_monthly: 49700 },
+  { name: "VIP", onboarding_fee: 499700, price_monthly: 99700 },
+];
+const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+async function tiers() {
+  try {
+    const { data } = await createServerClient()
+      .from("plans")
+      .select("name, onboarding_fee, price_monthly")
+      .eq("is_active", true)
+      .order("price_monthly", { ascending: true });
+    const rows = (data ?? []) as { name: string; onboarding_fee: number | null; price_monthly: number | null }[];
+    return rows.length ? rows.map((r) => ({ name: r.name, onboarding_fee: r.onboarding_fee ?? 0, price_monthly: r.price_monthly ?? 0 })) : FALLBACK_TIERS;
+  } catch {
+    return FALLBACK_TIERS;
+  }
+}
 
 export const metadata: Metadata = {
   title: "Terms of Sale & Service Agreement — LifeCharter Command Suite",
@@ -8,7 +32,8 @@ export const metadata: Metadata = {
 const H2 = "text-xl font-semibold text-[#F8F5F0] mt-10 mb-3";
 const P = "text-[#b8a898] leading-relaxed mb-4";
 
-export default function TermsOfSalePage() {
+export default async function TermsOfSalePage() {
+  const rows = await tiers();
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
       <div className="mx-auto max-w-3xl px-6 py-16">
@@ -56,21 +81,13 @@ export default function TermsOfSalePage() {
               </tr>
             </thead>
             <tbody className="text-[#b8a898]">
-              <tr className="border-t border-[#F3EEE4]/10">
-                <td className="px-4 py-3 font-semibold text-[#F8F5F0]">Starter</td>
-                <td className="px-4 py-3">$2,497</td>
-                <td className="px-4 py-3">$347/mo</td>
-              </tr>
-              <tr className="border-t border-[#F3EEE4]/10 bg-[#1C2236]/50">
-                <td className="px-4 py-3 font-semibold text-[#F8F5F0]">Growth</td>
-                <td className="px-4 py-3">$2,997</td>
-                <td className="px-4 py-3">$497/mo</td>
-              </tr>
-              <tr className="border-t border-[#F3EEE4]/10">
-                <td className="px-4 py-3 font-semibold text-[#F8F5F0]">VIP</td>
-                <td className="px-4 py-3">$4,997</td>
-                <td className="px-4 py-3">$997/mo</td>
-              </tr>
+              {rows.map((t, i) => (
+                <tr key={t.name} className={`border-t border-[#F3EEE4]/10${i % 2 === 1 ? " bg-[#1C2236]/50" : ""}`}>
+                  <td className="px-4 py-3 font-semibold text-[#F8F5F0]">{t.name}</td>
+                  <td className="px-4 py-3">{usd(t.onboarding_fee)}</td>
+                  <td className="px-4 py-3">{usd(t.price_monthly)}/mo</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

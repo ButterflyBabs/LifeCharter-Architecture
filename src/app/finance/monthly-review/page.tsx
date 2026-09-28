@@ -67,7 +67,7 @@ export default function MonthlyReviewPage() {
           <ArrowLeft className="w-4 h-4" /> Financial Pulse
         </Link>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly Review</h1>
+          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly Money Review</h1>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => step(-1)}>
               <ChevronLeft className="w-4 h-4" />
