@@ -4,6 +4,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
 import { OPERATIONS_PILLARS } from "@/lib/operations";
+import { logActivity, q } from "@/lib/activity";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,8 @@ export async function POST(request: Request) {
     if (!title) return NextResponse.json({ error: "Name the process first." }, { status: 400 });
     const a = await planningAssistant();
     if (!a?.key) return NextResponse.json({ needsKey: true });
+    const overCap = await memberAiGate();
+    if (overCap) return overCap;
     const pillar = OPERATIONS_PILLARS.find((p) => p.key === body.pillarKey)?.name;
     const sys = planningSystem(
       a,
@@ -73,6 +77,7 @@ export async function POST(request: Request) {
     console.error("POST /api/sops:", error.message);
     return NextResponse.json({ error: "Couldn't save the SOP." }, { status: 500 });
   }
+  await logActivity({ masterPlanId, action: "created", entityType: "sop", entityId: (data as { id?: string })?.id, summary: `Added SOP ${q(row.title)}` });
   return NextResponse.json({ sop: data });
 }
 
@@ -90,6 +95,8 @@ export async function PATCH(request: Request) {
     .select(SELECT)
     .maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save the SOP." }, { status: 500 });
+  const saved = data as { id?: string; title?: string };
+  await logActivity({ masterPlanId, action: "updated", entityType: "sop", entityId: saved.id, summary: `Updated SOP ${q(saved.title)}` });
   return NextResponse.json({ sop: data });
 }
 
@@ -98,6 +105,7 @@ export async function DELETE(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
   const body = await request.json().catch(() => ({}));
   if (!masterPlanId || typeof body.id !== "string") return NextResponse.json({ error: "Missing SOP." }, { status: 400 });
-  await createServerClient().from("sops").delete().eq("id", body.id).eq("master_plan_id", masterPlanId);
+  const { data: gone } = await createServerClient().from("sops").delete().eq("id", body.id).eq("master_plan_id", masterPlanId).select("id, title");
+  if (gone?.[0]) await logActivity({ masterPlanId, action: "deleted", entityType: "sop", entityId: body.id, summary: `Deleted SOP ${q(gone[0].title)}` });
   return NextResponse.json({ ok: true });
 }

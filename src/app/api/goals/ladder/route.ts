@@ -4,6 +4,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant, planningSystem, runJson, cleanList } from "@/lib/ai/planningAi";
 import { CHILD_OF, periodLabel, type GoalPeriod } from "@/lib/goalLadder";
+import { logActivity, q } from "@/lib/activity";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,8 @@ export async function POST(request: Request) {
   if (body.action === "suggest") {
     const a = await planningAssistant();
     if (!a?.key) return NextResponse.json({ needsKey: true });
+    const overCap = await memberAiGate();
+    if (overCap) return overCap;
     const sys = planningSystem(
       a,
       "helping them break a goal into smaller goals.",
@@ -85,6 +89,7 @@ export async function POST(request: Request) {
       console.error("goal ladder add:", error.message);
       return NextResponse.json({ error: "Couldn't save that goal." }, { status: 500 });
     }
+    await logActivity({ masterPlanId, action: "created", entityType: "goal", entityId: data?.id as string, summary: `Added ${childPeriod} goal ${q(title)}` });
     return NextResponse.json({ goal: data });
   }
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });
@@ -96,6 +101,7 @@ export async function DELETE(request: Request) {
   const body = await request.json().catch(() => ({}));
   const g = masterPlanId && typeof body.id === "string" ? await ownGoal(masterPlanId, body.id) : null;
   if (!g || g.period === "year") return NextResponse.json({ error: "Goal not found." }, { status: 404 });
-  await createServerClient().from("client_plan_goals").delete().eq("id", g.id);
+  const { error } = await createServerClient().from("client_plan_goals").delete().eq("id", g.id);
+  if (!error) await logActivity({ masterPlanId, action: "deleted", entityType: "goal", entityId: g.id as string, summary: `Deleted goal ${q(g.title)}` });
   return NextResponse.json({ ok: true });
 }

@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { getBlueprint, sectionQuestions } from "@/lib/plans/blueprints";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
 
   const assistant = await planningAssistant();
   if (!assistant?.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
   const key = assistant.key;
 
   // Other sections already written, for coherence.

@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
   const itemType = body.itemType === "template" ? "template" : "script";
 
   const { name, key, instructions } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
   if (!key) return NextResponse.json({ needsKey: true });
 
   const channelLabel: Record<string, string> = {

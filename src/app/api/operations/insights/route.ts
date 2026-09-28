@@ -7,6 +7,7 @@ import { planningAssistant } from "@/lib/ai/planningAi";
 import { OPERATIONS_PILLARS, STATUS_LABEL, type PillarStatus } from "@/lib/operations";
 import { answersText, type DeeperAnswers } from "@/lib/operationsDeeper";
 import { latestInsight, saveInsight } from "@/lib/ai/planKnowledge";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
   // answers, scores, plans, tasks, SOPs…), not just the pillar ratings.
   const a = await planningAssistant();
   if (!a?.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
   const { name, key } = a;
 
   const dataText = rows

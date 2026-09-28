@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +83,8 @@ export async function POST(request: Request) {
   }
 
   const { name, key } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
   if (!key) return NextResponse.json({ needsKey: true });
 
   const list = tools.map((t) => `${t.name}: ~$${t.monthly}/mo`).join("; ");

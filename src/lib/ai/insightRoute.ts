@@ -4,6 +4,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
 import { latestInsight, saveInsight, type InsightArea } from "@/lib/ai/planKnowledge";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 // A GET/POST pair for "the client's assistant reads X and says what it means":
 // GET returns the last one it wrote (stored with the account, under the
@@ -29,6 +30,8 @@ export function insightRoute(cfg: {
     const a = await planningAssistant();
     if (!a) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
     if (!a.key) return NextResponse.json({ needsKey: true });
+    const overCap = await memberAiGate();
+    if (overCap) return overCap;
     const ask = typeof cfg.ask === "function" ? await cfg.ask(a.planId) : cfg.ask;
     const out = await runJson(a, planningSystem(a, cfg.role, cfg.rules), ask, cfg.maxTokens ?? 1100);
     const result = out ? cfg.shape(out) : null;

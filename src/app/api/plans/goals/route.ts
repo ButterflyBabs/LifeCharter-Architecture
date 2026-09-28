@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planSegmentIds } from "@/lib/planScope";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -71,5 +72,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "failed to update goal" }, { status: 500 });
   }
 
+  if (status) {
+    const t = q((updated as { title?: string }).title);
+    const label: Record<GoalStatus, string> = { met: `Marked goal ${t} met`, in_progress: `Marked goal ${t} in progress`, slipped: `Marked goal ${t} slipped`, not_started: `Marked goal ${t} not started` };
+    await logActivity({ masterPlanId: planId, action: status === "met" ? "completed" : "updated", entityType: "goal", entityId: goalId, summary: label[status] });
+  }
   return NextResponse.json({ ok: true, goal: updated }, { headers: { "Cache-Control": "no-store" } });
 }

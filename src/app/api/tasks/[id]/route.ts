@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { planSegmentIds } from "@/lib/planScope";
 import { planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
+import { logActivity, q, type ActivityInput } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     if (!newAssignee) return NextResponse.json({ error: "That person isn't on this account's team." }, { status: 400 });
     update.assignee_member_id = newAssignee.id;
   }
-  const { data: before } = newAssignee ? await supabase.from("tasks").select("assignee_member_id").eq("id", params.id).eq("master_plan_id", masterPlanId).maybeSingle() : { data: null };
+  const { data: before } = await supabase.from("tasks").select("status, assignee_member_id").eq("id", params.id).eq("master_plan_id", masterPlanId).maybeSingle();
 
   const { data, error } = await supabase
     .from("tasks")
@@ -64,6 +65,23 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (data && newAssignee && before?.assignee_member_id !== newAssignee.id && newAssignee.id !== (await myMemberId())) {
     await notifyAssignee(newAssignee, { title: data.title as string, due_at: data.due_at as string | null }, await actorName()).catch(() => {});
   }
+  if (data) {
+    const t = q(data.title);
+    const log: ActivityInput[] = [];
+    const base = { masterPlanId, entityType: "task" as const, entityId: data.id as number };
+    if (typeof body.status === "string" && body.status !== before?.status) {
+      if (body.status === "done") log.push({ ...base, action: "completed", summary: `Completed task ${t}` });
+      else if (before?.status === "done") log.push({ ...base, action: "reopened", summary: `Reopened task ${t}` });
+      else log.push({ ...base, action: "updated", summary: `Moved task ${t} to ${body.status}` });
+    }
+    if ("assignee_member_id" in update && (before?.assignee_member_id ?? null) !== (update.assignee_member_id ?? null)) {
+      log.push({ ...base, action: "reassigned", summary: `Reassigned task ${t} to ${newAssignee ? newAssignee.name : "the account owner"}` });
+    }
+    if (!log.length && Object.keys(update).some((k) => k !== "updated_at" && k !== "status" && k !== "completed_at" && k !== "assignee_member_id")) {
+      log.push({ ...base, action: "updated", summary: `Updated task ${t}` });
+    }
+    if (log.length) await logActivity(log);
+  }
   return NextResponse.json({ task: data });
 }
 
@@ -74,10 +92,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { error } = await supabase.from("tasks").delete().eq("id", params.id).eq("master_plan_id", masterPlanId);
+  const { data: gone, error } = await supabase.from("tasks").delete().eq("id", params.id).eq("master_plan_id", masterPlanId).select("id, title");
   if (error) {
     console.error("DELETE /api/tasks/[id]:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  const row = gone?.[0];
+  if (row) await logActivity({ masterPlanId, action: "deleted", entityType: "task", entityId: row.id as number, summary: `Deleted task ${q(row.title)}` });
   return NextResponse.json({ ok: true });
 }

@@ -6,7 +6,8 @@ import { planSegmentIds } from "@/lib/planScope";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz } from "@/lib/tz";
 import { currentBusiness } from "@/lib/businessScope";
-import { ACTIVITY_TYPE_IDS, OUTCOME_IDS, PRIORITIES } from "@/lib/salesActivities";
+import { ACTIVITY_TYPE_IDS, OUTCOME_IDS, PRIORITIES, typeLabel } from "@/lib/salesActivities";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -163,6 +164,8 @@ export async function POST(request: Request) {
     .select("id, type, contact_name, contact_company, title, priority, status, outcome, estimated_value, occurred_on, notes, segment_id")
     .single();
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+  const who = insert.contact_name || insert.contact_company || insert.title;
+  await logActivity({ masterPlanId, action: insert.status === "completed" ? "completed" : "created", entityType: "sales_activity", entityId: (data as { id?: string })?.id, summary: `Logged ${typeLabel(type)}${who ? ` with ${q(who)}` : ""}` });
   return NextResponse.json({ activity: shape(data as Row) });
 }
 
@@ -225,12 +228,20 @@ export async function PATCH(request: Request) {
     else if (body.segmentId !== undefined && (await planSegmentIds(masterPlanId)).includes(Number(body.segmentId))) update.segment_id = Number(body.segmentId);
   }
 
-  const { error } = await supabase
+  const { data: saved, error } = await supabase
     .from("sales_activities")
     .update(update)
     .eq("id", id)
-    .eq("master_plan_id", masterPlanId);
+    .eq("master_plan_id", masterPlanId)
+    .select("id, type, contact_name, contact_company, title, status");
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+  const r = saved?.[0];
+  if (r) {
+    const who = q(r.contact_name || r.contact_company || r.title || r.type);
+    if (update.status === "completed") await logActivity({ masterPlanId, action: "completed", entityType: "sales_activity", entityId: id, summary: `Completed ${typeLabel(r.type)} with ${who}` });
+    else if (update.status === "open" && body.action === "toggle") await logActivity({ masterPlanId, action: "reopened", entityType: "sales_activity", entityId: id, summary: `Reopened ${typeLabel(r.type)} with ${who}` });
+    else if (body.action !== "toggle") await logActivity({ masterPlanId, action: "updated", entityType: "sales_activity", entityId: id, summary: `Updated ${typeLabel(r.type)} with ${who}` });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -244,11 +255,14 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
 
-  const { error } = await supabase
+  const { data: gone, error } = await supabase
     .from("sales_activities")
     .delete()
     .eq("id", id)
-    .eq("master_plan_id", masterPlanId);
+    .eq("master_plan_id", masterPlanId)
+    .select("id, type, contact_name, contact_company, title");
   if (error) return NextResponse.json({ error: "Couldn't delete." }, { status: 500 });
+  const g = gone?.[0];
+  if (g) await logActivity({ masterPlanId, action: "deleted", entityType: "sales_activity", entityId: id, summary: `Deleted ${typeLabel(g.type)} with ${q(g.contact_name || g.contact_company || g.title)}` });
   return NextResponse.json({ ok: true });
 }

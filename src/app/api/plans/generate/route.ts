@@ -7,6 +7,7 @@ import { ProseAnswer } from "@/lib/scoring/aiScore";
 import { generatePlan, PlanType } from "@/lib/plans/generatePlan";
 import { planningAssistant } from "@/lib/ai/planningAi";
 import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
 
   const body = await request.json().catch(() => ({}));
   const planType = body?.planType as PlanType;

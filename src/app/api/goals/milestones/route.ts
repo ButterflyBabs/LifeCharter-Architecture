@@ -10,6 +10,7 @@ import { DIMENSION_LABEL, type DimensionKey } from "@/lib/scoring/dimensionModel
 import { currentBusiness } from "@/lib/businessScope";
 import { currentStart } from "@/lib/goalLadder";
 import { isDimension, milestoneQuestions, type ProposedMilestone } from "@/lib/milestoneAssessment";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,8 @@ export async function POST(request: Request) {
     const a = await planningAssistant();
     if (!a) return NextResponse.json({ error: "No account found." }, { status: 400 });
     if (!a.key) return NextResponse.json({ needsKey: true });
+    const overCap = await memberAiGate();
+    if (overCap) return overCap;
 
     const facts = await dimensionFacts(masterPlanId, dimension);
     const sys = planningSystem(

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
 import { ACTIVITY_TYPES } from "@/lib/salesActivities";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
   const a = await planningAssistant();
   if (!a) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   if (!a.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
 
   const db = createServerClient();
   const since = new Date(Date.now() - 28 * 86400000).toISOString().slice(0, 10);

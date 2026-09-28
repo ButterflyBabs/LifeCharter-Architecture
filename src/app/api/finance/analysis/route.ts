@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { saveInsight, latestInsight } from "@/lib/ai/planKnowledge";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,8 @@ export async function POST(request: Request) {
 
   const assistant = await planningAssistant();
   if (!assistant?.key || !masterPlanId) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
   const key = assistant.key;
 
   const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;

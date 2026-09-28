@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { logActivity, q } from "@/lib/activity";
 import { BILL_CADENCES, loadBills, nextAfter, type BillCadence } from "@/lib/finance/bills";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     console.error("POST /api/finance/bills:", error.message);
     return NextResponse.json({ error: "Couldn't save that bill." }, { status: 500 });
   }
+  await logActivity(rows.map((r) => ({ masterPlanId, action: "created", entityType: "bill" as const, summary: `Added bill ${q(r.name)}` })));
   return NextResponse.json({ ok: true, added: rows.length });
 }
 
@@ -86,12 +88,14 @@ export async function PATCH(request: Request) {
       .from("finance_bills")
       .update(next ? { next_due: next, last_paid_on: paidOn, updated_at: new Date().toISOString() } : { active: false, last_paid_on: paidOn, updated_at: new Date().toISOString() })
       .eq("id", id);
+    await logActivity({ masterPlanId, action: "paid", entityType: "bill", entityId: id, summary: `Paid bill ${q(bill.name)}${isFinite(amount) && amount > 0 ? ` ($${amount.toFixed(2)})` : ""}` });
     return NextResponse.json({ ok: true, nextDue: next, recorded: isFinite(amount) && amount > 0 });
   }
 
   const patch = clean(body);
   if (!Object.keys(patch).length) return NextResponse.json({ error: "Nothing to change." }, { status: 400 });
-  await supabase.from("finance_bills").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
+  const { error: upErr } = await supabase.from("finance_bills").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
+  if (!upErr) await logActivity({ masterPlanId, action: "updated", entityType: "bill", entityId: id, summary: `Updated bill ${q(patch.name || bill.name)}` });
   return NextResponse.json({ ok: true });
 }
 
@@ -102,6 +106,7 @@ export async function DELETE(request: Request) {
   const body = await request.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id : "";
   if (!masterPlanId || !id) return NextResponse.json({ error: "Missing bill." }, { status: 400 });
-  await createServerClient().from("finance_bills").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id).eq("master_plan_id", masterPlanId);
+  const { data: gone } = await createServerClient().from("finance_bills").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id).eq("master_plan_id", masterPlanId).select("id, name");
+  if (gone?.[0]) await logActivity({ masterPlanId, action: "deleted", entityType: "bill", entityId: id, summary: `Stopped tracking bill ${q(gone[0].name)}` });
   return NextResponse.json({ ok: true });
 }

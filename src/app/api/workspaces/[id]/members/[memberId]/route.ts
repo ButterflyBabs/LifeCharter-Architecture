@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { cleanFeatureMap, PRESETS } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
-import { isSuperAdmin } from "@/lib/authz";
+import { isSuperAdmin, resolveActor } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { usageMonth } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,10 @@ type MemberRow = {
   avatar_url: string | null;
   joined_at: string | null;
   permissions?: { preset?: string | null; features?: unknown } | null;
+  ai_monthly_cap?: number | null;
 };
 
-function serialize(m: MemberRow) {
+function serialize(m: MemberRow, aiUsed = 0) {
   return {
     id: m.id,
     name: m.name || "",
@@ -33,10 +35,13 @@ function serialize(m: MemberRow) {
     joinedAt: m.joined_at || null,
     // Per-feature access (null = the role's defaults).
     access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
+    // Monthly AI cap on the owner's key (null = no cap) and this month's use.
+    aiMonthlyCap: m.ai_monthly_cap ?? null,
+    aiUsedThisMonth: aiUsed,
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap";
 
 // Confirms the member belongs to a workspace owned by the current client.
 async function ownedMember(workspaceId: string, memberId: string) {
@@ -89,6 +94,21 @@ export async function PATCH(
     update.permissions = { preset, features };
   }
 
+  // Monthly AI cap on the owner's key: a whole number of requests, or null for no cap.
+  // Only the account owner decides how their key is spent (not an admin).
+  if ("aiMonthlyCap" in body) {
+    if ((await resolveActor()).kind === "member") {
+      return NextResponse.json({ error: "Only the account owner can set AI limits." }, { status: 403 });
+    }
+    const raw = body.aiMonthlyCap;
+    if (raw === null || raw === "") update.ai_monthly_cap = null;
+    else {
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0 || n > 100000) return NextResponse.json({ error: "Enter a monthly limit between 0 and 100,000, or leave it blank for no limit." }, { status: 400 });
+      update.ai_monthly_cap = Math.floor(n);
+    }
+  }
+
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
@@ -104,7 +124,8 @@ export async function PATCH(
     console.error("PATCH member:", error.message);
     return NextResponse.json({ error: "could not save member" }, { status: 500 });
   }
-  return NextResponse.json({ member: serialize(data as MemberRow) });
+  const { data: u } = await supabase.from("ai_member_usage").select("count").eq("member_id", params.memberId).eq("month", usageMonth()).maybeSingle();
+  return NextResponse.json({ member: serialize(data as MemberRow, Number(u?.count) || 0) });
 }
 
 // DELETE — remove a member from the workspace.

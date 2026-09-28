@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+  await logActivity({ masterPlanId, action: "created", entityType: "script", entityId: (data as { id?: string })?.id, summary: `Added ${body.itemType === "template" ? "template" : "script"} ${q(title)}` });
   return NextResponse.json({ item: shape(data as Row) });
 }
 
@@ -130,13 +132,17 @@ export async function PATCH(request: Request) {
     else if (typeof body.tags === "string") update.tags = body.tags;
   }
 
-  const { error } = await supabase
+  const { data: saved, error } = await supabase
     .from("scripts_templates")
     .update(update)
     .eq("id", id)
-    .eq("master_plan_id", masterPlanId);
+    .eq("master_plan_id", masterPlanId)
+    .select("id, title");
 
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+  // Using a script or starring it isn't worth a line in the log; edits are.
+  const edited = body.action !== "use" && Object.keys(update).some((k) => k !== "updated_at" && k !== "is_favorite");
+  if (edited && saved?.[0]) await logActivity({ masterPlanId, action: "updated", entityType: "script", entityId: id, summary: `Updated script ${q(saved[0].title)}` });
   return NextResponse.json({ ok: true });
 }
 
@@ -150,12 +156,14 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
 
-  const { error } = await supabase
+  const { data: gone, error } = await supabase
     .from("scripts_templates")
     .delete()
     .eq("id", id)
-    .eq("master_plan_id", masterPlanId);
+    .eq("master_plan_id", masterPlanId)
+    .select("id, title");
 
   if (error) return NextResponse.json({ error: "Couldn't delete." }, { status: 500 });
+  if (gone?.[0]) await logActivity({ masterPlanId, action: "deleted", entityType: "script", entityId: id, summary: `Deleted script ${q(gone[0].title)}` });
   return NextResponse.json({ ok: true });
 }

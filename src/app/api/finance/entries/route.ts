@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { logActivity } from "@/lib/activity";
 import { planSegmentIds } from "@/lib/planScope";
 import { periodRange } from "@/lib/finance/period";
 
@@ -248,6 +249,14 @@ export async function POST(request: Request) {
     console.error("POST /api/finance/entries:", error.message);
     return NextResponse.json({ error: "Couldn't save the entry." }, { status: 500 });
   }
+  const what = [typeof body.category === "string" && body.category.trim(), typeof body.description === "string" && body.description.trim()].filter(Boolean).join(": ");
+  await logActivity({
+    masterPlanId,
+    action: "created",
+    entityType: type,
+    entityId: data?.id as string | number | undefined,
+    summary: `Added ${type} $${amount.toFixed(2)}${what ? ` (${what.slice(0, 80)})` : ""}`,
+  });
   return NextResponse.json({ entry: serialize(data as Row) });
 }
 

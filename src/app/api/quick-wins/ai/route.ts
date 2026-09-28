@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
   // goals, pipeline and tasks — so a quick win fits what THEY are working on.
   const assistant = await planningAssistant();
   if (!assistant?.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
   const key = assistant.key;
 
   let sys = "";

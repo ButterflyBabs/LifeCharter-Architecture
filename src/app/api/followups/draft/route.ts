@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,8 @@ export async function POST(request: Request) {
   const senderName = typeof body.senderName === "string" ? body.senderName.trim() : "";
 
   const { name, key } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
   if (!key) return NextResponse.json({ needsKey: true });
 
   const sys =

@@ -3,6 +3,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { collectUntagged, countUntagged, loadSegments } from "@/lib/segments/autoTag";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export async function POST(request: Request) {
   const a = await planningAssistant();
   if (!a) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   if (!a.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
 
   const [segments, items] = await Promise.all([loadSegments(a.planId), collectUntagged(a.planId)]);
   if (segments.length === 0) return NextResponse.json({ error: "Add at least one segment first, so there's something to tie activity to." }, { status: 400 });
