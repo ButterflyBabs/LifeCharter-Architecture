@@ -9,6 +9,7 @@ import { replayKey, replaysFor, sessionsBetween, upcomingEvents, type Session } 
 import { describeRule, icsLocal, rrule, ruleChoices, type RecurFreq } from "@/lib/community/recurrence";
 import { uploadCommunityFile, useFileUrl } from "@/lib/community/storage";
 import { EVENT_KIND_LABELS, type CommunityEvent, type EventKind, type EventReplay } from "@/lib/community/types";
+import { EventAfter, useEventAfterData } from "@/components/community/MemberAi";
 import { Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, RichText, TextArea } from "@/components/community/ui";
 
 type Rsvp = "going" | "maybe" | "not_going";
@@ -116,6 +117,7 @@ export default function EventsPage() {
   const canCreate = isAdmin || spaces.some((s) => canModerate(s.id));
   const { rsvps, going, rsvp } = useRsvps(view === "calendar" ? null : sessions);
   const replays = useReplays(view === "calendar" ? null : sessions, reloadKey);
+  const after = useEventAfterData(view === "past" ? sessions : null);
 
   const load = useCallback(async () => {
     if (view === "calendar") return;
@@ -199,6 +201,7 @@ export default function EventsPage() {
               onEdit={setEditing}
               onReplay={(s, replay) => setReplaySession({ s, replay })}
               onChanged={reload}
+              after={view === "past" ? after : undefined}
             />
           ))}
         </div>
@@ -253,6 +256,7 @@ function EventCard({
   onReplay,
   onChanged,
   compact,
+  after,
 }: {
   s: Session;
   replay?: EventReplay;
@@ -263,6 +267,7 @@ function EventCard({
   onReplay: (s: Session, replay?: EventReplay) => void;
   onChanged: () => void;
   compact?: boolean;
+  after?: ReturnType<typeof useEventAfterData>;
 }) {
   const { supabase, spaces, isAdmin, canModerate } = useCommunity();
   const e = s.event;
@@ -405,6 +410,7 @@ function EventCard({
               </span>
             )}
           </div>
+          {after && !upcoming && !compact && <EventAfter s={s} manage={manage} recap={after.recapFor(s)} note={after.noteFor(s)} onChanged={after.reload} />}
         </div>
       </div>
     </Card>

@@ -6,7 +6,9 @@
 //      (PLUS_OPENAI_API_KEY — its own OpenAI project with its own spend
 //      limit), always as "Mariposa", capped per member per month.
 //   3. Otherwise none (free members see the Plus invitation instead).
-import { isOwnerEmail } from "@/lib/authz";
+import { NextResponse } from "next/server";
+import { isOwnerEmail, sessionUser } from "@/lib/authz";
+import { crossOriginBlocked } from "@/lib/security";
 import { readAccountKey } from "@/lib/ai/config";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -81,7 +83,9 @@ export async function collectiveAiFor(user: { id: string; email: string | null }
   return { key: capReached ? "" : plusKey, name: "Mariposa", source: "plus", plus, capReached, plusKeyMissing: !plusKey };
 }
 
-export async function logAiUse(userId: string, action: string, source: AiSource) {
+// "house" = LifeCharter's own key, for work a host does for the Collective
+// (event recaps) — logged, but never counted against a member's Plus cap.
+export async function logAiUse(userId: string, action: string, source: AiSource | "house") {
   await createServerClient().from("cm_ai_usage").insert({ user_id: userId, action, source });
 }
 
@@ -93,7 +97,7 @@ export function aiUnavailableMessage(ai: CollectiveAi): string {
 }
 
 // One JSON-mode call on the small model. Throws with a member-friendly message.
-export async function aiJson(key: string, system: string, user: string, maxTokens = 400): Promise<Record<string, unknown>> {
+export async function aiJson(key: string, system: string, user: string, maxTokens = 400, temperature = 0.6): Promise<Record<string, unknown>> {
   const { default: OpenAI } = await import("openai");
   try {
     const completion = await new OpenAI({ apiKey: key }).chat.completions.create({
@@ -103,7 +107,7 @@ export async function aiJson(key: string, system: string, user: string, maxToken
         { role: "user", content: user },
       ],
       max_tokens: maxTokens,
-      temperature: 0.6,
+      temperature,
       response_format: { type: "json_object" },
     });
     try {
@@ -116,6 +120,44 @@ export async function aiJson(key: string, system: string, user: string, maxToken
     const status = (e as { status?: number })?.status;
     throw new Error(status === 401 ? "The AI key was rejected — update it in Command Suite settings." : "The AI didn't respond — try again in a moment.");
   }
+}
+
+// Speech → text for voice journaling. Throws with a member-friendly message.
+export async function aiTranscribe(key: string, file: File): Promise<string> {
+  const { default: OpenAI } = await import("openai");
+  const client = new OpenAI({ apiKey: key });
+  try {
+    const r = await client.audio.transcriptions.create({ file, model: "gpt-4o-mini-transcribe" });
+    return (r.text || "").trim();
+  } catch (e) {
+    const status = (e as { status?: number })?.status;
+    if (status === 401) throw new Error("The AI key was rejected — update it in Command Suite settings.");
+    // Older keys/projects without the newer model: fall back to Whisper once.
+    if (status === 404 || status === 403) {
+      try {
+        const r = await client.audio.transcriptions.create({ file, model: "whisper-1" });
+        return (r.text || "").trim();
+      } catch (e2) {
+        console.error("aiTranscribe (whisper):", e2);
+      }
+    } else console.error("aiTranscribe:", e);
+    throw new Error("Couldn't turn that recording into text — try again in a moment.");
+  }
+}
+
+// The shared gate for member AI routes: same-origin, signed in, has an AI
+// (their own Command Suite key, or Plus under the monthly cap), and has
+// allowed Mariposa. Returns the member + AI, or the response to send back.
+export async function memberAiGate(
+  request: Request
+): Promise<{ ok: true; user: { id: string; email: string | null }; ai: CollectiveAi } | { ok: false; response: NextResponse }> {
+  if (crossOriginBlocked(request)) return { ok: false, response: NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 }) };
+  const user = await sessionUser();
+  if (!user) return { ok: false, response: NextResponse.json({ error: "Please sign in." }, { status: 401 }) };
+  const ai = await collectiveAiFor(user);
+  if (!ai.key) return { ok: false, response: NextResponse.json({ error: aiUnavailableMessage(ai), needsPlus: !ai.plus && !ai.source }, { status: 402 }) };
+  if (!(await hasAiConsent(user.id))) return { ok: false, response: NextResponse.json({ error: "Please allow Mariposa first.", needsConsent: true }, { status: 428 }) };
+  return { ok: true, user, ai };
 }
 
 // Has this member agreed to Mariposa sending their text to OpenAI?

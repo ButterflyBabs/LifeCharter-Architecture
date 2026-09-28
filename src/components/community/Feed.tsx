@@ -12,6 +12,7 @@ import { MentionTextArea, useMentions } from "./MentionTextArea";
 import { decodeMentions, toPlain } from "@/lib/community/mentions";
 import { Avatar, Badge, Button, Card, ErrorNote, RichText, Input, EmptyState, Spinner } from "./ui";
 import { ReportDialog } from "./ReportDialog";
+import { SayThis } from "./MemberAi";
 import { haptic } from "@/lib/community/native";
 
 export const REACTIONS = ["❤️", "🙌", "🔥", "🦋", "👏", "💡"];
@@ -94,6 +95,7 @@ export function Composer({ channel, onPosted }: { channel: Channel; onPosted: (p
             </button>
           )}
           <DraftStrip draft={media} />
+          {expanded && <SayThis text={body} where="post" onUse={setBody} />}
           <ErrorNote>{error}</ErrorNote>
           <div className="flex items-center justify-between gap-2">
             <AttachButton draft={media} />

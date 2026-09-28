@@ -83,7 +83,11 @@ export function PlusInvite({ what, title = "Mariposa can help", compact }: { wha
 // POST to an AI route; if the member hasn't allowed Mariposa yet, ask once
 // (the consent screen) and retry.
 export async function aiPost(url: string, body: unknown): Promise<Response> {
-  const send = () => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (body instanceof FormData) return aiSend(() => fetch(url, { method: "POST", body }));
+  return aiSend(() => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+}
+
+async function aiSend(send: () => Promise<Response>): Promise<Response> {
   const res = await send();
   if (res.status === 428 && (await requestAiConsent())) return send();
   return res;
@@ -119,10 +123,13 @@ export function AiConsentHost() {
           <li>what you&rsquo;re writing when you tap a Mariposa button</li>
           <li>for a reflection, look-back, report or Sunday review: the journal entries it covers</li>
           <li>for Ask the Library: your question</li>
+          <li>for a voice note: the recording, only to turn it into text (it isn&rsquo;t kept)</li>
+          <li>for What you missed or Catch me up: the posts and replies being summarized — only ones you can already see</li>
+          <li>for a focus note or an event recap: the session recap and the notes you add</li>
         </ul>
         <p>
-          OpenAI processes it only to write the answer and does not use it to train its models. Nothing is shared with other members, and Mariposa only runs
-          when you ask (or for your Sunday review).
+          OpenAI processes it only to write the answer and does not use it to train its models. Nothing is shared with other members, Mariposa never posts or
+          sends anything for you, and it only runs when you ask (or for your Sunday review).
         </p>
         <p className="text-[13px] text-[var(--cm-muted-2)]">You can withdraw this anytime in Me → Mariposa.</p>
         <div className="flex justify-end gap-2 pt-1">

@@ -12,6 +12,7 @@ import { useCommunity } from "@/lib/community/context";
 import { JOURNAL_PROMPTS, SHARE_PATHWAY, weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } from "@/lib/community/journal";
 import { Button, ErrorNote, Input, Label, Modal, TextArea } from "./ui";
 import { AI_PRIVACY_NOTE, PlusInvite, Suggestion, askJournalAi, useJournalAi, useJournalAiStatus } from "./JournalAssist";
+import { VoiceNote } from "./MemberAi";
 
 type AiSuggestion =
   | { kind: "sharpen"; headline: string; first_step: string }
@@ -241,6 +242,9 @@ export function JournalSheet({
             </span>
           </Label>
           <TextArea id="j-private" value={f.private_note} onChange={(e) => setF({ ...f, private_note: e.target.value })} placeholder={prompt.note} className="min-h-[120px]" />
+          <div className="mt-2">
+            <VoiceNote onText={(t) => setF((prev) => ({ ...prev, private_note: prev.private_note.trim() ? `${prev.private_note.trim()}\n\n${t}` : t }))} />
+          </div>
         </div>
 
         {kind === "reflection" && (
@@ -337,10 +341,10 @@ export function JournalSheet({
           <PlusInvite
             what={
               kind === "intention"
-                ? "Get a clearer headline and a first step."
+                ? "Get a clearer headline and a first step — or speak your entry instead of typing."
                 : kind === "win"
-                  ? "Get three questions that help you see what made this win happen."
-                  : "Get a first draft of your reflection from your week."
+                  ? "Get three questions that help you see what made this win happen — or speak it instead of typing."
+                  : "Get a first draft of your reflection from your week — or speak it instead of typing."
             }
           />
         )}

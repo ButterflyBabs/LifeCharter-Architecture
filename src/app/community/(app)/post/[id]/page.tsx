@@ -12,6 +12,7 @@ import { Avatar, Button, Card, EmptyState, ErrorNote, PageLoading, RichText } fr
 import { AttachButton, DraftStrip, MediaGallery, pasteInto, useMediaDraft } from "@/components/community/Media";
 import { MentionTextArea, useMentions } from "@/components/community/MentionTextArea";
 import { ReportDialog } from "@/components/community/ReportDialog";
+import { SayThis, ThreadCatchUp } from "@/components/community/MemberAi";
 
 export default function PostPage({ params }: { params: { id: string } }) {
   const { supabase, channels, spaces } = useCommunity();
@@ -105,6 +106,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         <h2 className="mb-3 font-editorial text-[21px] font-semibold text-[var(--cm-ink)]">
           {comments.length ? `${comments.length} ${comments.length === 1 ? "reply" : "replies"}` : "Replies"}
         </h2>
+        <ThreadCatchUp postId={post.id} replies={comments.length} />
         <div className="space-y-4">
           {top.map((c) => (
             <div key={c.id}>
@@ -255,6 +257,7 @@ function ReplyBox({ postId, parentId, compact, onPosted }: { postId: string; par
           rows={2}
         />
         <DraftStrip draft={media} size={64} />
+        <SayThis text={text} where="reply" onUse={setText} />
         <ErrorNote>{error}</ErrorNote>
         <div className="flex items-center justify-between">
           <AttachButton draft={media} accept="image/*,video/*" />
