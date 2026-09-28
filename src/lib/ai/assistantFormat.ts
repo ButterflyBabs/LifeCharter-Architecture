@@ -77,5 +77,19 @@ export function formatAnswerSections(rows: AnswerRow[]): string {
     );
   }
 
+  // Their latest Quick Pulse check-in: mostly 1–5 ratings, so the rating counts even without words.
+  const pulse = rows.filter((r) => r.assessment_type === "quick_pulse" && !isSensitive(r));
+  if (pulse.length) {
+    const rating = (r: AnswerRow) => (typeof r.answer_value === "string" && /^[1-5]$/.test(r.answer_value) ? `${r.answer_value}/5` : "");
+    const lines = sampleBySection(pulse, 16)
+      .map((r) => {
+        const said = [rating(r), clip(oneLine(r.answer_text || ""), 200)].filter(Boolean).join(" — ");
+        return said ? `- [${r.section_name || "General"}] ${clip(oneLine(r.question_text), 110)} → ${said}` : "";
+      })
+      .filter(Boolean);
+    const when = pulse[0]?.answered_at ? ` on ${String(pulse[0].answered_at).slice(0, 10)}` : "";
+    if (lines.length) sections.push(`From their latest Quick Pulse check-in${when}:\n${lines.join("\n")}`);
+  }
+
   return clip(sections.join("\n\n"), MAX_CHARS);
 }

@@ -13,7 +13,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trim()}…` : s.trim());
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 
-export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews";
+export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews" | "operations";
 
 // The latest thing this client's assistant concluded about an area.
 export async function latestInsight(masterPlanId: string, area: InsightArea) {

@@ -58,6 +58,17 @@ export default function OperationsPage() {
 
   useEffect(() => {
     load();
+    // The last insights their assistant gave, if any.
+    fetch("/api/operations/insights")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const s = d?.saved;
+        if (s && Array.isArray(s.insights)) {
+          setHeadline(typeof s.headline === "string" ? s.headline : "");
+          setInsights(s.insights);
+        }
+      })
+      .catch(() => {});
   }, [load]);
 
   const runInsights = useCallback(async () => {

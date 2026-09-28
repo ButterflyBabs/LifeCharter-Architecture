@@ -6,8 +6,17 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { OPERATIONS_PILLARS, STATUS_LABEL, type PillarStatus } from "@/lib/operations";
 import { answersText, type DeeperAnswers } from "@/lib/operationsDeeper";
+import { latestInsight, saveInsight } from "@/lib/ai/planKnowledge";
 
 export const dynamic = "force-dynamic";
+
+// The last insights this client's assistant gave (so the page shows them on load).
+export async function GET() {
+  const masterPlanId = await resolveMasterPlanId();
+  if (!masterPlanId) return NextResponse.json({ saved: null });
+  const i = await latestInsight(masterPlanId, "operations").catch(() => null);
+  return NextResponse.json({ saved: i ? { ...i.content, createdAt: i.createdAt } : null });
+}
 
 // AI insights for the 8 operational pillars: reads each pillar's saved status +
 // notes and asks the client's bot where to focus next. Structured JSON so the
@@ -75,10 +84,15 @@ export async function POST(request: Request) {
     } catch {
       parsed = {};
     }
-    return NextResponse.json({
+    const result = {
       headline: String(parsed.headline || "").trim() || "Set each pillar's status and I'll show you where to focus.",
       insights: Array.isArray(parsed.insights) ? parsed.insights.slice(0, 5) : [],
-    });
+    };
+    // Saved so the page remembers them and the assistant knows what was advised.
+    if (masterPlanId && result.insights.length) {
+      await saveInsight(masterPlanId, "operations", name, { ...result, summary: result.headline }).catch(() => {});
+    }
+    return NextResponse.json(result);
   } catch (e) {
     console.error("POST /api/operations/insights:", e);
     return NextResponse.json({ error: "Couldn't generate insights — try again in a moment." }, { status: 502 });

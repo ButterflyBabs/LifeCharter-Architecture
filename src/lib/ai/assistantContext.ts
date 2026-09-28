@@ -1,6 +1,7 @@
 import { planningKnowledge } from "@/lib/ai/planKnowledge";
 import { offersKnowledge, pipelineKnowledge } from "@/lib/sales/knowledge";
 import { alignmentKnowledge } from "@/lib/ai/alignKnowledge";
+import { latestInsight } from "@/lib/ai/planKnowledge";
 import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
@@ -15,7 +16,7 @@ import * as microsoft from "@/lib/microsoft";
 
 // Everything the client's AI assistant knows about them, built fresh on every
 // question from THEIR OWN data: what they've answered so far in the Brain, Soul
-// and Profit assessments (each answer counts as soon as it's given — it does not
+// and Profit assessments and their latest Quick Pulse check-in (each answer counts as soon as it's given — it does not
 // wait for the assessment to be finished), their live dimension scores, and
 // what's on their plate today. Answers flagged sensitive are never included.
 
@@ -32,6 +33,7 @@ const TYPE_LABEL: Record<string, string> = {
   soul: "Soul (purpose, values & story)",
   profit_architecture: "Profit (financial health)",
   command_shift: "Command Shift (21-Day Challenge answers)",
+  quick_pulse: "Quick Pulse (latest check-in)",
 };
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -95,7 +97,7 @@ export async function buildAssistantKnowledge(
       .from("unified_client_responses")
       .select("assessment_type, section_name, question_text, answer_text, answer_value, score, max_score, answered_at")
       .eq("master_plan_id", masterPlanId)
-      .in("assessment_type", ["brain", "soul", "profit_architecture", "command_shift"])
+      .in("assessment_type", ["brain", "soul", "profit_architecture", "command_shift", "quick_pulse"])
       .order("answered_at", { ascending: false })
       .limit(800);
     const rows = (data ?? []) as AnswerRow[];
@@ -105,7 +107,7 @@ export async function buildAssistantKnowledge(
       counts.set(r.assessment_type, (counts.get(r.assessment_type) ?? 0) + 1);
     }
     answered = Array.from(counts.values()).reduce((a, b) => a + b, 0);
-    const progress = Object.keys(TYPE_LABEL).filter((t) => t !== "command_shift" || counts.get(t)).map((t) => `${TYPE_LABEL[t]}: ${counts.get(t) ? `${counts.get(t)} answers so far` : "not started"}`);
+    const progress = Object.keys(TYPE_LABEL).filter((t) => (t !== "command_shift" && t !== "quick_pulse") || counts.get(t)).map((t) => `${TYPE_LABEL[t]}: ${counts.get(t) ? `${counts.get(t)} answers so far` : "not started"}`);
     parts.push(`Assessment progress — ${progress.join("; ")}.`);
     parts.push(formatAnswerSections(rows));
   } catch {
@@ -171,6 +173,15 @@ export async function buildAssistantKnowledge(
         `Operational pillars (8): ${by("complete").length} complete, ${prog.length} in progress` +
           (attn.length ? `; they flagged as needing attention: ${attn.join(", ")}` : "") +
           `; the rest not started.`
+      );
+    }
+    // What their assistant last advised on Operations.
+    const op = await latestInsight(masterPlanId, "operations");
+    const opList = Array.isArray(op?.content?.insights) ? (op!.content.insights as { pillar?: string; priority?: string; detail?: string }[]) : [];
+    if (op && (op.content.headline || opList.length)) {
+      parts.push(
+        `Operations insights given ${op.createdAt.slice(0, 10)}: ${String(op.content.headline || "").slice(0, 200)}` +
+          (opList.length ? ` Focus: ${opList.slice(0, 4).map((i) => `${i.pillar} (${i.priority}) — ${String(i.detail || "").slice(0, 160)}`).join("; ")}.` : "")
       );
     }
   } catch {
