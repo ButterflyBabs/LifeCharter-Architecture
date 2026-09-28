@@ -138,6 +138,23 @@ async function isHouseWorkspace(workspaceId: string | null): Promise<boolean> {
 }
 
 export async function middleware(request: NextRequest) {
+  // Trailing slashes (next.config sets skipTrailingSlashRedirect): the Certification Portal lives at
+  // /certificationportal/ and needs its slash for relative links; every other address drops it.
+  {
+    const p = request.nextUrl.pathname;
+    if (p === "/certificationportal") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/certificationportal/";
+      return NextResponse.redirect(url, 308);
+    }
+    if (p.startsWith("/certificationportal/")) return NextResponse.next();
+    if (p.length > 1 && p.endsWith("/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = p.replace(/\/+$/, "");
+      return NextResponse.redirect(url, 308);
+    }
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   // API responses are live per-user data — never let the edge/browser cache them.

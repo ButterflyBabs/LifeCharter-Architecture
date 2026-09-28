@@ -13,6 +13,20 @@ const nextConfig = {
   // /dashboard and /business-alignment rendered the same page under two
   // addresses (Command Suite Audit, Q1). The sidebar uses /business-alignment,
   // so older /dashboard links now forward there.
+  // The Coaching Certification Portal is served at /certificationportal/ (Babs, 2026-09-28). Its pages
+  // use relative links, so they need the trailing slash; middleware.ts keeps the slash for the portal
+  // and removes it everywhere else, exactly as Next.js did before.
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    const portal = "https://coaching-certification-portal.vercel.app";
+    return {
+      beforeFiles: [
+        { source: "/certificationportal/", destination: `${portal}/` },
+        { source: "/certificationportal/:path*/", destination: `${portal}/:path*/` },
+        { source: "/certificationportal/:path*", destination: `${portal}/:path*` },
+      ],
+    };
+  },
   async redirects() {
     return [{ source: "/dashboard", destination: "/business-alignment", permanent: false }];
   },
