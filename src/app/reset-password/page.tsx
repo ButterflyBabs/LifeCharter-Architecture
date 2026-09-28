@@ -45,7 +45,10 @@ function ResetPasswordInner() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      // Supabase refuses passwords found in known data breaches; its wording ("weak") confuses people.
+      setError(/weak|easy to guess|pwned|breach|leaked/i.test(error.message)
+        ? "That password has shown up in a known data breach somewhere online, so it can't be used here. Please choose a different one (a short phrase of 3–4 unrelated words works well)."
+        : error.message);
       return;
     }
     router.push("/?after=reset");

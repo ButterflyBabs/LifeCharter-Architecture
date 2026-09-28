@@ -84,7 +84,15 @@ export async function POST(request: Request) {
   });
   if (updErr) {
     console.error("invite accept updateUser:", updErr.message);
-    return NextResponse.json({ error: "could not set the password" }, { status: 500 });
+    // Supabase refuses passwords found in known data breaches (and weak ones). Say so plainly.
+    if (/weak|easy to guess|pwned|breach|leaked/i.test(updErr.message)) {
+      return NextResponse.json(
+        { error: "That password has shown up in a known data breach somewhere online, so it can't be used here. Please choose a different one (a short phrase of 3–4 unrelated words works well)." },
+        { status: 400 }
+      );
+    }
+    if (/password/i.test(updErr.message)) return NextResponse.json({ error: updErr.message }, { status: 400 });
+    return NextResponse.json({ error: "Couldn't set the password just now. Please try again in a minute." }, { status: 500 });
   }
 
   // Consume the token and activate the member.
