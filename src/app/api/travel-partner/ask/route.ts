@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { searchKb, KNOWLEDGE_BASE, type KbEntry } from "@/lib/knowledgeBase";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,8 @@ export async function POST(request: Request) {
   const sources = matched.map((m) => ({ id: m.id, question: m.question, category: m.category }));
 
   const { name, key } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
 
   // Graceful fallback with no AI key: return the single best KB answer verbatim.
   if (!key) {

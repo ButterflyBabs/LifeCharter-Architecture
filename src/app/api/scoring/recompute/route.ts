@@ -8,6 +8,7 @@ import { captureSnapshot } from "@/lib/scoring/snapshot";
 import { resolveOpenAiKey } from "@/lib/ai/config";
 import { computeSegmentScores, persistSegmentScores } from "@/lib/scoring/segmentScore";
 import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabilities";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export async function POST() {
 
 async function run() {
   const openAiKey = await resolveOpenAiKey();
+  const overCap = await memberAiGate(openAiKey);
+  if (overCap) return overCap;
   if (!openAiKey) {
     return NextResponse.json(
       { error: "Add your OpenAI key in Settings → AI Assistant to run scoring.", configured: false },

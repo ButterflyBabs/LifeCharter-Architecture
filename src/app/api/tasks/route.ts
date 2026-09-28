@@ -6,6 +6,7 @@ import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { currentBusiness } from "@/lib/businessScope";
 import { planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
+import { logActivity, q } from "@/lib/activity";
 
 // Always query live data per request.
 export const dynamic = "force-dynamic";
@@ -130,5 +131,12 @@ export async function POST(request: Request) {
   if (assignee && assignee.id !== (await myMemberId())) {
     await notifyAssignee(assignee, { title: String(body.title), due_at: (row.due_at as string) ?? null }, await actorName()).catch(() => {});
   }
+  await logActivity({
+    masterPlanId,
+    action: "created",
+    entityType: "task",
+    entityId: data?.id as number | undefined,
+    summary: `Added task ${q(body.title)}${assignee ? ` for ${assignee.name}` : ""}`,
+  });
   return NextResponse.json({ task: data, persisted: true });
 }

@@ -5,6 +5,7 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { PLATFORM_LABELS } from "@/lib/postStream";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { loadBusinessContext } from "@/lib/marketing/businessContext";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export async function POST(request: Request) {
   const tone = typeof body.tone === "string" ? body.tone.trim() : "";
 
   const { name, key } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
   if (!key) return NextResponse.json({ needsKey: true });
 
   const context = await loadBusinessContext(await resolveMasterPlanId());

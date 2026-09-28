@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { usageMonth } from "@/lib/ai/memberCap";
 import { withinStandingLimit } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +22,10 @@ type MemberRow = {
   avatar_url: string | null;
   joined_at: string | null;
   permissions?: { preset?: string | null; features?: unknown } | null;
+  ai_monthly_cap?: number | null;
 };
 
-function serialize(m: MemberRow) {
+function serialize(m: MemberRow, aiUsed = 0) {
   return {
     id: m.id,
     name: m.name || "",
@@ -34,10 +36,13 @@ function serialize(m: MemberRow) {
     joinedAt: m.joined_at || null,
     // Per-feature access (null = the role's defaults).
     access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
+    // Monthly AI cap on the owner's key (null = no cap) and this month's use.
+    aiMonthlyCap: m.ai_monthly_cap ?? null,
+    aiUsedThisMonth: aiUsed,
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap";
 
 // Confirms the workspace exists and belongs to the current client.
 async function ownedWorkspace(id: string) {
@@ -68,7 +73,13 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     console.error("GET members:", error.message);
     return NextResponse.json({ error: "could not load members" }, { status: 500 });
   }
-  return NextResponse.json({ members: ((data || []) as MemberRow[]).map(serialize) });
+  const rows = (data || []) as MemberRow[];
+  const used = new Map<string, number>();
+  if (rows.length) {
+    const { data: u } = await supabase.from("ai_member_usage").select("member_id, count").eq("month", usageMonth()).in("member_id", rows.map((r) => r.id));
+    for (const r of (u || []) as { member_id: string; count: number }[]) used.set(r.member_id, Number(r.count) || 0);
+  }
+  return NextResponse.json({ members: rows.map((m) => serialize(m, used.get(m.id) ?? 0)) });
 }
 
 // POST — invite/add a member.
@@ -125,5 +136,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
     console.error("POST members:", error.message);
     return NextResponse.json({ error: "could not add member" }, { status: 500 });
   }
-  return NextResponse.json({ member: serialize(data as MemberRow) });
+  return NextResponse.json({ member: serialize(data as MemberRow, 0) });
 }

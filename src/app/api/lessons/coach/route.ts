@@ -5,6 +5,7 @@ import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi"
 import { saveInsight } from "@/lib/ai/planKnowledge";
 import { createServerClient } from "@/lib/supabase/server";
 import { DIMENSION_KEYS, DIMENSION_LABEL, type DimensionKey } from "@/lib/scoring/dimensionModel";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
   const a = await planningAssistant();
   if (!masterPlanId || !a) return NextResponse.json({ error: "No account found." }, { status: 400 });
   if (!a.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
   const label = DIMENSION_LABEL[dimension];
   const sys = planningSystem(
     a,

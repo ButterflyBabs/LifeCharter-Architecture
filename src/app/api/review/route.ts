@@ -7,6 +7,7 @@ import { zonedToUtcISO } from "@/lib/tz";
 import { planningAssistant, planningSystem, runJson, cleanList } from "@/lib/ai/planningAi";
 import { saveInsight } from "@/lib/ai/planKnowledge";
 import { QUESTIONS, gatherNumbers, numbersText, periodFor, type ReviewCadence } from "@/lib/reviews";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
 
     let briefing: Record<string, unknown> = {};
     const a = await planningAssistant();
+    const overCap = await memberAiGate(a?.key);
+    if (overCap) return overCap;
     if (a?.key) {
       const sys = planningSystem(
         a,
@@ -105,6 +108,8 @@ export async function POST(request: Request) {
     }
     let proposed: Record<string, string>[] = [];
     const a = await planningAssistant();
+    const overCap = await memberAiGate(a?.key);
+    if (overCap) return overCap;
     if (a?.key) {
       const sys = planningSystem(
         a,

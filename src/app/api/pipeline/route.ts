@@ -3,6 +3,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { DEAL_COLUMNS, ensureStages, shapeDeal } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
 import { ownBusinessId, planBusinesses, salesAccount } from "@/lib/sales/account";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -53,5 +54,7 @@ export async function POST(request: Request) {
   if ((count ?? 0) >= 5000) return NextResponse.json({ error: "That's the most deals one account can hold." }, { status: 400 });
   const { data, error } = await a.supabase.from("pipeline_deals").insert(row).select(DEAL_COLUMNS).single();
   if (error) return NextResponse.json({ error: "Couldn't save the deal." }, { status: 500 });
-  return NextResponse.json({ deal: shapeDeal(data as Record<string, unknown>, new Map(stages.map((s) => [s.id, s]))) });
+  const d = data as Record<string, unknown>;
+  await logActivity({ masterPlanId: a.masterPlanId, action: "created", entityType: "deal", entityId: d.id as string, summary: `Added deal ${q(d.contact_name || d.company)} in ${stage.name}` });
+  return NextResponse.json({ deal: shapeDeal(d, new Map(stages.map((s) => [s.id, s]))) });
 }

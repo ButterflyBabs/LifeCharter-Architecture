@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ export async function POST(request: Request) {
   const a = await planningAssistant();
   if (!a) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   if (!a.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
 
   const since = new Date();
   since.setUTCMonth(since.getUTCMonth() - 3);

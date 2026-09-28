@@ -6,6 +6,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { currentMailOwner } from "@/lib/mailOwner";
 import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => ({}));
   const { name, key, instructions } = await resolveAiConfig();
+  const overCap = await memberAiGate(key);
+  if (overCap) return overCap;
   if (!key) return NextResponse.json({ needsKey: true, insights: [] });
 
   const planId = await resolveMasterPlanId();

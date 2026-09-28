@@ -11,6 +11,7 @@ import {
   PostStreamError,
   type CreatePostInput,
 } from "@/lib/postStream";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,8 @@ export async function POST(request: Request) {
 
   try {
     const post = await createPost(key, input);
+    const verb = status === "scheduled" ? "Scheduled" : status === "published" ? "Published" : "Drafted";
+    await logActivity({ action: status === "published" ? "published" : "created", entityType: "content_post", entityId: (post as { id?: string } | null)?.id, summary: `${verb} post ${q(title)}` });
     return NextResponse.json({ post });
   } catch (e) {
     return fail(e);
@@ -90,6 +93,7 @@ export async function PATCH(request: Request) {
   try {
     if (body.action === "publish") {
       const post = await publishPost(key, id);
+      await logActivity({ action: "published", entityType: "content_post", entityId: id, summary: `Published post ${q((post as { title?: string } | null)?.title)}` });
       return NextResponse.json({ post });
     }
     const patch: Partial<CreatePostInput> = {};
@@ -100,6 +104,7 @@ export async function PATCH(request: Request) {
     if (typeof body.scheduledAt === "string") patch.scheduledAt = body.scheduledAt;
     if (Array.isArray(body.mediaUrls)) patch.mediaUrls = body.mediaUrls.map(String).filter(Boolean);
     const post = await updatePost(key, id, patch);
+    await logActivity({ action: "updated", entityType: "content_post", entityId: id, summary: `Updated post ${q(patch.title || (post as { title?: string } | null)?.title)}` });
     return NextResponse.json({ post });
   } catch (e) {
     return fail(e);
@@ -117,6 +122,7 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
   try {
     await deletePost(key, id);
+    await logActivity({ action: "deleted", entityType: "content_post", entityId: id, summary: "Deleted a post" });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return fail(e);

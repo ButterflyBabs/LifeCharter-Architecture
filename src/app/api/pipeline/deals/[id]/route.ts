@@ -3,6 +3,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { DEAL_COLUMNS, ensureStages, shapeDeal } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
 import { ownBusinessId, salesAccount } from "@/lib/sales/account";
+import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if ("businessId" in body) row.business_id = await ownBusinessId(a.masterPlanId, body.businessId);
   const { data, error } = await a.supabase.from("pipeline_deals").update(row).eq("id", params.id).eq("master_plan_id", a.masterPlanId).select(DEAL_COLUMNS).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save the deal." }, { status: 500 });
-  return NextResponse.json({ deal: shapeDeal(data as Record<string, unknown>, new Map(stages.map((s) => [s.id, s]))) });
+  const d = data as Record<string, unknown>;
+  const name = q(d.contact_name || d.company);
+  const moved = row.stage_id ? stages.find((s) => s.id === row.stage_id) : null;
+  if (moved) {
+    const action = moved.kind === "won" ? "won" : moved.kind === "lost" ? "lost" : "moved";
+    const summary = moved.kind === "won" ? `Marked deal ${name} won` : moved.kind === "lost" ? `Marked deal ${name} lost` : `Moved deal ${name} to ${moved.name}`;
+    await logActivity({ masterPlanId: a.masterPlanId, action, entityType: "deal", entityId: params.id, summary });
+  } else if (Object.keys(row).some((k) => k !== "sort_order")) {
+    await logActivity({ masterPlanId: a.masterPlanId, action: "updated", entityType: "deal", entityId: params.id, summary: `Updated deal ${name}` });
+  }
+  return NextResponse.json({ deal: shapeDeal(d, new Map(stages.map((s) => [s.id, s]))) });
 }
 
 // DELETE: remove a deal (its logged calls stay in Daily Compass, unlinked).
@@ -44,7 +55,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   const a = await salesAccount();
   if (!a) return NextResponse.json({ error: "No account found." }, { status: 400 });
-  const { error } = await a.supabase.from("pipeline_deals").delete().eq("id", params.id).eq("master_plan_id", a.masterPlanId);
+  const { data: gone, error } = await a.supabase.from("pipeline_deals").delete().eq("id", params.id).eq("master_plan_id", a.masterPlanId).select("id, contact_name, company");
   if (error) return NextResponse.json({ error: "Couldn't delete the deal." }, { status: 500 });
+  if (gone?.[0]) await logActivity({ masterPlanId: a.masterPlanId, action: "deleted", entityType: "deal", entityId: params.id, summary: `Deleted deal ${q(gone[0].contact_name || gone[0].company)}` });
   return NextResponse.json({ ok: true });
 }

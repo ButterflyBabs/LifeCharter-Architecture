@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { currentMailOwner } from "@/lib/mailOwner";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { buildAssistantKnowledge, loadHistory, saveTurn, assistantSystemPrompt } from "@/lib/ai/assistantContext";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 // System prompt for the AI Business Guide ({name} = the account's assistant).
 const systemPrompt = (name: string) => `You are ${name}, the AI business guide in the LifeCharter Command Suite, a business assessment and optimization platform.
@@ -34,6 +35,8 @@ Provide guidance that is:
 export async function POST(request: NextRequest) {
   try {
     const { name, key, instructions } = await resolveAiConfig();
+    const overCap = await memberAiGate(key);
+    if (overCap) return overCap;
     // Check if an OpenAI API key is configured (per-account or env)
     if (!key) {
       return NextResponse.json({

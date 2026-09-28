@@ -5,6 +5,7 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { planningAssistant, planningSystem, runJson, cleanList } from "@/lib/ai/planningAi";
 import { latestInsight, saveInsight } from "@/lib/ai/planKnowledge";
 import { buildForecast } from "@/lib/planning/forecastData";
+import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
   const a = await planningAssistant();
   if (!a) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   if (!a.key) return NextResponse.json({ needsKey: true });
+  const overCap = await memberAiGate();
+  if (overCap) return overCap;
 
   const f = await buildForecast(a.planId);
   if (f.baseMonthlyRevenue <= 0) {

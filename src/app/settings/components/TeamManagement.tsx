@@ -25,6 +25,8 @@ import {
   Check,
 } from "lucide-react";
 import MemberAccess from "./MemberAccess";
+import TeamActivity from "./TeamActivity";
+import MemberAiCap from "./MemberAiCap";
 import type { FeatureMap } from "@/lib/teamRoles";
 
 type Role = "admin" | "editor" | "viewer" | "sales";
@@ -38,6 +40,8 @@ interface TeamMember {
   avatar?: string | null;
   joinedAt?: string | null;
   access?: { preset: string | null; features: FeatureMap } | null;
+  aiMonthlyCap?: number | null;
+  aiUsedThisMonth?: number;
 }
 
 const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", custom: "Custom access" };
@@ -114,12 +118,20 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
 
   // The Sales role opens the owner's own sales page, so only the owner (super admin) can grant it.
   const [canGrantSales, setCanGrantSales] = useState(false);
+  // Only the account owner (not an admin) sets how much of their AI key each member may use.
+  const [isAccountOwner, setIsAccountOwner] = useState(false);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((me) => setCanGrantSales(Boolean(me?.superAdmin)))
+      .then((me) => {
+        setCanGrantSales(Boolean(me?.superAdmin));
+        setIsAccountOwner(Boolean(me) && !me.teamRole);
+      })
       .catch(() => {});
   }, []);
+
+  // Members list or the Activity log.
+  const [view, setView] = useState<"members" | "activity">("members");
 
   // Invite-link ("Create login") state.
   const [invitingId, setInvitingId] = useState<string | null>(null);
@@ -226,6 +238,10 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   };
 
   const handleChangeRole = (id: string, role: Role) => patchMember(id, { role });
+  const saveAiCap = async (id: string, cap: number | null) => {
+    await patchMember(id, { aiMonthlyCap: cap });
+    flash(true, cap === null ? "AI limit removed." : `AI limit set to ${cap} requests a month.`);
+  };
   const [accessOpen, setAccessOpen] = useState<string | null>(null);
   const saveAccess = async (id: string, access: { preset: string; features: FeatureMap } | null) => {
     await patchMember(id, { access } as Partial<TeamMember>);
@@ -301,8 +317,41 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
     }
   };
 
+  const tabs = (
+    <div role="tablist" aria-label="Team" className="inline-flex rounded-lg border border-[#1a2b4a]/15 p-1 bg-[#F8F5F0]/60 dark:bg-white/5">
+      {(["members", "activity"] as const).map((v) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          aria-selected={view === v}
+          onClick={() => setView(v)}
+          className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+            view === v ? "bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] shadow-sm font-medium" : "text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0]"
+          }`}
+        >
+          {v === "members" ? "Members" : "Activity"}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (view === "activity") {
+    return (
+      <div className="space-y-6">
+        {tabs}
+        <div>
+          <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Team Activity</h3>
+          <p className="text-sm text-[#b8a898]">Who did what across the account. Only you and your admins can see this.</p>
+        </div>
+        <TeamActivity />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {tabs}
       {/* Hidden avatar picker shared by all member rows */}
       <input
         ref={avatarInputRef}
@@ -568,6 +617,16 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                     </Button>
                   </div>
                 </div>
+
+                {member.role !== "sales" && (
+                  <MemberAiCap
+                    used={member.aiUsedThisMonth ?? 0}
+                    cap={member.aiMonthlyCap ?? null}
+                    canEdit={isAccountOwner}
+                    busy={isBusy}
+                    onSave={(cap) => saveAiCap(member.id, cap)}
+                  />
+                )}
 
                 {accessOpen === member.id && <MemberAccess access={member.access ?? null} busy={isBusy} onSave={(a) => saveAccess(member.id, a)} />}
 
