@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import DimensionLessons from "@/components/lessons/DimensionLessons";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Clock, HelpCircle } from "lucide-react";
 
@@ -167,6 +168,8 @@ export default function DimensionDetailPage() {
             <HelpCircle className="w-3.5 h-3.5" />
             Tap any input above to go where you can improve it.
           </div>
+
+          <DimensionLessons dimension={key} label={dim.label} score={dim.score} />
         </>
       )}
     </div>

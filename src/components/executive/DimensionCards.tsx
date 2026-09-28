@@ -59,7 +59,7 @@ function SortableDimension({ id, name, score }: { id: string; name: string; scor
       >
         <GripVertical className="w-3.5 h-3.5" />
       </button>
-      <Link href={`/dimensions/${id}`} className="block" title={`Why is ${name} ${score ?? "—"}?`}>
+      <Link href={`/dimensions/${id}${score !== null && score < 60 ? "#lessons" : ""}`} className="block" title={`Why is ${name} ${score ?? "—"}?`}>
         <span className="text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] leading-tight pr-4 block">{name}</span>
         <p className="text-xl font-serif mt-1" style={{ color: score !== null ? healthColor(score) : "#9CA3AF" }}>
           {score ?? "—"}
@@ -70,9 +70,13 @@ function SortableDimension({ id, name, score }: { id: string; name: string; scor
             style={{ width: `${score ?? 0}%`, backgroundColor: score !== null ? healthColor(score) : "#E8E4E0" }}
           />
         </div>
-        <span className="mt-1.5 block text-[10px] text-[#2E7C83] opacity-0 group-hover:opacity-100 transition-opacity">
-          Why this score →
-        </span>
+        {score !== null && score < 60 ? (
+          <span className="mt-1.5 block text-[10px] font-semibold text-[#8a6a15]">Learn how to lift this →</span>
+        ) : (
+          <span className="mt-1.5 block text-[10px] text-[#2E7C83] opacity-0 group-hover:opacity-100 transition-opacity">
+            Why this score →
+          </span>
+        )}
       </Link>
     </div>
   );

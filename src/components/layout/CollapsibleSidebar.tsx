@@ -48,6 +48,7 @@ import {
   BookOpen,
   Scale,
   Sprout,
+  GraduationCap,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -118,6 +119,7 @@ const ownerSection = {
     { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
+    { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
   ],
 };
 

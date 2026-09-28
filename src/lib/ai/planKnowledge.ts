@@ -14,7 +14,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trim()}…` : s.trim());
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 
-export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews" | "operations" | "review";
+export type InsightArea = "hub" | "forecast" | "finance" | "sales" | "alignment" | "progress" | "profile" | "segments" | "reviews" | "operations" | "review" | "lesson";
 
 // The latest thing this client's assistant concluded about an area.
 export async function latestInsight(masterPlanId: string, area: InsightArea) {
@@ -33,7 +33,7 @@ export async function latestInsight(masterPlanId: string, area: InsightArea) {
 export async function saveInsight(masterPlanId: string, area: InsightArea, assistant: string, content: Record<string, unknown>) {
   const db = createServerClient();
   await db.from("planning_insights").insert({ master_plan_id: masterPlanId, area, assistant, content });
-  const { data } = await db.from("planning_insights").select("id").eq("master_plan_id", masterPlanId).eq("area", area).order("created_at", { ascending: false }).range(10, 200);
+  const { data } = await db.from("planning_insights").select("id").eq("master_plan_id", masterPlanId).eq("area", area).order("created_at", { ascending: false }).range(area === "lesson" ? 24 : 10, 200); // lessons: one per dimension
   const stale = (data ?? []).map((r) => r.id as string);
   if (stale.length) await db.from("planning_insights").delete().in("id", stale);
 }
