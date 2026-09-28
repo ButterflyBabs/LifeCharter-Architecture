@@ -86,7 +86,6 @@ const navigationSections = [
     title: "SYSTEMS",
     color: "text-[#b8a898]",
     items: [
-      { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "ai-guide", label: "AI Guide", icon: Sparkles, href: "/ai-guide" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
@@ -104,6 +103,7 @@ const ownerSection = {
     { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
     { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
+    { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
   ],
 };
 

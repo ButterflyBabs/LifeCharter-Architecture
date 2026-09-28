@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createCommandClient, isCommandConfigured } from "@/lib/command-db";
+import { isAlignmentArchitect } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
 // Surfaces real data from the Command Dashboard backend: the 12 business command
 // domains + latest audit findings, and the RBAC roles/permissions catalog.
 export async function GET() {
+  if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (!isCommandConfigured()) {
     return NextResponse.json({ configured: false });
   }
