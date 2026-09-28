@@ -300,6 +300,42 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // 10. The weekly review is due (Fri–Mon) and the monthly one at month's turn.
+  try {
+    const tz = await ownerTimezone(masterPlanId);
+    const local = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+    const dow = local.getDay(); // 0 Sun … 6 Sat
+    const dom = local.getDate();
+    const { periodFor } = await import("@/lib/reviews");
+    const checks: { cadence: "weekly" | "monthly"; on: boolean }[] = [
+      { cadence: "weekly", on: dow === 5 || dow === 6 || dow === 0 || dow === 1 },
+      { cadence: "monthly", on: dom <= 5 || dom >= new Date(local.getFullYear(), local.getMonth() + 1, 0).getDate() - 1 },
+    ];
+    for (const c of checks) {
+      if (!c.on) continue;
+      const p = periodFor(c.cadence, tz);
+      const { data } = await supabase
+        .from("business_reviews")
+        .select("id")
+        .eq("master_plan_id", masterPlanId)
+        .eq("cadence", c.cadence)
+        .eq("period_start", p.start)
+        .eq("status", "completed")
+        .maybeSingle();
+      if (!data) {
+        out.push({
+          nkey: `review-due:${c.cadence}:${p.start}`,
+          type: "action",
+          title: c.cadence === "weekly" ? "Your weekly review is ready" : "Your monthly review is ready",
+          body: `${p.label}: ten minutes to see how it went and choose your three tasks for next ${c.cadence === "weekly" ? "week" : "month"}.`,
+          href: `/planning/review${c.cadence === "monthly" ? "?cadence=monthly" : ""}`,
+        });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

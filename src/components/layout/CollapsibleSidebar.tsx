@@ -43,6 +43,7 @@ import {
   Rocket,
   LogOut,
   Users,
+  ClipboardCheck,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -65,6 +66,7 @@ const navigationSections = [
     color: "text-[#4a9b9b]",
     items: [
       { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
+      { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },

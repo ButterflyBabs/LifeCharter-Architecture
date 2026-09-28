@@ -21,6 +21,7 @@ import {
   X,
   Trash2,
   FileSignature,
+  ClipboardCheck,
 } from "lucide-react";
 import ProposalModal from "@/components/plans/ProposalModal";
 
@@ -286,6 +287,17 @@ export default function PlanningHubPage() {
               ? `${usd(data.forecast.expectedNet)} net (${data.forecast.horizonMonths} mo, expected)`
               : "Set your assumptions"
           }
+        />
+        {/* Guided review */}
+        <PlanRollupCard
+          icon={<ClipboardCheck className="w-5 h-5" />}
+          title="Weekly & Monthly Review"
+          description="Your assistant briefs you, you answer three questions, you leave with three tasks"
+          href="/planning/review"
+          status="review"
+          updatedAt={null}
+          hideUpdated
+          metric="About 10 minutes"
         />
         {/* Finance */}
         <PlanRollupCard
