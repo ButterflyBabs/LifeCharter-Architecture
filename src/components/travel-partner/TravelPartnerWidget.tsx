@@ -28,7 +28,6 @@ import {
   Send,
   Loader2,
   LifeBuoy,
-  ExternalLink,
   Bot,
   Plus,
 } from "lucide-react";
@@ -577,13 +576,7 @@ export default function TravelPartnerWidget() {
                     >
                       <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
                       {m.role === "guide" && m.escalate && (
-                        <a
-                          href="mailto:support@amilynnecarroll.com?subject=LifeCharter%20support%20question"
-                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#c0632f] hover:underline"
-                        >
-                          <LifeBuoy className="w-3.5 h-3.5" /> Contact support
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                        <SendToSupport question={[...askMessages.slice(0, i)].reverse().find((x) => x.role === "user")?.text ?? ""} />
                       )}
                     </div>
                   </div>
@@ -713,5 +706,28 @@ export default function TravelPartnerWidget() {
         )}
       </Card>
     </div>
+  );
+}
+
+// When Travel Partner can't answer: send the question straight to the Support Desk.
+function SendToSupport({ question }: { question: string }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  if (state === "sent") return <p className="mt-2 text-xs font-medium text-[#2c6b3f]">Sent to support. You&apos;ll get an email reply, and it&apos;s under Help → Contact Support → My requests.</p>;
+  return (
+    <button
+      onClick={async () => {
+        setState("sending");
+        const r = await fetch("/api/support/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject: question.slice(0, 120) || "Question from Travel Partner", message: question || "(no question text)", category: "question", source: "travel_partner" }),
+        }).catch(() => null);
+        setState(r?.ok ? "sent" : "error");
+      }}
+      disabled={state === "sending"}
+      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#c0632f] hover:underline disabled:opacity-60"
+    >
+      <LifeBuoy className="w-3.5 h-3.5" /> {state === "sending" ? "Sending…" : state === "error" ? "Couldn't send. Try again" : "Send this to support"}
+    </button>
   );
 }

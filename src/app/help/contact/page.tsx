@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MyRequests from "@/components/support/MyRequests";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -28,6 +29,8 @@ export default function ContactSupportPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [suggestions, setSuggestions] = useState<{ question: string; answer: string }[]>([]);
+  const [sentCount, setSentCount] = useState(0);
   const [submitError, setSubmitError] = useState("");
 
   const supportCategories = [
@@ -51,11 +54,11 @@ export default function ContactSupportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to submit request");
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to submit request");
 
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+      setSentCount((n) => n + 1);
       setSubmitSuccess(true);
       setFormData({
         name: "",
@@ -176,8 +179,19 @@ export default function ContactSupportPage() {
                 Request Submitted!
               </h3>
               <p className="text-[#7b6b8d] dark:text-[#e8e4f0] mb-6">
-                We&apos;ve received your message and will respond within 24 hours.
+                We&apos;ve received your message and will respond within 24 hours. You&apos;ll get an email when we reply, and you can follow it below under My requests.
               </p>
+              {suggestions.length > 0 && (
+                <div className="mx-auto mb-6 max-w-xl text-left rounded-xl border border-[#c9a227]/40 bg-[#c9a227]/5 p-4">
+                  <p className="mb-2 text-sm font-semibold text-[#8a6a15]">While you wait, these might answer it:</p>
+                  {suggestions.map((s) => (
+                    <details key={s.question} className="mb-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                      <summary className="cursor-pointer font-medium">{s.question}</summary>
+                      <p className="mt-1 whitespace-pre-line text-[#4a4b6a] dark:text-[#e8e4f0]">{s.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              )}
               <Button onClick={() => setSubmitSuccess(false)}>
                 Submit Another Request
               </Button>
@@ -354,6 +368,8 @@ export default function ContactSupportPage() {
           </div>
         </CardContent>
       </Card>
+
+      <MyRequests refreshKey={sentCount} />
 
       {/* Office Hours */}
       <div className="text-center py-8 border-t border-[#1a2b4a]/10">

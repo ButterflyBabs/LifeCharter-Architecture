@@ -49,6 +49,7 @@ import {
   Scale,
   Sprout,
   GraduationCap,
+  Inbox,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -120,6 +121,7 @@ const ownerSection = {
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
+    { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
   ],
 };
 
