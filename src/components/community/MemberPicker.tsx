@@ -7,11 +7,20 @@ import type { Profile } from "@/lib/community/types";
 import { Avatar, Input, Spinner } from "./ui";
 
 // Search the Collective's directory and pick a member.
-export function MemberPicker({ onPick, excludeSelf = true }: { onPick: (p: Profile) => void; excludeSelf?: boolean }) {
+export function MemberPicker({
+  onPick,
+  excludeSelf = true,
+  exclude,
+}: {
+  onPick: (p: Profile) => void;
+  excludeSelf?: boolean;
+  exclude?: string[]; // people already chosen / already in the conversation
+}) {
   const { supabase, userId, blockedIds } = useCommunity();
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
+  const skip = (exclude ?? []).join(",");
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -19,11 +28,12 @@ export function MemberPicker({ onPick, excludeSelf = true }: { onPick: (p: Profi
       let query = supabase.from("cm_profiles").select("*").eq("status", "active").order("display_name").limit(30);
       if (q.trim()) query = query.ilike("display_name", `%${q.trim().replace(/[%_]/g, "")}%`);
       const { data } = await query;
-      setRows(((data as Profile[]) ?? []).filter((p) => (!excludeSelf || p.user_id !== userId) && !blockedIds.has(p.user_id)));
+      const hidden = new Set(skip ? skip.split(",") : []);
+      setRows(((data as Profile[]) ?? []).filter((p) => (!excludeSelf || p.user_id !== userId) && !blockedIds.has(p.user_id) && !hidden.has(p.user_id)));
       setLoading(false);
     }, 200);
     return () => clearTimeout(t);
-  }, [q, supabase, userId, excludeSelf, blockedIds]);
+  }, [q, supabase, userId, excludeSelf, blockedIds, skip]);
 
   return (
     <div>
