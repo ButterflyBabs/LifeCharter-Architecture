@@ -22,6 +22,7 @@ const PUBLIC_APIS = [
   "/api/cron/journal-review", // secured by its own CRON_SECRET check, not a session
   "/api/cron/moderate", // secured by its own CRON_SECRET check, not a session
   "/api/cron/weekly-offer-thread", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/welcome-sequence", // secured by its own CRON_SECRET check, not a session
   "/api/cron/task-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/masterclass-attendance", // secured by its own CRON_SECRET check, not a session
   "/api/cron/demo-reset", // secured by its own CRON_SECRET check, not a session

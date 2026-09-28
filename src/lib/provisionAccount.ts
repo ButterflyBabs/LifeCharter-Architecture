@@ -1,5 +1,6 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
+import { sendWelcomeEmail } from "@/lib/email/welcomeSequence";
 
 // Service-role client — bypasses RLS. Only ever used server-side (webhook,
 // checkout-confirm route), never exposed to the browser.
@@ -43,6 +44,7 @@ export async function provisionAccountForEmail(
     if (fullName?.trim()) update.full_name = fullName.trim();
     await supabase.from("profiles").update(update).eq("id", existingProfile.id);
     await joinCommandSuiteCommunity(supabase, existingProfile.id, fullName);
+    await sendWelcomeEmail(supabase, { userId: existingProfile.id, email: normalizedEmail, name: fullName ?? null, planId, enrolledAt: new Date().toISOString() }, "welcome");
     return { userId: existingProfile.id, workspaceId: existingProfile.workspace_id, isNewAccount: false };
   }
 
@@ -108,6 +110,8 @@ export async function provisionAccountForEmail(
   }
 
   await joinCommandSuiteCommunity(supabase, userId, displayName);
+  // Email 1 of the welcome sequence (no-op until WELCOME_EMAILS_ENABLED=true; sends once).
+  await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
 
   return { userId, workspaceId: workspace.id, isNewAccount: true };
 }
