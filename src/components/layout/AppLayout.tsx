@@ -23,6 +23,7 @@ interface AppLayoutProps {
 const BARE_ROUTES = [
   "/reviews/collect",
   "/unsubscribe",
+  "/f",
   "/login",
   "/logout",
   "/forgot-password",

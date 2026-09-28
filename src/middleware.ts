@@ -8,7 +8,7 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect } from "@/
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal"];
 const PUBLIC_APIS = [
   "/api/reviews/collect",
   "/auth/callback",
@@ -31,6 +31,7 @@ const PUBLIC_APIS = [
   "/api/cron/stripe-sync", // secured by its own CRON_SECRET check, not a session
   "/api/cron/sequences", // secured by its own CRON_SECRET check, not a session
   "/api/unsubscribe", // signed token only; mail apps one-click POST here
+  "/api/forms", // public Suite forms (CRM); origin-checked, form id is the key
   "/api/auth/forgot", // public — password-reset request; always answers the same way
   "/api/collective/request-invite", // public — landing-page invitation requests; rate-limited + honeypot
   "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code

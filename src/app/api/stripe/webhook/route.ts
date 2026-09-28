@@ -9,6 +9,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
+import { logEvent } from "@/lib/crm";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
                   sourceRef: session.id,
                   tags: ["life-shift", "paid"],
                 });
+                if (r.contactId) await logEvent(planId, r.contactId, "purchase", "Bought The Life Shift ($25)", { stripeSession: session.id }).catch(() => {});
                 if (!r.enrollmentId) console.warn(`life shift enrol ${email}: ${r.reason}`);
               }
             } catch (e) {

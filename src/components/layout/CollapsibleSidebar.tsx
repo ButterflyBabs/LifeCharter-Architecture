@@ -118,13 +118,14 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
+    { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
+    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
     { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
-    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
   ],
 };

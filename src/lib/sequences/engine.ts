@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { renderStep, unsubscribeApiUrl } from "@/lib/sequences/render";
+import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 
 // The Sequences engine: enrol a contact, then send each step on its day at the
 // sequence's hour in the contact's own time zone (day 0 goes right away). Every
@@ -72,39 +73,19 @@ export interface EnrolInput {
 
 // Adds (or updates) the contact and enrols them. Unsubscribed contacts are never
 // enrolled again. Returns the enrollment id, or null with a reason.
-export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: string | null; reason?: string }> {
+export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: string | null; contactId?: string; reason?: string }> {
   const db = createServerClient();
   const email = i.email.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { enrollmentId: null, reason: "invalid email" };
-  const { data: seq } = await db.from("sequences").select("id, active").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
+  if (!EMAIL_RE.test(email)) return { enrollmentId: null, reason: "invalid email" };
+  const { data: seq } = await db.from("sequences").select("id, name, active").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
   if (!seq) return { enrollmentId: null, reason: `no sequence "${i.sequenceKey}"` };
 
-  const tz = i.timezone && isValidTz(i.timezone) ? i.timezone : "America/Denver";
-  const { data: existing } = await db.from("seq_contacts").select("id, tags, unsubscribed_at, first_name").eq("master_plan_id", i.masterPlanId).eq("email", email).maybeSingle();
-  let contactId = existing?.id as string | undefined;
-  if (existing) {
-    const tags = Array.from(new Set([...((existing.tags as string[]) ?? []), ...(i.tags ?? [])]));
-    await db
-      .from("seq_contacts")
-      .update({
-        tags,
-        ...(i.firstName && !existing.first_name ? { first_name: i.firstName } : {}),
-        ...(i.lastName ? { last_name: i.lastName } : {}),
-        ...(i.phone ? { phone: i.phone } : {}),
-        ...(i.timezone && isValidTz(i.timezone) ? { timezone: i.timezone } : {}),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-    if (existing.unsubscribed_at) return { enrollmentId: null, reason: "unsubscribed" };
-  } else {
-    const { data: created, error } = await db
-      .from("seq_contacts")
-      .insert({ master_plan_id: i.masterPlanId, email, first_name: i.firstName || null, last_name: i.lastName || null, phone: i.phone || null, timezone: tz, source: i.source || null, tags: i.tags ?? [] })
-      .select("id")
-      .single();
-    if (error || !created) return { enrollmentId: null, reason: error?.message || "couldn't save contact" };
-    contactId = created.id as string;
-  }
+  const contact = await upsertContact({ masterPlanId: i.masterPlanId, email, firstName: i.firstName, lastName: i.lastName, phone: i.phone, timezone: i.timezone, source: i.source, tags: i.tags }, db);
+  if (!contact) return { enrollmentId: null, reason: "couldn't save contact" };
+  const contactId = contact.id;
+  if (contact.unsubscribed) return { enrollmentId: null, contactId, reason: "unsubscribed" };
+  const { data: c } = await db.from("seq_contacts").select("timezone").eq("id", contactId).maybeSingle();
+  const tz = c?.timezone && isValidTz(c.timezone as string) ? (c.timezone as string) : "America/Denver";
 
   const { data: enr, error: enrErr } = await db
     .from("sequence_enrollments")
@@ -113,12 +94,13 @@ export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: strin
       { onConflict: "sequence_id,contact_id", ignoreDuplicates: true }
     )
     .select("id");
-  if (enrErr) return { enrollmentId: null, reason: enrErr.message };
+  if (enrErr) return { enrollmentId: null, contactId, reason: enrErr.message };
   const enrollmentId = (enr?.[0]?.id as string) ?? null;
-  if (!enrollmentId) return { enrollmentId: null, reason: "already enrolled" };
+  if (!enrollmentId) return { enrollmentId: null, contactId, reason: "already enrolled" };
+  await logEvent(i.masterPlanId, contactId, "sequence", `Started “${seq.name}”`, { sequence: i.sequenceKey }, db).catch(() => {});
   // Day 0 goes out right away (if the sequence is live).
   if (seq.active) await processEnrollment(db, enrollmentId).catch((e) => console.error("sequence day-0:", e));
-  return { enrollmentId };
+  return { enrollmentId, contactId };
 }
 
 interface Step {
