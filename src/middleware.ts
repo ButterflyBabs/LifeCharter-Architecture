@@ -36,6 +36,7 @@ const PUBLIC_APIS = [
   "/api/google/callback", // OAuth return; verifies its own signed state (mailbox flow also requires the signed-in owner)
   "/api/microsoft/callback", // same
   "/api/book", // public booking pages (slots, book, manage by private token)
+  "/api/assessment-results", // Executive Business Assessment (landing page) → Suite CRM + results email
   "/api/auth/forgot", // public — password-reset request; always answers the same way
   "/api/collective/request-invite", // public — landing-page invitation requests; rate-limited + honeypot
   "/api/community/join", // public — new Collective members sign up here; guarded by the space's invite code
