@@ -136,3 +136,59 @@ export async function listPastParticipants(meetingUuid: string): Promise<ZoomPar
   } while (next);
   return out;
 }
+
+// ── Booking-link meetings ────────────────────────────────────────────────────
+// Needs the app's meeting:write:admin (or meeting:write:meeting:admin) scope.
+// The token response lists the granted scopes, so the Calendars screen can say
+// plainly when the scope is missing instead of failing a real booking.
+
+export async function zoomScopes(): Promise<string> {
+  if (!isZoomConfigured()) return "";
+  const accountId = process.env.ZOOM_ACCOUNT_ID!;
+  const basic = Buffer.from(`${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`).toString("base64");
+  const res = await fetch("https://zoom.us/oauth/token", {
+    method: "POST",
+    headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=account_credentials&account_id=${encodeURIComponent(accountId)}`,
+  });
+  if (!res.ok) return "";
+  const data = (await res.json()) as { scope?: string };
+  return data.scope || "";
+}
+
+export async function canCreateZoomMeetings(): Promise<boolean> {
+  const s = await zoomScopes();
+  return /meeting:write(:admin|:meeting:admin|:meeting)?\b/.test(s) || s.includes("meeting:write");
+}
+
+// Creates a scheduled meeting hosted by `hostEmail` (a user on the Zoom
+// account). Returns the join link and meeting id, or null if Zoom said no.
+export async function createZoomMeeting(o: { hostEmail: string; topic: string; startISO: string; durationMin: number; timezone: string; agenda?: string }): Promise<{ id: string; joinUrl: string } | null> {
+  if (!isZoomConfigured()) return null;
+  const token = await getAccessToken();
+  const res = await fetch(`https://api.zoom.us/v2/users/${encodeURIComponent(o.hostEmail)}/meetings`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      topic: o.topic.slice(0, 200),
+      type: 2,
+      start_time: o.startISO.replace(/\.\d{3}Z$/, "Z"),
+      duration: o.durationMin,
+      timezone: o.timezone,
+      agenda: (o.agenda || "").slice(0, 1900),
+      settings: { join_before_host: false, waiting_room: true, meeting_authentication: false },
+    }),
+  });
+  if (!res.ok) {
+    console.error("zoom create meeting:", res.status, await res.text().catch(() => ""));
+    return null;
+  }
+  const m = (await res.json()) as { id: number; join_url: string };
+  return { id: String(m.id), joinUrl: m.join_url };
+}
+
+export async function deleteZoomMeeting(id: string): Promise<void> {
+  if (!isZoomConfigured() || !id) return;
+  const token = await getAccessToken();
+  await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+}

@@ -71,7 +71,7 @@ export async function upsertContact(i: ContactInput, db: Db = createServerClient
 export async function logEvent(
   masterPlanId: string,
   contactId: string,
-  kind: "form" | "note" | "purchase" | "sequence" | "tag" | "email" | "manual",
+  kind: "form" | "note" | "purchase" | "sequence" | "tag" | "email" | "manual" | "booking",
   title: string,
   detail: Record<string, unknown> = {},
   db: Db = createServerClient()

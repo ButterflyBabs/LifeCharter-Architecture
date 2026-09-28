@@ -24,6 +24,7 @@ const BARE_ROUTES = [
   "/reviews/collect",
   "/unsubscribe",
   "/f",
+  "/book",
   "/login",
   "/logout",
   "/forgot-password",

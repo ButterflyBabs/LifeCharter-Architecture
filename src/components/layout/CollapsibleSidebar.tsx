@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Mail,
+  CalendarDays,
   Package,
   KanbanSquare,
   Globe,
@@ -120,6 +121,7 @@ const ownerSection = {
   items: [
     { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
     { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
+    { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
     { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
