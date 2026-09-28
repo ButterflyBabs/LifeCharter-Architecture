@@ -7,6 +7,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Package,
+  KanbanSquare,
   Globe,
   Compass,
   ClipboardList,
@@ -66,6 +68,8 @@ const navigationSections = [
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
+      { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
+      { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
     ],
@@ -378,7 +382,10 @@ export function CollapsibleSidebar() {
 
   // Get active item based on current path
   const getActiveItem = () => {
-    const item = navigationItems.find((item) => item.href !== "/" && pathname?.startsWith(item.href));
+    // The most specific match wins (so /sales/pipeline lights Pipeline, not Sales Plan).
+    const item = navigationItems
+      .filter((i) => i.href !== "/" && !i.href.includes("?") && (pathname === i.href || pathname?.startsWith(i.href + "/")))
+      .sort((a, b) => b.href.length - a.href.length)[0];
     if (item) return item.id;
     if (pathname === "/") return "dashboard";
     return "dashboard";

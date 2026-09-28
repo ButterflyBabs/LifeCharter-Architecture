@@ -29,6 +29,7 @@ import {
   Tag,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
+import PipelineCard from "@/components/executive/PipelineCard";
 import { timezoneOptions } from "@/lib/timezones";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz, timeInTz } from "@/lib/tz";
@@ -242,6 +243,7 @@ export default function ExecutiveHome() {
     "brief",
     "schedule",
     "financial",
+    "pipeline",
     "tasks",
     "inbox",
   ]);
@@ -427,7 +429,13 @@ export default function ExecutiveHome() {
     if (saved) {
       try {
         const arr = JSON.parse(saved);
-        if (Array.isArray(arr)) setBriefOrder(arr);
+        // Keep the saved order, and add any card that's newer than it (e.g. Pipeline) after Financial Pulse.
+        if (Array.isArray(arr))
+          setBriefOrder((defaults) => {
+            const next = arr.filter((x: unknown) => typeof x === "string" && defaults.includes(x as string)) as string[];
+            for (const id of defaults) if (!next.includes(id)) next.splice(id === "pipeline" && next.includes("financial") ? next.indexOf("financial") + 1 : next.length, 0, id);
+            return next;
+          });
       } catch {
         /* ignore */
       }
@@ -1337,6 +1345,12 @@ export default function ExecutiveHome() {
             </a>
           </div>
         </div>
+        </div>
+
+        {/* Pipeline & Offers (from /sales/pipeline and /sales/offers) */}
+        <div {...briefCardProps("pipeline")}>
+          <button draggable onDragStart={() => setDragId("pipeline")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
+          <PipelineCard />
         </div>
 
         {/* Financial Pulse */}

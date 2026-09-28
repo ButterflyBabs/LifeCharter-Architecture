@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { GlobalControlContacts } from "./GlobalControlContacts";
 import { TodaysActivity } from "./TodaysActivity";
+import { DealsToMove } from "./DealsToMove";
 import { QuickActions } from "./QuickActions";
 import QuickWins from "@/components/QuickWins";
 
@@ -693,6 +694,9 @@ export default function DailyCompassPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Deals to move today — from the Pipeline */}
+          <DealsToMove />
+
           {/* Today's Activity — live from the in-app ledger */}
           <TodaysActivity />
 
