@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { availableSlots, book, calendarBySlug } from "@/lib/booking/engine";
 import { createServerClient } from "@/lib/supabase/server";
+import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,5 +46,19 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     timezone: str(b.timezone) || null,
     answers: b.answers && typeof b.answers === "object" ? (b.answers as Record<string, string>) : {},
   });
+  if (r.ok) {
+    // Schedule → Meta Conversions API. Reschedules (the manage page) aren't new bookings.
+    const [firstName, ...rest] = str(b.name).trim().split(/\s+/);
+    await sendMetaEvent({
+      eventName: "Schedule",
+      eventId: `booking-${r.bookingId}`,
+      email: str(b.email),
+      phone: str(b.phone) || null,
+      firstName: firstName || null,
+      lastName: rest.join(" ") || null,
+      contentName: `booking:${cal.slug}`,
+      ...browserContext(request),
+    });
+  }
   return r.ok ? NextResponse.json({ ok: true, manage: `/book/manage/${r.manageToken}` }) : NextResponse.json({ error: r.error }, { status: 409 });
 }

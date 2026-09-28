@@ -13,6 +13,7 @@ import { logEvent, upsertContact } from "@/lib/crm";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
+import { sendMetaEvent } from "@/lib/metaCapi";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -46,6 +47,12 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createClient();
+
+    // Every completed checkout is a Purchase for Meta ads (Conversions API): Command Suite,
+    // Life Shift and SOUL Sessions Payment Links, Collective Plus, Website Build. Never throws.
+    if (event.type === "checkout.session.completed") {
+      await sendPurchaseToMeta(event.data.object as Stripe.Checkout.Session);
+    }
 
     // Collective Plus subscriptions are handled on their own and never touch
     // Command Suite plans/profiles below.
@@ -375,3 +382,30 @@ async function handlePlusEvent(stripe: Stripe, event: Stripe.Event): Promise<boo
 }
 
 export const runtime = 'nodejs';
+
+// Purchase → Meta Conversions API. The event id is the checkout session id, the same id the
+// /get-started/success page gives the browser pixel, so Meta counts one purchase (and Stripe
+// retries of this webhook collapse into it too).
+async function sendPurchaseToMeta(session: Stripe.Checkout.Session) {
+  const meta = session.metadata || {};
+  const [firstName, ...rest] = (session.customer_details?.name || meta.fullName || "").trim().split(/\s+/);
+  const isSuite = meta.flow === "self_serve_starter" || meta.flow === "sales_combined_checkout" || (!meta.flow && !!meta.userId);
+  const contentName =
+    meta.flow === "self_serve_starter" ? "command_suite_starter"
+    : isSuite ? "command_suite"
+    : meta.flow || "stripe_checkout";
+  const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+  const sourceUrl = meta.flow === "life_shift" ? "https://amilynnecarroll.com" : session.success_url?.split("?")[0] || app;
+  await sendMetaEvent({
+    eventName: "Purchase",
+    eventId: session.id,
+    email: session.customer_details?.email || session.customer_email,
+    phone: session.customer_details?.phone,
+    firstName: firstName || null,
+    lastName: rest.join(" ") || null,
+    value: typeof session.amount_total === "number" ? session.amount_total / 100 : null,
+    currency: session.currency || "usd",
+    contentName,
+    sourceUrl,
+  });
+}

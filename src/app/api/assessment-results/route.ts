@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
+import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,20 @@ export async function POST(request: Request) {
   const { data: recent } = await db.from("crm_events").select("id").eq("contact_id", contact.id).eq("kind", "form").eq("title", "Completed the Executive Business Assessment").gte("created_at", since).limit(1);
   await logEvent(planId, contact.id, "form", "Completed the Executive Business Assessment", { data: { overall: String(overall ?? ""), top_gaps: gaps.map((g: { label: string }) => g.label).join(", "), recommendation: rec, ...Object.fromEntries(scores.map((s: { label: string; score: number }) => [s.label, String(s.score)])) } }, db);
   if (recent?.length) return NextResponse.json({ ok: true, crm: "saved" });
+
+  // Lead → Meta Conversions API (a page that also fires the pixel can post the same eventId).
+  const ctx = browserContext(request, str(b.pageUrl, 1000) || null);
+  await sendMetaEvent({
+    eventName: "Lead",
+    eventId: str(b.eventId, 200) || metaEventId("assessment", contact.id, Math.floor(Date.now() / 600_000)),
+    email,
+    firstName,
+    lastName,
+    contentName: "executive_assessment",
+    ...ctx,
+    fbp: ctx.fbp || str(b.fbp, 200) || null,
+    fbc: ctx.fbc || str(b.fbc, 300) || null,
+  });
 
   const key = process.env.RESEND_API_KEY;
   if (key) {
