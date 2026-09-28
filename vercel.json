@@ -57,6 +57,14 @@
     {
       "source": "/executive_consultation/:path*",
       "destination": "https://lccs-lifecharter-booking.vercel.app/:path*"
+    },
+    {
+      "source": "/certificationportal/",
+      "destination": "https://coaching-certification-portal.vercel.app/"
+    },
+    {
+      "source": "/certificationportal/:path*",
+      "destination": "https://coaching-certification-portal.vercel.app/:path*"
     }
   ]
 }
