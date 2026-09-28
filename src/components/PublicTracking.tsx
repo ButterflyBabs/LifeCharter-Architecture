@@ -3,12 +3,12 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { SHARED_META_PIXEL_ID } from "@/lib/tracking";
 
 // Meta Pixel + Google Analytics + the Google Ads tag on lccommandsuite.com's PUBLIC pages only (Babs, 2026-09-27: one
 // shared pixel and one Analytics account for every site). Nothing loads inside anyone's account,
 // the Collective's member area, or admin pages, so clients' and members' private activity is never
 // tracked.
-const SHARED_META_PIXEL_ID = "1084205054362982"; // "AmiLynne Carroll Websites", Sacred Kaleidoscope Community
 const GA_MEASUREMENT_ID = "G-EK2T4YVFF4"; // shared GA4 property, account "Sacred Kaleidoscope Community LLC"
 const GOOGLE_ADS_ID = "AW-10845925823"; // Google Ads tag "Sacred Kaleidoscope Community"
 const PUBLIC_PREFIXES = ["/collective", "/get-started", "/schedule", "/executive_consultation", "/join"];

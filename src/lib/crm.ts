@@ -100,7 +100,9 @@ function splitName(full: string) {
 // Handles one public form submission: validate against the form's own fields,
 // save the contact + submission, tag, log, enrol in the form's sequence, and
 // email the account owner. Returns the message to show the visitor.
-export async function submitForm(formId: string, raw: Record<string, unknown>, pageUrl: string | null): Promise<{ ok: true; message: string } | { ok: false; error: string; status: number }> {
+// `lead` is set only for a new submission (not a quick repeat), for the Meta Lead event.
+export interface FormLead { email: string; firstName: string; lastName: string; phone: string | null; formKey: string; contactId: string }
+export async function submitForm(formId: string, raw: Record<string, unknown>, pageUrl: string | null): Promise<{ ok: true; message: string; lead?: FormLead } | { ok: false; error: string; status: number }> {
   const db = createServerClient();
   const { data: form } = await db.from("crm_forms").select("*").eq("id", formId).eq("active", true).maybeSingle();
   if (!form) return { ok: false, error: "This form isn't available.", status: 404 };
@@ -145,7 +147,7 @@ export async function submitForm(formId: string, raw: Record<string, unknown>, p
   }
 
   if (form.notify) await notifyOwner(db, form, data, email, pageUrl).catch((e) => console.error("form notify:", e));
-  return { ok: true, message: form.success_message };
+  return { ok: true, message: form.success_message, lead: { email, firstName: name.first, lastName: name.last, phone: data.phone || null, formKey: form.key, contactId: contact.id } };
 }
 
 async function notifyOwner(db: Db, form: { master_plan_id: string; name: string }, data: Record<string, string>, email: string, pageUrl: string | null) {
