@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { OPERATIONS_PILLARS, STATUS_LABEL, type PillarStatus } from "@/lib/operations";
+import { answersText, type DeeperAnswers } from "@/lib/operationsDeeper";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +21,10 @@ export async function POST(request: Request) {
 
   const { data } = await supabase
     .from("operations_pillars")
-    .select("pillar_key, status, notes")
+    .select("pillar_key, status, notes, answers")
     .eq("master_plan_id", masterPlanId);
   const saved = new Map(
-    ((data || []) as { pillar_key: string; status: string; notes: string | null }[]).map((r) => [r.pillar_key, r])
+    ((data || []) as { pillar_key: string; status: string; notes: string | null; answers: DeeperAnswers | null }[]).map((r) => [r.pillar_key, r])
   );
 
   const rows = OPERATIONS_PILLARS.map((p) => {
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
       name: p.name,
       status: (s?.status as PillarStatus) || "not_started",
       notes: (s?.notes || "").trim(),
+      deeper: answersText(p.key, s?.answers),
     };
   });
 
@@ -41,13 +43,13 @@ export async function POST(request: Request) {
   const dataText = rows
     .map(
       (r) =>
-        `${r.name}: ${STATUS_LABEL[r.status]}${r.notes ? ` — notes: ${r.notes}` : ""}`
+        `${r.name}: ${STATUS_LABEL[r.status]}${r.notes ? ` — notes: ${r.notes}` : ""}${r.deeper ? ` — their answers: ${r.deeper}` : ""}`
     )
     .join("\n");
 
   const sys =
     `You are ${name}, a sharp, supportive operations advisor for a small business owner. ` +
-    "You're looking at their 8 operational pillars and each pillar's status and notes. " +
+    "You're looking at their 8 operational pillars: each pillar's status, notes, and their answers to deeper questions about it. " +
     "Assess overall operational health and tell them where to focus next. " +
     'Return STRICT JSON: {"headline":"1-sentence read on operational health",' +
     '"insights":[{"pillar":"pillar name","priority":"high|medium|low","detail":"what to do and why it matters"}]}. ' +

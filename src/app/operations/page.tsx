@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Settings, CheckCircle2, Clock, AlertTriangle, Circle, Sparkles, Loader2 } from "lucide-react";
 import { STATUS_LABEL } from "@/lib/operations";
@@ -11,6 +12,7 @@ interface Pillar {
   description: string;
   status: "not_started" | "in_progress" | "needs_attention" | "complete";
   notes: string;
+  deeper?: { answered: number; total: number };
 }
 
 interface OpInsight {
@@ -238,6 +240,12 @@ export default function OperationsPage() {
                     placeholder="What's working, what needs attention…"
                     className="w-full p-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                   />
+                  <Link href={`/operations/${p.key}`} className="mt-3 flex items-center justify-between rounded-lg border border-[#2E7C83]/25 px-3 py-2 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
+                    <span>Go deeper</span>
+                    <span className="text-xs font-normal text-[#7b6b8d]">
+                      {p.deeper && p.deeper.answered > 0 ? `${p.deeper.answered} of ${p.deeper.total} answered` : `${p.deeper?.total ?? ""} questions`} →
+                    </span>
+                  </Link>
                 </CardContent>
               </Card>
             );

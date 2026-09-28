@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { OPERATIONS_PILLARS, PILLAR_STATUSES, type PillarStatus } from "@/lib/operations";
+import { answeredCount, type DeeperAnswers } from "@/lib/operationsDeeper";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,11 @@ export async function GET() {
   const masterPlanId = await resolveMasterPlanId();
   const { data } = await supabase
     .from("operations_pillars")
-    .select("pillar_key, status, notes")
+    .select("pillar_key, status, notes, answers")
     .eq("master_plan_id", masterPlanId);
 
   const saved = new Map(
-    ((data || []) as { pillar_key: string; status: string; notes: string | null }[]).map((r) => [
+    ((data || []) as { pillar_key: string; status: string; notes: string | null; answers: DeeperAnswers | null }[]).map((r) => [
       r.pillar_key,
       r,
     ])
@@ -30,6 +31,7 @@ export async function GET() {
       description: p.description,
       status: (s?.status as PillarStatus) || "not_started",
       notes: s?.notes || "",
+      deeper: answeredCount(p.key, s?.answers),
     };
   });
 
