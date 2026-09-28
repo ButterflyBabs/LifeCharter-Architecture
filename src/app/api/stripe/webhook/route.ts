@@ -9,7 +9,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
-import { logEvent } from "@/lib/crm";
+import { logEvent, upsertContact } from "@/lib/crm";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
@@ -66,11 +66,19 @@ export async function POST(req: NextRequest) {
         // (Admin → Purchase access). Never throws; idempotent on retries.
         await grantAccessForCheckout(stripe, session);
 
-        // Bought the Command Suite: their booked-consultation deals in Babs's Pipeline are won.
-        if (meta.flow !== "life_shift") {
+        // Bought the Command Suite (self-serve Starter, or a sales checkout that
+        // provisions an account): they become a tagged customer in Babs's Suite CRM
+        // and their booked-consultation deals in her Pipeline are won. Other
+        // purchases (Life Shift, SOUL Sessions, Conversations of Consequence...) don't count.
+        if (meta.flow === "self_serve_starter" || (!meta.flow && meta.userId) || meta.flow === "sales_combined_checkout") {
           const buyer = session.customer_details?.email || session.customer_email;
           const housePlan = buyer ? await ownerMasterPlanId().catch(() => null) : null;
-          if (buyer && housePlan) await winBookingDeals(housePlan, buyer).catch((e) => console.error("win booking deals:", e));
+          if (buyer && housePlan) {
+            await winBookingDeals(housePlan, buyer).catch((e) => console.error("win booking deals:", e));
+            const [first, ...rest] = (session.customer_details?.name || meta.fullName || "").trim().split(/\s+/);
+            const c = await upsertContact({ masterPlanId: housePlan, email: buyer, firstName: first || null, lastName: rest.join(" ") || null, source: "stripe:command-suite", tags: ["command-suite-customer", ...(meta.planId || meta.tier ? [`plan-${meta.planId || meta.tier}`] : []), ...(meta.alumni === "true" ? ["lifecharter-alumni"] : [])] }).catch(() => null);
+            if (c) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
+          }
         }
 
         if (meta.flow === "self_serve_starter") {
