@@ -34,7 +34,13 @@ export function calculateRevenueHealthLike(m: Metrics): number | null {
 
 /** Systems: delegation, hours efficiency, documentation, delegation activity. */
 export function calculateSystemsHealthLike(m: Metrics): number | null {
-  if (!has(m, "hours_worked", "target_hours")) return null;
+  // Without hours data, documented processes alone: SOP coverage of the 8
+  // operational areas, from 50 (one area) up to 100 (all eight), so writing a
+  // first SOP never lowers the score.
+  if (!has(m, "hours_worked", "target_hours")) {
+    if (!has(m, "sop_areas_covered") || m.sop_areas_covered <= 0) return null;
+    return Math.round(50 + 50 * Math.min(m.sop_areas_covered / 8, 1));
+  }
   const delegationRatio =
     m.target_hours > 0 ? Math.max(0, (1 - m.hours_worked / m.target_hours) * 100) : 0;
   const delegationScore = Math.max(0, 100 - delegationRatio);
@@ -73,4 +79,9 @@ export function calculateSalesOpsLike(m: Metrics): number | null {
   const parts = [conv, leads].filter((x): x is number => x !== null);
   if (!parts.length) return null;
   return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+}
+
+/** Legal: share of the Legal & Compliance checklist done (in progress counts half). */
+export function calculateLegalChecklistLike(m: Metrics): number | null {
+  return has(m, "legal_checklist_pct") ? Math.round(Math.max(0, Math.min(100, m.legal_checklist_pct))) : null;
 }

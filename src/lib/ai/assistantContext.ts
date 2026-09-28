@@ -211,6 +211,26 @@ export async function buildAssistantKnowledge(
     /* optional */
   }
 
+  // Legal & Compliance checklist: how far along, and renewals coming up.
+  try {
+    const { LEGAL_ITEMS, legalCompletion } = await import("@/lib/legalChecklist");
+    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group").eq("master_plan_id", masterPlanId);
+    const rows = (data ?? []) as import("@/lib/legalChecklist").LegalState[];
+    const pct = legalCompletion(rows);
+    if (pct !== null) {
+      const in60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
+      const due = rows.filter((r) => r.due_date && r.due_date <= in60 && r.status !== "na");
+      const open = LEGAL_ITEMS.filter((i) => !["done", "na"].includes(rows.find((r) => r.item_key === i.key)?.status ?? "")).slice(0, 6);
+      parts.push(
+        `Legal & compliance checklist: ${pct}% of what applies is done.` +
+          (due.length ? ` Coming due: ${due.map((r) => `${LEGAL_ITEMS.find((i) => i.key === r.item_key)?.title ?? r.custom_title} (${r.due_date})`).join("; ")}.` : "") +
+          (open.length ? ` Still open, e.g.: ${open.map((i) => i.title).join("; ")}.` : "")
+      );
+    }
+  } catch {
+    /* optional */
+  }
+
   // Bills coming due (Bills & Cash Calendar).
   try {
     const bills = await billsKnowledge(masterPlanId);

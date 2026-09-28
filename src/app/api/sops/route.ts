@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 //   GET                          → this client's SOPs
 //   POST { action: "draft", title, notes?, pillarKey? } → the assistant drafts one (not saved)
 //   POST { ...sop }              → create    PATCH { id, ...sop } → edit    DELETE { id }
-// Every save keeps the Operations score's "SOPs created" in step with the library.
+// SOPs in use feed the Systems score live (see liveOperationalMetrics).
 
 const PILLARS = new Set(OPERATIONS_PILLARS.map((p) => p.key));
 const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at";
@@ -27,21 +27,6 @@ function clean(body: Record<string, unknown>) {
   if (body.status === "draft" || body.status === "active") out.status = body.status;
   if (typeof body.lastReviewed === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.lastReviewed)) out.last_reviewed = body.lastReviewed;
   return out;
-}
-
-// The Operations score counts SOPs; the library is now the source of that number.
-async function syncSopCount(masterPlanId: string) {
-  const db = createServerClient();
-  const { count } = await db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", masterPlanId).eq("status", "active");
-  const { data: mp } = await db.from("client_master_plans").select("metadata").eq("id", masterPlanId).maybeSingle();
-  const meta = (mp?.metadata as Record<string, unknown>) ?? {};
-  // A number they typed in by hand stands until the library has something in it.
-  if (!count && !meta.sops_from_library) return;
-  const operational = { ...((meta.operational as Record<string, number>) ?? {}), sops_created: count ?? 0 };
-  await db
-    .from("client_master_plans")
-    .update({ metadata: { ...meta, operational, operational_at: new Date().toISOString(), sops_from_library: true } })
-    .eq("id", masterPlanId);
 }
 
 export async function GET() {
@@ -88,7 +73,6 @@ export async function POST(request: Request) {
     console.error("POST /api/sops:", error.message);
     return NextResponse.json({ error: "Couldn't save the SOP." }, { status: 500 });
   }
-  await syncSopCount(masterPlanId).catch(() => {});
   return NextResponse.json({ sop: data });
 }
 
@@ -106,7 +90,6 @@ export async function PATCH(request: Request) {
     .select(SELECT)
     .maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save the SOP." }, { status: 500 });
-  await syncSopCount(masterPlanId).catch(() => {});
   return NextResponse.json({ sop: data });
 }
 
@@ -116,6 +99,5 @@ export async function DELETE(request: Request) {
   const body = await request.json().catch(() => ({}));
   if (!masterPlanId || typeof body.id !== "string") return NextResponse.json({ error: "Missing SOP." }, { status: 400 });
   await createServerClient().from("sops").delete().eq("id", body.id).eq("master_plan_id", masterPlanId);
-  await syncSopCount(masterPlanId).catch(() => {});
   return NextResponse.json({ ok: true });
 }

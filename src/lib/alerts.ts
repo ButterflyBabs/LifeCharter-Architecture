@@ -336,13 +336,38 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // 11. Legal & compliance renewals due within 14 days (or overdue).
+  try {
+    const { LEGAL_ITEMS } = await import("@/lib/legalChecklist");
+    const { data } = await supabase
+      .from("legal_checklist")
+      .select("item_key, due_date, status, custom_title")
+      .eq("master_plan_id", masterPlanId)
+      .not("due_date", "is", null)
+      .neq("status", "na")
+      .lte("due_date", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+    const today = new Date().toISOString().slice(0, 10);
+    for (const r of (data || []) as { item_key: string; due_date: string; custom_title: string | null }[]) {
+      const title = LEGAL_ITEMS.find((i) => i.key === r.item_key)?.title ?? r.custom_title ?? "A compliance item";
+      out.push({
+        nkey: `legal-due:${r.item_key}:${r.due_date}`,
+        type: r.due_date < today ? "warning" : "action",
+        title: r.due_date < today ? `Overdue: ${title}` : `Coming due ${r.due_date}: ${title}`,
+        body: "Renew or file it, then update the date on your Legal & Compliance checklist.",
+        href: "/compliance",
+      });
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }
 
 
 // Alerts worth an email (the rest stay in the bell): keyed by nkey prefix.
-export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:"];
+export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:"];
 export const isEmailWorthy = (nkey: string | null) => !!nkey && EMAIL_WORTHY.some((p) => nkey.startsWith(p));
 
 // Brings the stored notifications in line with the live alerts (keeping

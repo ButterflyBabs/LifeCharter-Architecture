@@ -46,6 +46,7 @@ import {
   ClipboardCheck,
   Mountain,
   BookOpen,
+  Scale,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -97,6 +98,7 @@ const navigationSections = [
     items: [
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },
+      { id: "compliance", label: "Legal & Compliance", icon: Scale, href: "/compliance" },
       { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
     ],

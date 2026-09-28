@@ -13,6 +13,7 @@ import {
   calculateSystemsHealthLike,
   calculateSalesOpsLike,
   calculateOperationsHealthLike,
+  calculateLegalChecklistLike,
 } from "./operational";
 
 // ---- Normalized inputs -----------------------------------------------------
@@ -144,6 +145,7 @@ function subScoreFor(
       else if (key === "systems") s = calculateSystemsHealthLike(inputs.operational);
       else if (key === "sales") s = calculateSalesOpsLike(inputs.operational);
       else if (key === "operations") s = calculateOperationsHealthLike(inputs.operational);
+      else if (key === "legal") s = calculateLegalChecklistLike(inputs.operational);
       return { subScore: s, answeredAt: inputs.operationalAt ?? null };
     }
     case "business_plan": {

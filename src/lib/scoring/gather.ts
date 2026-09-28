@@ -9,6 +9,7 @@
  */
 
 import { createServerClient } from "@/lib/supabase/server";
+import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
 import { baselineCompleteness } from "@/lib/plans/blueprints";
 import { PULSE_LABEL_BY_ID } from "./pulseLabels";
@@ -224,6 +225,28 @@ async function liveOperationalMetrics(
       m.pillars_complete = rows.filter((r) => r.status === "complete").length;
       m.pillars_inprogress = rows.filter((r) => r.status === "in_progress").length;
     }
+  } catch {
+    /* optional */
+  }
+
+  // Systems — documented processes (Playbook & SOPs): how many of the 8
+  // operational areas have at least one SOP in use.
+  try {
+    const { data } = await supabase.from("sops").select("pillar_key").eq("master_plan_id", scopeId).eq("status", "active");
+    const rows = (data || []) as { pillar_key: string | null }[];
+    if (rows.length) {
+      m.sops_created = rows.length;
+      m.sop_areas_covered = new Set(rows.map((r) => r.pillar_key || "general")).size;
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Legal — share of the Legal & Compliance checklist done.
+  try {
+    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group").eq("master_plan_id", scopeId);
+    const pct = legalCompletion((data || []) as LegalState[]);
+    if (pct !== null) m.legal_checklist_pct = pct;
   } catch {
     /* optional */
   }

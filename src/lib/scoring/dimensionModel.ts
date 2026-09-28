@@ -300,7 +300,11 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
     key: "legal",
     label: "Legal",
     staleDays: STALE,
-    sources: [{ kind: "profit", method: "scale", weight: 100, profitDomain: "legal" }],
+    sources: [
+      { kind: "profit", method: "scale", weight: 60, profitDomain: "legal" },
+      // The Legal & Compliance checklist (live).
+      { kind: "operational", method: "formula", weight: 40, operationalMetrics: ["legal_checklist_pct"] },
+    ],
   },
   {
     key: "sustainability",
