@@ -27,8 +27,8 @@ const GC_FORM_BASE =
 const MASTERCLASS_TAG_ID = process.env.GC_MASTERCLASS_TAG_ID || "6a73c0f94c33c83e76795cdc";
 
 // The Incubator's Global Control tag (the one its confirmation/reminder workflow runs on).
-// Until it's set, Incubator registrants are left unsynced so they're picked up once it is.
-const INCUBATOR_TAG_ID = process.env.GC_INCUBATOR_TAG_ID || "";
+// "LC-incubator-registration" (Babs, 2026-09-28).
+const INCUBATOR_TAG_ID = process.env.GC_INCUBATOR_TAG_ID || "69fa1666f047865f2e391269";
 
 async function fireMasterclassTag(email: string, firstName: string, lastName: string, tagId: string = MASTERCLASS_TAG_ID): Promise<string> {
   const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
