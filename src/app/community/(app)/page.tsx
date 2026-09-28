@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Compass, Sparkles, Target, Anchor, Trophy } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
-import { eventWhen, timeAgo } from "@/lib/community/format";
+import { eventWhen, eventWhenShort, timeAgo } from "@/lib/community/format";
 import type { DiscoverCard, Post } from "@/lib/community/types";
 import { upcomingEvents, type Session } from "@/lib/community/events";
 import { Avatar, Button, Card, Eyebrow } from "@/components/community/ui";
@@ -178,7 +178,7 @@ function CommunityHome() {
             label="Your Next Session"
             href={nextSession ? `/community/events#${nextSession.event.id}` : "/community/events"}
             title={nextSession?.event.title ?? "Nothing scheduled yet"}
-            detail={nextSession ? nextSession.start.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : undefined}
+            detail={nextSession ? eventWhenShort(nextSession.start, nextSession.end) : undefined}
           />
           <MiniCard
             icon={<Trophy className="h-4 w-4" />}
