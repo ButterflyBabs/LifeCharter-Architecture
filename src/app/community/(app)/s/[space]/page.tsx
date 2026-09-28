@@ -10,6 +10,7 @@ import { Card, EmptyState, Eyebrow, Avatar } from "@/components/community/ui";
 import { JoinSpaceBanner } from "@/components/community/JoinSpaceBanner";
 import { LeaveSpaceButton } from "@/components/community/LeaveSpaceButton";
 import { useProfiles } from "@/lib/community/context";
+import { SpaceCover, SpaceLogo } from "@/components/community/SpaceBranding";
 
 export default function SpacePage({ params }: { params: { space: string } }) {
   const { supabase, spaceBySlug, channelsFor, isMember } = useCommunity();
@@ -50,10 +51,11 @@ export default function SpacePage({ params }: { params: { space: string } }) {
   return (
     <div className="space-y-6">
       <div>
+        <SpaceCover space={space} className="mb-4" />
         <Eyebrow>The LifeCharter Collective</Eyebrow>
-        <h1 className="mt-1 font-editorial text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[38px]">
-          <span className="mr-2">{space.emoji}</span>
-          {space.name}
+        <h1 className="mt-1 flex items-center gap-3 font-editorial text-[32px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[38px]">
+          <SpaceLogo space={space} size={44} className="shadow-[0_6px_16px_-8px_rgba(31,43,58,0.5)]" />
+          <span className="min-w-0">{space.name}</span>
         </h1>
         {space.tagline && <p className="mt-1 font-editorial text-[18px] italic text-[var(--cm-gold-text)]">{space.tagline}</p>}
         {space.description && <p className="mt-2 max-w-2xl text-[15px] text-[var(--cm-muted-2)]">{space.description}</p>}

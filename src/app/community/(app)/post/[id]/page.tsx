@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CornerDownRight, Flag, Trash2 } from "lucide-react";
 import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
@@ -56,6 +56,21 @@ export default function PostPage({ params }: { params: { id: string } }) {
       void supabase.removeChannel(sub);
     };
   }, [supabase, params.id]);
+
+  // Search results link to a reply as #c-<id>: bring it into view once replies load.
+  const jumped = useRef(false);
+  useEffect(() => {
+    if (jumped.current || !comments.length) return;
+    const hash = window.location.hash;
+    if (!hash.startsWith("#c-")) return;
+    const el = document.getElementById(hash.slice(1));
+    if (!el) return;
+    jumped.current = true;
+    const glow = ["ring-2", "ring-[#D4AF63]/60", "ring-offset-4", "ring-offset-[var(--cm-surface)]"];
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("rounded-2xl", ...glow);
+    setTimeout(() => el.classList.remove(...glow), 2600);
+  }, [comments, post]);
 
   if (post === undefined) return <PageLoading />;
   if (post === null) {
@@ -145,7 +160,7 @@ function CommentRow({
   const canDelete = comment.author_id === userId || canModerate(comment.space_id);
 
   return (
-    <div className="flex gap-3">
+    <div id={`c-${comment.id}`} className="flex scroll-mt-24 gap-3">
       <Link href={`/community/members/${comment.author_id}`}>
         <Avatar name={author?.display_name} url={author?.avatar_url} size={34} />
       </Link>

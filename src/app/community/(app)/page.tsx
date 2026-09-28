@@ -21,6 +21,7 @@ import { weekStartOf, type JournalEntry, type JournalFocus, type JournalKind } f
 import { useViewAs } from "@/lib/community/prefs";
 import { toPlain } from "@/lib/community/mentions";
 import { useIsNativeApp } from "@/lib/community/native";
+import { CollectiveSearch } from "@/components/community/CollectiveSearch";
 
 function greeting() {
   const h = new Date().getHours();
@@ -152,6 +153,8 @@ function CommunityHome() {
           <p className="font-editorial text-[17px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
         </div>
 
+        <CollectiveSearch />
+
         <InstallBanner />
 
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-4">
@@ -217,6 +220,8 @@ function CommunityHome() {
         </h1>
         <p className="font-editorial text-[18px] italic text-[var(--cm-gold-text)]">Create Balance. Build Alignment. Take Command.</p>
       </div>
+
+      <CollectiveSearch />
 
       <InstallBanner />
 

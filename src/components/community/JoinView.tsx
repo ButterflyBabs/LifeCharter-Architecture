@@ -21,6 +21,10 @@ export interface JoinSpace {
   description: string | null;
   emoji: string | null;
   logo_url: string | null;
+  cover_url?: string | null;
+  // Ready-to-show URLs for the cover and logo, signed on the server.
+  cover_src?: string | null;
+  logo_src?: string | null;
   visibility: "public" | "private";
   join_enabled: boolean;
 }
@@ -160,6 +164,12 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
 
   return (
     <Shell>
+      {!signinOnly && space?.cover_src && (
+        <div className="-mx-6 -mt-8 mb-6 aspect-[3/1] overflow-hidden bg-[var(--cm-fill-2)] sm:-mx-9 sm:-mt-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={space.cover_src} alt="" className="h-full w-full object-cover" />
+        </div>
+      )}
       {!signinOnly && (
         <div className="mb-5 flex justify-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--cm-ink-tint)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--cm-ink)]">
@@ -175,6 +185,16 @@ export function JoinView({ space, mode = "join" }: { space: JoinSpace | null; mo
         priority
         className="mx-auto mb-4 h-auto w-[280px] max-w-full"
       />
+      {!signinOnly && !isMain && space?.logo_src && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={space.logo_src}
+          alt=""
+          width={72}
+          height={72}
+          className="mx-auto mb-2 h-[72px] w-[72px] rounded-2xl object-cover shadow-[0_2px_4px_rgba(31,43,58,0.08),0_14px_28px_-14px_rgba(31,43,58,0.45)] ring-4 ring-[var(--cm-surface)]"
+        />
+      )}
       {/* The logo already names the Collective, so on its own front door the title is for screen readers. */}
       <h1
         className={cn(

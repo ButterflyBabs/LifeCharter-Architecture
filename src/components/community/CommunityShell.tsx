@@ -15,6 +15,7 @@ import { Avatar, Button, PageLoading } from "./ui";
 import { PwaRegister } from "./PwaRegister";
 import { AiConsentHost } from "./JournalAssist";
 import { NativeBridge } from "./NativeBridge";
+import { SpaceLogo } from "./SpaceBranding";
 import { useIsNativeApp } from "@/lib/community/native";
 import { useCollapsedChannels, useThemePref, useViewAs } from "@/lib/community/prefs";
 
@@ -284,7 +285,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                       open ? "bg-white/10 text-white" : "text-[#F3EEE4]/85 hover:bg-white/[0.06] hover:text-white"
                     )}
                   >
-                    <span className="w-5 text-center">{space.emoji}</span>
+                    <span className="flex w-5 justify-center">
+                      <SpaceLogo space={space} size={20} />
+                    </span>
                     <span className="truncate">{space.name}</span>
                   </Link>
                   {open && (

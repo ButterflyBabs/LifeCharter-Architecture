@@ -5,6 +5,7 @@ import { useCommunity } from "@/lib/community/context";
 import { ChannelFeed } from "@/components/community/Feed";
 import { EmptyState, Eyebrow } from "@/components/community/ui";
 import { JoinSpaceBanner } from "@/components/community/JoinSpaceBanner";
+import { SpaceLogo } from "@/components/community/SpaceBranding";
 
 export default function ChannelPage({ params }: { params: { space: string; channel: string } }) {
   const { spaceBySlug, channelsFor, isMember } = useCommunity();
@@ -23,8 +24,8 @@ export default function ChannelPage({ params }: { params: { space: string; chann
     <div>
       <div className="mb-5">
         <Eyebrow>
-          <Link href={`/community/s/${space.slug}`} className="hover:underline">
-            {space.emoji} {space.name}
+          <Link href={`/community/s/${space.slug}`} className="inline-flex items-center gap-1.5 hover:underline">
+            <SpaceLogo space={space} size={18} /> {space.name}
           </Link>
         </Eyebrow>
         <h1 className="mt-1 font-editorial text-[30px] font-semibold leading-tight text-[var(--cm-ink)] md:text-[34px]">

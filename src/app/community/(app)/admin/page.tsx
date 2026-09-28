@@ -10,6 +10,7 @@ import { useCommunity, useProfiles } from "@/lib/community/context";
 import { timeAgo } from "@/lib/community/format";
 import { SECTION_LABELS, type Channel, type DiscoverCard, type Profile, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Heading, Input, Label, Modal, PageLoading, TextArea } from "@/components/community/ui";
+import { SpaceBrandingEditor, SpaceLogo } from "@/components/community/SpaceBranding";
 
 type Tab = "reports" | "invites" | "requests" | "welcome" | "spaces" | "discover" | "members";
 
@@ -279,7 +280,7 @@ function Spaces() {
               .filter((s) => s.section === sec)
               .map((s) => (
                 <Card key={s.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <span className="text-[24px]">{s.emoji}</span>
+                  <SpaceLogo space={s} size={30} emojiClassName="text-[24px]" />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-[var(--cm-ink)]">{s.name}</p>
                     <p className="text-[12.5px] text-[var(--cm-muted)]">
@@ -305,7 +306,8 @@ function Spaces() {
 }
 
 function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: () => void }) {
-  const { supabase, userId, refresh } = useCommunity();
+  const { supabase, userId, refresh, spaces } = useCommunity();
+  const existing = initial.id ? spaces.find((s) => s.id === initial.id) : undefined;
   const [f, setF] = useState({
     name: initial.name ?? "",
     slug: initial.slug ?? "",
@@ -401,6 +403,13 @@ function SpaceEditor({ initial, onClose }: { initial: Partial<Space>; onClose: (
           <Input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: Number(e.target.value) })} />
         </div>
       </div>
+      {existing ? (
+        <div className="mt-4 rounded-xl border border-[var(--cm-line-soft)] bg-[var(--cm-surface)] p-3.5">
+          <SpaceBrandingEditor space={existing} />
+        </div>
+      ) : (
+        <p className="mt-3 text-[12.5px] text-[var(--cm-muted)]">You can add a cover image and logo once the channel is created.</p>
+      )}
       <div className="mt-3 space-y-1.5 text-[14px] text-[var(--cm-body)]">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={f.is_default} onChange={(e) => setF({ ...f, is_default: e.target.checked })} /> Everyone who joins the Collective is added automatically
@@ -481,6 +490,12 @@ function ChannelsEditor({ space, onClose }: { space: Space; onClose: () => void 
       wide
     >
       <ErrorNote>{error}</ErrorNote>
+      <details className="mt-3 rounded-xl border border-[var(--cm-line-soft)] px-3 py-2.5">
+        <summary className="cursor-pointer text-[13.5px] font-semibold text-[var(--cm-ink)]">Cover image &amp; logo</summary>
+        <div className="mt-3">
+          <SpaceBrandingEditor space={space} />
+        </div>
+      </details>
       {rows === null ? (
         <PageLoading />
       ) : (
@@ -870,7 +885,7 @@ function Reports() {
 function ChannelAdmin({ spaces }: { spaces: Space[] }) {
   return (
     <div>
-      <Heading sub="Invite people to the channels you run and see who's in them.">Channel admin</Heading>
+      <Heading sub="Invite people to the channels you run, see who's in them, and set each channel's cover and logo.">Channel admin</Heading>
       <div className="space-y-5">
         {spaces.map((s) => (
           <ChannelAdminCard key={s.id} space={s} />
@@ -900,8 +915,8 @@ function ChannelAdminCard({ space }: { space: Space }) {
 
   return (
     <Card className="p-4">
-      <p className="font-semibold text-[var(--cm-ink)]">
-        {space.emoji} {space.name}{" "}
+      <p className="flex flex-wrap items-center gap-x-2 font-semibold text-[var(--cm-ink)]">
+        <SpaceLogo space={space} size={22} /> {space.name}{" "}
         <span className="ml-1 text-[12.5px] font-normal text-[var(--cm-muted)]">
           {rows ? `${rows.length} ${rows.length === 1 ? "member" : "members"}` : "…"}
           {space.join_enabled ? "" : " · not accepting new members"}
