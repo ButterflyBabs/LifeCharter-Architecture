@@ -14,6 +14,7 @@ import {
   Zap,
   ArrowRight,
   Wallet,
+  CalendarDays,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -49,6 +50,13 @@ const SECTIONS: Section[] = [
     description: "Week, month & year-to-date income, expenses, net",
     icon: <Activity className="w-5 h-5 text-[#c9a227]" />,
     tint: "#c9a227",
+  },
+  {
+    href: "/finance/bills",
+    title: "Bills & Cash Calendar",
+    description: "What's due to go out, and when",
+    icon: <CalendarDays className="w-5 h-5 text-[#b06a5a]" />,
+    tint: "#b06a5a",
   },
   {
     href: "/finance/budget",

@@ -274,6 +274,32 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // 9. Bills due in the next 3 days (or overdue) that aren't on autopay.
+  try {
+    const { data } = await supabase
+      .from("finance_bills")
+      .select("id, name, amount, next_due, autopay")
+      .eq("master_plan_id", masterPlanId)
+      .eq("active", true)
+      .eq("autopay", false)
+      .lte("next_due", new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10));
+    const today = new Date().toISOString().slice(0, 10);
+    for (const b of (data || []) as { id: string; name: string; amount: number | null; next_due: string }[]) {
+      const late = b.next_due < today;
+      const [y, m, d] = b.next_due.split("-").map(Number);
+      const when = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      out.push({
+        nkey: `bill-due:${b.id}:${b.next_due}`,
+        type: late ? "warning" : "action",
+        title: late ? `${b.name} is overdue` : `${b.name} is due ${b.next_due === today ? "today" : when}`,
+        body: `${b.amount ? `$${Math.round(Number(b.amount)).toLocaleString("en-US")} · ` : ""}${late ? `was due ${when}. ` : ""}Mark it paid on your Bills calendar once it's done.`,
+        href: "/finance/bills",
+      });
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

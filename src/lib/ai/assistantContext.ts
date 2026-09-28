@@ -2,6 +2,7 @@ import { planningKnowledge } from "@/lib/ai/planKnowledge";
 import { offersKnowledge, pipelineKnowledge } from "@/lib/sales/knowledge";
 import { alignmentKnowledge } from "@/lib/ai/alignKnowledge";
 import { latestInsight } from "@/lib/ai/planKnowledge";
+import { billsKnowledge } from "@/lib/finance/bills";
 import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
@@ -202,6 +203,14 @@ export async function buildAssistantKnowledge(
         parts.push(`Income so far (their ledger): ${[one("this week", pulse.periods.week), one("this month", pulse.periods.month), one("this year", pulse.periods.year)].join("; ")}.`);
       }
     }
+  } catch {
+    /* optional */
+  }
+
+  // Bills coming due (Bills & Cash Calendar).
+  try {
+    const bills = await billsKnowledge(masterPlanId);
+    if (bills) parts.push(bills);
   } catch {
     /* optional */
   }
