@@ -122,6 +122,7 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
+    { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
     { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
@@ -313,6 +314,7 @@ function NavItem({
       <Link
         ref={linkRef}
         href={item.href}
+        {...(item.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         onMouseEnter={() => isCollapsed && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
