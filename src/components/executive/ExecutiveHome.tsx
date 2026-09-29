@@ -247,6 +247,7 @@ export default function ExecutiveHome() {
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
   const first30 = useFirst30();
   const [briefOrder, setBriefOrder] = useState<string[]>([
+    "coaching",
     "brief",
     "first30",
     "schedule",
@@ -422,7 +423,8 @@ export default function ExecutiveHome() {
             for (const id of defaults) {
               if (next.includes(id)) continue;
               const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : id === "first30" ? "brief" : null;
-              next.splice(after && next.includes(after) ? next.indexOf(after) + 1 : next.length, 0, id);
+              if (id === "coaching") next.unshift(id);
+              else next.splice(after && next.includes(after) ? next.indexOf(after) + 1 : next.length, 0, id);
             }
             return next;
           });
@@ -1196,13 +1198,14 @@ export default function ExecutiveHome() {
         </div>
       </header>
 
-      {/* This week's coaching calls: always front of mind */}
-      <div className="mb-5">
-        <CoachingCallsCard />
-      </div>
-
       {/* Executive Briefing — draggable cards */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-4 mb-5">
+        {/* This week's coaching calls (full width so the week reads in one line) */}
+        <div {...briefCardProps("coaching", "col-span-full")}>
+          <button draggable onDragStart={() => setDragId("coaching")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
+          <CoachingCallsCard />
+        </div>
+
         {/* Your Morning Brief */}
         <div {...briefCardProps("brief")}>
           <button draggable onDragStart={() => setDragId("brief")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>

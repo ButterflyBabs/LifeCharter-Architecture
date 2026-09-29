@@ -71,7 +71,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
 
   return (
     <section aria-labelledby="coaching-calls-h" className="rounded-2xl border border-[#c9a227]/30 bg-white dark:bg-[#1a2b4a]/40 shadow-sm p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pr-7">
         <h2 id="coaching-calls-h" className="flex items-center gap-2 text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
           <CalendarClock className="w-4 h-4 text-[#c9a227]" aria-hidden /> {week === "next" ? "Next week's coaching calls" : "This week's coaching calls"}
         </h2>
