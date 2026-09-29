@@ -11,6 +11,7 @@ export const SCRIPT_CATEGORIES = [
   "Content",
   "Nurture",
   "Closing",
+  "Training",
 ];
 
 export const SCRIPT_CHANNELS = [
