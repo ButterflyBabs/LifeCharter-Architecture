@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fireExecConsultTag, writeExecConsultFields } from "@/lib/execConsultGC";
 import { createServerClient } from "@/lib/supabase/server";
+import { upsertContact, logEvent } from "@/lib/crm";
+import { ownerMasterPlanId } from "@/lib/housePlan";
 
 /**
  * Called from the two Executive Consultation qualification questionnaires
  * (/schedule/masterclass and /schedule/website) right before the prospect
- * is sent on to actually pick a time. Fires the source-specific Global
- * Control tag (lccs-execconsult-masterclass or lccs-execconsult-website),
- * then writes every answer onto that contact's custom fields — regardless
- * of whether they end up booking, showing up, or buying. "Appointment
- * booked/canceled" and "sold" are tracked separately: the first two are
- * Global Control's own booking-automation tags (that step happens entirely
- * on Global Control's booking page, which this app never sees), and "sold"
- * fires later from the New Client Onboarding form on /sales-reference.
+ * is sent on to actually pick a time. Saves the person as a contact in Babs's
+ * own Suite CRM (tagged executive-consultation-request + consult-<source>) with
+ * every answer on their timeline — regardless of whether they end up booking,
+ * showing up, or buying — plus an audit row for attribution reporting.
  */
-
-const MC_TAG_ID = process.env.GC_EXEC_MC_TAG_ID;
-const WEBSITE_TAG_ID = process.env.GC_EXEC_WEBSITE_TAG_ID;
 
 interface QualifyBody {
   source: "masterclass" | "website";
@@ -51,28 +45,38 @@ export async function POST(req: NextRequest) {
     const [firstName, ...rest] = body.fullName.trim().split(/\s+/);
     const lastName = rest.join(" ");
 
-    const tagId = body.source === "masterclass" ? MC_TAG_ID : WEBSITE_TAG_ID;
-    const { status: gcTagStatus, contactId } = await fireExecConsultTag(tagId, {
-      email: body.email,
-      firstName,
-      lastName,
-    });
-
-    await writeExecConsultFields(contactId, {
+    const answers = {
       source: body.source,
       revenue_range: body.revenueRange,
       bottleneck: body.bottleneck,
       is_decision_maker: body.isDecisionMaker ? "Yes" : "No",
       tools: (body.tools || []).join(", "),
       implementation_timeline: body.implementationTimeline || "",
-      qualified_at: new Date().toISOString().slice(0, 10),
-      // No-ops until GC_EXEC_FIELD_MAP has a "session_source" entry — same
-      // graceful-degrade pattern as every other field here.
       session_source: body.sessionSource || "",
-    });
+    };
 
-    // Best-effort audit row — independent of whether GC_EXEC_FIELD_MAP has a
-    // session_source mapping yet, so attribution is queryable immediately.
+    // Babs's own contacts: the request lands on the person's timeline.
+    try {
+      const planId = await ownerMasterPlanId();
+      if (planId) {
+        const c = await upsertContact({
+          masterPlanId: planId,
+          email: body.email,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          source: `consult-${body.source}`,
+          tags: ["executive-consultation-request", `consult-${body.source}`],
+        });
+        if (c) await logEvent(planId, c.id, "form", "Executive Consultation questionnaire", { answers });
+      } else {
+        console.error("[consultation/qualify] owner account not found — contact not saved");
+      }
+    } catch (e) {
+      console.error("[consultation/qualify] contact save failed:", e);
+    }
+
+    // Best-effort audit row, so attribution is queryable. The gc_* columns are
+    // left over from a retired integration.
     try {
       const supabase = createServerClient();
       await supabase.from("exec_consult_qualifications").insert({
@@ -85,14 +89,14 @@ export async function POST(req: NextRequest) {
         tools: (body.tools || []).join(", ") || null,
         implementation_timeline: body.implementationTimeline || null,
         session_source: body.sessionSource || null,
-        gc_contact_id: contactId,
-        gc_tag_status: gcTagStatus,
+        gc_contact_id: null,
+        gc_tag_status: "not_used",
       });
     } catch (e) {
       console.error("[consultation/qualify] audit insert failed:", e);
     }
 
-    return NextResponse.json({ success: true, gcTagStatus });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Consultation qualify error:", error);
     return NextResponse.json({ error: "Failed to submit" }, { status: 500 });

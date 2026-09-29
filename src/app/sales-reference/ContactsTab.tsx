@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
-type Row = { id: string; name: string; email: string; phone: string; tags: number; lastActiveAt: string | null };
+type Row = { id: string; name: string; email: string; phone: string; tags: string[]; lastActiveAt: string | null };
 
-// Contacts tab: browse or search the owner's Global Control contacts. "Pull up" loads the
-// contact into the lookup panel above (?email=), which shows tags and custom fields.
+// Contacts tab: browse or search the owner's Suite contacts. "Pull up" loads the
+// contact into the lookup panel above (?email=), which shows tags and recent activity.
 export function ContactsTab() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -40,7 +41,8 @@ export function ContactsTab() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-[#F8F5F0]">Contacts</h2>
-          <p className="text-sm text-[#b8a898]">Your Global Control contacts. Only you and your own team can see this.</p>
+          <p className="text-sm text-[#b8a898]">Your Suite contacts. Only you and your own team can see this.{" "}
+            <Link href="/contacts" className="text-[#E3C27C] hover:underline">Open Contacts</Link></p>
         </div>
         <form
           className="flex gap-2"
@@ -83,7 +85,18 @@ export function ContactsTab() {
                 <td className="py-2 pr-4 text-[#F8F5F0]">{c.name || "—"}</td>
                 <td className="pr-4">{c.email || "—"}</td>
                 <td className="pr-4">{c.phone || "—"}</td>
-                <td className="pr-4">{c.tags}</td>
+                <td className="pr-4">
+                  {c.tags.length ? (
+                    <span className="flex flex-wrap gap-1">
+                      {c.tags.slice(0, 3).map((t) => (
+                        <span key={t} className="rounded-full bg-[#F3EEE4]/10 px-2 py-0.5 text-[10px] text-[#F3EEE4]/80">{t}</span>
+                      ))}
+                      {c.tags.length > 3 && <span className="text-[10px] text-[#b8a898]">+{c.tags.length - 3}</span>}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="pr-4">{when(c.lastActiveAt)}</td>
                 <td>
                   {c.email && (

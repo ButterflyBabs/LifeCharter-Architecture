@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useProspect } from "./ProspectContext";
 
 const FIELD_CLASS =
@@ -58,7 +59,7 @@ const DIMENSIONS = [
   "Leadership", "Vision", "Product", "Client Experience", "Legal", "Sustainability",
 ];
 
-type Result = { success: true; isNewAccount: boolean; gcTagStatus: string; loginUrl: string | null } | null;
+type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null } | null;
 
 export function NewClientForm() {
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -136,12 +137,11 @@ export function NewClientForm() {
           {result.isNewAccount ? "Account created" : "Account updated"} — {form.fullName}
         </h2>
         <p className="mt-2 text-sm text-[#b8a898]">
-          Global Control tag:{" "}
-          <span className={result.gcTagStatus === "tagged" ? "text-[#7FC4C9]" : "text-[#E3C27C]"}>
-            {result.gcTagStatus === "tagged" ? "applied" : result.gcTagStatus}
-          </span>
-          {result.gcTagStatus !== "tagged" && (
-            <span className="text-[#b8a898]"> — check GC_CLIENT_TAG_ID is configured</span>
+          Contacts:{" "}
+          {result.contactSaved ? (
+            <span className="text-[#7FC4C9]">saved and tagged command-suite-customer</span>
+          ) : (
+            <span className="text-[#E3C27C]">couldn&apos;t update their contact — add the tag from Contacts</span>
           )}
         </p>
 
@@ -194,13 +194,13 @@ export function NewClientForm() {
       <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">New Client Onboarding</h2>
       <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
         Fill this out before the end of the call. Creates their Command Suite login if they
-        don&apos;t already have one — or updates their existing account if they do — tags their
-        existing Global Control contact as a client, and saves the business info from this call.
+        don&apos;t already have one — or updates their existing account if they do — tags them as a
+        client in your contacts, and saves the business info from this call.
       </p>
 
       {justPrefilled && (
         <p className="mb-4 text-sm text-[#7FC4C9]">
-          &#10003; Filled in from their Global Control record below &mdash; check it over and fill in the rest.
+          &#10003; Filled in from their contact record below &mdash; check it over and fill in the rest.
         </p>
       )}
 
@@ -213,7 +213,7 @@ export function NewClientForm() {
               <input required className={FIELD_CLASS} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
             </div>
             <div>
-              <label className={LABEL_CLASS}>Email * (matches their existing Global Control contact)</label>
+              <label className={LABEL_CLASS}>Email * (matches their existing contact, if any)</label>
               <input required type="email" className={FIELD_CLASS} value={form.email} onChange={(e) => set("email", e.target.value)} />
             </div>
             <div>
@@ -331,14 +331,9 @@ export function NewClientForm() {
             <div>
               <label className={LABEL_CLASS}>Preferred coaching call day/time</label>
               <input className={FIELD_CLASS} value={form.preferredCallTime} onChange={(e) => set("preferredCallTime", e.target.value)} />
-              <a
-                href="https://app.globalcontrol.io/appointment-booking/test-calendar"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1.5 inline-block text-xs text-[#E3C27C] underline"
-              >
-                Schedule first 1:1 time on Babs&apos;s calendar &rarr;
-              </a>
+              <Link href="/calendars" className="mt-1.5 inline-block text-xs text-[#E3C27C] underline">
+                Schedule the first 1:1 from Calendars &rarr;
+              </Link>
             </div>
           </div>
         </div>

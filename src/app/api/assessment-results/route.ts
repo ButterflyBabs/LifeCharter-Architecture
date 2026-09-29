@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // The Executive Business Assessment (Command Suite landing page) posts here:
 // the person lands in the Suite CRM (tagged executive-assessment) with their
 // scores on their timeline, gets their results by email, and Babs gets a copy.
-// Replaces the Global Control lccs_execassess tag + workflow (Babs, 2026-09-28).
+// Replaces the old lccs_execassess tag + workflow (retired integration) (Babs, 2026-09-28).
 
 const REC: Record<string, { title: string; body: string; label: string; url: string }> = {
   consultation: {

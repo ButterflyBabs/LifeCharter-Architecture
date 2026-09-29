@@ -15,7 +15,7 @@ interface ActivityItem {
 
 // Fires whenever a call/follow-up is logged elsewhere on the page so this panel
 // can refresh its counts without prop-drilling across the layout.
-export const ACTIVITY_EVENT = "gc-activity-logged";
+export const ACTIVITY_EVENT = "compass-activity-logged";
 
 function tz(): string {
   if (typeof window === "undefined") return "UTC";
@@ -31,7 +31,7 @@ export function TodaysActivity() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/global-control/activity?tz=${encodeURIComponent(tz())}`);
+      const res = await fetch(`/api/compass-activity?tz=${encodeURIComponent(tz())}`);
       const d = await res.json().catch(() => ({}));
       setCalls(d.calls || 0);
       setFollowups(d.followups || 0);

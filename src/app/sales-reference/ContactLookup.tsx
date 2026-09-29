@@ -8,7 +8,6 @@ interface ContactSummary {
   name: string;
   email: string;
   phone?: string;
-  status?: string;
 }
 
 interface LookupResult {
@@ -16,11 +15,11 @@ interface LookupResult {
   name?: string;
   email?: string;
   phone?: string;
-  status?: string;
+  source?: string | null;
+  addedAt?: string;
   lastActiveAt?: string | null;
-  lastContactedAt?: string | null;
   tags?: string[];
-  customFields?: { name: string; value: string }[];
+  activity?: { title: string; kind: string; at: string }[];
 }
 
 function fmtDate(iso: string | null | undefined): string | null {
@@ -31,15 +30,6 @@ function fmtDate(iso: string | null | undefined): string | null {
     return null;
   }
 }
-
-// Custom-field names that have an obvious, unambiguous match to a New Client
-// Onboarding field — the account has many other custom fields (event
-// booking, assessment scores, ...) with no corresponding form field, so this
-// stays a short, exact-name allowlist rather than guessing at fuzzy matches.
-const FIELD_MAP: Record<string, "companyName" | "biggestChallenge"> = {
-  "Company Name": "companyName",
-  "Biggest Challenge": "biggestChallenge",
-};
 
 export function ContactLookup() {
   const params = useSearchParams();
@@ -105,16 +95,10 @@ export function ContactLookup() {
 
   function useContact() {
     if (!detail?.found) return;
-    const mapped: Record<string, string> = {};
-    for (const cf of detail.customFields || []) {
-      const key = FIELD_MAP[cf.name];
-      if (key) mapped[key] = cf.value;
-    }
     setProspect({
       fullName: detail.name,
       email: detail.email,
       phone: detail.phone,
-      ...mapped,
     });
     setUsed(true);
   }
@@ -123,7 +107,7 @@ export function ContactLookup() {
     <section className="mb-10 rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
       <h3 className="text-sm font-semibold text-[#F8F5F0] mb-1">Look up a prospect</h3>
       <p className="text-xs text-[#b8a898] mb-4">
-        Search by name or email — pulls their real Global Control record before or during the call.
+        Search by name or email — pulls their record from your Suite contacts before or during the call.
       </p>
       <form onSubmit={search} className="flex flex-col sm:flex-row gap-2">
         <input
@@ -143,7 +127,7 @@ export function ContactLookup() {
       </form>
 
       {searchState === "error" && (
-        <p className="mt-3 text-sm text-red-300">Couldn&apos;t reach Global Control — try again in a moment.</p>
+        <p className="mt-3 text-sm text-red-300">Couldn&apos;t search your contacts — try again in a moment.</p>
       )}
       {detailState === "error" && (
         <p className="mt-3 text-sm text-red-300">Couldn&apos;t load that contact — try again in a moment.</p>
@@ -151,7 +135,7 @@ export function ContactLookup() {
 
       {results && results.length === 0 && (
         <p className="mt-3 text-sm text-[#E3C27C]">
-          No Global Control contact matches that yet — they may not have registered for the
+          No contact matches that yet — they may not have registered for the
           MasterClass, Challenge, or a consultation before this call.
         </p>
       )}
@@ -197,19 +181,11 @@ export function ContactLookup() {
               {used ? "✓ Added to form below" : "Use this contact ↓"}
             </button>
           </div>
-          <div className="flex flex-wrap items-baseline gap-2 mt-2">
-            {detail.status && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-[#c9a227] bg-[#c9a227]/10 px-2 py-1 rounded-full">
-                {detail.status}
-              </span>
-            )}
-          </div>
-
-          {(fmtDate(detail.lastContactedAt) || fmtDate(detail.lastActiveAt)) && (
+          {(fmtDate(detail.addedAt) || fmtDate(detail.lastActiveAt)) && (
             <p className="text-xs text-[#b8a898]/70 mt-1">
-              {fmtDate(detail.lastContactedAt) && <>Last contacted {fmtDate(detail.lastContactedAt)}</>}
-              {fmtDate(detail.lastContactedAt) && fmtDate(detail.lastActiveAt) && " · "}
-              {fmtDate(detail.lastActiveAt) && <>Last active {fmtDate(detail.lastActiveAt)}</>}
+              {fmtDate(detail.addedAt) && <>Added {fmtDate(detail.addedAt)}{detail.source ? ` (${detail.source})` : ""}</>}
+              {fmtDate(detail.addedAt) && fmtDate(detail.lastActiveAt) && " · "}
+              {fmtDate(detail.lastActiveAt) && <>Last activity {fmtDate(detail.lastActiveAt)}</>}
             </p>
           )}
 
@@ -226,15 +202,15 @@ export function ContactLookup() {
             </div>
           )}
 
-          {!!detail.customFields?.length && (
-            <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 border-t border-[#F3EEE4]/10 pt-3">
-              {detail.customFields.map((cf) => (
-                <div key={cf.name}>
-                  <dt className="text-[10px] uppercase tracking-wide text-[#b8a898]/70">{cf.name}</dt>
-                  <dd className="text-sm text-[#F3EEE4] break-words">{cf.value}</dd>
-                </div>
+          {!!detail.activity?.length && (
+            <ul className="mt-4 space-y-1.5 border-t border-[#F3EEE4]/10 pt-3">
+              {detail.activity.map((ev, i) => (
+                <li key={`${ev.at}-${i}`} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="text-[#F3EEE4] break-words">{ev.title}</span>
+                  <span className="text-[10px] text-[#b8a898]/70 whitespace-nowrap">{fmtDate(ev.at)}</span>
+                </li>
               ))}
-            </dl>
+            </ul>
           )}
         </div>
       )}

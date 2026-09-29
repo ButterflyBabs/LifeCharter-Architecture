@@ -125,15 +125,17 @@ export async function withinStandingLimit(
   return { allowed: currentCount < limit, limit };
 }
 
-// Tool integrations (Global Control, PostStream, …) this account has connected.
-// Email accounts (their own "mailboxes" limit) and the AI key don't count.
+// Tool integrations (PostStream, …) this account has connected.
+// Email accounts (their own "mailboxes" limit) and the AI key don't count, and
+// neither does a leftover row for the retired global_control integration.
 export async function integrationUsage(masterPlanId: string | null): Promise<{ count: number; limit: number | null }> {
   if (!masterPlanId) return { count: 0, limit: null };
   const { count } = await createServerClient()
     .from("client_integrations")
     .select("id", { count: "exact", head: true })
     .eq("master_plan_id", masterPlanId)
-    .eq("status", "connected");
+    .eq("status", "connected")
+    .neq("provider", "global_control");
   const caps = await planCapabilities(masterPlanId);
   const raw = caps?.integrations;
   return { count: count ?? 0, limit: typeof raw === "number" ? raw : null };

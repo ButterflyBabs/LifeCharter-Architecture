@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
-import { fireExecConsultTag } from "@/lib/execConsultGC";
-import { writeGcCustomFields, findGcContactIdByEmail } from "@/lib/gcCustomFields";
+import { upsertContact, logEvent } from "@/lib/crm";
+import { ownerMasterPlanId } from "@/lib/housePlan";
 
 /**
  * Called from the New Client form on /sales-reference after Marcello closes
@@ -15,26 +15,9 @@ import { writeGcCustomFields, findGcContactIdByEmail } from "@/lib/gcCustomField
  * 2. Provision their Command Suite account — same provisionAccountForEmail
  *    helper the self-serve flow uses, so this is idempotent and safe even
  *    if they already have an account (e.g. a Starter customer upgrading).
- * 3. Tag their EXISTING Global Control contact (from MasterClass/Challenge
- *    registration) as a paying client — uses the tag-form-submission
- *    endpoint, the one proven to upsert-by-email in production (see
- *    commandsuite-landing-page/app/api/register/route.ts). Missing
- *    GC_CLIENT_TAG_ID is a configuration gap, not a reason to fail the
- *    whole request — the account still gets created either way.
- * 4. Also fire lccs-execconsult-sold (GC_EXEC_SOLD_TAG_ID), best-effort —
- *    lets Global Control report on sales that came from an Executive
- *    Consultation specifically, separately from the general client tag.
- *    Reuses fireExecConsultTag, the same helper the /schedule qualification
- *    questionnaires already use to fire lccs-execconsult-* tags.
- * 5. Write the full intake record onto that same contact's custom fields
- *    (gc_client_field_map, app_settings-backed) — best-effort, no-op until
- *    the fields exist and the map is set. tag-form-submission (step 3)
- *    never hands back a contact id, so this reuses step 4's contact id
- *    when available (same contact, same email), or looks it up fresh.
+ * 3. Save them in Babs's own Suite contacts, tagged command-suite-customer,
+ *    with "Onboarded as a Command Suite client" on their timeline.
  */
-
-const GC_FORM_BASE =
-  process.env.GC_FORM_BASE || "https://api.globalcontrol.io/api/tag-form-submission";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -60,44 +43,6 @@ interface OnboardBody {
   timezone?: string;
   preferredCallTime?: string;
   year1AgreementAccepted: boolean;
-}
-
-async function fireClientTag(email: string, fullName: string, phone?: string): Promise<string> {
-  const tagId = process.env.GC_CLIENT_TAG_ID;
-  if (!tagId) {
-    console.error(`[onboard-client] NOT CONFIGURED — no GC_CLIENT_TAG_ID set. Contact not tagged: ${email}`);
-    return "skipped_no_tag_id";
-  }
-
-  const [firstName, ...rest] = fullName.trim().split(/\s+/);
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (process.env.GLOBAL_CONTROL_API_KEY) {
-    headers["X-API-KEY"] = process.env.GLOBAL_CONTROL_API_KEY;
-  }
-
-  try {
-    const res = await fetch(`${GC_FORM_BASE}/${encodeURIComponent(tagId)}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        email,
-        firstName: firstName || "",
-        lastName: rest.join(" ") || "",
-        ...(phone ? { phone } : {}),
-      }),
-    });
-    const payload = await res.json().catch(() => null);
-    // GC returns HTTP 200 even on failure — success must be checked explicitly.
-    const succeeded = res.ok && payload?.data?.success === true;
-    if (!succeeded) {
-      console.error(`[onboard-client] TAG SUBMIT FAILED for ${email}: ${JSON.stringify(payload)}`);
-      return "failed";
-    }
-    return "tagged";
-  } catch (err) {
-    console.error(`[onboard-client] TAG SUBMIT ERROR for ${email}:`, err);
-    return "error";
-  }
 }
 
 export async function POST(req: NextRequest) {
@@ -150,7 +95,7 @@ export async function POST(req: NextRequest) {
       preferred_call_time: body.preferredCallTime || null,
       year1_agreement_accepted: body.year1AgreementAccepted,
       user_id: userId,
-      gc_tag_status: "pending",
+      gc_tag_status: "not_used", // column left from a retired integration
     });
 
     if (insertError) {
@@ -207,56 +152,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Tag their existing Global Control contact (best-effort).
-    const tagStatus = await fireClientTag(body.email, body.fullName, body.phone);
-    await supabase
-      .from("client_intake_submissions")
-      .update({ gc_tag_status: tagStatus })
-      .eq("email", body.email)
-      .eq("user_id", userId);
-
-    // 3b. Also fire the "sold" tag (best-effort, no-op if GC_EXEC_SOLD_TAG_ID
-    // isn't configured yet) — separates Executive-Consultation-sourced sales
-    // out from the general client tag for reporting.
-    const [soldFirstName, ...soldRest] = body.fullName.trim().split(/\s+/);
-    const soldTagResult = await fireExecConsultTag(process.env.GC_EXEC_SOLD_TAG_ID, {
-      email: body.email,
-      firstName: soldFirstName || undefined,
-      lastName: soldRest.join(" ") || undefined,
-      phone: body.phone,
-    });
-    if (soldTagResult.status !== "tagged") {
-      console.error(`[onboard-client] sold-tag ${soldTagResult.status} for ${body.email}`);
+    // 3. Tag them in Babs's own Suite contacts (best-effort).
+    let contactSaved = false;
+    try {
+      const planId = await ownerMasterPlanId();
+      if (planId) {
+        const [firstName, ...rest] = body.fullName.trim().split(/\s+/);
+        const c = await upsertContact({
+          masterPlanId: planId,
+          email: body.email,
+          firstName: firstName || null,
+          lastName: rest.join(" ") || null,
+          phone: body.phone || null,
+          timezone: body.timezone || null,
+          source: body.sessionSource || "sales-onboarding",
+          tags: ["command-suite-customer"],
+        });
+        if (c) {
+          await logEvent(planId, c.id, "manual", "Onboarded as a Command Suite client", {
+            tier: body.tier,
+            companyName: body.companyName || null,
+            sessionSource: body.sessionSource || null,
+          });
+          contactSaved = true;
+        }
+      }
+    } catch (e) {
+      console.error(`[onboard-client] contact save failed for ${body.email}:`, e);
     }
-
-    // 3c. Write the intake details onto the contact's custom fields
-    // (best-effort, no-op until gc_client_field_map is configured).
-    // tag-form-submission (used above for the general client tag) never
-    // hands back a contact id, so reuse the sold-tag call's contact id when
-    // available, falling back to a fresh lookup by email.
-    const gcContactId = soldTagResult.contactId || (await findGcContactIdByEmail(body.email));
-    await writeGcCustomFields(
-      gcContactId,
-      {
-        company_name: body.companyName,
-        website: body.website,
-        industry: body.industry,
-        years_in_business: body.yearsInBusiness,
-        tier: body.tier,
-        implementation_amount_cents:
-          body.implementationAmountCents !== undefined ? String(body.implementationAmountCents) : undefined,
-        implementation_date: body.implementationDate,
-        monthly_revenue_range: body.monthlyRevenueRange,
-        team_size: body.teamSize,
-        primary_offer: body.primaryOffer,
-        biggest_challenge: body.biggestChallenge,
-        weakest_dimension: body.weakestDimension,
-        preferred_call_time: body.preferredCallTime,
-        session_source: body.sessionSource,
-      },
-      "gc_client_field_map",
-      "GC_CLIENT_FIELD_MAP"
-    );
 
     // 4. Generate a real login link to hand to the client — same recovery-link
     // pattern as the self-serve flow, since production SMTP still isn't wired
@@ -269,13 +192,13 @@ export async function POST(req: NextRequest) {
 
     if (linkError || !linkData?.properties?.action_link) {
       console.error("generateLink failed:", linkError?.message);
-      return NextResponse.json({ success: true, isNewAccount, gcTagStatus: tagStatus, loginUrl: null });
+      return NextResponse.json({ success: true, isNewAccount, contactSaved, loginUrl: null });
     }
 
     return NextResponse.json({
       success: true,
       isNewAccount,
-      gcTagStatus: tagStatus,
+      contactSaved,
       loginUrl: linkData.properties.action_link,
     });
   } catch (error) {

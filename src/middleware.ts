@@ -52,10 +52,10 @@ const PUBLIC_APIS = [
 // sales-reference form but shouldn't see client data, the dashboard, or anything else.
 const SALES_ROLE = "sales";
 
-// The owner's own sales page and the APIs behind it read the owner's Global Control
-// contacts with the house key. Only the owner (super admin) and the owner's own team may
+// The owner's own sales page and the APIs behind it read the owner's own Suite CRM
+// contacts. Only the owner (super admin) and the owner's own team may
 // reach them — never a client or anyone on a client's team. (Babs, 2026-09-27: clients
-// must never have access to her Global Control contacts.)
+// must never have access to her contacts.)
 const HOUSE_ONLY_PAGES = ["/sales-reference"];
 const HOUSE_ONLY_APIS = ["/api/sales"];
 
@@ -131,7 +131,7 @@ async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: 
 }
 
 // Is this workspace the owner's own (the super admin's)? The Sales role opens the owner's
-// internal sales page and Global Control contacts, so it is honored only there — never in
+// internal sales page and her contacts, so it is honored only there — never in
 // a client's workspace.
 async function isHouseWorkspace(workspaceId: string | null): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

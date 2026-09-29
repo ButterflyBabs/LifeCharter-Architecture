@@ -61,7 +61,6 @@ export async function GET() {
     google.isConnected().catch(() => false),
     microsoft.isConnected().catch(() => false),
   ]);
-  let globalControl = false;
   let poststream = false;
   if (masterPlanId) {
     try {
@@ -69,10 +68,9 @@ export async function GET() {
         .from("client_integrations")
         .select("provider, api_key, status")
         .eq("master_plan_id", masterPlanId)
-        .in("provider", ["global_control", "poststream"]);
+        .eq("provider", "poststream");
       for (const r of (data || []) as { provider: string; api_key: string | null; status: string | null }[]) {
         const has = Boolean((r.api_key || "").trim());
-        if (r.provider === "global_control") globalControl = has;
         if (r.provider === "poststream") poststream = has;
       }
     } catch {
@@ -107,7 +105,6 @@ export async function GET() {
       calendar: gConnected || mConnected,
       google: gConnected,
       microsoft: mConnected,
-      globalControl,
       poststream,
     },
     tools: { connected: toolsConnected },

@@ -21,7 +21,7 @@ import WebsiteQuestion from "@/components/website/WebsiteQuestion";
 interface SetupStatus {
   assessments: { brain: boolean; soul: boolean; profit: boolean; complete: boolean };
   ai: { connected: boolean };
-  integrations: { calendar: boolean; google: boolean; microsoft: boolean; globalControl: boolean; poststream: boolean };
+  integrations: { calendar: boolean; google: boolean; microsoft: boolean; poststream: boolean };
   requiredComplete: boolean;
 }
 

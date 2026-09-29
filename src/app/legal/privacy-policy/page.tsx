@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
         <h2 className={H2}>3. How We Share Information</h2>
         <p className={P}>We do not sell your personal information. We share information with:</p>
         <ul className="space-y-3 text-[#b8a898] leading-relaxed mb-4">
-          <li className={LI}><span className={DOT}>&#9679;</span><span>Service providers who help us operate the Suite, including Supabase (hosting/database), Stripe (payment processing), Global Control (CRM/communications), Vercel (hosting), and similar providers, each bound to use your information only to provide services to us.</span></li>
+          <li className={LI}><span className={DOT}>&#9679;</span><span>Service providers who help us operate the Suite, including Supabase (hosting/database), Stripe (payment processing), Vercel (hosting), and similar providers, each bound to use your information only to provide services to us.</span></li>
           <li className={LI}><span className={DOT}>&#9679;</span><span>As required by law, or to protect our rights, safety, or property.</span></li>
           <li className={LI}><span className={DOT}>&#9679;</span><span>With your consent, or at your direction.</span></li>
         </ul>

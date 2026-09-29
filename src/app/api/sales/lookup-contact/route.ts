@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lookupContactByEmail } from "@/lib/gcContactLookup";
+import { lookupSalesContact } from "@/lib/salesContacts";
 
 /**
  * Called from the contact lookup panel on /sales-reference so Marcello (or
- * anyone with real access to that page) can see a prospect's actual Global
- * Control record — tags, status, custom fields — right before or during a
- * call, instead of tabbing over to Global Control mid-conversation.
+ * anyone with real access to that page) can see a prospect's record in Babs's
+ * Suite contacts — tags, last activity and recent timeline — right before or
+ * during a call.
  *
  * Requires a session (not in PUBLIC_APIS) — gated the same way as the rest
  * of /sales-reference, including for the restricted "sales" role, which is
- * explicitly allow-listed for this path in middleware.ts.
+ * explicitly allow-listed for this path (src/lib/teamRoles.ts).
  */
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await lookupContactByEmail(email);
+    const result = await lookupSalesContact(email);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Contact lookup error:", error);

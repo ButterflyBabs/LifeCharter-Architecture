@@ -4,7 +4,6 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { dayInTz, zonedToUtcISO } from "@/lib/tz";
 import { publishedPostCounts } from "@/lib/social/postCounts";
-import { isMirroredLog } from "@/lib/activityRules";
 import { ACTIVITY_TYPES } from "@/lib/salesActivities";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +14,7 @@ export const dynamic = "force-dynamic";
 //
 // A day counts as "active" when the client did at least one thing that day:
 // completed a task, checked off a recurring task, logged a call or follow-up
-// (on a Global Control contact or in Sales Activities), or posted.
+// in Sales Activities (or completed a follow-up task), or posted.
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const ymd = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
@@ -74,10 +73,9 @@ export async function GET(request: Request) {
     return c;
   };
 
-  const [{ data: tasks }, { data: rec }, { data: gc }, { data: sales }, { data: goalRows }, postCounts] = await Promise.all([
+  const [{ data: tasks }, { data: rec }, { data: sales }, { data: goalRows }, postCounts] = await Promise.all([
     supabase.from("tasks").select("completed_at, followup").eq("master_plan_id", masterPlanId).eq("status", "done").gte("completed_at", sinceISO).limit(5000),
     supabase.from("recurring_tasks").select("id").eq("master_plan_id", masterPlanId),
-    supabase.from("contact_activity_log").select("type, note, created_at").eq("master_plan_id", masterPlanId).gte("created_at", sinceISO).limit(5000),
     supabase.from("sales_activities").select("type, occurred_on").eq("master_plan_id", masterPlanId).gte("occurred_on", sinceDay).limit(5000),
     supabase.from("sales_goals").select("activity_type, weekly_target").eq("master_plan_id", masterPlanId),
     publishedPostCounts(masterPlanId, tz, sinceDay),
@@ -92,14 +90,6 @@ export async function GET(request: Request) {
   if (recIds.length) {
     const { data: done } = await supabase.from("recurring_task_completions").select("done_on").in("recurring_task_id", recIds).gte("done_on", sinceDay).limit(5000);
     for (const d of (done ?? []) as { done_on: string }[]) at(String(d.done_on).slice(0, 10)).recurring += 1;
-  }
-  // Calls and follow-ups logged against Global Control contacts. An auto-sent
-  // follow-up is also a completed task (counted above), so its log row is skipped.
-  for (const g of (gc ?? []) as { type: string; note: string | null; created_at: string }[]) {
-    if (isMirroredLog(g.note)) continue;
-    const c = at(dayInTz(g.created_at, tz));
-    if (g.type === "followup") c.followups += 1;
-    else if (g.type === "call") c.calls += 1;
   }
   // Sales Activities count on the day they happened — never before it.
   for (const s of (sales ?? []) as { type: string; occurred_on: string }[]) {
@@ -147,7 +137,7 @@ export async function GET(request: Request) {
     id: t.id,
     category: GOAL_META[t.id]?.category ?? t.label,
     target: targets[t.id] ?? null,
-    // Calls and follow-ups also include what's logged elsewhere (Global Control, completed follow-up tasks).
+    // Calls and follow-ups also include what's logged elsewhere (completed follow-up tasks).
     current: t.id === "call" ? sum("calls") : t.id === "followup" ? sum("followups") : salesThisWeek(t.id),
     unit: GOAL_META[t.id]?.unit ?? "",
   }));

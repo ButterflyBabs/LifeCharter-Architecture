@@ -1,7 +1,7 @@
 /**
  * Integrations Panel
  * The account's real connections: how many plan integration spots are used
- * (Global Control, PostStream and future tools — email accounts and the AI key
+ * (PostStream and future tools — email accounts and the AI key
  * are counted separately), plus Calendar & Email.
  */
 

@@ -104,7 +104,7 @@ export async function clientSetupState(supabase: SupabaseClient, userId: string,
   const [{ data: resp }, { data: plan }, { data: integ }, { data: g }, { data: m }, { data: ws }, key] = await Promise.all([
     supabase.from("unified_client_responses").select("assessment_type").eq("master_plan_id", masterPlanId).in("assessment_type", ["brain", "soul"]).limit(500),
     supabase.from("client_master_plans").select("domain_scores, profit_score").eq("id", masterPlanId).maybeSingle(),
-    supabase.from("client_integrations").select("provider, api_key").eq("master_plan_id", masterPlanId).in("provider", ["global_control", "poststream"]),
+    supabase.from("client_integrations").select("provider, api_key").eq("master_plan_id", masterPlanId).eq("provider", "poststream"),
     supabase.from("google_credentials").select("owner_id").eq("owner_id", userId).limit(1),
     supabase.from("microsoft_credentials").select("owner_id").eq("owner_id", userId).limit(1),
     supabase.from("workspaces").select("website").eq("master_plan_id", masterPlanId).order("is_default", { ascending: false }).limit(1).maybeSingle(),
