@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "A few quick questions, then pick a time with Marcello.",
 };
 
-const BOOKING_URL = "https://app.globalcontrol.io/appointment-booking/lccsexec-consultwebsite";
+const BOOKING_URL = "/book/executive-consultation";
 
 export default function ScheduleWebsitePage({
   searchParams,

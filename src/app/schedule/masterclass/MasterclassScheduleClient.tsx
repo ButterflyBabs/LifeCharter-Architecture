@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { ScheduleQuestionnaireForm } from "../ScheduleQuestionnaireForm";
 
-const BOOKING_URL = "https://app.globalcontrol.io/appointment-booking/executive-consultation-lccs";
+const BOOKING_URL = "/book/executive-consultation";
 
 export function MasterclassScheduleClient() {
   const params = useSearchParams();

@@ -75,6 +75,8 @@ export function ScheduleQuestionnaireForm({
       if (!res.ok) throw new Error(data.error || "Something went wrong");
       trackEvent("Lead", { content_name: "executive_consultation_request" });
       // Give the tracking beacons a moment before leaving the page.
+      // Prefill the booking page without putting their details in the URL.
+      try { sessionStorage.setItem("bk_prefill", JSON.stringify({ name: fullName, email })); } catch {}
       setTimeout(() => { window.location.href = bookingUrl; }, 300);
     } catch (err) {
       setState("error");

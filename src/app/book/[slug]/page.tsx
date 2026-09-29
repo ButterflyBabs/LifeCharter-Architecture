@@ -33,7 +33,9 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   useEffect(() => {
     setTz(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver");
     const q = new URLSearchParams(window.location.search);
-    setPrefill({ name: q.get("name") || "", email: q.get("email") || "" });
+    let saved: { name?: string; email?: string } = {};
+    try { saved = JSON.parse(sessionStorage.getItem("bk_prefill") || "{}"); } catch {}
+    setPrefill({ name: q.get("name") || saved.name || "", email: q.get("email") || saved.email || "" });
   }, []);
 
   const when = (s: string) => new Date(s).toLocaleString("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
