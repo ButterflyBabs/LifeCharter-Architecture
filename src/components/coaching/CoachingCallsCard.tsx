@@ -44,12 +44,12 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
     else groups.push({ label, items: [c] });
   }
 
-  // Monday to Sunday of the week being shown.
+  // Monday to Friday of the week being shown (no weekend calls).
   const weekDays = (() => {
     const base = new Date(now);
     base.setHours(0, 0, 0, 0);
     const monday = new Date(base.getFullYear(), base.getMonth(), base.getDate() - ((base.getDay() + 6) % 7) + (week === "next" ? 7 : 0));
-    return Array.from({ length: 7 }, (_, i) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i));
+    return Array.from({ length: 5 }, (_, i) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i));
   })();
 
   const chip = (c: Call) => {
@@ -92,7 +92,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
         </div>
       ) : (
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
-          <div className="grid grid-cols-7 gap-2 min-w-[760px]">
+          <div className="grid grid-cols-5 gap-2 min-w-[600px]">
             {weekDays.map((d) => {
               const items = shown.filter((c) => new Date(c.start).toDateString() === d.toDateString());
               const isToday = d.toDateString() === new Date(now).toDateString();
