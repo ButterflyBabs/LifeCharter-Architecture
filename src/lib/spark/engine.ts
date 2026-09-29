@@ -66,9 +66,10 @@ export function siteLabel(site: SparkSite | null, channel: SparkChannel) {
   return channel === "instagram" ? "Instagram" : site?.label || site?.origin || "Website";
 }
 
-// Instagram has no page, so it uses the first website's booking calendar.
-export function bookingFor(settings: SparkSettings, site: SparkSite | null) {
-  return bookingUrl(site?.bookingSlug) || bookingUrl(settings.sites.find((s) => s.enabled && s.bookingSlug)?.bookingSlug);
+// A site with one booking calendar uses it. Instagram and mixed-audience sites have none:
+// the AI shares the fitting link from the account's Knowledge instead.
+export function bookingFor(_settings: SparkSettings, site: SparkSite | null) {
+  return bookingUrl(site?.bookingSlug);
 }
 
 async function findOrStartConversation(db: Db, i: SparkTurnInput): Promise<Conversation | null> {
