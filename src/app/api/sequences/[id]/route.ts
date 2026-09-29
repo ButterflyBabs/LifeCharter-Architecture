@@ -11,7 +11,7 @@ export const maxDuration = 60;
 // One sequence of the signed-in account (by id AND the account's plan; 404 otherwise).
 //   GET → the sequence, its steps, and its people
 //   POST { action } with action one of:
-//     settings { name, description, fromName, fromEmail, brand, sendHour, active }
+//     settings { name, description, fromName, fromEmail, brand, sendHour, notifyOnJoin, active }
 //     save-step { step: { id?, position, dayOffset, subject, preview, body, buttonLabel, buttonUrl } }
 //     delete-step { stepId }
 //     preview { step }                 → the rendered email (as Eloise)
@@ -61,7 +61,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       sequence_sends: undefined,
       sent: sends.filter((s) => s.status === "sent").length,
       failed: sends.filter((s) => s.status === "failed").length,
-      registered: form ? { at: form, via: "form" } : e.registered_at ? { at: e.registered_at, via: "manual", note: e.registered_note } : null,
+      registered: form ? { at: form, via: "form" } : { at: (e.registered_at as string | null) ?? (e.enrolled_at as string), via: "joined" },
     };
   });
   return NextResponse.json({ sequence: seq, steps: steps ?? [], people });
@@ -82,6 +82,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (house && typeof b.fromEmail === "string" && /^[^@\s]+@(lifecharter\.life|lccommandsuite\.com)$/i.test(b.fromEmail.trim())) patch.from_email = b.fromEmail.trim().toLowerCase();
     if (typeof b.brand === "string" && b.brand.trim()) patch.brand = str(b.brand, 60);
     if (Number.isInteger(b.sendHour) && b.sendHour >= 0 && b.sendHour <= 23) patch.send_hour = b.sendHour;
+    if (typeof b.notifyOnJoin === "boolean") patch.notify_on_join = b.notifyOnJoin;
     if (typeof b.active === "boolean") patch.active = b.active;
     if (b.active === true && !house) {
       // A client can't turn a sequence on until their own domain is verified and their address is in.

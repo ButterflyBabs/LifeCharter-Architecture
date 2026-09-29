@@ -21,6 +21,7 @@ interface Seq {
   from_email: string;
   brand: string;
   send_hour: number;
+  notify_on_join?: boolean;
   active: boolean;
   step_count?: number;
   people?: { total: number; active: number; completed: number };
@@ -43,7 +44,7 @@ interface Person {
   source: string | null;
   sent: number;
   failed: number;
-  registered: { at: string; via: "form" | "manual"; note?: string | null } | null;
+  registered: { at: string; via: "form" | "joined" } | null;
   seq_contacts: { id: string; email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
 }
 interface Sender { house: boolean; ok: boolean; reason?: string | null; setupPath?: string; fromName?: string; fromEmail?: string | null; replyTo?: string }
@@ -223,6 +224,15 @@ export default function SequencesManager() {
                     </select>
                     <span className="text-[#7a8a99]">their time</span>
                   </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(seq.notify_on_join)}
+                      onChange={(e) => saveSettings({ notifyOnJoin: e.target.checked }, e.target.checked ? "You'll get an email each time someone registers." : "Registration emails are off for this campaign.")}
+                      className="w-4 h-4 accent-[#2E7C83]"
+                    />
+                    Email me when someone registers
+                  </label>
                   <span className="text-[#7a8a99]">· {people.length} people · {people.filter((p) => p.status === "completed").length} finished</span>
                 </div>
               </CardContent>
@@ -381,24 +391,12 @@ export default function SequencesManager() {
                             <td className="p-3 whitespace-nowrap">{p.start_date}<span className="block text-xs text-[#7a8a99]">{p.source}</span></td>
                             <td className="p-3">{p.sent}/{steps.length}{p.failed ? <span className="text-[#C76F56]"> · {p.failed} failed</span> : null}</td>
                             <td className="p-3 whitespace-nowrap">
-                              {p.registered?.via === "form" ? (
-                                <span className="inline-flex items-center rounded-full bg-[#2E7C83]/10 px-2.5 py-1 text-xs font-medium text-[#1F5E63] dark:text-[#9fd3d6]" title="Signed up on the form">
+                              {p.registered && (
+                                <span className="inline-flex items-center rounded-full bg-[#2E7C83]/10 px-2.5 py-1 text-xs font-medium text-[#1F5E63] dark:text-[#9fd3d6]" title={p.registered.via === "form" ? "Signed up on the form" : "Added to this campaign"}>
                                   ✓ {regWhen(p.registered.at)}
                                 </span>
-                              ) : (
-                                <label className="inline-flex items-center gap-2 cursor-pointer" title={p.registered?.note || "Tick when they confirm another way (for example, by replying)"}>
-                                  <input
-                                    type="checkbox"
-                                    checked={Boolean(p.registered)}
-                                    onChange={async (e) => {
-                                      await act({ action: "registered", enrollmentId: p.id, registered: e.target.checked });
-                                      void loadOne(openId);
-                                    }}
-                                    className="w-4 h-4 accent-[#2E7C83]"
-                                  />
-                                  <span className={p.registered ? "text-xs" : "text-xs text-[#7a8a99]"}>{p.registered ? regWhen(p.registered.at) : "Not yet"}</span>
-                                </label>
                               )}
+                              {p.registered && <span className="block text-[10px] text-[#7a8a99] mt-0.5">{p.registered.via === "form" ? "sign-up form" : "added"}</span>}
                             </td>
                             <td className="p-3 capitalize">{status}</td>
                             <td className="p-3 whitespace-nowrap">

@@ -72,7 +72,7 @@ export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: strin
   const db = createServerClient();
   const email = i.email.trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return { enrollmentId: null, reason: "invalid email" };
-  const { data: seq } = await db.from("sequences").select("id, name, active").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
+  const { data: seq } = await db.from("sequences").select("id, name, active, notify_on_join").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
   if (!seq) return { enrollmentId: null, reason: `no sequence "${i.sequenceKey}"` };
 
   const contact = await upsertContact({ masterPlanId: i.masterPlanId, email, firstName: i.firstName, lastName: i.lastName, phone: i.phone, timezone: i.timezone, source: i.source, tags: i.tags }, db);
@@ -95,7 +95,42 @@ export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: strin
   await logEvent(i.masterPlanId, contactId, "sequence", `Started “${seq.name}”`, { sequence: i.sequenceKey }, db).catch(() => {});
   // Day 0 goes out right away (if the sequence is live).
   if (seq.active) await processEnrollment(db, enrollmentId).catch((e) => console.error("sequence day-0:", e));
+  // Tell the owner someone joined. Form sign-ups already send their own notice.
+  if (seq.notify_on_join && !(i.source || "").startsWith("form:")) {
+    await notifyJoin(db, i.masterPlanId, seq.name as string, contactId, i.source || null).catch((e) => console.error("join notice:", e));
+  }
   return { enrollmentId, contactId };
+}
+
+const escHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+// "New registration" email to the account owner when someone joins a campaign
+// that has "Email me when someone joins" on.
+async function notifyJoin(db: Db, planId: string, campaign: string, contactId: string, source: string | null) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return;
+  const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
+  const { data: prof } = plan?.user_id ? await db.from("profiles").select("email").eq("id", plan.user_id).maybeSingle() : { data: null };
+  if (!prof?.email) return;
+  const { data: c } = await db.from("seq_contacts").select("email, first_name, last_name").eq("id", contactId).maybeSingle();
+  if (!c) return;
+  const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || (c.email as string);
+  const how = !source || source === "manual" ? "Added in the Suite" : source.startsWith("booking") ? "From a booking" : source.startsWith("purchase") ? "From a purchase" : source;
+  const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "LifeCharter Command Suite <reminders@lccommandsuite.com>",
+      to: prof.email,
+      reply_to: c.email,
+      subject: `New registration: ${campaign}: ${name}`,
+      html: `<div style="font-family:Arial,sans-serif;font-size:14px;max-width:560px;color:#1a2b4a">
+<p style="font-size:16px"><strong>${escHtml(name)}</strong> is registered for <strong>${escHtml(campaign)}</strong>.</p>
+<p>${escHtml(String(c.email))}<br><span style="color:#7a8a99">${escHtml(how)} · ${new Date().toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} MT</span></p>
+<p><a href="${app}/sequences-manager" style="color:#2E7C83">See everyone in Campaigns &amp; Broadcasts</a> · Reply to this email to write to them directly.</p></div>`,
+    }),
+  });
 }
 
 interface Step {
