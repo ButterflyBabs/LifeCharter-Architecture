@@ -140,6 +140,7 @@ const ownerSection = {
   items: [
     { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
+    { id: "event-emails", label: "Event Emails", icon: Mail, href: "/event-emails" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
