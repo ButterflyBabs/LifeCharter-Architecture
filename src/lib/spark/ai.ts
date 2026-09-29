@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase/server";
 import { readAccountKey } from "@/lib/ai/config";
 import { ALIGNMENT_ARCHITECT_EMAIL, superAdminEmails } from "@/lib/authz";
-import { bookingUrl, type SparkSettings, type SparkSite } from "./settings";
+import type { SparkSettings, SparkSite } from "./settings";
 
 // The model call behind LC Spark. Public requests have no session, so the key is
 // the ACCOUNT's own OpenAI key (Vault), found through the account's owner. Only
@@ -74,11 +74,11 @@ export async function sparkReply(opts: {
   settings: SparkSettings;
   channel: "web" | "instagram";
   site: SparkSite | null;
+  booking: string | null; // the site's calendar, or (Instagram) the first website's
   history: SparkHistoryItem[];
   known: { name: string | null; email: string | null };
 }): Promise<SparkAiResult | null> {
-  const booking = bookingUrl(opts.site?.bookingSlug);
-  const system = buildSystemPrompt(opts.settings, opts.channel, opts.site, booking, opts.known);
+  const system = buildSystemPrompt(opts.settings, opts.channel, opts.site, opts.booking, opts.known);
   try {
     const completion = await new OpenAI({ apiKey: opts.apiKey, timeout: 20_000, maxRetries: 1 }).chat.completions.create({
       model: "gpt-4o-mini",

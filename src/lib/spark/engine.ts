@@ -166,7 +166,7 @@ export async function runSparkTurn(i: SparkTurnInput): Promise<SparkTurnResult> 
   let aiEmail: string | null = null;
   const account = await sparkAccountAi(i.settings.master_plan_id);
   if (!reply) {
-    const ai = account.key ? await sparkReply({ apiKey: account.key, settings: i.settings, channel: i.channel, site: i.site, history, known: { name: conv.visitor_name, email: conv.visitor_email } }) : null;
+    const ai = account.key ? await sparkReply({ apiKey: account.key, settings: i.settings, channel: i.channel, site: i.site, booking, history, known: { name: conv.visitor_name, email: conv.visitor_email } }) : null;
     if (ai) {
       reply = ai.reply;
       wantsBooking = ai.wantsBooking;

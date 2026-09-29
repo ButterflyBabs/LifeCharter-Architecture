@@ -8,7 +8,7 @@ export const maxDuration = 60;
 // within 10 days, so connected accounts keep answering DMs.
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = createServerClient();
   const soon = new Date(Date.now() + 10 * 86_400_000).toISOString();
   const { data: rows } = await db

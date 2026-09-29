@@ -89,7 +89,8 @@ export function originAllowed(settings: SparkSettings, origin: string | null): S
     return null;
   }
   const sites = settings.sites.filter((s) => s && s.enabled && s.origin);
-  if (u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) return sites[0] ?? null;
+  // Local testing only; never on the live site.
+  if (process.env.NODE_ENV !== "production" && u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) return sites[0] ?? null;
   if (u.protocol !== "https:") return null;
   const host = u.hostname.toLowerCase().replace(/^www\./, "");
   return sites.find((s) => siteHost(s.origin) === host) ?? null;
