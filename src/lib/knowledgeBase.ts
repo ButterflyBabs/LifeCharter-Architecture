@@ -161,17 +161,17 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
   {
     id: "sa-contacts-crm",
     category: "Sales",
-    question: "What are Contacts, Forms and Broadcasts?",
+    question: "What are Contacts and Forms, and how do I edit a contact?",
     answer:
-      "Contacts (Daily Operations → Contacts) is your own CRM: everyone who fills in one of your forms, books a call or is added by hand, with tags and a timeline of every touch. Forms gives you a hosted sign-up link (or a plain HTML form for your website) that saves people as contacts, tags them and can start a sequence. Broadcasts sends a one-time email to everyone with a tag. Only your account sees your contacts.",
-    keywords: ["contacts", "crm", "forms", "broadcast", "newsletter", "tags", "leads", "sign up form"],
+      "Contacts (Daily Operations → Contacts) is your own CRM: everyone who fills in one of your forms, books a call or is added by hand, with tags and a timeline of every touch. Click someone to open their record, then Edit to change their name, email, phone, company, title, website, address, birthday and relationship (Client, Coach, Affiliate, Partner and so on, or your own). Under “Add or remove fields” you can add your own fields, like Referred by, and they appear on every contact. Tags show as buttons: click the x to remove one, type to add one, or click a tag to see everyone who has it. Tag history lists every tag added or removed, when, and where it came from (a form, a booking, an import or a person). Forms gives you a hosted sign-up link (or a plain HTML form for your website) that saves people as contacts, tags them and can start a campaign. One-time emails to everyone with a tag are in Campaigns & Broadcasts. Only your account sees your contacts.",
+    keywords: ["contacts", "crm", "forms", "edit contact", "custom fields", "address", "relationship", "tag history", "tags", "leads", "sign up form"],
   },
   {
     id: "sa-contact-emails",
     category: "Sales",
     question: "Why can I see my emails with a contact on their record?",
     answer:
-      "Open a contact in Contacts and the Emails section lists every email with them, newest first: mail you've sent and received in your connected Gmail or Microsoft 365 (including Sent), plus the sequence and broadcast emails the Suite sent them. It checks your mailboxes each time you open someone, or click Refresh emails; click an email to read it in full. Only the account owner sees emails from their own mailboxes. Team members see just the Suite's emails. To start, connect a mailbox in Settings → Integrations.",
+      "Open a contact in Contacts and the Emails section lists every email with them, newest first: mail you've sent and received in your connected Gmail or Microsoft 365 (including Sent), plus the campaign and broadcast emails the Suite sent them. It checks your mailboxes each time you open someone, or click Refresh emails; click an email to read it in full. Only the account owner sees emails from their own mailboxes. Team members see just the Suite's emails. To start, connect a mailbox in Settings → Integrations.",
     keywords: ["contact emails", "email history", "gmail", "outlook", "microsoft 365", "sent mail", "contact record", "inbox"],
   },
   {
@@ -185,10 +185,10 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
   {
     id: "sa-sequences",
     category: "Sales",
-    question: "How do Sequences work, and why won't my emails send yet?",
+    question: "How do Campaigns and Broadcasts work, and why won't my emails send yet?",
     answer:
-      "A sequence is a timed email series: day 0 goes right away, then each email on its day at the hour you pick, in each person's own time zone. People join by hand, from a form or from a booking calendar, and anyone who unsubscribes is never emailed again. Emails go out from your own domain, so first open Contacts → Email sending, add a domain like mail.yourbusiness.com, add the DNS records it shows at your domain provider, click Check verification, and fill in your mailing address (the law requires it on marketing emails). Until then, sequences and broadcasts can't be turned on.",
-    keywords: ["sequences", "email series", "drip", "nurture", "sending domain", "dns", "verify", "email sending", "mailing address"],
+      "Campaigns & Broadcasts (Daily Operations) has two tabs. A campaign is a timed email series: day 0 goes right away, then each email on its day at the hour you pick, in each person's own time zone. People join by hand, from a form or from a booking calendar, and anyone who unsubscribes is never emailed again. A broadcast is a one-time email to everyone with a tag, sent now or at a time you schedule. Emails go out from your own domain, so first open Contacts → Email sending, add a domain like mail.yourbusiness.com, add the DNS records it shows at your domain provider, click Check verification, and fill in your mailing address (the law requires it on marketing emails). Until then, campaigns and broadcasts can't be turned on.",
+    keywords: ["campaigns", "broadcasts", "sequences", "email series", "drip", "nurture", "newsletter", "sending domain", "dns", "verify", "email sending", "mailing address"],
   },
 
   // ---- Finance ----
@@ -657,7 +657,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Sequences, Pipeline, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Campaigns & Broadcasts, Pipeline, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {

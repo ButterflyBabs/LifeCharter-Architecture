@@ -5,7 +5,6 @@ import { Users, Search, Plus, Copy, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import BroadcastsTab from "./BroadcastsTab";
 import EmailSendingTab from "./EmailSendingTab";
 import ContactRecord, { Pill, TagAdder } from "./ContactRecord";
 import ImportContacts, { ExportContactsLink } from "./ImportContacts";
@@ -52,7 +51,7 @@ interface Submission {
   contact_id: string | null;
 }
 
-const TABS = ["contacts", "forms", "broadcasts", "sending"] as const;
+const TABS = ["contacts", "forms", "sending"] as const;
 type Tab = (typeof TABS)[number];
 const APP = typeof window !== "undefined" ? window.location.origin : "https://lccommandsuite.com";
 const fullName = (c: Pick<Contact, "first_name" | "last_name" | "email">) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
@@ -66,7 +65,9 @@ export default function ContactsCrm() {
   // Deep link: /contacts?tab=sending (the "Set up email sending" links point here).
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    if (t && (TABS as readonly string[]).includes(t)) setTab(t as Tab);
+    // Broadcasts moved to Campaigns & Broadcasts; keep old links working.
+    if (t === "broadcasts") window.location.replace("/sequences-manager?tab=broadcasts");
+    else if (t && (TABS as readonly string[]).includes(t)) setTab(t as Tab);
   }, []);
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
@@ -82,7 +83,7 @@ export default function ContactsCrm() {
       <div className="flex gap-2 mb-5">
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "contacts" ? "Contacts" : t === "forms" ? "Forms" : t === "broadcasts" ? "Broadcasts" : "Email sending"}
+            {t === "contacts" ? "Contacts" : t === "forms" ? "Forms" : "Email sending"}
           </button>
         ))}
       </div>
@@ -91,7 +92,7 @@ export default function ContactsCrm() {
           {msg}
         </button>
       )}
-      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : tab === "forms" ? <FormsTab setMsg={setMsg} /> : tab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : <EmailSendingTab setMsg={setMsg} />}
+      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : tab === "forms" ? <FormsTab setMsg={setMsg} /> : <EmailSendingTab setMsg={setMsg} />}
     </div>
   );
 }
@@ -370,7 +371,7 @@ function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: 
             <Input value={tagText} onChange={(e) => setTagText(e.target.value)} onBlur={() => save({ tags: tagText.split(",").map((t) => t.trim()).filter(Boolean) }, "Tags saved.")} />
           </label>
           <label className="block text-sm">
-            Start this email series when they submit
+            Start this campaign when they submit
             <select
               value={form.sequence_key || ""}
               onChange={(e) => save({ sequenceKey: e.target.value }, "Saved.")}

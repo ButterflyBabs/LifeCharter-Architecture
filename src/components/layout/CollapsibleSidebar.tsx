@@ -72,7 +72,7 @@ const navigationSections = [
       // The CRM: every account, each seeing only its own contacts, calendars and sequences.
       { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
-      { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
+      { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },

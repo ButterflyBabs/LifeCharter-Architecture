@@ -5,6 +5,7 @@ import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square } from "lucide-react
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import BroadcastsTab from "../contacts/BroadcastsTab";
 
 interface Seq {
   id: string;
@@ -59,6 +60,11 @@ export default function SequencesManager() {
   const [add, setAdd] = useState({ email: "", firstName: "", lastName: "", timezone: "America/Denver" });
   const [newName, setNewName] = useState("");
   const [msg, setMsg] = useState("");
+  // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
+  const [tab, setTab] = useState<"campaigns" | "broadcasts">("campaigns");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "broadcasts") setTab("broadcasts");
+  }, []);
 
   const loadList = useCallback(async () => {
     const d = await fetch("/api/sequences", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -135,8 +141,12 @@ export default function SequencesManager() {
           <Mail className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Sequences</h1>
-          <p className="text-[#7a8a99]">Timed email series sent from the Suite. Daily emails go out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</p>
+          <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Campaigns &amp; Broadcasts</h1>
+          <p className="text-[#7a8a99]">
+            {tab === "campaigns"
+              ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
+              : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
+          </p>
         </div>
       </div>
       {sender && !sender.house && !sender.ok && (
@@ -150,6 +160,15 @@ export default function SequencesManager() {
         </button>
       )}
 
+      <div className="flex gap-2 mb-5">
+        {(["campaigns", "broadcasts"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+            {t === "campaigns" ? "Campaigns" : "Broadcasts"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
           {(list ?? []).map((s) => (
@@ -165,8 +184,8 @@ export default function SequencesManager() {
             </button>
           ))}
           <div className="flex gap-2 pt-2">
-            <Input placeholder="New sequence name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <Button onClick={createSeq} aria-label="Create sequence"><Plus className="w-4 h-4" /></Button>
+            <Input placeholder="New campaign name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Button onClick={createSeq} aria-label="Create campaign"><Plus className="w-4 h-4" /></Button>
           </div>
         </div>
 
@@ -187,7 +206,7 @@ export default function SequencesManager() {
                     onClick={() => saveSettings({ active: !seq.active }, seq.active ? "Paused. Nothing more goes out until you turn it back on." : "Live. Emails go out on schedule.")}
                     className={seq.active ? "bg-[#C76F56] hover:bg-[#b05e47]" : ""}
                   >
-                    {seq.active ? <><Pause className="w-4 h-4 mr-1" /> Pause whole sequence</> : <><Play className="w-4 h-4 mr-1" /> Turn on</>}
+                    {seq.active ? <><Pause className="w-4 h-4 mr-1" /> Pause whole campaign</> : <><Play className="w-4 h-4 mr-1" /> Turn on</>}
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -337,7 +356,7 @@ export default function SequencesManager() {
                           </tr>
                         );
                       })}
-                      {!people.length && <tr><td colSpan={5} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this sequence."}</td></tr>}
+                      {!people.length && <tr><td colSpan={5} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this campaign."}</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -346,6 +365,7 @@ export default function SequencesManager() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

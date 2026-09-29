@@ -84,11 +84,11 @@ export default function EmailSendingTab({ setMsg }: { setMsg: (m: string) => voi
         <CardContent className="p-5 space-y-2 text-sm">
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">How your emails go out</p>
           <p className="text-[#5a6472]">
-            Sequences, broadcasts and booking emails are sent from your own domain, so they come from your business and land in inboxes. Until your domain is verified, the Suite doesn&rsquo;t email your contacts at all. Calendar invites from a host&rsquo;s connected Google or Microsoft calendar still go out.
+            Campaigns, broadcasts and booking emails are sent from your own domain, so they come from your business and land in inboxes. Until your domain is verified, the Suite doesn&rsquo;t email your contacts at all. Calendar invites from a host&rsquo;s connected Google or Microsoft calendar still go out.
           </p>
           <ul className="space-y-1">
             <li>{v.ready?.bookings ? "✓" : "○"} Booking confirmations and reminders {v.ready?.bookings ? "are on" : "are waiting on your verified domain"}</li>
-            <li>{v.ready?.marketing ? "✓" : "○"} Sequences and broadcasts {v.ready?.marketing ? "are ready to send" : `are waiting: ${v.ready?.reason ?? ""}`}</li>
+            <li>{v.ready?.marketing ? "✓" : "○"} Campaigns and broadcasts {v.ready?.marketing ? "are ready to send" : `are waiting: ${v.ready?.reason ?? ""}`}</li>
           </ul>
         </CardContent>
       </Card>
