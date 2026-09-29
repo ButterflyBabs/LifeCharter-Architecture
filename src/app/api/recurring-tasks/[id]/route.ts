@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { nowParts } from "@/lib/finance/period";
+import { validateRecurring } from "@/lib/recurring";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     await supabase.from("recurring_task_completions").delete().eq("recurring_task_id", params.id).eq("done_on", today);
   }
   return NextResponse.json({ ok: true, done: Boolean(body.done), today });
+}
+
+// PUT — edit a recurring task (same fields as adding one). Past check-offs are kept.
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  if (crossOriginBlocked(request)) {
+    return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
+  if (!(await owned(params.id))) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const v = validateRecurring(await request.json().catch(() => ({})));
+  if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
+  const { error } = await createServerClient().from("recurring_tasks").update(v.row).eq("id", params.id);
+  if (error) return NextResponse.json({ error: "Couldn't save the changes." }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
 
 // DELETE — remove a recurring task (its check-off history goes with it).

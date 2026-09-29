@@ -28,6 +28,7 @@ import {
   Paperclip,
   Download,
   Tag,
+  Pencil,
 } from "lucide-react";
 import DimensionCards from "@/components/executive/DimensionCards";
 import PipelineCard from "@/components/executive/PipelineCard";
@@ -182,6 +183,7 @@ export default function ExecutiveHome() {
   const [rtTime, setRtTime] = useState("");
   const [rtKind, setRtKind] = useState<"deadline" | "scheduled">("deadline");
   const [rtError, setRtError] = useState("");
+  const [rtEditId, setRtEditId] = useState<string | null>(null);
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -347,12 +349,44 @@ export default function ExecutiveHome() {
     }
   };
 
+  // Clears the recurring-task form back to "add a new one".
+  const resetRecurringForm = () => {
+    setRtEditId(null);
+    setRtTitle("");
+    setRtPriority("medium");
+    setRtCadence("daily");
+    setRtDays([1, 2, 3, 4, 5]);
+    setRtDom("1");
+    setRtTime("");
+    setRtKind("deadline");
+    setRtError("");
+  };
+
+  // Opens the recurring-task window with this task loaded for editing.
+  const editRecurring = (t: RecurringTask) => {
+    setRtEditId(t.id);
+    setRtTitle(t.title);
+    setRtPriority(t.priority);
+    setRtCadence(t.cadence);
+    setRtDays(t.daysOfWeek.length ? t.daysOfWeek : [1, 2, 3, 4, 5]);
+    setRtDom(String(t.dayOfMonth ?? 1));
+    setRtTime((t.timeOfDay ?? "").slice(0, 5));
+    setRtKind(t.timeKind === "scheduled" ? "scheduled" : "deadline");
+    setRtError("");
+    setShowRecurring(true);
+  };
+
+  const closeRecurring = () => {
+    setShowRecurring(false);
+    resetRecurringForm();
+  };
+
   const addRecurring = async (e: React.FormEvent) => {
     e.preventDefault();
     setRtError("");
     try {
-      const res = await fetch("/api/recurring-tasks", {
-        method: "POST",
+      const res = await fetch(rtEditId ? `/api/recurring-tasks/${rtEditId}` : "/api/recurring-tasks", {
+        method: rtEditId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: rtTitle,
@@ -369,9 +403,7 @@ export default function ExecutiveHome() {
         setRtError(d.error || "Couldn't save that.");
         return;
       }
-      setRtTitle("");
-      setRtTime("");
-      setRtKind("deadline");
+      resetRecurringForm();
       loadRecurring();
     } catch {
       setRtError("Couldn't save that.");
@@ -381,6 +413,7 @@ export default function ExecutiveHome() {
   const deleteRecurring = async (t: RecurringTask) => {
     if (!confirm(`Stop repeating "${t.title}"?`)) return;
     setRecurring((prev) => prev.filter((x) => x.id !== t.id));
+    if (rtEditId === t.id) resetRecurringForm();
     await fetch(`/api/recurring-tasks/${t.id}`, { method: "DELETE" }).catch(() => {});
   };
 
@@ -1648,9 +1681,15 @@ export default function ExecutiveHome() {
                             <div className={`w-2 h-2 rounded-full ${getPriorityColor(t.priority)}`} />
                             <span className="text-[10px] text-gray-400">{t.schedule}</span>
                           </div>
-                          <p className={`text-sm text-[#3F4654] leading-snug break-words ${t.doneToday ? "line-through" : ""}`}>
+                          <button
+                            type="button"
+                            onClick={() => editRecurring(t)}
+                            title="Edit or delete this recurring task"
+                            className={`group/rt text-left text-sm text-[#3F4654] leading-snug break-words hover:text-[#2E7C83] ${t.doneToday ? "line-through" : ""}`}
+                          >
                             {t.title}
-                          </p>
+                            <Pencil className="inline w-3 h-3 ml-1.5 text-gray-300 opacity-0 group-hover/rt:opacity-100" aria-hidden />
+                          </button>
                           {t.dueAt &&
                             (() => {
                               const info = dueInfo(
@@ -2003,7 +2042,7 @@ export default function ExecutiveHome() {
       {showRecurring && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setShowRecurring(false)}
+          onClick={closeRecurring}
         >
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
@@ -2011,7 +2050,7 @@ export default function ExecutiveHome() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-serif text-indigo-900">Recurring tasks</h3>
-              <button onClick={() => setShowRecurring(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+              <button onClick={closeRecurring} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -2019,7 +2058,7 @@ export default function ExecutiveHome() {
             {recurring.length > 0 && (
               <ul className="mb-5 divide-y divide-gray-100 border border-gray-100 rounded-xl">
                 {recurring.map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <li key={t.id} className={`flex items-center gap-3 px-3 py-2.5 ${rtEditId === t.id ? "bg-[#2E7C83]/5" : ""}`}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(t.priority)}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-[#3F4654] truncate">{t.title}</p>
@@ -2029,7 +2068,16 @@ export default function ExecutiveHome() {
                       </p>
                     </div>
                     <button
+                      onClick={() => editRecurring(t)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-[#2E7C83] hover:bg-gray-50"
+                      aria-label={`Edit ${t.title}`}
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => deleteRecurring(t)}
+                      title="Delete"
                       className="p-1.5 rounded-lg text-gray-300 hover:text-[#D83A34] hover:bg-gray-50"
                       aria-label={`Delete ${t.title}`}
                     >
@@ -2041,7 +2089,14 @@ export default function ExecutiveHome() {
             )}
 
             <form onSubmit={addRecurring} className="space-y-4">
-              <p className="text-sm font-medium text-gray-700">Add a recurring task</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-700">{rtEditId ? "Edit recurring task" : "Add a recurring task"}</p>
+                {rtEditId && (
+                  <button type="button" onClick={resetRecurringForm} className="text-xs text-gray-400 hover:text-gray-600">
+                    Cancel edit
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={rtTitle}
@@ -2174,7 +2229,7 @@ export default function ExecutiveHome() {
                 disabled={!rtTitle.trim()}
                 className="w-full py-2.5 rounded-lg bg-[#2E7C83] text-white text-sm font-medium hover:bg-[#256b71] disabled:opacity-50 transition-colors"
               >
-                Add recurring task
+                {rtEditId ? "Save changes" : "Add recurring task"}
               </button>
             </form>
           </div>

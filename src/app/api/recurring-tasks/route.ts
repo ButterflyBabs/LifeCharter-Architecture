@@ -4,12 +4,11 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { nowParts } from "@/lib/finance/period";
-import { isDueOn, scheduleLabel, clockLabel, type Cadence } from "@/lib/recurring";
+import { isDueOn, scheduleLabel, clockLabel, validateRecurring, type Cadence } from "@/lib/recurring";
 import { zonedToUtcISO } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
-const PRIORITIES = ["critical", "high", "medium", "low"];
 
 type Row = {
   id: string;
@@ -83,37 +82,14 @@ export async function POST(request: Request) {
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
 
-  const title = typeof body.title === "string" ? body.title.trim().slice(0, 255) : "";
-  const cadence: Cadence | null = ["daily", "weekly", "monthly"].includes(body.cadence) ? body.cadence : null;
-  if (!title) return NextResponse.json({ error: "Give the task a title." }, { status: 400 });
-  if (!cadence) return NextResponse.json({ error: "Choose how often it repeats." }, { status: 400 });
-
-  const daysOfWeek =
-    cadence === "weekly" && Array.isArray(body.daysOfWeek)
-      ? Array.from(new Set(body.daysOfWeek.map(Number).filter((n: number) => Number.isInteger(n) && n >= 0 && n <= 6)))
-      : null;
-  if (cadence === "weekly" && (!daysOfWeek || daysOfWeek.length === 0)) {
-    return NextResponse.json({ error: "Pick at least one day of the week." }, { status: 400 });
-  }
-  const dayOfMonth = cadence === "monthly" ? Math.round(Number(body.dayOfMonth)) : null;
-  if (cadence === "monthly" && !(dayOfMonth && dayOfMonth >= 1 && dayOfMonth <= 31)) {
-    return NextResponse.json({ error: "Pick a day of the month (1–31)." }, { status: 400 });
-  }
-
-  const timeOfDay =
-    typeof body.timeOfDay === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(body.timeOfDay) ? body.timeOfDay : null;
+  const v = validateRecurring(body);
+  if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
 
   const { data, error } = await createServerClient()
     .from("recurring_tasks")
     .insert({
       master_plan_id: masterPlanId,
-      title,
-      priority: PRIORITIES.includes(body.priority) ? body.priority : "medium",
-      cadence,
-      days_of_week: daysOfWeek,
-      day_of_month: dayOfMonth,
-      time_of_day: timeOfDay,
-      time_kind: body.timeKind === "scheduled" ? "scheduled" : "deadline",
+      ...v.row,
     })
     .select("id")
     .single();

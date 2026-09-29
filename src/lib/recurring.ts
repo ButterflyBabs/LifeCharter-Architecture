@@ -48,3 +48,50 @@ export function scheduleLabel(rule: RecurringRule): string {
   if (days.join(",") === "0,6") return "Weekends";
   return days.map((d) => DAY_NAMES[d]).join(", ");
 }
+
+const PRIORITIES = ["critical", "high", "medium", "low"];
+
+// Checks a recurring task from the add or edit form and returns the columns to save:
+// { title, priority?, cadence, daysOfWeek?, dayOfMonth?, timeOfDay? (HH:MM), timeKind? }.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function validateRecurring(body: any):
+  | { error: string }
+  | {
+      row: {
+        title: string;
+        priority: string;
+        cadence: Cadence;
+        days_of_week: number[] | null;
+        day_of_month: number | null;
+        time_of_day: string | null;
+        time_kind: "scheduled" | "deadline";
+      };
+    } {
+  const title = typeof body?.title === "string" ? body.title.trim().slice(0, 255) : "";
+  const cadence: Cadence | null = ["daily", "weekly", "monthly"].includes(body?.cadence) ? body.cadence : null;
+  if (!title) return { error: "Give the task a title." };
+  if (!cadence) return { error: "Choose how often it repeats." };
+
+  const daysOfWeek =
+    cadence === "weekly" && Array.isArray(body.daysOfWeek)
+      ? (Array.from(new Set(body.daysOfWeek.map(Number).filter((n: number) => Number.isInteger(n) && n >= 0 && n <= 6))) as number[])
+      : null;
+  if (cadence === "weekly" && (!daysOfWeek || daysOfWeek.length === 0)) return { error: "Pick at least one day of the week." };
+  const dayOfMonth = cadence === "monthly" ? Math.round(Number(body.dayOfMonth)) : null;
+  if (cadence === "monthly" && !(dayOfMonth && dayOfMonth >= 1 && dayOfMonth <= 31)) return { error: "Pick a day of the month (1–31)." };
+
+  const timeOfDay =
+    typeof body.timeOfDay === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(body.timeOfDay) ? body.timeOfDay : null;
+
+  return {
+    row: {
+      title,
+      priority: PRIORITIES.includes(body.priority) ? body.priority : "medium",
+      cadence,
+      days_of_week: daysOfWeek,
+      day_of_month: dayOfMonth,
+      time_of_day: timeOfDay,
+      time_kind: body.timeKind === "scheduled" ? "scheduled" : "deadline",
+    },
+  };
+}
