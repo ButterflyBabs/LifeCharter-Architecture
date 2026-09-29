@@ -36,7 +36,7 @@ export async function OPTIONS(request: Request) {
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.id)) return NextResponse.json({ error: "Not found." }, { status: 404, headers: cors(request) });
-  const { data } = await createServerClient().from("crm_forms").select("id, name, description, fields, success_message").eq("id", params.id).eq("active", true).maybeSingle();
+  const { data } = await createServerClient().from("crm_forms").select("id, name, description, fields, success_message, submit_label").eq("id", params.id).eq("active", true).maybeSingle();
   if (!data) return NextResponse.json({ error: "Not found." }, { status: 404, headers: cors(request) });
   return NextResponse.json({ form: data }, { headers: cors(request) });
 }

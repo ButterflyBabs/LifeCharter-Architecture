@@ -11,6 +11,7 @@ interface Field {
   options?: string[];
 }
 interface Form {
+  submit_label?: string | null;
   id: string;
   name: string;
   description: string | null;
@@ -88,7 +89,7 @@ export default function HostedForm({ params }: { params: { id: string } }) {
             <input name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
             {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
             <button disabled={sending} className="w-full rounded-full bg-[#2E7C83] px-6 py-3 font-semibold text-white hover:bg-[#256b71] disabled:opacity-60">
-              {sending ? "Sending…" : "Send"}
+              {sending ? "Sending…" : form.submit_label || "Send"}
             </button>
           </form>
         )}
