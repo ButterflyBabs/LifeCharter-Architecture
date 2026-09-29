@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { toCsv } from "@/lib/contactImport";
 import { crmAccount } from "../../guard";
+import { resolveActor } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,6 +11,8 @@ export const maxDuration = 60;
 export async function GET() {
   const a = await crmAccount();
   if ("denied" in a) return a.denied;
+  // Downloading the whole list is the account owner's call, not a team member's.
+  if ((await resolveActor()).kind === "member") return new Response("Only the account owner can export contacts.", { status: 403 });
   const db = createServerClient();
   const out: unknown[][] = [["Email", "First name", "Last name", "Phone", "Tags", "Source", "Created", "Unsubscribed"]];
   const PAGE = 1000;
