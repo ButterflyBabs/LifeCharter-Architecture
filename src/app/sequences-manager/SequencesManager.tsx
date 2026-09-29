@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
+import ContactPicker, { personName } from "../contacts/ContactPicker";
 
 interface Seq {
   id: string;
@@ -38,7 +39,7 @@ interface Person {
   source: string | null;
   sent: number;
   failed: number;
-  seq_contacts: { email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
+  seq_contacts: { id: string; email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
 }
 interface Sender { house: boolean; ok: boolean; reason?: string | null; setupPath?: string; fromName?: string; fromEmail?: string | null; replyTo?: string }
 const EMPTY = { id: "", position: 0, dayOffset: 0, subject: "", preview: "", body: "", buttonLabel: "", buttonUrl: "" };
@@ -305,7 +306,19 @@ export default function SequencesManager() {
               <>
                 <Card>
                   <CardContent className="p-5 space-y-3">
-                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add someone by hand</p>
+                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add someone from your contacts</p>
+                    <ContactPicker
+                      taken={people.map((p) => p.seq_contacts?.id ?? "").filter(Boolean)}
+                      onPick={async (c) => {
+                        const d = await act({ action: "enrol", email: c.email }, seq.active ? `${personName(c)} is in. Their first email is on its way.` : `${personName(c)} is in. Emails start when you turn the campaign on.`);
+                        if (d) { void loadOne(openId); void loadList(); }
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-5 space-y-3">
+                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Or add someone new</p>
                     <div className="grid gap-2 md:grid-cols-2">
                       <Input placeholder="Email" value={add.email} onChange={(e) => setAdd({ ...add, email: e.target.value })} />
                       <select value={add.timezone} onChange={(e) => setAdd({ ...add, timezone: e.target.value })} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm" aria-label="Time zone">
@@ -316,7 +329,7 @@ export default function SequencesManager() {
                     </div>
                     <Button
                       onClick={async () => {
-                        const d = await act({ action: "enrol", ...add }, seq.active ? "Added. Their first email is on its way." : "Added. Emails start when you turn the sequence on.");
+                        const d = await act({ action: "enrol", ...add }, seq.active ? "Added. Their first email is on its way." : "Added. Emails start when you turn the campaign on.");
                         if (d) { setAdd({ email: "", firstName: "", lastName: "", timezone: add.timezone }); void loadOne(openId); void loadList(); }
                       }}
                     >

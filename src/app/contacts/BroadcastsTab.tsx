@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { OWNER_TZ, addDays, slotsIn, zonedParts } from "@/lib/broadcasts/shared";
+import ContactPicker, { personName, type PickedContact } from "./ContactPicker";
+import { Pill } from "./ContactRecord";
 
 interface Summary {
   id: string;
@@ -28,6 +30,7 @@ interface Full extends Summary {
   from_name: string;
   from_email: string;
   tag_match: "any" | "all";
+  contact_ids: string[];
   skip_prior_template: boolean;
   variables: Record<string, string>;
 }
@@ -44,6 +47,7 @@ interface Detail {
   counts: Record<string, number>;
   problems: string[];
   failures: { email: string; error: string | null }[];
+  people: PickedContact[];
 }
 
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
@@ -149,6 +153,7 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   const [d, setD] = useState<Detail | null>(null);
   const [f, setF] = useState<Full | null>(null);
   const [reach, setReach] = useState<number | null>(null);
+  const [known, setKnown] = useState<Record<string, PickedContact>>({});
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [session, setSession] = useState(todayMt(tz));
@@ -161,6 +166,7 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
     setD(r);
     setF(r.broadcast);
     setReach(r.reach);
+    setKnown((k) => ({ ...k, ...Object.fromEntries(((r.people ?? []) as PickedContact[]).map((p) => [p.id, p])) }));
     if (r.broadcast.scheduled_at) setWhen(zonedParts(new Date(r.broadcast.scheduled_at), r.broadcast.timezone || tz));
   }, [id, tz]);
   useEffect(() => {
@@ -173,15 +179,15 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   }, [session, tpl, d?.broadcast.status]);
 
   const draft = f
-    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, variables: f.variables }
+    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, variables: f.variables }
     : null;
 
   // Live recipient count as tags change.
-  const tagKey = f ? `${f.tags.join(",")}|${f.tag_match}|${f.skip_prior_template}` : "";
+  const tagKey = f ? `${f.tags.join(",")}|${(f.contact_ids ?? []).join(",")}|${f.tag_match}|${f.skip_prior_template}` : "";
   useEffect(() => {
     if (!f || !d || d.broadcast.status !== "draft") return;
     const t = setTimeout(async () => {
-      const r = await post({ action: "count", draft: { tags: f.tags, tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template } }, true);
+      const r = await post({ action: "count", draft: { tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template } }, true);
       if (r) setReach(r.reach);
     }, 300);
     return () => clearTimeout(t);
@@ -222,6 +228,11 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   const slots = Array.from(new Set([...(tpl?.slots.map((s) => s.key) ?? []), ...slotsIn(f.subject, f.preview, f.body, f.button_url)]));
   const tagOptions = Array.from(new Set([...allTags, ...f.tags])).sort();
   const set = (patch: Partial<Full>) => setF({ ...f, ...patch });
+  const picked = f.contact_ids ?? [];
+  const nameOf = (cid: string) => {
+    const p = known[cid];
+    return p ? personName(p) : "…";
+  };
 
   return (
     <div className="space-y-4">
@@ -309,6 +320,26 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
                 Skip anyone who already got an earlier one of these
               </label>
             )}
+          </div>
+          <div className="pt-2 border-t border-[#1a2b4a]/10 space-y-2">
+            <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Plus people you add by name</p>
+            {picked.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {picked.map((cid) => (
+                  <Pill key={cid} onRemove={editable ? () => set({ contact_ids: picked.filter((x) => x !== cid) }) : undefined}>{nameOf(cid)}</Pill>
+                ))}
+              </div>
+            )}
+            {editable && (
+              <ContactPicker
+                taken={picked}
+                onPick={(c) => {
+                  setKnown((k) => ({ ...k, [c.id]: c }));
+                  set({ contact_ids: [...picked, c.id] });
+                }}
+              />
+            )}
+            {editable && <p className="text-xs text-[#7a8a99]">Remember to click Save below so your changes stick.</p>}
           </div>
           <p className="text-sm">
             <strong>{reach ?? "…"}</strong> {reach === 1 ? "person" : "people"}

@@ -133,7 +133,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   if (b.action === "enrol") {
-    const tz = typeof b.timezone === "string" && isValidTz(b.timezone) ? b.timezone : "America/Denver";
+    // No time zone given (someone picked from Contacts): keep the one on their record.
+    const tz = typeof b.timezone === "string" && isValidTz(b.timezone) ? b.timezone : null;
     const r = await enrolContact({
       masterPlanId: planId,
       sequenceKey: seq.key,
@@ -144,7 +145,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       source: "manual",
       tags: [seq.key],
     });
-    return r.enrollmentId ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r.reason === "unsubscribed" ? "They've unsubscribed, so they can't be added back." : r.reason === "already enrolled" ? "They're already in this sequence." : r.reason || "Couldn't add them." }, { status: 400 });
+    return r.enrollmentId ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r.reason === "unsubscribed" ? "They've unsubscribed, so they can't be added back." : r.reason === "already enrolled" ? "They're already in this campaign." : r.reason || "Couldn't add them." }, { status: 400 });
   }
 
   if (b.action === "person") {

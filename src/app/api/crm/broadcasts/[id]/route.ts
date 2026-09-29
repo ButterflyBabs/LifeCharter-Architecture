@@ -41,6 +41,9 @@ function fields(d: Record<string, unknown>, cur: BroadcastRow, house: boolean): 
     from_name: house ? str(d.fromName, 80) || cur.from_name : cur.from_name,
     from_email: house && typeof d.fromEmail === "string" && FROM_RE.test(d.fromEmail.trim()) ? d.fromEmail.trim().toLowerCase() : cur.from_email,
     tags,
+    contact_ids: Array.isArray(d.contactIds)
+      ? Array.from(new Set(d.contactIds.map((x) => String(x)).filter((x) => /^[0-9a-f-]{36}$/i.test(x)))).slice(0, 2000)
+      : cur.contact_ids ?? [],
     tag_match: d.tagMatch === "all" ? "all" : d.tagMatch === "any" ? "any" : cur.tag_match,
     skip_prior_template: typeof d.skipPriorTemplate === "boolean" ? d.skipPriorTemplate : cur.skip_prior_template,
     variables: d.variables ? vars : cur.variables,
@@ -63,7 +66,12 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const counts = await sendCounts(db, b.id);
   const reach = b.queued_at ? b.recipient_count : (await listRecipients(db, b)).length;
   const { data: failures } = await db.from("crm_broadcast_sends").select("email, error").eq("broadcast_id", b.id).eq("status", "failed").limit(20);
-  return NextResponse.json({ broadcast: b, reach, counts, problems: problems(b), failures: failures ?? [] });
+  // The people picked by hand, with names for the screen.
+  const ids = b.contact_ids ?? [];
+  const { data: people } = ids.length
+    ? await db.from("seq_contacts").select("id, email, first_name, last_name, unsubscribed_at").eq("master_plan_id", b.master_plan_id).in("id", ids.slice(0, 2000))
+    : { data: [] };
+  return NextResponse.json({ broadcast: b, reach, counts, problems: problems(b), failures: failures ?? [], people: people ?? [] });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {

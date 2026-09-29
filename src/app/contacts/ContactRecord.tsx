@@ -167,6 +167,8 @@ export default function ContactRecord({
   const [newRel, setNewRel] = useState("");
   const [managing, setManaging] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; active: boolean }[]>([]);
+  const [pickCampaign, setPickCampaign] = useState("");
 
   const load = useCallback(async () => {
     const d = await fetch(`/api/crm/contacts/${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -176,6 +178,12 @@ export default function ContactRecord({
     setHistory(d.tagHistory ?? []);
     setFields(d.customFields ?? []);
   }, [id]);
+  useEffect(() => {
+    fetch("/api/sequences", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setCampaigns(((d.sequences ?? []) as { id: string; name: string; active: boolean }[]).map((x) => ({ id: x.id, name: x.name, active: x.active }))))
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     setEditing(false);
     setManaging(false);
@@ -409,14 +417,38 @@ export default function ContactRecord({
           </div>
         )}
 
-        {series.length > 0 && (
-          <div>
-            <p className={heading}>Email campaigns</p>
-            {series.map((s) => (
-              <p key={s.id} className="text-sm">{s.name} · <span className="capitalize">{s.status}</span> · {s.sent} sent</p>
-            ))}
-          </div>
-        )}
+        <div>
+          <p className={heading}>Email campaigns</p>
+          {series.map((s) => (
+            <p key={s.id} className="text-sm">{s.name} · <span className="capitalize">{s.status}</span> · {s.sent} sent</p>
+          ))}
+          {campaigns.length > 0 && !c.unsubscribed_at && (
+            <div className="mt-2 flex gap-2">
+              <select value={pickCampaign} onChange={(e) => setPickCampaign(e.target.value)} className={`${box} h-10`} aria-label="Add to a campaign">
+                <option value="">Add to a campaign…</option>
+                {campaigns.filter((x) => !series.some((s) => s.name === x.name)).map((x) => (
+                  <option key={x.id} value={x.id}>{x.name}{x.active ? "" : " (paused)"}</option>
+                ))}
+              </select>
+              <Button
+                variant="outline"
+                disabled={!pickCampaign}
+                onClick={async () => {
+                  const r = await fetch(`/api/sequences/${pickCampaign}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "enrol", email: c.email }) });
+                  const d = await r.json().catch(() => ({}));
+                  if (!r.ok) return setMsg(d.error || "Couldn't add them.");
+                  setMsg(`Added to ${campaigns.find((x) => x.id === pickCampaign)?.name ?? "the campaign"}.`);
+                  setPickCampaign("");
+                  void load();
+                  onChanged();
+                }}
+              >
+                Add
+              </Button>
+            </div>
+          )}
+          {!series.length && !campaigns.length && <p className="text-sm text-[#7a8a99]">Not in any campaigns.</p>}
+        </div>
 
         <div>
           <p className={heading}>Add a note</p>

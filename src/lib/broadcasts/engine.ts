@@ -28,6 +28,7 @@ export interface BroadcastRow {
   from_email: string;
   reply_to: string;
   tags: string[];
+  contact_ids: string[];
   tag_match: "any" | "all";
   skip_prior_template: boolean;
   variables: Record<string, string>;
@@ -61,16 +62,24 @@ const isUrl = (v: string) => /^https?:\/\/\S+$/i.test(v);
 // Everyone this broadcast would reach right now (not unsubscribed).
 export async function listRecipients(
   db: Db,
-  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "tag_match" | "skip_prior_template" | "template_key">
+  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key">
 ): Promise<{ id: string; email: string }[]> {
-  if (!b.tags.length) return [];
+  const picked = b.contact_ids ?? [];
+  if (!b.tags.length && !picked.length) return [];
   const out: { id: string; email: string }[] = [];
-  for (let from = 0; ; from += 1000) {
+  // People added by hand (only this account's, never unsubscribed ones).
+  for (let i = 0; i < picked.length; i += 500) {
+    const { data, error } = await db.from("seq_contacts").select("id, email").eq("master_plan_id", b.master_plan_id).is("unsubscribed_at", null).in("id", picked.slice(i, i + 500));
+    if (error) throw new Error(error.message);
+    out.push(...((data ?? []) as { id: string; email: string }[]));
+  }
+  const seen = new Set(out.map((c) => c.id));
+  for (let from = 0; b.tags.length; from += 1000) {
     let q = db.from("seq_contacts").select("id, email").eq("master_plan_id", b.master_plan_id).is("unsubscribed_at", null).order("created_at").range(from, from + 999);
     q = b.tag_match === "all" ? q.contains("tags", b.tags) : q.overlaps("tags", b.tags);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    out.push(...((data ?? []) as { id: string; email: string }[]));
+    for (const c of (data ?? []) as { id: string; email: string }[]) if (!seen.has(c.id)) out.push(c);
     if (!data || data.length < 1000) break;
   }
   if (!b.skip_prior_template || !b.template_key) return out;
@@ -87,11 +96,11 @@ export async function listRecipients(
 }
 
 // What still has to be done before it can go out (empty = ready).
-export function problems(b: Pick<BroadcastRow, "subject" | "body" | "tags" | "preview" | "button_label" | "button_url" | "variables">): string[] {
+export function problems(b: Pick<BroadcastRow, "subject" | "body" | "tags" | "contact_ids" | "preview" | "button_label" | "button_url" | "variables">): string[] {
   const p: string[] = [];
   if (!b.subject.trim()) p.push("Add a subject.");
   if (!b.body.trim()) p.push("Add the email itself.");
-  if (!b.tags.length) p.push("Pick at least one tag to send to.");
+  if (!b.tags.length && !(b.contact_ids ?? []).length) p.push("Pick at least one tag or person to send to.");
   for (const k of slotsIn(b.subject, b.preview, b.body, b.button_url)) {
     const v = (b.variables?.[k] || "").trim();
     if (!v) p.push(`Fill in {{${k}}}.`);
