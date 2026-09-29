@@ -24,6 +24,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim().slice(0, 120);
   if (typeof b.description === "string") patch.description = b.description.trim().slice(0, 500) || null;
   if (typeof b.successMessage === "string" && b.successMessage.trim()) patch.success_message = b.successMessage.trim().slice(0, 500);
+  if (typeof b.submitLabel === "string") patch.submit_label = b.submitLabel.trim().slice(0, 40) || null;
   if (typeof b.notify === "boolean") patch.notify = b.notify;
   if (typeof b.active === "boolean") patch.active = b.active;
   if (Array.isArray(b.tags)) patch.tags = Array.from(new Set(b.tags.map((t: unknown) => String(t).trim().toLowerCase().slice(0, 60)).filter(Boolean)));

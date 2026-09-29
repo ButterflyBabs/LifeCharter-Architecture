@@ -15,10 +15,11 @@ const tagOf = (v: unknown) =>
 // sent = ticked here; registered = their first sign-up on the list's form.
 // GET ?list= → lists, forms, the chosen list's rows, and registrants without the tag.
 // POST
-//   create-list { name, tag, formId? }
+//   create-list { name, tag, formId?, campaignId? }
+//   campaign { listId, campaignId }                (the campaign that sends this list's invite)
 //   tags { listId, tags: [] }                     (which tags the list follows)
 //   add { listId, people: [{ name?, email }], mode: "send" | "already" }
-//     send:    starts the list's invite campaign (the campaign whose key is the invite tag),
+//     send:    starts the list's invite campaign (chosen in List settings),
 //              which emails them the invite; "Invite sent" = when that email went out.
 //     already: just tags them and marks "Invite sent" now (they were invited another way).
 //   sent { listId, contactId, sent: boolean }
@@ -28,14 +29,15 @@ export async function GET(request: Request) {
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const [{ data: lists }, { data: forms }, { data: allTagRows }] = await Promise.all([
-    db.from("crm_invite_lists").select("id, name, form_id, invite_tag, invite_tags, created_at").eq("master_plan_id", a.planId).order("created_at", { ascending: false }),
+    db.from("crm_invite_lists").select("id, name, form_id, invite_tag, invite_tags, invite_sequence_id, created_at").eq("master_plan_id", a.planId).order("created_at", { ascending: false }),
     db.from("crm_forms").select("id, name").eq("master_plan_id", a.planId).order("name"),
     db.from("seq_contacts").select("tags").eq("master_plan_id", a.planId).limit(5000),
   ]);
+  const { data: campaigns } = await db.from("sequences").select("id, name, active").eq("master_plan_id", a.planId).order("name");
   const allTags = Array.from(new Set((allTagRows ?? []).flatMap((c) => (c.tags as string[]) ?? []))).sort();
   const want = new URL(request.url).searchParams.get("list");
   const list = (lists ?? []).find((l) => l.id === want) ?? (lists ?? [])[0] ?? null;
-  if (!list) return NextResponse.json({ lists: [], forms: forms ?? [], allTags, list: null, invites: [], walkIns: [] });
+  if (!list) return NextResponse.json({ lists: [], forms: forms ?? [], campaigns: campaigns ?? [], allTags, list: null, invites: [], walkIns: [] });
   const listTags = ((list.invite_tags as string[]) ?? []).length ? (list.invite_tags as string[]) : list.invite_tag ? [list.invite_tag as string] : [];
 
   // Everyone with the invite tag.
@@ -97,9 +99,9 @@ export async function GET(request: Request) {
     }
   }
 
-  // The list's invite campaign (key = the main invite tag): its first email, and when it went to each person.
-  const { data: inviteSeq } = list.invite_tag
-    ? await db.from("sequences").select("id, name, active").eq("master_plan_id", a.planId).eq("key", list.invite_tag).maybeSingle()
+  // The list's invite campaign: its first email, and when it went to each person.
+  const { data: inviteSeq } = list.invite_sequence_id
+    ? await db.from("sequences").select("id, name, active").eq("master_plan_id", a.planId).eq("id", list.invite_sequence_id).maybeSingle()
     : { data: null };
   let inviteCampaign: { id: string; name: string; active: boolean; subject: string } | null = null;
   if (inviteSeq) {
@@ -126,7 +128,7 @@ export async function GET(request: Request) {
   const walkIns = Array.from(registered.entries())
     .filter(([email]) => !invited.has(email))
     .map(([email, r]) => ({ email, name: r.name, registered_at: r.at }));
-  return NextResponse.json({ lists: lists ?? [], forms: forms ?? [], allTags, list, inviteCampaign, invites: rows, walkIns });
+  return NextResponse.json({ lists: lists ?? [], forms: forms ?? [], campaigns: campaigns ?? [], allTags, list, inviteCampaign, invites: rows, walkIns });
 }
 
 export async function POST(request: Request) {
@@ -146,15 +148,31 @@ export async function POST(request: Request) {
       const { data: f } = await db.from("crm_forms").select("id").eq("id", str(b.formId, 40)).eq("master_plan_id", a.planId).maybeSingle();
       formId = (f?.id as string) ?? null;
     }
-    const { data, error } = await db.from("crm_invite_lists").insert({ master_plan_id: a.planId, name, form_id: formId, invite_tag: tag, invite_tags: [tag] }).select("id").single();
+    let campaignId: string | null = null;
+    if (str(b.campaignId, 40)) {
+      const { data: sq } = await db.from("sequences").select("id").eq("id", str(b.campaignId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+      campaignId = (sq?.id as string) ?? null;
+    }
+    const { data, error } = await db.from("crm_invite_lists").insert({ master_plan_id: a.planId, name, form_id: formId, invite_tag: tag, invite_tags: [tag], invite_sequence_id: campaignId }).select("id").single();
     if (error) return NextResponse.json({ error: "Couldn't create the list." }, { status: 500 });
     return NextResponse.json({ id: data.id });
   }
 
-  const { data: list } = await db.from("crm_invite_lists").select("id, name, invite_tag, invite_tags").eq("id", str(b.listId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+  const { data: list } = await db.from("crm_invite_lists").select("id, name, invite_tag, invite_tags, invite_sequence_id").eq("id", str(b.listId, 40)).eq("master_plan_id", a.planId).maybeSingle();
   if (!list) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const tag = (list.invite_tag as string) || ((list.invite_tags as string[]) ?? [])[0] || "invited";
   const listTags = ((list.invite_tags as string[]) ?? []).length ? (list.invite_tags as string[]) : [tag];
+
+  if (b.action === "campaign") {
+    let campaignId: string | null = null;
+    if (str(b.campaignId, 40)) {
+      const { data: sq } = await db.from("sequences").select("id").eq("id", str(b.campaignId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+      if (!sq) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      campaignId = sq.id as string;
+    }
+    await db.from("crm_invite_lists").update({ invite_sequence_id: campaignId }).eq("id", list.id).eq("master_plan_id", a.planId);
+    return NextResponse.json({ ok: true });
+  }
 
   if (b.action === "tags") {
     const tags = Array.from(new Set((Array.isArray(b.tags) ? b.tags : []).map(tagOf).filter(Boolean))).slice(0, 20) as string[];
@@ -166,6 +184,8 @@ export async function POST(request: Request) {
   }
 
   if (b.action === "add") {
+    const { data: inv } = list.invite_sequence_id ? await db.from("sequences").select("key").eq("id", list.invite_sequence_id).eq("master_plan_id", a.planId).maybeSingle() : { data: null };
+    const inviteKey = (inv?.key as string) || "";
     const people = (Array.isArray(b.people) ? b.people : []).slice(0, 500) as { name?: unknown; email?: unknown }[];
     let added = 0;
     const skipped: string[] = [];
@@ -177,8 +197,12 @@ export async function POST(request: Request) {
       }
       const [first, ...rest] = str(p.name, 120).split(/\s+/);
       if (b.mode === "send") {
-        // Send the invite: start the list's invite campaign (it tags them too).
-        const r = await enrolContact({ masterPlanId: a.planId, sequenceKey: tag, email, firstName: first || null, lastName: rest.join(" ") || null, source: "manual", tags: [tag] });
+        // Send the invite: start the list's invite campaign, and tag them for this list.
+        if (!inviteKey) {
+          skipped.push(`${email} (choose an invite campaign in List settings)`);
+          continue;
+        }
+        const r = await enrolContact({ masterPlanId: a.planId, sequenceKey: inviteKey, email, firstName: first || null, lastName: rest.join(" ") || null, source: "manual", tags: [tag] });
         if (!r.enrollmentId) {
           skipped.push(`${email} (${r.reason === "already enrolled" ? "already sent the invite" : r.reason === "unsubscribed" ? "unsubscribed" : r.reason?.startsWith("no sequence") ? "no invite campaign for this list" : "couldn't send"})`);
           continue;

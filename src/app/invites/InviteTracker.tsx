@@ -13,6 +13,7 @@ interface List {
   form_id: string | null;
   invite_tag: string | null;
   invite_tags: string[];
+  invite_sequence_id: string | null;
 }
 interface Invite {
   id: string; // the contact
@@ -48,6 +49,7 @@ export default function InviteTracker() {
   const [lists, setLists] = useState<List[]>([]);
   const [forms, setForms] = useState<{ id: string; name: string }[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; active: boolean }[]>([]);
   const [newTag, setNewTag] = useState("");
   const [listId, setListId] = useState("");
   const [invites, setInvites] = useState<Invite[] | null>(null);
@@ -60,7 +62,7 @@ export default function InviteTracker() {
   const [mode, setMode] = useState<"send" | "already">("send");
   const [showSettings, setShowSettings] = useState(false);
   const [inviteCampaign, setInviteCampaign] = useState<{ id: string; name: string; active: boolean; subject: string } | null>(null);
-  const [newList, setNewList] = useState({ open: false, name: "", tag: "", formId: "" });
+  const [newList, setNewList] = useState({ open: false, name: "", tag: "", formId: "", campaignId: "" });
   const [filter, setFilter] = useState<"all" | "not-sent" | "sent" | "registered" | "not-registered">("all");
 
   const load = useCallback(async (id?: string) => {
@@ -68,6 +70,7 @@ export default function InviteTracker() {
     setLists(d.lists ?? []);
     setForms(d.forms ?? []);
     setAllTags(d.allTags ?? []);
+    setCampaigns(d.campaigns ?? []);
     setInviteCampaign(d.inviteCampaign ?? null);
     setListId(d.list?.id ?? "");
     setInvites(d.invites ?? []);
@@ -144,19 +147,23 @@ export default function InviteTracker() {
 
       {newList.open && (
         <Card className="mb-5">
-          <CardContent className="p-4 grid gap-2 sm:grid-cols-[1fr_200px_240px_auto]">
+          <CardContent className="p-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_180px_220px_220px_auto]">
             <Input placeholder="Event name, e.g. Open House (Nov 5)" value={newList.name} onChange={(e) => setNewList({ ...newList, name: e.target.value })} />
             <Input placeholder="Invite tag, e.g. open-house-invite" value={newList.tag} onChange={(e) => setNewList({ ...newList, tag: e.target.value })} aria-label="Invite tag" />
             <select value={newList.formId} onChange={(e) => setNewList({ ...newList, formId: e.target.value })} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm" aria-label="Sign-up form">
               <option value="">Sign-up form (for registrations)…</option>
               {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
+            <select value={newList.campaignId} onChange={(e) => setNewList({ ...newList, campaignId: e.target.value })} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm" aria-label="Invite campaign">
+              <option value="">Invite campaign (sends the invite)…</option>
+              {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}{c.active ? "" : " (off)"}</option>)}
+            </select>
             <Button
               disabled={!newList.name.trim()}
               onClick={async () => {
-                const d = await post({ action: "create-list", name: newList.name, tag: newList.tag, formId: newList.formId });
+                const d = await post({ action: "create-list", name: newList.name, tag: newList.tag, formId: newList.formId, campaignId: newList.campaignId });
                 if (d) {
-                  setNewList({ open: false, name: "", tag: "", formId: "" });
+                  setNewList({ open: false, name: "", tag: "", formId: "", campaignId: "" });
                   void load(d.id);
                 }
               }}
@@ -195,7 +202,20 @@ export default function InviteTracker() {
           {showSettings && (
           <Card>
             <CardContent className="p-4 space-y-3">
-              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">List settings: which tags make up this list</p>
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">List settings</p>
+              <label className="block text-sm">
+                Invite campaign (what &ldquo;Send them the invite email&rdquo; sends)
+                <select
+                  value={list.invite_sequence_id ?? ""}
+                  onChange={async (e) => { if (await post({ action: "campaign", listId, campaignId: e.target.value })) void load(listId); }}
+                  className="mt-1 h-10 w-full max-w-md rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm"
+                >
+                  <option value="">None (only &ldquo;I already invited them myself&rdquo;)</option>
+                  {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}{c.active ? "" : " (off)"}</option>)}
+                </select>
+                <span className="block text-xs text-[#7a8a99] mt-1">Build the invite in Campaigns &amp; Broadcasts: one email with a button to your sign-up form.</span>
+              </label>
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] pt-2">Which tags make up this list</p>
               <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Usually set once. Anyone in Contacts with any of the highlighted tags shows on this list. Changing this sends no email.</p>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from(new Set([...(list.invite_tags ?? []), ...allTags])).sort().map((t) => {
@@ -244,7 +264,8 @@ export default function InviteTracker() {
                     <input type="radio" name="invite-mode" checked={mode === "send"} onChange={() => setMode("send")} className="mt-0.5 accent-[#2E7C83]" />
                     <span>
                       <strong>Send them the invite email</strong>
-                      <span className="block text-xs text-[#7a8a99]">They get &ldquo;{inviteCampaign.subject}&rdquo; from you, with a Save my seat button. When they register you get an email and they show as Registered.</span>
+                      <span className="block text-xs text-[#7a8a99]">They get &ldquo;{inviteCampaign.subject}&rdquo; from you. When they register you get an email and they show as Registered.</span>
+                      {!inviteCampaign.active && <span className="block text-xs text-[#C76F56] mt-0.5">The {inviteCampaign.name} campaign is off, so invites wait until you turn it on in Campaigns &amp; Broadcasts.</span>}
                     </span>
                   </label>
                 )}

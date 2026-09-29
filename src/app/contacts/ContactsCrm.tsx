@@ -40,6 +40,7 @@ interface Form {
   sequence_key: string | null;
   notify: boolean;
   success_message: string;
+  submit_label?: string | null;
   active: boolean;
   submissions?: number;
   last_submission?: string | null;
@@ -398,7 +399,11 @@ function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: 
             <input type="checkbox" checked={form.notify} onChange={(e) => save({ notify: e.target.checked })} /> Email me each new submission
           </label>
           <label className="block text-sm">
-            Thank-you message
+            Button text
+            <Input defaultValue={form.submit_label ?? ""} placeholder="Send" onBlur={(e) => e.target.value.trim() !== (form.submit_label ?? "") && save({ submitLabel: e.target.value }, "Button text saved.")} />
+          </label>
+          <label className="block text-sm">
+            Thank-you message (line breaks are kept)
             <textarea defaultValue={form.success_message} rows={2} onBlur={(e) => e.target.value !== form.success_message && save({ successMessage: e.target.value })} className={field} />
           </label>
           <label className="block text-sm">
