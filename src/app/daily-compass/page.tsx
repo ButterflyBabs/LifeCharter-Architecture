@@ -26,7 +26,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import { GlobalControlContacts } from "./GlobalControlContacts";
 import { TodaysActivity } from "./TodaysActivity";
 import { DealsToMove } from "./DealsToMove";
 import { QuickActions } from "./QuickActions";
@@ -819,10 +818,6 @@ export default function DailyCompassPage() {
         </Card>
       </div>
 
-      {/* Global Control contacts — full-width, editable */}
-      <div className="mt-6">
-        <GlobalControlContacts />
-      </div>
     </div>
   );
 }
