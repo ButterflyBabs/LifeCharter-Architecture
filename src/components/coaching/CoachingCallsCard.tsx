@@ -10,12 +10,16 @@ type Call = { id: string; eventId: string; title: string; start: string; end: st
 // so clients always know when and where to go for support and training.
 export default function CoachingCallsCard({ compact = false }: { compact?: boolean }) {
   const [calls, setCalls] = useState<Call[] | null>(null);
+  const [week, setWeek] = useState<"this" | "next">("this");
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     fetch("/api/coaching-calls", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { calls: [] }))
-      .then((d) => setCalls(Array.isArray(d.calls) ? d.calls : []))
+      .then((d) => {
+        setCalls(Array.isArray(d.calls) ? d.calls : []);
+        setWeek(d.week === "next" ? "next" : "this");
+      })
       .catch(() => setCalls([]));
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
@@ -31,7 +35,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
   };
   const time = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
-  const shown = (calls ?? []).slice(0, compact ? 5 : 12);
+  const shown = (calls ?? []).slice(0, compact ? 8 : 30);
   const groups: { label: string; items: Call[] }[] = [];
   for (const c of shown) {
     const label = day(c.start);
@@ -44,14 +48,14 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
     <section aria-labelledby="coaching-calls-h" className="rounded-2xl border border-[#c9a227]/30 bg-white dark:bg-[#1a2b4a]/40 shadow-sm p-5">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h2 id="coaching-calls-h" className="flex items-center gap-2 text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-          <CalendarClock className="w-4 h-4 text-[#c9a227]" aria-hidden /> This week&apos;s coaching calls
+          <CalendarClock className="w-4 h-4 text-[#c9a227]" aria-hidden /> {week === "next" ? "Next week's coaching calls" : "This week's coaching calls"}
         </h2>
         <Link href="/community/events" className="text-xs font-medium text-[#2E7C83] hover:underline">See all calls and replays</Link>
       </div>
       {calls === null ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : !shown.length ? (
-        <p className="text-sm text-[#7a8a99]">No calls in the next 7 days. See the full schedule on the Collective&apos;s Events page.</p>
+        <p className="text-sm text-[#7a8a99]">No calls scheduled this week or next. See the full schedule on the Collective&apos;s Events page.</p>
       ) : (
         <div className={compact ? "space-y-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
           {groups.map((g) => (
