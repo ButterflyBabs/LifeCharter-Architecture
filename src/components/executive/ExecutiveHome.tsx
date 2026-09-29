@@ -1,6 +1,7 @@
 "use client";
 
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
+import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
@@ -1189,6 +1190,11 @@ export default function ExecutiveHome() {
           </button>
         </div>
       </header>
+
+      {/* This week's coaching calls: always front of mind */}
+      <div className="mb-5">
+        <CoachingCallsCard />
+      </div>
 
       {/* Executive Briefing — draggable cards */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-4 mb-5">

@@ -30,6 +30,7 @@ import { TodaysActivity } from "./TodaysActivity";
 import { DealsToMove } from "./DealsToMove";
 import { QuickActions } from "./QuickActions";
 import QuickWins from "@/components/QuickWins";
+import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 
 // A task as returned by /api/tasks.
 interface RealTask {
@@ -693,6 +694,9 @@ export default function DailyCompassPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* This week's coaching calls */}
+          <CoachingCallsCard compact />
+
           {/* Deals to move today — from the Pipeline */}
           <DealsToMove />
 
