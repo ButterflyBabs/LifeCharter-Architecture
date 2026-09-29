@@ -56,8 +56,8 @@ export default function HostedForm({ params }: { params: { id: string } }) {
         {form === null && <p className="text-[#56616E]">This form isn&rsquo;t available.</p>}
         {form && done && (
           <>
-            <h1 className="text-2xl font-semibold text-[#1F3A3D]">Thank you</h1>
-            <p className="mt-2 leading-relaxed text-[#56616E]">{done}</p>
+            <h1 className="text-2xl font-semibold text-[#1F3A3D]">Thank you!</h1>
+            <p className="mt-2 whitespace-pre-line leading-relaxed text-[#56616E]">{done}</p>
           </>
         )}
         {form && !done && (
