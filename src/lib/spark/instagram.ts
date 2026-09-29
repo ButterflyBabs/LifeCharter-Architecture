@@ -69,3 +69,31 @@ export async function sendIgMessage(token: string, recipientId: string, text: st
   }
   return true;
 }
+
+// Meta's signed_request (deauthorize + data deletion callbacks): "<sig>.<payload>",
+// both base64url, sig = HMAC-SHA256(payload, app secret). Returns the payload or null.
+export function parseSignedRequest(signed: string | null): { user_id?: string | number } | null {
+  const secret = process.env.SPARK_IG_APP_SECRET;
+  if (!secret || !signed || !signed.includes(".")) return null;
+  const [sig, payload] = signed.split(".", 2);
+  const got = Buffer.from(sig.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+  const want = createHmac("sha256", secret).update(payload).digest();
+  if (got.length !== want.length || !timingSafeEqual(got, want)) return null;
+  try {
+    return JSON.parse(Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
+// Someone removed the app or asked for their data: forget the Instagram connection
+// for that account, and (for a DM sender) their LC Spark Instagram conversations.
+export async function forgetInstagramUser(igUserId: string): Promise<void> {
+  const { createServerClient } = await import("@/lib/supabase/server");
+  const db = createServerClient();
+  await db
+    .from("spark_settings")
+    .update({ ig_enabled: false, ig_user_id: null, ig_username: null, ig_access_token: null, ig_token_expires_at: null, updated_at: new Date().toISOString() })
+    .eq("ig_user_id", igUserId);
+  await db.from("spark_conversations").delete().eq("channel", "instagram").eq("visitor_key", igUserId);
+}
