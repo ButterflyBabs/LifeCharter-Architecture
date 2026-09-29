@@ -5,6 +5,7 @@ import type {
   MessageDetail,
   OutgoingAttachment,
   MailLabel,
+  PersonMail,
 } from "@/lib/google";
 import { dayWindowUtc } from "@/lib/tz";
 import { scopeOwner, type MailScope } from "@/lib/mailOwner";
@@ -266,6 +267,41 @@ export async function searchInbox(accessToken: string, query: string, max = 20):
   if (!r.ok) throw new Error(`graph search ${r.status}`);
   const data = await r.json();
   return ((data.value ?? []) as GraphMessage[]).map(graphInboxRow);
+}
+
+type GraphAddr = { emailAddress?: { name?: string; address?: string } };
+
+// Every message to or from one address across ALL folders (Inbox, Sent Items,
+// archive folders…): /me/messages spans the whole mailbox, and the KQL
+// "participants:" keyword matches From, To, Cc and Bcc. Newest first.
+export async function searchAllMail(
+  accessToken: string,
+  email: string,
+  max = 50,
+  signal?: AbortSignal
+): Promise<PersonMail[]> {
+  const url =
+    `${GRAPH}/me/messages?$search=${encodeURIComponent(`"participants:${email}"`)}` +
+    `&$select=id,conversationId,subject,bodyPreview,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,sentDateTime&$top=${max}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, signal });
+  if (!r.ok) throw new Error(`graph search ${r.status}`);
+  const data = await r.json();
+  const addr = (a?: GraphAddr) => (a?.emailAddress?.address ?? "").toLowerCase();
+  type Row = GraphMessage & { toRecipients?: GraphAddr[]; ccRecipients?: GraphAddr[]; bccRecipients?: GraphAddr[]; sentDateTime?: string };
+  return ((data.value ?? []) as Row[])
+    .map((m) => {
+      const when = m.sentDateTime || m.receivedDateTime;
+      return {
+        id: m.id,
+        threadId: m.conversationId ?? "",
+        fromEmail: addr(m.from),
+        toEmails: [...(m.toRecipients ?? []), ...(m.ccRecipients ?? []), ...(m.bccRecipients ?? [])].map(addr).filter(Boolean),
+        subject: m.subject || "(no subject)",
+        snippet: m.bodyPreview ?? "",
+        ts: when ? new Date(when).getTime() || 0 : 0,
+      };
+    })
+    .sort((a, b) => b.ts - a.ts);
 }
 
 export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {

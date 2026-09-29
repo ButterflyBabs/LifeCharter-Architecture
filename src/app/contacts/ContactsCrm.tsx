@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "./BroadcastsTab";
 import EmailSendingTab from "./EmailSendingTab";
+import ContactEmails from "./ContactEmails";
 
 interface Contact {
   id: string;
@@ -314,6 +315,8 @@ function ContactPanel({ id, onClose, onChanged, setMsg }: { id: string; onClose:
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="A call, a conversation, a next step…" className={field} />
           <Button className="mt-2" onClick={addNote}>Save note</Button>
         </div>
+
+        <ContactEmails contactId={c.id} name={fullName(c)} />
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-2">Timeline</p>

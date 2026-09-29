@@ -317,6 +317,63 @@ export async function searchInbox(accessToken: string, query: string, max = 20):
   return hydrateInboxIds(accessToken, ids, labelMap);
 }
 
+// One message to or from a person, for a contact's email history (metadata only).
+export type PersonMail = {
+  id: string; // provider message id (what fetchMessage takes)
+  threadId: string;
+  fromEmail: string;
+  toEmails: string[]; // To + Cc (+ Bcc where the mailbox can see it)
+  subject: string;
+  snippet: string;
+  ts: number;
+};
+
+const addrList = (raw: string): string[] =>
+  (raw.match(/[^\s<>,;"']+@[^\s<>,;"']+/g) ?? []).map((a) => a.toLowerCase());
+
+// Every message to or from one address across ALL mail (received, sent and
+// archived; not spam/trash): messages.list has no labelIds filter here, unlike
+// fetchInbox, so the search spans the whole mailbox. Newest first.
+export async function searchAllMail(
+  accessToken: string,
+  email: string,
+  max = 50,
+  signal?: AbortSignal
+): Promise<PersonMail[]> {
+  const q = `from:${email} OR to:${email} OR cc:${email} OR bcc:${email}`;
+  const auth = { headers: { Authorization: `Bearer ${accessToken}` }, signal };
+  const listRes = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(q)}`,
+    auth
+  );
+  if (!listRes.ok) throw new Error(`gmail search ${listRes.status}`);
+  const ids: string[] = ((await listRes.json()).messages ?? []).map((m: { id: string }) => m.id);
+  const rows = await Promise.all(
+    ids.map(async (id): Promise<PersonMail | null> => {
+      const r = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc&metadataHeaders=Subject&metadataHeaders=Date`,
+        auth
+      );
+      if (!r.ok) return null;
+      const msg = await r.json();
+      const h: Record<string, string> = Object.fromEntries(
+        (msg.payload?.headers ?? []).map((x: { name: string; value: string }) => [x.name.toLowerCase(), x.value])
+      );
+      const ts = Number(msg.internalDate) || (h["date"] ? new Date(h["date"]).getTime() || 0 : 0);
+      return {
+        id,
+        threadId: msg.threadId ?? "",
+        fromEmail: addrList(h["from"] ?? "")[0] ?? "",
+        toEmails: [...addrList(h["to"] ?? ""), ...addrList(h["cc"] ?? ""), ...addrList(h["bcc"] ?? "")],
+        subject: h["subject"] || "(no subject)",
+        snippet: msg.snippet ?? "",
+        ts,
+      };
+    })
+  );
+  return rows.filter((m): m is PersonMail => m !== null);
+}
+
 export type AttachmentMeta = { id: string; name: string; mimeType: string; size: number };
 export type MailLabel = { id: string; name: string; color?: string };
 
