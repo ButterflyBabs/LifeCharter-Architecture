@@ -167,6 +167,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["contacts", "crm", "forms", "broadcast", "newsletter", "tags", "leads", "sign up form"],
   },
   {
+    id: "sa-contacts-import",
+    category: "Sales",
+    question: "How do I import or export my contacts?",
+    answer:
+      "Open Contacts and click Import contacts. Export your list from Gmail/Google Contacts, Outlook, iPhone/iCloud, Excel or your old CRM (GoHighLevel, Global Control, Mailchimp, Kajabi) as a CSV or vCard (.vcf) file and drop it in, or paste cells from a spreadsheet. Check how each column is matched, look over the preview, and confirm these people have agreed to hear from you; up to 5,000 contacts per import. Everyone gets an \"imported\" tag, people already in your contacts are merged (never duplicated), unsubscribes stay in place, and importing never emails anyone or starts a sequence. Export contacts downloads your whole list as a CSV.",
+    keywords: ["import", "export", "upload", "csv", "vcard", "vcf", "spreadsheet", "gmail", "outlook", "iphone", "mailchimp", "gohighlevel", "move contacts", "contacts"],
+  },
+  {
     id: "sa-sequences",
     category: "Sales",
     question: "How do Sequences work, and why won't my emails send yet?",
