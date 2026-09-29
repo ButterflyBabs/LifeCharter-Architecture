@@ -748,6 +748,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "Yes. The activity log in Settings → Team shows who did what across the account: what was added, changed or deleted, and by whom. Only you and your admins can see it. You can also set a monthly AI limit for each team member so their use of your AI stays within what you choose.",
     keywords: ["activity log", "audit", "history", "who changed", "team activity", "ai limit", "ai cap"],
   },
+  {
+    id: "gs-coaching-calls",
+    category: "Getting Started",
+    question: "What coaching calls come with the Command Suite?",
+    answer:
+      "Executive coaching is part of every Command Suite plan, and the live calls are where it happens. Every week (all times Mountain): Monday 10am, the Weekly Alignment Anchor (last week's wins and challenges, this week's goals; if you make one call a week, make it this one). Tuesday 6pm, the 90-minute Dimension Call: Growth on the first Tuesday, the Hope Seat on the second, a SOUL Session on the third and Community on the fourth. Wednesday 11am, Sales & Marketing Coaching (20 to 30 minutes of teaching, then open support). Thursday 11am, Suite Office Hours for anything tech related, with a build-along every other week. Friday 10am, The Inner Command, our mindset call about life and business. New clients also have the New Client Launch Call every other Thursday at 1pm during their first 30 days. Growth and VIP members are invited to a quarterly intensive (a Friday and Saturday, 10am to 2pm on Zoom), and there's an annual in-person retreat for Command Suite clients. Every call is on the Collective's Events page, and you don't need to attend them all: pick what serves you each week.",
+    keywords: ["coaching", "calls", "group coaching", "schedule", "alignment anchor", "office hours", "inner command", "mindset", "hope seat", "dimension call", "launch call", "build along", "intensive", "retreat", "support call"],
+  },
 ];
 
 // Lightweight keyword-overlap retrieval: score each entry against the query and
