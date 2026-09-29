@@ -80,16 +80,16 @@ export async function GET(request: Request) {
     }
   }
 
-  // Anyone in the campaign the form starts is registered too (they have the Zoom link).
+  // Also people marked registered by hand (they confirmed another way).
   if (list.form_id) {
     const { data: f } = await db.from("crm_forms").select("sequence_key").eq("id", list.form_id).maybeSingle();
     const { data: seq } = f?.sequence_key ? await db.from("sequences").select("id").eq("master_plan_id", a.planId).eq("key", f.sequence_key).maybeSingle() : { data: null };
     if (seq) {
-      const { data: joined } = await db.from("sequence_enrollments").select("enrolled_at, registered_at, seq_contacts(email, first_name, last_name)").eq("sequence_id", seq.id).limit(5000);
-      for (const m of joined ?? []) {
+      const { data: marked } = await db.from("sequence_enrollments").select("registered_at, seq_contacts(email, first_name, last_name)").eq("sequence_id", seq.id).not("registered_at", "is", null).limit(5000);
+      for (const m of marked ?? []) {
         const c = m.seq_contacts as unknown as { email: string; first_name: string | null; last_name: string | null } | null;
         const email = (c?.email ?? "").toLowerCase();
-        if (email && !registered.has(email)) registered.set(email, { at: ((m.registered_at as string | null) ?? (m.enrolled_at as string)), name: [c?.first_name, c?.last_name].filter(Boolean).join(" ") });
+        if (email && !registered.has(email)) registered.set(email, { at: m.registered_at as string, name: [c?.first_name, c?.last_name].filter(Boolean).join(" ") });
       }
     }
   }

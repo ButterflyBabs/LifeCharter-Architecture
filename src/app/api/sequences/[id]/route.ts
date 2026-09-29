@@ -43,9 +43,13 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       .order("enrolled_at", { ascending: false })
       .limit(500),
   ]);
-  // Registered: their first sign-up on a form that starts this campaign, else a mark made by hand.
+  // Registered: their first sign-up on a form that starts this campaign or that its emails
+  // link to (an invite's "Save my seat" button), else a mark made by hand.
   const { data: forms } = await db.from("crm_forms").select("id").eq("master_plan_id", seq.master_plan_id).eq("sequence_key", seq.key);
-  const formIds = (forms ?? []).map((f) => f.id as string);
+  const linked = new Set<string>();
+  for (const st of steps ?? []) for (const m of `${st.body ?? ""} ${st.button_url ?? ""}`.match(/\/f\/[0-9a-f-]{36}/gi) ?? []) linked.add(m.slice(3).toLowerCase());
+  const { data: linkedForms } = linked.size ? await db.from("crm_forms").select("id").eq("master_plan_id", seq.master_plan_id).in("id", Array.from(linked)) : { data: [] };
+  const formIds = Array.from(new Set([...(forms ?? []), ...(linkedForms ?? [])].map((f) => f.id as string)));
   const contactIds = (enrs ?? []).map((e) => (e.seq_contacts as unknown as { id: string } | null)?.id).filter(Boolean) as string[];
   const signedUp = new Map<string, string>();
   if (formIds.length && contactIds.length) {
@@ -61,7 +65,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       sequence_sends: undefined,
       sent: sends.filter((s) => s.status === "sent").length,
       failed: sends.filter((s) => s.status === "failed").length,
-      registered: form ? { at: form, via: "form" } : { at: (e.registered_at as string | null) ?? (e.enrolled_at as string), via: "joined" },
+      registered: form ? { at: form, via: "form" } : e.registered_at ? { at: e.registered_at as string, via: "manual" } : null,
     };
   });
   return NextResponse.json({ sequence: seq, steps: steps ?? [], people });
