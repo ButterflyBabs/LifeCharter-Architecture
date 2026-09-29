@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { renderStep, unsubscribeApiUrl } from "@/lib/sequences/render";
 import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
+import { senderCache, type AccountSender } from "@/lib/email/accountSender";
 
 // The Sequences engine: enrol a contact, then send each step on its day at the
 // sequence's hour in the contact's own time zone (day 0 goes right away). Every
@@ -9,13 +9,8 @@ import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 
 type Db = ReturnType<typeof createServerClient>;
 
-// The Alignment Architect's own account (Phase 1 sequences live there).
-export async function ownerMasterPlanId(db: Db = createServerClient()): Promise<string | null> {
-  const { data: prof } = await db.from("profiles").select("id").ilike("email", ALIGNMENT_ARCHITECT_EMAIL).maybeSingle();
-  if (!prof?.id) return null;
-  const { data: plan } = await db.from("client_master_plans").select("id").eq("user_id", prof.id).order("created_at").limit(1).maybeSingle();
-  return (plan?.id as string) ?? null;
-}
+// Babs's own account now lives in @/lib/housePlan (re-exported for existing imports).
+export { ownerMasterPlanId } from "@/lib/housePlan";
 
 // US state → time zone (the zone most of the state uses), for buyers whose
 // checkout gives a billing address. Everyone else defaults to Mountain.
@@ -115,6 +110,7 @@ interface Step {
 }
 interface SeqRow {
   id: string;
+  master_plan_id: string;
   name: string;
   brand: string;
   from_name: string;
@@ -149,9 +145,17 @@ export async function sendRendered(
   return res.ok ? { ok: true, id: out?.id, status: res.status } : { ok: false, error: out?.message || `Resend ${res.status}`, status: res.status };
 }
 
+// A client account's From/Reply-To (their own verified domain), in the shape sendRendered takes.
+export function clientFrom(who: Extract<AccountSender, { ok: true; house: false }>) {
+  return { from_name: `"${who.fromName}"`, from_email: who.fromEmail, reply_to: who.replyTo };
+}
+
 // Sends whatever is due for one enrollment: day 0 immediately, then at most one
 // day-step per run (so a missed run catches up gently rather than in a burst).
-export async function processEnrollment(db: Db, enrollmentId: string, now = new Date()): Promise<number> {
+// `sender` looks up who the account sends as (cached per cron run). A client
+// account that can't send yet (no verified domain / no mailing address) is
+// skipped before anything is claimed, and never falls back to a Babs address.
+export async function processEnrollment(db: Db, enrollmentId: string, now = new Date(), sender: (planId: string, marketing: boolean) => Promise<AccountSender> = senderCache(db)): Promise<number> {
   const { data: enr } = await db
     .from("sequence_enrollments")
     .select("id, status, start_date, sequence_id, contact_id")
@@ -159,13 +163,15 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
     .maybeSingle();
   if (!enr || enr.status !== "active") return 0;
   const [{ data: seq }, { data: contact }, { data: steps }, { data: sent }] = await Promise.all([
-    db.from("sequences").select("id, name, brand, from_name, from_email, reply_to, send_hour, active").eq("id", enr.sequence_id).maybeSingle(),
+    db.from("sequences").select("id, master_plan_id, name, brand, from_name, from_email, reply_to, send_hour, active").eq("id", enr.sequence_id).maybeSingle(),
     db.from("seq_contacts").select("id, email, first_name, timezone, unsubscribed_at").eq("id", enr.contact_id).maybeSingle(),
     db.from("sequence_steps").select("id, position, day_offset, subject, preview, body, button_label, button_url").eq("sequence_id", enr.sequence_id).order("position"),
     db.from("sequence_sends").select("step_id").eq("enrollment_id", enr.id),
   ]);
   const s = seq as SeqRow | null;
   if (!s || !s.active || !contact) return 0;
+  const who = await sender(s.master_plan_id, true);
+  if (!who.ok) return 0; // client account not ready to send: nothing goes out, nothing is claimed
   if (contact.unsubscribed_at) {
     await db.from("sequence_enrollments").update({ status: "stopped" }).eq("id", enr.id);
     return 0;
@@ -190,8 +196,8 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
       .upsert({ enrollment_id: enr.id, step_id: st.id, status: "claimed" }, { onConflict: "enrollment_id,step_id", ignoreDuplicates: true })
       .select("id");
     if (!claim?.length) continue; // another run already has it
-    const mail = renderStep({ brand: s.brand, subject: st.subject, preview: st.preview, body: st.body, buttonLabel: st.button_label, buttonUrl: st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null } });
-    const r = await sendRendered(s, contact.email as string, contact.id as string, mail);
+    const mail = renderStep({ brand: s.brand, subject: st.subject, preview: st.preview, body: st.body, buttonLabel: st.button_label, buttonUrl: st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null }, footer: who.house ? undefined : who.footer });
+    const r = await sendRendered(who.house ? s : clientFrom(who), contact.email as string, contact.id as string, mail);
     await db
       .from("sequence_sends")
       .update(r.ok ? { status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString() } : { status: "failed", error: (r.error || "").slice(0, 500) })
@@ -215,9 +221,10 @@ export async function processDue(): Promise<{ checked: number; sent: number }> {
   if (!ids.length) return { checked: 0, sent: 0 };
   const { data: enrs } = await db.from("sequence_enrollments").select("id").eq("status", "active").in("sequence_id", ids).limit(2000);
   let sent = 0;
+  const sender = senderCache(db);
   for (const e of (enrs ?? []) as { id: string }[]) {
     try {
-      sent += await processEnrollment(db, e.id);
+      sent += await processEnrollment(db, e.id, new Date(), sender);
     } catch (err) {
       console.error("sequence send:", e.id, err);
     }

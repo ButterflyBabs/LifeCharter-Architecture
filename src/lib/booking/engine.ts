@@ -6,6 +6,7 @@ import { createZoomMeeting, deleteZoomMeeting } from "@/lib/zoom";
 import { upsertContact, logEvent, EMAIL_RE, type FormField } from "@/lib/crm";
 import { enrolContact, isValidTz } from "@/lib/sequences/engine";
 import { dealForBooking, moveDeal } from "@/lib/booking/deals";
+import { accountSender, senderCache, type AccountSender } from "@/lib/email/accountSender";
 
 // The booking engine. A calendar offers a time when at least one of its hosts is
 // inside their working hours, clear of every connected calendar (plus buffers),
@@ -236,8 +237,10 @@ async function afterBooking(
   hostId: string,
   b: { name: string; email: string; phone: string | null; tz: string; answers: Record<string, string>; token: string; start: number; end: number; rescheduled: boolean; rescheduleOf: string | null }
 ) {
-  const { data: host } = await db.from("booking_hosts").select("*").eq("id", hostId).maybeSingle();
+  const { data: host } = await db.from("booking_hosts").select("*").eq("id", hostId).eq("master_plan_id", cal.master_plan_id).maybeSingle();
   if (!host) return;
+  // Who this account's booking emails come from (Babs: as always; a client: only their own verified domain, else none).
+  const who = await accountSender(cal.master_plan_id, { marketing: false }, db);
   const startISO = new Date(b.start).toISOString();
   const endISO = new Date(b.end).toISOString();
   const manage = `${APP()}/book/manage/${b.token}`;
@@ -246,14 +249,15 @@ async function afterBooking(
   // Meeting place
   let meetingUrl: string | null = null;
   let zoomId: string | null = null;
-  if (cal.location === "zoom") {
+  // The Suite's Zoom app belongs to Babs's Zoom account, so only her calendars create Zoom meetings.
+  if (cal.location === "zoom" && who.house) {
     const z = await createZoomMeeting({ hostEmail: host.zoom_email || host.email, topic: `${cal.name}: ${b.name}`, startISO, durationMin: cal.duration_min, timezone: host.timezone, agenda: cal.description || "" }).catch(() => null);
     if (z) {
       meetingUrl = z.joinUrl;
       zoomId = z.id;
     }
   }
-  const where = cal.location === "zoom" ? meetingUrl || "Zoom (link to follow)" : cal.location === "phone" ? `Phone: ${host.name} will call ${b.phone || "you"}` : cal.location_detail || "";
+  const where = cal.location === "zoom" ? meetingUrl || (who.house ? "Zoom (link to follow)" : cal.location_detail || "Video call (link to follow)") : cal.location === "phone" ? `Phone: ${host.name} will call ${b.phone || "you"}` : cal.location_detail || "";
 
   // Host's calendar event, with the invitee and anyone copied as guests.
   const { data: conns } = await db.from("booking_connections").select("*").eq("host_id", hostId).order("add_events", { ascending: false }).order("created_at");
@@ -289,7 +293,7 @@ async function afterBooking(
   }
 
   // Emails: the invitee's confirmation; the host and anyone copied get the details.
-  await sendMail({
+  await sendMail(who, {
     to: b.email,
     replyTo: host.email,
     fromName: host.name,
@@ -305,10 +309,10 @@ async function afterBooking(
     button: { label: "Reschedule or cancel", url: manage },
   });
   const hostTo = Array.from(new Set([host.email, ...cal.cc_emails].map((e) => e.toLowerCase())));
-  await sendMail({
+  await sendMail(who, {
     to: hostTo,
     replyTo: b.email,
-    fromName: "LifeCharter Command Suite",
+    fromName: SUITE_NAME,
     subject: `${b.rescheduled ? "Rescheduled" : "New booking"}: ${cal.name} with ${b.name}, ${fmt(startISO, host.timezone, "short")}`,
     heading: `${b.rescheduled ? "Rescheduled" : "New"} ${cal.name}`,
     lines: [
@@ -341,7 +345,8 @@ export async function cancelBooking(bookingId: string, reason: string, by: "invi
   if (b.contact_id && cal && status === "canceled") await logEvent(b.master_plan_id, b.contact_id, "booking", `Canceled ${cal.name} (${by === "invitee" ? "by them" : "by you"})${reason ? `: ${reason}` : ""}`, { booking: bookingId }, db);
   if (opts.notify !== false && cal && host && status === "canceled") {
     const tz = b.invitee_timezone || host.timezone;
-    await sendMail({
+    const who = await accountSender(b.master_plan_id, { marketing: false }, db);
+    await sendMail(who, {
       to: b.invitee_email,
       replyTo: host.email,
       fromName: host.name,
@@ -350,10 +355,10 @@ export async function cancelBooking(bookingId: string, reason: string, by: "invi
       lines: [`${esc(cal.name)} with ${esc(host.name)}, ${esc(fmt(b.start_at, tz))}, has been canceled.`, reason ? `Note: ${esc(reason)}` : ""],
       button: { label: "Book a new time", url: `${APP()}/book/${cal.slug}` },
     });
-    await sendMail({
+    await sendMail(who, {
       to: Array.from(new Set([host.email, ...(cal.cc_emails as string[])].map((e: string) => e.toLowerCase()))),
       replyTo: b.invitee_email,
-      fromName: "LifeCharter Command Suite",
+      fromName: SUITE_NAME,
       subject: `Canceled: ${cal.name} with ${b.invitee_name}, ${fmt(b.start_at, host.timezone, "short")}`,
       heading: `${cal.name} canceled`,
       lines: [`${esc(b.invitee_name)} (${esc(b.invitee_email)}) · ${esc(fmt(b.start_at, host.timezone))}`, `Canceled ${by === "invitee" ? "by them" : "by you"}${reason ? `: ${esc(reason)}` : ""}`],
@@ -374,6 +379,7 @@ export async function sendReminders(): Promise<number> {
     .lt("start_at", new Date(now + 24 * 3_600_000 + 10 * 60_000).toISOString())
     .limit(500);
   let sent = 0;
+  const sender = senderCache(db);
   for (const b of data ?? []) {
     const left = Date.parse(b.start_at) - now;
     const r = (b.reminders ?? {}) as Record<string, string>;
@@ -385,10 +391,12 @@ export async function sendReminders(): Promise<number> {
     const cal = b.booking_calendars as { name: string; slug: string };
     const host = b.booking_hosts as { name: string; email: string };
     const tz = b.invitee_timezone || "America/Denver";
-    await sendMail({
+    const who = await sender(b.master_plan_id as string, false);
+    if (!who.ok) continue; // client account without its own verified domain: no reminder email
+    await sendMail(who, {
       to: b.invitee_email,
       replyTo: host?.email,
-      fromName: host?.name || "LifeCharter Command Suite",
+      fromName: host?.name || SUITE_NAME,
       subject: `${which === "r1" ? "In 1 hour" : "Tomorrow"}: ${cal.name} with ${host?.name}`,
       heading: which === "r1" ? "See you soon" : "A reminder for tomorrow",
       lines: [`<strong>${esc(cal.name)}</strong> with ${esc(host?.name || "")}`, esc(fmt(b.start_at, tz)), b.meeting_url ? `Join on Zoom: <a href="${b.meeting_url}">${esc(b.meeting_url)}</a>` : ""],
@@ -409,18 +417,27 @@ export function fmt(iso: string, tz: string, style: "long" | "short" = "long") {
     : d.toLocaleString("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 }
 
-async function sendMail(m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
+const SUITE_NAME = "LifeCharter Command Suite";
+
+// Babs's account: exactly as always (reminders@lccommandsuite.com, her support
+// address). A client account: only from its own verified domain, with its own
+// support address; if it can't send yet, nothing is emailed (never a Babs address).
+async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
+  if (!who.ok) return;
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
+  const fromAddr = who.house ? "reminders@lccommandsuite.com" : who.fromEmail;
+  const fromName = who.house ? m.fromName : m.fromName === SUITE_NAME ? who.fromName : m.fromName;
+  const support = who.house ? "support@amilynnecarroll.com" : who.supportEmail;
   const body = m.lines.filter(Boolean).map((l) => `<p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#2E3A46">${l}</p>`).join("");
   const button = m.button
     ? `<p style="margin:18px 0 6px"><a href="${m.button.url}" style="display:inline-block;background:#2E7C83;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;font-size:14px;padding:11px 22px;border-radius:999px">${esc(m.button.label)}</a></p>`
     : "";
-  const html = `<!doctype html><html><body style="margin:0;background:#FBF8F1"><table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F1;padding:28px 12px"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:28px;border:1px solid #EADFCF"><tr><td><h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:22px;color:#0F5B63">${esc(m.heading)}</h1>${body}${button}<p style="margin:18px 0 0;font-family:Arial,sans-serif;font-size:11px;color:#9aa3ad">Questions? Reply to this email or write to support@amilynnecarroll.com.</p></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#FBF8F1"><table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F1;padding:28px 12px"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:28px;border:1px solid #EADFCF"><tr><td><h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:22px;color:#0F5B63">${esc(m.heading)}</h1>${body}${button}<p style="margin:18px 0 0;font-family:Arial,sans-serif;font-size:11px;color:#9aa3ad">Questions? Reply to this email${support ? ` or write to ${esc(support)}` : ""}.</p></td></tr></table></td></tr></table></body></html>`;
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: `${m.fromName.replace(/[<>"]/g, "")} <reminders@lccommandsuite.com>`, to: m.to, reply_to: m.replyTo, subject: m.subject, html }),
+    body: JSON.stringify({ from: `${fromName.replace(/[<>"]/g, "")} <${fromAddr}>`, to: m.to, reply_to: m.replyTo, subject: m.subject, html }),
   }).catch((e) => console.error("booking mail:", e));
 }
 
@@ -439,7 +456,9 @@ export async function markNoShow(bookingId: string): Promise<void> {
   const first = String(b.invitee_name || "").split(/\s+/)[0] || "there";
   const fill = (t: string) => t.replace(/\{\{\s*first_name\s*\}\}/gi, first).replace(/\{\{\s*host\s*\}\}/gi, host.name).replace(/\{\{\s*meeting\s*\}\}/gi, cal.name);
   const paras = fill(cal.noshow_body).split(/\n{2,}/).map((p: string) => esc(p).replace(/\n/g, "<br>"));
-  await sendMail({
+  const who = await accountSender(b.master_plan_id, { marketing: false }, db);
+  if (!who.ok) return; // client account without its own verified domain: no follow-up email
+  await sendMail(who, {
     to: b.invitee_email,
     replyTo: host.email,
     fromName: host.name,

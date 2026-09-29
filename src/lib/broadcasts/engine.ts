@@ -1,8 +1,10 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { renderStep } from "@/lib/sequences/render";
-import { sendRendered } from "@/lib/sequences/engine";
+import { clientFrom, sendRendered } from "@/lib/sequences/engine";
+import { accountSender, type EmailFooter } from "@/lib/email/accountSender";
+import { housePlanId } from "@/lib/housePlan";
 import { logEvent } from "@/lib/crm";
-import { fillSlots, slotsIn } from "./shared";
+import { OWNER_TZ, fillSlots, slotsIn } from "./shared";
 
 // Broadcasts: one-off emails to everyone with a tag. When one goes out, the
 // recipients are snapshotted into crm_broadcast_sends (one row each, unique per
@@ -34,6 +36,24 @@ export interface BroadcastRow {
   timezone: string;
   queued_at: string | null;
   recipient_count: number;
+}
+
+// The zone an account schedules broadcasts in: Babs's is Mountain (as always);
+// a client's is their own profile time zone.
+export async function accountTimezone(db: Db, planId: string, house: boolean): Promise<string> {
+  if (house) return OWNER_TZ;
+  const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
+  const { data: prof } = plan?.user_id ? await db.from("profiles").select("timezone").eq("id", plan.user_id).maybeSingle() : { data: null };
+  const tz = (prof?.timezone as string) || "";
+  try {
+    if (tz) {
+      new Intl.DateTimeFormat("en-US", { timeZone: tz });
+      return tz;
+    }
+  } catch {
+    /* fall through */
+  }
+  return OWNER_TZ;
 }
 
 const isUrl = (v: string) => /^https?:\/\/\S+$/i.test(v);
@@ -84,7 +104,7 @@ export function problems(b: Pick<BroadcastRow, "subject" | "body" | "tags" | "pr
   return p;
 }
 
-export function renderBroadcast(b: BroadcastRow, contact: { id: string; first_name: string | null }, subjectPrefix = "") {
+export function renderBroadcast(b: BroadcastRow, contact: { id: string; first_name: string | null }, subjectPrefix = "", footer?: EmailFooter) {
   const v = b.variables || {};
   return renderStep({
     brand: b.brand,
@@ -94,6 +114,7 @@ export function renderBroadcast(b: BroadcastRow, contact: { id: string; first_na
     buttonLabel: b.button_label,
     buttonUrl: b.button_url ? fillSlots(b.button_url, v) : null,
     contact,
+    footer,
   });
 }
 
@@ -115,6 +136,21 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // BROADCAST_PER_SECOND (default 10) emails a second. Returns how many went out.
 export async function processBroadcast(db: Db, id: string, deadline: number): Promise<number> {
   const now = new Date().toISOString();
+  // A client account that can't send (no verified domain of its own, or no mailing
+  // address) sends nothing, and never falls back to a Babs address. A due scheduled
+  // one goes back to draft rather than going out days late once they're set up.
+  const { data: head } = await db.from("crm_broadcasts").select("master_plan_id, status, queued_at").eq("id", id).maybeSingle();
+  if (!head) return 0;
+  const who = await accountSender(head.master_plan_id as string, { marketing: true }, db);
+  if (!who.ok) {
+    // Only revert when we positively know whose account this is (a failed lookup of
+    // Babs's account must never knock her scheduled broadcast back to draft).
+    const houseKnown = Boolean(await housePlanId(db));
+    if (houseKnown && (head.status === "scheduled" || (head.status === "sending" && !head.queued_at))) {
+      await db.from("crm_broadcasts").update({ status: "draft", updated_at: now }).eq("id", id).in("status", ["scheduled", "sending"]).lte("scheduled_at", now);
+    }
+    return 0;
+  }
   // A due scheduled broadcast becomes "sending" exactly once.
   await db.from("crm_broadcasts").update({ status: "sending", started_at: now, updated_at: now }).eq("id", id).eq("status", "scheduled").lte("scheduled_at", now);
   const { data } = await db.from("crm_broadcasts").select("*").eq("id", id).maybeSingle();
@@ -156,8 +192,8 @@ export async function processBroadcast(db: Db, id: string, deadline: number): Pr
       const wait = last + gap - Date.now();
       if (wait > 0) await sleep(wait);
       last = Date.now();
-      const mail = renderBroadcast(b, { id: r.contact_id, first_name: r.seq_contacts.first_name });
-      const res = await sendRendered(b, r.email, r.contact_id, mail).catch((e) => ({ ok: false, error: String(e), status: 0 }) as { ok: boolean; id?: string; error?: string; status?: number });
+      const mail = renderBroadcast(b, { id: r.contact_id, first_name: r.seq_contacts.first_name }, "", who.house ? undefined : who.footer);
+      const res = await sendRendered(who.house ? b : clientFrom(who), r.email, r.contact_id, mail).catch((e) => ({ ok: false, error: String(e), status: 0 }) as { ok: boolean; id?: string; error?: string; status?: number });
       if (!res.ok && res.status === 429) {
         // Rate-limited: Resend didn't take it, so it's safe to put back and slow down.
         await db.from("crm_broadcast_sends").update({ status: "queued", claimed_at: null }).eq("id", r.id);

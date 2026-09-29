@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { availableSlots, book, calendarBySlug } from "@/lib/booking/engine";
 import { createServerClient } from "@/lib/supabase/server";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
+import { isHousePlan } from "@/lib/housePlan";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
   const from = u.searchParams.get("from") || new Date().toISOString();
   const to = u.searchParams.get("to") || new Date(Date.now() + 14 * 86_400_000).toISOString();
   if (Date.parse(to) - Date.parse(from) > 45 * 86_400_000) return NextResponse.json({ error: "Range too long." }, { status: 400 });
-  const { data: hosts } = await createServerClient().from("booking_hosts").select("name").in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
+  const { data: hosts } = await createServerClient().from("booking_hosts").select("name").eq("master_plan_id", cal.master_plan_id).in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
   const plan = await availableSlots(cal, from, to);
   return NextResponse.json({
     calendar: {
@@ -46,7 +47,8 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     timezone: str(b.timezone) || null,
     answers: b.answers && typeof b.answers === "object" ? (b.answers as Record<string, string>) : {},
   });
-  if (r.ok) {
+  // Meta Conversions API is Babs's own ad account: only her calendars report to it.
+  if (r.ok && (await isHousePlan(cal.master_plan_id))) {
     // Schedule → Meta Conversions API. Reschedules (the manage page) aren't new bookings.
     const [firstName, ...rest] = str(b.name).trim().split(/\s+/);
     await sendMetaEvent({

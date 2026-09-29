@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "./BroadcastsTab";
+import EmailSendingTab from "./EmailSendingTab";
 
 interface Contact {
   id: string;
@@ -63,6 +64,8 @@ interface Submission {
   contact_id: string | null;
 }
 
+const TABS = ["contacts", "forms", "broadcasts", "sending"] as const;
+type Tab = (typeof TABS)[number];
 const APP = typeof window !== "undefined" ? window.location.origin : "https://lccommandsuite.com";
 const fullName = (c: Pick<Contact, "first_name" | "last_name" | "email">) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 const when = (iso: string | null | undefined) =>
@@ -72,8 +75,13 @@ const chip = "inline-flex items-center gap-1 rounded-full bg-[#2E7C83]/10 px-2.5
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
 
 export default function ContactsCrm() {
-  const [tab, setTab] = useState<"contacts" | "forms" | "broadcasts">("contacts");
+  const [tab, setTab] = useState<Tab>("contacts");
   const [msg, setMsg] = useState("");
+  // Deep link: /contacts?tab=sending (the "Set up email sending" links point here).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && (TABS as readonly string[]).includes(t)) setTab(t as Tab);
+  }, []);
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
@@ -86,9 +94,9 @@ export default function ContactsCrm() {
         </div>
       </div>
       <div className="flex gap-2 mb-5">
-        {(["contacts", "forms", "broadcasts"] as const).map((t) => (
+        {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "contacts" ? "Contacts" : t === "forms" ? "Forms" : "Broadcasts"}
+            {t === "contacts" ? "Contacts" : t === "forms" ? "Forms" : t === "broadcasts" ? "Broadcasts" : "Email sending"}
           </button>
         ))}
       </div>
@@ -97,7 +105,7 @@ export default function ContactsCrm() {
           {msg}
         </button>
       )}
-      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : tab === "forms" ? <FormsTab setMsg={setMsg} /> : <BroadcastsTab setMsg={setMsg} />}
+      {tab === "contacts" ? <ContactsTab setMsg={setMsg} /> : tab === "forms" ? <FormsTab setMsg={setMsg} /> : tab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : <EmailSendingTab setMsg={setMsg} />}
     </div>
   );
 }
@@ -464,6 +472,10 @@ function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: 
             </button>
           </div>
           <p className="text-xs text-[#7a8a99]">Form id for the websites: {form.id}</p>
+          <p className="text-xs text-[#7a8a99]">
+            On your own website: link to the share link above, or point a plain HTML form at{" "}
+            <code className="break-all">{`<form method="post" action="${APP}/api/forms/${form.id}">`}</code> with inputs named {form.fields.map((f) => f.name).join(", ")}.
+          </p>
         </CardContent>
       </Card>
 

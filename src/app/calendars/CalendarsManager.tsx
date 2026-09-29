@@ -16,7 +16,7 @@ interface Cal {
   create_deal: boolean; deal_value: number | null; noshow_subject: string | null; noshow_body: string | null;
 }
 interface Booking { id: string; calendar_id: string; host_id: string | null; start_at: string; invitee_name: string; invitee_email: string; invitee_phone: string | null; answers: Record<string, string>; status: string; meeting_url: string | null; cancel_reason: string | null }
-interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean } }
+interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
 
 const DAYS: [string, string][] = [["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]];
 const TZS = ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu", "Europe/London"];
@@ -58,9 +58,15 @@ export default function CalendarsManager() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Calendars</h1>
-          <p className="text-[#7a8a99]">Booking links that check each host&rsquo;s real calendars, add Zoom, send reminders and put every booking in Contacts.</p>
+          <p className="text-[#7a8a99]">Booking links that check each host&rsquo;s real calendars{d?.house ? ", add Zoom" : ""}, send reminders and put every booking in Contacts.</p>
         </div>
       </div>
+      {d?.sender && !d.sender.house && !d.sender.ok && (
+        <p className="mb-4 rounded-lg bg-[#c9a227]/15 px-4 py-2 text-sm">
+          Booking confirmation and reminder emails are off until your own sending domain is verified. Bookings still work, and calendar invites from a host&rsquo;s connected Google or Microsoft calendar still go out.{" "}
+          <a href={d.sender.setupPath} className="font-semibold text-[#2E7C83] underline">Set up email sending</a>
+        </p>
+      )}
       {d && d.zoom.configured && !d.zoom.canCreate && (
         <p className="mb-4 rounded-lg bg-[#c9a227]/15 px-4 py-2 text-sm">Zoom links: the Suite&rsquo;s Zoom app can&rsquo;t create meetings yet (it needs the &ldquo;meeting:write&rdquo; permission). Until then, bookings say &ldquo;Zoom link to follow.&rdquo;</p>
       )}
@@ -146,16 +152,16 @@ function Calendars({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) 
           <Button aria-label="Create calendar" onClick={async () => { const x = await act({ action: "create-calendar", name: newName }); if (x?.id) { setNewName(""); setOpenId(String(x.id)); } }}><Plus className="w-4 h-4" /></Button>
         </div>
       </div>
-      {cal ? <CalendarEditor key={cal.id} cal={cal} hosts={d.hosts} act={act} setMsg={setMsg} /> : <p className="text-sm text-[#7a8a99]">Create a calendar to get started.</p>}
+      {cal ? <CalendarEditor key={cal.id} cal={cal} hosts={d.hosts} house={Boolean(d.house)} act={act} setMsg={setMsg} /> : <p className="text-sm text-[#7a8a99]">Create a calendar to get started.</p>}
     </div>
   );
 }
 
-function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; act: Act; setMsg: (m: string) => void }) {
+function CalendarEditor({ cal, hosts, house, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; act: Act; setMsg: (m: string) => void }) {
   const [f, setF] = useState({
     name: cal.name, slug: cal.slug, description: cal.description ?? "", duration: cal.duration_min, step: cal.slot_step_min, bufferBefore: cal.buffer_before_min, bufferAfter: cal.buffer_after_min,
     minNotice: cal.min_notice_hours, maxDays: cal.max_days_ahead, dailyCap: cal.daily_cap ?? 0, assignment: cal.assignment, hostIds: cal.host_ids, cc: cal.cc_emails.join(", "),
-    location: cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
+    location: !house && cal.location === "zoom" ? "custom" : cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
     createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
     questions: cal.questions.map((q) => `${q.label}${q.required ? " *" : ""}${q.type === "textarea" ? " (textarea)" : ""}${q.options?.length ? `: ${q.options.join(" | ")}` : ""}`).join("\n"),
   });
@@ -230,12 +236,12 @@ function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; 
           <div className="grid gap-3 sm:grid-cols-2">
             <label>Where
               <select value={f.location} onChange={(e) => setF({ ...f, location: e.target.value as Cal["location"] })} className={sel}>
-                <option value="zoom">Zoom (a link is created for each booking)</option>
+                {house && <option value="zoom">Zoom (a link is created for each booking)</option>}
                 <option value="phone">Phone (host calls them)</option>
                 <option value="custom">Somewhere else</option>
               </select>
             </label>
-            {f.location === "custom" && <label>Details<Input value={f.locationDetail} onChange={(e) => setF({ ...f, locationDetail: e.target.value })} /></label>}
+            {f.location === "custom" && <label>Details{!house && " (e.g. your Zoom or Google Meet link, or an address)"}<Input value={f.locationDetail} onChange={(e) => setF({ ...f, locationDetail: e.target.value })} /></label>}
           </div>
           <label className="block">Questions to ask when booking, one per line
             <textarea rows={4} value={f.questions} onChange={(e) => setF({ ...f, questions: e.target.value })} className={`${field} font-mono text-xs`} />
@@ -248,7 +254,11 @@ function CalendarEditor({ cal, hosts, act, setMsg }: { cal: Cal; hosts: Host[]; 
             {f.createDeal && (
               <label className="block">Deal value ($)<Input type="number" value={f.dealValue} onChange={(e) => setF({ ...f, dealValue: Number(e.target.value) || 0 })} /></label>
             )}
-            <p className="text-xs text-[#7a8a99]">The deal starts in your first open stage (Discovery call), moves to Won when they buy the Command Suite, and to Lost if they cancel or don&rsquo;t show. Booking again reopens it.</p>
+            <p className="text-xs text-[#7a8a99]">
+              {house
+                ? <>The deal starts in your first open stage (Discovery call), moves to Won when they buy the Command Suite, and to Lost if they cancel or don&rsquo;t show. Booking again reopens it.</>
+                : <>The deal starts in your first open stage and moves to Lost if they cancel or don&rsquo;t show; mark it Won in the Pipeline when they buy. Booking again reopens it.</>}
+            </p>
           </div>
           <div className="rounded-lg border border-[#1a2b4a]/10 p-3 space-y-2">
             <p className="font-medium">No-show follow-up email</p>
@@ -267,14 +277,14 @@ function Hosts({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) => v
   const [add, setAdd] = useState({ name: "", email: "", zoomEmail: "", timezone: "America/Denver" });
   return (
     <div className="space-y-4">
-      {d.hosts.map((h) => <HostCard key={h.id} h={h} act={act} setMsg={setMsg} />)}
+      {d.hosts.map((h) => <HostCard key={h.id} h={h} house={Boolean(d.house)} act={act} setMsg={setMsg} />)}
       <Card>
         <CardContent className="p-5 space-y-2 text-sm">
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add a host</p>
           <div className="grid gap-2 sm:grid-cols-2">
             <Input placeholder="Name" value={add.name} onChange={(e) => setAdd({ ...add, name: e.target.value })} />
             <Input placeholder="Email" value={add.email} onChange={(e) => setAdd({ ...add, email: e.target.value })} />
-            <Input placeholder="Zoom account email (if different)" value={add.zoomEmail} onChange={(e) => setAdd({ ...add, zoomEmail: e.target.value })} />
+            {d.house && <Input placeholder="Zoom account email (if different)" value={add.zoomEmail} onChange={(e) => setAdd({ ...add, zoomEmail: e.target.value })} />}
             <select value={add.timezone} onChange={(e) => setAdd({ ...add, timezone: e.target.value })} className={sel}>{TZS.map((z) => <option key={z} value={z}>{z.replace("America/", "").replace("_", " ")}</option>)}</select>
           </div>
           <Button onClick={async () => { const x = await act({ action: "create-host", ...add }, "Host added. Send them their connect link below."); if (x) setAdd({ name: "", email: "", zoomEmail: "", timezone: add.timezone }); }}>Add host</Button>
@@ -284,7 +294,7 @@ function Hosts({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) => v
   );
 }
 
-function HostCard({ h, act, setMsg }: { h: Host; act: Act; setMsg: (m: string) => void }) {
+function HostCard({ h, house, act, setMsg }: { h: Host; house: boolean; act: Act; setMsg: (m: string) => void }) {
   const [weekly, setWeekly] = useState(h.weekly ?? {});
   const [info, setInfo] = useState({ name: h.name, email: h.email, zoomEmail: h.zoom_email ?? "", timezone: h.timezone });
   const link = `${ORIGIN}/book/connect/${h.id}?k=${h.connect_key}`;
@@ -298,7 +308,7 @@ function HostCard({ h, act, setMsg }: { h: Host; act: Act; setMsg: (m: string) =
         <div className="grid gap-2 sm:grid-cols-4">
           <label>Name<Input value={info.name} onChange={(e) => setInfo({ ...info, name: e.target.value })} /></label>
           <label>Email<Input value={info.email} onChange={(e) => setInfo({ ...info, email: e.target.value })} /></label>
-          <label>Zoom email<Input value={info.zoomEmail} onChange={(e) => setInfo({ ...info, zoomEmail: e.target.value })} placeholder={h.email} /></label>
+          {house && <label>Zoom email<Input value={info.zoomEmail} onChange={(e) => setInfo({ ...info, zoomEmail: e.target.value })} placeholder={h.email} /></label>}
           <label>Time zone<select value={info.timezone} onChange={(e) => setInfo({ ...info, timezone: e.target.value })} className={sel}>{(TZS.includes(info.timezone) ? TZS : [info.timezone, ...TZS]).map((z) => <option key={z} value={z}>{z.replace("America/", "").replace("_", " ")}</option>)}</select></label>
         </div>
         <div>

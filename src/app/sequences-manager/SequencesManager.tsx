@@ -39,6 +39,7 @@ interface Person {
   failed: number;
   seq_contacts: { email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
 }
+interface Sender { house: boolean; ok: boolean; reason?: string | null; setupPath?: string; fromName?: string; fromEmail?: string | null; replyTo?: string }
 const EMPTY = { id: "", position: 0, dayOffset: 0, subject: "", preview: "", body: "", buttonLabel: "", buttonUrl: "" };
 type StepForm = typeof EMPTY;
 const TIMEZONES = ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu", "America/Toronto", "Europe/London", "Australia/Sydney"];
@@ -47,6 +48,7 @@ const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1
 
 export default function SequencesManager() {
   const [list, setList] = useState<Seq[] | null>(null);
+  const [sender, setSender] = useState<Sender | null>(null);
   const [openId, setOpenId] = useState("");
   const [seq, setSeq] = useState<Seq | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
@@ -61,6 +63,7 @@ export default function SequencesManager() {
   const loadList = useCallback(async () => {
     const d = await fetch("/api/sequences", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setList(d.sequences ?? []);
+    setSender(d.sender ?? null);
     if (!openId && d.sequences?.[0]) setOpenId(d.sequences[0].id);
   }, [openId]);
   const loadOne = useCallback(async (id: string) => {
@@ -133,9 +136,14 @@ export default function SequencesManager() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Sequences</h1>
-          <p className="text-[#7a8a99]">Timed email series sent from the Suite. Daily emails go out at the set hour in each person&rsquo;s own time zone. Only you see this page.</p>
+          <p className="text-[#7a8a99]">Timed email series sent from the Suite. Daily emails go out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</p>
         </div>
       </div>
+      {sender && !sender.house && !sender.ok && (
+        <p className="mb-4 rounded-lg bg-[#c9a227]/15 px-4 py-2 text-sm">
+          {sender.reason} <a href={sender.setupPath} className="font-semibold text-[#2E7C83] underline">Set up email sending</a>
+        </p>
+      )}
       {msg && (
         <button onClick={() => setMsg("")} className="mb-4 block w-full text-left rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm">
           {msg}
@@ -169,7 +177,11 @@ export default function SequencesManager() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{seq.name}</p>
-                    <p className="text-sm text-[#7a8a99]">From {seq.from_name} &lt;{seq.from_email}&gt; · replies to support@amilynnecarroll.com</p>
+                    <p className="text-sm text-[#7a8a99]">
+                      {!sender || sender.house
+                        ? <>From {seq.from_name} &lt;{seq.from_email}&gt; · replies to support@amilynnecarroll.com</>
+                        : <>From {sender.fromName} &lt;{sender.fromEmail || "your own domain, once it's set up"}&gt;{sender.replyTo ? ` · replies to ${sender.replyTo}` : ""}</>}
+                    </p>
                   </div>
                   <Button
                     onClick={() => saveSettings({ active: !seq.active }, seq.active ? "Paused. Nothing more goes out until you turn it back on." : "Live. Emails go out on schedule.")}
@@ -325,7 +337,7 @@ export default function SequencesManager() {
                           </tr>
                         );
                       })}
-                      {!people.length && <tr><td colSpan={5} className="p-4 text-[#7a8a99]">No one yet. Life Shift buyers are added automatically when they pay.</td></tr>}
+                      {!people.length && <tr><td colSpan={5} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this sequence."}</td></tr>}
                     </tbody>
                   </table>
                 </div>

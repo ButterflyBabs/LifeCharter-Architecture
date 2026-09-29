@@ -5,11 +5,16 @@ import { useEffect, useState } from "react";
 // Public: the Unsubscribe link at the foot of every sequence email.
 export default function UnsubscribePage() {
   const [state, setState] = useState<"working" | "done" | "error">("working");
+  const [support, setSupport] = useState<string | null>(null);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("t") || "";
     fetch("/api/unsubscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }) })
-      .then((r) => setState(r.ok ? "done" : "error"))
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        setSupport(typeof d.support === "string" ? d.support : null);
+        setState(r.ok ? "done" : "error");
+      })
       .catch(() => setState("error"));
   }, []);
 
@@ -20,13 +25,20 @@ export default function UnsubscribePage() {
         {state === "done" && (
           <>
             <h1 style={{ fontSize: 22, color: "#1F3A3D", margin: "0 0 10px" }}>You&rsquo;re unsubscribed</h1>
-            <p style={{ color: "#555", lineHeight: 1.6 }}>You won&rsquo;t get any more emails from this series. If that was a mistake, just write to <a href="mailto:support@amilynnecarroll.com" style={{ color: "#2A7F7A" }}>support@amilynnecarroll.com</a> and we&rsquo;ll put you back.</p>
+            <p style={{ color: "#555", lineHeight: 1.6 }}>
+              You won&rsquo;t get any more emails from this series.{" "}
+              {support ? (
+                <>If that was a mistake, just write to <a href={`mailto:${support}`} style={{ color: "#2A7F7A" }}>{support}</a> and we&rsquo;ll put you back.</>
+              ) : (
+                <>If that was a mistake, just reply to one of the emails and we&rsquo;ll put you back.</>
+              )}
+            </p>
           </>
         )}
         {state === "error" && (
           <>
             <h1 style={{ fontSize: 22, color: "#1F3A3D", margin: "0 0 10px" }}>That link didn&rsquo;t work</h1>
-            <p style={{ color: "#555", lineHeight: 1.6 }}>Please email <a href="mailto:support@amilynnecarroll.com" style={{ color: "#2A7F7A" }}>support@amilynnecarroll.com</a> and we&rsquo;ll take you off the list right away.</p>
+            <p style={{ color: "#555", lineHeight: 1.6 }}>Please reply to the email you received and ask to be taken off the list. We&rsquo;ll do it right away.</p>
           </>
         )}
       </div>

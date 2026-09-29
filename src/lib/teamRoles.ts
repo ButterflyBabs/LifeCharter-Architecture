@@ -86,7 +86,7 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 
 export type FeatureKey =
   | "tasks" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
-  | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar";
+  | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -105,6 +105,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "compliance", label: "Legal & Compliance", pages: ["/compliance"], apis: ["/api/legal-checklist"] },
   { key: "website_review", label: "Website Review", pages: ["/website-review"], apis: ["/api/website-review"] },
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
+  { key: "crm", label: "Contacts, calendars & sequences", pages: ["/contacts", "/calendars", "/sequences-manager"], apis: ["/api/crm", "/api/calendars", "/api/sequences"] },
 ];
 
 const ALL_VIEW = Object.fromEntries(FEATURES.map((f) => [f.key, "view"])) as FeatureMap;
@@ -114,7 +115,7 @@ const ONLY = (keys: FeatureKey[], extra: FeatureMap = {}) =>
 export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap }[] = [
   { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["tasks", "daily_compass", "content", "scripts"]) },
   { key: "bookkeeper", label: "Bookkeeper", blurb: "Finance only.", features: ONLY(["finance"]) },
-  { key: "sales", label: "Sales", blurb: "Sales activities, scripts and the pipeline.", features: ONLY(["sales_activities", "scripts", "pipeline", "tasks"]) },
+  { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
   { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["content", "testimonials", "scripts", "tasks"]) },
   { key: "viewer", label: "Viewer", blurb: "Sees everything above, changes nothing.", features: ALL_VIEW },
 ];

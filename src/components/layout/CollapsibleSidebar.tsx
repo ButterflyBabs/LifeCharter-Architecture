@@ -69,10 +69,10 @@ const navigationSections = [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
-      // Babs's CRM (Alignment Architect only): shown here for her, never for clients.
-      { id: "contacts", label: "Contacts", icon: Users, href: "/contacts", ownerOnly: true },
-      { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars", ownerOnly: true },
-      { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager", ownerOnly: true },
+      // The CRM: every account, each seeing only its own contacts, calendars and sequences.
+      { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
+      { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
+      { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
@@ -429,7 +429,7 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && (superAdmin || !("ownerOnly" in i && i.ownerOnly))) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
   // Load the profile name + headshot for the footer block.

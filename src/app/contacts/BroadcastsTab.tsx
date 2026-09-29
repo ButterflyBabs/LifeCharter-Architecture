@@ -19,6 +19,7 @@ interface Summary {
   created_at: string;
 }
 interface Full extends Summary {
+  timezone: string;
   preview: string | null;
   body: string;
   button_label: string | null;
@@ -48,14 +49,20 @@ interface Detail {
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
 const selectCls = "h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm";
 const STATUS: Record<Summary["status"], string> = { draft: "Draft", scheduled: "Scheduled", sending: "Sending", sent: "Sent", canceled: "Canceled" };
-const mt = (iso: string | null) =>
-  iso ? `${new Date(iso).toLocaleString("en-US", { timeZone: OWNER_TZ, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} MT` : "";
-const todayMt = () => zonedParts(new Date(), OWNER_TZ).date;
+interface Sender { house: boolean; ok: boolean; reason?: string | null; setupPath?: string; fromName?: string; fromEmail?: string | null; replyTo?: string }
+// Times show in the account's zone: Mountain for Babs (as always), the client's own otherwise.
+const zoneAbbr = (tz: string) => (tz === OWNER_TZ ? "MT" : new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }).formatToParts(new Date()).find((x) => x.type === "timeZoneName")?.value || tz);
+const zoneName = (tz: string) => (tz === OWNER_TZ ? "Mountain" : tz.replace(/^[^/]+\//, "").replace(/_/g, " "));
+const mt = (iso: string | null, tz = OWNER_TZ) =>
+  iso ? `${new Date(iso).toLocaleString("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ${zoneAbbr(tz)}` : "";
+const todayMt = (tz = OWNER_TZ) => zonedParts(new Date(), tz).date;
 
 export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void }) {
   const [list, setList] = useState<Summary[] | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [tz, setTz] = useState(OWNER_TZ);
+  const [sender, setSender] = useState<Sender | null>(null);
   const [openId, setOpenId] = useState("");
   const [newName, setNewName] = useState("");
 
@@ -64,6 +71,8 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
     setList(d.broadcasts ?? []);
     setTemplates(d.templates ?? []);
     setAllTags(d.tags ?? []);
+    if (typeof d.timezone === "string") setTz(d.timezone);
+    setSender(d.sender ?? null);
   }, []);
   useEffect(() => {
     void load();
@@ -79,6 +88,12 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
   }
 
   return (
+    <div className="space-y-4">
+    {sender && !sender.house && !sender.ok && (
+      <p className="rounded-lg bg-[#c9a227]/15 px-4 py-2 text-sm">
+        {sender.reason} <a href={sender.setupPath} className="font-semibold text-[#2E7C83] underline">Set up email sending</a>
+      </p>
+    )}
     <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
       <div className="space-y-2 min-w-0">
         {templates.map((t) => (
@@ -105,7 +120,7 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
               <p className="truncate font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{b.name}</p>
               <p className="text-xs text-[#7a8a99]">
                 {STATUS[b.status]}
-                {b.status === "scheduled" ? ` · ${mt(b.scheduled_at)}` : ""}
+                {b.status === "scheduled" ? ` · ${mt(b.scheduled_at, tz)}` : ""}
                 {b.recipient_count ? ` · ${b.recipient_count} people` : ""}
               </p>
             </button>
@@ -115,7 +130,7 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
       </div>
       <div className="min-w-0">
         {openId ? (
-          <Editor key={openId} id={openId} allTags={allTags} templates={templates} setMsg={setMsg} onChange={load} onGone={() => { setOpenId(""); void load(); }} />
+          <Editor key={openId} id={openId} allTags={allTags} templates={templates} tz={tz} sender={sender} setMsg={setMsg} onChange={load} onGone={() => { setOpenId(""); void load(); }} />
         ) : (
           <Card>
             <CardContent className="p-6 text-sm text-[#7a8a99]">
@@ -126,17 +141,18 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
         )}
       </div>
     </div>
+    </div>
   );
 }
 
-function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: string; allTags: string[]; templates: Template[]; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
+function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }: { id: string; allTags: string[]; templates: Template[]; tz: string; sender: Sender | null; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
   const [d, setD] = useState<Detail | null>(null);
   const [f, setF] = useState<Full | null>(null);
   const [reach, setReach] = useState<number | null>(null);
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [session, setSession] = useState(todayMt());
-  const [when, setWhen] = useState({ date: addDays(todayMt(), 1), time: "09:00" });
+  const [session, setSession] = useState(todayMt(tz));
+  const [when, setWhen] = useState({ date: addDays(todayMt(tz), 1), time: "09:00" });
   const tpl = templates.find((t) => t.key === f?.template_key) ?? null;
 
   const load = useCallback(async () => {
@@ -145,8 +161,8 @@ function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: stri
     setD(r);
     setF(r.broadcast);
     setReach(r.reach);
-    if (r.broadcast.scheduled_at) setWhen(zonedParts(new Date(r.broadcast.scheduled_at), OWNER_TZ));
-  }, [id]);
+    if (r.broadcast.scheduled_at) setWhen(zonedParts(new Date(r.broadcast.scheduled_at), r.broadcast.timezone || tz));
+  }, [id, tz]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -216,8 +232,8 @@ function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: stri
               <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] break-words">{b.name}</p>
               <p className="text-sm text-[#7a8a99]">
                 {STATUS[b.status]}
-                {b.status === "scheduled" && ` for ${mt(b.scheduled_at)}`}
-                {" · "}From {b.from_name} &lt;{b.from_email}&gt;
+                {b.status === "scheduled" && ` for ${mt(b.scheduled_at, b.timezone || tz)}`}
+                {" · "}From {!sender || sender.house ? <>{b.from_name} &lt;{b.from_email}&gt;</> : <>{sender.fromName} &lt;{sender.fromEmail || "your own domain, once it's set up"}&gt;</>}
               </p>
             </div>
             {b.status === "draft" && (
@@ -330,7 +346,7 @@ function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: stri
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <Input placeholder="Brand line at the top" value={f.brand} onChange={(e) => set({ brand: e.target.value })} />
-              <Input placeholder="From address (@lifecharter.life or @lccommandsuite.com)" value={f.from_email} onChange={(e) => set({ from_email: e.target.value })} />
+              {(!sender || sender.house) && <Input placeholder="From address (@lifecharter.life or @lccommandsuite.com)" value={f.from_email} onChange={(e) => set({ from_email: e.target.value })} />}
             </div>
           </fieldset>
           <div className="flex flex-wrap gap-2">
@@ -366,7 +382,7 @@ function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: stri
                 <Input type="date" value={when.date} onChange={(e) => setWhen({ ...when, date: e.target.value })} />
               </label>
               <label className="text-sm">
-                Time (Mountain)
+                Time ({zoneName(b.timezone || tz)})
                 <Input type="time" value={when.time} onChange={(e) => setWhen({ ...when, time: e.target.value })} />
               </label>
               <Button
@@ -374,7 +390,7 @@ function Editor({ id, allTags, templates, setMsg, onChange, onGone }: { id: stri
                 onClick={() => run(async () => {
                   if (!(await save())) return;
                   const r = await post({ action: "schedule", ...when });
-                  if (r) { setMsg(`Scheduled for ${mt(r.scheduledAt)}.`); await load(); onChange(); }
+                  if (r) { setMsg(`Scheduled for ${mt(r.scheduledAt, b.timezone || tz)}.`); await load(); onChange(); }
                 })}
               >
                 <CalendarClock className="w-4 h-4 mr-1" /> {b.status === "scheduled" ? "Reschedule" : "Schedule"}

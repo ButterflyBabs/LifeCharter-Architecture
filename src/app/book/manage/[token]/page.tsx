@@ -50,7 +50,7 @@ export default function ManageBooking({ params }: { params: { token: string } })
     <main className="min-h-screen bg-[#FBF8F1] px-4 py-10">
       <div className="mx-auto max-w-2xl rounded-2xl border border-[#EADFCF] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-8">
         {d === undefined && <p className="text-[#56616E]">Loading…</p>}
-        {d === null && <p className="text-[#56616E]">We couldn&rsquo;t find that booking. Please check the link in your email, or write to support@amilynnecarroll.com.</p>}
+        {d === null && <p className="text-[#56616E]">We couldn&rsquo;t find that booking. Please check the link in your email, or reply to your confirmation email.</p>}
         {d && (
           <>
             <h1 className="text-2xl font-semibold text-[#1F3A3D]">{d.calendar.name}</h1>

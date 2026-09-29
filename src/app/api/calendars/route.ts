@@ -6,11 +6,15 @@ import { cancelBooking, markNoShow } from "@/lib/booking/engine";
 import { isValidTz } from "@/lib/sequences/engine";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
 import { canCreateZoomMeetings, isZoomConfigured } from "@/lib/zoom";
+import { senderProfile, senderVerdict, SENDING_SETUP_PATH } from "@/lib/email/accountSender";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// The account's booking calendars, hosts and bookings (owner screen /calendars).
+// The signed-in account's booking calendars, hosts and bookings (/calendars).
+// Every read filters by the account's plan; every by-id change first checks the
+// row belongs to that plan (404 otherwise). Zoom meetings come from Babs's Zoom
+// account, so only her calendars can use the Zoom location.
 //   GET → everything for the screen
 //   POST { action, ... } → create-host | update-host | connection | remove-connection |
 //        new-connect-key | create-calendar | update-calendar | booking-status | cancel-booking
@@ -51,8 +55,15 @@ export async function GET() {
   const { data: conns } = hostIds.length
     ? await db.from("booking_connections").select("id, host_id, provider, email, check_busy, add_events").in("host_id", hostIds).order("created_at")
     : { data: [] };
-  const zoom = isZoomConfigured() ? { configured: true, canCreate: await canCreateZoomMeetings().catch(() => false) } : { configured: false, canCreate: false };
-  return NextResponse.json({ calendars: calendars ?? [], hosts: (hosts ?? []).map((h) => ({ ...h, connections: (conns ?? []).filter((c) => c.host_id === h.id) })), bookings: bookings ?? [], zoom });
+  const zoom = !a.house
+    ? { configured: false, canCreate: false, available: false }
+    : isZoomConfigured()
+      ? { configured: true, canCreate: await canCreateZoomMeetings().catch(() => false), available: true }
+      : { configured: false, canCreate: false, available: true };
+  const profile = await senderProfile(a.planId, db);
+  const v = senderVerdict(profile, false);
+  const sender = profile.house ? { house: true, ok: true } : { house: false, ok: v.ok, reason: v.ok ? null : v.reason, setupPath: SENDING_SETUP_PATH };
+  return NextResponse.json({ calendars: calendars ?? [], hosts: (hosts ?? []).map((h) => ({ ...h, connections: (conns ?? []).filter((c) => c.host_id === h.id) })), bookings: bookings ?? [], zoom, house: a.house, sender });
 }
 
 export async function POST(request: Request) {
@@ -76,7 +87,7 @@ export async function POST(request: Request) {
       if (!str(b.name, 120) || !EMAIL_RE.test(email)) return NextResponse.json({ error: "Enter a name and a valid email." }, { status: 400 });
       const { data, error } = await db
         .from("booking_hosts")
-        .insert({ master_plan_id: a.planId, name: str(b.name, 120), email, zoom_email: str(b.zoomEmail, 200).toLowerCase() || null, timezone: isValidTz(str(b.timezone, 60)) ? str(b.timezone, 60) : "America/Denver" })
+        .insert({ master_plan_id: a.planId, name: str(b.name, 120), email, zoom_email: a.house ? str(b.zoomEmail, 200).toLowerCase() || null : null, timezone: isValidTz(str(b.timezone, 60)) ? str(b.timezone, 60) : "America/Denver" })
         .select("id")
         .single();
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That person is already a host." : "Couldn't add them." }, { status: 400 });
@@ -88,12 +99,12 @@ export async function POST(request: Request) {
       const patch: Record<string, unknown> = { updated_at: now };
       if (str(b.name, 120)) patch.name = str(b.name, 120);
       if (EMAIL_RE.test(str(b.email, 200))) patch.email = str(b.email, 200).toLowerCase();
-      if (b.zoomEmail !== undefined) patch.zoom_email = str(b.zoomEmail, 200).toLowerCase() || null;
+      if (a.house && b.zoomEmail !== undefined) patch.zoom_email = str(b.zoomEmail, 200).toLowerCase() || null;
       if (isValidTz(str(b.timezone, 60))) patch.timezone = str(b.timezone, 60);
       const weekly = cleanWeekly(b.weekly);
       if (weekly) patch.weekly = weekly;
       if (typeof b.active === "boolean") patch.active = b.active;
-      await db.from("booking_hosts").update(patch).eq("id", id);
+      await db.from("booking_hosts").update(patch).eq("id", id).eq("master_plan_id", a.planId);
       return NextResponse.json({ ok: true });
     }
     case "connection": {
@@ -116,14 +127,15 @@ export async function POST(request: Request) {
       const id = await ownHost(b.id);
       if (!id) return NextResponse.json({ error: "Not found." }, { status: 404 });
       const key = Array.from(crypto.getRandomValues(new Uint8Array(24)), (x) => x.toString(16).padStart(2, "0")).join("");
-      await db.from("booking_hosts").update({ connect_key: key, updated_at: now }).eq("id", id);
+      await db.from("booking_hosts").update({ connect_key: key, updated_at: now }).eq("id", id).eq("master_plan_id", a.planId);
       return NextResponse.json({ ok: true });
     }
     case "create-calendar": {
       const name = str(b.name, 120);
       const slug = (str(b.slug, 60) || name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       if (!name || !slug) return NextResponse.json({ error: "Give the calendar a name." }, { status: 400 });
-      const { data, error } = await db.from("booking_calendars").insert({ master_plan_id: a.planId, name, slug, tags: [slug] }).select("id").single();
+      // A client's calendar starts as "somewhere else" (Zoom is Babs's account only).
+      const { data, error } = await db.from("booking_calendars").insert({ master_plan_id: a.planId, name, slug, tags: [slug], ...(a.house ? {} : { location: "custom" }) }).select("id").single();
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken. Try another." : "Couldn't create it." }, { status: 400 });
       return NextResponse.json({ id: data.id });
     }
@@ -156,18 +168,23 @@ export async function POST(request: Request) {
         p.host_ids = b.hostIds.filter((x: string) => ok.has(x));
       }
       if (Array.isArray(b.ccEmails)) p.cc_emails = b.ccEmails.map((e: unknown) => str(e, 200).toLowerCase()).filter((e: string) => EMAIL_RE.test(e)).slice(0, 10);
-      if (["zoom", "phone", "custom"].includes(b.location)) p.location = b.location;
+      if ((a.house ? ["zoom", "phone", "custom"] : ["phone", "custom"]).includes(b.location)) p.location = b.location;
       if (b.locationDetail !== undefined) p.location_detail = str(b.locationDetail, 500) || null;
       if (b.questions !== undefined) p.questions = (cleanFields(b.questions) ?? []).filter((q) => q.name !== "email");
       if (Array.isArray(b.tags)) p.tags = b.tags.map((t: unknown) => str(t, 60).toLowerCase()).filter(Boolean);
-      if (b.sequenceKey !== undefined) p.sequence_key = str(b.sequenceKey, 60) || null;
+      if (b.sequenceKey !== undefined) {
+        // Only one of this account's own sequences.
+        const k = str(b.sequenceKey, 60);
+        const { data: sq } = k ? await db.from("sequences").select("key").eq("master_plan_id", a.planId).eq("key", k).maybeSingle() : { data: null };
+        p.sequence_key = sq?.key ?? null;
+      }
       if (b.confirmationNote !== undefined) p.confirmation_note = str(b.confirmationNote, 1000) || null;
       if (typeof b.createDeal === "boolean") p.create_deal = b.createDeal;
       if (b.dealValue !== undefined) p.deal_value = Number.isFinite(Number(b.dealValue)) && Number(b.dealValue) > 0 ? Math.round(Number(b.dealValue) * 100) / 100 : null;
       if (b.noshowSubject !== undefined) p.noshow_subject = str(b.noshowSubject, 200) || null;
       if (b.noshowBody !== undefined) p.noshow_body = str(b.noshowBody, 5000) || null;
       if (typeof b.active === "boolean") p.active = b.active;
-      const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id);
+      const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id).eq("master_plan_id", a.planId);
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken." : "Couldn't save." }, { status: 400 });
       return NextResponse.json({ ok: true });
     }
@@ -175,14 +192,14 @@ export async function POST(request: Request) {
       if (!["completed", "no_show"].includes(b.status)) return NextResponse.json({ error: "Unknown status." }, { status: 400 });
       const { data: bk } = await db.from("bookings").select("id, contact_id, calendar_id, status").eq("id", str(b.id, 60)).eq("master_plan_id", a.planId).maybeSingle();
       if (!bk) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      await db.from("bookings").update({ status: b.status }).eq("id", bk.id);
+      await db.from("bookings").update({ status: b.status }).eq("id", bk.id).eq("master_plan_id", a.planId);
       if (b.status === "no_show" && bk.status === "confirmed") await markNoShow(bk.id as string).catch((e) => console.error("no-show follow-up:", e));
       if (bk.contact_id) {
-        const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).maybeSingle();
+        const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).eq("master_plan_id", a.planId).maybeSingle();
         await logEvent(a.planId, bk.contact_id, "booking", `${b.status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });
-        const { data: c } = await db.from("seq_contacts").select("tags").eq("id", bk.contact_id).maybeSingle();
+        const { data: c } = await db.from("seq_contacts").select("tags").eq("id", bk.contact_id).eq("master_plan_id", a.planId).maybeSingle();
         const tag = `${b.status === "no_show" ? "no-show" : "attended"}-${cal?.slug ?? "meeting"}`;
-        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])) }).eq("id", bk.contact_id);
+        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])) }).eq("id", bk.contact_id).eq("master_plan_id", a.planId);
       }
       return NextResponse.json({ ok: true });
     }

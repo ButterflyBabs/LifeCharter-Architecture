@@ -158,6 +158,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "The follow-up engine keeps relationships warm. Contacts and tasks can carry a follow-up schedule; when a follow-up comes due, it surfaces in your notifications and Daily Compass so you reach out at the right moment. It works hand-in-hand with your Global Control contacts.",
     keywords: ["follow up", "follow-up", "followup", "engine", "reach out", "contacts", "cadence"],
   },
+  {
+    id: "sa-contacts-crm",
+    category: "Sales",
+    question: "What are Contacts, Forms and Broadcasts?",
+    answer:
+      "Contacts (Daily Operations → Contacts) is your own CRM: everyone who fills in one of your forms, books a call or is added by hand, with tags and a timeline of every touch. Forms gives you a hosted sign-up link (or a plain HTML form for your website) that saves people as contacts, tags them and can start a sequence. Broadcasts sends a one-time email to everyone with a tag. Only your account sees your contacts.",
+    keywords: ["contacts", "crm", "forms", "broadcast", "newsletter", "tags", "leads", "sign up form"],
+  },
+  {
+    id: "sa-sequences",
+    category: "Sales",
+    question: "How do Sequences work, and why won't my emails send yet?",
+    answer:
+      "A sequence is a timed email series: day 0 goes right away, then each email on its day at the hour you pick, in each person's own time zone. People join by hand, from a form or from a booking calendar, and anyone who unsubscribes is never emailed again. Emails go out from your own domain, so first open Contacts → Email sending, add a domain like mail.yourbusiness.com, add the DNS records it shows at your domain provider, click Check verification, and fill in your mailing address (the law requires it on marketing emails). Until then, sequences and broadcasts can't be turned on.",
+    keywords: ["sequences", "email series", "drip", "nurture", "sending domain", "dns", "verify", "email sending", "mailing address"],
+  },
 
   // ---- Finance ----
   {
@@ -507,6 +523,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Yes — when you schedule a planning session with a date (and time) on the Planning Hub, it creates a real event on your connected calendar that day, and the session shows an 'On calendar' badge. If Google is still read-only, it schedules in the hub and prompts you to reconnect for calendar access.",
     keywords: ["planning session calendar", "add to calendar", "event", "on calendar", "schedule session"],
+  },
+  {
+    id: "cal-booking-links",
+    category: "Calendar & Connections",
+    question: "How do booking links (Calendars) work?",
+    answer:
+      "Daily Operations → Calendars gives you booking pages like Calendly. Add hosts, send each host their private connect link so their Google or Microsoft calendar is checked for busy times, then create a calendar with its length, buffers, questions and where you'll meet. Every booking lands in Contacts and can start a sequence or open a Pipeline deal. Confirmation and reminder emails go out from your own verified domain (Contacts → Email sending); until then, bookings still work and the host's calendar invite still goes out.",
+    keywords: ["booking link", "calendly", "calendars", "book a call", "appointments", "hosts", "reminders", "scheduling page"],
   },
 
   // ---- Getting Started (navigation) ----
