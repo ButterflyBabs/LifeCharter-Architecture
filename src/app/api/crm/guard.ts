@@ -19,15 +19,16 @@ export type CrmAccount = { planId: string; userEmail: string | null; isArchitect
 export async function crmAccount(request?: Request): Promise<CrmAccount | { denied: NextResponse }> {
   const writing = Boolean(request && request.method !== "GET" && request.method !== "HEAD");
   if (writing && crossOriginBlocked(request!)) return { denied: NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 }) };
-  const user = authEnabled() ? await sessionUser() : null;
-  if (authEnabled() && !user) return { denied: NextResponse.json({ error: "Please sign in." }, { status: 401 }) };
-  // The public demo shows sample data only; it can't send, book or change anything here.
+  // The public demo shows sample data only (resolveMasterPlanId pins it to the demo
+  // account, which has no owner or mailbox); it can read but never send, book or change.
   let demo = false;
   try {
     demo = cookies().get("lc_demo")?.value === "1";
   } catch {
     /* no request scope */
   }
+  const user = authEnabled() ? await sessionUser() : null;
+  if (authEnabled() && !user && !demo) return { denied: NextResponse.json({ error: "Please sign in." }, { status: 401 }) };
   if (demo && writing) return { denied: NextResponse.json({ error: "The demo is view-only." }, { status: 403 }) };
   const planId = await resolveMasterPlanId();
   if (!planId) return { denied: NextResponse.json({ error: "No account found." }, { status: 400 }) };
