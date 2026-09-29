@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
+import ContactLookupInput from "@/components/crm/ContactLookupInput";
+
+const LOOKUP = "flex h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] placeholder:text-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#c9a227]/50 focus:border-[#c9a227] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]";
 
 interface Seq {
   id: string;
@@ -320,11 +323,32 @@ export default function SequencesManager() {
                   <CardContent className="p-5 space-y-3">
                     <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Or add someone new</p>
                     <div className="grid gap-2 md:grid-cols-2">
-                      <Input placeholder="Email" value={add.email} onChange={(e) => setAdd({ ...add, email: e.target.value })} />
+                      <ContactLookupInput
+                        className={LOOKUP}
+                        type="email"
+                        placeholder="Email"
+                        value={add.email}
+                        onChange={(v) => setAdd({ ...add, email: v })}
+                        pickLabel="Add"
+                        onPick={async (c) => {
+                          const d = await act({ action: "enrol", email: c.email }, seq.active ? `${personName(c)} is in. Their first email is on its way.` : `${personName(c)} is in. Emails start when you turn the campaign on.`);
+                          if (d) { setAdd({ email: "", firstName: "", lastName: "", timezone: add.timezone }); void loadOne(openId); void loadList(); }
+                        }}
+                      />
                       <select value={add.timezone} onChange={(e) => setAdd({ ...add, timezone: e.target.value })} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm" aria-label="Time zone">
                         {TIMEZONES.map((z) => <option key={z} value={z}>{z.replace("America/", "").replace("_", " ")}</option>)}
                       </select>
-                      <Input placeholder="First name" value={add.firstName} onChange={(e) => setAdd({ ...add, firstName: e.target.value })} />
+                      <ContactLookupInput
+                        className={LOOKUP}
+                        placeholder="First name"
+                        value={add.firstName}
+                        onChange={(v) => setAdd({ ...add, firstName: v })}
+                        pickLabel="Add"
+                        onPick={async (c) => {
+                          const d = await act({ action: "enrol", email: c.email }, seq.active ? `${personName(c)} is in. Their first email is on its way.` : `${personName(c)} is in. Emails start when you turn the campaign on.`);
+                          if (d) { setAdd({ email: "", firstName: "", lastName: "", timezone: add.timezone }); void loadOne(openId); void loadList(); }
+                        }}
+                      />
                       <Input placeholder="Last name" value={add.lastName} onChange={(e) => setAdd({ ...add, lastName: e.target.value })} />
                     </div>
                     <Button

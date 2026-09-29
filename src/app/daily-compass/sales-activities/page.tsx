@@ -28,6 +28,7 @@ import Link from "next/link";
 import { ACTIVITY_TYPES, OUTCOMES, PRIORITIES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import SalesNav from "@/components/sales/SalesNav";
+import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 
 interface Activity {
   id: string;
@@ -527,9 +528,10 @@ export default function SalesActivitiesPage() {
               </div>
               <SegmentSelect value={form.segmentId} onChange={(id) => setForm({ ...form, segmentId: id })} />
               <div className="grid grid-cols-2 gap-2">
-                <input
+                <ContactLookupInput
                   value={form.contactName}
-                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                  onChange={(v) => setForm({ ...form, contactName: v })}
+                  onPick={(c) => setForm({ ...form, contactName: lookupName(c), contactCompany: c.company || form.contactCompany })}
                   placeholder="Contact name"
                   className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
                 />

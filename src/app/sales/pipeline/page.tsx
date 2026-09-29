@@ -9,6 +9,7 @@ import { STALE_DAYS } from "@/lib/sales/pipeline";
 import { formatMoney } from "@/lib/sales/offers";
 import { ACTIVITY_TYPES, OUTCOMES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
 import SalesNav from "@/components/sales/SalesNav";
+import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
 type OfferLite = { id: string; name: string; price: number | null; status: string };
 type Business = { id: number; name: string };
@@ -204,6 +205,9 @@ function PipelineBoard() {
     load();
   }
 
+  // Picked someone already in Contacts: fill in their name, company and email.
+  const fillFromContact = (c: LookupContact) =>
+    setForm((f) => (f ? { ...f, contactName: lookupName(c), company: c.company || f.company, email: c.email } : f));
   const set = (k: keyof DealForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm((f) => (f ? { ...f, [k]: e.target.value } : f));
   const formStage = form ? stageById.get(form.stageId) : undefined;
   const removedWithDeals = editStages ? stages.filter((s) => !editStages.some((e) => e.id === s.id) && (deals ?? []).some((d) => d.stageId === s.id)) : [];
@@ -336,9 +340,9 @@ function PipelineBoard() {
               <button onClick={closeForm} aria-label="Close" className="rounded-lg p-2 hover:bg-black/5"><X className="h-5 w-5" /></button>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div><label className={label} htmlFor="d-name">Who it&rsquo;s with</label><input id="d-name" className={input} value={form.contactName} onChange={set("contactName")} placeholder="Name" /></div>
+              <div><label className={label} htmlFor="d-name">Who it&rsquo;s with</label><ContactLookupInput id="d-name" className={input} value={form.contactName} onChange={(v) => setForm((f) => (f ? { ...f, contactName: v } : f))} onPick={fillFromContact} placeholder="Name, or search your contacts" /></div>
               <div><label className={label} htmlFor="d-company">Company</label><input id="d-company" className={input} value={form.company} onChange={set("company")} /></div>
-              <div className="sm:col-span-2"><label className={label} htmlFor="d-email">Email</label><input id="d-email" type="email" className={input} value={form.email} onChange={set("email")} /></div>
+              <div className="sm:col-span-2"><label className={label} htmlFor="d-email">Email</label><ContactLookupInput id="d-email" type="email" className={input} value={form.email} onChange={(v) => setForm((f) => (f ? { ...f, email: v } : f))} onPick={fillFromContact} /></div>
               <div><label className={label} htmlFor="d-stage">Stage</label><select id="d-stage" className={input} value={form.stageId} onChange={set("stageId")}>{stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
               <div>
                 <label className={label} htmlFor="d-offer">Offer</label>

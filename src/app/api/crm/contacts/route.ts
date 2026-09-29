@@ -16,11 +16,17 @@ export async function GET(request: Request) {
   const db = createServerClient();
   let query = db
     .from("seq_contacts")
-    .select("id, email, first_name, last_name, phone, tags, source, unsubscribed_at, created_at, last_activity_at")
+    .select("id, email, first_name, last_name, phone, company, tags, source, unsubscribed_at, created_at, last_activity_at")
     .eq("master_plan_id", a.planId)
     .order("last_activity_at", { ascending: false, nullsFirst: false })
     .limit(500);
-  if (q) query = query.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+  if (q) {
+    // "Jane Doe" matches first + last name together, as well as any single field.
+    const [first, ...rest] = q.split(/\s+/);
+    const last = rest.join(" ");
+    const both = last ? `,and(first_name.ilike.%${first}%,last_name.ilike.%${last}%)` : "";
+    query = query.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%,phone.ilike.%${q}%${both}`);
+  }
   if (tag) query = query.contains("tags", [tag]);
   const [{ data }, { data: all }] = await Promise.all([query, db.from("seq_contacts").select("tags").eq("master_plan_id", a.planId).limit(5000)]);
   const tags = Array.from(new Set((all ?? []).flatMap((c) => (c.tags as string[]) ?? []))).sort();

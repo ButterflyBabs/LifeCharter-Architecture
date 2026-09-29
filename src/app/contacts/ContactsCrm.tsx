@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import EmailSendingTab from "./EmailSendingTab";
 import ContactRecord, { Pill, TagAdder } from "./ContactRecord";
+import ContactLookupInput from "@/components/crm/ContactLookupInput";
 import ImportContacts, { ExportContactsLink } from "./ImportContacts";
 
 interface Contact {
@@ -53,6 +54,7 @@ interface Submission {
 
 const TABS = ["contacts", "forms", "sending"] as const;
 type Tab = (typeof TABS)[number];
+const LOOKUP = "flex h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] placeholder:text-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#c9a227]/50 focus:border-[#c9a227] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]";
 const APP = typeof window !== "undefined" ? window.location.origin : "https://lccommandsuite.com";
 const fullName = (c: Pick<Contact, "first_name" | "last_name" | "email">) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 const when = (iso: string | null | undefined) =>
@@ -122,6 +124,15 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
     return () => clearTimeout(t);
   }, [load]);
 
+  // Typing someone who's already here: open their record instead of adding them twice.
+  function openExisting(c: { id: string }) {
+    setAdding(false);
+    setAdd({ email: "", firstName: "", lastName: "", phone: "", note: "" });
+    setAddTags([]);
+    setOpenId(c.id);
+    setMsg("They're already in your contacts, so I opened their record.");
+  }
+
   async function saveNew() {
     const r = await fetch("/api/crm/contacts", {
       method: "POST",
@@ -163,10 +174,10 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
           <Card>
             <CardContent className="p-4 space-y-2">
               <div className="grid gap-2 sm:grid-cols-2">
-                <Input placeholder="Email *" value={add.email} onChange={(e) => setAdd({ ...add, email: e.target.value })} />
+                <ContactLookupInput className={LOOKUP} type="email" placeholder="Email *" value={add.email} onChange={(v) => setAdd({ ...add, email: v })} onPick={openExisting} pickLabel="Open" />
                 <Input placeholder="Phone" value={add.phone} onChange={(e) => setAdd({ ...add, phone: e.target.value })} />
-                <Input placeholder="First name" value={add.firstName} onChange={(e) => setAdd({ ...add, firstName: e.target.value })} />
-                <Input placeholder="Last name" value={add.lastName} onChange={(e) => setAdd({ ...add, lastName: e.target.value })} />
+                <ContactLookupInput className={LOOKUP} placeholder="First name" value={add.firstName} onChange={(v) => setAdd({ ...add, firstName: v })} onPick={openExisting} pickLabel="Open" />
+                <ContactLookupInput className={LOOKUP} placeholder="Last name" value={add.lastName} onChange={(v) => setAdd({ ...add, lastName: v })} onPick={openExisting} pickLabel="Open" />
               </div>
               {addTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
