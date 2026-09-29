@@ -57,6 +57,7 @@ export default function InviteTracker() {
   const [email, setEmail] = useState("");
   const [paste, setPaste] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  const [alreadySent, setAlreadySent] = useState(true);
   const [newList, setNewList] = useState({ open: false, name: "", tag: "", formId: "" });
   const [filter, setFilter] = useState<"all" | "not-sent" | "sent" | "registered" | "not-registered">("all");
 
@@ -84,7 +85,7 @@ export default function InviteTracker() {
   }
 
   async function addPeople(people: { name: string; email: string }[]) {
-    const d = await post({ action: "add", listId, people });
+    const d = await post({ action: "add", listId, people, alreadySent });
     if (!d) return;
     setMsg(`${d.added} added.${d.skipped?.length ? ` Skipped (no valid email or already on the list): ${d.skipped.join(", ")}` : ""}`);
     void load(listId);
@@ -242,7 +243,11 @@ export default function InviteTracker() {
                   <Button disabled={!paste.trim()} onClick={() => { void addPeople(parseLines(paste)); setPaste(""); setShowPaste(false); }}>Add {parseLines(paste).length || ""} people</Button>
                 </div>
               )}
-              <p className="text-xs text-[#7a8a99]">Adding someone gives them the tag <strong>{list.invite_tag}</strong> in Contacts (new people are added to Contacts). Registrations fill in on their own from the sign-up form.</p>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={alreadySent} onChange={(e) => setAlreadySent(e.target.checked)} className="w-4 h-4 accent-[#2E7C83]" />
+                I&rsquo;ve already sent them the invite (mark &ldquo;Invite sent&rdquo; now)
+              </label>
+              <p className="text-xs text-[#7a8a99]">Nothing is emailed from this page: adding someone only tags them. Adding someone gives them the tag <strong>{list.invite_tag}</strong> in Contacts (new people are added to Contacts). Registrations fill in on their own from the sign-up form.</p>
             </CardContent>
           </Card>
 

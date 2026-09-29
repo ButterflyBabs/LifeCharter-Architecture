@@ -16,7 +16,8 @@ const tagOf = (v: unknown) =>
 // POST
 //   create-list { name, tag, formId? }
 //   tags { listId, tags: [] }                     (which tags the list follows)
-//   add { listId, people: [{ name?, email }] }   (adds the main invite tag; new emails become contacts)
+//   add { listId, people: [{ name?, email }], alreadySent? }   (adds the main invite tag; new emails become
+//     contacts; alreadySent marks the invite as sent now. Nothing is ever emailed from here.)
 //   sent { listId, contactId, sent: boolean }
 //   remove { listId, contactId }                  (removes the list's tags; they stay in Contacts)
 export async function GET(request: Request) {
@@ -148,6 +149,11 @@ export async function POST(request: Request) {
       }
       added++;
       await logEvent(a.planId, c.id, "tag", `Invited to ${list.name} (tagged ${tag})`, {}, db).catch(() => {});
+      if (b.alreadySent === true) {
+        await db
+          .from("crm_invites")
+          .upsert({ list_id: list.id, master_plan_id: a.planId, contact_id: c.id, email, sent_at: new Date().toISOString() }, { onConflict: "list_id,email" });
+      }
     }
     return NextResponse.json({ added, skipped });
   }
