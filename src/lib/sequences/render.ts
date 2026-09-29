@@ -26,7 +26,16 @@ export const unsubscribeUrl = (contactId: string) => `${APP_URL}/unsubscribe?t=$
 export const unsubscribeApiUrl = (contactId: string) => `${APP_URL}/api/unsubscribe?t=${encodeURIComponent(unsubscribeToken(contactId))}`;
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-const inline = (s: string) => esc(s).replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" style="color:#2E7C83">$1</a>').replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+// [label](https://…) becomes a named link; bare https:// links are linked as they are.
+const MD_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+const inline = (s: string) => {
+  const links: [string, string][] = [];
+  const marked = s.replace(MD_LINK, (_m, label: string, url: string) => `\u0000${links.push([label, url]) - 1}\u0000`);
+  return esc(marked)
+    .replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" style="color:#2E7C83">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `<a href="${esc(links[+i][1])}" style="color:#2E7C83;font-weight:bold">${esc(links[+i][0])}</a>`);
+};
 
 // Plain text with blank-line paragraphs, "- " bullets and "1. " steps -> email-safe HTML.
 export function toHtml(text: string) {
@@ -86,6 +95,6 @@ export function renderStep(r: RenderInput) {
     <a href="${unsub}" style="color:#8A8F99">Unsubscribe</a> from these emails.
   </td></tr>
 </table></td></tr></table></body></html>`;
-  const text = `${body}${button ? `\n\n${button.label}: ${button.url}` : ""}${signText ? `\n\n${signText}` : ""}\n\n—\nQuestions? Reply${support ? `, or write to ${support}` : ""}.\n${address}\nUnsubscribe: ${unsub}`;
+  const text = `${body.replace(MD_LINK, "$1: $2")}${button ? `\n\n${button.label}: ${button.url}` : ""}${signText ? `\n\n${signText}` : ""}\n\n—\nQuestions? Reply${support ? `, or write to ${support}` : ""}.\n${address}\nUnsubscribe: ${unsub}`;
   return { subject, html, text };
 }

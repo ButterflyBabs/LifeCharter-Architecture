@@ -1,0 +1,24 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//LifeCharter Command Suite//Events//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:suite-sneak-peek-20261002@lccommandsuite.com
+DTSTAMP:20260929T140000Z
+DTSTART:20261002T190000Z
+DTEND:20261002T200000Z
+SUMMARY:Behind the Scenes: Command Suite Sneak Peek
+LOCATION:https://us02web.zoom.us/j/89710271242?pwd=agceV9xqXXSTNw8hbgbTetXzC8gNac.1
+URL:https://us02web.zoom.us/j/89710271242?pwd=agceV9xqXXSTNw8hbgbTetXzC8gNac.1
+DESCRIPTION:A behind-the-scenes look at the LifeCharter Command Suite with Am
+ iLynne "Babs" Carroll.\n\nJoin on Zoom: https://us02web.zoom.us/j/897102712
+ 42?pwd=agceV9xqXXSTNw8hbgbTetXzC8gNac.1\nMeeting ID: 897 1027 1242\nPasscode
+ : 600888
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Command Suite Sneak Peek starts in 10 minutes
+TRIGGER:-PT10M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
