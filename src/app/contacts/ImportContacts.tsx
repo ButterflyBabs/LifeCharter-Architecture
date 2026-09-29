@@ -30,7 +30,7 @@ const HOW_TO: [string, string][] = [
   ["Gmail / Google Contacts", "contacts.google.com → Export → Google CSV."],
   ["Outlook", "People → Manage contacts → Export contacts → CSV."],
   ["iPhone / iCloud / Mac", "icloud.com/contacts → select all → Export vCard (Mac Contacts: File → Export → vCard)."],
-  ["Your old CRM", "GoHighLevel, Global Control, Mailchimp, Kajabi and most others: Contacts or Audience → Export → CSV."],
+  ["Your old CRM", "GoHighLevel, Mailchimp, Kajabi and most others: Contacts or Audience → Export → CSV."],
   ["Excel / Numbers / Google Sheets", "File → Save as or Download → CSV, or copy the cells and paste them below."],
 ];
 

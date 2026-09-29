@@ -65,7 +65,7 @@ const journeyStages: JourneyStage[] = [
       { id: "brain", title: "Brain Assessment", description: "Map how your business runs, in your own words", icon: <BarChart3 className="w-5 h-5" />, path: "/assessments/brain", section: "business", estimatedTime: 20, completed: false },
       { id: "soul", title: "Soul Assessment", description: "Your identity, values, calling and story", icon: <Target className="w-5 h-5" />, path: "/assessments/soul", section: "business", estimatedTime: 15, completed: false },
       { id: "profit", title: "Profit Assessment", description: "Score your 12 business dimensions for your baseline", icon: <TrendingUp className="w-5 h-5" />, path: "/assessments/profit", section: "business", estimatedTime: 15, completed: false },
-      { id: "tools", title: "Connect one tool", description: "Calendar and email, Global Control, or PostStream", icon: <Calendar className="w-5 h-5" />, path: "/settings", section: "business", estimatedTime: 5, completed: false },
+      { id: "tools", title: "Connect one tool", description: "Calendar and email, or PostStream", icon: <Calendar className="w-5 h-5" />, path: "/settings", section: "business", estimatedTime: 5, completed: false },
       { id: "website", title: "Add your website", description: "For your free Website Alignment Review", icon: <FileText className="w-5 h-5" />, path: "/setup", section: "business", estimatedTime: 1, completed: false },
     ],
   },
@@ -106,7 +106,7 @@ export default function TravelPartnerWidget() {
         if (!d) return;
         const a = d.assessments || {};
         const i = d.integrations || {};
-        const toolsConnected = Boolean(i.calendar || i.globalControl || i.poststream);
+        const toolsConnected = Boolean(i.calendar || i.poststream);
         const done = [a.brain, a.soul, a.profit, d.ai?.connected, toolsConnected].filter(Boolean).length;
         setAutoDone([d.ai?.connected && "ai", a.brain && "brain", a.soul && "soul", a.profit && "profit", toolsConnected && "tools"].filter(Boolean) as string[]);
         // Treat a bypassed account as complete so the setup banner stays hidden.

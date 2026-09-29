@@ -308,7 +308,7 @@ export default function WeeklyViewPage() {
             <div className="space-y-2">
               <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Where the numbers come from</h3>
               <p className="text-sm text-[#5a6472] dark:text-[#c3ccd8]">
-                Calls and follow-ups come from your Global Control contact log, your Sales Activities and follow-up tasks you
+                Calls and follow-ups come from your Sales Activities and follow-up tasks you
                 complete. Posts come from your Content Calendar. Tasks come from your task list and recurring tasks.
               </p>
             </div>

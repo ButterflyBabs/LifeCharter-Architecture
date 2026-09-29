@@ -69,7 +69,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Daily Rhythm",
     question: "What is the Daily Compass?",
     answer:
-      "The Daily Compass is your daily execution hub. It shows AI insights from your business bot grounded in your 12 dimensions and 8 operational pillars, your priority tasks, your Quick Wins (fully editable and AI-assisted), today's activity, and your Global Control contacts. It's where you turn strategy into action each day.",
+      "The Daily Compass is your daily execution hub. It shows AI insights from your business bot grounded in your 12 dimensions and 8 operational pillars, your priority tasks, your Quick Wins (fully editable and AI-assisted), and today's activity, with Scripts & Templates, the Content Calendar and Sales Activities a click away. It's where you turn strategy into action each day.",
     keywords: ["daily compass", "compass", "insights", "execution", "priorities"],
   },
   {
@@ -155,7 +155,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "How does the follow-up engine work?",
     answer:
-      "The follow-up engine keeps relationships warm. Contacts and tasks can carry a follow-up schedule; when a follow-up comes due, it surfaces in your notifications and Daily Compass so you reach out at the right moment. It works hand-in-hand with your Global Control contacts.",
+      "The follow-up engine keeps relationships warm. Contacts and tasks can carry a follow-up schedule; when a follow-up comes due, it surfaces in your notifications and Daily Compass so you reach out at the right moment. It works hand-in-hand with your Contacts (Daily Operations → Contacts).",
     keywords: ["follow up", "follow-up", "followup", "engine", "reach out", "contacts", "cadence"],
   },
   {
@@ -179,7 +179,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "How do I import or export my contacts?",
     answer:
-      "Open Contacts and click Import contacts. Export your list from Gmail/Google Contacts, Outlook, iPhone/iCloud, Excel or your old CRM (GoHighLevel, Global Control, Mailchimp, Kajabi) as a CSV or vCard (.vcf) file and drop it in, or paste cells from a spreadsheet. Check how each column is matched, look over the preview, and confirm these people have agreed to hear from you; up to 5,000 contacts per import. Everyone gets an \"imported\" tag, people already in your contacts are merged (never duplicated), unsubscribes stay in place, and importing never emails anyone or starts a sequence. Export contacts downloads your whole list as a CSV.",
+      "Open Contacts and click Import contacts. Export your list from Gmail/Google Contacts, Outlook, iPhone/iCloud, Excel or your old CRM (GoHighLevel, Mailchimp, Kajabi and others) as a CSV or vCard (.vcf) file and drop it in, or paste cells from a spreadsheet. Check how each column is matched, look over the preview, and confirm these people have agreed to hear from you; up to 5,000 contacts per import. Everyone gets an \"imported\" tag, people already in your contacts are merged (never duplicated), unsubscribes stay in place, and importing never emails anyone or starts a sequence. Export contacts downloads your whole list as a CSV.",
     keywords: ["import", "export", "upload", "csv", "vcard", "vcf", "spreadsheet", "gmail", "outlook", "iphone", "mailchimp", "gohighlevel", "move contacts", "contacts"],
   },
   {
@@ -361,14 +361,6 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- Integrations ----
   {
-    id: "in-global-control",
-    category: "Integrations",
-    question: "What is the Global Control integration?",
-    answer:
-      "Global Control connects your contacts into LifeCharter so you can see and manage them alongside your daily work, and drive the follow-up engine from real relationships. You connect it with your Global Control API key in Settings.",
-    keywords: ["global control", "contacts", "crm", "integration", "gc"],
-  },
-  {
     id: "in-poststream",
     category: "Integrations",
     question: "What is PostStream?",
@@ -383,7 +375,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Account & Settings",
     question: "What can I manage in Settings?",
     answer:
-      "Settings is where you connect integrations (Global Control, PostStream, your AI key), connect your Google and Microsoft email and calendar accounts, configure your AI Guide, choose your time zone and task-reminder preferences (Profile), and manage your account, team and workspace. If a feature needs a key or a connection, Settings is where you add it.",
+      "Settings is where you connect integrations (PostStream, your AI key), connect your Google and Microsoft email and calendar accounts, configure your AI Guide, choose your time zone and task-reminder preferences (Profile), and manage your account, team and workspace. If a feature needs a key or a connection, Settings is where you add it.",
     keywords: ["settings", "account", "workspace", "manage", "configure", "integrations panel", "profile", "time zone", "reminders"],
   },
 
@@ -657,6 +649,104 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Yes. In Settings → AI Assistant, the 'How should your assistant reply?' box holds standing instructions it follows every time — for example 'be direct and skip the pep talk', 'keep answers under 80 words', 'use short bullet points', or 'always end with one next step'. Tap the suggestions to add them, edit freely (up to 1,500 characters), and click Save. Instructions shape tone, length, format and focus; your assistant still only uses your own information and never invents facts. You can rename it in the same place, and clear its memory of past conversations with 'Clear memory' on the dashboard's AI Assistant card.",
     keywords: ["instructions", "how to reply", "tone", "style", "shorter", "bullet", "customize", "assistant", "name", "rename", "personality", "format"],
+  },
+
+  // ---- Added Sept 28 2026: pages and changes not covered above ----
+  {
+    id: "gs-sidebar",
+    category: "Getting Started",
+    question: "How is the menu on the left organized?",
+    answer:
+      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Sequences, Pipeline, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+    keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
+  },
+  {
+    id: "gs-setup-suite",
+    category: "Getting Started",
+    question: "What is Set up Suite?",
+    answer:
+      "Set up Suite (Getting Started → Set up Suite) is the short setup that makes everything else work: connect your AI, then take the Brain, Soul and Profit assessments that give your assistant its context and set your business-health baseline, and add your website address for your Website Alignment Review. Each step shows whether it's done.",
+    keywords: ["set up", "setup", "set up suite", "onboarding", "first steps", "assessments", "connect ai", "website address"],
+  },
+  {
+    id: "gs-first-30",
+    category: "Getting Started",
+    question: "What is First 30 Days?",
+    answer:
+      "First 30 Days (Getting Started → First 30 Days) is twelve small steps that turn the Suite into how you run your business: write your vision, add your offers and prices, put open opportunities in the Pipeline, set your monthly income goal, record this month's income and expenses, add your regular bills, do your first weekly review, write your first SOP, rate your 8 operational pillars, work through the Legal & Compliance checklist, break a yearly goal into this quarter, and take your first monthly Quick Pulse. Each step ticks itself off when it's done, and the ones that strengthen your lowest scores are marked for you.",
+    keywords: ["first 30 days", "30 days", "checklist", "getting started", "steps", "onboarding", "new client"],
+  },
+  {
+    id: "dr-quick-capture",
+    category: "Daily Rhythm",
+    question: "What is Quick Capture?",
+    answer:
+      "Quick Capture (Daily Operations → Quick Capture) is a phone-friendly page for the two things you jot down on the move: a task, or money in or out. On your phone, press and hold the Command Suite app icon for shortcuts to Quick Capture, the Daily Compass and your tasks.",
+    keywords: ["quick capture", "capture", "phone", "mobile", "on the go", "jot", "expense", "income", "shortcut"],
+  },
+  {
+    id: "pl-weekly-review",
+    category: "Planning",
+    question: "How does the Weekly Review work?",
+    answer:
+      "Weekly Review (Planning & Numbers → Weekly Review) is a short weekly sit-down with your real numbers: what came in and went out, your tasks and goals, and your assistant's read on what they mean. It suggests next steps with due dates; edit them, untick any you don't want, and they go straight onto your task list. Finishing it marks that week's planning session complete, with the review saved as its notes.",
+    keywords: ["weekly review", "review", "weekly", "planning session", "rhythm", "check in", "next steps"],
+  },
+  {
+    id: "pl-goal-ladder",
+    category: "Planning",
+    question: "What is the Goal Ladder?",
+    answer:
+      "The Goal Ladder (Planning & Numbers → Goal Ladder) breaks your year's goals into this quarter, this month and this week, so a big goal always has a next step. Choose an area, answer four short questions, and your assistant proposes this quarter's milestones for it; edit them before you save.",
+    keywords: ["goal ladder", "goals", "quarter", "quarterly", "milestones", "yearly goal", "break down"],
+  },
+  {
+    id: "sa-offers",
+    category: "Sales",
+    question: "What goes in Offers & Packages?",
+    answer:
+      "Offers & Packages (Growth → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
+    keywords: ["offers", "packages", "pricing", "products", "services", "what I sell", "retired"],
+  },
+  {
+    id: "op-sops",
+    category: "Operations",
+    question: "How do Playbook & SOPs work?",
+    answer:
+      "Playbook & SOPs (Systems → Playbook & SOPs) is how your business runs, written down once. Name a process, jot how you do it today in your own words, and your assistant drafts clean, numbered steps you can edit. Your SOPs make it easier to hand work to a team member and keep things consistent.",
+    keywords: ["sop", "sops", "playbook", "process", "procedures", "standard operating procedure", "document", "delegate"],
+  },
+  {
+    id: "op-compliance",
+    category: "Operations",
+    question: "What is Legal & Compliance?",
+    answer:
+      "Legal & Compliance (Systems → Legal & Compliance) is one checklist for contracts, insurance, licenses and filings. Use 'What applies to my business?' and your assistant suggests which items matter for you. Ticking items off feeds your Legal score in your business health. It's a checklist to keep you organized, not legal advice; check anything important with a qualified professional.",
+    keywords: ["legal", "compliance", "contracts", "insurance", "licenses", "filings", "checklist", "legal score"],
+  },
+  {
+    id: "gr-website-review",
+    category: "Growth & Reviews",
+    question: "What is the Website Alignment Review?",
+    answer:
+      "Every Command Suite client gets a Website Alignment Review, included. Add your website address in Set up Suite or on the Website Review page (Growth → Website Review), and within 14 days of joining we read your site against the positioning, voice and offer you build in the Suite and give you the five changes that matter most. You'll get an email when it's ready, and it stays on your Website Review page. If your site needs rebuilding, ask about the Website Build.",
+    keywords: ["website review", "website alignment", "website", "site", "review", "five changes", "website build"],
+  },
+  {
+    id: "as-team-access",
+    category: "Account & Settings",
+    question: "How do I give a team member access, and control what they see?",
+    answer:
+      "In Settings → Team, invite someone by email and choose a role: Admin (runs the account day to day and manages the team; no billing, connected accounts or account deletion), Editor (works on the business: tasks, plans, content, finance and sales activity), Viewer (sees what an Editor sees but changes nothing), or Sales (the sales page only). Then use 'Choose which features they can reach' to turn each area on, view-only or off, or start from a preset such as Virtual assistant, Bookkeeper, Sales, Content or Viewer. 'Contacts, calendars & sequences' is its own area. Team members never see your connected inbox, and only the account owner can export contacts or set up your sending domain. Changes apply the next time they open a page.",
+    keywords: ["team", "team member", "invite", "roles", "permissions", "access", "admin", "editor", "viewer", "assistant", "va", "bookkeeper"],
+  },
+  {
+    id: "as-activity-log",
+    category: "Account & Settings",
+    question: "Can I see what my team has done in the account?",
+    answer:
+      "Yes. The activity log in Settings → Team shows who did what across the account: what was added, changed or deleted, and by whom. Only you and your admins can see it. You can also set a monthly AI limit for each team member so their use of your AI stays within what you choose.",
+    keywords: ["activity log", "audit", "history", "who changed", "team activity", "ai limit", "ai cap"],
   },
 ];
 

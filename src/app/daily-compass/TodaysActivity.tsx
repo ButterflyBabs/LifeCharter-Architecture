@@ -126,7 +126,7 @@ export function TodaysActivity() {
         )}
 
         <p className="text-xs text-[#5a6472] dark:text-[#c3ccd8]">
-          Today&apos;s counts add up: calls &amp; follow-ups you log on Global Control contacts, entries dated today in Sales
+          Today&apos;s counts add up: entries dated today in Sales
           Activities, and follow-up tasks you complete today. Posts are what you published today — from the Content
           Calendar and any posts made directly in PostStream.
         </p>

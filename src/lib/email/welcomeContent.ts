@@ -25,7 +25,7 @@ export const WELCOME_EMAILS: WelcomeEmail[] = [
     "day": 3,
     "subject": "One connection, and one question",
     "preview": "Connect a tool, and tell us your website address.",
-    "body": "{{GREETING}}\n\nTwo small things finish your setup.\n\n1. Connect one tool. Your calendar and email (Google or Microsoft), Global Control, or PostStream. Any one of them completes setup, and it's what lets the Suite act for you, not just advise you.\n\n2. What's your website address? Add it on Set up Suite. We'll read your site against the positioning and offer you're building, and send you your free Website Alignment Review.\n\nHaven't connected your AI yet? It's step one on the same page, and it takes about five minutes.\n\nStuck on any of it? Bring it to the weekly tech-support call, or just reply.\n\nFinish setup: https://lccommandsuite.com/setup"
+    "body": "{{GREETING}}\n\nTwo small things finish your setup.\n\n1. Connect one tool. Your calendar and email (Google or Microsoft), or PostStream. Any one of them completes setup, and it's what lets the Suite act for you, not just advise you.\n\n2. What's your website address? Add it on Set up Suite. We'll read your site against the positioning and offer you're building, and send you your free Website Alignment Review.\n\nHaven't connected your AI yet? It's step one on the same page, and it takes about five minutes.\n\nStuck on any of it? Bring it to the weekly tech-support call, or just reply.\n\nFinish setup: https://lccommandsuite.com/setup"
   },
   {
     "key": "day5",

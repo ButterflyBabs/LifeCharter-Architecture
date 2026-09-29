@@ -96,8 +96,8 @@ export async function GET() {
 
   const assessmentsComplete = brain && soul && profit;
   // Connecting tools is required too — any single connection (calendar & email,
-  // Global Control or PostStream) meets it.
-  const toolsConnected = gConnected || mConnected || globalControl || poststream;
+  // or PostStream) meets it.
+  const toolsConnected = gConnected || mConnected || poststream;
   const requiredComplete = assessmentsComplete && ai && toolsConnected;
 
   return NextResponse.json({

@@ -14,7 +14,6 @@ import {
   ArrowRight,
   Compass,
   Calendar,
-  Users,
   Share2,
 } from "lucide-react";
 import WebsiteQuestion from "@/components/website/WebsiteQuestion";
@@ -97,8 +96,8 @@ export default function SetupPage() {
   const requiredTotal = steps.filter((x) => x.required).length;
 
   // "Connect your tools" is the fifth required step: it's met once at least one
-  // tool (calendar & email, Global Control or PostStream) is connected.
-  const toolStates = [Boolean(s?.integrations.calendar), Boolean(s?.integrations.globalControl), Boolean(s?.integrations.poststream)];
+  // tool (calendar & email or PostStream) is connected.
+  const toolStates = [Boolean(s?.integrations.calendar), Boolean(s?.integrations.poststream)];
   const toolsConnected = toolStates.filter(Boolean).length;
   const toolsDone = toolsConnected > 0;
   const stepsDone = requiredDone + (toolsDone ? 1 : 0);
@@ -215,17 +214,16 @@ export default function SetupPage() {
                     <Plug className="w-5 h-5 text-[#2E7C83]" />
                     <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Connect your tools</h3>
                     <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">Required — any one</span>
-                    <span className="text-[11px] text-[#7a8a99]">{toolsConnected} of 3 connected</span>
+                    <span className="text-[11px] text-[#7a8a99]">{toolsConnected} of 2 connected</span>
                   </div>
                   <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">
-                    Hook up your calendar &amp; email, contacts, and social so the Suite can act for you. Connecting any one of them completes this step.
+                    Hook up your calendar &amp; email, or your social accounts, so the Suite can act for you. Connecting any one of them completes this step.
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                 <IntegrationChip icon={<Calendar className="w-4 h-4" />} label="Calendar & Email" done={toolStates[0]} />
-                <IntegrationChip icon={<Users className="w-4 h-4" />} label="Global Control" done={toolStates[1]} />
-                <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[2]} />
+                <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[1]} />
               </div>
               <Link
                 href="/settings"
