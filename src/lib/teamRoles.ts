@@ -92,7 +92,7 @@ export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
 export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[] }[] = [
   { key: "tasks", label: "Tasks", pages: ["/tasks"], apis: ["/api/tasks", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
-  { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights"] },
+  { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
   { key: "content", label: "Content Calendar & Studio", pages: ["/daily-compass/calendar", "/daily-compass/content-studio"], apis: ["/api/content", "/api/social"] },
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },
   { key: "sales_activities", label: "Sales Activities", pages: ["/daily-compass/sales-activities"], apis: ["/api/sales-activities"] },
