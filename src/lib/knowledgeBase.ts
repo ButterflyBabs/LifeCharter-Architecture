@@ -183,6 +183,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["import", "export", "upload", "csv", "vcard", "vcf", "spreadsheet", "gmail", "outlook", "iphone", "mailchimp", "gohighlevel", "move contacts", "contacts"],
   },
   {
+    id: "sa-invite-tracker",
+    category: "Sales",
+    question: "How do I track who I invited to an event and who registered?",
+    answer:
+      "Daily Operations → Invite Tracker. Create an invite list for the event and link it to the event's sign-up form. Add people by name or email (it suggests people already in your Contacts), or paste a whole list, one person per line. Tick “Invite sent” when you send someone the invite; the date and time are saved. Registered fills in on its own, with the date and time, as soon as they sign up on the form. People who registered without being on your list are shown underneath. Everyone you add is saved in Contacts with the tag invited, and you can download the list as a CSV.",
+    keywords: ["invite", "invites", "invite tracker", "guest list", "rsvp", "registered", "event", "who registered"],
+  },
+  {
     id: "sa-sequences",
     category: "Sales",
     question: "How do Campaigns and Broadcasts work, and why won't my emails send yet?",

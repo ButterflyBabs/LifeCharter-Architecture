@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Mail,
+  MailCheck,
   CalendarDays,
   Package,
   KanbanSquare,
@@ -73,6 +74,7 @@ const navigationSections = [
       { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
+      { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
