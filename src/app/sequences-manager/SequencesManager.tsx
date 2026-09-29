@@ -61,9 +61,9 @@ export default function SequencesManager() {
   const [newName, setNewName] = useState("");
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
-  const [tab, setTab] = useState<"campaigns" | "broadcasts">("campaigns");
+  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts">("campaigns");
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "broadcasts") setTab("broadcasts");
+    if (new URLSearchParams(window.location.search).get("tab") === "broadcasts") setPageTab("broadcasts");
   }, []);
 
   const loadList = useCallback(async () => {
@@ -143,7 +143,7 @@ export default function SequencesManager() {
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Campaigns &amp; Broadcasts</h1>
           <p className="text-[#7a8a99]">
-            {tab === "campaigns"
+            {pageTab === "campaigns"
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
               : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
           </p>
@@ -162,13 +162,13 @@ export default function SequencesManager() {
 
       <div className="flex gap-2 mb-5">
         {(["campaigns", "broadcasts"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+          <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
             {t === "campaigns" ? "Campaigns" : "Broadcasts"}
           </button>
         ))}
       </div>
 
-      {tab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
+      {pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
           {(list ?? []).map((s) => (
