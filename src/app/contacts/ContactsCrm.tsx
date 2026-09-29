@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "./BroadcastsTab";
 import EmailSendingTab from "./EmailSendingTab";
 import ContactEmails from "./ContactEmails";
+import ImportContacts, { ExportContactsLink } from "./ImportContacts";
 
 interface Contact {
   id: string;
@@ -119,6 +120,7 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
   const [tag, setTag] = useState("");
   const [openId, setOpenId] = useState("");
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [add, setAdd] = useState({ email: "", firstName: "", lastName: "", phone: "", tags: "", note: "" });
 
   const load = useCallback(async () => {
@@ -166,7 +168,10 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
           <Button onClick={() => setAdding((v) => !v)}>
             <Plus className="w-4 h-4 mr-1" /> Add contact
           </Button>
+          <Button variant="outline" onClick={() => setImporting((v) => !v)}>Import contacts</Button>
+          <ExportContactsLink />
         </div>
+        {importing && <ImportContacts onClose={() => setImporting(false)} onImported={load} onViewTag={(t) => { setQ(""); setTag(t); setImporting(false); }} />}
         {adding && (
           <Card>
             <CardContent className="p-4 space-y-2">
