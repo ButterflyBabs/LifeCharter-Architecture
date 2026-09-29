@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { crmAccount } from "../guard";
+import { enrolContact } from "@/lib/sequences/engine";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,10 @@ const tagOf = (v: unknown) =>
 // POST
 //   create-list { name, tag, formId? }
 //   tags { listId, tags: [] }                     (which tags the list follows)
-//   add { listId, people: [{ name?, email }], alreadySent? }   (adds the main invite tag; new emails become
-//     contacts; alreadySent marks the invite as sent now. Nothing is ever emailed from here.)
+//   add { listId, people: [{ name?, email }], mode: "send" | "already" }
+//     send:    starts the list's invite campaign (the campaign whose key is the invite tag),
+//              which emails them the invite; "Invite sent" = when that email went out.
+//     already: just tags them and marks "Invite sent" now (they were invited another way).
 //   sent { listId, contactId, sent: boolean }
 //   remove { listId, contactId }                  (removes the list's tags; they stay in Contacts)
 export async function GET(request: Request) {
@@ -94,6 +97,23 @@ export async function GET(request: Request) {
     }
   }
 
+  // The list's invite campaign (key = the main invite tag): its first email, and when it went to each person.
+  const { data: inviteSeq } = list.invite_tag
+    ? await db.from("sequences").select("id, name, active").eq("master_plan_id", a.planId).eq("key", list.invite_tag).maybeSingle()
+    : { data: null };
+  let inviteCampaign: { id: string; name: string; active: boolean; subject: string } | null = null;
+  if (inviteSeq) {
+    const { data: first } = await db.from("sequence_steps").select("subject").eq("sequence_id", inviteSeq.id).order("position").limit(1).maybeSingle();
+    inviteCampaign = { id: inviteSeq.id as string, name: inviteSeq.name as string, active: Boolean(inviteSeq.active), subject: (first?.subject as string) ?? "" };
+    for (let i = 0; i < ids.length; i += 500) {
+      const { data: enrs } = await db.from("sequence_enrollments").select("contact_id, sequence_sends(status, sent_at)").eq("sequence_id", inviteSeq.id).in("contact_id", ids.slice(i, i + 500));
+      for (const e of enrs ?? []) {
+        const at = ((e.sequence_sends as { status: string; sent_at: string | null }[] | null) ?? []).filter((x) => x.status === "sent" && x.sent_at).map((x) => x.sent_at as string).sort()[0];
+        if (at && !sent.has(e.contact_id as string)) sent.set(e.contact_id as string, at);
+      }
+    }
+  }
+
   const rows = people.map((p) => ({
     id: p.id,
     name: [p.first_name, p.last_name].filter(Boolean).join(" ") || null,
@@ -106,7 +126,7 @@ export async function GET(request: Request) {
   const walkIns = Array.from(registered.entries())
     .filter(([email]) => !invited.has(email))
     .map(([email, r]) => ({ email, name: r.name, registered_at: r.at }));
-  return NextResponse.json({ lists: lists ?? [], forms: forms ?? [], allTags, list, invites: rows, walkIns });
+  return NextResponse.json({ lists: lists ?? [], forms: forms ?? [], allTags, list, inviteCampaign, invites: rows, walkIns });
 }
 
 export async function POST(request: Request) {
@@ -156,6 +176,16 @@ export async function POST(request: Request) {
         continue;
       }
       const [first, ...rest] = str(p.name, 120).split(/\s+/);
+      if (b.mode === "send") {
+        // Send the invite: start the list's invite campaign (it tags them too).
+        const r = await enrolContact({ masterPlanId: a.planId, sequenceKey: tag, email, firstName: first || null, lastName: rest.join(" ") || null, source: "manual", tags: [tag] });
+        if (!r.enrollmentId) {
+          skipped.push(`${email} (${r.reason === "already enrolled" ? "already sent the invite" : r.reason === "unsubscribed" ? "unsubscribed" : r.reason?.startsWith("no sequence") ? "no invite campaign for this list" : "couldn't send"})`);
+          continue;
+        }
+        added++;
+        continue;
+      }
       const c = await upsertContact({ masterPlanId: a.planId, email, firstName: first || null, lastName: rest.join(" ") || null, source: `manual:${a.userEmail ?? "you"}`, tags: [tag] }, db);
       if (!c) {
         skipped.push(email);
@@ -163,7 +193,7 @@ export async function POST(request: Request) {
       }
       added++;
       await logEvent(a.planId, c.id, "tag", `Invited to ${list.name} (tagged ${tag})`, {}, db).catch(() => {});
-      if (b.alreadySent === true) {
+      if (b.mode === "already" || b.alreadySent === true) {
         await db
           .from("crm_invites")
           .upsert({ list_id: list.id, master_plan_id: a.planId, contact_id: c.id, email, sent_at: new Date().toISOString() }, { onConflict: "list_id,email" });

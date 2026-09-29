@@ -57,7 +57,9 @@ export default function InviteTracker() {
   const [email, setEmail] = useState("");
   const [paste, setPaste] = useState("");
   const [showPaste, setShowPaste] = useState(false);
-  const [alreadySent, setAlreadySent] = useState(true);
+  const [mode, setMode] = useState<"send" | "already">("send");
+  const [showSettings, setShowSettings] = useState(false);
+  const [inviteCampaign, setInviteCampaign] = useState<{ id: string; name: string; active: boolean; subject: string } | null>(null);
   const [newList, setNewList] = useState({ open: false, name: "", tag: "", formId: "" });
   const [filter, setFilter] = useState<"all" | "not-sent" | "sent" | "registered" | "not-registered">("all");
 
@@ -66,6 +68,7 @@ export default function InviteTracker() {
     setLists(d.lists ?? []);
     setForms(d.forms ?? []);
     setAllTags(d.allTags ?? []);
+    setInviteCampaign(d.inviteCampaign ?? null);
     setListId(d.list?.id ?? "");
     setInvites(d.invites ?? []);
     setWalkIns(d.walkIns ?? []);
@@ -85,9 +88,9 @@ export default function InviteTracker() {
   }
 
   async function addPeople(people: { name: string; email: string }[]) {
-    const d = await post({ action: "add", listId, people, alreadySent });
+    const d = await post({ action: "add", listId, people, mode: inviteCampaign ? mode : "already" });
     if (!d) return;
-    setMsg(`${d.added} added.${d.skipped?.length ? ` Skipped (no valid email or already on the list): ${d.skipped.join(", ")}` : ""}`);
+    setMsg(`${d.added} ${mode === "send" && inviteCampaign ? (d.added === 1 ? "invite sent" : "invites sent") : "added to the list"}.${d.skipped?.length ? ` Skipped: ${d.skipped.join(", ")}` : ""}`);
     void load(listId);
   }
 
@@ -181,10 +184,19 @@ export default function InviteTracker() {
               </div>
             ))}
           </div>
+          <div className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">
+            This list is everyone tagged{" "}
+            {(list.invite_tags ?? []).map((t) => (
+              <span key={t} className="mx-0.5 rounded-full bg-[#2E7C83]/10 px-2 py-0.5 font-medium text-[#1F5E63] dark:text-[#9fd3d6]">{t}</span>
+            ))}
+            .{" "}
+            <button type="button" onClick={() => setShowSettings((v) => !v)} className="text-[#2E7C83] hover:underline">{showSettings ? "Hide list settings" : "List settings"}</button>
+          </div>
+          {showSettings && (
           <Card>
             <CardContent className="p-4 space-y-3">
-              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Who&rsquo;s invited</p>
-              <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Everyone in Contacts with any of these tags is on this list. Tag people in Contacts (or on an import), or add them below.</p>
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">List settings: which tags make up this list</p>
+              <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Usually set once. Anyone in Contacts with any of the highlighted tags shows on this list. Changing this sends no email.</p>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from(new Set([...(list.invite_tags ?? []), ...allTags])).sort().map((t) => {
                   const on = (list.invite_tags ?? []).includes(t);
@@ -220,15 +232,34 @@ export default function InviteTracker() {
               </div>
             </CardContent>
           </Card>
+          )}
           {!list.form_id && <p className="text-sm rounded-lg bg-[#c9a227]/15 px-4 py-2">This list isn&rsquo;t linked to a sign-up form, so registrations can&rsquo;t be tracked.</p>}
 
           <Card>
             <CardContent className="p-4 space-y-3">
-              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add people to invite</p>
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Invite people</p>
+              <div className="space-y-2">
+                {inviteCampaign && (
+                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer ${mode === "send" ? "border-[#2E7C83] bg-[#2E7C83]/5" : "border-[#1a2b4a]/15"}`}>
+                    <input type="radio" name="invite-mode" checked={mode === "send"} onChange={() => setMode("send")} className="mt-0.5 accent-[#2E7C83]" />
+                    <span>
+                      <strong>Send them the invite email</strong>
+                      <span className="block text-xs text-[#7a8a99]">They get &ldquo;{inviteCampaign.subject}&rdquo; from you, with a Save my seat button. When they register you get an email and they show as Registered.</span>
+                    </span>
+                  </label>
+                )}
+                <label className={`flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer ${mode === "already" || !inviteCampaign ? "border-[#2E7C83] bg-[#2E7C83]/5" : "border-[#1a2b4a]/15"}`}>
+                  <input type="radio" name="invite-mode" checked={mode === "already" || !inviteCampaign} onChange={() => setMode("already")} className="mt-0.5 accent-[#2E7C83]" />
+                  <span>
+                    <strong>I already invited them myself</strong>
+                    <span className="block text-xs text-[#7a8a99]">No email is sent. They&rsquo;re added to this list and marked &ldquo;Invite sent&rdquo; now.</span>
+                  </span>
+                </label>
+              </div>
               <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                <ContactLookupInput className={LOOKUP} placeholder="Name (or search your contacts)" value={name} onChange={setName} pickLabel="Add" onPick={(c) => { setName(""); setEmail(""); void addPeople([{ name: lookupName(c), email: c.email }]); }} />
-                <ContactLookupInput className={LOOKUP} type="email" placeholder="Email" value={email} onChange={setEmail} pickLabel="Add" onPick={(c) => { setName(""); setEmail(""); void addPeople([{ name: lookupName(c), email: c.email }]); }} />
-                <Button disabled={!email.trim()} onClick={() => { void addPeople([{ name, email }]); setName(""); setEmail(""); }}><UserPlus className="w-4 h-4 mr-1" /> Add</Button>
+                <ContactLookupInput className={LOOKUP} placeholder="Name (or search your contacts)" value={name} onChange={setName} pickLabel="Use" onPick={(c) => { setName(lookupName(c)); setEmail(c.email); }} />
+                <ContactLookupInput className={LOOKUP} type="email" placeholder="Email" value={email} onChange={setEmail} pickLabel="Use" onPick={(c) => { setName(lookupName(c)); setEmail(c.email); }} />
+                <Button disabled={!email.trim()} onClick={() => { void addPeople([{ name, email }]); setName(""); setEmail(""); }}><UserPlus className="w-4 h-4 mr-1" /> {inviteCampaign && mode === "send" ? "Send invite" : "Add to list"}</Button>
               </div>
               <button type="button" onClick={() => setShowPaste((v) => !v)} className="text-sm text-[#2E7C83] hover:underline">{showPaste ? "Hide" : "Or paste a list of people"}</button>
               {showPaste && (
@@ -240,14 +271,20 @@ export default function InviteTracker() {
                     placeholder={"One person per line, for example:\nJane Doe <jane@example.com>\nSam Lee, sam@example.com\nalex@example.com"}
                     className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm font-mono"
                   />
-                  <Button disabled={!paste.trim()} onClick={() => { void addPeople(parseLines(paste)); setPaste(""); setShowPaste(false); }}>Add {parseLines(paste).length || ""} people</Button>
+                  <Button
+                    disabled={!paste.trim()}
+                    onClick={() => {
+                      const people = parseLines(paste);
+                      if (inviteCampaign && mode === "send" && !confirm(`Send the invite email to ${people.length} ${people.length === 1 ? "person" : "people"}?`)) return;
+                      void addPeople(people);
+                      setPaste("");
+                      setShowPaste(false);
+                    }}
+                  >
+                    {inviteCampaign && mode === "send" ? `Send invite to ${parseLines(paste).length || ""} people` : `Add ${parseLines(paste).length || ""} people to the list`}
+                  </Button>
                 </div>
               )}
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={alreadySent} onChange={(e) => setAlreadySent(e.target.checked)} className="w-4 h-4 accent-[#2E7C83]" />
-                I&rsquo;ve already sent them the invite (mark &ldquo;Invite sent&rdquo; now)
-              </label>
-              <p className="text-xs text-[#7a8a99]">Nothing is emailed from this page: adding someone only tags them. Adding someone gives them the tag <strong>{list.invite_tag}</strong> in Contacts (new people are added to Contacts). Registrations fill in on their own from the sign-up form.</p>
             </CardContent>
           </Card>
 
