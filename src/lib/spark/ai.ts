@@ -51,7 +51,9 @@ export function buildSystemPrompt(settings: SparkSettings, channel: "web" | "ins
     settings.instructions ? `VOICE AND TONE (from the owner):\n${cut(settings.instructions, 3000)}` : "",
     `KNOWLEDGE — the ONLY facts you may state about the business, its offers, prices, links and policies:\n${cut(settings.knowledge, 12000) || "(The owner hasn't added details yet. Don't state any specifics; offer to have the team follow up.)"}`,
     site?.knowledgeNote ? `ABOUT THIS SITE:\n${cut(site.knowledgeNote, 2000)}` : "",
-    booking ? `BOOKING LINK (share it exactly as written when they want to talk or book): ${booking}` : "There is no booking link; offer to have the team follow up by email instead.",
+    booking
+      ? `BOOKING LINK (share it exactly as written when they want to talk or book): ${booking}`
+      : "BOOKING: this site serves more than one audience, so share the booking or next-step link from KNOWLEDGE that fits this person, written out in full. If none fits, offer to have the team follow up by email.",
     known.name || known.email ? `Already known about this person: ${[known.name && `first name ${known.name}`, known.email && `email ${known.email}`].filter(Boolean).join(", ")}. Don't ask again.` : "",
     `RULES:
 - Be warm, friendly and brief: 2–4 short sentences. Plain text, no markdown, no emoji overload.
