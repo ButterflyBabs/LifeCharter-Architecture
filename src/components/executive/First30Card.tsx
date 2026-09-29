@@ -24,12 +24,15 @@ export function useFirst30(): First30 | null {
   return d;
 }
 
+const stageName = (w: number) => (w === 0 ? "Start here: your assessments" : `Week ${w}`);
+
 export default function First30Card({ data }: { data: First30 }) {
-  // Two weeks at a time: the earliest week that still has open steps, and the week after it.
-  // Weeks 3 and 4 only come into view once the earlier week is fully checked off.
+  // One stage at a time: the assessments first (everything else is informed by them),
+  // then Week 1, and each later week only once the one before it is fully checked off.
   const weeks = Array.from(new Set(data.steps.map((s) => s.week))).sort((a, b) => a - b);
   const current = weeks.find((w) => data.steps.some((s) => s.week === w && !s.done));
-  const shownWeeks = current === undefined ? [] : weeks.filter((w) => w === current || w === current + 1);
+  const shownWeeks = current === undefined ? [] : [current];
+  const finished = current === undefined ? weeks : weeks.filter((w) => w < current);
   const pct = Math.round((data.done / Math.max(data.total, 1)) * 100);
   return (
     <div className="h-full overflow-hidden rounded-2xl border border-[#c9a227]/40 bg-[#FFFFFF] shadow-sm">
@@ -46,6 +49,13 @@ export default function First30Card({ data }: { data: First30 }) {
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
           <div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${pct}%` }} />
         </div>
+        {finished.length > 0 && current !== undefined && (
+          <ul className="mt-3 space-y-1 text-xs text-[#2c6b3f]">
+            {finished.map((w) => (
+              <li key={w} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> {stageName(w)} complete</li>
+            ))}
+          </ul>
+        )}
         {shownWeeks.length ? (
           <div className="mt-3">
             {shownWeeks.map((w, i) => {
@@ -54,7 +64,7 @@ export default function First30Card({ data }: { data: First30 }) {
               return (
                 <div key={w} className={i > 0 ? "mt-3 border-t border-gray-200 pt-3" : ""}>
                   <p className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                    <span>Week {w}</span>
+                    <span>{stageName(w)}</span>
                     <span className="font-medium normal-case tracking-normal">{left ? `${left} to go` : "Done"}</span>
                   </p>
                   <ul className="space-y-1.5 text-sm">

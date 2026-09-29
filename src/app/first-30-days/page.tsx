@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Circle, Sprout } from "lucide-react";
+import { CheckCircle2, Circle, Lock, Sprout } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { useFirst30 } from "@/components/executive/First30Card";
 
 const WEEK_TITLES: Record<number, string> = {
+  0: "Start here · Your assessments",
   1: "Week 1 · Your foundation",
   2: "Week 2 · Money & rhythm",
   3: "Week 3 · Systems",
@@ -24,7 +25,7 @@ export default function First30Page() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your First 30 Days</h1>
-          <p className="text-[#7a8a99]">Twelve small steps that turn the Suite into how you run your business. Each one ticks itself off when it&apos;s done, and the ones that strengthen your lowest scores are marked for you.</p>
+          <p className="text-[#7a8a99]">Start with your three assessments, since everything else is informed by your answers. Then twelve small steps, one week at a time, turn the Suite into how you run your business. Each week opens once the one before it is done. Each one ticks itself off when it&apos;s done, and the ones that strengthen your lowest scores are marked for you.</p>
         </div>
       </div>
       {d && (
@@ -41,10 +42,17 @@ export default function First30Page() {
         <p className="text-[#7a8a99]">Loading…</p>
       ) : (
         <div className="space-y-5">
-          {[1, 2, 3, 4].map((w) => (
-            <Card key={w}>
+          {[0, 1, 2, 3, 4].map((w) => {
+            // Each stage opens only once the one before it is fully done.
+            const locked = w > 0 && steps.some((s) => s.week < w && !s.done);
+            const prev = w - 1 === 0 ? "your assessments are" : `Week ${w - 1} is`;
+            return (
+            <Card key={w} className={locked ? "opacity-60" : ""}>
               <CardContent className="p-5">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{WEEK_TITLES[w]}</p>
+                {locked ? (
+                  <p className="flex items-center gap-2 py-2 text-sm text-[#7a8a99]"><Lock className="h-4 w-4" aria-hidden /> Opens once {prev} complete.</p>
+                ) : (
                 <div className="divide-y divide-[#1a2b4a]/10">
                   {steps
                     .filter((s) => s.week === w)
@@ -64,9 +72,11 @@ export default function First30Page() {
                       </Link>
                     ))}
                 </div>
+                )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

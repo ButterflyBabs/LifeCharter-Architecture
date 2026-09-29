@@ -216,7 +216,7 @@ export async function buildAssistantKnowledge(
     const { first30Status } = await import("@/lib/first30");
     const f = await first30Status(masterPlanId);
     if (f.done < f.total && f.day <= 60) {
-      const open = f.steps.filter((x) => !x.done).sort((a, b) => Number(!!b.focus) - Number(!!a.focus)).slice(0, 4);
+      const open = f.steps.filter((x) => !x.done).sort((a, b) => a.week - b.week || Number(!!b.focus) - Number(!!a.focus)).slice(0, 4);
       parts.push(`First 30 days: day ${Math.min(f.day, 30)}, ${f.done} of ${f.total} setup steps done. Next: ${open.map((x) => `${x.title}${x.focus ? ` (strengthens ${x.focus})` : ""}`).join("; ")}.`);
     }
   } catch {

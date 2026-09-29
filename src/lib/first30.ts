@@ -1,13 +1,14 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 
-// The first 30 days after setup: twelve small steps over four weeks that turn
+// The first 30 days: the three assessments first (everything else is informed by
+// their answers), then twelve small steps over four weeks that turn
 // the Suite's tools into habits. Each step is checked live from the client's own
 // data, so it ticks itself off the moment it's done.
 
 export interface First30Step {
   key: string;
-  week: 1 | 2 | 3 | 4;
+  week: 0 | 1 | 2 | 3 | 4; // 0 = the assessments, which inform everything else
   title: string;
   why: string;
   href: string;
@@ -20,7 +21,26 @@ type Def = Omit<First30Step, "done" | "focus"> & { check: (id: string, db: Retur
 
 const count = async (q: PromiseLike<{ count: number | null }>) => ((await q).count ?? 0);
 
+const answered = async (id: string, db: ReturnType<typeof createServerClient>, type: "brain" | "soul") =>
+  (await count(db.from("unified_client_responses").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("assessment_type", type))) > 0;
+
 const STEPS: Def[] = [
+  {
+    key: "brain", week: 0, dims: ["systems","operations"], title: "Take the Brain assessment", why: "Maps your business systems in your own words.", href: "/assessments/brain",
+    check: (id, db) => answered(id, db, "brain"),
+  },
+  {
+    key: "soul", week: 0, dims: ["vision","leadership"], title: "Take the Soul assessment", why: "Your identity, values, calling and story: the heart your assistant writes from.", href: "/assessments/soul",
+    check: (id, db) => answered(id, db, "soul"),
+  },
+  {
+    key: "profit", week: 0, dims: ["finance"], title: "Take the Profit assessment", why: "Scores your 12 business dimensions and sets your baseline.", href: "/assessments/profit",
+    check: async (id, db) => {
+      const { data } = await db.from("client_master_plans").select("domain_scores, profit_score").eq("id", id).maybeSingle();
+      const ds = (data?.domain_scores as Record<string, unknown> | null) || null;
+      return Boolean((ds && Object.keys(ds).length > 0) || (data?.profit_score as number | null));
+    },
+  },
   {
     key: "vision", week: 1, dims: ["vision","leadership"], title: "Write your vision in the Business Plan", why: "Everything else in the Suite points back to it.", href: "/business-plan",
     check: async (id, db) => (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "business").not("content", "is", null))) > 0,
