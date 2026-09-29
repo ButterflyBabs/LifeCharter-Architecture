@@ -756,6 +756,30 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "Executive coaching is part of every Command Suite plan, and the live calls are where it happens. Every week (all times Mountain): Monday 10am, the Weekly Alignment Anchor (last week's wins and challenges, this week's goals; if you make one call a week, make it this one). Tuesday 6pm, the 90-minute Dimension Call: Growth on the first Tuesday, the Hope Seat on the second, a SOUL Session on the third, Community on the fourth, and the Flight Crew Mixer (round robin networking) on a fifth Tuesday. Wednesday 11am, Sales & Marketing Coaching (20 to 30 minutes of teaching, then open support). Thursday 11am, Suite Office Hours for anything tech related, with a build-along every other week. Friday 10am, The Inner Command, our mindset call about life and business. New clients also have the New Client Launch Call every other Thursday at 1pm during their first 30 days. Growth and VIP members are invited to a quarterly intensive (a Friday and Saturday, 10am to 2pm on Zoom), and there's an annual in-person retreat for Command Suite clients. Your next 7 days of calls, with Zoom buttons, are on Executive Home and Daily Compass under “This week's coaching calls”, and the full schedule and replays are on the Collective's Events page. Each call has its own Zoom room; the first time you join one, Zoom asks you to register once. You don't need to attend them all: pick what serves you each week. Know a founder who'd benefit? Founder's Half Hour, every Tuesday at noon, is free and open to everyone.",
     keywords: ["coaching", "calls", "group coaching", "schedule", "alignment anchor", "office hours", "inner command", "mindset", "hope seat", "dimension call", "launch call", "build along", "intensive", "retreat", "support call"],
   },
+  {
+    id: "gs-call-register",
+    category: "Getting Started",
+    question: "Do I need to register for each coaching call, and where are the replays?",
+    answer:
+      "Each call series has its own Zoom room. The first time you join one, Zoom asks for your name and email once; after that the same link takes you straight in every week. Your next 7 days of calls are on Executive Home and Daily Compass (“This week's coaching calls”), with a Join now button that lights up 10 minutes before a call. Replays are in the Collective under Events → Past & replays.",
+    keywords: ["register", "registration", "zoom", "join", "replay", "recording", "coaching call", "link"],
+  },
+  {
+    id: "gs-hope-seat",
+    category: "Getting Started",
+    question: "What are the Hope Seat and the Flight Crew Mixer?",
+    answer:
+      "Both are Tuesday Dimension Calls (6pm Mountain, 90 minutes). On the second Tuesday, one to three members are invited into the Hope Seat for direction and coaching while everyone else holds space and learns alongside them; what's shared there stays in the room. In months with a fifth Tuesday, the call becomes the Flight Crew Mixer: round robin networking so you get to know the founders you're flying with.",
+    keywords: ["hope seat", "flight crew mixer", "networking", "round robin", "tuesday", "dimension call"],
+  },
+  {
+    id: "gs-founders-half-hour",
+    category: "Getting Started",
+    question: "What is Founder's Half Hour, and can I invite someone?",
+    answer:
+      "Founder's Half Hour is a free 30-minute coaching and mentoring call with Babs every Tuesday at noon Mountain, open to everyone. Bring a question about your business and leave with a next step. Yes, invite a friend or a fellow founder: they register at https://us02web.zoom.us/meeting/register/Yv6WtkGmRaGGDLhoPrMMfw",
+    keywords: ["founder's half hour", "founders half hour", "free call", "public call", "invite", "friend", "tuesday noon"],
+  },
 ];
 
 // Lightweight keyword-overlap retrieval: score each entry against the query and
