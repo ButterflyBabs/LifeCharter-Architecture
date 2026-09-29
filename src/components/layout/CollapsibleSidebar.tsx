@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Mail,
+  Presentation,
   MailCheck,
   CalendarDays,
   Package,
@@ -141,6 +142,7 @@ const ownerSection = {
   color: "text-[#c9a227]",
   items: [
     { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
+    { id: "sneak-peek-run-of-show", label: "Sneak Peek Run of Show", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
     { id: "event-emails", label: "Event Emails", icon: Mail, href: "/event-emails" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
