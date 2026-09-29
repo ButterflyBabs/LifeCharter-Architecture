@@ -63,6 +63,10 @@ interface MailAccount {
   accountKey: string;
 }
 
+// A mailbox's identity is provider + account key: the same address can be connected
+// through both Google and Microsoft, and their account keys are then identical.
+const mailboxId = (provider: string | undefined, accountKey: string | undefined) => `${provider ?? "google"}:${accountKey ?? ""}`;
+
 interface AttachmentMeta {
   id: string;
   name: string;
@@ -494,7 +498,7 @@ export default function ExecutiveHome() {
   const visibleEmails = emails.filter(
     (e) =>
       (!unreadOnly || e.unread) &&
-      (!accountFilter || e.accountKey === accountFilter) &&
+      (!accountFilter || mailboxId(e.provider, e.accountKey) === accountFilter) &&
       (!labelFilter || (e.labels ?? []).some((l) => l.id === labelFilter))
   );
   // Distinct labels present across the loaded inbox, for the label filter.
@@ -1789,11 +1793,12 @@ export default function ExecutiveHome() {
               {accounts.length > 1 &&
                 accounts.map((a) => (
                   <button
-                    key={a.accountKey}
-                    onClick={() => setAccountFilter((p) => (p === a.accountKey ? null : a.accountKey))}
-                    className={chipCls(accountFilter === a.accountKey)}
+                    key={mailboxId(a.provider, a.accountKey)}
+                    onClick={() => setAccountFilter((p) => (p === mailboxId(a.provider, a.accountKey) ? null : mailboxId(a.provider, a.accountKey)))}
+                    className={chipCls(accountFilter === mailboxId(a.provider, a.accountKey))}
+                    aria-pressed={accountFilter === mailboxId(a.provider, a.accountKey)}
                   >
-                    {a.label}
+                    {a.provider === "microsoft" ? "Microsoft · " : "Gmail · "}{a.label}
                   </button>
                 ))}
               {inboxLabels.length > 0 && (
