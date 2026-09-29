@@ -25,8 +25,11 @@ export function useFirst30(): First30 | null {
 }
 
 export default function First30Card({ data }: { data: First30 }) {
-  // Open steps that strengthen their weakest areas come first.
-  const next = data.steps.filter((s) => !s.done).sort((a, b) => Number(!!b.focus) - Number(!!a.focus)).slice(0, 3);
+  // Two weeks at a time: the earliest week that still has open steps, and the week after it.
+  // Weeks 3 and 4 only come into view once the earlier week is fully checked off.
+  const weeks = Array.from(new Set(data.steps.map((s) => s.week))).sort((a, b) => a - b);
+  const current = weeks.find((w) => data.steps.some((s) => s.week === w && !s.done));
+  const shownWeeks = current === undefined ? [] : weeks.filter((w) => w === current || w === current + 1);
   const pct = Math.round((data.done / Math.max(data.total, 1)) * 100);
   return (
     <div className="h-full overflow-hidden rounded-2xl border border-[#c9a227]/40 bg-[#FFFFFF] shadow-sm">
@@ -43,21 +46,43 @@ export default function First30Card({ data }: { data: First30 }) {
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
           <div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${pct}%` }} />
         </div>
-        <ul className="mt-3 space-y-2 text-sm">
-          {next.map((s) => (
-            <li key={s.key}>
-              <Link href={s.href} className="flex items-center gap-2 text-indigo-900 hover:underline">
-                <Circle className="h-4 w-4 shrink-0 text-[#c9a227]" /> {s.title}
-                {s.focus && <span className="ml-1 rounded-full bg-[#c9a227]/15 px-1.5 text-[10px] font-semibold text-[#8a6a15]">focus</span>}
-              </Link>
-            </li>
-          ))}
-          {!next.length && (
-            <li className="flex items-center gap-2 text-[#2c6b3f]">
-              <CheckCircle2 className="h-4 w-4" /> All done. Beautifully built.
-            </li>
-          )}
-        </ul>
+        {shownWeeks.length ? (
+          <div className="mt-3">
+            {shownWeeks.map((w, i) => {
+              const steps = data.steps.filter((s) => s.week === w);
+              const left = steps.filter((s) => !s.done).length;
+              return (
+                <div key={w} className={i > 0 ? "mt-3 border-t border-gray-200 pt-3" : ""}>
+                  <p className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                    <span>Week {w}</span>
+                    <span className="font-medium normal-case tracking-normal">{left ? `${left} to go` : "Done"}</span>
+                  </p>
+                  <ul className="space-y-1.5 text-sm">
+                    {steps.map((s) => (
+                      <li key={s.key}>
+                        {s.done ? (
+                          <span className="flex items-center gap-2 text-gray-400 line-through decoration-gray-300">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2c6b3f]" aria-hidden /> <span>{s.title}</span>
+                            <span className="sr-only">(done)</span>
+                          </span>
+                        ) : (
+                          <Link href={s.href} className="flex items-center gap-2 text-indigo-900 hover:underline">
+                            <Circle className="h-4 w-4 shrink-0 text-[#c9a227]" aria-hidden /> {s.title}
+                            {s.focus && <span className="ml-1 rounded-full bg-[#c9a227]/15 px-1.5 text-[10px] font-semibold text-[#8a6a15]">focus</span>}
+                          </Link>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-3 flex items-center gap-2 text-sm text-[#2c6b3f]">
+            <CheckCircle2 className="h-4 w-4" /> All done. Beautifully built.
+          </p>
+        )}
       </div>
     </div>
   );
