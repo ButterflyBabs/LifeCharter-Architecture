@@ -17,13 +17,14 @@ export async function GET(request: Request) {
 
   const boxes = await openMailboxes();
   const emails: MergedEmail[] = [];
-  const accounts: Array<{ provider: Provider; email: string; label: string; accountKey: string }> = [];
+  const accounts: Array<{ provider: Provider; email: string; label: string; accountKey: string; error?: string }> = [];
   const providers = { google: false, microsoft: false };
 
   await Promise.all(
     boxes.map(async (box) => {
       providers[box.provider] = true;
-      accounts.push({ provider: box.provider, email: box.email ?? "", label: box.label, accountKey: box.accountKey });
+      const account: (typeof accounts)[number] = { provider: box.provider, email: box.email ?? "", label: box.label, accountKey: box.accountKey };
+      accounts.push(account);
       try {
         const rows =
           box.provider === "google"
@@ -32,6 +33,8 @@ export async function GET(request: Request) {
         emails.push(...rows.map((e) => ({ ...e, provider: box.provider, account: box.label, accountKey: box.accountKey })));
       } catch (e) {
         console.error(`inbox ${box.provider}:`, e);
+        // Usually an expired or revoked sign-in: tell the screen so it can ask them to reconnect.
+        account.error = "reconnect";
       }
     })
   );
