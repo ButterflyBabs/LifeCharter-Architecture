@@ -69,26 +69,31 @@ const navigationSections = [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
-      { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
-      { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
+      { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
     ],
   },
   {
-    title: "STRATEGIC PLANNING",
+    title: "PLANNING & NUMBERS",
     color: "text-[#4a9b9b]",
     items: [
-      { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
-      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
       { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
+      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
       { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
-      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
+    ],
+  },
+  {
+    title: "GROWTH",
+    color: "text-[#c9855e]",
+    items: [
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
-      { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
+      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
+      { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
   {
@@ -96,11 +101,10 @@ const navigationSections = [
     color: "text-[#7b6b8d]",
     items: [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
+      { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
-      { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
-      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
-      { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
+      { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
     ],
   },
   {
@@ -114,6 +118,14 @@ const navigationSections = [
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
     ],
   },
+  {
+    title: "GETTING STARTED",
+    color: "text-[#8fb58a]",
+    items: [
+      { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
+      { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
+    ],
+  },
 ];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
@@ -124,16 +136,16 @@ const ownerSection = {
   items: [
     { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
-    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
+    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
-    { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
-    { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
-    { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
-    { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
-    { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
-    { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
+    { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
+    { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
+    { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
+    { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
+    { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
+    { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
   ],
 };
 
@@ -372,6 +384,25 @@ export function CollapsibleSidebar() {
         /* not remembered */
       }
       return next;
+    });
+  // The account block at the bottom (theme, profile, sign out) folds down to one
+  // row so it doesn't crowd the menu; the choice is remembered on this device.
+  const [accountOpen, setAccountOpen] = useState(false);
+  useEffect(() => {
+    try {
+      setAccountOpen(localStorage.getItem("nav-account-open") === "1");
+    } catch {
+      /* start folded */
+    }
+  }, []);
+  const toggleAccount = () =>
+    setAccountOpen((prev) => {
+      try {
+        localStorage.setItem("nav-account-open", prev ? "0" : "1");
+      } catch {
+        /* not remembered */
+      }
+      return !prev;
     });
   const [profile, setProfile] = useState<{ fullName: string; avatarUrl: string | null; workspaceName: string }>({
     fullName: "",
@@ -636,62 +667,78 @@ export function CollapsibleSidebar() {
         )}
       </nav>
 
-      {/* User Profile & Theme Toggle */}
+      {/* Account: one row (photo + name) that opens to theme, sign out and workspace */}
       <div className={cn("border-t border-white/10 space-y-2", isCollapsed ? "p-2" : "p-4")}>
-        {/* Theme Toggle */}
         <button
-          onClick={toggleTheme}
+          type="button"
+          onClick={toggleAccount}
+          aria-expanded={accountOpen}
+          aria-controls="sidebar-account"
+          title={isCollapsed ? displayName : undefined}
           className={cn(
-            "flex items-center rounded-lg text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors",
-            isCollapsed ? "justify-center w-full p-2" : "justify-between w-full px-4 py-2.5"
+            "w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left",
+            isCollapsed ? "p-2 flex justify-center" : "px-3 py-3"
           )}
-          title={isCollapsed ? (theme === "light" ? "Light Mode" : "Dark Mode") : undefined}
         >
-          <span className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
-            {theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {!isCollapsed && (theme === "light" ? "Light Mode" : "Dark Mode")}
-          </span>
-        </button>
-
-        {/* User Profile */}
-        <div
-          className={cn("rounded-xl bg-white/5 border border-white/10", isCollapsed ? "p-2 flex justify-center" : "px-3 py-3")}
-        >
-          <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
-            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
+          <span className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+            <span className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#c9a227] to-[#a88b1e] flex items-center justify-center text-[#1a2b4a] font-serif font-bold text-sm flex-shrink-0">
               {profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 initials
               )}
-            </div>
+            </span>
             {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                <p className="text-xs text-white/40 truncate">Founder &amp; CEO</p>
+              <>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium text-white truncate">{displayName}</span>
+                  <span className="block text-xs text-white/40 truncate">Founder &amp; CEO</span>
+                </span>
+                <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform duration-200", accountOpen && "rotate-180")} aria-hidden />
+              </>
+            )}
+          </span>
+          <span className="sr-only">{accountOpen ? "Hide account options" : "Show account options"}</span>
+        </button>
+
+        {accountOpen && (
+          <div id="sidebar-account" className="space-y-2">
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={cn(
+                "flex items-center rounded-lg text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors",
+                isCollapsed ? "justify-center w-full p-2" : "justify-between w-full px-4 py-2.5"
+              )}
+              title={isCollapsed ? (theme === "light" ? "Light Mode" : "Dark Mode") : undefined}
+            >
+              <span className={cn("flex items-center gap-2", isCollapsed && "justify-center")}>
+                {theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {!isCollapsed && (theme === "light" ? "Light Mode" : "Dark Mode")}
+              </span>
+            </button>
+
+            {/* Sign out */}
+            <Link
+              href="/logout"
+              title="Sign out"
+              className={cn(
+                "flex items-center rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
+                isCollapsed ? "justify-center w-full p-2" : "gap-2 px-4 py-2.5"
+              )}
+            >
+              <LogOut className="w-4 h-4" />
+              {!isCollapsed && <span className="text-sm">Sign out</span>}
+            </Link>
+
+            {/* Workspace - only when expanded */}
+            {!isCollapsed && profile.workspaceName && (
+              <div className="px-4 py-1 text-xs text-white/40">
+                <span className="text-white/30">Workspace:</span> {profile.workspaceName}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Sign out */}
-        <Link
-          href="/logout"
-          title="Sign out"
-          className={cn(
-            "flex items-center rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
-            isCollapsed ? "justify-center w-full p-2" : "gap-2 px-4 py-2.5"
-          )}
-        >
-          <LogOut className="w-4 h-4" />
-          {!isCollapsed && <span className="text-sm">Sign out</span>}
-        </Link>
-
-        {/* Workspace Selector - only when expanded */}
-        {!isCollapsed && profile.workspaceName && (
-          <div className="px-4 py-1 text-xs text-white/40">
-            <span className="text-white/30">Workspace:</span> {profile.workspaceName}
           </div>
         )}
       </div>
