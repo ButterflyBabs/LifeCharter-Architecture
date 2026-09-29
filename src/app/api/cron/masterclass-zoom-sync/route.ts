@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId } from "@/lib/zoom";
+import { cachedSchedule, incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId, type ZoomSchedule } from "@/lib/zoom";
+import { eventSetting, eventTemplates, sendDueEventEmails, suiteEmailsLive, type EventKey } from "@/lib/eventEmails";
 import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 
@@ -18,6 +19,12 @@ export const dynamic = "force-dynamic";
  * This is step one — sync-in, so nobody falls through the gate. Matching
  * Zoom's post-session attendance report back to these registrants (the
  * actual "who showed up" tracking) is a separate follow-up job.
+ *
+ * Suite emails (src/lib/eventEmails.ts): once an event's app_settings switch
+ * `event_emails:<event>` is on (and its confirmation template is live), new
+ * registrants skip the Global Control tag and get the Suite's own
+ * confirmation + reminders instead. Registrants synced before the switch stay
+ * with Global Control. With the switch off, everything below runs as before.
  */
 
 const GC_FORM_BASE =
@@ -74,10 +81,11 @@ async function run(request: Request) {
   );
 
   // Every Zoom meeting whose registrants feed a Global Control tag.
-  const events = [
+  const events: { key: EventKey; meetingId: string; tagId: string }[] = [
     { key: "masterclass", meetingId: masterclassMeetingId(), tagId: MASTERCLASS_TAG_ID },
     { key: "incubator", meetingId: incubatorMeetingId(), tagId: INCUBATOR_TAG_ID },
   ];
+  const scheduleCache = new Map<string, Promise<ZoomSchedule>>(); // one Zoom meeting lookup per event per run
   const results: Record<string, unknown>[] = [];
   // Registrants also land in the Suite CRM (Babs's Contacts), tagged, with no deal value:
   // a deal is only opened when they book an Executive Consultation (cs025).
@@ -92,7 +100,9 @@ async function run(request: Request) {
       results.push({ event: ev.key, meetingId: ev.meetingId, error: "Zoom fetch failed", detail: String(err) });
       continue;
     }
-    if (!ev.tagId) {
+    const [setting, templates] = await Promise.all([eventSetting(supabase, ev.key), eventTemplates(supabase, ev.key)]);
+    const suiteOn = suiteEmailsLive(setting, templates);
+    if (!ev.tagId && !suiteOn) {
       if (registrants.length) console.error(`[zoom-sync] ${ev.key}: ${registrants.length} registrants waiting — set GC_${ev.key.toUpperCase()}_TAG_ID`);
       results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, synced: 0, tag: "not_configured" });
       continue;
@@ -112,7 +122,8 @@ async function run(request: Request) {
     let syncedCount = 0;
 
     for (const r of toSync) {
-      const status = await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
+      // Switch on: first seen now → the Suite emails them, Global Control is never tagged.
+      const status = suiteOn ? "suite" : await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
       if (housePlan) {
         const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags: [`${ev.key}-registered`] }).catch(() => null);
         if (c) await logEvent(housePlan, c.id, "form", `Registered for the ${ev.key === "incubator" ? "LifeCharter Incubator" : "Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
@@ -123,12 +134,23 @@ async function run(request: Request) {
           zoom_meeting_id: ev.meetingId,
           email: r.email,
           gc_tag_status: status,
+          event_key: ev.key,
+          join_url: r.joinUrl || null,
+          registered_at: r.createTime || new Date().toISOString(),
+          suite_emails: suiteOn,
         },
         { onConflict: "zoom_registrant_id" }
       );
       if (status === "tagged") syncedCount++;
     }
-    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount });
+    let emails: unknown;
+    try {
+      emails = await sendDueEventEmails({ db: supabase, event: ev.key, meetingId: ev.meetingId, registrants, housePlan, templates, schedule: () => cachedSchedule(ev.meetingId, scheduleCache) });
+    } catch (err) {
+      console.error(`[zoom-sync] ${ev.key}: Suite emails failed:`, err);
+      emails = { error: String(err) };
+    }
+    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount, suiteEmails: suiteOn, emails });
   }
 
   return NextResponse.json({ results });

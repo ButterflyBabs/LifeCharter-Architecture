@@ -47,6 +47,8 @@ export interface ZoomRegistrant {
   email: string;
   firstName: string;
   lastName: string;
+  joinUrl: string; // this registrant's own join link
+  createTime: string; // ISO, when they registered ("" if Zoom didn't say)
 }
 
 // All approved registrants for the recurring MasterClass meeting (register
@@ -69,7 +71,7 @@ export async function listMasterclassRegistrants(meetingId: string = masterclass
     }
     const data = (await res.json()) as {
       next_page_token?: string;
-      registrants?: Array<{ id: string; email: string; first_name?: string; last_name?: string }>;
+      registrants?: Array<{ id: string; email: string; first_name?: string; last_name?: string; join_url?: string; create_time?: string }>;
     };
     for (const r of data.registrants || []) {
       registrants.push({
@@ -77,12 +79,64 @@ export async function listMasterclassRegistrants(meetingId: string = masterclass
         email: r.email,
         firstName: r.first_name || "",
         lastName: r.last_name || "",
+        joinUrl: r.join_url || "",
+        createTime: r.create_time || "",
       });
     }
     nextPageToken = data.next_page_token || "";
   } while (nextPageToken);
 
   return registrants;
+}
+
+// ---------- Occurrences (upcoming sessions) ----------
+
+export interface ZoomOccurrence {
+  start: string; // ISO (UTC)
+  duration: number; // minutes
+}
+export interface ZoomSchedule {
+  occurrences: ZoomOccurrence[]; // every non-deleted occurrence, oldest first (past ones included)
+  next: ZoomOccurrence | null; // the next one that hasn't ended yet
+}
+
+// A recurring meeting's occurrences (GET /meetings/{id} → occurrences[], past
+// ones included via show_previous_occurrences), or a single meeting's own
+// start_time. `next` is the first whose start + duration is still ahead.
+export async function meetingSchedule(meetingId: string, now: Date = new Date()): Promise<ZoomSchedule> {
+  const token = await getAccessToken();
+  const url = new URL(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`);
+  url.searchParams.set("show_previous_occurrences", "true");
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`Zoom meeting request failed: ${res.status} ${await res.text()}`);
+  const m = (await res.json()) as {
+    start_time?: string;
+    duration?: number;
+    occurrences?: Array<{ start_time?: string; duration?: number; status?: string }>;
+  };
+  const base = m.duration || 60;
+  const list: ZoomOccurrence[] = (m.occurrences?.length ? m.occurrences : m.start_time ? [{ start_time: m.start_time, duration: base }] : [])
+    .filter((o) => o.start_time && (o.status || "available") !== "deleted")
+    .map((o) => ({ start: new Date(o.start_time!).toISOString(), duration: o.duration || base }))
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const next = list.find((o) => new Date(o.start).getTime() + o.duration * 60_000 > now.getTime()) ?? null;
+  return { occurrences: list, next };
+}
+
+/** The next occurrence of a meeting that hasn't ended (start + duration > now), or null. */
+export async function nextOccurrence(meetingId: string, cache?: Map<string, Promise<ZoomSchedule>>): Promise<ZoomOccurrence | null> {
+  return (await cachedSchedule(meetingId, cache)).next;
+}
+
+/** meetingSchedule, fetched once per cron run when the caller passes the same Map. */
+export function cachedSchedule(meetingId: string, cache?: Map<string, Promise<ZoomSchedule>>): Promise<ZoomSchedule> {
+  if (!cache) return meetingSchedule(meetingId);
+  let p = cache.get(meetingId);
+  if (!p) {
+    p = meetingSchedule(meetingId);
+    cache.set(meetingId, p);
+  }
+  return p;
 }
 
 // ---------- Attendance (past occurrences) ----------
