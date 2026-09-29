@@ -172,7 +172,7 @@ async function notifyOwner(db: Db, form: { master_plan_id: string; name: string 
       from: "LifeCharter Command Suite <reminders@lccommandsuite.com>",
       to: prof.email,
       reply_to: email,
-      subject: `New ${form.name}: ${data.name || data.first_name || email}`,
+      subject: `New ${form.name}: ${data.name || [data.first_name, data.last_name].filter(Boolean).join(" ") || email}`,
       html: `<div style="font-family:Arial,sans-serif;font-size:14px;max-width:560px">
 <p style="font-size:16px;color:#1a2b4a"><strong>${esc(form.name)}</strong></p>
 <table cellpadding="0" cellspacing="0">${rows}</table>

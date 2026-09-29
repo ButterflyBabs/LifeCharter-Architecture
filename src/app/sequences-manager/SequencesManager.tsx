@@ -9,6 +9,7 @@ import BroadcastsTab from "../contacts/BroadcastsTab";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
 import ContactLookupInput from "@/components/crm/ContactLookupInput";
 
+const regWhen = (iso: string) => new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const LOOKUP = "flex h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] placeholder:text-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#c9a227]/50 focus:border-[#c9a227] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]";
 
 interface Seq {
@@ -42,6 +43,7 @@ interface Person {
   source: string | null;
   sent: number;
   failed: number;
+  registered: { at: string; via: "form" | "manual"; note?: string | null } | null;
   seq_contacts: { id: string; email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
 }
 interface Sender { house: boolean; ok: boolean; reason?: string | null; setupPath?: string; fromName?: string; fromEmail?: string | null; replyTo?: string }
@@ -364,7 +366,7 @@ export default function SequencesManager() {
                 <div className="overflow-x-auto rounded-xl border border-[#1a2b4a]/10">
                   <table className="w-full text-sm">
                     <thead className="bg-[#1a2b4a]/5 text-left">
-                      <tr><th className="p-3">Person</th><th className="p-3">Started</th><th className="p-3">Sent</th><th className="p-3">Status</th><th className="p-3"></th></tr>
+                      <tr><th className="p-3">Person</th><th className="p-3">Started</th><th className="p-3">Sent</th><th className="p-3">Registered</th><th className="p-3">Status</th><th className="p-3"></th></tr>
                     </thead>
                     <tbody>
                       {people.map((p) => {
@@ -378,6 +380,26 @@ export default function SequencesManager() {
                             </td>
                             <td className="p-3 whitespace-nowrap">{p.start_date}<span className="block text-xs text-[#7a8a99]">{p.source}</span></td>
                             <td className="p-3">{p.sent}/{steps.length}{p.failed ? <span className="text-[#C76F56]"> · {p.failed} failed</span> : null}</td>
+                            <td className="p-3 whitespace-nowrap">
+                              {p.registered?.via === "form" ? (
+                                <span className="inline-flex items-center rounded-full bg-[#2E7C83]/10 px-2.5 py-1 text-xs font-medium text-[#1F5E63] dark:text-[#9fd3d6]" title="Signed up on the form">
+                                  ✓ {regWhen(p.registered.at)}
+                                </span>
+                              ) : (
+                                <label className="inline-flex items-center gap-2 cursor-pointer" title={p.registered?.note || "Tick when they confirm another way (for example, by replying)"}>
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(p.registered)}
+                                    onChange={async (e) => {
+                                      await act({ action: "registered", enrollmentId: p.id, registered: e.target.checked });
+                                      void loadOne(openId);
+                                    }}
+                                    className="w-4 h-4 accent-[#2E7C83]"
+                                  />
+                                  <span className={p.registered ? "text-xs" : "text-xs text-[#7a8a99]"}>{p.registered ? regWhen(p.registered.at) : "Not yet"}</span>
+                                </label>
+                              )}
+                            </td>
                             <td className="p-3 capitalize">{status}</td>
                             <td className="p-3 whitespace-nowrap">
                               {status === "active" && (
@@ -393,7 +415,7 @@ export default function SequencesManager() {
                           </tr>
                         );
                       })}
-                      {!people.length && <tr><td colSpan={5} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this campaign."}</td></tr>}
+                      {!people.length && <tr><td colSpan={6} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this campaign."}</td></tr>}
                     </tbody>
                   </table>
                 </div>

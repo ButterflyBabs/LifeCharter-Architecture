@@ -38,14 +38,31 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     db.from("sequence_steps").select("*").eq("sequence_id", seq.id).order("position"),
     db
       .from("sequence_enrollments")
-      .select("id, status, enrolled_at, start_date, source, completed_at, seq_contacts(id, email, first_name, last_name, timezone, unsubscribed_at), sequence_sends(status)")
+      .select("id, status, enrolled_at, start_date, source, completed_at, registered_at, registered_note, seq_contacts(id, email, first_name, last_name, timezone, unsubscribed_at), sequence_sends(status)")
       .eq("sequence_id", seq.id)
       .order("enrolled_at", { ascending: false })
       .limit(500),
   ]);
+  // Registered: their first sign-up on a form that starts this campaign, else a mark made by hand.
+  const { data: forms } = await db.from("crm_forms").select("id").eq("master_plan_id", seq.master_plan_id).eq("sequence_key", seq.key);
+  const formIds = (forms ?? []).map((f) => f.id as string);
+  const contactIds = (enrs ?? []).map((e) => (e.seq_contacts as unknown as { id: string } | null)?.id).filter(Boolean) as string[];
+  const signedUp = new Map<string, string>();
+  if (formIds.length && contactIds.length) {
+    const { data: subs } = await db.from("crm_submissions").select("contact_id, created_at").in("form_id", formIds).in("contact_id", contactIds).order("created_at", { ascending: true });
+    for (const s of subs ?? []) if (!signedUp.has(s.contact_id as string)) signedUp.set(s.contact_id as string, s.created_at as string);
+  }
   const people = (enrs ?? []).map((e) => {
     const sends = (e.sequence_sends as { status: string }[] | null) ?? [];
-    return { ...e, sequence_sends: undefined, sent: sends.filter((s) => s.status === "sent").length, failed: sends.filter((s) => s.status === "failed").length };
+    const cid = (e.seq_contacts as unknown as { id: string } | null)?.id ?? "";
+    const form = signedUp.get(cid) ?? null;
+    return {
+      ...e,
+      sequence_sends: undefined,
+      sent: sends.filter((s) => s.status === "sent").length,
+      failed: sends.filter((s) => s.status === "failed").length,
+      registered: form ? { at: form, via: "form" } : e.registered_at ? { at: e.registered_at, via: "manual", note: e.registered_note } : null,
+    };
   });
   return NextResponse.json({ sequence: seq, steps: steps ?? [], people });
 }
@@ -146,6 +163,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
       tags: [seq.key],
     });
     return r.enrollmentId ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r.reason === "unsubscribed" ? "They've unsubscribed, so they can't be added back." : r.reason === "already enrolled" ? "They're already in this campaign." : r.reason || "Couldn't add them." }, { status: 400 });
+  }
+
+  if (b.action === "registered") {
+    const at = b.registered ? new Date().toISOString() : null;
+    await db.from("sequence_enrollments").update({ registered_at: at, registered_note: b.registered ? str(b.note, 200) || null : null }).eq("id", str(b.enrollmentId, 60)).eq("sequence_id", seq.id);
+    return NextResponse.json({ ok: true, registered_at: at });
   }
 
   if (b.action === "person") {
