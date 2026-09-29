@@ -187,7 +187,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
     answer:
-      "Daily Operations → Invite Tracker. Create an invite list for the event and link it to the event's sign-up form. Add people by name or email (it suggests people already in your Contacts), or paste a whole list, one person per line. Tick “Invite sent” when you send someone the invite; the date and time are saved. Registered fills in on its own, with the date and time, as soon as they sign up on the form. People who registered without being on your list are shown underneath. Everyone you add is saved in Contacts with the tag invited, and you can download the list as a CSV.",
+      "Daily Operations → Invite Tracker. Create an invite list for the event, give it an invite tag (like open-house-invite) and link it to the event's sign-up form. Everyone in Contacts with that tag is on the list, so you can invite people by tagging them in Contacts or on an import, or add them right on the page by name or email (it suggests people already in your Contacts) or by pasting a whole list. Tick “Invite sent” when you send someone the invite; the date and time are saved. Registered fills in on its own, with the date and time, as soon as they sign up on the form. People who registered without the tag are shown underneath. Taking the tag off removes someone from the list, and you can download the list as a CSV.",
     keywords: ["invite", "invites", "invite tracker", "guest list", "rsvp", "registered", "event", "who registered"],
   },
   {

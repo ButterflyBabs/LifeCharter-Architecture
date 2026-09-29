@@ -11,15 +11,15 @@ interface List {
   id: string;
   name: string;
   form_id: string | null;
+  invite_tag: string | null;
+  invite_tags: string[];
 }
 interface Invite {
-  id: string;
-  contact_id: string | null;
+  id: string; // the contact
   name: string | null;
   email: string;
+  invited_at: string;
   sent_at: string | null;
-  note: string | null;
-  created_at: string;
   registered_at: string | null;
 }
 interface WalkIn {
@@ -47,6 +47,8 @@ function parseLines(text: string) {
 export default function InviteTracker() {
   const [lists, setLists] = useState<List[]>([]);
   const [forms, setForms] = useState<{ id: string; name: string }[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
   const [listId, setListId] = useState("");
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
@@ -55,13 +57,14 @@ export default function InviteTracker() {
   const [email, setEmail] = useState("");
   const [paste, setPaste] = useState("");
   const [showPaste, setShowPaste] = useState(false);
-  const [newList, setNewList] = useState({ open: false, name: "", formId: "" });
+  const [newList, setNewList] = useState({ open: false, name: "", tag: "", formId: "" });
   const [filter, setFilter] = useState<"all" | "not-sent" | "sent" | "registered" | "not-registered">("all");
 
   const load = useCallback(async (id?: string) => {
     const d = await fetch(`/api/crm/invites${id ? `?list=${id}` : ""}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setLists(d.lists ?? []);
     setForms(d.forms ?? []);
+    setAllTags(d.allTags ?? []);
     setListId(d.list?.id ?? "");
     setInvites(d.invites ?? []);
     setWalkIns(d.walkIns ?? []);
@@ -100,7 +103,7 @@ export default function InviteTracker() {
 
   function exportCsv() {
     const q = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const lines = [["Name", "Email", "Invite sent", "Registered"].join(","), ...rows.map((r) => [q(r.name ?? ""), q(r.email), q(when(r.sent_at)), q(when(r.registered_at))].join(","))];
+    const lines = [["Name", "Email", "Tagged", "Invite sent", "Registered"].join(","), ...rows.map((r) => [q(r.name ?? ""), q(r.email), q(when(r.invited_at)), q(when(r.sent_at)), q(when(r.registered_at))].join(","))];
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -137,8 +140,9 @@ export default function InviteTracker() {
 
       {newList.open && (
         <Card className="mb-5">
-          <CardContent className="p-4 grid gap-2 sm:grid-cols-[1fr_260px_auto]">
+          <CardContent className="p-4 grid gap-2 sm:grid-cols-[1fr_200px_240px_auto]">
             <Input placeholder="Event name, e.g. Open House (Nov 5)" value={newList.name} onChange={(e) => setNewList({ ...newList, name: e.target.value })} />
+            <Input placeholder="Invite tag, e.g. open-house-invite" value={newList.tag} onChange={(e) => setNewList({ ...newList, tag: e.target.value })} aria-label="Invite tag" />
             <select value={newList.formId} onChange={(e) => setNewList({ ...newList, formId: e.target.value })} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 text-sm" aria-label="Sign-up form">
               <option value="">Sign-up form (for registrations)…</option>
               {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -146,9 +150,9 @@ export default function InviteTracker() {
             <Button
               disabled={!newList.name.trim()}
               onClick={async () => {
-                const d = await post({ action: "create-list", name: newList.name, formId: newList.formId });
+                const d = await post({ action: "create-list", name: newList.name, tag: newList.tag, formId: newList.formId });
                 if (d) {
-                  setNewList({ open: false, name: "", formId: "" });
+                  setNewList({ open: false, name: "", tag: "", formId: "" });
                   void load(d.id);
                 }
               }}
@@ -176,6 +180,45 @@ export default function InviteTracker() {
               </div>
             ))}
           </div>
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Who&rsquo;s invited</p>
+              <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Everyone in Contacts with any of these tags is on this list. Tag people in Contacts (or on an import), or add them below.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from(new Set([...(list.invite_tags ?? []), ...allTags])).sort().map((t) => {
+                  const on = (list.invite_tags ?? []).includes(t);
+                  return (
+                    <button
+                      key={t}
+                      onClick={async () => {
+                        const next = on ? list.invite_tags.filter((x) => x !== t) : [...(list.invite_tags ?? []), t];
+                        if (!next.length) return setMsg("Keep at least one tag on the list.");
+                        if (await post({ action: "tags", listId, tags: next })) void load(listId);
+                      }}
+                      className={`rounded-full px-3 py-1 text-xs border ${on ? "bg-[#2E7C83] text-white border-[#2E7C83]" : "border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 max-w-md">
+                <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag, e.g. sneak-peek-invite" aria-label="New invite tag" />
+                <Button
+                  variant="outline"
+                  disabled={!newTag.trim()}
+                  onClick={async () => {
+                    if (await post({ action: "tags", listId, tags: [...(list.invite_tags ?? []), newTag] })) {
+                      setNewTag("");
+                      void load(listId);
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
           {!list.form_id && <p className="text-sm rounded-lg bg-[#c9a227]/15 px-4 py-2">This list isn&rsquo;t linked to a sign-up form, so registrations can&rsquo;t be tracked.</p>}
 
           <Card>
@@ -199,7 +242,7 @@ export default function InviteTracker() {
                   <Button disabled={!paste.trim()} onClick={() => { void addPeople(parseLines(paste)); setPaste(""); setShowPaste(false); }}>Add {parseLines(paste).length || ""} people</Button>
                 </div>
               )}
-              <p className="text-xs text-[#7a8a99]">Everyone you add is saved in Contacts with the tag <strong>invited</strong>. Registrations fill in on their own from the sign-up form.</p>
+              <p className="text-xs text-[#7a8a99]">Adding someone gives them the tag <strong>{list.invite_tag}</strong> in Contacts (new people are added to Contacts). Registrations fill in on their own from the sign-up form.</p>
             </CardContent>
           </Card>
 
@@ -224,6 +267,7 @@ export default function InviteTracker() {
               <thead className="bg-[#1a2b4a]/5 text-left">
                 <tr>
                   <th className="p-3">Invited</th>
+                  <th className="p-3 whitespace-nowrap">Tagged</th>
                   <th className="p-3">Invite sent</th>
                   <th className="p-3">Registered</th>
                   <th className="p-3 w-10"><span className="sr-only">Remove</span></th>
@@ -236,13 +280,14 @@ export default function InviteTracker() {
                       <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name || r.email}</p>
                       {r.name && <p className="text-xs text-[#7a8a99]">{r.email}</p>}
                     </td>
+                    <td className="p-3 whitespace-nowrap text-[#5a6472]">{when(r.invited_at)}</td>
                     <td className="p-3">
                       <label className="inline-flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={Boolean(r.sent_at)}
                           onChange={async (e) => {
-                            const d = await post({ action: "sent", id: r.id, sent: e.target.checked });
+                            const d = await post({ action: "sent", listId, contactId: r.id, sent: e.target.checked });
                             if (d) setInvites((xs) => (xs ?? []).map((x) => (x.id === r.id ? { ...x, sent_at: d.sent_at } : x)));
                           }}
                           className="w-4 h-4 accent-[#2E7C83]"
@@ -262,8 +307,8 @@ export default function InviteTracker() {
                     <td className="p-3">
                       <button
                         onClick={async () => {
-                          if (!confirm(`Take ${r.name || r.email} off this invite list? They stay in Contacts.`)) return;
-                          if (await post({ action: "remove", id: r.id })) void load(listId);
+                          if (!confirm(`Take ${r.name || r.email} off this invite list? This removes the ${list.invite_tag} tag; they stay in Contacts.`)) return;
+                          if (await post({ action: "remove", listId, contactId: r.id })) void load(listId);
                         }}
                         aria-label={`Remove ${r.name || r.email}`}
                         className="p-1 text-[#7a8a99] hover:text-[#D83A34]"
@@ -275,7 +320,7 @@ export default function InviteTracker() {
                 ))}
                 {!shown.length && (
                   <tr>
-                    <td colSpan={4} className="p-4 text-[#7a8a99]">{rows.length ? "No one matches this filter." : "No one on this list yet. Add people above."}</td>
+                    <td colSpan={5} className="p-4 text-[#7a8a99]">{rows.length ? "No one matches this filter." : "No one on this list yet. Add people above."}</td>
                   </tr>
                 )}
               </tbody>
