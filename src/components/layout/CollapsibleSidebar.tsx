@@ -69,6 +69,10 @@ const navigationSections = [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
+      // Babs's CRM (Alignment Architect only): shown here for her, never for clients.
+      { id: "contacts", label: "Contacts", icon: Users, href: "/contacts", ownerOnly: true },
+      { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars", ownerOnly: true },
+      { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager", ownerOnly: true },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
@@ -135,9 +139,6 @@ const ownerSection = {
   color: "text-[#c9a227]",
   items: [
     { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
-    { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
-    { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
-    { id: "sequences-manager", label: "Sequences", icon: Mail, href: "/sequences-manager" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
@@ -428,7 +429,7 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && (superAdmin || !("ownerOnly" in i && i.ownerOnly))) }))
     .filter((s) => s.items.length > 0);
 
   // Load the profile name + headshot for the footer block.
