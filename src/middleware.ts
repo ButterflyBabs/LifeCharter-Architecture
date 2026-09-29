@@ -32,8 +32,11 @@ const PUBLIC_APIS = [
   "/api/cron/sequences", // secured by its own CRON_SECRET check, not a session
   "/api/cron/bookings", // secured by its own CRON_SECRET check, not a session
   "/api/cron/broadcasts", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/spark", // secured by its own CRON_SECRET check, not a session (refreshes LC Spark Instagram tokens)
   "/api/unsubscribe", // signed token only; mail apps one-click POST here
   "/api/forms", // public Suite forms (CRM); origin-checked, form id is the key
+  "/api/spark/public", // LC Spark website chat widget; origin-checked against the account's own sites, public key picks the account, rate-limited + honeypot
+  "/api/spark/instagram", // LC Spark Meta webhook (verify token + X-Hub-Signature-256) and OAuth callback (signed state + owner session); /connect checks the owner itself
   "/api/google/callback", // OAuth return; verifies its own signed state (mailbox flow also requires the signed-in owner)
   "/api/microsoft/callback", // same
   "/api/book", // public booking pages (slots, book, manage by private token)
@@ -347,5 +350,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Run on everything except Next internals and static image assets.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|community-sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|community-sw\\.js|spark\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)"],
 };

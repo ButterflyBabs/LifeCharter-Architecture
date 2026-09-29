@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/broadcasts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/spark",
+      "schedule": "0 12 * * *"
     }
   ],
   "rewrites": [
