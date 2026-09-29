@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     while (next < clean.length) {
       const c = clean[next++];
       try {
-        const res = await upsertContact({ masterPlanId: planId, email: c.email, firstName: c.firstName, lastName: c.lastName, phone: c.phone, source, tags: c.tags }, db);
+        const res = await upsertContact({ masterPlanId: planId, email: c.email, firstName: c.firstName, lastName: c.lastName, phone: c.phone, source, tags: c.tags, company: c.company || null }, db);
         if (!res) {
           errors.push({ row: c.row, reason: "Couldn't save this contact" });
           continue;

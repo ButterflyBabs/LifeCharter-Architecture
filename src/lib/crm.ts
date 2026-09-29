@@ -19,6 +19,7 @@ export interface ContactInput {
   timezone?: string | null;
   source?: string | null;
   tags?: string[];
+  company?: string | null;
 }
 
 // Adds the contact, or merges into the existing one (tags add up; a known first
@@ -30,7 +31,7 @@ export async function upsertContact(i: ContactInput, db: Db = createServerClient
   const now = new Date().toISOString();
   const { data: existing } = await db
     .from("seq_contacts")
-    .select("id, tags, unsubscribed_at, first_name, last_name, phone")
+    .select("id, tags, unsubscribed_at, first_name, last_name, phone, company")
     .eq("master_plan_id", i.masterPlanId)
     .eq("email", email)
     .maybeSingle();
@@ -43,6 +44,8 @@ export async function upsertContact(i: ContactInput, db: Db = createServerClient
         ...(i.firstName && !existing.first_name ? { first_name: i.firstName } : {}),
         ...(i.lastName && !existing.last_name ? { last_name: i.lastName } : {}),
         ...(i.phone && !existing.phone ? { phone: i.phone } : {}),
+        ...(i.company && !existing.company ? { company: i.company } : {}),
+        tag_source: i.source || null,
         ...(tz ? { timezone: tz } : {}),
         updated_at: now,
         last_activity_at: now,
@@ -58,6 +61,7 @@ export async function upsertContact(i: ContactInput, db: Db = createServerClient
       first_name: i.firstName || null,
       last_name: i.lastName || null,
       phone: i.phone || null,
+      company: i.company || null,
       timezone: tz || "America/Denver",
       source: i.source || null,
       tags: i.tags ?? [],

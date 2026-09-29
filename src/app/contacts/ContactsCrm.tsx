@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Users, Search, Plus, X, FileText, Copy, ExternalLink, StickyNote, Mail, ShoppingBag, Tag, UserPlus, ClipboardList } from "lucide-react";
+import { Users, Search, Plus, Copy, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "./BroadcastsTab";
 import EmailSendingTab from "./EmailSendingTab";
-import ContactEmails from "./ContactEmails";
+import ContactRecord, { Pill, TagAdder } from "./ContactRecord";
 import ImportContacts, { ExportContactsLink } from "./ImportContacts";
 
 interface Contact {
@@ -22,20 +22,6 @@ interface Contact {
   created_at: string;
   last_activity_at: string | null;
   timezone?: string;
-}
-interface Event {
-  id: string;
-  kind: string;
-  title: string;
-  detail: Record<string, unknown>;
-  created_at: string;
-}
-interface Series {
-  id: string;
-  status: string;
-  name: string;
-  sent: number;
-  start_date: string;
 }
 interface Field {
   name: string;
@@ -72,8 +58,6 @@ const APP = typeof window !== "undefined" ? window.location.origin : "https://lc
 const fullName = (c: Pick<Contact, "first_name" | "last_name" | "email">) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 const when = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
-const ICON: Record<string, typeof Mail> = { form: ClipboardList, note: StickyNote, purchase: ShoppingBag, sequence: Mail, tag: Tag, manual: UserPlus, email: Mail };
-const chip = "inline-flex items-center gap-1 rounded-full bg-[#2E7C83]/10 px-2.5 py-0.5 text-xs text-[#1F5E63] dark:text-[#9fd3d6]";
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
 
 export default function ContactsCrm() {
@@ -121,7 +105,8 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
   const [openId, setOpenId] = useState("");
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [add, setAdd] = useState({ email: "", firstName: "", lastName: "", phone: "", tags: "", note: "" });
+  const [add, setAdd] = useState({ email: "", firstName: "", lastName: "", phone: "", note: "" });
+  const [addTags, setAddTags] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     const p = new URLSearchParams();
@@ -140,19 +125,20 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
     const r = await fetch("/api/crm/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...add, tags: add.tags.split(",").map((t) => t.trim()).filter(Boolean) }),
+      body: JSON.stringify({ ...add, tags: addTags }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return setMsg(d.error || "Couldn't save.");
     setMsg(d.created ? "Contact added." : "They were already here, so I updated them.");
     setAdding(false);
-    setAdd({ email: "", firstName: "", lastName: "", phone: "", tags: "", note: "" });
+    setAdd({ email: "", firstName: "", lastName: "", phone: "", note: "" });
+    setAddTags([]);
     setOpenId(d.id);
     void load();
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+    <div className="grid gap-6 lg:grid-cols-[1fr_460px]">
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[200px]">
@@ -181,7 +167,12 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
                 <Input placeholder="First name" value={add.firstName} onChange={(e) => setAdd({ ...add, firstName: e.target.value })} />
                 <Input placeholder="Last name" value={add.lastName} onChange={(e) => setAdd({ ...add, lastName: e.target.value })} />
               </div>
-              <Input placeholder="Tags, separated by commas" value={add.tags} onChange={(e) => setAdd({ ...add, tags: e.target.value })} />
+              {addTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {addTags.map((t) => <Pill key={t} onRemove={() => setAddTags((x) => x.filter((y) => y !== t))}>{t}</Pill>)}
+                </div>
+              )}
+              <TagAdder existing={tags} current={addTags} onAdd={(t) => setAddTags((x) => [...x, t])} />
               <textarea placeholder="Note (optional)" rows={2} value={add.note} onChange={(e) => setAdd({ ...add, note: e.target.value })} className={field} />
               <div className="flex gap-2">
                 <Button onClick={saveNew}>Save</Button>
@@ -212,8 +203,8 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
                       {c.tags.slice(0, 4).map((t) => (
-                        <span key={t} className={chip}>
-                          {t}
+                        <span key={t} onClick={(e) => e.stopPropagation()}>
+                          <Pill title="Show everyone with this tag" onClick={() => setTag(t)}>{t}</Pill>
                         </span>
                       ))}
                       {c.tags.length > 4 && <span className="text-xs text-[#7a8a99]">+{c.tags.length - 4}</span>}
@@ -238,124 +229,8 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
           </table>
         </div>
       </div>
-      {openId ? <ContactPanel id={openId} onClose={() => setOpenId("")} onChanged={load} setMsg={setMsg} /> : <div className="hidden lg:block text-sm text-[#7a8a99] pt-3">Choose someone to see their timeline.</div>}
+      {openId ? <ContactRecord id={openId} allTags={tags} onClose={() => setOpenId("")} onChanged={load} onFilterTag={(t) => { setQ(""); setTag(t); }} setMsg={setMsg} /> : <div className="hidden lg:block text-sm text-[#7a8a99] pt-3">Choose someone to see their timeline.</div>}
     </div>
-  );
-}
-
-function ContactPanel({ id, onClose, onChanged, setMsg }: { id: string; onClose: () => void; onChanged: () => void; setMsg: (m: string) => void }) {
-  const [c, setC] = useState<Contact | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [series, setSeries] = useState<Series[]>([]);
-  const [note, setNote] = useState("");
-  const [tagText, setTagText] = useState("");
-
-  const load = useCallback(async () => {
-    const d = await fetch(`/api/crm/contacts/${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
-    setC(d.contact ?? null);
-    setEvents(d.events ?? []);
-    setSeries(d.series ?? []);
-    setTagText(((d.contact?.tags as string[]) ?? []).join(", "));
-  }, [id]);
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function saveTags() {
-    const r = await fetch(`/api/crm/contacts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags: tagText.split(",").map((t) => t.trim()).filter(Boolean) }),
-    });
-    if (!r.ok) return setMsg("Couldn't save the tags.");
-    void load();
-    onChanged();
-  }
-  async function addNote() {
-    if (!note.trim()) return;
-    const r = await fetch(`/api/crm/contacts/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }) });
-    if (!r.ok) return setMsg("Couldn't save the note.");
-    setNote("");
-    void load();
-    onChanged();
-  }
-
-  if (!c) return <Card><CardContent className="p-5 text-sm text-[#7a8a99]">Loading…</CardContent></Card>;
-  return (
-    <Card className="lg:sticky lg:top-4 self-start">
-      <CardContent className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{fullName(c)}</p>
-            <a href={`mailto:${c.email}`} className="text-sm text-[#2E7C83] break-all">{c.email}</a>
-            {c.phone && <p className="text-sm text-[#5a6472]">{c.phone}</p>}
-            <p className="text-xs text-[#7a8a99] mt-1">
-              Since {when(c.created_at)}
-              {c.source ? ` · from ${c.source.replace(/^form:/, "form ")}` : ""}
-              {c.unsubscribed_at ? " · unsubscribed from emails" : ""}
-            </p>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="p-1 rounded-lg hover:bg-[#1a2b4a]/5"><X className="w-4 h-4" /></button>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-1">Tags</p>
-          <div className="flex gap-2">
-            <Input value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Separated by commas" />
-            <Button variant="outline" onClick={saveTags}>Save</Button>
-          </div>
-        </div>
-
-        {series.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-1">Email series</p>
-            {series.map((s) => (
-              <p key={s.id} className="text-sm">{s.name} · <span className="capitalize">{s.status}</span> · {s.sent} sent</p>
-            ))}
-          </div>
-        )}
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-1">Add a note</p>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="A call, a conversation, a next step…" className={field} />
-          <Button className="mt-2" onClick={addNote}>Save note</Button>
-        </div>
-
-        <ContactEmails contactId={c.id} name={fullName(c)} />
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-2">Timeline</p>
-          <ol className="space-y-3">
-            {events.map((e) => {
-              const Icon = ICON[e.kind] ?? FileText;
-              const data = (e.detail?.data as Record<string, string> | undefined) ?? null;
-              return (
-                <li key={e.id} className="flex gap-3">
-                  <Icon className="w-4 h-4 mt-0.5 shrink-0 text-[#c9a227]" />
-                  <div className="min-w-0">
-                    <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap break-words">{e.title}</p>
-                    {data && (
-                      <dl className="mt-1 text-xs text-[#5a6472] space-y-0.5">
-                        {Object.entries(data)
-                          .filter(([k]) => !["email", "name"].includes(k))
-                          .map(([k, v]) => (
-                            <div key={k}>
-                              <dt className="inline font-medium">{k.replace(/_/g, " ")}: </dt>
-                              <dd className="inline whitespace-pre-wrap">{v}</dd>
-                            </div>
-                          ))}
-                      </dl>
-                    )}
-                    <p className="text-xs text-[#7a8a99]">{when(e.created_at)}</p>
-                  </div>
-                </li>
-              );
-            })}
-            {!events.length && <li className="text-sm text-[#7a8a99]">Nothing yet.</li>}
-          </ol>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

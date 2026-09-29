@@ -199,7 +199,7 @@ export async function POST(request: Request) {
         await logEvent(a.planId, bk.contact_id, "booking", `${b.status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });
         const { data: c } = await db.from("seq_contacts").select("tags").eq("id", bk.contact_id).eq("master_plan_id", a.planId).maybeSingle();
         const tag = `${b.status === "no_show" ? "no-show" : "attended"}-${cal?.slug ?? "meeting"}`;
-        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])) }).eq("id", bk.contact_id).eq("master_plan_id", a.planId);
+        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])), tag_source: `booking:${cal?.slug ?? "meeting"}` }).eq("id", bk.contact_id).eq("master_plan_id", a.planId);
       }
       return NextResponse.json({ ok: true });
     }
