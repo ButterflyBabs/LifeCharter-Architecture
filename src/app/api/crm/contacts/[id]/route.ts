@@ -69,7 +69,20 @@ async function history(db: ReturnType<typeof createServerClient>, planId: string
     ...((deals ?? []) as unknown as Record<string, unknown>[]).map((d) => ({ id: `d-${d.id}`, title: (d.sales_offers as { name: string } | null)?.name ?? "Won deal", date: (((d.closed_at as string) || (d.stage_changed_at as string)) ?? "").slice(0, 10), amount: d.value != null ? Number(d.value) : null, detail: "Won in Pipeline", source: "deal" })),
     ...(records ?? []).filter((r) => r.kind === "purchase").map((r) => ({ id: `r-${r.id}`, recordId: r.id as string, title: (r.title as string) || ((r.sales_offers as unknown as { name: string } | null)?.name ?? "Purchase"), date: r.occurred_on as string, amount: r.amount != null ? Number(r.amount) : null, detail: (r.note as string) ?? null, source: "manual" })),
   ].sort((x, y) => y.date.localeCompare(x.date));
-  return { attended, purchases };
+  // A won deal for something they also bought is the same purchase: keep one line,
+  // with the deal's amount when the purchase didn't have one.
+  const merged: Item[] = [];
+  for (const p of purchases) {
+    if (p.source === "deal") {
+      const same = purchases.find((q) => q !== p && q.source !== "deal" && q.title.toLowerCase() === p.title.toLowerCase());
+      if (same) {
+        if (same.amount == null) same.amount = p.amount;
+        continue;
+      }
+    }
+    merged.push(p);
+  }
+  return { attended, purchases: merged };
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
