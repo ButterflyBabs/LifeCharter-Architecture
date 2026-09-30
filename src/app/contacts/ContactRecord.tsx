@@ -156,6 +156,90 @@ function sourceLabel(s: string | null) {
 }
 
 type Draft = Record<string, string> & { relationships?: never };
+type HistoryItem = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; source: string; recordId?: string };
+const SOURCE_LABEL: Record<string, string> = { booking: "booked call", zoom: "Zoom", purchase: "checkout", stripe: "checkout", deal: "Pipeline", manual: "added by hand" };
+const histDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n % 1 ? 2 : 0 });
+
+// Calls they attended or what they bought: newest first, with a small form to log one by hand.
+function HistorySection({ kind, title, items, contactId, onChanged, setMsg }: { kind: "attended" | "purchase"; title: string; items: HistoryItem[]; contactId: string; onChanged: () => void; setMsg: (m: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ title: "", occurredOn: new Date().toISOString().slice(0, 10), amount: "", offerId: "" });
+  const [offers, setOffers] = useState<{ id: string; name: string; price: number | null }[]>([]);
+  useEffect(() => {
+    if (kind !== "purchase" || !open || offers.length) return;
+    fetch("/api/offers", { cache: "no-store" }).then((r) => r.json()).then((d) => setOffers(d.offers ?? [])).catch(() => {});
+  }, [kind, open, offers.length]);
+  async function save() {
+    const r = await fetch(`/api/crm/contacts/${contactId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ record: { kind, ...f } }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return setMsg(d.error || "Couldn't save.");
+    setF({ title: "", occurredOn: new Date().toISOString().slice(0, 10), amount: "", offerId: "" });
+    setOpen(false);
+    onChanged();
+  }
+  const total = items.reduce((t, i) => t + (i.amount ?? 0), 0);
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">
+          {title} ({items.length}){kind === "purchase" && total > 0 ? ` · ${usd(total)}` : ""}
+        </p>
+        <button type="button" onClick={() => setOpen((v) => !v)} className="text-xs text-[#2E7C83] hover:underline">{open ? "Cancel" : "+ Add"}</button>
+      </div>
+      {open && (
+        <div className="mb-2 space-y-2 rounded-lg border border-[#1a2b4a]/10 p-2">
+          {kind === "purchase" && (
+            <select
+              value={f.offerId}
+              onChange={(e) => { const o = offers.find((x) => x.id === e.target.value); setF({ ...f, offerId: e.target.value, title: o?.name ?? f.title, amount: o?.price != null ? String(o.price) : f.amount }); }}
+              className={`${box} h-10`}
+              aria-label="Offer"
+            >
+              <option value="">Choose an offer (or type below)</option>
+              {offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          )}
+          <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder={kind === "purchase" ? "What they bought" : "Which call (e.g. Weekly Alignment Anchor)"} aria-label={kind === "purchase" ? "What they bought" : "Which call"} />
+          <div className="grid grid-cols-2 gap-2">
+            <Input type="date" value={f.occurredOn} onChange={(e) => setF({ ...f, occurredOn: e.target.value })} aria-label="Date" />
+            {kind === "purchase" && <Input type="number" min={0} value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} placeholder="Amount $" aria-label="Amount" />}
+          </div>
+          <Button onClick={save} disabled={!f.title.trim()}>{kind === "purchase" ? "Add purchase" : "Add call"}</Button>
+        </div>
+      )}
+      {items.length ? (
+        <ul className="space-y-1.5">
+          {items.map((i) => (
+            <li key={i.id} className="flex items-start justify-between gap-2 text-sm">
+              <span className="min-w-0">
+                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{i.title}</span>
+                <span className="block text-xs text-[#7a8a99]">
+                  {histDate(i.date)}
+                  {i.amount != null ? ` · ${usd(i.amount)}` : ""}
+                  {i.detail ? ` · ${i.detail}` : ""}
+                  {SOURCE_LABEL[i.source] ? ` · ${SOURCE_LABEL[i.source]}` : ""}
+                </span>
+              </span>
+              {i.recordId && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${i.title}`}
+                  onClick={async () => { if (!confirm(`Remove “${i.title}”?`)) return; await fetch(`/api/crm/contacts/${contactId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deleteRecord: i.recordId }) }); onChanged(); }}
+                  className="shrink-0 p-1 text-[#7a8a99] hover:text-[#D83A34]"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-[#7a8a99]">{kind === "purchase" ? "No purchases yet." : "No calls attended yet."}</p>
+      )}
+    </div>
+  );
+}
 
 export default function ContactRecord({
   id,
@@ -177,6 +261,8 @@ export default function ContactRecord({
   const [series, setSeries] = useState<Series[]>([]);
   const [history, setHistory] = useState<TagChange[]>([]);
   const [fields, setFields] = useState<CustomField[]>([]);
+  const [attended, setAttended] = useState<HistoryItem[]>([]);
+  const [purchases, setPurchases] = useState<HistoryItem[]>([]);
   const [pipelines, setPipelines] = useState<{ id: string; board: string; stage: string; followUpOn: string | null }[]>([]);
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
@@ -197,6 +283,8 @@ export default function ContactRecord({
     setHistory(d.tagHistory ?? []);
     setFields(d.customFields ?? []);
     setPipelines(d.pipelines ?? []);
+    setAttended(d.attended ?? []);
+    setPurchases(d.purchases ?? []);
   }, [id]);
   useEffect(() => {
     fetch("/api/sequences", { cache: "no-store" })
@@ -415,6 +503,11 @@ export default function ContactRecord({
             )}
           </>
         )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <HistorySection kind="attended" title="Calls attended" items={attended} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
+          <HistorySection kind="purchase" title="Purchases" items={purchases} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
+        </div>
 
         {pipelines.length > 0 && (
           <div>

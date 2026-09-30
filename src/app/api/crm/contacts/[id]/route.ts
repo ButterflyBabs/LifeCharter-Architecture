@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 // One contact: GET → contact + timeline + email series + form submissions + tag history
 // + the account's custom fields. PATCH any of { email, firstName, lastName, phone,
 // company, jobTitle, website, addressLine1, addressLine2, city, region, postalCode,
-// country, birthday, relationships, custom, tags } · POST { note } adds a timeline note
+// country, birthday, relationships, custom, tags } · POST { note } adds a timeline note,
+// POST { record: { kind: attended|purchase, title, occurredOn, amount?, offerId?, note? } }
+// logs a call attended or a purchase by hand, POST { deleteRecord: id } removes one.
+// GET also returns `attended` and `purchases`: everything the Suite knows, newest first.
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const a = await crmAccount();
   if ("denied" in a) return a.denied;
@@ -37,7 +40,36 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     name: (e.sequences as unknown as { name: string } | null)?.name ?? "",
     sent: ((e.sequence_sends as { status: string }[] | null) ?? []).filter((s) => s.status === "sent").length,
   }));
-  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines });
+  const { attended, purchases } = await history(db, a.planId, a.house, contact as { id: string; email: string }, (events ?? []) as { id: string; kind: string; title: string; detail: Record<string, unknown>; created_at: string }[]);
+  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases });
+}
+
+type Item = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; source: string; recordId?: string };
+
+// Calls they attended and what they bought, from every place the Suite records it,
+// plus anything logged by hand. Dates are YYYY-MM-DD; newest first.
+async function history(db: ReturnType<typeof createServerClient>, planId: string, house: boolean, contact: { id: string; email: string }, events: { id: string; kind: string; title: string; detail: Record<string, unknown>; created_at: string }[]) {
+  const email = (contact.email || "").toLowerCase();
+  const [{ data: bookings }, { data: records }, { data: deals }, mc, orders] = await Promise.all([
+    db.from("bookings").select("id, start_at, status, booking_calendars(name)").eq("master_plan_id", planId).eq("status", "completed").or(`contact_id.eq.${contact.id},invitee_email.eq.${email}`).order("start_at", { ascending: false }).limit(200),
+    db.from("contact_records").select("id, kind, title, occurred_on, amount, note, sales_offers(name)").eq("contact_id", contact.id).eq("master_plan_id", planId).order("occurred_on", { ascending: false }),
+    email ? db.from("pipeline_deals").select("id, contact_name, value, closed_at, stage_changed_at, pipeline_stages!inner(kind), sales_offers(name)").eq("master_plan_id", planId).ilike("email", email).eq("pipeline_stages.kind", "won") : Promise.resolve({ data: [] }),
+    // Babs's MasterClass attendance comes from the Zoom reports.
+    house && email ? db.from("masterclass_attendance").select("session_date, minutes").ilike("email", email).order("session_date", { ascending: false }) : Promise.resolve({ data: [] }),
+    house && email ? db.from("website_build_orders").select("stripe_checkout_session_id, amount_total_cents, payment_plan, created_at").ilike("email", email) : Promise.resolve({ data: [] }),
+  ]);
+  const attended: Item[] = [
+    ...(bookings ?? []).map((b) => ({ id: `b-${b.id}`, title: (b.booking_calendars as unknown as { name: string } | null)?.name ?? "Booked call", date: (b.start_at as string).slice(0, 10), source: "booking" })),
+    ...((mc as { data: { session_date: string; minutes: number | null }[] | null }).data ?? []).map((m) => ({ id: `mc-${m.session_date}`, title: "MasterClass", date: m.session_date, detail: m.minutes ? `${m.minutes} min` : null, source: "zoom" })),
+    ...(records ?? []).filter((r) => r.kind === "attended").map((r) => ({ id: `r-${r.id}`, recordId: r.id as string, title: r.title as string, date: r.occurred_on as string, detail: (r.note as string) ?? null, source: "manual" })),
+  ].sort((x, y) => y.date.localeCompare(x.date));
+  const purchases: Item[] = [
+    ...events.filter((e) => e.kind === "purchase").map((e) => ({ id: `e-${e.id}`, title: e.title.replace(/^Bought\s+/i, "").replace(/^Purchased\s+/i, ""), date: e.created_at.slice(0, 10), source: "purchase" })),
+    ...((orders as { data: { stripe_checkout_session_id: string; amount_total_cents: number | null; payment_plan: string | null; created_at: string }[] | null }).data ?? []).map((o) => ({ id: `wb-${o.stripe_checkout_session_id}`, title: "Website Build", date: o.created_at.slice(0, 10), amount: o.amount_total_cents != null ? o.amount_total_cents / 100 : null, detail: o.payment_plan, source: "stripe" })),
+    ...((deals ?? []) as unknown as Record<string, unknown>[]).map((d) => ({ id: `d-${d.id}`, title: (d.sales_offers as { name: string } | null)?.name ?? "Won deal", date: (((d.closed_at as string) || (d.stage_changed_at as string)) ?? "").slice(0, 10), amount: d.value != null ? Number(d.value) : null, detail: "Won in Pipeline", source: "deal" })),
+    ...(records ?? []).filter((r) => r.kind === "purchase").map((r) => ({ id: `r-${r.id}`, recordId: r.id as string, title: (r.title as string) || ((r.sales_offers as unknown as { name: string } | null)?.name ?? "Purchase"), date: r.occurred_on as string, amount: r.amount != null ? Number(r.amount) : null, detail: (r.note as string) ?? null, source: "manual" })),
+  ].sort((x, y) => y.date.localeCompare(x.date));
+  return { attended, purchases };
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -104,6 +136,31 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const a = await crmAccount(request);
   if ("denied" in a) return a.denied;
   const b = await request.json().catch(() => ({}));
+  const db = createServerClient();
+  if (b.record || b.deleteRecord) {
+    const { data: c } = await db.from("seq_contacts").select("id").eq("id", params.id).eq("master_plan_id", a.planId).maybeSingle();
+    if (!c) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    if (b.deleteRecord) {
+      await db.from("contact_records").delete().eq("id", String(b.deleteRecord)).eq("contact_id", c.id).eq("master_plan_id", a.planId);
+      return NextResponse.json({ ok: true });
+    }
+    const r = b.record as Record<string, unknown>;
+    const kind = r.kind === "purchase" ? "purchase" : r.kind === "attended" ? "attended" : null;
+    let offerId = typeof r.offerId === "string" && r.offerId ? r.offerId : null;
+    if (offerId) {
+      const { data: o } = await db.from("sales_offers").select("id, name").eq("id", offerId).eq("master_plan_id", a.planId).maybeSingle();
+      offerId = (o?.id as string) ?? null;
+      if (!r.title && o) r.title = o.name;
+    }
+    const title = typeof r.title === "string" ? r.title.trim().slice(0, 200) : "";
+    const day = typeof r.occurredOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.occurredOn) ? r.occurredOn : new Date().toISOString().slice(0, 10);
+    const amount = r.amount === "" || r.amount == null ? null : Number(r.amount);
+    if (!kind || !title) return NextResponse.json({ error: kind === "purchase" ? "Say what they bought." : "Name the call." }, { status: 400 });
+    if (amount != null && !Number.isFinite(amount)) return NextResponse.json({ error: "Enter a valid amount." }, { status: 400 });
+    await db.from("contact_records").insert({ master_plan_id: a.planId, contact_id: c.id, kind, title, occurred_on: day, amount, offer_id: offerId, note: typeof r.note === "string" ? r.note.trim().slice(0, 500) || null : null });
+    await logEvent(a.planId, c.id as string, "manual", kind === "purchase" ? `Logged a purchase: ${title}` : `Logged attendance: ${title}`, { logged: true, on: day }, db).catch(() => {});
+    return NextResponse.json({ ok: true });
+  }
   const note = typeof b.note === "string" ? b.note.trim().slice(0, 4000) : "";
   if (!note) return NextResponse.json({ error: "Write a note first." }, { status: 400 });
   const { data: c } = await createServerClient().from("seq_contacts").select("id").eq("id", params.id).eq("master_plan_id", a.planId).maybeSingle();
