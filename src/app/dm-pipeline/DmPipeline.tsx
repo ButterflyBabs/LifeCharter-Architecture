@@ -48,6 +48,7 @@ type Draft = { name: string; handle: string; profileUrl: string; email: string; 
 export default function DmPipeline() {
   const tz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
   const [stages, setStages] = useState<Stage[]>([]);
+  const [boardName, setBoardName] = useState("DM Pipeline");
   const [cards, setCards] = useState<Card[] | null>(null);
   const [today, setToday] = useState("");
   const [filter, setFilter] = useState<string>("All");
@@ -74,6 +75,7 @@ export default function DmPipeline() {
     const d = await fetch(`/api/dm-pipeline?tz=${encodeURIComponent(tz)}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     if (d.error) setMsg(d.error);
     setStages(d.stages ?? []);
+    if (d.name) setBoardName(d.name);
     setCards(d.cards ?? []);
     setToday(d.today ?? "");
   }, [tz]);
@@ -120,12 +122,12 @@ export default function DmPipeline() {
             <MessageSquare className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">DM Pipeline</h1>
+            <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{boardName}</h1>
             <p className="text-[#7a8a99]">Everyone you&rsquo;re messaging on Instagram, Facebook and LinkedIn. Drag a card to its next stage and the follow-up sets itself.</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setSettings(true)}><Settings2 className="w-4 h-4 mr-1" /> Stages & follow-ups</Button>
+          <Button variant="outline" onClick={() => setSettings(true)}><Settings2 className="w-4 h-4 mr-1" /> Settings</Button>
           <Button onClick={() => setAdding(true)}><Plus className="w-4 h-4 mr-1" /> Add a prospect</Button>
         </div>
       </div>
@@ -220,7 +222,7 @@ export default function DmPipeline() {
 
       {adding && stages.length > 0 && <AddCard stages={stages} scripts={scripts} initial={initial} onClose={() => { setAdding(false); setInitial(undefined); }} onSaved={(c) => { setCards((cs) => [...(cs ?? []), c]); setAdding(false); setMsg(`${c.name} added.${c.follow_up_on ? ` Follow-up set for ${shortDate(c.follow_up_on)}.` : ""}`); }} post={post} />}
       {open && <CardDetail card={open} stages={stages} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
-      {settings && <StageSettings stages={stages} onClose={() => setSettings(false)} onSaved={(s) => { setStages(s); setSettings(false); setMsg("Stages saved. New follow-ups use the new days."); }} post={post} />}
+      {settings && <StageSettings boardName={boardName} stages={stages} onClose={() => setSettings(false)} onSaved={(s, n) => { setStages(s); setBoardName(n); setSettings(false); setMsg("Saved. New follow-ups use the new days."); }} post={post} />}
     </div>
   );
 }
@@ -363,10 +365,14 @@ function CardDetail({ card, stages, onClose, onMove, onSaved, onDeleted, post }:
   );
 }
 
-function StageSettings({ stages, onClose, onSaved, post }: { stages: Stage[]; onClose: () => void; onSaved: (s: Stage[]) => void; post: (b: Record<string, unknown>) => Promise<{ stages?: Stage[] } | null> }) {
+function StageSettings({ boardName, stages, onClose, onSaved, post }: { boardName: string; stages: Stage[]; onClose: () => void; onSaved: (s: Stage[], name: string) => void; post: (b: Record<string, unknown>) => Promise<{ stages?: Stage[]; name?: string } | null> }) {
+  const [name, setName] = useState(boardName);
   const [rows, setRows] = useState(stages.map((s) => ({ id: s.id, name: s.name, followUpDays: s.followUpDays == null ? "" : String(s.followUpDays), kind: s.kind })));
   return (
-    <Modal title="Stages & follow-ups" onClose={onClose}>
+    <Modal title="Board settings" onClose={onClose}>
+      <label className="mb-4 block text-xs font-medium text-[#5a6472]">Board name (shows in your menu too)
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="DM Pipeline" />
+      </label>
       <p className="mb-3 text-sm text-[#7a8a99]">Rename a stage or change how many days after a move its follow-up is due. Leave days empty for no follow-up.</p>
       <div className="space-y-2">
         {rows.map((r, i) => (
@@ -380,7 +386,15 @@ function StageSettings({ stages, onClose, onSaved, post }: { stages: Stage[]; on
         ))}
       </div>
       <div className="mt-4 flex gap-2">
-        <Button onClick={async () => { const d = await post({ action: "stages", stages: rows.map((r) => ({ id: r.id, name: r.name, followUpDays: r.followUpDays === "" ? null : Number(r.followUpDays) })) }); if (d?.stages) onSaved(d.stages); }}>Save</Button>
+        <Button
+          onClick={async () => {
+            const n = name.trim() !== boardName ? await post({ action: "name", name }) : { name: boardName };
+            const d = await post({ action: "stages", stages: rows.map((r) => ({ id: r.id, name: r.name, followUpDays: r.followUpDays === "" ? null : Number(r.followUpDays) })) });
+            if (d?.stages) onSaved(d.stages, n?.name || boardName);
+          }}
+        >
+          Save
+        </Button>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
       </div>
     </Modal>

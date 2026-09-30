@@ -17,8 +17,11 @@ export const dynamic = "force-dynamic";
 //   update { cardId, name?, handle?, profileUrl?, email?, platform?, notes?, followUpOn? (YYYY-MM-DD or "") }
 //   delete { cardId }
 //   stages { stages: [{ id, name, followUpDays }] }   (rename a stage or change its follow-up days)
+//   name { name }                                     (this account's name for the board)
 const PLATFORM_IDS = DM_PLATFORMS.map((p) => p.id) as string[];
 const TAG: Record<string, string> = { IG: "dm-instagram", FB: "dm-facebook", LI: "dm-linkedin" };
+const SOCIAL_COL: Record<string, string> = { IG: "instagram", FB: "facebook", LI: "linkedin" };
+const DEFAULT_NAME = "DM Pipeline";
 
 export async function GET(request: Request) {
   const a = await crmAccount();
@@ -33,7 +36,8 @@ export async function GET(request: Request) {
     .order("sort_order")
     .order("created_at")
     .limit(2000);
-  return NextResponse.json({ stages, cards: cards ?? [], today: dateIn(tz, 0) });
+  const { data: plan } = await db.from("client_master_plans").select("dm_pipeline_name").eq("id", a.planId).maybeSingle();
+  return NextResponse.json({ name: (plan?.dm_pipeline_name as string) || DEFAULT_NAME, stages, cards: cards ?? [], today: dateIn(tz, 0) });
 }
 
 export async function POST(request: Request) {
@@ -71,6 +75,12 @@ export async function POST(request: Request) {
       const c = await upsertContact({ masterPlanId: a.planId, email, firstName: first || null, lastName: rest.join(" ") || null, source: "dm-pipeline", tags: [TAG[platform]] }, db);
       contactId = c?.id ?? null;
     }
+    // Their profile for this platform goes on the contact record, if it's empty there.
+    const profile = str(b.profileUrl, 300) || str(b.handle, 120);
+    if (contactId && profile) {
+      const col = SOCIAL_COL[platform];
+      await db.from("seq_contacts").update({ [col]: profile }).eq("id", contactId).eq("master_plan_id", a.planId).is(col, null);
+    }
     if (contactId) {
       const { data: dup } = await db.from("dm_cards").select("id").eq("master_plan_id", a.planId).eq("contact_id", contactId).maybeSingle();
       if (dup) return NextResponse.json({ error: "They're already in your DM Pipeline." }, { status: 409 });
@@ -97,6 +107,12 @@ export async function POST(request: Request) {
 
   const cardId = str(b.cardId, 40);
   const { data: card } = await db.from("dm_cards").select("id, follow_up_task_id").eq("id", cardId).eq("master_plan_id", a.planId).maybeSingle();
+
+  if (b.action === "name") {
+    const name = str(b.name, 60) || null;
+    await db.from("client_master_plans").update({ dm_pipeline_name: name }).eq("id", a.planId);
+    return NextResponse.json({ name: name || DEFAULT_NAME });
+  }
 
   if (b.action === "stages") {
     const list = Array.isArray(b.stages) ? b.stages : [];

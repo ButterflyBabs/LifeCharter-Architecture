@@ -16,12 +16,12 @@ export async function GET() {
   const db = createServerClient();
   const { data: defs } = await db.from("crm_custom_fields").select("key, label").eq("master_plan_id", a.planId).order("position");
   const custom = (defs ?? []) as { key: string; label: string }[];
-  const out: unknown[][] = [["Email", "First name", "Last name", "Phone", "Company", "Job title", "Website", "Address line 1", "Address line 2", "City", "State / region", "Postal code", "Country", "Birthday", "Relationships", "Tags", ...custom.map((f) => f.label), "Source", "Created", "Unsubscribed"]];
+  const out: unknown[][] = [["Email", "First name", "Last name", "Phone", "Company", "Job title", "Website", "Address line 1", "Address line 2", "City", "State / region", "Postal code", "Country", "Birthday", "Facebook", "LinkedIn", "Instagram", "YouTube", "Relationships", "Tags", ...custom.map((f) => f.label), "Source", "Created", "Unsubscribed"]];
   const PAGE = 1000;
   for (let from = 0; from < 100_000; from += PAGE) {
     const { data, error } = await db
       .from("seq_contacts")
-      .select("email, first_name, last_name, phone, company, job_title, website, address_line1, address_line2, city, region, postal_code, country, birthday, relationships, custom, tags, source, created_at, unsubscribed_at")
+      .select("email, first_name, last_name, phone, company, job_title, website, address_line1, address_line2, city, region, postal_code, country, birthday, facebook, linkedin, instagram, youtube, relationships, custom, tags, source, created_at, unsubscribed_at")
       .eq("master_plan_id", a.planId)
       .order("created_at", { ascending: true })
       .order("id", { ascending: true })
@@ -30,7 +30,7 @@ export async function GET() {
     for (const c of data ?? []) {
       const cv = (c.custom as Record<string, unknown>) ?? {};
       out.push([
-        c.email, c.first_name, c.last_name, c.phone, c.company, c.job_title, c.website, c.address_line1, c.address_line2, c.city, c.region, c.postal_code, c.country, c.birthday,
+        c.email, c.first_name, c.last_name, c.phone, c.company, c.job_title, c.website, c.address_line1, c.address_line2, c.city, c.region, c.postal_code, c.country, c.birthday, c.facebook, c.linkedin, c.instagram, c.youtube,
         ((c.relationships as string[]) ?? []).join("; "), ((c.tags as string[]) ?? []).join("; "), ...custom.map((f) => (cv[f.key] ?? "") as string),
         c.source, c.created_at, c.unsubscribed_at ?? "",
       ]);

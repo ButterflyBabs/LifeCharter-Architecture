@@ -420,12 +420,14 @@ export function CollapsibleSidebar() {
 
   const [superAdmin, setSuperAdmin] = useState(false);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
+  const [dmName, setDmName] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         setSuperAdmin(d?.architect === true);
         setFeatures(d?.features ?? null);
+        setDmName(typeof d?.dmPipelineName === "string" && d.dmPipelineName ? d.dmPipelineName : null);
       })
       .catch(() => {});
   }, []);
@@ -436,7 +438,7 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)).map((i) => (i.id === "dm-pipeline" && dmName ? { ...i, label: dmName } : i)) }))
     .filter((s) => s.items.length > 0);
 
   // Load the profile name + headshot for the footer block.

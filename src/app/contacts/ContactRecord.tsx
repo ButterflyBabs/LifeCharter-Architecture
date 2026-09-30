@@ -23,6 +23,10 @@ export interface ContactFull {
   postal_code: string | null;
   country: string | null;
   birthday: string | null;
+  facebook: string | null;
+  linkedin: string | null;
+  instagram: string | null;
+  youtube: string | null;
   relationships: string[];
   custom: Record<string, string>;
   tags: string[];
@@ -127,6 +131,20 @@ export function TagAdder({ existing, current, onAdd }: { existing: string[]; cur
   );
 }
 
+// A social profile as typed (a link or an @handle) → a link to open.
+const SOCIALS = [
+  { key: "instagram", label: "Instagram", base: "https://instagram.com/" },
+  { key: "facebook", label: "Facebook", base: "https://facebook.com/" },
+  { key: "linkedin", label: "LinkedIn", base: "https://www.linkedin.com/in/" },
+  { key: "youtube", label: "YouTube", base: "https://youtube.com/@" },
+] as const;
+function socialHref(base: string, v: string) {
+  const t = v.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^(www\.)?[a-z0-9-]+\.[a-z]{2,}\//i.test(t)) return `https://${t}`;
+  return base + t.replace(/^@/, "");
+}
+
 // Where a tag change came from, in plain words.
 function sourceLabel(s: string | null) {
   if (!s) return "";
@@ -207,6 +225,10 @@ export default function ContactRecord({
       postalCode: c.postal_code ?? "",
       country: c.country ?? "",
       birthday: c.birthday ?? "",
+      instagram: c.instagram ?? "",
+      facebook: c.facebook ?? "",
+      linkedin: c.linkedin ?? "",
+      youtube: c.youtube ?? "",
     } as Draft);
     setRels(c.relationships ?? []);
     setCustom({ ...(c.custom ?? {}) });
@@ -252,6 +274,10 @@ export default function ContactRecord({
     ["Website", c.website ? <a href={/^https?:\/\//.test(c.website) ? c.website : `https://${c.website}`} target="_blank" rel="noreferrer" className="text-[#2E7C83] break-all">{c.website}</a> : null],
     ["Address", address.length ? <span className="whitespace-pre-line">{address.join("\n")}</span> : null],
     ["Birthday", c.birthday ? new Date(`${c.birthday}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : null],
+    ...SOCIALS.map((s) => {
+      const v = (c[s.key] ?? "").trim();
+      return [s.label, v ? <a href={socialHref(s.base, v)} target="_blank" rel="noreferrer" className="text-[#2E7C83] break-all">{v}</a> : null] as [string, React.ReactNode];
+    }),
     ...fields.map((f) => [f.label, c.custom?.[f.key] ? (f.type === "url" ? <a href={c.custom[f.key]} target="_blank" rel="noreferrer" className="text-[#2E7C83] break-all">{c.custom[f.key]}</a> : <span className="whitespace-pre-line">{c.custom[f.key]}</span>) : null] as [string, React.ReactNode]),
   ];
   const filled = details.filter(([, v]) => v);
@@ -298,6 +324,10 @@ export default function ContactRecord({
               <label className={label}>State / region<Input value={draft.region} onChange={set("region")} /></label>
               <label className={label}>Postal code<Input value={draft.postalCode} onChange={set("postalCode")} /></label>
               <label className={label}>Country<Input value={draft.country} onChange={set("country")} /></label>
+              <label className={label}>Instagram<Input value={draft.instagram} onChange={set("instagram")} placeholder="@handle or link" /></label>
+              <label className={label}>Facebook<Input value={draft.facebook} onChange={set("facebook")} placeholder="Profile link or name" /></label>
+              <label className={label}>LinkedIn<Input value={draft.linkedin} onChange={set("linkedin")} placeholder="Profile link" /></label>
+              <label className={label}>YouTube<Input value={draft.youtube} onChange={set("youtube")} placeholder="@channel or link" /></label>
             </div>
 
             <div>
@@ -379,7 +409,7 @@ export default function ContactRecord({
                 ))}
               </dl>
             ) : (
-              <button type="button" onClick={startEdit} className="text-sm text-[#2E7C83] hover:underline">+ Add address, company, relationship and more</button>
+              <button type="button" onClick={startEdit} className="text-sm text-[#2E7C83] hover:underline">+ Add address, company, socials, relationship and more</button>
             )}
           </>
         )}

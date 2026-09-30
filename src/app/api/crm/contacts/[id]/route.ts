@@ -45,6 +45,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     ["firstName", "first_name", 80], ["lastName", "last_name", 80], ["phone", "phone", 40], ["company", "company", 160], ["jobTitle", "job_title", 120],
     ["website", "website", 300], ["addressLine1", "address_line1", 200], ["addressLine2", "address_line2", 200], ["city", "city", 120],
     ["region", "region", 120], ["postalCode", "postal_code", 30], ["country", "country", 120],
+    ["facebook", "facebook", 300], ["linkedin", "linkedin", 300], ["instagram", "instagram", 300], ["youtube", "youtube", 300],
   ];
   for (const [k, col, n] of TEXT) if (str(b[k], n) !== undefined) patch[col] = str(b[k], n) || null;
   if (b.birthday !== undefined) {
