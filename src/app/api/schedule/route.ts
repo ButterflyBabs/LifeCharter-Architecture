@@ -39,5 +39,7 @@ export async function GET(request: Request) {
     return ta - tb;
   });
 
-  return NextResponse.json({ connected, events });
+  // Which calendars are connected, so the page links to the right ones.
+  const providers = { google: boxes.some((b) => b.provider === "google"), microsoft: boxes.some((b) => b.provider === "microsoft") };
+  return NextResponse.json({ connected, providers, events });
 }

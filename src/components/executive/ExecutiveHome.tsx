@@ -242,7 +242,7 @@ export default function ExecutiveHome() {
   const [forwardTo, setForwardTo] = useState("");
   const [forwardNote, setForwardNote] = useState("");
   const [sendingForward, setSendingForward] = useState(false);
-  const [schedule, setSchedule] = useState<{ connected: boolean; events: ScheduleEvent[] } | null>(null);
+  const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
@@ -1363,17 +1363,30 @@ export default function ExecutiveHome() {
             )}
           </div>
 
-          {/* View Full Calendar Link — opens the user's real Google Calendar */}
-          <div className="px-6 pb-5">
-            <a
-              href="https://calendar.google.com/calendar/r"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors font-medium"
-            >
-              Open Google Calendar
-              <ChevronRight className="w-4 h-4" />
-            </a>
+          {/* Open the real calendars: the connected ones, or both when none is connected yet */}
+          <div className="px-6 pb-5 flex flex-wrap gap-x-5 gap-y-1">
+            {(!schedule?.providers || schedule.providers.google || !schedule.providers.microsoft) && (
+              <a
+                href="https://calendar.google.com/calendar/r"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors font-medium"
+              >
+                Open Google Calendar
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            )}
+            {(!schedule?.providers || schedule.providers.microsoft || !schedule.providers.google) && (
+              <a
+                href="https://outlook.office.com/calendar/view/day"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:text-[#2E7C83]/80 transition-colors font-medium"
+              >
+                Open Microsoft Calendar
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            )}
           </div>
         </div>
         </div>
