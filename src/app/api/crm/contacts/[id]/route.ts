@@ -15,13 +15,21 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const db = createServerClient();
   const { data: contact } = await db.from("seq_contacts").select("*").eq("id", params.id).eq("master_plan_id", a.planId).maybeSingle();
   if (!contact) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  const [{ data: events }, { data: enrs }, { data: subs }, { data: tagHistory }, { data: customFields }] = await Promise.all([
+  const [{ data: events }, { data: enrs }, { data: subs }, { data: tagHistory }, { data: customFields }, { data: pipelineCards }] = await Promise.all([
     db.from("crm_events").select("id, kind, title, detail, created_at").eq("contact_id", contact.id).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(200),
     db.from("sequence_enrollments").select("id, status, start_date, sequences(name), sequence_sends(status)").eq("contact_id", contact.id),
     db.from("crm_submissions").select("id, data, created_at, crm_forms(name)").eq("contact_id", contact.id).order("created_at", { ascending: false }).limit(50),
     db.from("crm_tag_history").select("id, tag, action, source, approximate, created_at").eq("contact_id", contact.id).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(300),
     db.from("crm_custom_fields").select("id, key, label, type, options, position").eq("master_plan_id", a.planId).order("position").order("created_at"),
+    db.from("dm_cards").select("id, follow_up_on, stage_changed_at, pipeline_boards(name), dm_stages(name)").eq("contact_id", contact.id).eq("master_plan_id", a.planId),
   ]);
+  const pipelines = (pipelineCards ?? []).map((p) => ({
+    id: p.id,
+    board: (p.pipeline_boards as unknown as { name: string } | null)?.name ?? "",
+    stage: (p.dm_stages as unknown as { name: string } | null)?.name ?? "",
+    followUpOn: p.follow_up_on,
+    since: p.stage_changed_at,
+  }));
   const series = (enrs ?? []).map((e) => ({
     id: e.id,
     status: e.status,
@@ -29,7 +37,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     name: (e.sequences as unknown as { name: string } | null)?.name ?? "",
     sent: ((e.sequence_sends as { status: string }[] | null) ?? []).filter((s) => s.status === "sent").length,
   }));
-  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [] });
+  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines });
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {

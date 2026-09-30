@@ -177,6 +177,7 @@ export default function ContactRecord({
   const [series, setSeries] = useState<Series[]>([]);
   const [history, setHistory] = useState<TagChange[]>([]);
   const [fields, setFields] = useState<CustomField[]>([]);
+  const [pipelines, setPipelines] = useState<{ id: string; board: string; stage: string; followUpOn: string | null }[]>([]);
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Draft>({} as Draft);
@@ -195,6 +196,7 @@ export default function ContactRecord({
     setSeries(d.series ?? []);
     setHistory(d.tagHistory ?? []);
     setFields(d.customFields ?? []);
+    setPipelines(d.pipelines ?? []);
   }, [id]);
   useEffect(() => {
     fetch("/api/sequences", { cache: "no-store" })
@@ -412,6 +414,21 @@ export default function ContactRecord({
               <button type="button" onClick={startEdit} className="text-sm text-[#2E7C83] hover:underline">+ Add address, company, socials, relationship and more</button>
             )}
           </>
+        )}
+
+        {pipelines.length > 0 && (
+          <div>
+            <p className={heading}>Pipelines</p>
+            <ul className="space-y-1">
+              {pipelines.map((p) => (
+                <li key={p.id} className="text-sm">
+                  <a href="/dm-pipeline" className="font-medium text-[#2E7C83] hover:underline">{p.board}</a>
+                  <span className="text-[#5a6472] dark:text-[#b8c2cf]"> · {p.stage}</span>
+                  {p.followUpOn && <span className="text-xs text-[#7a8a99]"> · follow up {new Date(`${p.followUpOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Tags */}

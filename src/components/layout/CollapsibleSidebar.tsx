@@ -78,7 +78,7 @@ const navigationSections = [
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
-      { id: "dm-pipeline", label: "DM Pipeline", icon: MessagesSquare, href: "/dm-pipeline" },
+      { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
     ],
@@ -420,14 +420,12 @@ export function CollapsibleSidebar() {
 
   const [superAdmin, setSuperAdmin] = useState(false);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
-  const [dmName, setDmName] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         setSuperAdmin(d?.architect === true);
         setFeatures(d?.features ?? null);
-        setDmName(typeof d?.dmPipelineName === "string" && d.dmPipelineName ? d.dmPipelineName : null);
       })
       .catch(() => {});
   }, []);
@@ -438,7 +436,7 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)).map((i) => (i.id === "dm-pipeline" && dmName ? { ...i, label: dmName } : i)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
   // Load the profile name + headshot for the footer block.
