@@ -66,6 +66,7 @@ import {
 // same shape as that app's DAILY OPERATIONS / STRATEGIC PLANNING groups,
 // built from this app's own eleven pages rather than copying its content.
 const navigationSections = [
+  // Today's rhythm: where the day starts and runs.
   {
     title: "DAILY OPERATIONS",
     color: "text-[#c9a227]",
@@ -73,28 +74,37 @@ const navigationSections = [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
-      // The CRM: every account, each seeing only its own contacts, calendars and sequences.
-      { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
-      { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
-      { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
-      { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
-      { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
-      { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
     ],
   },
+  // The CRM: every account, each seeing only its own people, deals, calendars and emails.
+  {
+    title: "CLIENTS & SALES",
+    color: "text-[#2E7C83]",
+    items: [
+      { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
+      { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
+      { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
+      { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
+      { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
+      { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
+      { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
+    ],
+  },
+  // Plans first, then the numbers.
   {
     title: "PLANNING & NUMBERS",
     color: "text-[#4a9b9b]",
     items: [
       { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
-      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
       { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
+      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
     ],
   },
+  // What you sell and how you're seen.
   {
     title: "GROWTH",
     color: "text-[#c9855e]",
@@ -102,7 +112,6 @@ const navigationSections = [
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
-      { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
@@ -114,8 +123,8 @@ const navigationSections = [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
-      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
+      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
     ],
   },
   {
