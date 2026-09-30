@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
+import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, EMAIL_RE } from "@/lib/crm";
 import { DM_PLATFORMS, ensureDmStages, moveCard, createCard, dateIn } from "@/lib/dmPipeline";
@@ -36,7 +37,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const a = await crmAccount(request);
+  if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  // Checked as a read so the public demo can drag its sample cards too: DM Pipeline
+  // changes only touch the demo account's own rows (reset hourly) and send nothing.
+  const a = await crmAccount();
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const b = await request.json().catch(() => ({}));
