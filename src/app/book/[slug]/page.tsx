@@ -49,7 +49,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
     const r = await fetch(`/api/book/${params.slug}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ start: pick, name: f.name, email: f.email, phone: f.phone, timezone: tz, answers, _hp: f._hp }),
+      body: JSON.stringify({ start: pick, name: f.name, email: f.email, phone: f.phone, timezone: tz, answers, _hp: f._hp, _ref: new URLSearchParams(window.location.search).get("ref") || undefined }),
     });
     const d = await r.json().catch(() => ({}));
     setSending(false);

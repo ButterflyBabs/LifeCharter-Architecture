@@ -52,7 +52,7 @@ const followLabel = (s: Stage) => (s.kind === "booked" ? "Adds a Sales Pipeline 
 
 type Draft = { name: string; handle: string; profileUrl: string; email: string; platform: string; contactId: string | null; stageId: string; scriptId: string; notes: string };
 
-export default function DmPipeline() {
+export default function DmPipeline({ purpose = "outreach", embedded = false }: { purpose?: "outreach" | "affiliate"; embedded?: boolean }) {
   const tz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
   const [boards, setBoards] = useState<Board[]>([]);
   const [board, setBoard] = useState<Board | null>(null);
@@ -72,17 +72,18 @@ export default function DmPipeline() {
   // Arriving from Scripts & Templates: /dm-pipeline?add=1&script=<id>&platform=LI
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    if (q.get("add") === "1") {
+    if (!embedded && q.get("add") === "1") {
       const p = q.get("platform");
       setInitial({ scriptId: q.get("script") || "", ...(p && PLATFORMS.some((x) => x.id === p) ? { platform: p } : {}) });
       setAdding(true);
       window.history.replaceState(null, "", "/dm-pipeline");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const load = useCallback(
     async (boardId?: string) => {
-      const q = new URLSearchParams({ tz });
+      const q = new URLSearchParams({ tz, purpose });
       if (boardId) q.set("board", boardId);
       const d = await fetch(`/api/dm-pipeline?${q}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
       if (d.error) setMsg(d.error);
@@ -92,17 +93,17 @@ export default function DmPipeline() {
       setCards(d.cards ?? []);
       setToday(d.today ?? "");
       try {
-        if (d.board?.id) localStorage.setItem("pipelines-board", d.board.id);
+        if (d.board?.id) localStorage.setItem(`pipelines-board-${purpose}`, d.board.id);
       } catch {
         /* not remembered */
       }
     },
-    [tz]
+    [tz, purpose]
   );
   useEffect(() => {
     let last: string | undefined;
     try {
-      last = localStorage.getItem("pipelines-board") || undefined;
+      last = localStorage.getItem(`pipelines-board-${purpose}`) || undefined;
     } catch {
       /* none */
     }
@@ -111,10 +112,10 @@ export default function DmPipeline() {
       .then((r) => r.json())
       .then((d) => setScripts(((d.items ?? []) as ScriptLite[]).filter((s) => s.channel === "dm" || (s.platforms ?? []).some((p) => ["DM", "IG", "FB", "LI", "Email", "TXT"].includes(p)))))
       .catch(() => {});
-  }, [load]);
+  }, [load, purpose]);
 
   const post: Post = async (body) => {
-    const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, tz }) });
+    const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, tz, purpose }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
       setMsg(d.error || "Something went wrong.");
@@ -143,9 +144,9 @@ export default function DmPipeline() {
   const open = cards?.find((c) => c.id === openId) ?? null;
 
   return (
-    <div className="py-8 px-4 sm:px-6 max-w-[1500px] mx-auto">
+    <div className={embedded ? "" : "py-8 px-4 sm:px-6 max-w-[1500px] mx-auto"}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 ${embedded ? "hidden" : ""}`}>
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c9a227] to-[#1a2b4a] flex items-center justify-center">
             <MessageSquare className="w-6 h-6 text-white" />
           </div>
@@ -173,7 +174,7 @@ export default function DmPipeline() {
           </button>
         ))}
         <button onClick={() => setCreating(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#2E7C83]/50 px-3 py-1.5 text-sm text-[#2E7C83] hover:bg-[#2E7C83]/5">
-          <Plus className="w-4 h-4" /> New pipeline
+          <Plus className="w-4 h-4" /> {purpose === "affiliate" ? "New recruiting board" : "New pipeline"}
         </button>
       </div>
 

@@ -3,6 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { submitForm } from "@/lib/crm";
 import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
+import { cookies } from "next/headers";
+import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (typeof body._hp === "string" && body._hp.trim()) return plainPost ? page("Thank you", "Thank you!") : NextResponse.json({ ok: true, message: "Thank you!" }, { headers });
   const pageUrl = typeof body._page === "string" ? body._page : request.headers.get("referer");
   const r = await submitForm(params.id, body, pageUrl);
+  // Came through an affiliate's link (their cookie, or ?ref passed along as _ref): credit the lead.
+  if (r.ok && r.lead) {
+    const code = (typeof body._ref === "string" && body._ref) || cookies().get(AFF_COOKIE)?.value || "";
+    if (code) {
+      const db = createServerClient();
+      const aff = await affiliateByCode(db, r.lead.masterPlanId, code).catch(() => null);
+      if (aff) await recordReferral(db, r.lead.masterPlanId, aff, r.lead.contactId, "lead", `form:${r.lead.formKey}`).catch((e) => console.error("affiliate lead:", e));
+    }
+  }
   if (plainPost) return r.ok ? page("Thank you", r.message) : page("Please check the form", `${r.error} Please go back and try again.`, r.status);
   if (r.ok && r.lead && (await isHousePlan(r.lead.masterPlanId))) {
     // Lead → Meta Conversions API. A site that also fires the pixel's Lead can post the same

@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
+import { creditSale } from "@/lib/affiliates";
+import { createServerClient as affDb } from "@/lib/supabase/server";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
@@ -85,6 +87,10 @@ export async function POST(req: NextRequest) {
             const [first, ...rest] = (session.customer_details?.name || meta.fullName || "").trim().split(/\s+/);
             const c = await upsertContact({ masterPlanId: housePlan, email: buyer, firstName: first || null, lastName: rest.join(" ") || null, source: "stripe:command-suite", tags: ["command-suite-customer", ...(meta.planId || meta.tier ? [`plan-${meta.planId || meta.tier}`] : []), ...(meta.alumni === "true" ? ["lifecharter-alumni"] : [])] }).catch(() => null);
             if (c) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
+            // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
+            if (c && typeof session.amount_total === "number") {
+              await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+            }
           }
         }
 
@@ -124,6 +130,9 @@ export async function POST(req: NextRequest) {
                   tags: ["life-shift", "paid"],
                 });
                 if (r.contactId) await logEvent(planId, r.contactId, "purchase", "Bought The Life Shift ($25)", { stripeSession: session.id }).catch(() => {});
+                if (r.contactId && typeof session.amount_total === "number") {
+                  await creditSale(affDb(), planId, { contactId: r.contactId, affiliateCode: meta.affiliate || null, description: "The Life Shift", amount: session.amount_total / 100, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+                }
                 if (!r.enrollmentId) console.warn(`life shift enrol ${email}: ${r.reason}`);
               }
             } catch (e) {

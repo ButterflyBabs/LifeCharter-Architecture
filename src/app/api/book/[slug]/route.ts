@@ -3,6 +3,8 @@ import { availableSlots, book, calendarBySlug } from "@/lib/booking/engine";
 import { createServerClient } from "@/lib/supabase/server";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
+import { cookies } from "next/headers";
+import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -47,6 +49,18 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     timezone: str(b.timezone) || null,
     answers: b.answers && typeof b.answers === "object" ? (b.answers as Record<string, string>) : {},
   });
+  // Came through an affiliate's link: credit the booking to them.
+  if (r.ok) {
+    const code = str(b._ref) || cookies().get(AFF_COOKIE)?.value || "";
+    if (code) {
+      const db = createServerClient();
+      const aff = await affiliateByCode(db, cal.master_plan_id, code).catch(() => null);
+      if (aff) {
+        const { data: c } = await db.from("seq_contacts").select("id").eq("master_plan_id", cal.master_plan_id).eq("email", str(b.email).trim().toLowerCase()).maybeSingle();
+        if (c) await recordReferral(db, cal.master_plan_id, aff, c.id as string, "booking", `booking:${cal.slug}`).catch((e) => console.error("affiliate booking:", e));
+      }
+    }
+  }
   // Meta Conversions API is Babs's own ad account: only her calendars report to it.
   if (r.ok && (await isHousePlan(cal.master_plan_id))) {
     // Schedule → Meta Conversions API. Reschedules (the manage page) aren't new bookings.

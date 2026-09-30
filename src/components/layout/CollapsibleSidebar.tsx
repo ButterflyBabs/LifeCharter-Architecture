@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Mail,
+  Handshake,
   MessagesSquare,
   Presentation,
   MailCheck,
@@ -101,6 +102,7 @@ const navigationSections = [
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
+      { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],

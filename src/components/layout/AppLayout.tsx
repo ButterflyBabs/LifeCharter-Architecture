@@ -25,6 +25,8 @@ const BARE_ROUTES = [
   "/unsubscribe",
   "/f",
   "/book",
+  "/a", // an affiliate's private dashboard
+  "/r", // affiliate links (redirect)
   "/login",
   "/logout",
   "/forgot-password",

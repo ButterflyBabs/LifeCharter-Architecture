@@ -23,6 +23,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
 
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
         fullName: fullName || "",
         sessionSource: sessionSource || "",
         alumni: isAlumni ? "true" : "false",
+        affiliate: cookies().get(AFF_COOKIE)?.value || "",
       },
     });
 

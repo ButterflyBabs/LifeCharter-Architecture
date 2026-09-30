@@ -3,6 +3,7 @@ import { zonedToUtcISO } from "@/lib/tz";
 import { nowParts } from "@/lib/finance/period";
 import { ensureStages } from "@/lib/sales/pipeline";
 import { logEvent } from "@/lib/crm";
+import { uniqueCode } from "@/lib/affiliates";
 
 // Outreach pipelines: each account can have many boards (the DM pipeline is one).
 // A board has its own stages, a short tag given to everyone on it, and a tag per
@@ -37,7 +38,16 @@ const SIMPLE_TEMPLATE: typeof DM_TEMPLATE = [
   { key: "in_progress", name: "In progress", slug: "in-progress", followUpDays: 7, kind: "open" },
   { key: "done", name: "Done", slug: "done", followUpDays: null, kind: "closed" },
 ];
-export const TEMPLATES = { dm: DM_TEMPLATE, simple: SIMPLE_TEMPLATE };
+const AFFILIATE_TEMPLATE: typeof DM_TEMPLATE = [
+  { key: "prospect", name: "Prospect", slug: "prospect", followUpDays: null, kind: "open" },
+  { key: "sent", name: "Reached out", slug: "reached-out", followUpDays: 3, kind: "open" },
+  { key: "conversation", name: "Talking", slug: "talking", followUpDays: 2, kind: "open" },
+  { key: "agreement", name: "Agreement sent", slug: "agreement-sent", followUpDays: 3, kind: "open" },
+  { key: "affiliate_active", name: "Active affiliate", slug: "active", followUpDays: null, kind: "closed" },
+  { key: "not_now", name: "Not now", slug: "not-now", followUpDays: null, kind: "closed" },
+];
+export const TEMPLATES = { dm: DM_TEMPLATE, simple: SIMPLE_TEMPLATE, affiliate: AFFILIATE_TEMPLATE };
+export type Purpose = "outreach" | "affiliate";
 
 export const slugTag = (s: string, n = 40) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, n).replace(/-$/, "");
 
@@ -58,11 +68,11 @@ export const shapeStage = (r: Record<string, unknown>): DmStage => ({
   sortOrder: (r.sort_order as number) ?? 0,
 });
 
-export async function createBoard(db: Db, planId: string, name: string, tag: string | null, template: keyof typeof TEMPLATES): Promise<Board | null> {
+export async function createBoard(db: Db, planId: string, name: string, tag: string | null, template: keyof typeof TEMPLATES, purpose: Purpose = "outreach"): Promise<Board | null> {
   const { data: last } = await db.from("pipeline_boards").select("sort_order").eq("master_plan_id", planId).order("sort_order", { ascending: false }).limit(1).maybeSingle();
   const { data: board } = await db
     .from("pipeline_boards")
-    .insert({ master_plan_id: planId, name, tag, sort_order: ((last?.sort_order as number) ?? -1) + 1 })
+    .insert({ master_plan_id: planId, name, tag, purpose, sort_order: ((last?.sort_order as number) ?? -1) + 1 })
     .select("id, name, tag, sort_order")
     .single();
   if (!board) return null;
@@ -80,12 +90,24 @@ export async function createBoard(db: Db, planId: string, name: string, tag: str
   return { id: board.id as string, name: board.name as string, tag: (board.tag as string) ?? null, sortOrder: board.sort_order as number };
 }
 
-// The account's boards; a first DM board is made the first time.
-export async function ensureBoards(db: Db, planId: string): Promise<Board[]> {
-  const { data } = await db.from("pipeline_boards").select("id, name, tag, sort_order").eq("master_plan_id", planId).order("sort_order").order("created_at");
+// The account's boards of one purpose; the first one is made the first time
+// (a DM board for outreach, the recruiting board for affiliates).
+export async function ensureBoards(db: Db, planId: string, purpose: Purpose = "outreach"): Promise<Board[]> {
+  const { data } = await db.from("pipeline_boards").select("id, name, tag, sort_order").eq("master_plan_id", planId).eq("purpose", purpose).order("sort_order").order("created_at");
   if (data && data.length) return data.map((b) => ({ id: b.id as string, name: b.name as string, tag: (b.tag as string) ?? null, sortOrder: b.sort_order as number }));
-  const b = await createBoard(db, planId, "DM Pipeline", "dm", "dm");
+  const b = purpose === "affiliate" ? await createBoard(db, planId, "Affiliate recruiting", "affiliate", "affiliate", "affiliate") : await createBoard(db, planId, "DM Pipeline", "dm", "dm");
   return b ? [b] : [];
+}
+
+// Reaching "Active affiliate" makes them an affiliate (once), with their own link.
+async function ensureAffiliate(db: Db, planId: string, card: { name: string; email: string | null; contact_id: string | null }) {
+  if (card.contact_id) {
+    const { data: have } = await db.from("affiliates").select("id").eq("master_plan_id", planId).eq("contact_id", card.contact_id).maybeSingle();
+    if (have) return;
+  }
+  const code = await uniqueCode(db, card.name.split(/\s+/)[0] || card.name);
+  await db.from("affiliates").insert({ master_plan_id: planId, contact_id: card.contact_id, name: card.name, email: card.email, code, agreement_on: new Date().toISOString().slice(0, 10) });
+  if (card.contact_id) await logEvent(planId, card.contact_id, "manual", `Became an affiliate (code ${code})`, {}, db as never).catch(() => {});
 }
 
 export async function boardStages(db: Db, planId: string, boardId: string): Promise<DmStage[]> {
@@ -182,6 +204,7 @@ export async function moveCard(db: Db, planId: string, cardId: string, stage: Dm
     Object.assign(patch, await setFollowUp(db, planId, card as Card, stage, boardName, tz), { stage_id: stage.id, stage_changed_at: now });
     if (stage.key === "sent" || stage.key === "followed_up") patch.last_contacted_at = now;
     if (stage.kind === "booked") patch.deal_id = await bookDeal(db, planId, card as Card, boardName);
+    if (stage.key === "affiliate_active") await ensureAffiliate(db, planId, card as Card).catch((e) => console.error("affiliate from pipeline:", e));
     await retagContact(db, planId, card.contact_id as string | null, [stage.tag], [(from?.tag as string) ?? null]);
     if (card.contact_id) {
       await logEvent(planId, card.contact_id as string, "manual", `${boardName}: moved to ${stage.name}`, { dm_card: card.id }, db as never).catch(() => {});
@@ -225,6 +248,7 @@ export async function createCard(
   const follow = await setFollowUp(db, planId, card as Card, stage, board.name, tz);
   const extra: Record<string, unknown> = { ...follow };
   if (stage.kind === "booked") extra.deal_id = await bookDeal(db, planId, card as Card, board.name);
+  if (stage.key === "affiliate_active") await ensureAffiliate(db, planId, card as Card).catch((e) => console.error("affiliate from pipeline:", e));
   const { data: saved } = await db.from("dm_cards").update(extra).eq("id", card.id).select("*").single();
   await retagContact(db, planId, input.contactId ?? null, [board.tag, stage.tag], []);
   if (input.contactId) {

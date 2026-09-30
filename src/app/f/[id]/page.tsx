@@ -41,7 +41,7 @@ export default function HostedForm({ params }: { params: { id: string } }) {
     const r = await fetch(`/api/forms/${params.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, _tz: Intl.DateTimeFormat().resolvedOptions().timeZone, _page: window.location.href }),
+      body: JSON.stringify({ ...body, _tz: Intl.DateTimeFormat().resolvedOptions().timeZone, _page: window.location.href, _ref: new URLSearchParams(window.location.search).get("ref") || undefined }),
     });
     const d = await r.json().catch(() => ({}));
     setSending(false);

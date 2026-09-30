@@ -24,6 +24,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
@@ -101,6 +103,8 @@ export async function POST(req: NextRequest) {
         sessionSource: typeof sessionSource === "string" ? sessionSource : "",
         plusCredit: String(credit > 0 ? credit : 0),
         alumni: isAlumni ? "true" : "false",
+        // An affiliate's link brought them here (credited when the payment completes).
+        affiliate: cookies().get(AFF_COOKIE)?.value || "",
       },
     });
 

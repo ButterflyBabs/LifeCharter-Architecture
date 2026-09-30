@@ -199,6 +199,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["dm", "dms", "direct message", "instagram", "facebook", "linkedin", "dm pipeline", "outreach", "follow up", "prospecting", "social selling"],
   },
   {
+    id: "gr-affiliates",
+    category: "Growth",
+    question: "How do affiliates work in the Suite?",
+    answer:
+      "Growth → Affiliates has four parts. Recruiting is a pipeline for people you'd like as affiliates; drag someone to Active affiliate and they're added to My affiliates with their own link. My affiliates gives each affiliate a tracked link (lccommandsuite.com/r/their-code) that counts clicks and remembers the visitor for 60 days: sign-ups on your Suite forms and bookings on your Suite calendars are credited to them, and so are later purchases through your Suite checkout. Commission is set by product (Commission by product) and can be changed for any one affiliate on their page; sales you make elsewhere can be added by hand. Mark commissions paid and they're recorded as an Affiliate Commissions expense in Finance. Each affiliate has a private dashboard link to send them, with a monthly report (clicks, people referred, sales by product, commissions owed and paid) they can download as a spreadsheet; you see the same report on their page. Programs I promote keeps your own affiliate links and codes (Amazon and others) in one place; earnings you mark paid are added to Finance as Affiliate Income. If you're an affiliate yourself (for LifeCharter, for example), My partnerships shows your link and your monthly report right inside the app.",
+    keywords: ["affiliate", "affiliates", "referral", "referral link", "commission", "partner", "partnership", "amazon associates", "payout", "monthly report"],
+  },
+  {
     id: "sa-invite-tracker",
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
@@ -681,7 +689,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Campaigns & Broadcasts, Invite Tracker, Pipeline, Outreach Pipelines, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Campaigns & Broadcasts, Invite Tracker, Pipeline, Outreach Pipelines, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Affiliates, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {

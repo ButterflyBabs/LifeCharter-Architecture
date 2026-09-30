@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   const db = createServerClient();
   const u = new URL(request.url);
   const tz = await resolveUserTimeZone(u.searchParams.get("tz"));
-  const boards = await ensureBoards(db, a.planId);
+  const boards = await ensureBoards(db, a.planId, u.searchParams.get("purpose") === "affiliate" ? "affiliate" : "outreach");
   const board = boards.find((b) => b.id === u.searchParams.get("board")) ?? boards[0] ?? null;
   if (!board) return NextResponse.json({ boards: [], board: null, stages: [], cards: [], today: dateIn(tz, 0) });
   const [stages, { data: cards }] = await Promise.all([
@@ -62,7 +62,8 @@ export async function POST(request: Request) {
   const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
   const days = (v: unknown) => (v === null || v === "" || v === undefined ? null : Math.max(0, Math.min(365, Math.round(Number(v)))));
   const tz = await resolveUserTimeZone(str(b.tz, 60) || null);
-  const boards = await ensureBoards(db, a.planId);
+  const purpose = b.purpose === "affiliate" ? "affiliate" : "outreach";
+  const boards = await ensureBoards(db, a.planId, purpose);
   const boardOf = (id: unknown): Board | undefined => boards.find((x) => x.id === id);
 
   // ── Boards ──
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     const name = str(b.name, 80);
     if (!name) return NextResponse.json({ error: "Name the pipeline." }, { status: 400 });
     const tag = slugTag(str(b.tag, 40) || name.replace(/pipeline/i, ""), 30) || null;
-    const board = await createBoard(db, a.planId, name, tag, b.template === "simple" ? "simple" : "dm");
+    const board = await createBoard(db, a.planId, name, tag, purpose === "affiliate" ? "affiliate" : b.template === "simple" ? "simple" : "dm", purpose);
     return board ? NextResponse.json({ board }) : NextResponse.json({ error: "Couldn't create it." }, { status: 500 });
   }
   if (b.action === "board-update") {
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
       }
     }
     await db.from("pipeline_boards").update(patch).eq("id", board.id).eq("master_plan_id", a.planId);
-    return NextResponse.json({ boards: await ensureBoards(db, a.planId), stages: await boardStages(db, a.planId, board.id) });
+    return NextResponse.json({ boards: await ensureBoards(db, a.planId, purpose), stages: await boardStages(db, a.planId, board.id) });
   }
   if (b.action === "board-delete") {
     const board = boardOf(b.boardId);
