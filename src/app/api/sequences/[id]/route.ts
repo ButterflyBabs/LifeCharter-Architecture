@@ -4,6 +4,7 @@ import { enrolContact, clientFrom, sendRendered, isValidTz } from "@/lib/sequenc
 import { renderStep } from "@/lib/sequences/render";
 import { footerOf, senderProfile, senderVerdict } from "@/lib/email/accountSender";
 import { crmAccount, testRecipient } from "../../crm/guard";
+import { logEvent } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,7 @@ export const maxDuration = 60;
 //     test { stepId }                  → sends that step to the signed-in person
 //     enrol { email, firstName, lastName, timezone }
 //     person { enrollmentId, status: active|paused|stopped }
+//     resend { enrollmentId, stepId }   → sends that one email to that one person now
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const link = (v: unknown) => (typeof v === "string" && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 600) : null);
@@ -38,7 +40,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     db.from("sequence_steps").select("*").eq("sequence_id", seq.id).order("position"),
     db
       .from("sequence_enrollments")
-      .select("id, status, enrolled_at, start_date, source, completed_at, registered_at, registered_note, seq_contacts(id, email, first_name, last_name, timezone, unsubscribed_at), sequence_sends(status)")
+      .select("id, status, enrolled_at, start_date, source, completed_at, registered_at, registered_note, seq_contacts(id, email, first_name, last_name, timezone, unsubscribed_at), sequence_sends(status, step_id)")
       .eq("sequence_id", seq.id)
       .order("enrolled_at", { ascending: false })
       .limit(500),
@@ -57,7 +59,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     for (const s of subs ?? []) if (!signedUp.has(s.contact_id as string)) signedUp.set(s.contact_id as string, s.created_at as string);
   }
   const people = (enrs ?? []).map((e) => {
-    const sends = (e.sequence_sends as { status: string }[] | null) ?? [];
+    const sends = (e.sequence_sends as { status: string; step_id: string }[] | null) ?? [];
     const cid = (e.seq_contacts as unknown as { id: string } | null)?.id ?? "";
     const form = signedUp.get(cid) ?? null;
     return {
@@ -65,6 +67,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       sequence_sends: undefined,
       sent: sends.filter((s) => s.status === "sent").length,
       failed: sends.filter((s) => s.status === "failed").length,
+      sentSteps: sends.filter((s) => s.status === "sent").map((s) => s.step_id),
       registered: form ? { at: form, via: "form" } : e.registered_at ? { at: e.registered_at as string, via: "manual" } : null,
     };
   });
@@ -181,6 +184,25 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (!status) return NextResponse.json({ error: "Unknown status." }, { status: 400 });
     await db.from("sequence_enrollments").update({ status }).eq("id", str(b.enrollmentId, 60)).eq("sequence_id", seq.id).neq("status", "completed");
     return NextResponse.json({ ok: true });
+  }
+
+  if (b.action === "resend") {
+    // One email of this campaign, to one person in it, right now. Counts as that email
+    // having gone to them, so the schedule never sends it to them a second time.
+    const { data: enr } = await db.from("sequence_enrollments").select("id, seq_contacts(id, email, first_name, unsubscribed_at)").eq("id", str(b.enrollmentId, 60)).eq("sequence_id", seq.id).maybeSingle();
+    const c = enr?.seq_contacts as unknown as { id: string; email: string; first_name: string | null; unsubscribed_at: string | null } | null;
+    if (!enr || !c) return NextResponse.json({ error: "They're not in this campaign." }, { status: 404 });
+    if (c.unsubscribed_at) return NextResponse.json({ error: "They've unsubscribed, so they can't be emailed." }, { status: 400 });
+    const { data: step } = await db.from("sequence_steps").select("*").eq("id", str(b.stepId, 60)).eq("sequence_id", seq.id).maybeSingle();
+    if (!step) return NextResponse.json({ error: "Pick which email to send." }, { status: 400 });
+    const who = senderVerdict(await senderProfile(planId, db), true);
+    if (!who.ok) return NextResponse.json({ error: who.reason, setup: true }, { status: 400 });
+    const mail = renderStep({ brand: seq.brand, subject: step.subject, preview: step.preview, body: step.body, buttonLabel: step.button_label, buttonUrl: step.button_url, contact: { id: c.id, first_name: c.first_name }, footer: who.house ? undefined : who.footer });
+    const r = await sendRendered(who.house ? seq : clientFrom(who), c.email, c.id, mail);
+    if (!r.ok) return NextResponse.json({ error: r.error || "Couldn't send." }, { status: 500 });
+    await db.from("sequence_sends").upsert({ enrollment_id: enr.id, step_id: step.id, status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString(), error: null }, { onConflict: "enrollment_id,step_id" });
+    await logEvent(planId, c.id, "email", `Resent “${step.subject}” (${seq.name})`, { sequence: seq.key, step: step.id, resend: true }, db).catch(() => {});
+    return NextResponse.json({ ok: true, to: c.email });
   }
 
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });

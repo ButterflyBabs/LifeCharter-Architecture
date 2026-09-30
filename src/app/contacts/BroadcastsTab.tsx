@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { OWNER_TZ, addDays, slotsIn, zonedParts } from "@/lib/broadcasts/shared";
 import ContactPicker, { personName, type PickedContact } from "./ContactPicker";
 import { Pill } from "./ContactRecord";
+import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 
 interface Summary {
   id: string;
@@ -46,7 +47,7 @@ interface Detail {
   reach: number;
   counts: Record<string, number>;
   problems: string[];
-  failures: { email: string; error: string | null }[];
+  failures: { contact_id: string; email: string; error: string | null }[];
   people: PickedContact[];
 }
 
@@ -158,6 +159,7 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   const [busy, setBusy] = useState(false);
   const [session, setSession] = useState(todayMt(tz));
   const [when, setWhen] = useState({ date: addDays(todayMt(tz), 1), time: "09:00" });
+  const [resendQ, setResendQ] = useState("");
   const tpl = templates.find((t) => t.key === f?.template_key) ?? null;
 
   const load = useCallback(async () => {
@@ -211,6 +213,17 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
       setBusy(false);
     }
   }
+  // This broadcast, again, to one person (after checking with you which email it is).
+  const resendTo = (contactId: string, label: string) =>
+    run(async () => {
+      if (!confirm(`Send "${d?.broadcast.subject}" to ${label} now?`)) return;
+      const r = await post({ action: "resend", contactId });
+      if (r) {
+        setMsg(`Sent "${r.subject}" to ${r.to}.`);
+        setResendQ("");
+        await load();
+      }
+    });
   const save = async (okMsg?: string) => {
     const r = await post({ action: "save", draft });
     if (r) {
@@ -270,8 +283,20 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
             </div>
           )}
           {!!d.failures.length && (
-            <div className="text-xs text-[#C76F56] space-y-0.5">
-              {d.failures.map((x) => <p key={x.email} className="break-all">{x.email}: {x.error}</p>)}
+            <div className="text-xs text-[#C76F56] space-y-1">
+              {d.failures.map((x) => (
+                <p key={x.email} className="break-all">
+                  {x.email}: {x.error}{" "}
+                  {b.status !== "sending" && <button disabled={busy} onClick={() => resendTo(x.contact_id, x.email)} className="ml-1 underline text-[#2E7C83]">Resend</button>}
+                </p>
+              ))}
+            </div>
+          )}
+          {(b.status === "sent" || b.status === "canceled") && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Resend to one person</p>
+              <ContactLookupInput value={resendQ} onChange={setResendQ} onPick={(c) => void resendTo(c.id, `${lookupName(c)} (${c.email})`)} placeholder="Type a name or email…" pickLabel="Send" className={field} />
+              <p className="text-xs text-[#7a8a99]">They get this same email, now. Handy when someone didn&apos;t get it or joined after it went out.</p>
             </div>
           )}
         </CardContent>

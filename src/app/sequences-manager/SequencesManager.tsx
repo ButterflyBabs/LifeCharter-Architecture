@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square } from "lucide-react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -44,6 +44,7 @@ interface Person {
   source: string | null;
   sent: number;
   failed: number;
+  sentSteps?: string[];
   registered: { at: string; via: "form" | "manual" } | null;
   seq_contacts: { id: string; email: string; first_name: string | null; last_name: string | null; timezone: string; unsubscribed_at: string | null } | null;
 }
@@ -68,6 +69,7 @@ export default function SequencesManager() {
   const [newName, setNewName] = useState("");
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
+  const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
   const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts">("campaigns");
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "broadcasts") setPageTab("broadcasts");
@@ -383,7 +385,8 @@ export default function SequencesManager() {
                         const c = p.seq_contacts;
                         const status = c?.unsubscribed_at ? "unsubscribed" : p.status;
                         return (
-                          <tr key={p.id} className="border-t border-[#1a2b4a]/10">
+                          <Fragment key={p.id}>
+                          <tr className="border-t border-[#1a2b4a]/10">
                             <td className="p-3">
                               <p className="font-medium">{[c?.first_name, c?.last_name].filter(Boolean).join(" ") || "—"}</p>
                               <p className="text-xs text-[#7a8a99]">{c?.email} · {c?.timezone.replace("America/", "")}</p>
@@ -418,11 +421,52 @@ export default function SequencesManager() {
                               {status === "paused" && (
                                 <button title="Resume" onClick={async () => { await act({ action: "person", enrollmentId: p.id, status: "active" }); void loadOne(openId); }} className="p-2 rounded-lg hover:bg-[#1a2b4a]/5"><Play className="w-4 h-4" /></button>
                               )}
+                              {status !== "unsubscribed" && steps.length > 0 && (
+                                <button
+                                  title="Resend an email to this person"
+                                  onClick={() => {
+                                    const sent = steps.filter((st) => p.sentSteps?.includes(st.id));
+                                    setResend(resend?.enrollmentId === p.id ? null : { enrollmentId: p.id, stepId: (sent[sent.length - 1] ?? steps[0]).id });
+                                  }}
+                                  className="p-2 rounded-lg text-[#2E7C83] hover:bg-[#2E7C83]/10"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
                               {(status === "active" || status === "paused") && (
                                 <button title="Stop for good" onClick={async () => { if (confirm("Stop this person's emails for good?")) { await act({ action: "person", enrollmentId: p.id, status: "stopped" }); void loadOne(openId); } }} className="p-2 rounded-lg text-[#C76F56] hover:bg-[#C76F56]/10"><Square className="w-4 h-4" /></button>
                               )}
                             </td>
                           </tr>
+                          {resend?.enrollmentId === p.id && c && (
+                            <tr className="bg-[#2E7C83]/5">
+                              <td colSpan={6} className="p-3">
+                                <div className="flex flex-wrap items-center gap-2 text-sm">
+                                  <span className="font-medium">Resend to {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email}:</span>
+                                  <select value={resend.stepId} onChange={(e) => setResend({ ...resend, stepId: e.target.value })} className="rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-2 text-sm max-w-full">
+                                    {steps.map((st, i) => (
+                                      <option key={st.id} value={st.id}>
+                                        Email {i + 1}: {st.subject}{p.sentSteps?.includes(st.id) ? " (sent)" : " (not sent yet)"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      const st = steps.find((x) => x.id === resend.stepId);
+                                      if (!st || !confirm(`Send "${st.subject}" to ${c.email} now?`)) return;
+                                      const d = await act({ action: "resend", enrollmentId: p.id, stepId: st.id }, `Sent "${st.subject}" to ${c.email}.`);
+                                      if (d) { setResend(null); void loadOne(openId); }
+                                    }}
+                                  >
+                                    <Send className="w-4 h-4 mr-1" /> Send now
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setResend(null)}>Cancel</Button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          </Fragment>
                         );
                       })}
                       {!people.length && <tr><td colSpan={6} className="p-4 text-[#7a8a99]">{sender?.house ? "No one yet. Life Shift buyers are added automatically when they pay." : "No one yet. Add people here, or have a form or booking calendar start this campaign."}</td></tr>}

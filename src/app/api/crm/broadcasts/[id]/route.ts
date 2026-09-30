@@ -5,6 +5,7 @@ import { BroadcastRow, listRecipients, problems, processBroadcast, renderBroadca
 import { OWNER_TZ, zonedToUtc } from "@/lib/broadcasts/shared";
 import { footerOf, senderProfile, senderVerdict } from "@/lib/email/accountSender";
 import { crmAccount, testRecipient, type CrmAccount } from "../../guard";
+import { logEvent } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -65,7 +66,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const { b, db } = r;
   const counts = await sendCounts(db, b.id);
   const reach = b.queued_at ? b.recipient_count : (await listRecipients(db, b)).length;
-  const { data: failures } = await db.from("crm_broadcast_sends").select("email, error").eq("broadcast_id", b.id).eq("status", "failed").limit(20);
+  const { data: failures } = await db.from("crm_broadcast_sends").select("contact_id, email, error").eq("broadcast_id", b.id).eq("status", "failed").limit(20);
   // The people picked by hand, with names for the screen.
   const ids = b.contact_ids ?? [];
   const { data: people } = ids.length
@@ -143,6 +144,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ ok: true, sent });
     }
     return NextResponse.json({ ok: true, scheduledAt: at.toISOString() });
+  }
+
+  if (body.action === "resend") {
+    // This broadcast, to one person, right now (someone who missed it, or was added later).
+    if (!["sending", "sent", "canceled"].includes(b.status)) return NextResponse.json({ error: "This one hasn't gone out yet." }, { status: 400 });
+    const { data: c } = await db.from("seq_contacts").select("id, email, first_name, unsubscribed_at").eq("id", str(body.contactId, 60)).eq("master_plan_id", b.master_plan_id).maybeSingle();
+    if (!c) return NextResponse.json({ error: "Pick someone from your contacts." }, { status: 404 });
+    if (c.unsubscribed_at) return NextResponse.json({ error: "They've unsubscribed, so they can't be emailed." }, { status: 400 });
+    const who = senderVerdict(await senderProfile(b.master_plan_id, db), true);
+    if (!who.ok) return NextResponse.json({ error: who.reason, setup: true }, { status: 400 });
+    const mail = renderBroadcast(b, { id: c.id, first_name: c.first_name }, "", who.house ? undefined : who.footer);
+    const s = await sendRendered(who.house ? b : clientFrom(who), c.email, c.id, mail);
+    if (!s.ok) return NextResponse.json({ error: s.error || "Couldn't send." }, { status: 500 });
+    await db.from("crm_broadcast_sends").upsert({ broadcast_id: b.id, contact_id: c.id, email: c.email, status: "sent", resend_id: s.id ?? null, sent_at: now(), error: null }, { onConflict: "broadcast_id,contact_id" });
+    await logEvent(b.master_plan_id, c.id, "email", `Resent broadcast: “${mail.subject}”`, { broadcast: b.id, name: b.name, resend: true }, db).catch(() => {});
+    return NextResponse.json({ ok: true, to: c.email, subject: mail.subject });
   }
 
   if (body.action === "unschedule") {
