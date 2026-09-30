@@ -3,6 +3,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity, q } from "@/lib/activity";
+import { PLATFORM_IDS } from "@/lib/scriptsSeed";
+
+const platformsOf = (v: unknown) => (Array.isArray(v) ? Array.from(new Set(v.map(String).filter((x) => PLATFORM_IDS.includes(x)))) : null);
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +22,7 @@ interface Row {
   usage_count: number | null;
   last_used: string | null;
   source: string | null;
+  platforms: string[] | null;
 }
 
 function shape(r: Row) {
@@ -35,6 +39,7 @@ function shape(r: Row) {
     usageCount: r.usage_count || 0,
     lastUsed: r.last_used,
     source: r.source || "manual",
+    platforms: r.platforms ?? [],
   };
 }
 
@@ -46,7 +51,7 @@ export async function GET() {
   if (!masterPlanId) return NextResponse.json({ items: [] });
 
   const sel =
-    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source";
+    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms";
 
   const { data } = await supabase
     .from("scripts_templates")
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
   if (!title || !content) return NextResponse.json({ error: "Title and content are required." }, { status: 400 });
 
   const sel =
-    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source";
+    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms";
   const { data, error } = await supabase
     .from("scripts_templates")
     .insert({
@@ -88,6 +93,7 @@ export async function POST(request: Request) {
       content,
       tags: Array.isArray(body.tags) ? body.tags.join(", ") : typeof body.tags === "string" ? body.tags : "",
       source: body.source === "ai" ? "ai" : body.source === "library" ? "library" : "manual",
+      platforms: platformsOf(body.platforms) ?? [],
     })
     .select(sel)
     .single();
@@ -128,6 +134,8 @@ export async function PATCH(request: Request) {
     if (typeof body.channel === "string" && body.channel.trim()) update.channel = body.channel.trim();
     if (body.itemType === "script" || body.itemType === "template") update.item_type = body.itemType;
     if (typeof body.isFavorite === "boolean") update.is_favorite = body.isFavorite;
+    const plats = platformsOf(body.platforms);
+    if (plats) update.platforms = plats;
     if (Array.isArray(body.tags)) update.tags = body.tags.join(", ");
     else if (typeof body.tags === "string") update.tags = body.tags;
   }

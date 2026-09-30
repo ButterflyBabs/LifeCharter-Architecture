@@ -21,3 +21,24 @@ export const SCRIPT_CHANNELS = [
   { id: "objection", label: "Objections" },
   { id: "social", label: "Social" },
 ];
+
+// Where a script or template is used. Codes are stored; labels are shown.
+export const SCRIPT_PLATFORMS = [
+  { id: "IG", label: "Instagram" },
+  { id: "FB", label: "Facebook" },
+  { id: "LI", label: "LinkedIn" },
+  { id: "YT", label: "YouTube" },
+  { id: "Spotify", label: "Spotify" },
+  { id: "Email", label: "Email" },
+  { id: "DM", label: "DM" },
+  { id: "TXT", label: "Text" },
+];
+export const PLATFORM_IDS = SCRIPT_PLATFORMS.map((p) => p.id);
+
+// A starter-library item's platforms, from its channel.
+export function platformsForChannel(channel: string): string[] {
+  if (channel === "email") return ["Email"];
+  if (channel === "dm") return ["DM"];
+  if (channel === "social") return ["IG", "FB", "LI"];
+  return [];
+}

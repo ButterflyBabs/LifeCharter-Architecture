@@ -27,7 +27,9 @@ import {
   BookOpen,
 } from "lucide-react";
 import Link from "next/link";
-import { SCRIPT_CATEGORIES, SCRIPT_CHANNELS } from "@/lib/scriptsSeed";
+import { SCRIPT_CATEGORIES, SCRIPT_CHANNELS, SCRIPT_PLATFORMS, platformsForChannel } from "@/lib/scriptsSeed";
+
+const PLATFORM_LABEL: Record<string, string> = Object.fromEntries(SCRIPT_PLATFORMS.map((p) => [p.id, p.label]));
 import { SCRIPT_LIBRARY, extractFields, fillFields } from "@/lib/scriptLibrary";
 import SalesNav from "@/components/sales/SalesNav";
 
@@ -44,6 +46,7 @@ interface Script {
   usageCount: number;
   lastUsed: string | null;
   source: string;
+  platforms: string[];
 }
 
 // Fields worth remembering between scripts (about you, not about a prospect).
@@ -70,6 +73,7 @@ type Working = {
   itemType: "script" | "template";
   category: string;
   channel: string;
+  platforms: string[];
   tags: string[];
   base: string; // the text being filled in (original or AI-rewritten)
 };
@@ -89,6 +93,7 @@ type FormState = {
   itemType: "script" | "template";
   category: string;
   channel: string;
+  platforms: string[];
   content: string;
   tags: string;
 };
@@ -100,6 +105,7 @@ const EMPTY_FORM: FormState = {
   itemType: "script",
   category: "Sales",
   channel: "sales",
+  platforms: [],
   content: "",
   tags: "",
 };
@@ -109,6 +115,7 @@ export default function ScriptsPage() {
   const [loaded, setLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState<string>("All");
+  const [plat, setPlat] = useState<string>("All");
   const [favOnly, setFavOnly] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -155,7 +162,7 @@ export default function ScriptsPage() {
     () =>
       SCRIPT_LIBRARY.map((l) => ({
         id: l.id, title: l.title, description: l.description, itemType: l.itemType, category: l.category,
-        channel: l.channel, content: l.content, tags: l.tags, isFavorite: false, usageCount: 0, lastUsed: null, source: "library",
+        channel: l.channel, platforms: platformsForChannel(l.channel), content: l.content, tags: l.tags, isFavorite: false, usageCount: 0, lastUsed: null, source: "library",
       })),
     []
   );
@@ -165,12 +172,14 @@ export default function ScriptsPage() {
   const filtered = pool.filter((s) => {
     if (!isLib && favOnly && !s.isFavorite) return false;
     if (cat !== "All" && s.category !== cat) return false;
+    if (plat !== "All" && !(s.platforms ?? []).includes(plat)) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
       s.title.toLowerCase().includes(q) ||
       s.content.toLowerCase().includes(q) ||
-      s.tags.some((t) => t.toLowerCase().includes(q))
+      s.tags.some((t) => t.toLowerCase().includes(q)) ||
+      (s.platforms ?? []).some((p) => p.toLowerCase() === q || (PLATFORM_LABEL[p] || "").toLowerCase().includes(q))
     );
   });
 
@@ -212,7 +221,7 @@ export default function ScriptsPage() {
       const res = await fetch("/api/scripts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, content: s.content, tags: s.tags, source: "library" }),
+        body: JSON.stringify({ title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, platforms: s.platforms, content: s.content, tags: s.tags, source: "library" }),
       });
       const d = await res.json().catch(() => ({}));
       if (d.item) {
@@ -238,7 +247,7 @@ export default function ScriptsPage() {
     setWorkNeedsKey(false);
     setWork({
       savedId: s.id.startsWith("lib-") ? null : s.id,
-      title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, tags: s.tags, base: s.content,
+      title: s.title, description: s.description, itemType: s.itemType, category: s.category, channel: s.channel, platforms: s.platforms ?? [], tags: s.tags, base: s.content,
     });
   };
 
@@ -312,7 +321,7 @@ export default function ScriptsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: work.savedId || tab === "library" ? `${work.title} (mine)` : work.title,
-          description: work.description, itemType: work.itemType, category: work.category, channel: work.channel,
+          description: work.description, itemType: work.itemType, category: work.category, channel: work.channel, platforms: work.platforms,
           content: filledText, tags: work.tags, source: aiText ? "ai" : "manual",
         }),
       });
@@ -342,6 +351,7 @@ export default function ScriptsPage() {
       itemType: s.itemType,
       category: s.category,
       channel: s.channel,
+      platforms: s.platforms ?? [],
       content: s.content,
       tags: s.tags.join(", "),
     });
@@ -375,6 +385,7 @@ export default function ScriptsPage() {
           itemType: d.draft.itemType,
           category: d.draft.category,
           channel: d.draft.channel,
+          platforms: platformsForChannel(d.draft.channel),
           content: d.draft.content,
           tags: (d.draft.tags || []).join(", "),
         });
@@ -402,6 +413,7 @@ export default function ScriptsPage() {
       itemType: form.itemType,
       category: form.category,
       channel: form.channel,
+      platforms: form.platforms,
       content: form.content,
       tags: form.tags,
     };
@@ -523,6 +535,23 @@ export default function ScriptsPage() {
           </button>
         ))}
       </div>
+      <div className="flex flex-wrap items-center gap-2 -mt-4 mb-6" role="group" aria-label="Filter by platform">
+        <span className="text-xs text-[#7a8a99] mr-1">Platform:</span>
+        {[{ id: "All", label: "All" }, ...SCRIPT_PLATFORMS].map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setPlat(p.id)}
+            aria-pressed={plat === p.id}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border ${
+              plat === p.id
+                ? "bg-[#1a2b4a] text-white border-[#1a2b4a]"
+                : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
       {!isLib && !loaded ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>
@@ -550,6 +579,17 @@ export default function ScriptsPage() {
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#7b6b8d] dark:text-[#e8e4f0] capitalize">
                         {s.itemType}
                       </span>
+                      {(s.platforms ?? []).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPlat(p)}
+                          title={`Show everything for ${PLATFORM_LABEL[p] || p}`}
+                          className="text-[11px] px-2 py-0.5 rounded-full border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+                        >
+                          {p === "TXT" ? "Text" : p}
+                        </button>
+                      ))}
                       {s.source === "ai" && (
                         <span className="inline-flex items-center gap-0.5 text-[11px] px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">
                           <Sparkles className="w-3 h-3" /> AI
@@ -890,6 +930,25 @@ export default function ScriptsPage() {
                       <option value="script">Script</option>
                       <option value="template">Template</option>
                     </select>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf] mb-1.5">Platforms (pick all that apply)</p>
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Platforms">
+                      {SCRIPT_PLATFORMS.map((p) => {
+                        const on = form.platforms.includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => setForm({ ...form, platforms: on ? form.platforms.filter((x) => x !== p.id) : [...form.platforms, p.id] })}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-full border ${on ? "bg-[#2E7C83] text-white border-[#2E7C83]" : "border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <textarea
                     value={form.content}
