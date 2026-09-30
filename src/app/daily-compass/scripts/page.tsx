@@ -634,6 +634,15 @@ export default function ScriptsPage() {
                     {copiedId === s.id ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedId === s.id ? "Copied" : "Copy"}
                   </button>
+                  {!isLib && (s.channel === "dm" || (s.platforms ?? []).some((p) => ["DM", "IG", "FB", "LI"].includes(p))) && (
+                    <a
+                      href={`/dm-pipeline?add=1&script=${s.id}${(() => { const p = (s.platforms ?? []).find((x) => ["IG", "FB", "LI"].includes(x)); return p ? `&platform=${p}` : ""; })()}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#2E7C83]/40 text-[#2E7C83] hover:bg-[#2E7C83]/5"
+                      title="Log who you sent this to, in your DM Pipeline"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Add to DM Pipeline
+                    </a>
+                  )}
                   {isLib ? (
                     <button
                       onClick={() => addToMine(s)}

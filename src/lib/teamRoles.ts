@@ -105,7 +105,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "compliance", label: "Legal & Compliance", pages: ["/compliance"], apis: ["/api/legal-checklist"] },
   { key: "website_review", label: "Website Review", pages: ["/website-review"], apis: ["/api/website-review"] },
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
-  { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/calendars", "/sequences-manager", "/invites"], apis: ["/api/crm", "/api/calendars", "/api/sequences"] },
+  { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/calendars", "/sequences-manager", "/invites", "/dm-pipeline"], apis: ["/api/crm", "/api/calendars", "/api/sequences", "/api/dm-pipeline"] },
 ];
 
 const ALL_VIEW = Object.fromEntries(FEATURES.map((f) => [f.key, "view"])) as FeatureMap;

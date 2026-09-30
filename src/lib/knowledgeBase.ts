@@ -191,6 +191,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["executive home", "rearrange", "drag", "layout", "cards", "move card", "dashboard"],
   },
   {
+    id: "sa-dm-pipeline",
+    category: "Sales",
+    question: "How do I track the DMs I send on Instagram, Facebook and LinkedIn?",
+    answer:
+      "Use the DM Pipeline (Daily Operations → DM Pipeline). Instagram, Facebook and LinkedIn don't let any app read the DMs you send, so you log each person as you message them: click Add a prospect, pick the platform, type their name (it suggests people already in Contacts), and add their handle, profile link and the script you used. Or, in Scripts & Templates, click Add to DM Pipeline on a DM script. Drag cards from stage to stage: To reach out, DM sent, Followed up, In conversation, Invited, Booked, Nurture and Not now. Each stage sets a follow-up date that becomes a task (DM sent 3 days, Followed up 5, In conversation next day, Invited 2, Nurture 30), and the card turns gold on the day and red when overdue. Moving someone to Booked adds them to your Sales Pipeline. Filter by platform, and change stage names or follow-up days under Stages & follow-ups. Adding an email puts them in Contacts with a dm-instagram, dm-facebook or dm-linkedin tag, and every move shows on their timeline.",
+    keywords: ["dm", "dms", "direct message", "instagram", "facebook", "linkedin", "dm pipeline", "outreach", "follow up", "prospecting", "social selling"],
+  },
+  {
     id: "sa-invite-tracker",
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
@@ -673,7 +681,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Campaigns & Broadcasts, Invite Tracker, Pipeline, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business. Daily Operations is today's work: Executive Home, Daily Compass, Tasks, Contacts, Calendars, Campaigns & Broadcasts, Invite Tracker, Pipeline, DM Pipeline, Quick Capture and The Collective. Planning & Numbers is your weekly and monthly rhythm: Weekly Review, Finance, Forecasting, Goal Ladder and the Planning Hub. Growth is getting and keeping clients: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, Business Segments and your Business Plan. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
