@@ -7,6 +7,18 @@ import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   LayoutDashboard,
   Mail,
   Handshake,
@@ -59,6 +71,7 @@ import {
   Inbox,
   Smartphone,
   MessageCircle,
+  GripVertical,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -373,6 +386,34 @@ function NavItem({
   );
 }
 
+// Drag-and-drop wrapper around NavItem (expanded sidebar only — the icon rail
+// has no room for a grip handle). The row itself is the drag surface (press
+// and hold on touch); the grip button is there so reordering works from the
+// keyboard too (Tab to it, Space to pick up, arrow keys to move).
+function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; isActive: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const { onKeyDown, ...pointerListeners } = (listeners ?? {}) as Record<string, unknown> & { onKeyDown?: React.KeyboardEventHandler };
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1, zIndex: isDragging ? 20 : undefined }}
+      className="relative group"
+      {...pointerListeners}
+    >
+      <NavItem item={item} isActive={isActive} isCollapsed={false} />
+      <button
+        type="button"
+        {...attributes}
+        onKeyDown={onKeyDown}
+        aria-label={`Reorder ${item.label} (Space, then arrow keys)`}
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-white/25 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-white/70 cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export function CollapsibleSidebar() {
   const { theme, toggleTheme, mounted } = useTheme();
   const { isCollapsed: isCollapsedDesktop, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
@@ -450,6 +491,52 @@ export function CollapsibleSidebar() {
   const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
+
+  // Pages can be dragged into whatever order you use most, within each
+  // section — remembered on this device. One saved list per section title;
+  // a page not in the saved list (new, or just became visible to you) is
+  // appended at the end rather than dropped.
+  const [navOrder, setNavOrder] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("nav-item-order") || "{}");
+      if (saved && typeof saved === "object") setNavOrder(saved);
+    } catch {
+      /* keep the default order */
+    }
+  }, []);
+  const orderedSections = sections.map((s) => {
+    const saved = navOrder[s.title];
+    if (!saved) return s;
+    const byId = new Map(s.items.map((i) => [i.id, i]));
+    const known = saved.filter((id) => byId.has(id));
+    const rest = s.items.filter((i) => !known.includes(i.id)).map((i) => i.id);
+    return { ...s, items: [...known, ...rest].map((id) => byId.get(id)!).filter(Boolean) };
+  });
+  const navSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const handleNavDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    // Reordering only ever happens within one section; ignore any attempt to
+    // drop into a different one.
+    const section = orderedSections.find((s) => s.items.some((i) => i.id === active.id));
+    if (!section || !section.items.some((i) => i.id === over.id)) return;
+    const ids = section.items.map((i) => i.id);
+    const next = arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
+    setNavOrder((prev) => {
+      const merged = { ...prev, [section.title]: next };
+      try {
+        localStorage.setItem("nav-item-order", JSON.stringify(merged));
+      } catch {
+        /* not remembered */
+      }
+      return merged;
+    });
+  };
 
   // Load the profile name + headshot for the footer block.
   useEffect(() => {
@@ -584,7 +671,10 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        {sections.map((section, sectionIndex) => (
+        <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
+        {orderedSections.map((section, sectionIndex) => {
+          const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
+          return (
           <div key={section.title} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
             {!isCollapsed ? (
@@ -614,16 +704,22 @@ export function CollapsibleSidebar() {
               </div>
             )}
 
-            {/* Section Items */}
+            {/* Section Items — draggable to reorder, expanded sidebar only */}
             <div className="space-y-1">
-              {section.items
-                .filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id)
-                .map((item) => (
-                  <NavItem key={item.id} item={item} isActive={activeItem === item.id} isCollapsed={isCollapsed} />
-                ))}
+              {isCollapsed ? (
+                visibleItems.map((item) => <NavItem key={item.id} item={item} isActive={activeItem === item.id} isCollapsed />)
+              ) : (
+                <SortableContext items={visibleItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                  {visibleItems.map((item) => (
+                    <SortableNavRow key={item.id} item={item} isActive={activeItem === item.id} />
+                  ))}
+                </SortableContext>
+              )}
             </div>
           </div>
-        ))}
+          );
+        })}
+        </DndContext>
 
         {/* Help Section */}
         {!isCollapsed && (
