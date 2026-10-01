@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { NotificationsBell } from "./NotificationsBell";
+import { FeedbackButton } from "./FeedbackButton";
 import { QuickAddMenu } from "./QuickAddMenu";
 import { BusinessSwitcher } from "./BusinessSwitcher";
 import Link from "next/link";
@@ -128,6 +129,9 @@ export function Header({
 
         {/* Quick add menu */}
         <QuickAddMenu />
+
+        {/* Glitch / suggestion / feedback */}
+        <FeedbackButton />
 
         {/* Notifications — live feed */}
         <NotificationsBell />

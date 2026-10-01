@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import MyRequests from "@/components/support/MyRequests";
+import { MyGlitches, CommunityBoard } from "@/components/support/FeedbackBoard";
+import { Sparkles, MessageSquareHeart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -370,6 +372,9 @@ export default function ContactSupportPage() {
       </Card>
 
       <MyRequests refreshKey={sentCount} />
+      <MyGlitches refreshKey={sentCount} />
+      <CommunityBoard kind="suggestion" title="Suggestions" icon={Sparkles} />
+      <CommunityBoard kind="feedback" title="General Feedback" icon={MessageSquareHeart} />
 
       {/* Office Hours */}
       <div className="text-center py-8 border-t border-[#1a2b4a]/10">

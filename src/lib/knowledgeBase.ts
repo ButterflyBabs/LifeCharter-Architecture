@@ -587,8 +587,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What does the + button in the top bar do?",
     answer:
-      "The '+' is a quick-add menu. It opens a short list to instantly create a new task (a small form right there, with an optional due date, time and 'due by' or 'do it at' choice), log a sale, create content, or schedule a planning session. The bell next to it is your notifications, and the '?' opens Help & Q&A.",
+      "The '+' is a quick-add menu. It opens a short list to instantly create a new task (a small form right there, with an optional due date, time and 'due by' or 'do it at' choice), log a sale, create content, or schedule a planning session. The light bulb next to it is for a glitch, a suggestion or feedback; the bell is your notifications; the '?' opens Help & Q&A.",
     keywords: ["plus button", "quick add", "top bar", "new task", "shortcut", "navigation", "due date", "time"],
+  },
+  {
+    id: "gs-feedback-bulb",
+    category: "Getting Started",
+    question: "What's the light bulb in the top bar for?",
+    answer:
+      "Click it for three choices. Something's not working lets you describe a glitch and, if you check the box, also opens a real support ticket our team follows up on — either way it shows up under Help → Contact Support → \"Glitches your team has reported,\" visible only to your own account. I have a suggestion and General feedback both go on a shared board at the bottom of that same page that every Command Suite user can see and thumbs-up — voting tells us how many people want the same thing. We can mark any of the three Open, Under review, Planned, Shipped or Closed, which shows right on the item.",
+    keywords: ["light bulb", "lightbulb", "feedback", "suggestion", "glitch", "bug report", "vote", "thumbs up", "roadmap", "feature request"],
   },
 
   // ---- Business Alignment (scoring + plans) ----

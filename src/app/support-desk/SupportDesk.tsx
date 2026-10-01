@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Inbox, Send } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import FeedbackAdminTab from "@/components/support/FeedbackAdminTab";
 
 interface Reply {
   author: "client" | "support";
@@ -35,7 +36,15 @@ const FILTERS: [string, string][] = [
 const STATUS_LABEL: Record<string, string> = { open: "Open", in_progress: "In progress", waiting: "Waiting on client", resolved: "Resolved" };
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
+const TOP_TABS: [string, string][] = [
+  ["tickets", "Tickets"],
+  ["glitch", "Glitches"],
+  ["suggestion", "Suggestions"],
+  ["feedback", "Feedback"],
+];
+
 export default function SupportDesk() {
+  const [topTab, setTopTab] = useState("tickets");
   const [filter, setFilter] = useState("active");
   const [reqs, setReqs] = useState<Req[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -86,6 +95,23 @@ export default function SupportDesk() {
           <p className="text-[#7a8a99]">Every client request in one place. Replies are emailed to the client; only you see this page.</p>
         </div>
       </div>
+
+      <div className="mb-5 flex flex-wrap gap-1.5 border-b border-[#1a2b4a]/10 pb-3">
+        {TOP_TABS.map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setTopTab(k)}
+            className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold ${topTab === k ? "bg-[#1a2b4a] text-white dark:bg-[#c9a227] dark:text-[#1a2b4a]" : "text-[#5a6472] hover:bg-[#1a2b4a]/5 dark:text-[#b8c2cf]"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {topTab !== "tickets" ? (
+        <FeedbackAdminTab kind={topTab as "glitch" | "suggestion" | "feedback"} />
+      ) : (
+        <>
       <div className="mb-4 flex flex-wrap gap-1.5">
         {FILTERS.map(([k, label]) => (
           <button
@@ -161,6 +187,8 @@ export default function SupportDesk() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }
