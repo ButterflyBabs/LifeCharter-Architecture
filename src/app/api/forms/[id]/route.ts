@@ -22,6 +22,8 @@ const ALLOWED = [
   /^https:\/\/amilynnecarroll-site(-[a-z0-9-]+)?\.vercel\.app$/,
   /^https:\/\/(www\.)?lccommandsuite\.com$/,
   /^https:\/\/(www\.)?lifecharter\.life$/,
+  /^https:\/\/(www\.)?evamaefoundation\.org$/,
+  /^https:\/\/evamaefoundation-site(-[a-z0-9-]+)?\.vercel\.app$/,
   /^http:\/\/localhost:\d+$/,
 ];
 
