@@ -179,6 +179,8 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
   if (ev.type === "refunded") {
     const refunded = Number(ev.amount_refunded) / 100 || price;
     await logEvent(planId, contact.id, "purchase", `Refunded on Payhip: ${names} ($${refunded.toFixed(2)})`, { order: orderId }, db);
+    // Take the refunded sale back out of real revenue.
+    await db.from("finance_entries").delete().eq("master_plan_id", planId).eq("source", "payhip").eq("external_id", orderId);
     return { ok: true };
   }
 
@@ -189,6 +191,21 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
 
   const free = price === 0;
   await logEvent(planId, contact.id, "purchase", `${free ? "Downloaded free on Payhip" : `Bought on Payhip ($${price.toFixed(2)})`}: ${names}`, { order: orderId, items: items.map((i) => i.product_key) }, db);
+
+  // Real revenue — same pattern as affiliate income (finance_entries, one row per
+  // paid order, external_id keeps a retried webhook from double-counting it).
+  if (price > 0) {
+    await db.from("finance_entries").insert({
+      master_plan_id: planId,
+      type: "income",
+      amount: Math.round(price * 100) / 100,
+      category: "Digital Planners",
+      description: names.slice(0, 300),
+      occurred_on: new Date().toISOString().slice(0, 10),
+      source: "payhip",
+      external_id: orderId,
+    });
+  }
 
   // A giveaway code was used: mark that claim redeemed.
   if (items.some((i) => i.used_coupon) || free) {
