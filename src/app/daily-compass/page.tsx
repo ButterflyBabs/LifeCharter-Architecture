@@ -24,6 +24,7 @@ import {
   BatteryLow,
   X,
   RefreshCw,
+  GripVertical,
 } from "lucide-react";
 import Link from "next/link";
 import { TodaysActivity } from "./TodaysActivity";
@@ -124,6 +125,64 @@ export default function DailyCompassPage() {
       .then((d) => setSocialOn(Boolean(d?.enabled)))
       .catch(() => setSocialOn(false));
   }, []);
+
+  // Drag-to-reorder the page's cards, remembered per device (same pattern as
+  // Executive Home's briefing cards: CSS `order` driven by native HTML5 drag
+  // events, so differently-sized cards can freely swap places in one grid).
+  const CARD_ORDER_KEY = "compass-card-order";
+  const DEFAULT_CARD_ORDER = ["focus", "quickActions", "coaching", "deals", "activity", "upcoming", "insights"];
+  const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
+  const [dragCardId, setDragCardId] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CARD_ORDER_KEY) || "null");
+      if (Array.isArray(saved) && saved.length) {
+        setCardOrder((prev) => {
+          const merged = saved.filter((id: string) => prev.includes(id));
+          const missing = prev.filter((id) => !merged.includes(id));
+          return [...merged, ...missing];
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const dropCardOn = useCallback(
+    (targetId: string) => {
+      if (!dragCardId || dragCardId === targetId) return;
+      setCardOrder((prev) => {
+        const next = prev.filter((id) => id !== dragCardId);
+        next.splice(next.indexOf(targetId), 0, dragCardId);
+        try {
+          localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+      setDragCardId(null);
+    },
+    [dragCardId]
+  );
+  const cardProps = (id: string) => {
+    const idx = cardOrder.indexOf(id);
+    return {
+      style: { order: idx === -1 ? 999 : idx },
+      onDragOver: (e: React.DragEvent) => e.preventDefault(),
+      onDrop: () => dropCardOn(id),
+    };
+  };
+  const dragHandle = (id: string) => (
+    <button
+      draggable
+      onDragStart={() => setDragCardId(id)}
+      aria-label="Drag to reorder"
+      title="Drag to reorder"
+      className="cursor-grab active:cursor-grabbing p-1 -m-1 rounded hover:bg-[#1a2b4a]/10 text-[#b8a898] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0]"
+    >
+      <GripVertical className="w-4 h-4" />
+    </button>
+  );
 
   useEffect(() => {
     const d = new Date();
@@ -409,11 +468,14 @@ export default function DailyCompassPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Focus Area */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Today's Focus — drag to reorder */}
+        <div className="lg:col-span-2 space-y-6" {...cardProps("focus")}>
           {/* Action Bar */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Today&apos;s Focus</h2>
+            <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
+              {dragHandle("focus")}
+              Today&apos;s Focus
+            </h2>
             <div className="flex gap-2">
               <div className="relative">
                 <select
@@ -688,26 +750,39 @@ export default function DailyCompassPage() {
             )}
           </div>
 
-          {/* Quick Actions — drag to reorder */}
+        </div>
+
+        {/* Quick Actions — drag to reorder */}
+        <div className="lg:col-span-2" {...cardProps("quickActions")}>
+          <div className="flex items-center gap-2 mb-2">
+            {dragHandle("quickActions")}
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#b8a898]">Quick Actions</span>
+          </div>
           <QuickActions psConnected={psConnected} socialOn={socialOn} />
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* This week's coaching calls */}
+        {/* This week's coaching calls — drag to reorder */}
+        <div {...cardProps("coaching")}>
           <CoachingCallsCard compact />
+        </div>
 
-          {/* Deals to move today — from the Pipeline */}
+        {/* Deals to move today — from the Pipeline; drag to reorder */}
+        <div {...cardProps("deals")}>
           <DealsToMove />
+        </div>
 
-          {/* Today's Activity — live from the in-app ledger */}
+        {/* Today's Activity — live from the in-app ledger; drag to reorder */}
+        <div {...cardProps("activity")}>
           <TodaysActivity />
+        </div>
 
-          {/* Upcoming scheduled follow-ups */}
+        {/* Upcoming scheduled follow-ups — drag to reorder */}
+        <div {...cardProps("upcoming")}>
           {upcoming.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
+                  {dragHandle("upcoming")}
                   <Calendar className="w-5 h-5 text-[#7b6b8d]" />
                   Upcoming follow-ups
                 </CardTitle>
@@ -747,12 +822,15 @@ export default function DailyCompassPage() {
               </CardContent>
             </Card>
           )}
+        </div>
 
-          {/* AI Insights */}
+        {/* AI Insights — drag to reorder */}
+        <div {...cardProps("insights")}>
           <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold flex items-center gap-2">
+                  {dragHandle("insights")}
                   <Sparkles className="w-5 h-5 text-[#c9a227]" />
                   Insights from {assistantName}
                 </h3>
