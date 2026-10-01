@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 import { housePlanId } from "@/lib/housePlan";
@@ -20,6 +20,10 @@ export const GIVEAWAY_PLANNERS: Record<string, { title: string; payhip: string; 
   "everyday-bright": { title: "Open Possibilities Everyday Planner 2027 · Bright & Cheerful", payhip: "xtPEf", brand: "Open Possibilities" },
   "everyday-coastal": { title: "Open Possibilities Everyday Planner 2027 · Calm Coastal", payhip: "RhsbB", brand: "Open Possibilities" },
 };
+
+// "Free for a limited time": the offer closes at the end of December 31, 2026 (Denver time).
+export const GIVEAWAY_ENDS = new Date("2027-01-01T07:00:00Z");
+export const giveawayOpen = (now = new Date()) => now < GIVEAWAY_ENDS;
 
 const SENDER = { from_name: "AmiLynne Carroll", from_email: "hello@lifecharter.life", reply_to: "support@amilynnecarroll.com" };
 const RESEND_GAP_MS = 10 * 60_000;
@@ -68,6 +72,7 @@ You get all four editions (dated 2027 or undated, Monday or Sunday start) plus t
 export type ClaimResult = { ok: true; message: string } | { ok: false; error: string; status: number };
 
 export async function claimFreePlanner(raw: Record<string, unknown>, pageUrl: string | null, db: Db = createServerClient()): Promise<ClaimResult> {
+  if (!giveawayOpen()) return { ok: false, error: "The free planner offer ended on December 31, 2026. You can still get any planner at https://www.amilynnecarroll.com/planners", status: 410 };
   const str = (k: string) => (typeof raw[k] === "string" ? (raw[k] as string).trim().slice(0, 200) : "");
   const email = str("email").toLowerCase();
   const plannerKey = str("planner");
@@ -128,4 +133,71 @@ export async function claimFreePlanner(raw: Record<string, unknown>, pageUrl: st
   await upsertContact({ masterPlanId: planId, email, tags: [`free-planner-${plannerKey}`], source: "form:free-planner" }, db);
   await logEvent(planId, contact.id, "form", `Claimed free planner: ${title}`, { planner: plannerKey, code, page: pageUrl, emailed: sent.ok }, db);
   return { ok: true, message: `Your free ${title} is on its way. Check your inbox for your personal code (and your spam folder, just in case).` };
+}
+
+// ── Payhip orders → the Suite ────────────────────────────────────────────────
+// Every Payhip order (paid, or $0 with a giveaway code) lands on the buyer's
+// contact: tags, a Purchases entry and a timeline note. A free code that gets
+// used marks the giveaway claim as redeemed.
+
+const PRODUCT_TAGS: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(GIVEAWAY_PLANNERS).map(([k, p]) => [p.payhip, `planner-${k}`])),
+  xH5Ov: "planner-trio",
+  "8SyEl": "planner-everyday-all",
+};
+
+interface PayhipItem { product_key?: string; product_name?: string; used_coupon?: boolean }
+
+function signatureOk(sig: unknown) {
+  const key = process.env.PAYHIP_API_KEY;
+  if (!key || typeof sig !== "string") return false;
+  const a = Buffer.from(sig);
+  const b = Buffer.from(createHash("sha256").update(key).digest("hex"));
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = createServerClient()): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  if (!signatureOk(ev.signature)) return { ok: false, error: "Bad signature.", status: 401 };
+  const email = typeof ev.email === "string" ? ev.email.trim().toLowerCase() : "";
+  const orderId = typeof ev.id === "string" ? ev.id : String(ev.id ?? "");
+  if (!EMAIL_RE.test(email) || !orderId) return { ok: false, error: "Missing email or order id.", status: 400 };
+  if (ev.type !== "paid" && ev.type !== "refunded") return { ok: true }; // other events: nothing to record
+  const planId = await housePlanId(db);
+  if (!planId) return { ok: false, error: "No account.", status: 500 };
+
+  const items = (Array.isArray(ev.items) ? ev.items : []) as PayhipItem[];
+  const names = items.map((i) => i.product_name || i.product_key || "Payhip product").join(" + ") || "Payhip order";
+  const price = typeof ev.price === "number" ? ev.price / 100 : Number(ev.price) / 100 || 0;
+  const productTags = items.map((i) => PRODUCT_TAGS[i.product_key ?? ""]).filter(Boolean);
+  const contact = await upsertContact(
+    { masterPlanId: planId, email, source: "payhip", tags: ["payhip-buyer", ...productTags, ...(ev.type === "refunded" ? ["payhip-refunded"] : [])] },
+    db
+  );
+  if (!contact) return { ok: false, error: "Bad email.", status: 400 };
+  const note = `Payhip order ${orderId}`;
+
+  if (ev.type === "refunded") {
+    const refunded = Number(ev.amount_refunded) / 100 || price;
+    await logEvent(planId, contact.id, "purchase", `Refunded on Payhip: ${names} ($${refunded.toFixed(2)})`, { order: orderId }, db);
+    return { ok: true };
+  }
+
+  // Payhip retries a webhook until it gets a 200, so an order is only recorded once.
+  const { data: seen } = await db.from("contact_records").select("id").eq("master_plan_id", planId).eq("contact_id", contact.id).eq("note", note).limit(1);
+  if (seen?.length) return { ok: true };
+  await db.from("contact_records").insert({ master_plan_id: planId, contact_id: contact.id, kind: "purchase", title: names.slice(0, 300), amount: price, note });
+
+  const free = price === 0;
+  await logEvent(planId, contact.id, "purchase", `${free ? "Downloaded free on Payhip" : `Bought on Payhip ($${price.toFixed(2)})`}: ${names}`, { order: orderId, items: items.map((i) => i.product_key) }, db);
+
+  // A giveaway code was used: mark that claim redeemed.
+  if (items.some((i) => i.used_coupon) || free) {
+    const keys = items.map((i) => i.product_key);
+    const planner = Object.entries(GIVEAWAY_PLANNERS).find(([, p]) => keys.includes(p.payhip))?.[0];
+    if (planner) {
+      await db.from("planner_giveaway_claims").update({ redeemed_at: new Date().toISOString() }).eq("master_plan_id", planId).eq("email", email).eq("planner", planner).is("redeemed_at", null);
+      await upsertContact({ masterPlanId: planId, email, tags: ["free-planner-redeemed"], source: "payhip" }, db);
+    }
+  }
+  return { ok: true };
 }

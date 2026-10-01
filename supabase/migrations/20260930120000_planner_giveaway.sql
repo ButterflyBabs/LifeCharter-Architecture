@@ -12,3 +12,6 @@ create table if not exists planner_giveaway_claims (
   unique (master_plan_id, email)
 );
 alter table planner_giveaway_claims enable row level security;
+
+-- Set when the buyer actually uses their free code on Payhip (Payhip webhook).
+alter table planner_giveaway_claims add column if not exists redeemed_at timestamptz;
