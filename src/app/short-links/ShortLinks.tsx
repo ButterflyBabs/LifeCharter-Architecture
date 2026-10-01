@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link2, Plus, X, Copy, CheckCircle, ExternalLink, Trash2, Pencil, Power, QrCode, BarChart3, Download } from "lucide-react";
+import { Link2, Plus, X, Copy, CheckCircle, ExternalLink, Trash2, Pencil, Power, QrCode, BarChart3, Download, Globe, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { shortUrlFor } from "@/lib/shortLinks";
 
-const APP = "https://lccommandsuite.com";
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
 const day = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+type DomainStatus = "not_started" | "pending" | "verified" | "failed";
+type DomainView = {
+  domain: string | null;
+  status: DomainStatus;
+  verification: { type: string; domain: string; value: string; reason: string }[];
+  dns: { type: string; name: string; value: string } | null;
+  checkedAt: string | null;
+};
 
 type LinkRow = {
   id: string;
@@ -46,8 +55,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function QrModal({ link, onClose }: { link: LinkRow; onClose: () => void }) {
-  const short = `${APP}/l/${link.code}`;
+function QrModal({ link, domain, onClose }: { link: LinkRow; domain: DomainView | null; onClose: () => void }) {
+  const short = shortUrlFor(link.code, domain);
   const src = `/api/short-links/${link.id}/qr`;
   return (
     <Modal title={`QR code — /l/${link.code}`} onClose={onClose}>
@@ -143,12 +152,13 @@ function StatsModal({ link, onClose }: { link: LinkRow; onClose: () => void }) {
   );
 }
 
-function CreateLink({ onClose, onSaved }: { onClose: () => void; onSaved: (msg: string) => void }) {
+function CreateLink({ domain, onClose, onSaved }: { domain: DomainView | null; onClose: () => void; onSaved: (msg: string) => void }) {
   const [destinationUrl, setDestinationUrl] = useState("");
   const [title, setTitle] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const prefix = domain?.status === "verified" && domain.domain ? `${domain.domain}/` : "lccommandsuite.com/l/";
 
   async function save() {
     setBusy(true);
@@ -161,7 +171,7 @@ function CreateLink({ onClose, onSaved }: { onClose: () => void; onSaved: (msg: 
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Couldn't create that link.");
-      onSaved(`Short link created: ${APP}/l/${d.link.code}`);
+      onSaved(`Short link created: ${shortUrlFor(d.link.code, domain)}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't create that link.");
     } finally {
@@ -183,7 +193,7 @@ function CreateLink({ onClose, onSaved }: { onClose: () => void; onSaved: (msg: 
         <div>
           <label className="mb-1 block text-xs font-medium text-[#5a6472]">Custom code (optional)</label>
           <div className="flex items-center gap-1 text-sm text-[#5a6472]">
-            <span className="whitespace-nowrap">lccommandsuite.com/l/</span>
+            <span className="whitespace-nowrap">{prefix}</span>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="auto-generated if left blank" className={box} />
           </div>
         </div>
@@ -197,7 +207,7 @@ function CreateLink({ onClose, onSaved }: { onClose: () => void; onSaved: (msg: 
   );
 }
 
-function EditLink({ link, onClose, onSaved }: { link: LinkRow; onClose: () => void; onSaved: () => void }) {
+function EditLink({ link, domain, onClose, onSaved }: { link: LinkRow; domain: DomainView | null; onClose: () => void; onSaved: () => void }) {
   const [destinationUrl, setDestinationUrl] = useState(link.destination_url);
   const [title, setTitle] = useState(link.title ?? "");
   const [busy, setBusy] = useState(false);
@@ -223,7 +233,7 @@ function EditLink({ link, onClose, onSaved }: { link: LinkRow; onClose: () => vo
   }
 
   return (
-    <Modal title={`Edit lccommandsuite.com/l/${link.code}`} onClose={onClose}>
+    <Modal title={`Edit ${shortUrlFor(link.code, domain).replace(/^https?:\/\//, "")}`} onClose={onClose}>
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-[#5a6472]">Where it should go</label>
@@ -243,8 +253,128 @@ function EditLink({ link, onClose, onSaved }: { link: LinkRow; onClose: () => vo
   );
 }
 
+const DOMAIN_BADGE: Record<DomainStatus, { label: string; cls: string; Icon: typeof Clock }> = {
+  verified: { label: "Verified — in use", cls: "bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#9fd3d6]", Icon: CheckCircle },
+  pending: { label: "Checking…", cls: "bg-[#c9a227]/15 text-[#8a6d12] dark:text-[#e6c96a]", Icon: Clock },
+  not_started: { label: "Not set up", cls: "bg-[#1a2b4a]/10 text-[#1a2b4a] dark:text-[#F8F5F0]", Icon: Clock },
+  failed: { label: "Not found yet", cls: "bg-[#C76F56]/15 text-[#a4513a] dark:text-[#f0a893]", Icon: AlertTriangle },
+};
+
+function DomainPanel({ view, onChange }: { view: DomainView | null; onChange: (v: DomainView) => void }) {
+  const [open, setOpen] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function act(body: Record<string, unknown>) {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch("/api/short-links/domain", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error || "Something went wrong.");
+        return;
+      }
+      onChange(d);
+      setNewDomain("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!view) return null;
+  const badge = DOMAIN_BADGE[view.status];
+
+  return (
+    <div className="mb-6 rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#15233d] dark:border-white/10">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <Globe className="w-4 h-4" /> Your short-link domain
+          {view.domain && (
+            <span className={`ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}>
+              <badge.Icon className="w-3 h-3" /> {badge.label}
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-[#7a8a99]">{view.domain || "Using lccommandsuite.com/l/ — set your own below"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-[#1a2b4a]/10 px-4 py-4 dark:border-white/10">
+          <p className="mb-3 text-sm text-[#5a6472] dark:text-[#b8a898]">
+            Point your own domain (or a subdomain like go.yourbusiness.com) at your short links, so people see YOUR address, never
+            lccommandsuite.com.
+          </p>
+
+          {!view.domain ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="go.yourbusiness.com" className="max-w-xs" />
+              <Button onClick={() => act({ action: "add-domain", domain: newDomain })} disabled={busy || !newDomain.trim()}>
+                {busy ? "Adding…" : "Add domain"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {view.status !== "verified" && view.dns && (
+                <div className="rounded-lg bg-[#1a2b4a]/[0.03] p-3 text-sm dark:bg-white/5">
+                  <p className="mb-1 font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Add this record at your domain provider:</p>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 font-mono text-xs text-[#5a6472] dark:text-[#b8a898]">
+                    <span>Type</span>
+                    <span>{view.dns.type}</span>
+                    <span>Name</span>
+                    <span>{view.dns.name}</span>
+                    <span>Value</span>
+                    <span>{view.dns.value}</span>
+                  </div>
+                  {view.verification.length > 0 && (
+                    <>
+                      <p className="mt-3 mb-1 font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                        Also add this ownership record (Vercel asked for it specifically):
+                      </p>
+                      {view.verification.map((c, i) => (
+                        <div key={i} className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 font-mono text-xs text-[#5a6472] dark:text-[#b8a898]">
+                          <span>Type</span>
+                          <span>{c.type}</span>
+                          <span>Name</span>
+                          <span>{c.domain}</span>
+                          <span>Value</span>
+                          <span>{c.value}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  <p className="mt-2 text-xs text-[#7a8a99]">DNS changes can take a few minutes to a few hours to take effect.</p>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" onClick={() => act({ action: "check-domain" })} disabled={busy}>
+                  <RefreshCw className="w-3.5 h-3.5" /> {busy ? "Checking…" : "Check verification"}
+                </Button>
+                <button
+                  onClick={() => act({ action: "remove-domain" })}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove domain
+                </button>
+              </div>
+            </div>
+          )}
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ShortLinks() {
   const [links, setLinks] = useState<LinkRow[] | null>(null);
+  const [domain, setDomain] = useState<DomainView | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LinkRow | null>(null);
   const [qrFor, setQrFor] = useState<LinkRow | null>(null);
@@ -259,6 +389,10 @@ export default function ShortLinks() {
 
   useEffect(() => {
     load();
+    fetch("/api/short-links/domain", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setDomain(d))
+      .catch(() => {});
   }, []);
 
   async function toggleActive(l: LinkRow) {
@@ -271,7 +405,7 @@ export default function ShortLinks() {
   }
 
   async function remove(l: LinkRow) {
-    if (!confirm(`Delete lccommandsuite.com/l/${l.code}? Anyone who already has that link will land on the homepage instead.`)) return;
+    if (!confirm(`Delete ${shortUrlFor(l.code, domain)}? Anyone who already has that link will land on a "not found" page instead.`)) return;
     await fetch(`/api/short-links/${l.id}`, { method: "DELETE" });
     load();
   }
@@ -287,9 +421,12 @@ export default function ShortLinks() {
         <Button onClick={() => setAdding(true)}><Plus className="w-4 h-4" /> New short link</Button>
       </div>
       <p className="text-[#7a8a99] mb-6">
-        Turn any long web address into a short lccommandsuite.com/l/ link — for a bio, a slide, a QR code, a text message. Every click is
-        counted, and you can repoint or turn off a link any time without changing it wherever you&apos;ve already shared it.
+        Turn any long web address into a short link — for a bio, a slide, a QR code, a text message. Every click is counted, and you can
+        repoint or turn off a link any time without changing it wherever you&apos;ve already shared it. Set up your own domain below so
+        people see your address, not lccommandsuite.com.
       </p>
+
+      <DomainPanel view={domain} onChange={setDomain} />
 
       {msg && (
         <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-[#2E7C83]/30 bg-[#2E7C83]/10 px-3 py-2 text-sm text-[#1F5E63]">
@@ -302,7 +439,7 @@ export default function ShortLinks() {
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : links.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#1a2b4a]/20 p-8 text-center text-[#7a8a99]">
-          No short links yet. Create one to get a short lccommandsuite.com/l/ address for any web page.
+          No short links yet. Create one to get a short address for any web page.
         </div>
       ) : (
         <>
@@ -311,13 +448,13 @@ export default function ShortLinks() {
           </p>
           <div className="space-y-2">
             {links.map((l) => {
-              const short = `${APP}/l/${l.code}`;
+              const short = shortUrlFor(l.code, domain);
               return (
                 <div key={l.id} className="rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#15233d] dark:border-white/10">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">/l/{l.code}</span>
+                        <span className="font-mono text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{short.replace(/^https?:\/\//, "")}</span>
                         {!l.active && (
                           <span className="rounded-full bg-[#1a2b4a]/10 px-2 py-0.5 text-[11px] font-semibold text-[#5a6472] dark:bg-white/10 dark:text-[#b8a898]">
                             Off
@@ -388,6 +525,7 @@ export default function ShortLinks() {
 
       {adding && (
         <CreateLink
+          domain={domain}
           onClose={() => setAdding(false)}
           onSaved={(m) => {
             setAdding(false);
@@ -399,6 +537,7 @@ export default function ShortLinks() {
       {editing && (
         <EditLink
           link={editing}
+          domain={domain}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -406,7 +545,7 @@ export default function ShortLinks() {
           }}
         />
       )}
-      {qrFor && <QrModal link={qrFor} onClose={() => setQrFor(null)} />}
+      {qrFor && <QrModal link={qrFor} domain={domain} onClose={() => setQrFor(null)} />}
       {statsFor && <StatsModal link={statsFor} onClose={() => setStatsFor(null)} />}
     </div>
   );

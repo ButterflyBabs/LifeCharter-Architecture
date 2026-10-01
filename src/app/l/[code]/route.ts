@@ -5,17 +5,20 @@ import { slugCode } from "@/lib/shortLinks";
 export const dynamic = "force-dynamic";
 
 // A short link's own redirect: counts the click (best-effort — never blocks
-// the redirect), then sends the visitor straight to the real URL. Not found,
-// turned off, or a malformed code all land on the home page rather than
-// erroring, same as the affiliate tracked-link route this mirrors.
+// the redirect), then sends the visitor straight to the real URL. Reached
+// either directly (lccommandsuite.com/l/<code>) or rewritten here by
+// middleware from a client's own verified short-link domain — so a not-found
+// or turned-off code answers with a plain 404 rather than redirecting
+// anywhere: on a client's own domain, bouncing to "/" would either loop or
+// flash lccommandsuite.com's branding under their address, neither of which
+// belongs on their domain.
 export async function GET(request: Request, { params }: { params: { code: string } }) {
   const db = createServerClient();
   const code = slugCode(params.code);
   const { data: link } = code
     ? await db.from("short_links").select("id, master_plan_id, destination_url, active").eq("code", code).maybeSingle()
     : { data: null };
-  const origin = new URL(request.url).origin;
-  if (!link || !link.active) return NextResponse.redirect(`${origin}/`);
+  if (!link || !link.active) return new NextResponse("Not found.", { status: 404 });
 
   try {
     await db
@@ -30,7 +33,7 @@ export async function GET(request: Request, { params }: { params: { code: string
   try {
     dest = new URL(link.destination_url as string).toString();
   } catch {
-    dest = `${origin}/`;
+    dest = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
   }
   return NextResponse.redirect(dest);
 }

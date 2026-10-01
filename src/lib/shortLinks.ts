@@ -36,6 +36,15 @@ export async function uniqueShortCode(db: Db, wanted?: string): Promise<string> 
   return `${randomCode()}${Date.now().toString(36).slice(-4)}`;
 }
 
+// The address to actually share for a code: the account's own verified
+// domain (go.yourbusiness.com/<code>, no /l/ — that whole domain exists only
+// for this), or the shared lccommandsuite.com/l/<code> fallback until one is
+// set up and verified.
+export function shortUrlFor(code: string, domain: { status: string; domain: string | null } | null): string {
+  if (domain?.status === "verified" && domain.domain) return `https://${domain.domain}/${code}`;
+  return `${process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com"}/l/${code}`;
+}
+
 export function normalizeDestination(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;

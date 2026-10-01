@@ -153,7 +153,55 @@ async function isHouseWorkspace(workspaceId: string | null): Promise<boolean> {
   }
 }
 
+// The Suite's own hosts — anything else arriving here is either a client's
+// verified short-link domain (go.theirbusiness.com) or not ours to serve.
+const SHORT_LINK_APP_HOSTS = new Set([
+  "lccommandsuite.com",
+  "www.lccommandsuite.com",
+  "amilynnecarroll.com",
+  "www.amilynnecarroll.com",
+  "lifecharter.life",
+  "www.lifecharter.life",
+]);
+function isSuiteHost(host: string): boolean {
+  const h = host.split(":")[0].toLowerCase();
+  return SHORT_LINK_APP_HOSTS.has(h) || h.endsWith(".vercel.app") || h === "localhost" || h === "127.0.0.1";
+}
+
+// Is this host a client's own verified short-link domain? REST, not the full
+// Supabase client — middleware runs on the Edge runtime.
+async function isVerifiedShortLinkDomain(host: string): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !svc) return false;
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/client_master_plans?select=id&short_link_domain=eq.${encodeURIComponent(host)}&short_link_domain_status=eq.verified`,
+      { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
+    );
+    if (!res.ok) return false;
+    const rows = (await res.json()) as unknown[];
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
+  // A client's own domain, e.g. go.theirbusiness.com/promo — rewritten to this
+  // app's /l/promo (the regular short-link redirect) so visitors never see
+  // lccommandsuite.com. Checked before anything else: this visitor isn't
+  // signed in to the Suite and must never be bounced toward /login.
+  {
+    const host = request.headers.get("host") || "";
+    if (host && !isSuiteHost(host) && (await isVerifiedShortLinkDomain(host))) {
+      const path = request.nextUrl.pathname;
+      const target = request.nextUrl.clone();
+      target.pathname = `/l${path === "/" ? "" : path}`;
+      return NextResponse.rewrite(target);
+    }
+  }
+
   // Trailing slashes (next.config sets skipTrailingSlashRedirect): the Certification Portal lives at
   // /certificationportal/ and needs its slash for relative links; every other address drops it.
   {
