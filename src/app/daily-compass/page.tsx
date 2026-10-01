@@ -762,17 +762,20 @@ export default function DailyCompassPage() {
         </div>
 
         {/* This week's coaching calls — drag to reorder */}
-        <div {...cardProps("coaching")}>
+        <div className="relative" {...cardProps("coaching")} draggable onDragStart={() => setDragCardId("coaching")}>
+          <div className="absolute top-4 right-4 z-10">{dragHandle("coaching")}</div>
           <CoachingCallsCard compact />
         </div>
 
         {/* Deals to move today — from the Pipeline; drag to reorder */}
-        <div {...cardProps("deals")}>
+        <div className="relative" {...cardProps("deals")} draggable onDragStart={() => setDragCardId("deals")}>
+          <div className="absolute top-4 right-4 z-10">{dragHandle("deals")}</div>
           <DealsToMove />
         </div>
 
         {/* Today's Activity — live from the in-app ledger; drag to reorder */}
-        <div {...cardProps("activity")}>
+        <div className="relative" {...cardProps("activity")} draggable onDragStart={() => setDragCardId("activity")}>
+          <div className="absolute top-4 right-4 z-10">{dragHandle("activity")}</div>
           <TodaysActivity />
         </div>
 
