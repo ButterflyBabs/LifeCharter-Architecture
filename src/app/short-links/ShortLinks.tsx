@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link2, Plus, X, Copy, CheckCircle, ExternalLink, Trash2, Pencil, Power } from "lucide-react";
+import { Link2, Plus, X, Copy, CheckCircle, ExternalLink, Trash2, Pencil, Power, QrCode, BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -43,6 +43,103 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
         {children}
       </div>
     </div>
+  );
+}
+
+function QrModal({ link, onClose }: { link: LinkRow; onClose: () => void }) {
+  const short = `${APP}/l/${link.code}`;
+  const src = `/api/short-links/${link.id}/qr`;
+  return (
+    <Modal title={`QR code — /l/${link.code}`} onClose={onClose}>
+      <div className="flex flex-col items-center gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={`QR code for ${short}`} className="h-56 w-56 rounded-lg border border-[#1a2b4a]/10" />
+        <p className="break-all text-center text-sm text-[#5a6472]">{short}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <a
+            href={src}
+            download={`${link.code}-qr.png`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-3 py-2 text-sm font-medium text-white hover:bg-[#1a2b4a]/90"
+          >
+            <Download className="w-4 h-4" /> Download PNG
+          </a>
+          <CopyButton text={short} label="Copy link" />
+        </div>
+        <p className="text-center text-xs text-[#7a8a99]">
+          Scanning this always goes wherever /l/{link.code} points right now — if you change the destination later, the same code (and
+          the same printed QR code) keeps working.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+type Analytics = { byDay: { date: string; count: number }[]; byReferrer: { referrer: string; count: number }[]; sampled: boolean };
+
+function StatsModal({ link, onClose }: { link: LinkRow; onClose: () => void }) {
+  const [data, setData] = useState<Analytics | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/short-links/${link.id}/analytics`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setData)
+      .catch(() => setData(null));
+  }, [link.id]);
+
+  const max = data ? Math.max(1, ...data.byDay.map((d) => d.count)) : 1;
+  const totalReferrer = data ? data.byReferrer.reduce((s, r) => s + r.count, 0) : 0;
+
+  return (
+    <Modal title={`Clicks — /l/${link.code}`} onClose={onClose}>
+      {!data ? (
+        <p className="text-sm text-[#7a8a99]">Loading…</p>
+      ) : (
+        <div className="space-y-5">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#7a8a99]">Last 30 days</p>
+            <div className="flex h-20 items-end gap-[2px]">
+              {data.byDay.map((d) => (
+                <div
+                  key={d.date}
+                  className="flex-1 rounded-t bg-[#2E7C83]"
+                  title={`${day(d.date)}: ${d.count} click${d.count === 1 ? "" : "s"}`}
+                  style={{ height: `${Math.max(4, (d.count / max) * 100)}%`, opacity: d.count ? 0.85 : 0.15 }}
+                />
+              ))}
+            </div>
+            {data.byDay.length > 0 && (
+              <div className="mt-1 flex justify-between text-[10px] text-[#7a8a99]">
+                <span>{day(data.byDay[0].date)}</span>
+                <span>{day(data.byDay[data.byDay.length - 1].date)}</span>
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#7a8a99]">Where clicks came from</p>
+            {data.byReferrer.length === 0 ? (
+              <p className="text-sm text-[#7a8a99]">No clicks yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {data.byReferrer.map((r) => (
+                  <div key={r.referrer} className="flex items-center gap-2 text-sm">
+                    <span className="w-32 flex-shrink-0 truncate text-[#1a2b4a] dark:text-[#F8F5F0]" title={r.referrer}>
+                      {r.referrer}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#1a2b4a]/5 dark:bg-white/10">
+                      <div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${totalReferrer ? (r.count / totalReferrer) * 100 : 0}%` }} />
+                    </div>
+                    <span className="w-8 flex-shrink-0 text-right text-[#5a6472]">{r.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {data.sampled && (
+            <p className="text-xs text-[#7a8a99]">Based on the most recent 2,000 clicks. The total click count on the card is always exact.</p>
+          )}
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -150,6 +247,8 @@ export default function ShortLinks() {
   const [links, setLinks] = useState<LinkRow[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LinkRow | null>(null);
+  const [qrFor, setQrFor] = useState<LinkRow | null>(null);
+  const [statsFor, setStatsFor] = useState<LinkRow | null>(null);
   const [msg, setMsg] = useState("");
 
   const load = () =>
@@ -241,6 +340,22 @@ export default function ShortLinks() {
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-1">
                       <button
+                        onClick={() => setStatsFor(l)}
+                        aria-label="View clicks"
+                        title="Clicks over time and where they came from"
+                        className="rounded-lg p-2 text-[#5a6472] hover:bg-[#1a2b4a]/5 dark:text-[#b8a898] dark:hover:bg-white/10"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setQrFor(l)}
+                        aria-label="QR code"
+                        title="QR code"
+                        className="rounded-lg p-2 text-[#5a6472] hover:bg-[#1a2b4a]/5 dark:text-[#b8a898] dark:hover:bg-white/10"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => setEditing(l)}
                         aria-label="Edit"
                         className="rounded-lg p-2 text-[#5a6472] hover:bg-[#1a2b4a]/5 dark:text-[#b8a898] dark:hover:bg-white/10"
@@ -291,6 +406,8 @@ export default function ShortLinks() {
           }}
         />
       )}
+      {qrFor && <QrModal link={qrFor} onClose={() => setQrFor(null)} />}
+      {statsFor && <StatsModal link={statsFor} onClose={() => setStatsFor(null)} />}
     </div>
   );
 }
