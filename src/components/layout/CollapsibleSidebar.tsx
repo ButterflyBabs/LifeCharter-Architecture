@@ -72,6 +72,7 @@ import {
   Smartphone,
   MessageCircle,
   GripVertical,
+  Link2,
 } from "lucide-react";
 
 // Navigation grouped into labeled sections, matching the Executive
@@ -103,6 +104,7 @@ const navigationSections = [
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
+      { id: "short-links", label: "Short Links", icon: Link2, href: "/short-links" },
     ],
   },
   // Plans first, then the numbers.

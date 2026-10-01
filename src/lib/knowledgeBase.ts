@@ -207,6 +207,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["affiliate", "affiliates", "referral", "referral link", "commission", "partner", "partnership", "amazon associates", "payout", "monthly report"],
   },
   {
+    id: "gr-short-links",
+    category: "Growth",
+    question: "How do I shorten a link and track its clicks?",
+    answer:
+      "Clients & Sales → Short Links. Click New short link, paste the real web address, and the Suite gives you a short one — lccommandsuite.com/l/ plus a code it picks for you, or one you choose yourself if that exact code is still free (codes are shared across every account, so it's first come, first served, same as affiliate codes). Add a title just for your own reference if you like. Share the short link anywhere — a bio, a slide, a text, a QR code — and every click is counted; the list shows each link's total clicks and when it was created. Pencil edits where it points to or its title without changing the short code itself, so anything you've already shared keeps working. The power button turns a link off (visitors land on your homepage instead) without deleting it, and the trash can removes it for good.",
+    keywords: ["short link", "short links", "link shortener", "shorten a link", "bitly", "short.io", "tracked link", "qr code", "bio link"],
+  },
+  {
     id: "sa-invite-tracker",
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
@@ -689,7 +697,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker and Affiliates. Planning & Numbers is your weekly and monthly rhythm, plans first and then the numbers: Weekly Review, Goal Ladder, Planning Hub, Finance and Forecasting. Growth is what you sell and how you're seen: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, your Business Plan and Business Segments. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Planning & Numbers is your weekly and monthly rhythm, plans first and then the numbers: Weekly Review, Goal Ladder, Planning Hub, Finance and Forecasting. Growth is what you sell and how you're seen: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, your Business Plan and Business Segments. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
