@@ -484,13 +484,24 @@ export function CollapsibleSidebar() {
       })
       .catch(() => {});
   }, []);
+  // Demo mode (lc_demo cookie): used for live sales demos, where the very
+  // first click of the script is Getting Started → Set up Suite — nobody
+  // should have to scroll to the bottom of the menu to find it. Demo only;
+  // every real account keeps the normal section order.
+  const [isDemo, setIsDemo] = useState(false);
+  useEffect(() => {
+    setIsDemo(document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1"));
+  }, []);
   // A team member with feature limits only sees the areas they can open.
   const visible = (href: string) => {
     if (!features) return true;
     const key = featureForPage(href.split("?")[0]);
     return !key || (features[key] ?? "none") !== "none";
   };
-  const sections = (superAdmin ? [...navigationSections, ownerSection] : navigationSections)
+  const demoOrderedSections = isDemo
+    ? [...navigationSections].sort((a, b) => (a.title === "GETTING STARTED" ? -1 : b.title === "GETTING STARTED" ? 1 : 0))
+    : navigationSections;
+  const sections = (superAdmin ? [...demoOrderedSections, ownerSection] : demoOrderedSections)
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
