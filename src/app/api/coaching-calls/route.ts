@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -10,19 +11,34 @@ export const dynamic = "force-dynamic";
 // Executive Home and Daily Compass. Any signed-in Command Suite account.
 const SPACE_SLUG = "command-suite";
 
+function isDemoRequest(): boolean {
+  try {
+    return cookies().get("lc_demo")?.value === "1";
+  } catch {
+    return false; // cookies() unavailable outside a request scope
+  }
+}
+
 export async function GET() {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ calls: [] });
   const db = createServerClient();
   const { data: space } = await db.from("cm_spaces").select("id").eq("slug", SPACE_SLUG).maybeSingle();
   if (!space?.id) return NextResponse.json({ calls: [] });
+  const isDemo = isDemoRequest();
   // "This week": the rest of the current Mon–Sun week in Mountain time (the calls
   // are scheduled in Mountain). If nothing is left this week, show all of next week.
+  // Demo mode skips straight to next week: some of the five weekly calls (e.g. the
+  // Anchor, the Dimension Call) don't have an occurrence every single calendar week
+  // this early in the rhythm, so "this week" can be sparse. Next week always has all
+  // five, so a live sales demo never catches a partial row.
   const now = Date.now();
   const endOfWeek = mountainWeekEnd(new Date(now));
-  let sessions = (await sessionsBetween(db, new Date(now - 2 * 3600_000), endOfWeek, space.id as string)).filter((x) => x.end.getTime() > now);
+  let sessions = isDemo
+    ? []
+    : (await sessionsBetween(db, new Date(now - 2 * 3600_000), endOfWeek, space.id as string)).filter((x) => x.end.getTime() > now);
   let week: "this" | "next" = "this";
-  if (!sessions.length) {
+  if (isDemo || !sessions.length) {
     sessions = await sessionsBetween(db, endOfWeek, new Date(endOfWeek.getTime() + 7 * 86_400_000), space.id as string);
     week = "next";
   }
