@@ -100,11 +100,16 @@ export async function claimFreePlanner(raw: Record<string, unknown>, pageUrl: st
     }
     const { data: prior } = await db.from("planner_giveaway_claims").select("id, planner, coupon_code, last_sent_at").eq("master_plan_id", planId).eq("email", email).maybeSingle();
     const title = prior ? GIVEAWAY_PLANNERS[prior.planner as string]?.title ?? "free planner" : "free planner";
+    let resent = false;
     if (prior?.coupon_code && (!prior.last_sent_at || Date.now() - new Date(prior.last_sent_at as string).getTime() > RESEND_GAP_MS)) {
       const sent = await sendCode(person, email, prior.planner as string, prior.coupon_code as string);
       if (sent.ok) await db.from("planner_giveaway_claims").update({ last_sent_at: new Date().toISOString() }).eq("id", prior.id);
+      resent = sent.ok;
     }
-    return { ok: true, message: `This email has already claimed its free planner (the ${title}). We've sent your code again, so check your inbox.` };
+    return {
+      ok: true,
+      message: `This email has already claimed its free planner (the ${title}). ${resent ? "We've sent your code again, so check your inbox." : "Your code was emailed a few minutes ago, so check your inbox and spam folder."}`,
+    };
   }
 
   const code = newCode();
