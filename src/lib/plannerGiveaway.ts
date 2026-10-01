@@ -34,8 +34,8 @@ async function createPayhipCoupon(code: string, productKey: string, email: strin
   if (!key) throw new Error("PAYHIP_API_KEY not set");
   const res = await fetch("https://payhip.com/api/v2/coupons", {
     method: "POST",
-    headers: { "payhip-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ code, coupon_type: "single", product_key: productKey, percent_off: 100, usage_limit: 1, notes: `Free planner giveaway: ${email}` }),
+    headers: { "payhip-api-key": key }, // Payhip wants form fields, not JSON
+    body: new URLSearchParams({ code, coupon_type: "single", product_key: productKey, percent_off: "100", usage_limit: "1", notes: `Free planner giveaway: ${email}` }),
   });
   if (!res.ok) throw new Error(`Payhip ${res.status}: ${(await res.text()).slice(0, 300)}`);
 }
