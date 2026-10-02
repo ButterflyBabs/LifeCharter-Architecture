@@ -246,3 +246,50 @@ export async function deleteZoomMeeting(id: string): Promise<void> {
   const token = await getAccessToken();
   await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
 }
+
+// Cloud recordings across the account in a date range (UTC days, at most a month).
+// Needs the Server-to-Server app scope cloud_recording:read:list_account_recordings:admin
+// (shown as recording:read:admin on older apps).
+export interface ZoomRecording {
+  meetingId: string;
+  uuid: string;
+  topic: string;
+  startTime: string; // ISO
+  durationMin: number;
+  shareUrl: string; // viewer link with the viewing passcode built in
+  ready: boolean; // every file has finished processing
+}
+
+export async function listAccountRecordings(fromYmd: string, toYmd: string): Promise<ZoomRecording[]> {
+  const token = await getAccessToken();
+  const out: ZoomRecording[] = [];
+  let next = "";
+  do {
+    const url = new URL("https://api.zoom.us/v2/accounts/me/recordings");
+    url.searchParams.set("from", fromYmd);
+    url.searchParams.set("to", toYmd);
+    url.searchParams.set("page_size", "300");
+    if (next) url.searchParams.set("next_page_token", next);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Zoom recordings request failed: ${res.status} ${await res.text()}`);
+    const data = (await res.json()) as {
+      next_page_token?: string;
+      meetings?: Array<{ id: number | string; uuid: string; topic?: string; start_time: string; duration?: number; share_url?: string; recording_play_passcode?: string; recording_files?: Array<{ status?: string }> }>;
+    };
+    for (const m of data.meetings || []) {
+      if (!m.share_url) continue;
+      const pwd = m.recording_play_passcode ? `${m.share_url.includes("?") ? "&" : "?"}pwd=${encodeURIComponent(m.recording_play_passcode)}` : "";
+      out.push({
+        meetingId: String(m.id),
+        uuid: m.uuid,
+        topic: m.topic || "",
+        startTime: m.start_time,
+        durationMin: Number(m.duration) || 0,
+        shareUrl: m.share_url + pwd,
+        ready: (m.recording_files || []).length > 0 && (m.recording_files || []).every((f) => !f.status || f.status === "completed"),
+      });
+    }
+    next = data.next_page_token || "";
+  } while (next);
+  return out;
+}

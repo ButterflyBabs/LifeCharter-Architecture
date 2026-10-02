@@ -32,6 +32,7 @@ const PUBLIC_APIS = [
   "/api/cron/sequences", // secured by its own CRON_SECRET check, not a session
   "/api/cron/bookings", // secured by its own CRON_SECRET check, not a session
   "/api/cron/accountability", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/collective-replays", // secured by its own CRON_SECRET check, not a session
   "/api/partner", // an outside accountability partner's private link; the unguessable token is the key, writes are origin-checked
   "/api/cron/broadcasts", // secured by its own CRON_SECRET check, not a session
   "/api/cron/spark", // secured by its own CRON_SECRET check, not a session (refreshes LC Spark Instagram tokens)

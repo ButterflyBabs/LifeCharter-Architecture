@@ -849,7 +849,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Do I need to register for each coaching call, and where are the replays?",
     answer:
-      "Each call series has its own Zoom room. The first time you join one, Zoom asks for your name and email once; after that the same link takes you straight in every week. Your next 7 days of calls are on Executive Home and Daily Compass (“This week's coaching calls”), with a Join now button that lights up 10 minutes before a call. Replays are in the Collective under Events → Past & replays.",
+      "Each call series has its own Zoom room. The first time you join one, Zoom asks for your name and email once; after that the same link takes you straight in every week. Your next 7 days of calls are on Executive Home and Daily Compass (“This week's coaching calls”), with a Join now button that lights up 10 minutes before a call. Replays are in the Collective under Events → Past & replays. Replays are added on their own: about an hour after a recorded call ends, its recording appears on that session under Events → Past & replays in the Collective.",
     keywords: ["register", "registration", "zoom", "join", "replay", "recording", "coaching call", "link"],
   },
   {

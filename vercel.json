@@ -75,6 +75,10 @@
     {
       "path": "/api/cron/accountability",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/collective-replays",
+      "schedule": "20 * * * *"
     }
   ],
   "rewrites": [
