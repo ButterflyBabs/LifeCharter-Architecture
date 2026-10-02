@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SALES_OUTCOMES, SALES_TIERS, type SalesOutcomeKey } from "@/lib/salesCall";
+import { SALES_OUTCOMES, type SalesOutcomeKey } from "@/lib/salesCall";
 import { useProspect } from "./ProspectContext";
 
 interface Phase {
