@@ -88,6 +88,7 @@ const navigationSections = [
     items: [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
+      { id: "content-calendar", label: "Content Calendar", icon: CalendarDays, href: "/daily-compass/calendar" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
