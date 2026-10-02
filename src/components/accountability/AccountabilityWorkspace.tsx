@@ -606,7 +606,7 @@ function AgreementTab({ view, post, readOnly }: { view: View; post: Post; readOn
               <option value="direct">Direct: tell it to me straight</option>
             </select>
           </Labeled>
-          <Labeled label="How and when we check in"><input className={field} value={checkIn} onChange={(e) => setCheckIn(e.target.value)} maxLength={400} /></Labeled>
+          <Labeled label="How and when we check in"><textarea className={field} rows={2} value={checkIn} onChange={(e) => setCheckIn(e.target.value)} maxLength={400} /></Labeled>
           <Labeled label="Rewards I'll give myself"><textarea className={field} rows={2} value={rewardSelf} onChange={(e) => setRewardSelf(e.target.value)} maxLength={600} /></Labeled>
           <Labeled label={`How I'd like to celebrate with ${view.partner.name}`}><textarea className={field} rows={2} value={rewardPartner} onChange={(e) => setRewardPartner(e.target.value)} maxLength={600} /></Labeled>
           <Labeled label="When I'm stuck, I'll… and I'd like you to…"><textarea className={field} rows={2} value={stuckPlan} onChange={(e) => setStuckPlan(e.target.value)} maxLength={600} /></Labeled>
