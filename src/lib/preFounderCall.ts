@@ -40,7 +40,7 @@ export const CUSTOM_FIELD_DEFS: { key: string; label: string; type: "text" | "lo
 
 export const CONCERNS: { key: string; label: string; say: string }[] = [
   { key: "price", label: "Price after six months", say: "It replaces what you pay for today: calendar, email, CRM, short links, finance, planning. What are you paying for those now, separately and half-used? And $497 is locked in for as long as you're with us." },
-  { key: "time", label: "No time to learn it", say: "That's why your first 30 days are guided, one week at a time. There's a New Client Launch Call every other Thursday, and Office Hours every Thursday where we build right alongside you." },
+  { key: "time", label: "No time to learn it", say: "That's why your first 30 days are guided, one week at a time. There's a New Client Launch Call every other Thursday, and Command Suite Office Hours every Thursday where we build right alongside you." },
   { key: "tech", label: "Not techy", say: "You don't have to be. Set up Suite walks you through it step by step, and you never set it up alone." },
   { key: "ai", label: "Worried about AI", say: "The AI is a sit-beside. It drafts, sorts and reminds, and you stay in charge. It only knows what you teach it, and each account sees only its own information." },
   { key: "overwhelm", label: "Feels like a lot", say: "You don't use it all at once. Your first 30 days open one week at a time, and we start with the one screen that matters most to you: " },

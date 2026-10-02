@@ -139,7 +139,7 @@ export default function ContactSupportPage() {
             <div className="w-12 h-12 rounded-full bg-[#c9a227]/10 flex items-center justify-center mx-auto mb-4">
               <Video className="w-6 h-6 text-[#c9a227]" />
             </div>
-            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Suite Office Hours</h3>
+            <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Command Suite Office Hours</h3>
             <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-3">
               Live help on Zoom, Thursdays at 11am MT
             </p>
