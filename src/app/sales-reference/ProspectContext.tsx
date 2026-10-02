@@ -12,6 +12,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from "rea
 // comparing the loosely-typed prefill object itself would be fragile.
 
 export interface ProspectPrefill {
+  contactId?: string;
   fullName?: string;
   email?: string;
   phone?: string;

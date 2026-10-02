@@ -20,6 +20,7 @@ export const SALES_APIS = [
   "/api/sales/search-contacts",
   "/api/sales/checkout-session",
   "/api/sales/contacts",
+  "/api/sales/save-call",
 ];
 
 const under = (path: string, prefixes: string[]) => prefixes.some((p) => path === p || path.startsWith(p + "/"));

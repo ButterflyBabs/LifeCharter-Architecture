@@ -35,6 +35,7 @@ export interface SalesContactRow {
 
 export interface SalesContactDetail {
   found: boolean;
+  id?: string;
   name?: string;
   email?: string;
   phone?: string;
@@ -99,6 +100,7 @@ export async function lookupSalesContact(email: string): Promise<SalesContactDet
     .limit(8);
   return {
     found: true,
+    id: c.id,
     name: nameOf(c),
     email: c.email,
     phone: c.phone || undefined,

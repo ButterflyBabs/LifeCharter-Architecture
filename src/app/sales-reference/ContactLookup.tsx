@@ -12,6 +12,7 @@ interface ContactSummary {
 
 interface LookupResult {
   found: boolean;
+  id?: string;
   name?: string;
   email?: string;
   phone?: string;
@@ -96,6 +97,7 @@ export function ContactLookup() {
   function useContact() {
     if (!detail?.found) return;
     setProspect({
+      contactId: detail.id,
       fullName: detail.name,
       email: detail.email,
       phone: detail.phone,
