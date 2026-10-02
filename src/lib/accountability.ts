@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { readAccountKey } from "@/lib/ai/config";
 import { isHousePlan } from "@/lib/housePlan";
 import { sendAccEmail } from "@/lib/email/accountabilityEmail";
+import { type CallRow, describe as describeCall, googleLink, icsFor, occurrences, validTz, zonedToUtc } from "@/lib/accountabilityCalls";
 
 // Accountability partners. A partnership is its own record between two people
 // (side "a" = the client who invited, side "b" = their partner), never a team seat:
@@ -138,13 +139,14 @@ interface Item {
 }
 
 export async function loadView(db: Db, p: Partnership, viewer: Viewer) {
-  const [{ data: itemRows }, { data: notes }, { data: nudges }, { data: templates }, { data: agreements }, { data: checkins }] = await Promise.all([
+  const [{ data: itemRows }, { data: notes }, { data: nudges }, { data: templates }, { data: agreements }, { data: checkins }, { data: callRows }] = await Promise.all([
     db.from("accountability_items").select("*").eq("partnership_id", p.id).order("created_at"),
     db.from("accountability_notes").select("*").eq("partnership_id", p.id).order("created_at").limit(800),
     db.from("accountability_nudges").select("*").eq("partnership_id", p.id).order("created_at", { ascending: false }).limit(60),
     viewer === "coach" ? Promise.resolve({ data: [] }) : db.from("accountability_templates").select("*").eq("partnership_id", p.id).eq("side", viewer).order("created_at"),
     db.from("accountability_agreements").select("*").eq("partnership_id", p.id),
     db.from("accountability_checkins").select("*").eq("partnership_id", p.id).order("week_of", { ascending: false }).limit(24),
+    viewer === "coach" ? Promise.resolve({ data: [] }) : db.from("accountability_calls").select("*").eq("partnership_id", p.id).in("status", ["proposed", "confirmed"]).order("created_at"),
   ]);
   const items = (itemRows ?? []) as Item[];
 
@@ -202,6 +204,7 @@ export async function loadView(db: Db, p: Partnership, viewer: Viewer) {
     templates: templates ?? [],
     agreements: { you: ags.find((a) => a.side === youSide) ?? null, partner: ags.find((a) => a.side === other(youSide)) ?? null },
     checkins: checkins ?? [],
+    calls: viewer === "coach" ? [] : callViews(p, (callRows ?? []) as CallRow[], viewer),
     stats: { you: stats(youSide), partner: stats(other(youSide)) },
     unread,
   };
@@ -216,6 +219,136 @@ async function celebrate(db: Db, p: Partnership, item: Pick<Item, "id" | "side" 
     kind: "celebrate",
     message: `${sideName(p, item.side)} finished "${item.title}".`,
   });
+}
+
+
+// ---------------------------------------------------------------- calls
+
+const MAX_CALLS = 6;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// What the page needs for each call: the next few occurrences as absolute instants (the
+// browser shows them in the viewer's own timezone) plus a plain-English summary.
+function callViews(p: Partnership, rows: CallRow[], viewer: Side) {
+  const now = new Date();
+  return rows
+    .map((c) => {
+      const next = occurrences(c, now, 3);
+      return {
+        id: c.id,
+        kind: c.kind,
+        title: c.title,
+        status: c.status,
+        mine: c.proposed_by === viewer,
+        proposedBy: sideName(p, c.proposed_by),
+        summary: describeCall(c),
+        durationMin: c.duration_min,
+        location: c.location,
+        note: c.note,
+        recurFreq: c.recur_freq,
+        recurDays: c.recur_days,
+        next: next.map((o) => ({ date: o.localDate, start: o.start.toISOString(), end: o.end.toISOString() })),
+        google: googleLink(c, sideName(p, other(viewer))),
+      };
+    })
+    .filter((c) => c.next.length > 0)
+    .sort((a, b) => a.next[0].start.localeCompare(b.next[0].start));
+}
+
+// The calendar file for one call, as the given side sees it ("Check-in with <partner>").
+export async function callIcs(db: Db, p: Partnership, side: Side, id: string) {
+  const { data } = await db.from("accountability_calls").select("*").eq("id", id).eq("partnership_id", p.id).maybeSingle();
+  const c = data as CallRow | null;
+  if (!c || c.status === "canceled" || c.status === "declined") return null;
+  return icsFor(c, sideName(p, other(side)));
+}
+
+async function mailCall(db: Db, p: Partnership, c: CallRow, to: Side, kind: "proposed" | "confirmed" | "declined" | "canceled") {
+  if (!notifies(p, to)) return;
+  const from = sideName(p, other(to));
+  const when = describeCall(c);
+  const link = sideLink(p, to);
+  if (kind === "proposed") {
+    await sendAccEmail({ to: await sideEmail(db, p, to), subject: `${from} wants to set up a call`, heading: `${from} proposed a ${c.kind === "recurring" ? "standing call" : "call"}`, body: `${c.title}\n${when}, ${c.duration_min} minutes${c.location ? `\nHow: ${c.location}` : ""}${c.note ? `\n\n"${c.note}"` : ""}\n\nSay yes, or let ${from} know it doesn't work.`, cta: "Answer", link });
+  } else if (kind === "confirmed") {
+    const ics = icsFor(c, from);
+    await sendAccEmail({ to: await sideEmail(db, p, to), subject: `Call confirmed with ${from}`, heading: "It's on the calendar", body: `${c.title} with ${from}\n${when}, ${c.duration_min} minutes${c.location ? `\nHow: ${c.location}` : ""}\n\nThe attached calendar file adds it to Apple, Google or Outlook calendar with a reminder 10 minutes before.`, cta: "Open your page", link, attachments: [{ filename: ics.filename, content: Buffer.from(ics.text).toString("base64"), contentType: "text/calendar; charset=utf-8; method=PUBLISH" }] });
+  } else {
+    await sendAccEmail({ to: await sideEmail(db, p, to), subject: kind === "declined" ? `${from} can't make that call` : `Call canceled: ${c.title}`, heading: kind === "declined" ? `${from} can't do that time` : "A call was canceled", body: `${c.title}\n${when}\n\n${kind === "declined" ? "Propose another time that works better." : "Set up a new one whenever you're ready."}`, cta: "Open your page", link });
+  }
+}
+
+async function actCall(db: Db, p: Partnership, side: Side, action: string, body: Record<string, unknown>): Promise<Res> {
+  const now = new Date();
+  if (action === "call-add") {
+    if (p.status !== "active") return bad(p.status === "invited" ? "You can schedule calls once your partner accepts." : "This partnership is paused.", 409);
+    const { count } = await db.from("accountability_calls").select("id", { count: "exact", head: true }).eq("partnership_id", p.id).in("status", ["proposed", "confirmed"]);
+    if ((count ?? 0) >= MAX_CALLS) return bad("That's plenty of calls on the calendar. Cancel one first.", 409);
+    const kind = body.kind === "recurring" ? "recurring" : "one_off";
+    const startsOn = String(body.date || "");
+    const time = String(body.time || "");
+    if (!DATE.test(startsOn) || !TIME_RE.test(time)) return bad("Pick a date and a time.");
+    const tz = validTz(body.tz);
+    const startAt = zonedToUtc(startsOn, time, tz);
+    if (kind === "one_off" && startAt.getTime() < now.getTime() - 5 * 60_000) return bad("That time has already passed.");
+    let days: number[] | null = null;
+    if (kind === "recurring") {
+      days = Array.isArray(body.days) ? Array.from(new Set((body.days as unknown[]).map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))).slice(0, 3) : [];
+      if (!days.length) return bad("Pick at least one day of the week.");
+    }
+    const duration = Math.min(120, Math.max(5, Math.round(Number(body.durationMin)) || 20));
+    const row = {
+      partnership_id: p.id,
+      kind,
+      title: clean(body.title, 80) || (kind === "recurring" ? "Weekly check-in call" : "Quick call"),
+      starts_on: startsOn,
+      local_time: time,
+      tz,
+      duration_min: duration,
+      recur_freq: kind === "recurring" ? (body.freq === "biweekly" ? "biweekly" : "weekly") : null,
+      recur_days: days,
+      location: clean(body.location, 300) || null,
+      note: clean(body.note, 300) || null,
+      proposed_by: side,
+      status: "proposed",
+      skips: [],
+    };
+    const { data, error } = await db.from("accountability_calls").insert(row).select("*").single();
+    if (error || !data) return bad("Couldn't save that call. Try again.", 500);
+    await mailCall(db, p, data as CallRow, other(side), "proposed");
+    return { ok: true, id: (data as CallRow).id };
+  }
+
+  const { data: found } = await db.from("accountability_calls").select("*").eq("id", String(body.id || "")).eq("partnership_id", p.id).maybeSingle();
+  const c = found as CallRow | null;
+  if (!c || !["proposed", "confirmed"].includes(c.status)) return bad("That call isn't on the calendar anymore.", 404);
+  const touch = { updated_at: now.toISOString() };
+
+  if (action === "call-respond") {
+    if (c.proposed_by === side) return bad("Your partner answers this one.", 409);
+    if (c.status !== "proposed") return bad("That one is already answered.", 409);
+    const yes = body.answer === "yes";
+    const location = c.location || clean(body.location, 300) || null;
+    await db.from("accountability_calls").update({ status: yes ? "confirmed" : "declined", location, ...touch }).eq("id", c.id);
+    const updated = { ...c, location };
+    if (yes) {
+      await mailCall(db, p, updated, side, "confirmed");
+      await mailCall(db, p, updated, other(side), "confirmed");
+    } else await mailCall(db, p, updated, other(side), "declined");
+    return { ok: true };
+  }
+  if (action === "call-cancel") {
+    await db.from("accountability_calls").update({ status: "canceled", ...touch }).eq("id", c.id);
+    if (c.status === "confirmed") await mailCall(db, p, c, other(side), "canceled");
+    return { ok: true };
+  }
+  if (action === "call-skip") {
+    const d = String(body.date || "");
+    if (c.kind !== "recurring" || c.status !== "confirmed" || !occurrences(c, now, 6).some((o) => o.localDate === d)) return bad("That date isn't coming up.", 409);
+    await db.from("accountability_calls").update({ skips: [...c.skips, d], ...touch }).eq("id", c.id);
+    return { ok: true };
+  }
+  return bad("Unknown action.");
 }
 
 // ---------------------------------------------------------------- acting
@@ -432,6 +565,8 @@ export async function act(db: Db, p: Partnership, side: Side, body: Record<strin
     );
     return { ok: true };
   }
+
+  if (action.startsWith("call-")) return writeBlocked ?? actCall(db, p, side, action, body);
 
   return bad("Unknown action.");
 }

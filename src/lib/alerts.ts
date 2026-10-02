@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { reminderLeadFor, minutesUntil, inMinutes, ownerTimezone, upcomingRecurringToday } from "@/lib/taskReminders";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
+import { occurrences, type CallRow } from "@/lib/accountabilityCalls";
 
 // The Suite's alerts: what needs the owner's attention right now, derived from
 // their own live data. The bell shows them; the daily alert email sends the
@@ -378,6 +379,28 @@ export async function deriveNotifications(
       }
     }
     if (rows.length) {
+      // Calls: a request waiting on my answer, and a confirmed call starting within the hour.
+      const { data: calls } = await supabase
+        .from("accountability_calls")
+        .select("*")
+        .in("partnership_id", rows.filter((p) => p.status === "active").map((p) => p.id))
+        .in("status", ["proposed", "confirmed"]);
+      const nowD = new Date();
+      for (const c of (calls || []) as CallRow[]) {
+        const m = mine.get(c.partnership_id);
+        if (!m) continue;
+        const occ = occurrences(c, nowD, 1)[0];
+        if (!occ) continue;
+        const when = new Intl.DateTimeFormat("en-US", { timeZone: c.tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(occ.start);
+        if (c.status === "proposed" && c.proposed_by !== m.side) {
+          out.push({ nkey: `acc-call:${c.id}`, type: "action", title: `${m.partner} wants to set up a call`, body: `${c.title}, ${when}. Say yes or suggest another time.`, href: "/accountability" });
+        } else if (c.status === "confirmed") {
+          const mins = Math.round((occ.start.getTime() - nowD.getTime()) / 60_000);
+          if (mins <= 60 && mins > -c.duration_min) {
+            out.push({ nkey: `acc-callsoon:${c.id}:${occ.localDate}`, type: "action", title: mins > 0 ? `Call with ${m.partner} in ${mins} minute${mins === 1 ? "" : "s"}` : `Your call with ${m.partner} is happening now`, body: c.location ? `${c.title}. ${c.location}` : c.title, href: "/accountability" });
+          }
+        }
+      }
       const { data: nudges } = await supabase
         .from("accountability_nudges")
         .select("id, partnership_id, from_side, to_side, kind, message")

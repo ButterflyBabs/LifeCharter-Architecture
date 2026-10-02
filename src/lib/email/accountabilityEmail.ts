@@ -5,7 +5,7 @@
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-export async function sendAccEmail(opts: { to: string; subject: string; heading: string; body: string; cta: string; link: string; footnote?: string }): Promise<boolean> {
+export async function sendAccEmail(opts: { to: string; subject: string; heading: string; body: string; cta: string; link: string; footnote?: string; attachments?: { filename: string; content: string; contentType: string }[] }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key || !opts.to) return false;
   const paragraphs = opts.body
@@ -31,6 +31,7 @@ export async function sendAccEmail(opts: { to: string; subject: string; heading:
         reply_to: "support@amilynnecarroll.com",
         subject: opts.subject,
         html,
+        ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ filename: a.filename, content: a.content, content_type: a.contentType })) } : {}),
         text: `${opts.heading}\n\n${opts.body}\n\n${opts.cta}: ${opts.link}`,
       }),
     });

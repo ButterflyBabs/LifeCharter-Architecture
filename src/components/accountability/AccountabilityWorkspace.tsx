@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import CallsTab, { NextCallStrip, type CallView } from "./Calls";
 import { Check, Heart, HandHeart, Sparkles, Send, Trash2, Plus, MessageSquare, Pause, Play, X, Flame, LifeBuoy } from "lucide-react";
 
 type Side = "a" | "b";
@@ -37,6 +38,7 @@ export interface View {
   templates: Template[];
   agreements: { you: Agreement | null; partner: Agreement | null };
   checkins: Checkin[];
+  calls: CallView[];
   stats: { you: Stats; partner: Stats };
   unread: number;
   invitedBy?: string;
@@ -83,7 +85,7 @@ type Post = (body: Record<string, unknown>) => Promise<Record<string, unknown> |
 export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExtra, tasksUrl, onGone }: { mode: "app" | "portal" | "coach"; getUrl: string; postUrl: string; postExtra?: Record<string, unknown>; tasksUrl?: string; onGone?: () => void }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"commitments" | "encouragement" | "checkin" | "agreement" | "wins">("commitments");
+  const [tab, setTab] = useState<"commitments" | "encouragement" | "calls" | "checkin" | "agreement" | "wins">("commitments");
   const [msg, setMsg] = useState("");
   const readOnly = mode === "coach";
 
@@ -125,10 +127,12 @@ export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExt
   if (!view) return <p className="text-sm text-[#7a8a99]">Loading…</p>;
 
   const { you, partner, partnership: ps } = view;
+  const icsUrl = (id: string) => (mode === "portal" ? `${postUrl}/ics?id=${id}` : `/api/accountability/ics?p=${ps.id}&id=${id}`);
   const isA = view.viewer === "a";
   const tabs: [typeof tab, string][] = [
     ["commitments", "Commitments"],
     ["encouragement", view.unread > 0 ? `Encouragement (${view.unread})` : "Encouragement"],
+    ...(readOnly ? [] : [["calls", view.calls.some((c) => c.status === "proposed" && !c.mine) ? "Calls (1)" : "Calls"] as [typeof tab, string]]),
     ["checkin", "Check-in"],
     ["agreement", "Our agreement"],
     ["wins", "Wins"],
@@ -152,6 +156,8 @@ export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExt
       {ps.coachVisible && view.viewer !== "coach" && <p className="rounded-xl bg-[#1a2b4a]/5 px-4 py-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{isA ? "Your coach can see this partnership (read-only)." : `${partner.name}'s coach can see this partnership (read-only).`}</p>}
       {ps.status === "paused" && <p className="rounded-xl bg-[#c9a227]/15 px-4 py-3 text-sm text-[#6b5410]">This partnership is paused. No reminders or emails go out until it&apos;s resumed.</p>}
       {ps.status === "ended" && <p className="rounded-xl bg-[#1a2b4a]/5 px-4 py-3 text-sm text-[#5a6472]">This partnership has ended and is read-only.</p>}
+
+      {!readOnly && ps.status !== "invited" && <NextCallStrip calls={view.calls} partnerName={partner.name} icsUrl={icsUrl} post={post} onOpen={() => setTab("calls")} />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <StatCard title={mode === "coach" ? `${you.name} (client)` : "You"} s={view.stats.you} />
@@ -180,6 +186,7 @@ export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExt
 
       {tab === "commitments" && <Commitments view={view} post={post} readOnly={readOnly} tasksUrl={tasksUrl} />}
       {tab === "encouragement" && <Encouragement view={view} post={post} readOnly={readOnly} />}
+      {tab === "calls" && <CallsTab calls={view.calls} partnerName={partner.name} partnershipId={ps.id} canAdd={ps.status === "active"} icsUrl={icsUrl} post={post} />}
       {tab === "checkin" && <CheckIn view={view} post={post} readOnly={readOnly} />}
       {tab === "agreement" && <AgreementTab view={view} post={post} readOnly={readOnly} />}
       {tab === "wins" && <Wins view={view} />}

@@ -615,6 +615,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["accountability", "commitments", "encouragement", "nudge", "check-in", "agreement", "reward", "consequence", "stuck", "wins", "streak"],
   },
   {
+    id: "gs-accountability-calls",
+    category: "Getting Started",
+    question: "How do I schedule a call with my accountability partner?",
+    answer:
+      "Open your partner and tap the Calls tab. Quick call: tap In 30 minutes, In an hour, This evening or Tomorrow and your partner gets a request they can accept in one tap. Standing call: pick the day or days, the time, every week or every other week, and how long, then propose it. Once your partner says yes it is confirmed and both of you get an email with a calendar file that adds it to Apple, Google or Outlook with a reminder 10 minutes before. Everyone sees times in their own timezone, and a standing call keeps its clock time through daylight saving. Put your Zoom or Meet link (or a phone number) in the How will you two connect box and it is added to every call you set up. A request waiting for you, and a call starting within the hour, show in the bell at the top and at the top of your partner page, where Join opens the call link. You can skip a single date, withdraw a request, or cancel a call at any time. Partners outside the Suite do all of this from their private link.",
+    keywords: ["accountability", "call", "schedule", "recurring", "weekly", "quick call", "calendar", "zoom", "reminder", "partner"],
+  },
+  {
     id: "gs-accountability-ai",
     category: "Getting Started",
     question: "Does the Accountability Partner page have AI help, and who pays for it?",
