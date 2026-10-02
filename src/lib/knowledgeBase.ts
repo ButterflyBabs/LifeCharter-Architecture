@@ -395,7 +395,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "How do Create Content and the Content Calendar work?",
     answer:
-      "They're one place now: the Content Calendar. Use Create content to write a post, pick platforms from your connected accounts, draft the caption + hashtags with AI, add media, and save as draft, schedule, or publish now through PostStream. Every post shows on its day, color-coded by status. Open any planned post and choose Schedule or publish to send it through PostStream from the calendar — the two stay linked, so a post that goes out (or one you make directly in PostStream) shows up as posted on the calendar and counts once.",
+      "They're one place now: the Content Calendar, in the left menu under Daily Operations right after Daily Compass. Use Create content to write a post, pick platforms from your connected accounts, draft the caption + hashtags with AI, add media, and save as draft, schedule, or publish now through PostStream. Every post shows on its day, color-coded by status. Open any planned post and choose Schedule or publish to send it through PostStream from the calendar — the two stay linked, so a post that goes out (or one you make directly in PostStream) shows up as posted on the calendar and counts once.",
     keywords: ["content", "create content", "content calendar", "poststream", "social", "posts", "schedule", "publish"],
   },
 
