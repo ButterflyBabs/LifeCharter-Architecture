@@ -186,7 +186,7 @@ export default function AssessmentsPage() {
                   <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70 mb-4">
                     Track your progress over time with this 18-question follow-up assessment.
                     Compare your results against your initial Brain, Soul, and Profit assessments
-                    to see trends and get personalized action steps. Takes just 5 minutes.
+                    to see trends and get three suggested next steps for your lowest-scoring area. Takes just 5 minutes.
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-[#b8a898]">
                     <span className="flex items-center gap-1">

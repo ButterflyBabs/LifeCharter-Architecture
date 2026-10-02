@@ -686,7 +686,7 @@ function QuickPulseCheckinContent() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Three Steps Forward</h2>
-                  <p className="text-sm text-[#b8a898]">Personalized actions based on your results</p>
+                  <p className="text-sm text-[#b8a898]">Suggested next steps, chosen from your lowest score and what changed since last time</p>
                 </div>
               </div>
             </CardHeader>

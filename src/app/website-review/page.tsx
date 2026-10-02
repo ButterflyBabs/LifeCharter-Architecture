@@ -20,7 +20,7 @@ export default function WebsiteReviewPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
       <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Included with Command Suite</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Included with Command Suite · written by our team, delivered within 14 days</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Website Alignment Review</h1>
         <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">
           Your website, read against the positioning, voice and offer you&rsquo;re building here, with the five changes that matter most.
