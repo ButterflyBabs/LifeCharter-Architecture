@@ -188,7 +188,35 @@ const ownerSection = {
   ],
 };
 
-const navigationItems = [...navigationSections, ownerSection].flatMap((s) => s.items);
+// DEMO ACCOUNT ONLY (lc_demo cookie). The pages in the order the guided tour
+// shows them, as one section at the top, so presenting is "click the next one
+// down". Everything not on the tour keeps its usual section underneath. No real
+// account ever gets this order.
+const DEMO_TOUR_ORDER = [
+  "setup", "first30", "alignment-profile", // Act 2: where every client starts
+  "executive-home", "demo-morning-brief", "daily-compass", "tasks", "accountability", // Act 3: running your day
+  "business-alignment", "progress", // Act 4: the whole business
+  "goals", "review", "finance", "forecasting", // Act 5: plans and numbers
+  "pipeline", "offers", "dm-pipeline", "contacts", "calendars", "sequences-manager", // Act 6: growing
+  "sops", "compliance", // Act 7: systems
+  "demo-coaching-calls", "demo-collective-events", // Act 8: Executive Coaching
+];
+const demoOnlyItems = [
+  { id: "demo-morning-brief", label: "Morning Brief", icon: Sparkles, href: "/morning-brief" },
+  { id: "demo-coaching-calls", label: "Coaching Calls (Home)", icon: LayoutDashboard, href: "/" },
+  { id: "demo-collective-events", label: "Collective Events", icon: CalendarDays, href: "/community/events" },
+];
+function demoTourSections() {
+  const all = new Map([...navigationSections.flatMap((s) => s.items), ...demoOnlyItems].map((i) => [i.id, i]));
+  const tour = DEMO_TOUR_ORDER.map((id) => all.get(id)).filter((i): i is NonNullable<typeof i> => Boolean(i));
+  const onTour = new Set(tour.map((i) => i.id));
+  return [
+    { title: "DEMO TOUR", color: "text-[#c9a227]", items: tour },
+    ...navigationSections.map((s) => ({ ...s, items: s.items.filter((i) => !onTour.has(i.id)) })).filter((s) => s.items.length > 0),
+  ];
+}
+
+const navigationItems = [...navigationSections, ownerSection, { items: demoOnlyItems }].flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -502,9 +530,7 @@ export function CollapsibleSidebar() {
     const key = featureForPage(href.split("?")[0]);
     return !key || (features[key] ?? "none") !== "none";
   };
-  const demoOrderedSections = isDemo
-    ? [...navigationSections].sort((a, b) => (a.title === "GETTING STARTED" ? -1 : b.title === "GETTING STARTED" ? 1 : 0))
-    : navigationSections;
+  const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   const sections = (superAdmin ? [...demoOrderedSections, ownerSection] : demoOrderedSections)
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
