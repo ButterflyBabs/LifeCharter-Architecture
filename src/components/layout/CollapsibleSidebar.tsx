@@ -531,7 +531,8 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
-  const sections = (superAdmin ? [...demoOrderedSections, ownerSection] : demoOrderedSections)
+  // The Alignment Architect section never shows while presenting the demo.
+  const sections = (superAdmin && !isDemo ? [...demoOrderedSections, ownerSection] : demoOrderedSections)
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
