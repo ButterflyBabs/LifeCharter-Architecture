@@ -71,6 +71,10 @@
     {
       "path": "/api/cron/spark",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/accountability",
+      "schedule": "0 14 * * *"
     }
   ],
   "rewrites": [

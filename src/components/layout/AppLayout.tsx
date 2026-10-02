@@ -26,6 +26,7 @@ const BARE_ROUTES = [
   "/f",
   "/book",
   "/a", // an affiliate's private dashboard
+  "/partner", // an outside accountability partner's private page
   "/r", // affiliate links (redirect)
   "/login",
   "/logout",
