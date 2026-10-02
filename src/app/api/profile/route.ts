@@ -36,7 +36,7 @@ export async function GET() {
 // Saves the signed-in owner's settings: the time zone they chose (dashboard
 // clock, greeting, schedule) and their task-reminder preferences. Team members
 // keep theirs in their browser. Send any subset of
-// { timezone, taskReminderEmail, taskReminderLeadMin }.
+// { fullName, phone, bio, timezone, taskReminderEmail, taskReminderLeadMin, alertEmail }.
 export async function PATCH(req: Request) {
   const { profileId, canEdit } = await resolveAiAccount();
   const body = await req.json().catch(() => ({}));
@@ -48,6 +48,14 @@ export async function PATCH(req: Request) {
     update.timezone = timezone;
     update.timezone_chosen = true;
   }
+  // Settings > Profile: name, phone and bio. (The sign-in email isn't changed here.)
+  if (body.fullName !== undefined) {
+    const name = typeof body.fullName === "string" ? body.fullName.trim().slice(0, 120) : "";
+    if (!name) return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
+    update.full_name = name;
+  }
+  if (body.phone !== undefined) update.phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 40) || null : null;
+  if (body.bio !== undefined) update.bio = typeof body.bio === "string" ? body.bio.trim().slice(0, 2000) || null : null;
   if (body.taskReminderEmail !== undefined) update.task_reminder_email = Boolean(body.taskReminderEmail);
   if (body.alertEmail !== undefined) update.alert_email = Boolean(body.alertEmail);
   if (body.taskReminderLeadMin !== undefined) {

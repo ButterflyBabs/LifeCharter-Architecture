@@ -33,8 +33,6 @@ import {
   CheckCircle,
   Moon,
   Sun,
-  Mail,
-  Smartphone,
   Sliders,
   Database,
   ExternalLink,
@@ -458,26 +456,6 @@ export default function SettingsPage() {
   const [wsMsg, setWsMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    email: {
-      weeklyDigest: true,
-      monthlyReview: true,
-      assessmentReminders: true,
-      businessPlanUpdates: true,
-      marketing: false
-    },
-    sms: {
-      enabled: false,
-      monthlySummary: false,
-      urgentAlerts: true
-    },
-    inApp: {
-      dailyTips: true,
-      goalReminders: true,
-      teamMentions: true
-    }
-  });
 
   // Integration settings - comprehensive tech stack for coaches and small business
   const [integrations, setIntegrations] = useState({
@@ -611,14 +589,30 @@ export default function SettingsPage() {
 
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
 
+  // Saves the Profile tab (name, phone, bio). Every other tab saves itself.
+  const [saveError, setSaveError] = useState("");
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
+    setSaveError("");
+    setSaveSuccess(false);
+    try {
+      const r = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: profile.fullName, phone: profile.phone, bio: profile.bio }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) setSaveError(d.error || "That didn't save. Please try again.");
+      else if (d.saved === false) setSaveError("Only the account owner can change these details.");
+      else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch {
+      setSaveError("That didn't save. Check your connection and try again.");
+    } finally {
       setIsSaving(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1000);
+    }
   };
 
   const renderProfileSettings = () => (
@@ -643,11 +637,10 @@ export default function SettingsPage() {
           <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
             Email
           </label>
-          <Input
-            type="email"
-            value={profile.email}
-            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-          />
+          <Input type="email" value={profile.email} readOnly disabled aria-describedby="profile-email-note" />
+          <p id="profile-email-note" className="mt-1 text-xs text-[#7a8a99]">
+            This is the email you sign in with. To change it, write to support@amilynnecarroll.com.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
@@ -684,45 +677,6 @@ export default function SettingsPage() {
               </option>
             ))}
           </select>
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-            Task reminders
-          </label>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-            <span>Remind me</span>
-            <select
-              value={reminderLead}
-              onChange={(e) => saveReminderPrefs({ taskReminderLeadMin: Number(e.target.value) })}
-              aria-label="How long before a timed task is due"
-              className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3"
-            >
-              {[10, 15, 30, 60, 120].map((m) => (
-                <option key={m} value={m}>
-                  {m < 60 ? `${m} minutes` : m === 60 ? "1 hour" : "2 hours"} before
-                </option>
-              ))}
-            </select>
-            <span>a timed task is due, in the app</span>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={reminderEmail}
-                onChange={(e) => saveReminderPrefs({ taskReminderEmail: e.target.checked })}
-                className="h-4 w-4 rounded border-[#1a2b4a]/30"
-              />
-              and by email
-            </label>
-          </div>
-          <label className="mt-3 flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-            <input
-              type="checkbox"
-              checked={alertEmail}
-              onChange={(e) => saveReminderPrefs({ alertEmail: e.target.checked })}
-              className="h-4 w-4 rounded border-[#1a2b4a]/30"
-            />
-            Email me once a day when something needs attention (a score drop, a slipped goal, a stalled pipeline, a bill coming due)
-          </label>
         </div>
       </div>
 
@@ -1210,78 +1164,47 @@ export default function SettingsPage() {
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
-          <Mail className="w-4 h-4" />
-          Email Notifications
-        </h4>
-        <div className="space-y-3">
-          {Object.entries(notifications.email).map(([key, value]) => (
-            <label key={key} className="flex items-center gap-3 cursor-pointer">
+          <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+            Task reminders
+          </label>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <span>Remind me</span>
+            <select
+              value={reminderLead}
+              onChange={(e) => saveReminderPrefs({ taskReminderLeadMin: Number(e.target.value) })}
+              aria-label="How long before a timed task is due"
+              className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3"
+            >
+              {[10, 15, 30, 60, 120].map((m) => (
+                <option key={m} value={m}>
+                  {m < 60 ? `${m} minutes` : m === 60 ? "1 hour" : "2 hours"} before
+                </option>
+              ))}
+            </select>
+            <span>a timed task is due, in the app</span>
+            <label className="inline-flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={value}
-                onChange={(e) => setNotifications({
-                  ...notifications,
-                  email: { ...notifications.email, [key]: e.target.checked }
-                })}
-                className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
+                checked={reminderEmail}
+                onChange={(e) => saveReminderPrefs({ taskReminderEmail: e.target.checked })}
+                className="h-4 w-4 rounded border-[#1a2b4a]/30"
               />
-              <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-              </span>
+              and by email
             </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-[#1a2b4a]/10 pt-6">
-        <h4 className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-4 flex items-center gap-2">
-          <Smartphone className="w-4 h-4" />
-          SMS Notifications
-        </h4>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
+          </div>
+          <label className="mt-3 flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
             <input
               type="checkbox"
-              checked={notifications.sms.enabled}
-              onChange={(e) => setNotifications({
-                ...notifications,
-                sms: { ...notifications.sms, enabled: e.target.checked }
-              })}
-              className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
+              checked={alertEmail}
+              onChange={(e) => saveReminderPrefs({ alertEmail: e.target.checked })}
+              className="h-4 w-4 rounded border-[#1a2b4a]/30"
             />
-            <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Enable SMS notifications</span>
+            Email me once a day when something needs attention (a score drop, a slipped goal, a stalled pipeline, a bill coming due)
           </label>
-          {notifications.sms.enabled && (
-            <div className="ml-7 space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notifications.sms.monthlySummary}
-                  onChange={(e) => setNotifications({
-                    ...notifications,
-                    sms: { ...notifications.sms, monthlySummary: e.target.checked }
-                  })}
-                  className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
-                />
-                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Monthly summary</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notifications.sms.urgentAlerts}
-                  onChange={(e) => setNotifications({
-                    ...notifications,
-                    sms: { ...notifications.sms, urgentAlerts: e.target.checked }
-                  })}
-                  className="w-4 h-4 rounded border-[#1a2b4a]/20 text-[#c9a227] focus:ring-[#c9a227]"
-                />
-                <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Urgent alerts only</span>
-              </label>
-            </div>
-          )}
         </div>
-      </div>
+      <p className="text-sm text-[#7a8a99]">
+        Changes here save as you make them. Emails for sign-ups, bookings and registrations are set on each form, calendar and campaign.
+      </p>
     </div>
   );
 
@@ -1845,6 +1768,29 @@ export default function SettingsPage() {
     </div>
   );
 
+  // Delete Account: a confirmed request to the Support Desk (nothing is removed automatically).
+  const [delOpen, setDelOpen] = useState(false);
+  const [delText, setDelText] = useState("");
+  const [delState, setDelState] = useState<"idle" | "sending" | "sent">("idle");
+  const [delError, setDelError] = useState("");
+  const requestDeletion = async () => {
+    setDelState("sending");
+    setDelError("");
+    try {
+      const r = await fetch("/api/support/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: "account", priority: "high", subject: "Account deletion request", message: "I'd like my Command Suite account and all of its data permanently deleted. (Sent from Settings > Data > Delete Account.)" }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 401 ? "Please sign in to send this request." : d.error || "That didn't send. Please try again, or write to support@amilynnecarroll.com.");
+      setDelState("sent");
+    } catch (e) {
+      setDelError(e instanceof Error ? e.message : "That didn't send.");
+      setDelState("idle");
+    }
+  };
+
   const renderDataSettings = () => (
     <div className="space-y-6">
       <div>
@@ -1887,14 +1833,38 @@ export default function SettingsPage() {
                 <div>
                   <h5 className="font-medium text-red-500">Delete Account</h5>
                   <p className="text-sm text-[#b8a898]">
-                    Permanently delete your account and all data
+                    Ask us to permanently delete your account and all its data
                   </p>
                 </div>
-                <Button variant="outline" className="text-red-500 border-red-500/30">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                {delState !== "sent" && (
+                  <Button variant="outline" className="text-red-500 border-red-500/30" onClick={() => { setDelOpen(!delOpen); setDelError(""); }} aria-expanded={delOpen}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
               </div>
+              {delState === "sent" ? (
+                <p role="status" className="mt-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                  Your request is in. We&apos;ll confirm by email before anything is removed. Nothing has been deleted yet.
+                </p>
+              ) : delOpen ? (
+                <div className="mt-4 space-y-3 border-t border-red-500/20 pt-4">
+                  <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    This sends a deletion request to our support team. We&apos;ll confirm with you by email first, then permanently remove your account and everything in it. Your membership and billing are closed out under your agreement. Download a backup above first if you want to keep your data.
+                  </p>
+                  <label className="block text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    Type DELETE to confirm
+                    <Input value={delText} onChange={(e) => setDelText(e.target.value)} className="mt-1 max-w-xs" autoComplete="off" />
+                  </label>
+                  {delError && <p role="alert" className="text-sm text-red-500">{delError}</p>}
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="text-red-500 border-red-500/30" disabled={delText.trim() !== "DELETE" || delState === "sending"} onClick={requestDeletion}>
+                      {delState === "sending" ? "Sending…" : "Request account deletion"}
+                    </Button>
+                    <Button variant="ghost" onClick={() => { setDelOpen(false); setDelText(""); }}>Keep my account</Button>
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -2115,12 +2085,15 @@ export default function SettingsPage() {
           </Card>
 
           {/* Save Button */}
-          <div className="mt-6 flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+          {(hiddenTabs.includes(activeTab) ? "profile" : activeTab) === "profile" && (
+            <div className="mt-6 flex items-center justify-end gap-3">
+              {saveError && <span role="alert" className="text-sm text-[#C76F56]">{saveError}</span>}
+              <Button onClick={handleSave} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
