@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     }
     const r = await createPartnership(db, a.planId, inviterName || (a.userEmail || "").split("@")[0], a.userEmail || "", String(body.name || ""), String(body.email || ""));
     if ("error" in r) return NextResponse.json({ error: r.error }, { status: r.status });
-    return NextResponse.json({ ok: true, id: r.partnership.id, link: r.partnership.b_plan_id ? null : `https://lccommandsuite.com/partner/${r.partnership.token}` });
+    return NextResponse.json({ ok: true, emailed: r.emailed, id: r.partnership.id, link: r.partnership.b_plan_id ? null : `https://lccommandsuite.com/partner/${r.partnership.token}` });
   }
 
   const p = typeof body.id === "string" ? await partnershipById(db, body.id) : null;

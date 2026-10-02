@@ -49,7 +49,8 @@ export default function Accountability() {
     setName("");
     setEmail("");
     setShowInvite(false);
-    setMsg(d.link ? `Invitation sent. They also have their own private link, which you can copy from their card.` : "Invitation sent. They'll find it under Accountability when they sign in.");
+    if (d.emailed === false) setMsg("Saved, but the email didn't go out. Copy their private link from their card and send it yourself.");
+    else setMsg(d.link ? `Invitation sent. They also have their own private link, which you can copy from their card.` : "Invitation sent. They'll find it under Accountability when they sign in.");
     await load();
     if (d.id) setSel(d.id);
   }

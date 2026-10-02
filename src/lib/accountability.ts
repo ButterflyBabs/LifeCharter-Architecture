@@ -82,7 +82,7 @@ const notifies = (p: Partnership, s: Side) => (s === "a" ? p.a_notify : p.b_noti
 
 // ---------------------------------------------------------------- creating
 
-export async function createPartnership(db: Db, planId: string, inviterName: string, inviterEmail: string, name: string, email: string): Promise<{ ok: true; partnership: Partnership } | { error: string; status: number }> {
+export async function createPartnership(db: Db, planId: string, inviterName: string, inviterEmail: string, name: string, email: string): Promise<{ ok: true; partnership: Partnership; emailed: boolean } | { error: string; status: number }> {
   const pn = clean(name, 80);
   const pe = clean(email, 200).toLowerCase();
   if (!pn) return { error: "Add your partner's name.", status: 400 };
@@ -108,7 +108,7 @@ export async function createPartnership(db: Db, planId: string, inviterName: str
   if (error || !data) return { error: "Couldn't save the invitation. Try again.", status: 500 };
   const p = data as Partnership;
   const inviter = firstName(p.a_name);
-  await sendAccEmail({
+  const emailed = await sendAccEmail({
     to: pe,
     subject: `${inviter} would like you as an accountability partner`,
     heading: `${inviter} asked you to be their accountability partner`,
@@ -116,7 +116,7 @@ export async function createPartnership(db: Db, planId: string, inviterName: str
     cta: "See the invitation",
     link: sideLink(p, "b"),
   });
-  return { ok: true, partnership: p };
+  return { ok: true, partnership: p, emailed };
 }
 
 // ---------------------------------------------------------------- reading
