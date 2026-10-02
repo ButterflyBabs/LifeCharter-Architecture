@@ -26,25 +26,12 @@ export async function GET() {
   const { data: space } = await db.from("cm_spaces").select("id").eq("slug", SPACE_SLUG).maybeSingle();
   if (!space?.id) return NextResponse.json({ calls: [] });
   const isDemo = isDemoRequest();
-  // "This week": the rest of the current Mon–Sun week in Mountain time (the calls
-  // are scheduled in Mountain). If nothing is left this week, show all of next week.
-  // Demo mode skips straight to next week: some of the five weekly calls (e.g. the
-  // Anchor, the Dimension Call) don't have an occurrence every single calendar week
-  // this early in the rhythm, so "this week" can be sparse. Next week always has all
-  // five, so a live sales demo never catches a partial row.
+  // "This week" is the rest of the current Mon–Sun week in Mountain time (the calls are
+  // scheduled in Mountain); "next week" is the whole following week.
   const now = Date.now();
   const endOfWeek = mountainWeekEnd(new Date(now));
-  let sessions = isDemo
-    ? []
-    : (await sessionsBetween(db, new Date(now - 2 * 3600_000), endOfWeek, space.id as string)).filter((x) => x.end.getTime() > now);
-  let week: "this" | "next" = "this";
-  if (isDemo || !sessions.length) {
-    sessions = await sessionsBetween(db, endOfWeek, new Date(endOfWeek.getTime() + 7 * 86_400_000), space.id as string);
-    week = "next";
-  }
-  const calls = sessions
-    .slice(0, 30)
-    .map((s) => ({
+  const shape = (list: Awaited<ReturnType<typeof sessionsBetween>>) =>
+    list.slice(0, 30).map((s) => ({
       id: `${s.event.id}:${s.start.toISOString()}`,
       eventId: s.event.id,
       title: s.event.title,
@@ -53,7 +40,13 @@ export async function GET() {
       joinUrl: /^https:\/\/([a-z0-9-]+\.)?zoom\.us\//i.test(s.event.join_url || "") ? s.event.join_url : null,
       about: (s.event.description || "").split(/\n/)[0].slice(0, 180),
     }));
-  return NextResponse.json({ calls, week });
+  const thisWeek = (await sessionsBetween(db, new Date(now - 2 * 3600_000), endOfWeek, space.id as string)).filter((x) => x.end.getTime() > now);
+  const nextWeek = await sessionsBetween(db, endOfWeek, new Date(endOfWeek.getTime() + 7 * 86_400_000), space.id as string);
+  // The card opens on this week, or next week when nothing is left this week (and always
+  // for the demo, so a live sales demo never catches a partial row); it has a tab for each.
+  const week: "this" | "next" = isDemo || !thisWeek.length ? "next" : "this";
+  const tabs = { this: shape(thisWeek), next: shape(nextWeek) };
+  return NextResponse.json({ calls: tabs[week], week, tabs });
 }
 
 // The instant the current Monday–Sunday week ends (midnight Monday), in Mountain time.

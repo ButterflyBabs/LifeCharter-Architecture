@@ -9,7 +9,7 @@ type Call = { id: string; eventId: string; title: string; start: string; end: st
 // "This week's coaching calls": Mon-Sun of Command Suite coaching calls,
 // so clients always know when and where to go for support and training.
 export default function CoachingCallsCard({ compact = false }: { compact?: boolean }) {
-  const [calls, setCalls] = useState<Call[] | null>(null);
+  const [tabs, setTabs] = useState<{ this: Call[]; next: Call[] } | null>(null);
   const [week, setWeek] = useState<"this" | "next">("this");
   const [now, setNow] = useState(() => Date.now());
 
@@ -17,10 +17,11 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
     fetch("/api/coaching-calls", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { calls: [] }))
       .then((d) => {
-        setCalls(Array.isArray(d.calls) ? d.calls : []);
-        setWeek(d.week === "next" ? "next" : "this");
+        const w: "this" | "next" = d.week === "next" ? "next" : "this";
+        setTabs({ this: Array.isArray(d.tabs?.this) ? d.tabs.this : w === "this" && Array.isArray(d.calls) ? d.calls : [], next: Array.isArray(d.tabs?.next) ? d.tabs.next : w === "next" && Array.isArray(d.calls) ? d.calls : [] });
+        setWeek(w);
       })
-      .catch(() => setCalls([]));
+      .catch(() => setTabs({ this: [], next: [] }));
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
@@ -35,6 +36,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
   };
   const time = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
+  const calls = tabs ? tabs[week] : null;
   const shown = (calls ?? []).slice(0, compact ? 8 : 30);
   const groups: { label: string; items: Call[] }[] = [];
   for (const c of shown) {
@@ -73,14 +75,21 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
     <section aria-labelledby="coaching-calls-h" className="rounded-2xl border border-[#c9a227]/30 bg-white dark:bg-[#1a2b4a]/40 shadow-sm p-5">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pr-7">
         <h2 id="coaching-calls-h" className="flex items-center gap-2 text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-          <CalendarClock className="w-4 h-4 text-[#c9a227]" aria-hidden /> {week === "next" ? "Next week's coaching calls" : "This week's coaching calls"}
+          <CalendarClock className="w-4 h-4 text-[#c9a227]" aria-hidden /> Coaching calls
         </h2>
+        <div role="tablist" aria-label="Which week" className="flex gap-1 rounded-full bg-[#1a2b4a]/5 p-0.5 dark:bg-white/10">
+          {(["this", "next"] as const).map((k) => (
+            <button key={k} role="tab" aria-selected={week === k} onClick={() => setWeek(k)} className={`rounded-full px-3 py-1 text-xs font-semibold ${week === k ? "bg-[#1a2b4a] text-white dark:bg-[#c9a227] dark:text-[#1a2b4a]" : "text-[#5a6472] dark:text-[#b8c2cf]"}`}>
+              {k === "this" ? "This week" : "Next week"}
+            </button>
+          ))}
+        </div>
         <Link href="/community/events" className="text-xs font-medium text-[#2E7C83] hover:underline">See all calls and replays</Link>
       </div>
       {calls === null ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : !shown.length ? (
-        <p className="text-sm text-[#7a8a99]">No calls scheduled this week or next. See the full schedule on the Collective&apos;s Events page.</p>
+        <p className="text-sm text-[#7a8a99]">{week === "this" ? "No more calls this week." : "No calls scheduled next week yet."} See the full schedule on the Collective&apos;s Events page.</p>
       ) : compact ? (
         <div className="space-y-3">
           {groups.map((g) => (
