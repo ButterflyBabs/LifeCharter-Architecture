@@ -149,6 +149,7 @@ export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExt
         </div>
       )}
       {view.partnership.status === "invited" && isA && <p className="rounded-xl bg-[#2E7C83]/10 px-4 py-3 text-sm text-[#1F5E63]">Waiting for {partner.name} to say yes. You can start adding commitments and writing your side of the agreement now.</p>}
+      {ps.coachVisible && view.viewer !== "coach" && <p className="rounded-xl bg-[#1a2b4a]/5 px-4 py-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{isA ? "Your coach can see this partnership (read-only)." : `${partner.name}'s coach can see this partnership (read-only).`}</p>}
       {ps.status === "paused" && <p className="rounded-xl bg-[#c9a227]/15 px-4 py-3 text-sm text-[#6b5410]">This partnership is paused. No reminders or emails go out until it&apos;s resumed.</p>}
       {ps.status === "ended" && <p className="rounded-xl bg-[#1a2b4a]/5 px-4 py-3 text-sm text-[#5a6472]">This partnership has ended and is read-only.</p>}
 
@@ -164,7 +165,7 @@ export default function AccountabilityWorkspace({ mode, getUrl, postUrl, postExt
           {ps.status !== "ended" && ps.status !== "invited" && <button className={btn} onClick={() => confirm("End this partnership? It becomes read-only for both of you.") && post({ action: "end" })}><X className="h-3 w-3" /> End</button>}
           {isA && ps.status === "ended" && <button className={btn} onClick={() => confirm("Delete this partnership and everything in it?") && post({ action: "delete" })}><Trash2 className="h-3 w-3" /> Delete</button>}
           <label className="flex items-center gap-1.5"><input type="checkbox" checked={ps.notify} onChange={(e) => post({ action: "notify", value: e.target.checked })} /> Email me about this</label>
-          {isA && mode === "app" && <label className="flex items-center gap-1.5"><input type="checkbox" checked={ps.coachVisible} onChange={(e) => post({ action: "coach-visible", value: e.target.checked })} /> Let my coach see this (read-only)</label>}
+          {isA && mode === "app" && <label className="flex items-center gap-1.5"><input type="checkbox" checked={ps.coachVisible} onChange={(e) => post({ action: "coach-visible", value: e.target.checked })} /> Let my coach see this (read-only; {partner.name} will see a note that she can)</label>}
         </div>
       )}
       {msg && <p className="rounded-lg bg-[#b06a5a]/10 px-3 py-2 text-sm text-[#8a2f2f]">{msg}</p>}
@@ -489,10 +490,10 @@ function Encouragement({ view, post, readOnly }: { view: View; post: Post; readO
       <div className={card}>
         <h3 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Feed</h3>
         <div className="mt-3 space-y-2.5">
-          {view.nudges.length === 0 && <p className="text-sm text-[#7a8a99]">Nothing yet. The first kind word sets the tone.</p>}
-          {view.nudges.map((n) => {
+          {view.nudges.filter((n) => n.from_side !== "system" || n.to_side === view.viewer || view.viewer === "coach").length === 0 && <p className="text-sm text-[#7a8a99]">Nothing yet. The first kind word sets the tone.</p>}
+          {view.nudges.filter((n) => n.from_side !== "system" || n.to_side === view.viewer || view.viewer === "coach").map((n) => {
             const mine = n.from_side === view.you.side;
-            const from = n.from_side === "system" ? "Reminder" : mine ? (readOnly ? view.you.name : "You") : view.partner.name;
+            const from = n.from_side === "system" ? "Update" : mine ? (readOnly ? view.you.name : "You") : view.partner.name;
             return (
               <div key={n.id} className={`rounded-xl px-3 py-2 text-sm ${n.from_side === "system" ? "bg-[#1a2b4a]/5" : mine ? "bg-[#c9a227]/10" : "bg-[#2E7C83]/10"} ${n.to_side === view.viewer && !n.read_at ? "ring-1 ring-[#2E7C83]/40" : ""}`}>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7a8a99]">{from} · {KIND_LABEL[n.kind] || "Note"} · {when(n.created_at)}</p>

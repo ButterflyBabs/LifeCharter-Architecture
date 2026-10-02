@@ -598,6 +598,38 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "Click it for three choices. Something's not working lets you describe a glitch and, if you check the box, also opens a real support ticket our team follows up on — either way it shows up under Help → Contact Support → \"Glitches your team has reported,\" visible only to your own account. I have a suggestion and General feedback both go on a shared board at the bottom of that same page that every Command Suite user can see and thumbs-up — voting tells us how many people want the same thing. We can mark any of the three Open, Under review, Planned, Shipped or Closed, which shows right on the item.",
     keywords: ["light bulb", "lightbulb", "feedback", "suggestion", "glitch", "bug report", "vote", "thumbs up", "roadmap", "feature request"],
   },
+  {
+    id: "gs-accountability-partner",
+    category: "Getting Started",
+    question: "How do I set up an accountability partner?",
+    answer:
+      "Open Daily Operations → Accountability Partner and choose Invite an accountability partner. Add their name and email. Your partner can be another Command Suite client or anyone outside the system: someone without an account gets a private link by email and needs nothing to sign up for. Your partner never sees your account. They see only the commitments you add on this page, and you see only what they add. You can have up to three partners at a time, and either of you can pause or end a partnership whenever you like.",
+    keywords: ["accountability", "accountability partner", "partner", "invite", "buddy", "check in", "hold me accountable"],
+  },
+  {
+    id: "gs-accountability-how",
+    category: "Getting Started",
+    question: "What can I do on the Accountability Partner page?",
+    answer:
+      "Commitments: add tasks, milestones, projects, deadlines or habits (or share one of your existing tasks), mark them as a promise, and attach a reward and what happens if it slips. Both of you can leave notes on any commitment. Encouragement: send a template message (Encourage, Nudge, Inspire, Support, Celebrate), save your own, or tap Write some for me for AI-written options; the I'm stuck button asks your partner for support in one tap. Check-in: a five-minute weekly note on what went well, where you got stuck and what you're committing to. Our agreement: each of you writes how you want to be held accountable, the tone that works for you, your rewards, and what happens if something slips. You choose whether that is a pledge in writing, tracked on each commitment as followed through or not, both, or kept light. Wins: everything either of you has finished. You also get a friendly reminder the day before something is due and a gentle note if it slips.",
+    keywords: ["accountability", "commitments", "encouragement", "nudge", "check-in", "agreement", "reward", "consequence", "stuck", "wins", "streak"],
+  },
+  {
+    id: "gs-accountability-ai",
+    category: "Getting Started",
+    question: "Does the Accountability Partner page have AI help, and who pays for it?",
+    answer:
+      "Yes. Draft it with AI on the Our agreement tab writes how you'd like to be held accountable, your rewards and what happens if you miss something, from a few words about how you work. Suggest a reward on a commitment and Write some for me on the Encouragement tab work the same way. It uses your own AI key (Settings → AI Assistant) and sees only what you type on this page, never your business data. When your partner is outside the Suite, their writing help runs on your key, with a daily limit. Consequences are always self-chosen and kept kind: the AI will soften anything that shames or harms.",
+    keywords: ["accountability", "ai", "draft", "write for me", "reward", "consequence", "key"],
+  },
+  {
+    id: "gs-accountability-coach",
+    category: "Getting Started",
+    question: "Can my coach see my accountability partnership?",
+    answer:
+      "Only if you choose. On a partnership page, turn on Let my coach see this and your coach gets a read-only view of it. Turn it off any time and she can no longer see it. Your partner sees a note on their page whenever your coach can see the partnership, so nothing is hidden from them, and a coach can't change anything.",
+    keywords: ["accountability", "coach", "visible", "privacy", "read-only"],
+  },
 
   // ---- Business Alignment (scoring + plans) ----
   {
