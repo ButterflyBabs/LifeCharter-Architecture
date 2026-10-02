@@ -567,6 +567,8 @@ function AgreementTab({ view, post, readOnly }: { view: View; post: Post; readOn
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   async function draft() {
     setBusy(true);
@@ -622,7 +624,10 @@ function AgreementTab({ view, post, readOnly }: { view: View; post: Post; readOn
             {mode !== "none" && mode !== "tracked" && <textarea className={`${field} mt-2`} rows={2} placeholder="What it looks like, kindly and specifically" value={missPlan} onChange={(e) => setMissPlan(e.target.value)} maxLength={800} />}
             {mode === "both" && <p className="mt-1 text-xs text-[#7a8a99]">Your pledge above, plus a follow-through check on each commitment.</p>}
           </Labeled>
-          <button className={`${btnPrimary} mt-4`} disabled={view.partnership.status === "ended"} onClick={() => post({ action: "agreement-save", howHeld, tone, checkIn, rewardSelf, rewardPartner, missPlan, stuckPlan, consequenceMode: mode }).then((r) => r && setInfo("Saved."))}><Check className="h-4 w-4" /> Save my agreement</button>
+          <div className="mt-4 flex items-center gap-3">
+            <button className={btnPrimary} disabled={saving || view.partnership.status === "ended"} onClick={async () => { setSaving(true); setSaved(false); const r = await post({ action: "agreement-save", howHeld, tone, checkIn, rewardSelf, rewardPartner, missPlan, stuckPlan, consequenceMode: mode }); setSaving(false); if (r) setSaved(true); }}><Check className="h-4 w-4" /> {saving ? "Saving…" : "Save my agreement"}</button>
+            {saved && <span className="text-sm font-semibold text-[#2c6b3f]">Saved. {view.partner.name} can read it now.</span>}
+          </div>
         </div>
       ) : (
         <AgreementRead title={`${view.you.name}'s agreement`} a={view.agreements.you} />
