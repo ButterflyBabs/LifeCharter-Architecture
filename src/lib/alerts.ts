@@ -361,6 +361,53 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // 12. Accountability Partner: encouragement, nudges, "I'm stuck" requests, a partner's wins and
+  // reminders waiting for you, plus an invitation from another Suite client. They leave the
+  // bell once you've opened the page (that marks them read there).
+  try {
+    const { data: parts } = await supabase
+      .from("accountability_partnerships")
+      .select("id, a_plan_id, b_plan_id, a_name, b_name, status")
+      .or(`a_plan_id.eq.${masterPlanId},b_plan_id.eq.${masterPlanId}`)
+      .neq("status", "ended");
+    const rows = (parts || []) as { id: string; a_plan_id: string; b_plan_id: string | null; a_name: string; b_name: string; status: string }[];
+    const mine = new Map(rows.map((p) => [p.id, { side: p.a_plan_id === masterPlanId ? "a" : "b", partner: ((p.a_plan_id === masterPlanId ? p.b_name : p.a_name) || "Your partner").trim().split(/\s+/)[0] || "Your partner" }]));
+    for (const p of rows) {
+      if (p.b_plan_id === masterPlanId && p.status === "invited") {
+        out.push({ nkey: `acc-invite:${p.id}`, type: "action", title: `${(p.a_name || "Someone").trim().split(/\s+/)[0]} invited you to be accountability partners`, body: "Open Accountability Partner to say yes, or not right now.", href: "/accountability" });
+      }
+    }
+    if (rows.length) {
+      const { data: nudges } = await supabase
+        .from("accountability_nudges")
+        .select("id, partnership_id, from_side, to_side, kind, message")
+        .in("partnership_id", rows.map((p) => p.id))
+        .is("read_at", null)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      let n = 0;
+      for (const x of (nudges || []) as { id: string; partnership_id: string; from_side: string; to_side: string; kind: string; message: string }[]) {
+        const m = mine.get(x.partnership_id);
+        if (!m || x.to_side !== m.side || n >= 10) continue;
+        n++;
+        const name = m.partner;
+        const system = x.from_side === "system";
+        const title = system
+          ? x.kind === "celebrate" ? "A win to celebrate" : "Accountability reminder"
+          : x.kind === "stuck" ? `${name} is stuck and asked for support`
+          : x.kind === "nudge" ? `${name} sent you a nudge`
+          : x.kind === "encourage" ? `${name} sent you encouragement`
+          : x.kind === "inspire" ? `${name} sent you some inspiration`
+          : x.kind === "support" ? `${name} is offering support`
+          : x.kind === "celebrate" ? `${name} is celebrating you`
+          : `${name} sent you a note`;
+        out.push({ nkey: `acc-nudge:${x.id}`, type: x.kind === "stuck" || x.kind === "nudge" || x.kind === "reminder" ? "action" : x.kind === "celebrate" ? "success" : "info", title, body: x.message.slice(0, 220), href: "/accountability" });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

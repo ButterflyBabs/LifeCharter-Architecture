@@ -245,6 +245,7 @@ export async function act(db: Db, p: Partnership, side: Side, body: Record<strin
   if (action === "accept") {
     if (side !== "b" || p.status !== "invited") return bad("There's nothing to accept.", 409);
     await db.from("accountability_partnerships").update({ status: "active", accepted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", p.id);
+    await db.from("accountability_nudges").insert({ partnership_id: p.id, from_side: "system", to_side: "a", kind: "celebrate", message: `${sideName(p, "b")} said yes. You're accountability partners now.` });
     await sendAccEmail({ to: await sideEmail(db, p, "a"), subject: `${sideName(p, "b")} is your accountability partner`, heading: `${sideName(p, "b")} said yes`, body: `${sideName(p, "b")} accepted. Add what you want to be held to, write how you each like to be supported, and send your first word of encouragement.`, cta: "Open Accountability", link: `${APP_URL}/accountability` });
     return { ok: true };
   }
