@@ -107,6 +107,7 @@ export default function Accountability() {
                 <li><b>Anyone can be a partner.</b> Another Suite client, or a friend or colleague with no account. They get a private link and nothing to sign up for.</li>
                 <li><b>Both of you write the rules.</b> How you each want to be held accountable, what you&apos;ll reward, and what happens if something slips, with AI help if you want it.</li>
               </ul>
+              <p className="mt-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Nobody in mind yet? <a className="font-semibold text-[#2E7C83] hover:underline" href="/community/s/commons/accountability-partners">Find one in the Collective</a>.</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -134,6 +135,8 @@ export default function Accountability() {
               ))}
             </div>
           )}
+
+          {rows !== null && rows.length > 0 && <p className="text-sm text-[#7a8a99]">Looking for someone new? <a className="font-semibold text-[#2E7C83] hover:underline" href="/community/s/commons/accountability-partners">Find an accountability partner in the Collective</a>.</p>}
 
           {showInvite ? (
             <div className="max-w-md space-y-2 rounded-2xl border border-[#c9a227]/30 bg-white p-5 dark:bg-[#1a2b4a]/40">

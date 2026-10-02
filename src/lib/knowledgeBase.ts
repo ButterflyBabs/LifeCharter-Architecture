@@ -603,7 +603,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How do I set up an accountability partner?",
     answer:
-      "Open Daily Operations → Accountability Partner and choose Invite an accountability partner. Add their name and email. Your partner can be another Command Suite client or anyone outside the system: someone without an account gets a private link by email and needs nothing to sign up for. Your partner never sees your account. They see only the commitments you add on this page, and you see only what they add. You can have up to three partners at a time, and either of you can pause or end a partnership whenever you like.",
+      "Open Daily Operations → Accountability Partner and choose Invite an accountability partner. Add their name and email. Your partner can be another Command Suite client or anyone outside the system: someone without an account gets a private link by email and needs nothing to sign up for. Your partner never sees your account. They see only the commitments you add on this page, and you see only what they add. You can have up to three partners at a time, and either of you can pause or end a partnership whenever you like. Don't have someone in mind? The Collective has a Find an Accountability Partner channel under Community, where members share what they're working on and the kind of accountability that helps them; when you find a fit, invite them from this page.",
     keywords: ["accountability", "accountability partner", "partner", "invite", "buddy", "check in", "hold me accountable"],
   },
   {
