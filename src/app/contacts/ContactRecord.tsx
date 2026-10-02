@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactEmails from "./ContactEmails";
+import FollowUpScheduler from "./FollowUpScheduler";
 
 export interface ContactFull {
   id: string;
@@ -595,6 +596,8 @@ export default function ContactRecord({
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="A call, a conversation, a next step…" className={box} />
           <Button className="mt-2" onClick={addNote}>Save note</Button>
         </div>
+
+        <FollowUpScheduler contact={{ id: c.id, name: fullName(c), email: c.email }} setMsg={setMsg} />
 
         <ContactEmails contactId={c.id} name={fullName(c)} />
 
