@@ -371,11 +371,11 @@ export default function ContactSupportPage() {
         </CardContent>
       </Card>
 
-      <WhatsNew />
       <MyRequests refreshKey={sentCount} />
       <MyGlitches refreshKey={sentCount} />
       <CommunityBoard kind="suggestion" title="Suggestions" icon={Sparkles} />
       <CommunityBoard kind="feedback" title="General Feedback" icon={MessageSquareHeart} />
+      <WhatsNew />
 
       {/* Office Hours */}
       <div className="text-center py-8 border-t border-[#1a2b4a]/10">
