@@ -84,7 +84,7 @@ export function FeedbackButton() {
         onClick={() => setOpen((o) => !o)}
         className="relative w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors"
         aria-label="Suggestion or feedback"
-        title="Got a glitch, a suggestion, or feedback?"
+        title="Report a glitch, suggest an idea or share feedback"
       >
         <Lightbulb className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
       </button>
