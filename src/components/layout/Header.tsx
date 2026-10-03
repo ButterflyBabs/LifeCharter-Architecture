@@ -7,6 +7,7 @@ import { useTheme } from "@/components/theme-provider";
 import {
   Search,
   HelpCircle,
+  LifeBuoy,
   Sparkles,
 } from "lucide-react";
 import { NotificationsBell } from "./NotificationsBell";
@@ -143,6 +144,16 @@ export function Header({
           className="w-9 h-9 rounded-full bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 flex items-center justify-center hover:bg-[#1a2b4a]/10 dark:hover:bg-[#e8e4f0]/20 transition-colors"
         >
           <HelpCircle className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
+        </Link>
+
+        {/* Contact Support: tickets, updates and fixes, suggestions */}
+        <Link
+          href="/help/contact"
+          aria-label="Contact Support"
+          title="Contact Support"
+          className="w-9 h-9 rounded-full bg-[#c9a227]/15 dark:bg-[#c9a227]/20 flex items-center justify-center hover:bg-[#c9a227]/25 dark:hover:bg-[#c9a227]/30 transition-colors"
+        >
+          <LifeBuoy className="w-5 h-5 text-[#c9a227]" />
         </Link>
 
       </div>
