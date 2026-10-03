@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { STARTER_GUIDE_URL } from "@/lib/starterGuide";
 import {
   Brain,
   Heart,
@@ -136,6 +137,20 @@ export default function SetupPage() {
             three assessments, the foundation everything else is built on, and at least one of your tools.
           </p>
         </div>
+
+        {/* Starter Guide */}
+        <a
+          href={STARTER_GUIDE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-[#c9a227]/40 bg-white dark:bg-[#1a2b4a]/40 px-5 py-4 hover:border-[#c9a227]"
+        >
+          <span>
+            <span className="block font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Want a checklist to follow?</span>
+            <span className="block text-sm text-[#7a8a99] dark:text-[#b8c2cf]">Open the Starter Guide: one small step at a time, with a tick box for each.</span>
+          </span>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#2E7C83] whitespace-nowrap">Open <ArrowRight className="w-4 h-4" /></span>
+        </a>
 
         {/* Progress */}
         <div className="mb-6">

@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { STARTER_GUIDE_URL } from "@/lib/starterGuide";
 import {
   LayoutDashboard,
   Mail,
@@ -163,6 +164,7 @@ const navigationSections = [
     items: [
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
+      { id: "starter-guide", label: "Starter Guide", icon: BookOpen, href: STARTER_GUIDE_URL },
     ],
   },
 ];
