@@ -757,6 +757,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["set up", "setup", "set up suite", "onboarding", "first steps", "assessments", "connect ai", "website address"],
   },
   {
+    id: "ba-growth-roadmap",
+    category: "Business Alignment",
+    question: "Where is my personalized growth roadmap?",
+    answer:
+      "On the Business Alignment page, just below your briefing. Once your three assessments are in, press Build my roadmap and your assistant writes your 90-day Growth Roadmap from your own scores and answers: the three areas to focus on first, then three phases (Days 1 to 30, 31 to 60 and 61 to 90) with two or three specific steps each. Every step opens the right screen, and one click adds it to your tasks. Press Refresh any time your scores change. It uses your own AI key, saves with your account, and never quotes your private answers.",
+    keywords: ["growth roadmap", "roadmap", "90 day", "plan", "recommendations", "business alignment", "next steps", "assessment results"],
+  },
+  {
     id: "gs-starter-guide",
     category: "Getting Started",
     question: "Is there a step-by-step guide to setting up?",

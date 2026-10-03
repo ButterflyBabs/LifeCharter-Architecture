@@ -413,6 +413,77 @@ export const AlignmentBriefing = () => (
     sections={[{ key: "drivers", heading: "What's driving it" }]}
   />
 );
+
+/* ───────────── Business Alignment: the Growth Roadmap ───────────── */
+type RoadmapStep = { area?: string; title: string; why?: string; task?: string; href?: string };
+type RoadmapData = {
+  summary: string; assistant?: string; createdAt?: string;
+  priorities?: { area: string; why: string }[];
+  phases?: { when: string; theme: string; steps: RoadmapStep[] }[];
+};
+
+// The personalized 90-day roadmap built from a client's assessment results: priority areas in
+// order, then three phases of steps, each one addable to their task list.
+export function GrowthRoadmap() {
+  const { name, needsKey, data, running, err, run } = useStored<RoadmapData>("/api/alignment/roadmap");
+  const [added, setAdded] = useState<Record<string, "busy" | "done">>({});
+
+  const addTask = async (s: RoadmapStep, key: string) => {
+    setAdded((a) => ({ ...a, [key]: "busy" }));
+    const { ok } = await post("/api/tasks", { title: s.task || s.title, description: s.why || "", status: "backlog", priority: "medium" });
+    setAdded((a) => ({ ...a, [key]: ok ? "done" : (undefined as never) }));
+    if (ok) window.dispatchEvent(new Event("tasks-changed"));
+  };
+
+  return (
+    <Shell name={name} title="growth roadmap" blurb="Your 90-day plan, built from your assessment results: where to focus first, then what to do in the first 30, 60 and 90 days." onRun={run} running={running} hasResult={!!data} runLabel="Build my roadmap" needsKey={needsKey} stamp={stampOf(data?.assistant || name, data?.createdAt)}>
+      {err && <p className="mt-3 text-sm text-[#8a2f2f]">{err}</p>}
+      {data && (
+        <>
+          <p className="mt-3 text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">{data.summary}</p>
+          {!!data.priorities?.length && (
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#2E7C83]">Where to focus first</p>
+              <ol className="mt-1 space-y-1.5">
+                {data.priorities.map((p, n) => (
+                  <li key={n} className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <span className="font-semibold">{n + 1}. {p.area}</span>
+                    <span className="text-[#5a6472] dark:text-[#c3ccd8]"> — {p.why}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {(data.phases ?? []).map((ph, pi) => (
+              <div key={pi} className="rounded-xl border border-[#2E7C83]/20 bg-white/70 p-4 dark:bg-white/5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#8a6a15]">{ph.when}</p>
+                <p className="mt-0.5 font-semibold text-[#12303a] dark:text-[#F8F5F0]">{ph.theme}</p>
+                <ul className="mt-2 space-y-3">
+                  {ph.steps.map((s, si) => {
+                    const key = `${pi}-${si}`;
+                    return (
+                      <li key={si} className="text-sm">
+                        <Link href={s.href || "/business-alignment"} className="inline-flex items-start gap-1 font-medium text-[#2E7C83] hover:underline">
+                          {s.title} <ArrowRight className="mt-1 h-3.5 w-3.5 flex-none" />
+                        </Link>
+                        {s.why && <p className="text-[#5a6472] dark:text-[#c3ccd8]">{s.why}</p>}
+                        <button onClick={() => addTask(s, key)} disabled={!!added[key]} className="mt-1 rounded-lg border border-[#2E7C83]/40 px-2.5 py-1 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/10 disabled:opacity-70">
+                          {added[key] === "done" ? "✓ Added to my tasks" : added[key] === "busy" ? "Adding…" : "Add to my tasks"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {!data && !needsKey && <p className="mt-3 text-sm text-[#5a6472] dark:text-[#c3ccd8]">Press <b>Build my roadmap</b> and your assistant writes it from your results. Refresh it any time your scores change.</p>}
+    </Shell>
+  );
+}
 export const ProgressRead = () => (
   <InsightPanel
     url="/api/progress/read" title="progress read" runLabel="Read my progress"

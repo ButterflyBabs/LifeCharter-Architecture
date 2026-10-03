@@ -22,10 +22,10 @@ export default function FullAssessmentCard() {
 
   const title = done ? "Your full assessment is complete" : status && finished > 0 ? `Finish your full assessment: ${left.length} ${left.length === 1 ? "assessment" : "assessments"} to go` : "Complete the Full Assessment";
   const text = done
-    ? "All three assessments are in, so your Business Health Score, your three next moves and your Alignment Profile are built from your own answers. Review any assessment above, or take a Quick Pulse check-in to track your progress."
+    ? "All three assessments are in, so your Business Health Score, your three next moves, your Growth Roadmap and your Alignment Profile are built from your own answers. Review any assessment above, or take a Quick Pulse check-in to track your progress."
     : status && finished > 0
-    ? "Each one you finish sharpens your Business Health Score, your next moves and your Alignment Profile. Here is where you stand."
-    : "Take all three assessments to get your complete Business Health Score, your three next moves and a written portrait of you and your business.";
+    ? "Each one you finish sharpens your Business Health Score, your next moves, your Growth Roadmap and your Alignment Profile. Here is where you stand."
+    : "Take all three assessments to get your complete Business Health Score, your three next moves, a 90-day Growth Roadmap and a written portrait of you and your business.";
 
   return (
     <div className="mt-8">
@@ -51,7 +51,7 @@ export default function FullAssessmentCard() {
             {done ? (
               <Link href="/business-alignment">
                 <Button variant="primary" size="lg">
-                  See your Business Alignment
+                  See your Growth Roadmap
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>

@@ -28,7 +28,7 @@ import { BusinessHealthTrend } from "@/components/dashboard/BusinessHealthTrend"
 import { OperatingRhythm } from "@/components/dashboard/OperatingRhythm";
 import { RevenueSnapshot } from "@/components/dashboard/RevenueSnapshot";
 import { Card, CardContent } from "@/components/ui/Card";
-import { AlignmentBriefing } from "@/components/planning/AssistantPanels";
+import { AlignmentBriefing, GrowthRoadmap } from "@/components/planning/AssistantPanels";
 
 // Define the dashboard card type
 type DashboardCard = {
@@ -339,6 +339,7 @@ export default function DashboardPage() {
       </div>
 
       <AlignmentBriefing />
+      <GrowthRoadmap />
 
       {/* Draggable Grid */}
       <DndContext
