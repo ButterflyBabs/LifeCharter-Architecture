@@ -11,6 +11,16 @@ export function welcomeEmailsEnabled() {
   return process.env.WELCOME_EMAILS_ENABLED === "true";
 }
 
+// The email as it will go out: the built-in copy, with any saved edit (subject, preview, body) on top.
+// The schedule (day) always comes from the built-in definition.
+export async function effectiveWelcomeEmail(supabase: SupabaseClient, key: string): Promise<(WelcomeEmail & { edited: boolean }) | null> {
+  const base = WELCOME_EMAILS.find((x) => x.key === key);
+  if (!base) return null;
+  const { data } = await supabase.from("lccs_welcome_email_overrides").select("subject, preview, body").eq("email_key", key).maybeSingle();
+  if (!data) return { ...base, edited: false };
+  return { ...base, subject: String(data.subject || base.subject), preview: String(data.preview ?? base.preview), body: String(data.body || base.body), edited: true };
+}
+
 export type WelcomeClient = { userId: string; email: string; name: string | null; planId: string | null; enrolledAt: string };
 
 const SIGN_OFF = "Head up - Wings out\nBabs 🦋";
@@ -66,7 +76,7 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
 // Claim, then send. Returns true only if this call sent the email.
 export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClient, key: string): Promise<boolean> {
   if (!welcomeEmailsEnabled()) return false;
-  const e = WELCOME_EMAILS.find((x) => x.key === key);
+  const e = await effectiveWelcomeEmail(supabase, key);
   const apiKey = process.env.RESEND_API_KEY;
   if (!e || !apiKey || !c.email) return false;
   const { data: claimed, error: claimErr } = await supabase
@@ -120,4 +130,22 @@ export async function clientSetupState(supabase: SupabaseClient, userId: string,
   const ai = Boolean(key);
   const assessments = types.has("brain") && types.has("soul") && profit;
   return { ai, assessments, tools, website: Boolean(((ws?.website as string) || "").trim()), setupComplete: ai && assessments && tools };
+}
+
+
+// "Send me a test" from the editor: one email to the person who asked, with sample details. Not logged, not counted.
+export async function sendWelcomeTest(e: WelcomeEmail, to: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !to) return false;
+  const { subject, text, html } = renderWelcomeEmail(e, { userId: "test", email: to, name: "Eloise", planId: "starter", enrolledAt: new Date().toISOString() });
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "Babs at LifeCharter Command Suite <support@lccommandsuite.com>", to, reply_to: "support@amilynnecarroll.com", subject: `[Test] ${subject}`, html, text }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

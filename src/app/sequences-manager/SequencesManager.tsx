@@ -158,7 +158,7 @@ export default function SequencesManager() {
             {pageTab === "campaigns"
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
               : pageTab === "welcome"
-              ? <>The new-client welcome series, so you can see who has been sent what and what is waiting.</>
+              ? <>The LCCS New Client Welcome emails: read and edit them, and see who has been sent what and what is waiting.</>
               : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function SequencesManager() {
       <div className="flex gap-2 mb-5">
         {((sender?.house ? ["campaigns", "broadcasts", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome")[]).map((t) => (
           <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : "Welcome series"}
+            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : "LCCS New Client Welcome"}
           </button>
         ))}
       </div>
