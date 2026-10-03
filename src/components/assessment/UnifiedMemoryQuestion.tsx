@@ -27,6 +27,10 @@ interface UnifiedMemoryQuestionProps {
   showCrossContext?: boolean;
   onSyncComplete?: (success: boolean) => void;
   className?: string;
+  /** Answer already held by the page (e.g. saved earlier or filled by the client's AI). */
+  initialValue?: string;
+  /** Tells the page whenever the answer changes, so its own state (and Next button) stay in step. */
+  onValueChange?: (value: string) => void;
 }
 
 export function UnifiedMemoryQuestion({
@@ -45,8 +49,16 @@ export function UnifiedMemoryQuestion({
   showCrossContext = true,
   onSyncComplete,
   className = '',
+  initialValue,
+  onValueChange,
 }: UnifiedMemoryQuestionProps) {
-  const [value, setValue] = useState<string | string[]>('');
+  const [value, setValue] = useState<string | string[]>(initialValue ?? '');
+
+  // Keep in step when the page's answer changes from outside (e.g. filled by AI).
+  useEffect(() => {
+    if (initialValue !== undefined && initialValue !== value) setValue(initialValue);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValue]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -158,6 +170,7 @@ export function UnifiedMemoryQuestion({
 
   const handleChange = (newValue: string | string[]) => {
     setValue(newValue);
+    onValueChange?.(Array.isArray(newValue) ? newValue.join(',') : newValue);
   };
 
   // Render different input types

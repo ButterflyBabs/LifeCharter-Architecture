@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Heart, ArrowLeft, ArrowRight, Save, CheckCircle, Shield } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { AiFillSection } from "@/components/assessment/AiFillSection";
 
 interface Question {
   id: string;
@@ -326,6 +327,7 @@ export default function SoulAssessmentPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   // Load saved progress
   useEffect(() => {
@@ -500,8 +502,33 @@ export default function SoulAssessmentPage() {
             <div className="mt-2">
               <Progress value={sectionProgress} variant="lavender" className="h-1" />
             </div>
+            <div className="mt-3">
+              <AiFillSection
+                assessmentName="Soul"
+                assessmentAbout="me as a person and a leader: my identity, story, calling, values, beliefs, voice, presence, the people I serve, and my stories"
+                sectionName={currentSection}
+                questions={sectionQuestions}
+                answers={answers}
+                accent="#7b6b8d"
+                onApply={(updates) => {
+                  setAnswers((prev) => ({ ...prev, ...updates }));
+                  setCurrentQuestion(allQuestions.findIndex((q) => q.section === currentSection));
+                  setAiNotice(
+                    `${Object.keys(updates).length} answers from your AI were saved to this section. Step through with Next to read each one and make any final edits.`
+                  );
+                }}
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {aiNotice && (
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-[#7b6b8d]/30 bg-[#7b6b8d]/10 px-4 py-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <p>✨ {aiNotice}</p>
+                <button type="button" onClick={() => setAiNotice(null)} className="text-xs underline">
+                  Dismiss
+                </button>
+              </div>
+            )}
             <div className="flex items-start gap-3">
               {currentQ.sensitive && (
                 <div className="flex items-center gap-1 text-amber-600 text-sm bg-amber-50 px-2 py-1 rounded">

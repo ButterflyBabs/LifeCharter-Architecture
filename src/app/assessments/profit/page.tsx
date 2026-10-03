@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { AiFillSection } from "@/components/assessment/AiFillSection";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -246,6 +247,7 @@ function ProfitAssessmentContent() {
   const [domainScores, setDomainScores] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   
   const { masterPlan, isSyncing, crossContext } = useUnifiedMemoryContext();
   // Where you left off is remembered per account on this device (never shared between people);
@@ -548,10 +550,45 @@ function ProfitAssessmentContent() {
                 {isSyncing ? "Syncing..." : isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
               </div>
             </div>
+            <div className="mt-3">
+              <AiFillSection
+                assessmentName="Profit"
+                assessmentAbout="how well my business is doing across 12 areas, rated honestly from 1 (very poor) to 5 (excellent), plus a few multiple-choice questions"
+                sectionName={currentDomain.name}
+                questions={questions
+                  .filter((q) => q.domain === currentQ.domain)
+                  .map((q) => ({
+                    id: q.id,
+                    text: q.text,
+                    type: q.type,
+                    options: q.type === "likert" ? likertOptions : q.options,
+                  }))}
+                answers={answers}
+                accent="#c9a227"
+                onApply={(updates) => {
+                  setAnswers((prev) => ({ ...prev, ...updates }));
+                  setCurrentQuestion(questions.findIndex((q) => q.domain === currentQ.domain));
+                  setAiNotice(
+                    `${Object.keys(updates).length} answers from your AI were saved to ${currentDomain.name}. Step through with Next to check each rating.`
+                  );
+                }}
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {aiNotice && (
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-[#c9a227]/30 bg-[#c9a227]/10 px-4 py-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <p>✨ {aiNotice}</p>
+                <button type="button" onClick={() => setAiNotice(null)} className="text-xs underline">
+                  Dismiss
+                </button>
+              </div>
+            )}
             {masterPlan && (
               <UnifiedMemoryQuestion
+                key={currentQ.id}
+                initialValue={answers[currentQ.id]}
+                onValueChange={(v) => setAnswers((prev) => ({ ...prev, [currentQ.id]: v }))}
                 masterPlanId={masterPlan.id}
                 workspaceId={masterPlan.workspace_id}
                 questionId={currentQ.id}

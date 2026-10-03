@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Brain, ArrowLeft, ArrowRight, Save, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { AiFillSection } from "@/components/assessment/AiFillSection";
 
 interface Question {
   id: string;
@@ -4539,6 +4540,7 @@ export default function BrainAssessmentPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   // Load saved progress
   useEffect(() => {
@@ -4736,8 +4738,33 @@ export default function BrainAssessmentPage() {
             <div className="mt-2">
               <Progress value={sectionProgress} variant="teal" className="h-1" />
             </div>
+            <div className="mt-3">
+              <AiFillSection
+                assessmentName="Brain"
+                assessmentAbout="my business: what it is, how it makes money, who it serves, and how it is marketed, sold, delivered and run"
+                sectionName={currentSection}
+                questions={sectionQuestions}
+                answers={answers}
+                accent="#4a9b9b"
+                onApply={(updates) => {
+                  setAnswers((prev) => ({ ...prev, ...updates }));
+                  setCurrentQuestion(questions.findIndex((q) => q.section === currentSection));
+                  setAiNotice(
+                    `${Object.keys(updates).length} answers from your AI were saved to this section. Step through with Next to read each one and make any final edits.`
+                  );
+                }}
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {aiNotice && (
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-[#4a9b9b]/30 bg-[#4a9b9b]/10 px-4 py-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <p>✨ {aiNotice}</p>
+                <button type="button" onClick={() => setAiNotice(null)} className="text-xs underline">
+                  Dismiss
+                </button>
+              </div>
+            )}
             <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
               {currentQ.text}
             </h2>
