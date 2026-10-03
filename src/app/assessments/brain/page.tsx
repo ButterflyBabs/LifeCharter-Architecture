@@ -82,7 +82,7 @@ const questions: Question[] = [
   {
     id: "bi_1_9",
     text: "Is the business local, national, international, online, in-person, hybrid, or location-specific?",
-    type: "radio",
+    type: "multiselect",
     section: "1. Business Identity",
     options: [
       { value: "local", label: "Local (specific city/region)" },
@@ -4050,6 +4050,30 @@ export default function BrainAssessmentPage() {
     setAnswers((prev) => ({ ...prev, [questions[currentQuestion].id]: value }));
   };
 
+  // Multi-select answers are stored as a comma-separated list of option values
+  // (e.g. "local,online,hybrid") so every answer stays a plain string.
+  const selectedValues = (id: string) =>
+    (answers[id] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+
+  const toggleMulti = (value: string) => {
+    const q = questions[currentQuestion];
+    const current = selectedValues(q.id);
+    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+    // Keep the options' own order so saved answers read consistently.
+    const ordered = (q.options ?? []).map((o) => o.value).filter((v) => next.includes(v));
+    handleAnswer(ordered.join(","));
+  };
+
+  // Human-readable answer for saving: option labels instead of raw values.
+  const answerTextFor = (q: Question) => {
+    const raw = answers[q.id] ?? "";
+    if ((q.type === "radio" || q.type === "multiselect") && q.options) {
+      const vals = q.type === "multiselect" ? selectedValues(q.id) : [raw];
+      return vals.map((v) => q.options!.find((o) => o.value === v)?.label ?? v).join("; ");
+    }
+    return raw;
+  };
+
   const persistResponses = async () => {
     const payload = questions
       .filter((q) => (answers[q.id] ?? "").toString().trim() !== "")
@@ -4057,7 +4081,7 @@ export default function BrainAssessmentPage() {
         questionId: q.id,
         questionText: q.text,
         section: q.section,
-        answerText: answers[q.id] ?? "",
+        answerText: answerTextFor(q),
         value: answers[q.id] ?? "",
       }));
     try {
@@ -4207,6 +4231,51 @@ export default function BrainAssessmentPage() {
                   </label>
                 ))}
               </div>
+            )}
+
+            {currentQ.type === "multiselect" && currentQ.options && (
+              <div className="space-y-3">
+                <p className="text-sm text-[#b8a898]">Select all that apply.</p>
+                {currentQ.options.map((option) => {
+                  const checked = selectedValues(currentQ.id).includes(option.value);
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        checked
+                          ? "border-[#4a9b9b] bg-[#4a9b9b]/5"
+                          : "border-[#c9a227]/20 hover:border-[#c9a227]/40"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        name={currentQ.id}
+                        value={option.value}
+                        checked={checked}
+                        onChange={() => toggleMulti(option.value)}
+                        className="mt-1 w-4 h-4 rounded text-[#4a9b9b] focus:ring-[#4a9b9b]"
+                      />
+                      <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
+                        {option.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {currentQ.type === "number" && (
+              <input
+                type="text"
+                inputMode="numeric"
+                value={answers[currentQ.id] || ""}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^0-9]/g, "");
+                  handleAnswer(currentQ.placeholder === "YYYY" ? digits.slice(0, 4) : digits);
+                }}
+                placeholder={currentQ.placeholder || "Enter a number"}
+                className="w-full max-w-xs p-4 rounded-xl border-2 border-[#c9a227]/20 focus:border-[#4a9b9b] focus:ring-2 focus:ring-[#4a9b9b]/20 outline-none bg-white dark:bg-[#1a1a2e] text-[#1a2b4a] dark:text-[#F8F5F0] text-lg tabular-nums"
+              />
             )}
 
             {currentQ.type === "text" && (
