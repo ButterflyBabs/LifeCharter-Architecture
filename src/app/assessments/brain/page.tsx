@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Brain, ArrowLeft, ArrowRight, Save, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 
 interface Question {
@@ -4535,6 +4536,7 @@ const sections = [
 ];
 
 export default function BrainAssessmentPage() {
+  const nextStep = useNextAssessment("brain");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -4680,9 +4682,9 @@ export default function BrainAssessmentPage() {
                 saved and will contribute to your overall Business Health Score.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/assessments/soul">
+                <Link href={nextStep.href}>
                   <Button variant="primary">
-                    Continue to Soul Assessment
+                    {nextStep.label}
                   </Button>
                 </Link>
                 <Link href="/dashboard">

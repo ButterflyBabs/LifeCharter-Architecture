@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Heart, ArrowLeft, ArrowRight, Save, CheckCircle, Shield } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 
 interface Question {
@@ -322,6 +323,7 @@ const sections = [
 ];
 
 export default function SoulAssessmentPage() {
+  const nextStep = useNextAssessment("soul");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -444,9 +446,9 @@ export default function SoulAssessmentPage() {
                 saved and will contribute to your overall LifeCharter Alignment Score.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/assessments/brain">
+                <Link href={nextStep.href}>
                   <Button variant="primary">
-                    Continue to Brain Assessment
+                    {nextStep.label}
                   </Button>
                 </Link>
                 <Link href="/dashboard">
