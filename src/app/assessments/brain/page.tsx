@@ -340,7 +340,7 @@ const questions: Question[] = [
   {
     id: "bm_1_1",
     text: "What type of business model do you currently operate?",
-    type: "multiselect",
+    type: "radio",
     section: "2. Business Model",
     options: [
       { value: "coaching", label: "Coaching" },
@@ -394,7 +394,7 @@ const questions: Question[] = [
   {
     id: "bm_1_6",
     text: "Is the business B2B, B2C, B2B2C, nonprofit, donor-supported, grant-funded, sponsorship-based, or hybrid?",
-    type: "multiselect",
+    type: "radio",
     section: "2. Business Model",
     options: [
       { value: "b2b", label: "B2B (Business to Business)" },
@@ -552,7 +552,7 @@ const questions: Question[] = [
   {
     id: "bm_2_7",
     text: "Is the price fixed, custom, tiered, recurring, usage-based, donation-based, or project-based?",
-    type: "multiselect",
+    type: "radio",
     section: "2. Business Model",
     options: [
       { value: "fixed", label: "Fixed (one set price)" },
@@ -1271,7 +1271,7 @@ const questions: Question[] = [
   {
     id: "op_1_13",
     text: "What is the delivery format?",
-    type: "multiselect",
+    type: "radio",
     section: "5. Offers, Products, and Services",
     options: [
       { value: "one_on_one", label: "1:1 (individual coaching, consulting, or service)" },
