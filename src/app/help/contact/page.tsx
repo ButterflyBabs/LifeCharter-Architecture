@@ -361,10 +361,10 @@ export default function ContactSupportPage() {
                 For urgent issues that cannot wait:
               </p>
               <p className="text-[#1a2b4a] dark:text-[#F8F5F0] font-medium">
-                VIP Members: Text &quot;URGENT&quot; to (555) 123-4567
+                VIP Members: text or WhatsApp &quot;URGENT&quot; to (720) 987-2080
               </p>
               <p className="text-xs text-[#b8a898] mt-2">
-                Available 24/7 for VIP members only
+                For VIP members only
               </p>
             </div>
           </div>
