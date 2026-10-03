@@ -38,7 +38,7 @@ export default function ConnectCalendars({ params }: { params: { hostId: string 
 
   const start = (p: string) => `/api/book/connect?host=${params.hostId}&k=${k}&provider=${p}`;
   return (
-    <main className="min-h-screen bg-[#FBF8F1] px-4 py-10">
+    <main className="min-h-screen bg-[#FBF8F1] px-4 py-10 text-[#1F3A3D] [color-scheme:light]">
       <div className="mx-auto max-w-xl rounded-2xl border border-[#EADFCF] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-8">
         {data === undefined && <p className="text-[#56616E]">Loading…</p>}
         {data === null && <p className="text-[#56616E]">This link isn&rsquo;t valid. Please ask for a new one.</p>}

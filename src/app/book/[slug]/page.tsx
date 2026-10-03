@@ -61,7 +61,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#FBF8F1] px-4 py-10">
+    <main className="min-h-screen bg-[#FBF8F1] px-4 py-10 text-[#1F3A3D] [color-scheme:light]">
       <div className="mx-auto max-w-2xl rounded-2xl border border-[#EADFCF] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-8">
         <h1 className="text-2xl font-semibold text-[#1F3A3D]">{meta?.name || " "}</h1>
         {meta && (
