@@ -98,7 +98,7 @@ export function QuickAddMenu() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick add"
-        title="Quick add: a task, content or a contact"
+        title="Quick add: a task, a sale, a post or a planning session"
         className="w-9 h-9 rounded-full bg-[#1a2b4a] text-[#F8F5F0] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors shadow-md"
       >
         <Plus className={`w-5 h-5 transition-transform ${open ? "rotate-45" : ""}`} />
