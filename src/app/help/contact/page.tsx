@@ -150,6 +150,30 @@ export default function ContactSupportPage() {
         </Card>
       </div>
 
+      {/* Support hours */}
+      <div className="text-center">
+        <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
+          Our Support Hours
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
+            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Monday - Friday</p>
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">9:00 AM - 5:00 PM MT</p>
+          </div>
+          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
+            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Saturday</p>
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Email only</p>
+          </div>
+          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
+            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Sunday</p>
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Closed</p>
+          </div>
+        </div>
+        <p className="text-sm text-[#b8a898] mt-4">
+          Based in Denver, CO • Mountain Time (UTC-7)
+        </p>
+      </div>
+
       {/* Response Time Banner */}
       <div className="bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] rounded-xl p-6 text-[#F8F5F0]">
         <div className="flex items-center gap-4">
@@ -376,30 +400,6 @@ export default function ContactSupportPage() {
       <CommunityBoard kind="suggestion" title="Suggestions" icon={Sparkles} />
       <CommunityBoard kind="feedback" title="General Feedback" icon={MessageSquareHeart} />
       <WhatsNew />
-
-      {/* Office Hours */}
-      <div className="text-center py-8 border-t border-[#1a2b4a]/10">
-        <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-4">
-          Our Support Hours
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
-            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Monday - Friday</p>
-            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">9:00 AM - 5:00 PM MT</p>
-          </div>
-          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
-            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Saturday</p>
-            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Email only</p>
-          </div>
-          <div className="p-4 bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg">
-            <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Sunday</p>
-            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Closed</p>
-          </div>
-        </div>
-        <p className="text-sm text-[#b8a898] mt-4">
-          Based in Denver, CO • Mountain Time (UTC-7)
-        </p>
-      </div>
     </div>
   );
 }
