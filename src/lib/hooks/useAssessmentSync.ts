@@ -43,18 +43,48 @@ export function useAssessmentSync(
       }
       if (changed.length === 0 && removedIds.length === 0) return;
 
-      fetch("/api/assessments/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, partial: true, responses: changed, removedIds }),
-        keepalive: true,
-      })
-        .then((r) => {
-          if (!r.ok) return;
-          for (const row of changed) synced.current[row.questionId] = row.answerText;
-          for (const id of removedIds) delete synced.current[id];
+      // Send in batches. Browsers refuse a keepalive request whose body is over
+      // 64 KB, and a long assessment (Brain answers can total 90 KB+) would
+      // otherwise fail silently on every save. Each batch stays well under that,
+      // and keepalive is only used when the batch is small enough to allow it.
+      const MAX_BATCH_BYTES = 48_000;
+      const batches: SyncRow[][] = [];
+      let current: SyncRow[] = [];
+      let currentBytes = 0;
+      for (const row of changed) {
+        const size = JSON.stringify(row).length;
+        if (current.length > 0 && currentBytes + size > MAX_BATCH_BYTES) {
+          batches.push(current);
+          current = [];
+          currentBytes = 0;
+        }
+        current.push(row);
+        currentBytes += size;
+      }
+      if (current.length > 0 || batches.length === 0) batches.push(current);
+
+      batches.forEach((batch, i) => {
+        const body = JSON.stringify({
+          type,
+          partial: true,
+          responses: batch,
+          // Removals ride along with the first batch only.
+          removedIds: i === 0 ? removedIds : [],
+        });
+        if (batch.length === 0 && (i !== 0 || removedIds.length === 0)) return;
+        fetch("/api/assessments/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: body.length < 60_000,
         })
-        .catch(() => {});
+          .then((r) => {
+            if (!r.ok) return;
+            for (const row of batch) synced.current[row.questionId] = row.answerText;
+            if (i === 0) for (const id of removedIds) delete synced.current[id];
+          })
+          .catch(() => {});
+      });
     }, delayMs);
     return () => clearTimeout(timer);
   }, [answers, type, delayMs]);
