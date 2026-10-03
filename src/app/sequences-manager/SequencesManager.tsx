@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
+import WelcomeSeriesTab from "./WelcomeSeriesTab";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
 import ContactLookupInput from "@/components/crm/ContactLookupInput";
 
@@ -70,9 +71,11 @@ export default function SequencesManager() {
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
   const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
-  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts">("campaigns");
+  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome">("campaigns");
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "broadcasts") setPageTab("broadcasts");
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "broadcasts") setPageTab("broadcasts");
+    if (t === "welcome") setPageTab("welcome");
   }, []);
 
   const loadList = useCallback(async () => {
@@ -154,6 +157,8 @@ export default function SequencesManager() {
           <p className="text-[#7a8a99]">
             {pageTab === "campaigns"
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
+              : pageTab === "welcome"
+              ? <>The new-client welcome series, so you can see who has been sent what and what is waiting.</>
               : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
           </p>
         </div>
@@ -170,14 +175,14 @@ export default function SequencesManager() {
       )}
 
       <div className="flex gap-2 mb-5">
-        {(["campaigns", "broadcasts"] as const).map((t) => (
+        {((sender?.house ? ["campaigns", "broadcasts", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome")[]).map((t) => (
           <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "campaigns" ? "Campaigns" : "Broadcasts"}
+            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : "Welcome series"}
           </button>
         ))}
       </div>
 
-      {pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
+      {pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
           {(list ?? []).map((s) => (

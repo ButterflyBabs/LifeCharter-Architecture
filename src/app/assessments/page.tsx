@@ -7,6 +7,7 @@ import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Cloc
 import CheckinSchedule from "@/components/assessments/CheckinSchedule";
 import { CommandShiftCard } from "@/components/assessments/CommandShiftCard";
 import AssessmentCardAction from "@/components/assessments/AssessmentCardAction";
+import FullAssessmentCard from "@/components/assessments/FullAssessmentCard";
 
 export const metadata: Metadata = {
   title: "Alignment Profile | LifeCharter Command Suite",
@@ -210,40 +211,8 @@ export default function AssessmentsPage() {
           </Card>
         </div>
 
-        {/* Complete Assessment CTA */}
-        <div className="mt-8">
-          <Card className="border-[#4a9b9b]/30">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-[#4a9b9b]/20 flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-8 h-8 text-[#4a9b9b]" />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-                    Complete the Full Assessment
-                  </h2>
-                  <p className="text-[#1a2b4a]/70 dark:text-[#F8F5F0]/70">
-                    Take all three assessments to get your complete Business Health Score 
-                    and receive a personalized growth roadmap with detailed recommendations.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <Link href="/assessments/brain">
-                    <Button variant="primary" size="lg">
-                      Start with Brain
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard">
-                    <Button variant="secondary" size="lg">
-                      Back to Dashboard
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Complete Assessment CTA: follows what this account has finished */}
+        <FullAssessmentCard />
 
         {/* Info Section */}
         <div className="mt-12 grid md:grid-cols-2 gap-8">
