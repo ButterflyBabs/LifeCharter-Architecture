@@ -32,13 +32,15 @@ export async function getAssessmentContext(masterPlanId: string, evidenceLimit =
 
   const evidence: { section: string; text: string }[] = [];
   try {
-    const { data } = await supabase
-      .from("unified_client_responses")
-      .select("section_name, answer_text, answer_value")
-      .eq("master_plan_id", masterPlanId)
-      .in("assessment_type", ["brain", "soul", "command_shift"])
-      .limit(400);
-    for (const r of (data || []) as { section_name: string | null; answer_text: string | null; answer_value: unknown }[]) {
+    // Sample each source on its own, so one long assessment (Brain has 535 answers) cannot crowd out the others.
+    const pull = (type: string) =>
+      supabase.from("unified_client_responses").select("section_name, answer_text, answer_value").eq("master_plan_id", masterPlanId).eq("assessment_type", type).limit(200);
+    const parts = await Promise.all([pull("brain"), pull("soul"), pull("command_shift")]);
+    type EvRow = { section_name: string | null; answer_text: string | null; answer_value: unknown };
+    const lists = parts.map((p) => (p.data || []) as EvRow[]);
+    const rowsAll: EvRow[] = []; // take turns between sources, so the limit below is shared fairly
+    for (let i = 0; i < Math.max(...lists.map((l) => l.length), 0); i++) for (const l of lists) if (l[i]) rowsAll.push(l[i]);
+    for (const r of rowsAll as { section_name: string | null; answer_text: string | null; answer_value: unknown }[]) {
       const av = r.answer_value as { sensitive?: boolean } | null;
       if (av && av.sensitive === true) continue;
       const text = (r.answer_text || "").trim();

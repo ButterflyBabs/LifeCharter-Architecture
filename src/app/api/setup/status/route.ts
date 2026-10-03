@@ -21,16 +21,17 @@ export async function GET() {
   let profit = false;
   if (masterPlanId) {
     try {
-      const { data } = await supabase
-        .from("unified_client_responses")
-        .select("assessment_type")
-        .eq("master_plan_id", masterPlanId)
-        .in("assessment_type", ["brain", "soul"])
-        .limit(500);
-      for (const r of (data || []) as { assessment_type: string }[]) {
-        if (r.assessment_type === "brain") brain = true;
-        if (r.assessment_type === "soul") soul = true;
-      }
+      // Count each assessment separately. (One combined query was capped at 500 rows, and
+      // Brain alone has 535 answers, so Soul could fall off the end and look unstarted.)
+      const has = async (type: "brain" | "soul") => {
+        const { count } = await supabase
+          .from("unified_client_responses")
+          .select("id", { count: "exact", head: true })
+          .eq("master_plan_id", masterPlanId)
+          .eq("assessment_type", type);
+        return (count ?? 0) > 0;
+      };
+      [brain, soul] = await Promise.all([has("brain"), has("soul")]);
     } catch {
       /* optional */
     }

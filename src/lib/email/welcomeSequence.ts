@@ -101,8 +101,11 @@ export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClien
 // What the client has already done, for skipping emails that no longer apply. Read without a
 // session (the cron runs as the service role), scoped to this one client's plan.
 export async function clientSetupState(supabase: SupabaseClient, userId: string, masterPlanId: string) {
-  const [{ data: resp }, { data: plan }, { data: integ }, { data: g }, { data: m }, { data: ws }, key] = await Promise.all([
-    supabase.from("unified_client_responses").select("assessment_type").eq("master_plan_id", masterPlanId).in("assessment_type", ["brain", "soul"]).limit(500),
+  // Brain and Soul are counted separately: one combined query was capped at 500 rows, and Brain alone has 535.
+  const answered = (type: "brain" | "soul") => supabase.from("unified_client_responses").select("id", { count: "exact", head: true }).eq("master_plan_id", masterPlanId).eq("assessment_type", type);
+  const [{ count: brainRows }, { count: soulRows }, { data: plan }, { data: integ }, { data: g }, { data: m }, { data: ws }, key] = await Promise.all([
+    answered("brain"),
+    answered("soul"),
     supabase.from("client_master_plans").select("domain_scores, profit_score").eq("id", masterPlanId).maybeSingle(),
     supabase.from("client_integrations").select("provider, api_key").eq("master_plan_id", masterPlanId).eq("provider", "poststream"),
     supabase.from("google_credentials").select("owner_id").eq("owner_id", userId).limit(1),
@@ -110,7 +113,7 @@ export async function clientSetupState(supabase: SupabaseClient, userId: string,
     supabase.from("workspaces").select("website").eq("master_plan_id", masterPlanId).order("is_default", { ascending: false }).limit(1).maybeSingle(),
     readAccountKey(userId).catch(() => ""),
   ]);
-  const types = new Set(((resp ?? []) as { assessment_type: string }[]).map((r) => r.assessment_type));
+  const types = new Set<string>([...((brainRows ?? 0) > 0 ? ["brain"] : []), ...((soulRows ?? 0) > 0 ? ["soul"] : [])]);
   const ds = (plan?.domain_scores as Record<string, unknown> | null) || null;
   const profit = Boolean((ds && Object.keys(ds).length) || plan?.profit_score);
   const tools = Boolean(g?.length || m?.length || ((integ ?? []) as { api_key: string | null }[]).some((r) => (r.api_key || "").trim()));
