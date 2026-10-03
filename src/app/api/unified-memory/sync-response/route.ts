@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const body: SyncResponseRequest = await request.json();
     
     // Validate required fields
-    const requiredFields = ['masterPlanId', 'workspaceId', 'questionId', 'questionText', 'answerValue'];
+    const requiredFields = ['masterPlanId', 'questionId', 'questionText', 'answerValue'];
     for (const field of requiredFields) {
       if (!(field in body)) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       .from('unified_client_responses')
       .upsert({
         master_plan_id: body.masterPlanId,
-        workspace_id: body.workspaceId,
+        workspace_id: body.workspaceId || null,
         user_id: user.id,
         assessment_type: 'profit_architecture',
         assessment_id: body.assessmentId,

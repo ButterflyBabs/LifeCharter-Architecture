@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const body: GenerateInsightRequest = await request.json();
     
     // Validate required fields
-    const requiredFields = ['masterPlanId', 'workspaceId', 'insightType', 'source', 'title', 'description'];
+    const requiredFields = ['masterPlanId', 'insightType', 'source', 'title', 'description'];
     for (const field of requiredFields) {
       if (!(field in body)) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .from('client_insights')
       .insert({
         master_plan_id: body.masterPlanId,
-        workspace_id: body.workspaceId,
+        workspace_id: body.workspaceId || null,
         user_id: masterPlan.user_id, // Insight belongs to the client
         insight_type: body.insightType,
         source: body.source,

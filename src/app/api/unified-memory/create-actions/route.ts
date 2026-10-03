@@ -69,7 +69,7 @@ async function handleSingleCreate(
   body: ActionItemRequest
 ) {
   // Validate required fields
-  if (!body.masterPlanId || !body.workspaceId || !body.title) {
+  if (!body.masterPlanId || !body.title) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
   
@@ -96,7 +96,7 @@ async function handleSingleCreate(
     .from('client_action_items')
     .insert({
       master_plan_id: body.masterPlanId,
-      workspace_id: body.workspaceId,
+      workspace_id: body.workspaceId || null,
       user_id: masterPlan.user_id, // Action belongs to the client
       title: body.title,
       description: body.description || null,
@@ -132,7 +132,7 @@ async function handleBulkCreate(
   body: BulkCreateRequest
 ) {
   // Validate required fields
-  if (!body.masterPlanId || !body.workspaceId) {
+  if (!body.masterPlanId) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
   
@@ -177,7 +177,7 @@ async function handleBulkCreate(
   // Generate action items for low-scoring domains
   const actionItems = lowScoringDomains.map(ds => ({
     master_plan_id: body.masterPlanId,
-    workspace_id: body.workspaceId,
+    workspace_id: body.workspaceId || null,
     user_id: masterPlan.user_id,
     title: `Address ${ds.domainName} Gap`,
     description: `Current score in ${ds.domainName} is ${ds.percentage}%, which is below the ${threshold}% target. Review assessment responses and develop improvement plan.`,

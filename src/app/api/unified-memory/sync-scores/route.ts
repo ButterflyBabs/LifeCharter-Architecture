@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const body: SyncScoresRequest = await request.json();
     
     // Validate required fields
-    if (!body.masterPlanId || !body.workspaceId || !body.domainScores) {
+    if (!body.masterPlanId || !body.domainScores) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
@@ -165,7 +165,7 @@ async function generateActionItemsForGaps(
 ): Promise<void> {
   const actionItems = lowScoringDomains.map(ds => ({
     master_plan_id: masterPlanId,
-    workspace_id: workspaceId,
+    workspace_id: workspaceId || null,
     user_id: userId,
     title: `Improve ${ds.domainName}`,
     description: `Address gaps identified in ${ds.domainName} (Score: ${Math.round((ds.score / ds.maxScore) * 100)}%). Focus on strengthening this area to improve overall business alignment.`,

@@ -822,7 +822,7 @@ export default function ProfitAssessmentPage() {
     );
   }
 
-  if (!masterPlanId || !workspaceId) {
+  if (!masterPlanId) {
     return (
       <div className="py-12 px-4">
         <div className="max-w-2xl mx-auto">
@@ -848,7 +848,7 @@ export default function ProfitAssessmentPage() {
   return (
     <UnifiedMemoryProvider
       masterPlanId={masterPlanId}
-      workspaceId={workspaceId}
+      workspaceId={workspaceId ?? ""}
       enableRealtime={true}
     >
       <div className="py-8 px-4">
