@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       ${name ? `Hi ${esc(name)},<br><br>` : ""}We received a request to set or reset the password for your LifeCharter account. Click below to choose one. This link works once and expires in an hour.
     </td></tr>
     <tr><td style="padding:22px 0"><a href="${link}" style="display:inline-block;background:#D4AF63;color:#0F1A38;font-family:Arial,sans-serif;font-weight:700;padding:13px 24px;border-radius:10px;text-decoration:none">Choose my password</a></td></tr>
-    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#8A8FA0">If you didn't ask for this, you can ignore this email — your password won't change. Questions? Reply, or write to support@amilynnecarroll.com.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#8A8FA0">If you didn't ask for this, you can ignore this email — your password won't change. Questions? Reply, or write to support@lccommandsuite.com.</td></tr>
   </table></td></tr></table></body></html>`;
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       from: `LifeCharter <${address}>`,
       to: email,
-      reply_to: "support@amilynnecarroll.com",
+      reply_to: "support@lccommandsuite.com",
       subject: "Set or reset your LifeCharter password",
       html,
       text: `Set or reset your LifeCharter password: ${link}\n\nThis link works once and expires in an hour. If you didn't ask for this, you can ignore this email.`,

@@ -68,7 +68,7 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
     <tr><td style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B8923F;font-weight:bold;padding-bottom:14px">LifeCharter Command Suite</td></tr>
     <tr><td>${toHtml(body)}</td></tr>
     <tr><td style="font-family:Georgia,serif;font-size:17px;font-style:italic;color:#1a2b4a;padding-top:8px">Head up - Wings out<br>Babs 🦋</td></tr>
-    <tr><td style="font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#7F8894;padding-top:22px">You're receiving this because you joined LifeCharter Command Suite. Questions? Reply, or write to support@amilynnecarroll.com.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#7F8894;padding-top:22px">You're receiving this because you joined LifeCharter Command Suite. Questions? Reply, or write to support@lccommandsuite.com.</td></tr>
   </table></td></tr></table></body></html>`;
   return { subject: e.subject, text, html };
 }
@@ -92,7 +92,7 @@ export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClien
       body: JSON.stringify({
         from: "Babs at LifeCharter Command Suite <support@lccommandsuite.com>",
         to: c.email,
-        reply_to: "support@amilynnecarroll.com",
+        reply_to: "support@lccommandsuite.com",
         subject,
         html,
         text,
@@ -142,7 +142,7 @@ export async function sendWelcomeTest(e: WelcomeEmail, to: string): Promise<bool
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "Babs at LifeCharter Command Suite <support@lccommandsuite.com>", to, reply_to: "support@amilynnecarroll.com", subject: `[Test] ${subject}`, html, text }),
+      body: JSON.stringify({ from: "Babs at LifeCharter Command Suite <support@lccommandsuite.com>", to, reply_to: "support@lccommandsuite.com", subject: `[Test] ${subject}`, html, text }),
     });
     return res.ok;
   } catch {

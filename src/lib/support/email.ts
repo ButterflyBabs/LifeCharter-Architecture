@@ -1,10 +1,10 @@
 // Support desk emails (Resend). New requests and client replies go to the
 // support inbox; support replies go to the client. Replies always route back to
-// support@amilynnecarroll.com. Quietly skips when RESEND_API_KEY isn't set.
+// support@lccommandsuite.com. Quietly skips when RESEND_API_KEY isn't set.
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 const FROM = process.env.SUPPORT_EMAIL_FROM || "LifeCharter Support <support@lccommandsuite.com>";
-export const SUPPORT_INBOX = "support@amilynnecarroll.com";
+export const SUPPORT_INBOX = "support@lccommandsuite.com";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 

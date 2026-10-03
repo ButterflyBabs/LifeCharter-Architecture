@@ -111,10 +111,10 @@ export default function ContactSupportPage() {
               Best for detailed questions
             </p>
             <a 
-              href="mailto:support@amilynnecarroll.com"
+              href="mailto:support@lccommandsuite.com"
               className="text-[#c9a227] hover:underline font-medium"
             >
-              support@amilynnecarroll.com
+              support@lccommandsuite.com
             </a>
           </CardContent>
         </Card>

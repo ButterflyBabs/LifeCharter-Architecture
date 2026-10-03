@@ -95,11 +95,11 @@ ${scoreHtml ? `<p style="margin:20px 0 6px;font-family:Arial,sans-serif;font-siz
 <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#2E3A46">${esc(r.body)}</p>
 <p style="margin:0 0 22px"><a href="${r.url}" style="display:inline-block;background:#2E7C83;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;font-size:14px;padding:12px 24px;border-radius:999px">${esc(r.label)}</a></p>
 <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:#1a2b4a;font-style:italic">Head up - Wings out<br>Babs 🦋</p>
-<p style="margin:22px 0 0;font-family:Arial,sans-serif;font-size:11px;color:#9aa3ad">Questions? Just reply, or write to support@amilynnecarroll.com.<br>Sacred Kaleidoscope Community LLC · 5787 S Odessa Street · Centennial, Colorado 80015</p>
+<p style="margin:22px 0 0;font-family:Arial,sans-serif;font-size:11px;color:#9aa3ad">Questions? Just reply, or write to support@lccommandsuite.com.<br>Sacred Kaleidoscope Community LLC · 5787 S Odessa Street · Centennial, Colorado 80015</p>
 </td></tr></table></td></tr></table></body></html>`;
     const send = (payload: Record<string, unknown>) =>
       fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch((e) => console.error("assessment mail:", e));
-    await send({ from: "AmiLynne Carroll <hello@lccommandsuite.com>", to: email, reply_to: "support@amilynnecarroll.com", subject: `Your Executive Business Assessment results${overall !== null ? `: ${overall}/100` : ""}`, html });
+    await send({ from: "AmiLynne Carroll <hello@lccommandsuite.com>", to: email, reply_to: "support@lccommandsuite.com", subject: `Your Executive Business Assessment results${overall !== null ? `: ${overall}/100` : ""}`, html });
     await send({
       from: "LifeCharter Command Suite <reminders@lccommandsuite.com>",
       to: ALIGNMENT_ARCHITECT_EMAIL,

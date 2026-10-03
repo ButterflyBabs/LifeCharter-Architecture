@@ -51,7 +51,7 @@ export async function sendCollectiveWelcome({ email, name, base }: { email: stri
       body: JSON.stringify({
         from: `The LifeCharter Collective <${address}>`,
         to: email,
-        reply_to: "support@amilynnecarroll.com",
+        reply_to: "support@lccommandsuite.com",
         subject: "Welcome to The LifeCharter Collective",
         html,
         text,
@@ -144,7 +144,7 @@ export async function sendPurchaseAccessEmail({
       body: JSON.stringify({
         from: `The LifeCharter Collective <${address}>`,
         to: email,
-        reply_to: "support@amilynnecarroll.com",
+        reply_to: "support@lccommandsuite.com",
         subject: hasAccount ? `Your ${names} channel is open` : `Your ${names} access is ready`,
         html,
         text,

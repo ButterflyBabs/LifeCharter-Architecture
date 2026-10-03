@@ -25,7 +25,7 @@ export const EMAIL_KINDS = ["confirm", "day_before", "hour_before"] as const;
 export type EmailKind = (typeof EMAIL_KINDS)[number];
 
 export const EVENT_SENDERS: Record<EventKey, { from_name: string; from_email: string; reply_to: string; brand: string; title: string }> = {
-  masterclass: { from_name: "AmiLynne Carroll", from_email: "hello@lccommandsuite.com", reply_to: "support@amilynnecarroll.com", brand: "The Command Shift MasterClass", title: "Command Shift MasterClass" },
+  masterclass: { from_name: "AmiLynne Carroll", from_email: "hello@lccommandsuite.com", reply_to: "support@lccommandsuite.com", brand: "The Command Shift MasterClass", title: "Command Shift MasterClass" },
   incubator: { from_name: "AmiLynne Carroll", from_email: "hello@lifecharter.life", reply_to: "support@amilynnecarroll.com", brand: "LifeCharter Incubator", title: "LifeCharter Incubator" },
 };
 

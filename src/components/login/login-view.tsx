@@ -14,7 +14,7 @@ const POST_LOGIN_ROUTE = "/";
 // SSO is not configured for Supabase Auth yet (the Google integration is a
 // separate connector). Hide the SSO button until an OAuth provider is enabled.
 const SSO_ENABLED = false;
-const SUPPORT_MAILTO = "mailto:support@amilynnecarroll.com";
+const SUPPORT_MAILTO = "mailto:support@lccommandsuite.com";
 
 const PAGE_BG: React.CSSProperties = {
   background: `

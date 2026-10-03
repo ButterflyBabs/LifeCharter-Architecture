@@ -639,7 +639,7 @@ export default function SettingsPage() {
           </label>
           <Input type="email" value={profile.email} readOnly disabled aria-describedby="profile-email-note" />
           <p id="profile-email-note" className="mt-1 text-xs text-[#7a8a99]">
-            This is the email you sign in with. To change it, write to support@amilynnecarroll.com.
+            This is the email you sign in with. To change it, write to support@lccommandsuite.com.
           </p>
         </div>
         <div>
@@ -1783,7 +1783,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ category: "account", priority: "high", subject: "Account deletion request", message: "I'd like my Command Suite account and all of its data permanently deleted. (Sent from Settings > Data > Delete Account.)" }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(r.status === 401 ? "Please sign in to send this request." : d.error || "That didn't send. Please try again, or write to support@amilynnecarroll.com.");
+      if (!r.ok) throw new Error(r.status === 401 ? "Please sign in to send this request." : d.error || "That didn't send. Please try again, or write to support@lccommandsuite.com.");
       setDelState("sent");
     } catch (e) {
       setDelError(e instanceof Error ? e.message : "That didn't send.");

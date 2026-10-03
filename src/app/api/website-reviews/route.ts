@@ -84,7 +84,7 @@ async function sendReviewReady(to: string, name: string, origin: string) {
     <tr><td style="font-size:26px;color:#1a2b4a;padding:8px 0 12px">Your Website Alignment Review is ready</td></tr>
     <tr><td style="font-family:Arial,sans-serif;font-size:15px;line-height:1.65;color:#2E3A46">${first ? `Hi ${first.replace(/[<>&]/g, "")},<br><br>` : ""}We've looked at your website against the positioning, voice and offer you're building in Command Suite. Your Review is waiting in your account, with the five changes that matter most.</td></tr>
     <tr><td style="padding:24px 0 8px"><a href="${link}" style="display:inline-block;background:#1a2b4a;color:#F8F5F0;font-family:Arial,sans-serif;font-weight:700;padding:14px 26px;border-radius:10px;text-decoration:none">Read your Review</a></td></tr>
-    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#7F8894;padding-top:14px">Questions, or want to talk it through? Just reply, or write to support@amilynnecarroll.com.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#7F8894;padding-top:14px">Questions, or want to talk it through? Just reply, or write to support@lccommandsuite.com.</td></tr>
     <tr><td style="font-size:17px;font-style:italic;color:#1a2b4a;padding-top:22px">Head up - Wings out<br>Babs 🦋</td></tr>
   </table></td></tr></table></body></html>`;
   try {
@@ -94,10 +94,10 @@ async function sendReviewReady(to: string, name: string, origin: string) {
       body: JSON.stringify({
         from: "LifeCharter Command Suite <support@lccommandsuite.com>",
         to,
-        reply_to: "support@amilynnecarroll.com",
+        reply_to: "support@lccommandsuite.com",
         subject: "Your Website Alignment Review is ready",
         html,
-        text: `${first ? `Hi ${first},\n\n` : ""}Your Website Alignment Review is ready in your Command Suite account, with the five changes that matter most.\n\nRead it here: ${link}\n\nQuestions? Reply, or write to support@amilynnecarroll.com.\n\nHead up - Wings out\nBabs 🦋`,
+        text: `${first ? `Hi ${first},\n\n` : ""}Your Website Alignment Review is ready in your Command Suite account, with the five changes that matter most.\n\nRead it here: ${link}\n\nQuestions? Reply, or write to support@lccommandsuite.com.\n\nHead up - Wings out\nBabs 🦋`,
       }),
     });
     if (!res.ok) console.error("review ready email:", res.status, await res.text().catch(() => ""));

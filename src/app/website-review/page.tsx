@@ -34,7 +34,7 @@ export default function WebsiteReviewPage() {
           <p className="mb-4 text-xs text-[#7b6b8d]">{[r.website, r.publishedAt ? `Delivered ${fmt(r.publishedAt)}` : ""].filter(Boolean).join(" · ")}</p>
           <ReviewText text={r.content} />
           <p className="mt-6 border-t border-[#1a2b4a]/10 pt-4 text-sm text-[#5b5f73] dark:border-white/10 dark:text-[#b8a898]">
-            Questions, or want to talk it through? Write to <a className="text-[#2E7C83] underline" href="mailto:support@amilynnecarroll.com">support@amilynnecarroll.com</a>.
+            Questions, or want to talk it through? Write to <a className="text-[#2E7C83] underline" href="mailto:support@lccommandsuite.com">support@lccommandsuite.com</a>.
           </p>
         </article>
       ) : r.status === "in_progress" ? (

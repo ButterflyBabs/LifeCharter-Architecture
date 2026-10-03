@@ -66,7 +66,7 @@ async function run(request: Request) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: prof.email, reply_to: "support@amilynnecarroll.com", subject, html }),
+      body: JSON.stringify({ from: FROM, to: prof.email, reply_to: "support@lccommandsuite.com", subject, html }),
     });
     if (!res.ok) {
       console.error("alert-digest email:", res.status, await res.text().catch(() => ""));
