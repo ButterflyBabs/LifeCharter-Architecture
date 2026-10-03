@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Brain, Heart, TrendingUp, ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 import CheckinSchedule from "@/components/assessments/CheckinSchedule";
 import { CommandShiftCard } from "@/components/assessments/CommandShiftCard";
+import AssessmentCardAction from "@/components/assessments/AssessmentCardAction";
 
 export const metadata: Metadata = {
   title: "Alignment Profile | LifeCharter Command Suite",
@@ -21,7 +22,7 @@ const alignmentProfiles = [
     icon: Brain,
     color: "#4a9b9b",
     bgColor: "bg-[#4a9b9b]/10",
-    questions: 325,
+    questions: 535,
     timeEstimate: "60-75 min",
     sections: ["Business Identity", "Business Model", "Vision & Strategy", "Ideal Clients", "Offers & Products", "Messaging & Brand", "Sales Process", "Operations", "Team & Culture", "Financials", "Legal & Risk", "Growth & Scale"],
     benefits: [
@@ -38,7 +39,7 @@ const alignmentProfiles = [
     icon: Heart,
     color: "#7b6b8d",
     bgColor: "bg-[#7b6b8d]/10",
-    questions: 264,
+    questions: 263,
     timeEstimate: "50-60 min",
     sections: ["Core Identity", "Origin Story", "Calling & Purpose", "Values & Standards", "Beliefs & Worldview", "Shadow & Resistance", "Sacred Practices", "Body & Energy", "Integration"],
     benefits: [
@@ -159,12 +160,7 @@ export default function AssessmentsPage() {
                   ))}
                 </ul>
 
-                <Link href={`/assessments/${assessment.id}`} className="mt-auto pt-4">
-                  <Button variant="primary" className="w-full">
-                    Start Assessment
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
+                <AssessmentCardAction id={assessment.id as "brain" | "soul" | "profit"} />
               </CardContent>
             </Card>
           ))}
