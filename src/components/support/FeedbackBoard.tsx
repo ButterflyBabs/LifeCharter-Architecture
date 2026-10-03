@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ThumbsUp, AlertTriangle, Ticket } from "lucide-react";
+import { ThumbsUp, AlertTriangle, Ticket, Megaphone } from "lucide-react";
 
 type Status = "open" | "under_review" | "planned" | "shipped" | "closed";
 const STATUS_LABEL: Record<Status, { label: string; color: string }> = {
@@ -153,6 +153,45 @@ export function CommunityBoard({ kind, title, icon: Icon }: { kind: "suggestion"
               </div>
             </div>
           ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// What's new: updates and fixes the team has made, newest first. Read-only; the same for every account.
+interface UpdateItem { id: string; title: string; description: string; created_at: string }
+export function WhatsNew() {
+  const [items, setItems] = useState<UpdateItem[] | null>(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    fetch("/api/feedback?kind=update", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setItems(d.items ?? []))
+      .catch(() => setItems([]));
+  }, []);
+  if (!items?.length) return null;
+  const shown = all ? items : items.slice(0, 8);
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <Megaphone className="w-5 h-5 text-[#c9a227]" /> What&apos;s new
+        </CardTitle>
+        <p className="text-sm text-[#7a8a99]">Updates and fixes to the Command Suite, newest first. When you report something with the light bulb, you&apos;ll see the fix here.</p>
+      </CardHeader>
+      <CardContent className="divide-y divide-[#1a2b4a]/10">
+        {shown.map((it) => (
+          <div key={it.id} className="py-3 first:pt-0 last:pb-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.title}</p>
+              <span className="text-xs text-[#b8a898]">{when(it.created_at)}</span>
+            </div>
+            <p className="mt-0.5 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{it.description}</p>
+          </div>
+        ))}
+        {items.length > shown.length && (
+          <button onClick={() => setAll(true)} className="pt-3 text-sm font-semibold text-[#2E7C83] hover:underline">Show earlier updates</button>
         )}
       </CardContent>
     </Card>

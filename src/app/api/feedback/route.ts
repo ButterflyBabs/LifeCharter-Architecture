@@ -14,15 +14,27 @@ export const dynamic = "force-dynamic";
 // GET  ?kind=glitch|suggestion|feedback → that list, newest/most-voted first
 // POST { kind, title, description, alsoTicket? } → submit one
 
-const KINDS = ["glitch", "suggestion", "feedback"] as const;
+const KINDS = ["glitch", "suggestion", "feedback"] as const; // what a client can submit
 type Kind = (typeof KINDS)[number];
+// "update" is read-only for clients: notes from the team about what is new or fixed, shown to everyone.
+const READ_KINDS = [...KINDS, "update"] as const;
 
 export async function GET(request: Request) {
   const user = await sessionUser();
   if (!user) return NextResponse.json({ items: [] });
-  const kind = new URL(request.url).searchParams.get("kind") as Kind | null;
-  if (!kind || !KINDS.includes(kind)) return NextResponse.json({ error: "Unknown kind." }, { status: 400 });
+  const kind = new URL(request.url).searchParams.get("kind") as Kind | "update" | null;
+  if (!kind || !(READ_KINDS as readonly string[]).includes(kind)) return NextResponse.json({ error: "Unknown kind." }, { status: 400 });
   const db = createServerClient();
+
+  if (kind === "update") {
+    const { data } = await db
+      .from("feedback_items")
+      .select("id, kind, title, description, status, submitter_name, created_at")
+      .eq("kind", "update")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    return NextResponse.json({ items: data ?? [] });
+  }
 
   if (kind === "glitch") {
     const planId = await resolveMasterPlanId();
