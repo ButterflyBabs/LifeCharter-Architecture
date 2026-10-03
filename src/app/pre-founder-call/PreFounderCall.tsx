@@ -313,7 +313,7 @@ export default function PreFounderCall() {
           </section>
 
           <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#c9a227]/40 bg-white p-4 shadow-lg dark:bg-[#1a2b4a]">
-            <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Adds a note, fills their Pre-Founder fields, tags them and logs the call{draft.interest === "ready" ? ", and creates a task to issue their login" : ""}.</p>
+            <p className={`text-sm ${draft.interest ? "text-[#5a6472] dark:text-[#b8c2cf]" : "font-semibold text-[#8a2f2f] dark:text-[#f0b8a8]"}`}>{draft.interest ? <>Adds a note, fills their Pre-Founder fields, tags them and logs the call{draft.interest === "ready" ? ", and creates a task to issue their login" : ""}.</> : "Pick their decision above (Their decision) to turn Save on."}</p>
             <button className="rounded-full bg-[#1a2b4a] px-5 py-2.5 text-sm font-semibold text-[#F8F5F0] disabled:opacity-50 dark:bg-[#c9a227] dark:text-[#1a2b4a]" disabled={busy || !draft.interest} onClick={save}>{busy ? "Saving…" : `Save to ${first === "[Name]" ? "contact" : first}'s card`}</button>
           </div>
         </div>
