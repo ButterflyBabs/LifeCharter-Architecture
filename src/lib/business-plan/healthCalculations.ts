@@ -145,17 +145,15 @@ export function getHealthStatus(health: number): {
   color: string;
   bgColor: string;
 } {
-  if (health >= 80) {
-    return { label: "Thriving", color: "text-green-500", bgColor: "bg-green-500" };
-  } else if (health >= 60) {
-    return { label: "Healthy", color: "text-[#84cc16]", bgColor: "bg-[#84cc16]" };
-  } else if (health >= 40) {
-    return { label: "Building", color: "text-yellow-500", bgColor: "bg-yellow-500" };
-  } else if (health >= 20) {
-    return { label: "Challenged", color: "text-orange-500", bgColor: "bg-orange-500" };
-  } else {
-    return { label: "Critical", color: "text-red-500", bgColor: "bg-red-500" };
+  // The same four phases used everywhere in the app.
+  if (health > 80) {
+    return { label: "Legacy", color: "text-green-500", bgColor: "bg-green-500" };
+  } else if (health > 60) {
+    return { label: "Expansion", color: "text-blue-500", bgColor: "bg-blue-500" };
+  } else if (health > 40) {
+    return { label: "Growth", color: "text-yellow-500", bgColor: "bg-yellow-500" };
   }
+  return { label: "Survival", color: "text-red-500", bgColor: "bg-red-500" };
 }
 
 /**

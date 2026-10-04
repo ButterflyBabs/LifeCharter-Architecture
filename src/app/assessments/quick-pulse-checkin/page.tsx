@@ -371,20 +371,19 @@ function QuickPulseCheckinContent() {
     let healthLevel = "";
     let healthColor = "";
 
-    if (totalScore >= 81) {
-      healthLevel = "Thriving";
+    // The same four phases used everywhere else in the app, on the same 0-100 scale (this check-in is out of 90).
+    const percent = Math.round((totalScore / 90) * 100);
+    if (percent >= 81) {
+      healthLevel = "Legacy";
       healthColor = "#22c55e";
-    } else if (totalScore >= 61) {
-      healthLevel = "Healthy";
-      healthColor = "#84cc16";
-    } else if (totalScore >= 41) {
-      healthLevel = "Building";
+    } else if (percent >= 61) {
+      healthLevel = "Expansion";
+      healthColor = "#3b82f6";
+    } else if (percent >= 41) {
+      healthLevel = "Growth";
       healthColor = "#eab308";
-    } else if (totalScore >= 21) {
-      healthLevel = "Challenged";
-      healthColor = "#f97316";
     } else {
-      healthLevel = "Critical";
+      healthLevel = "Survival";
       healthColor = "#ef4444";
     }
 
@@ -671,7 +670,7 @@ function QuickPulseCheckinContent() {
                   <Activity className="w-6 h-6" style={{ color: result.healthColor }} />
                 </div>
                 <p className="text-sm text-[#b8a898] mb-1">Total Score</p>
-                <p className="text-3xl font-bold" style={{ color: result.healthColor }}>{result.totalScore}<span className="text-lg text-[#b8a898]">/90</span></p>
+                <p className="text-3xl font-bold" style={{ color: result.healthColor }}>{Math.round((result.totalScore / 90) * 100)}<span className="text-lg text-[#b8a898]">/100</span></p>
                 <p className="text-sm font-medium mt-1" style={{ color: result.healthColor }}>{result.healthLevel}</p>
               </CardContent>
             </Card>

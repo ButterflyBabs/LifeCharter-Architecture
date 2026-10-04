@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 
 interface OverallBusinessHealthProps {
   score?: number;
@@ -159,10 +158,6 @@ export function OverallBusinessHealth(props: OverallBusinessHealthProps) {
             <p className="text-2xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               {status}
             </p>
-
-            <Badge variant={score <= 40 ? "warning" : score <= 60 ? "info" : "success"} className="mb-3">
-              {score <= 40 ? "Building your foundation" : score <= 60 ? "Gaining momentum" : score <= 80 ? "Growing strong" : "Thriving"}
-            </Badge>
 
             <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-2">
               <span className="font-medium">Primary focus:</span>{" "}
