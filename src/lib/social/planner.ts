@@ -371,7 +371,10 @@ export interface NoteSection {
 // "STORY (Monday)", "FIRST COMMENT". Text in parentheses may be mixed case.
 export function isHeading(line: string): boolean {
   const s = line.trim();
-  if (!s || s.length > 60) return false;
+  if (!s) return false;
+  // A long line is still a heading when it is a short capitalised label followed by a parenthetical note, e.g.
+  // "FIRST COMMENT (the only place the link appears; slide 8 carries the invitation)".
+  if (s.length > 60) return /\)$/.test(s) && s.indexOf("(") > 0 && s.indexOf("(") <= 40 && isHeading(s.slice(0, s.indexOf("(")));
   const core = s.replace(/\([^)]*\)/g, "").trim();
   if (!/[A-Z]/.test(core)) return false;
   return /^[A-Z0-9 '&/+:,\-·.!?]+$/.test(core) && !/^\d+[.:]/.test(core) && !/^\d{1,2}:\d{2}/.test(core);
