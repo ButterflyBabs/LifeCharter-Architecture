@@ -137,6 +137,12 @@ export async function POST(request: Request) {
       }
       reply = "";
     }
+    // On a plan page the card is pinned to that plan; if the chat text names a different plan, say it plainly instead.
+    const pk = pageKind(page);
+    if (pk && cards.some((c) => ["update_plan_section", "fill_plan_answers"].includes(c.tool))) {
+      const labels: Record<string, string> = { business: "Business Plan", marketing: "Marketing Plan", sales: "Sales Plan", forecasting: "Forecast Plan" };
+      if (Object.entries(labels).some(([k, l]) => k !== pk && reply.includes(l))) reply = "";
+    }
     if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
     if (planId && reply) await saveTurn(planId, "mariposa", shown, reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply, actions: cards });
