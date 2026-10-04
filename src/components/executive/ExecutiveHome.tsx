@@ -3,7 +3,7 @@
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
 import {
@@ -249,7 +249,6 @@ export default function ExecutiveHome() {
   const [aiActions, setAiActions] = useState<ActionCardData[]>([]);
   // The running conversation, kept on the server so it is still here after you leave and come back.
   const [aiThread, setAiThread] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
-  const threadEnd = useRef<HTMLDivElement | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
@@ -1050,9 +1049,6 @@ export default function ExecutiveHome() {
       })
       .catch(() => {});
   }, []);
-  useEffect(() => {
-    threadEnd.current?.scrollIntoView({ block: "nearest" });
-  }, [aiThread.length, aiLoading]);
 
   // `shown` is what the chat displays when the text sent is long (an edit request carries the draft's details).
   const askMariposa = async (q?: string, shown?: string) => {
@@ -2122,20 +2118,6 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Reply */}
-            {(aiLoading || aiThread.length > 0) && (
-              <div className="mb-4 max-h-96 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654]" aria-live="polite">
-                {aiThread.map((m) => (
-                  <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                    <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
-                      {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
-                    </div>
-                  </div>
-                ))}
-                {aiLoading && <div className="text-xs text-[#7a8a99]">{assistantName} is thinking…</div>}
-                <div ref={threadEnd} />
-              </div>
-            )}
-
             <AssistantActionCards
               fresh={aiActions}
               onRevise={(card, instruction) =>
@@ -2145,6 +2127,19 @@ export default function ExecutiveHome() {
                 )
               }
             />
+
+            {(aiLoading || aiThread.length > 0) && (
+              <div className="mb-4 max-h-96 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654]" aria-live="polite" aria-label="Conversation, newest first">
+                {aiLoading && <div className="text-xs text-[#7a8a99]">{assistantName} is thinking…</div>}
+                {[...aiThread].reverse().map((m) => (
+                  <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                    <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
+                      {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">
