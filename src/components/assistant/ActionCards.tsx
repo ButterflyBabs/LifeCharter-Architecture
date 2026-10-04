@@ -1,0 +1,93 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { CheckCircle2, Loader2, Undo2, XCircle } from "lucide-react";
+
+export interface ActionCardData {
+  id: string;
+  tool: string;
+  status: "proposed" | "executed" | "cancelled" | "failed" | "undone";
+  title: string;
+  lines: string[];
+  summary?: string;
+  error?: string;
+  canUndo?: boolean;
+}
+
+// What the AI assistant has prepared. Nothing runs until the client presses Approve here.
+export default function AssistantActionCards({ fresh }: { fresh: ActionCardData[] }) {
+  const [cards, setCards] = useState<ActionCardData[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState("");
+
+  // Anything still waiting for approval from earlier (survives a page reload).
+  useEffect(() => {
+    fetch("/api/assistant/actions", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const waiting = ((d?.actions ?? []) as ActionCardData[]).filter((a) => a.status === "proposed");
+        if (waiting.length) setCards((cur) => [...cur, ...waiting.filter((w) => !cur.some((c) => c.id === w.id))]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!fresh.length) return;
+    setCards((cur) => [...fresh, ...cur.filter((c) => !fresh.some((f) => f.id === c.id))]);
+  }, [fresh]);
+
+  async function decide(id: string, decision: "approve" | "cancel" | "undo") {
+    setBusy(id);
+    setErr("");
+    try {
+      const res = await fetch("/api/assistant/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, decision }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "That didn't work.");
+      setCards((cur) => cur.map((c) => (c.id === id ? (d.card as ActionCardData) : c)));
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+    setBusy(null);
+  }
+
+  if (!cards.length) return null;
+  return (
+    <div className="mb-4 space-y-3">
+      {cards.map((c) => (
+        <div key={c.id} className="rounded-xl border border-[#c9a227]/40 bg-[#FBF7EC] p-4 text-sm text-[#3F4654] dark:bg-[#2a2415] dark:text-[#e8e4f0]">
+          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.title}</p>
+          {c.lines.length > 0 && c.status === "proposed" && (
+            <ul className="mt-1.5 list-disc pl-5 text-xs text-[#5a6472] dark:text-[#b8c2cf]">
+              {c.lines.map((l, i) => <li key={i}>{l}</li>)}
+            </ul>
+          )}
+          {c.status === "proposed" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button onClick={() => decide(c.id, "approve")} disabled={busy === c.id} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60">
+                {busy === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Approve
+              </button>
+              <button onClick={() => decide(c.id, "cancel")} disabled={busy === c.id} className="rounded-lg border border-[#1a2b4a]/20 px-4 py-2 text-xs font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0]">
+                Cancel
+              </button>
+              <span className="text-[11px] text-[#7a8a99]">Nothing changes until you approve.</span>
+            </div>
+          )}
+          {c.status === "executed" && (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2c6b3f]"><CheckCircle2 className="h-3.5 w-3.5" /> {c.summary || "Done."}</span>
+              {c.canUndo && (
+                <button onClick={() => decide(c.id, "undo")} disabled={busy === c.id} className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline">
+                  <Undo2 className="h-3 w-3" /> Undo
+                </button>
+              )}
+            </div>
+          )}
+          {c.status === "undone" && <p className="mt-2 text-xs text-[#7a8a99]">{c.summary || "Undone."}</p>}
+          {c.status === "cancelled" && <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#7a8a99]"><XCircle className="h-3.5 w-3.5" /> Cancelled. Nothing was changed.</p>}
+          {c.status === "failed" && <p className="mt-2 text-xs text-[#8a2f2f]">That didn&apos;t work{c.error ? `: ${c.error}` : "."} Nothing else was changed.</p>}
+        </div>
+      ))}
+      {err && <p role="alert" className="text-xs text-[#8a2f2f]">{err}</p>}
+    </div>
+  );
+}

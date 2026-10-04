@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 import { useState, useEffect, useCallback } from "react";
@@ -245,6 +246,7 @@ export default function ExecutiveHome() {
   const [sendingForward, setSendingForward] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
+  const [aiActions, setAiActions] = useState<ActionCardData[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
@@ -1050,6 +1052,7 @@ export default function ExecutiveHome() {
       });
       const data = await res.json();
       setAiReply(data.reply ?? "Sorry, I couldn't respond right now.");
+      setAiActions(Array.isArray(data.actions) ? data.actions : []);
     } catch {
       setAiReply("Sorry, I couldn't respond right now.");
     }
@@ -2104,6 +2107,8 @@ export default function ExecutiveHome() {
                 {aiLoading ? `${assistantName} is thinking…` : aiReply}
               </div>
             )}
+
+            <AssistantActionCards fresh={aiActions} />
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">

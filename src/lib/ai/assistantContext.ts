@@ -394,7 +394,7 @@ export function assistantSystemPrompt(
   knowledge: AssistantKnowledge,
   extra = "",
   instructions = "",
-  opts: { notes?: string; message?: string } = {}
+  opts: { notes?: string; message?: string; canAct?: boolean } = {}
 ): string {
   const known = knowledge.text
     ? `WHAT YOU KNOW ABOUT THIS CLIENT — their own words and live numbers from their account:\n${knowledge.text}`
@@ -411,9 +411,12 @@ export function assistantSystemPrompt(
   const helpBlock = help.length
     ? `\nCOMMAND SUITE HELP LIBRARY (official answers about how the app works; use these if they are asking how to do something in the app, and say if the answer isn't covered here instead of guessing):\n${help.map((h) => `- Q: ${h.question}\n  A: ${h.answer}`).join("\n")}\n`
     : "";
+  const acting = opts.canAct
+    ? `\nWHAT YOU CAN DO FOR THEM: you have tools that change their account (for example tagging contacts). A tool never runs when you call it: the client sees a preview and must press Approve, so never say something is done; say you have prepared it for their approval. Use a lookup tool first to check who would be affected. Ask a short question if the request is unclear. If something is not in your tools yet (for example sending emails or building a pipeline), say that plainly and offer what you can do. You never send emails or messages yourself.\n`
+    : "";
   return `${persona}
 ${standing}
-${notes}
+${notes}${acting}
 ${known}
 ${helpBlock}
 ${extra}

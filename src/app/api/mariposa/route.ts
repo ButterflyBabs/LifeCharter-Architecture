@@ -7,6 +7,11 @@ import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { currentMailOwner } from "@/lib/mailOwner";
 import { buildAssistantKnowledge, loadHistory, saveTurn, clearHistory, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { createServerClient } from "@/lib/supabase/server";
+import { openAiToolDefs } from "@/lib/ai/actions/registry";
+import { handleToolCall, type ActionCard } from "@/lib/ai/actions/engine";
+import { isDemoRequest } from "@/lib/scoring/masterPlan";
+import { sessionUser } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -55,22 +60,35 @@ export async function POST(request: Request) {
       : [{ text: "", answered: 0 }, []];
 
     const openai = new OpenAI({ apiKey: key });
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions, { notes, message }),
-        },
-        ...history,
-        { role: "user", content: message },
-      ],
-      max_tokens: 420,
-      temperature: 0.6,
-    });
-    const reply = completion.choices[0]?.message?.content?.trim() ?? "";
+    // The assistant can also DO things (tools). Not in the public demo, which is view-only.
+    const canAct = !!planId && !isDemoRequest();
+    const sys = assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions, { notes, message, canAct });
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...history, { role: "user", content: message }];
+    const cards: ActionCard[] = [];
+    const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
+    let reply = "";
+    for (let round = 0; round < 4; round++) {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 700,
+        temperature: 0.5,
+        ...(canAct ? { tools: openAiToolDefs() } : {}),
+      });
+      const msg = completion.choices[0]?.message;
+      reply = msg?.content?.trim() ?? "";
+      const calls = (msg?.tool_calls ?? []).filter((c) => c.type === "function");
+      if (!calls.length || !ctx) break;
+      messages.push({ role: "assistant", content: msg?.content ?? null, tool_calls: msg!.tool_calls });
+      for (const c of calls) {
+        const out = await handleToolCall(c.function.name, c.function.arguments, ctx, cards);
+        messages.push({ role: "tool", tool_call_id: c.id, content: out });
+      }
+      reply = "";
+    }
+    if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
     if (planId && reply) await saveTurn(planId, "mariposa", message, reply).catch((e) => console.error("saveTurn:", e));
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply, actions: cards });
   } catch (e) {
     console.error("POST /api/mariposa:", e);
     return NextResponse.json({
