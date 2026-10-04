@@ -212,7 +212,7 @@ export default function SequencesManager() {
                     <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{seq.name}</p>
                     <p className="text-sm text-[#7a8a99]">
                       {!sender || sender.house
-                        ? <>From {seq.from_name} &lt;{seq.from_email}&gt; · replies to support@amilynnecarroll.com</>
+                        ? <>From {seq.from_name} &lt;{seq.from_email}&gt; · replies to support@lccommandsuite.com</>
                         : <>From {sender.fromName} &lt;{sender.fromEmail || "your own domain, once it's set up"}&gt;{sender.replyTo ? ` · replies to ${sender.replyTo}` : ""}</>}
                     </p>
                   </div>

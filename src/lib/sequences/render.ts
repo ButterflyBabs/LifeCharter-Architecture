@@ -79,7 +79,7 @@ export function renderStep(r: RenderInput) {
   const f = r.footer;
   const signHtml = f ? esc(f.signoff).replace(/\n/g, "<br>") : SIGN_OFF_HTML;
   const signText = f ? f.signoff : SIGN_OFF_TEXT;
-  const support = f ? f.supportEmail : "support@amilynnecarroll.com";
+  const support = f ? f.supportEmail : "support@lccommandsuite.com";
   const address = f ? f.address : BUSINESS_ADDRESS;
   const html = `<!doctype html><html><body style="margin:0;background:#FBF8F1">
 <span style="display:none;max-height:0;overflow:hidden">${esc(fill(r.preview || ""))}</span>

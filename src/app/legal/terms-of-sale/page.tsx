@@ -131,7 +131,7 @@ export default async function TermsOfSalePage() {
         <p className={P}>
           4.3 After Year 1. Once the Year-1 Term is complete, this Agreement continues on a month-to-month basis
           until terminated in writing by either Client or Company, with at least forty-five (45) days&apos; advance
-          notice (email to support@amilynnecarroll.com is sufficient from Client&apos;s side).
+          notice (email to support@lccommandsuite.com is sufficient from Client&apos;s side).
         </p>
 
         <h2 className={H2}>5. Refund Policy</h2>
@@ -199,8 +199,8 @@ export default async function TermsOfSalePage() {
 
         <h2 className={H2}>14. Contact and Notices</h2>
         <p className={P}>
-          Questions about this Agreement can be sent to support@amilynnecarroll.com. Formal legal notices under this
-          Agreement should be sent to support@amilynnecarroll.com, with a copy by mail to Sacred Kaleidoscope
+          Questions about this Agreement can be sent to support@lccommandsuite.com. Formal legal notices under this
+          Agreement should be sent to support@lccommandsuite.com, with a copy by mail to Sacred Kaleidoscope
           Community LLC, 5787 S Odessa St, Centennial, Colorado 80015.
         </p>
 

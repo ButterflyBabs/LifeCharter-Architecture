@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
         <h2 className={H2}>6. Your Choices</h2>
         <p className={P}>
           You can request to access, correct, or delete your personal information, or unsubscribe from marketing
-          emails at any time, by contacting support@amilynnecarroll.com.
+          emails at any time, by contacting support@lccommandsuite.com.
         </p>
 
         <h2 className={H2}>7. Data Security</h2>
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
 
         <h2 className={H2}>10. Contact Us</h2>
         <p className={P}>
-          Questions about this Privacy Policy can be sent to support@amilynnecarroll.com, or by mail to Sacred
+          Questions about this Privacy Policy can be sent to support@lccommandsuite.com, or by mail to Sacred
           Kaleidoscope Community LLC, 5787 S Odessa St, Centennial, Colorado 80015.
         </p>
 

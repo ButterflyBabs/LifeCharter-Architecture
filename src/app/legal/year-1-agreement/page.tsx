@@ -75,7 +75,7 @@ export default function Year1AgreementPage() {
         </div>
 
         <p className="mt-10 text-sm text-[#b8a898]/70">
-          Questions? Reach us at support@amilynnecarroll.com.
+          Questions? Reach us at support@lccommandsuite.com.
         </p>
       </div>
     </main>

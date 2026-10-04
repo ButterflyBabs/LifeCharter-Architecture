@@ -25,7 +25,7 @@ async function unsubscribe(token: string | null): Promise<{ ok: false } | { ok: 
   const { data: c } = await db.from("seq_contacts").select("master_plan_id").eq("id", contactId).maybeSingle();
   if (!c?.master_plan_id) return { ok: true, support: null };
   const p = await senderProfile(c.master_plan_id as string, db).catch(() => null);
-  return { ok: true, support: !p ? null : p.house ? "support@amilynnecarroll.com" : p.supportEmail || null };
+  return { ok: true, support: !p ? null : p.house ? "support@lccommandsuite.com" : p.supportEmail || null };
 }
 
 export async function POST(request: Request) {

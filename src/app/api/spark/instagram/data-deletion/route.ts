@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const code = (new URL(request.url).searchParams.get("code") || "").replace(/[^a-f0-9]/g, "").slice(0, 16);
   return new NextResponse(
-    `LC Spark data deletion${code ? ` (confirmation ${code})` : ""}: complete. Your Instagram connection and LC Spark Instagram conversations have been deleted. Questions: support@amilynnecarroll.com`,
+    `LC Spark data deletion${code ? ` (confirmation ${code})` : ""}: complete. Your Instagram connection and LC Spark Instagram conversations have been deleted. Questions: support@lccommandsuite.com`,
     { headers: { "Content-Type": "text/plain; charset=utf-8" } }
   );
 }

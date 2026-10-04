@@ -25,7 +25,7 @@ export const GIVEAWAY_PLANNERS: Record<string, { title: string; payhip: string; 
 export const GIVEAWAY_ENDS = new Date("2027-01-01T07:00:00Z");
 export const giveawayOpen = (now = new Date()) => now < GIVEAWAY_ENDS;
 
-const SENDER = { from_name: "AmiLynne Carroll", from_email: "hello@lifecharter.life", reply_to: "support@amilynnecarroll.com" };
+const SENDER = { from_name: "AmiLynne Carroll", from_email: "hello@lifecharter.life", reply_to: "support@lccommandsuite.com" };
 const RESEND_GAP_MS = 10 * 60_000;
 
 const newCode = () => {
