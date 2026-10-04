@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import MyRequests from "@/components/support/MyRequests";
-import { MyGlitches, CommunityBoard, WhatsNew } from "@/components/support/FeedbackBoard";
+import { MyGlitches, CommunityBoard, WhatsNew, ResolvedLog } from "@/components/support/FeedbackBoard";
 import { Sparkles, MessageSquareHeart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -400,6 +400,7 @@ export default function ContactSupportPage() {
       <CommunityBoard kind="suggestion" title="Suggestions" icon={Sparkles} />
       <CommunityBoard kind="feedback" title="General Feedback" icon={MessageSquareHeart} />
       <WhatsNew />
+      <ResolvedLog />
     </div>
   );
 }

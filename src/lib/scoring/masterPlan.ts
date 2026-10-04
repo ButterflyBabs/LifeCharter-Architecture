@@ -6,6 +6,14 @@ import { authEnabled, sessionUser, isOwnerEmail } from "@/lib/authz";
 // resolves to this plan so the whole app shows sample data for sales/training.
 export const DEMO_PLAN_NAME = "Demo — Brand Alchemy Studio";
 
+export function isDemoRequest(): boolean {
+  try {
+    return cookies().get("lc_demo")?.value === "1";
+  } catch {
+    return false;
+  }
+}
+
 async function demoMasterPlanId(): Promise<string | null> {
   try {
     const store = cookies();

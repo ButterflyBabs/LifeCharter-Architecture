@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sessionUser } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
-import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { isDemoRequest, resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { notifyNewRequest, confirmToClient } from "@/lib/support/email";
 
 export const dynamic = "force-dynamic";
@@ -17,20 +17,21 @@ export const dynamic = "force-dynamic";
 const KINDS = ["glitch", "suggestion", "feedback"] as const; // what a client can submit
 type Kind = (typeof KINDS)[number];
 // "update" is read-only for clients: notes from the team about what is new or fixed, shown to everyone.
-const READ_KINDS = [...KINDS, "update"] as const;
+// "resolved" is the same idea for answered support questions (anonymised), so everyone can learn from them.
+const READ_KINDS = [...KINDS, "update", "resolved"] as const;
 
 export async function GET(request: Request) {
   const user = await sessionUser();
-  if (!user) return NextResponse.json({ items: [] });
-  const kind = new URL(request.url).searchParams.get("kind") as Kind | "update" | null;
+  if (!user && !isDemoRequest()) return NextResponse.json({ items: [] });
+  const kind = new URL(request.url).searchParams.get("kind") as Kind | "update" | "resolved" | null;
   if (!kind || !(READ_KINDS as readonly string[]).includes(kind)) return NextResponse.json({ error: "Unknown kind." }, { status: 400 });
   const db = createServerClient();
 
-  if (kind === "update") {
+  if (kind === "update" || kind === "resolved") {
     const { data } = await db
       .from("feedback_items")
       .select("id, kind, title, description, status, submitter_name, created_at")
-      .eq("kind", "update")
+      .eq("kind", kind)
       .order("created_at", { ascending: false })
       .limit(100);
     return NextResponse.json({ items: data ?? [] });
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
       .order("vote_count", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200),
-    db.from("feedback_votes").select("item_id").eq("user_id", user.id),
+    user ? db.from("feedback_votes").select("item_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
   ]);
   const voted = new Set(((myVotes ?? []) as { item_id: string }[]).map((v) => v.item_id));
   return NextResponse.json({

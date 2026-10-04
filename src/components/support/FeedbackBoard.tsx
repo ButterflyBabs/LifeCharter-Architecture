@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ThumbsUp, AlertTriangle, Ticket, Megaphone } from "lucide-react";
+import { ThumbsUp, AlertTriangle, Ticket, Megaphone, CheckCircle2 } from "lucide-react";
 
 type Status = "open" | "under_review" | "planned" | "shipped" | "closed";
 const STATUS_LABEL: Record<Status, { label: string; color: string }> = {
@@ -192,6 +192,44 @@ export function WhatsNew() {
         ))}
         {items.length > shown.length && (
           <button onClick={() => setAll(true)} className="pt-3 text-sm font-semibold text-[#2E7C83] hover:underline">Show earlier updates</button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Recently answered: support questions we have resolved, anonymised, with the answer. Read-only; the same for every account.
+export function ResolvedLog() {
+  const [items, setItems] = useState<UpdateItem[] | null>(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    fetch("/api/feedback?kind=resolved", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setItems(d.items ?? []))
+      .catch(() => setItems([]));
+  }, []);
+  if (!items?.length) return null;
+  const shown = all ? items : items.slice(0, 6);
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <CheckCircle2 className="w-5 h-5 text-[#2E7C83]" /> Recently answered
+        </CardTitle>
+        <p className="text-sm text-[#7a8a99]">Questions other clients have asked and how we resolved them, with names removed. Your answer may already be here.</p>
+      </CardHeader>
+      <CardContent className="divide-y divide-[#1a2b4a]/10">
+        {shown.map((it) => (
+          <div key={it.id} className="py-3 first:pt-0 last:pb-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.title}</p>
+              <span className="text-xs text-[#b8a898]">Resolved {when(it.created_at)}</span>
+            </div>
+            <p className="mt-0.5 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{it.description}</p>
+          </div>
+        ))}
+        {items.length > shown.length && (
+          <button onClick={() => setAll(true)} className="pt-3 text-sm font-semibold text-[#2E7C83] hover:underline">Show more answered questions</button>
         )}
       </CardContent>
     </Card>
