@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Sparkles, Wand2, Loader2, Check, ChevronDown, ChevronUp, CircleDot, CheckCircle2 } from "lucide-react";
 import type { PlanQuestion } from "@/lib/plans/blueprints";
 
@@ -35,12 +35,16 @@ export default function PlanBuilder({ planType }: { planType: string }) {
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [needsKey, setNeedsKey] = useState(false);
   const [err, setErr] = useState("");
+  // What each section's text was when last loaded or saved, so a click-away with no change does not count as an edit.
+  const savedRef = useRef<Record<string, string>>({});
+  const remember = (sections: Section[]) => sections.forEach((x) => (savedRef.current[x.key] = x.content));
 
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/plans/sections?type=${planType}`);
       const d = await res.json().catch(() => ({}));
       if (d.sections) {
+        remember(d.sections as Section[]);
         setData(d);
         // Open the section named in ?section=, else the first unfilled baseline one.
         const wanted = new URLSearchParams(window.location.search).get("section");
@@ -68,6 +72,7 @@ export default function PlanBuilder({ planType }: { planType: string }) {
       const res = await fetch(`/api/plans/sections?type=${planType}`);
       const d = await res.json().catch(() => ({}));
       if (!d.sections) return;
+      remember(d.sections as Section[]);
       const active = document.activeElement as HTMLElement | null;
       const typingIn = active?.closest?.("[id^='section-']")?.id.replace("section-", "") || "";
       setData((prev) => {
@@ -96,20 +101,27 @@ export default function PlanBuilder({ planType }: { planType: string }) {
     };
   };
 
-  const saveSection = async (key: string, opts: { content?: string; answers?: Record<string, string>; source?: string } = {}) => {
+  const saveSection = async (key: string, opts: { content?: string; answers?: Record<string, string>; source?: string; status?: string } = {}) => {
     const sec = data?.sections.find((s) => s.key === key);
     if (!sec) return;
     const content = opts.content !== undefined ? opts.content : sec.content;
     const answers = opts.answers !== undefined ? opts.answers : sec.answers;
-    const status = content.trim() ? (opts.source === "ai" ? "drafted" : "edited") : "empty";
+    const changed = content.trim() !== (savedRef.current[key] ?? "").trim();
+    // Editing the text yourself makes it yours: the "Drafted by" label goes away and it shows as Edited.
+    // Clicking away without changing anything keeps the status it had (including Complete).
+    const source = opts.source ?? (changed ? "client" : undefined);
+    const status = !content.trim()
+      ? "empty"
+      : opts.status || (opts.source === "ai" ? "drafted" : changed || sec.status === "empty" || sec.status === "drafted" && source === "client" ? "edited" : sec.status);
     setSavingKey(key);
     setErr("");
     try {
       await fetch("/api/plans/sections", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: planType, sectionKey: key, content, answers, status, source: opts.source }),
+        body: JSON.stringify({ type: planType, sectionKey: key, content, answers, status, source }),
       });
+      savedRef.current[key] = content;
       setSavedKey(key);
       setTimeout(() => setSavedKey((k) => (k === key ? null : k)), 1500);
     } finally {
@@ -118,7 +130,7 @@ export default function PlanBuilder({ planType }: { planType: string }) {
     // Recompute meters after a content change.
     setData((prev) => {
       if (!prev) return prev;
-      const sections = prev.sections.map((s) => (s.key === key ? { ...s, content, answers, status } : s));
+      const sections = prev.sections.map((s) => (s.key === key ? { ...s, content, answers, status, ...(source ? { source, aiBy: source === "ai" ? s.aiBy : "" } : {}) } : s));
       return { ...prev, sections, ...recompute(sections) };
     });
   };
@@ -208,7 +220,15 @@ export default function PlanBuilder({ planType }: { planType: string }) {
                         {s.questions.filter((q) => (s.answers[q.id] || "").trim()).length} of {s.questions.length} answered
                       </span>
                     )}
-                    {s.source === "ai" && filled && (
+                    {s.status === "done" && filled && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#2c6b3f]/12 text-[#2c6b3f]">
+                        <Check className="w-2.5 h-2.5" /> Complete
+                      </span>
+                    )}
+                    {s.status !== "done" && s.source !== "ai" && s.status === "edited" && filled && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#2E7C83]/12 text-[#2E7C83]">Edited</span>
+                    )}
+                    {s.status !== "done" && s.source === "ai" && filled && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[#c9a227]/15 text-[#8a6a15]">
                         <Sparkles className="w-2.5 h-2.5" /> {s.aiBy ? `Drafted by ${s.aiBy}` : "AI draft"}
                       </span>
@@ -269,6 +289,16 @@ export default function PlanBuilder({ planType }: { planType: string }) {
                       ) : null}
                       {savedKey === s.key ? "Saved" : "Save"}
                     </button>
+                    {filled && (
+                      <button
+                        onClick={() => saveSection(s.key, { status: s.status === "done" ? "edited" : "done" })}
+                        disabled={savingKey === s.key}
+                        className={`inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg ${s.status === "done" ? "border border-[#2c6b3f]/30 text-[#2c6b3f] hover:bg-[#2c6b3f]/5" : "bg-[#2c6b3f] text-white hover:opacity-90"}`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        {s.status === "done" ? "Complete · Reopen" : "Mark section complete"}
+                      </button>
+                    )}
                     <span className="text-[11px] text-[#b8a898]">Autosaves when you click away.</span>
                   </div>
                 </div>
