@@ -489,7 +489,7 @@ export default function DailyCompassPage() {
         </div>
 
         {/* Today's Focus — drag to reorder */}
-        <div className="lg:col-span-2 space-y-6" {...cardProps("focus")}>
+        <div className="lg:col-span-3 space-y-6" {...cardProps("focus")}>
           {/* Action Bar */}
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
