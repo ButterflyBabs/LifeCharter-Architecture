@@ -92,6 +92,14 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("legal_checklist").select("id", { count: "exact", head: true }).eq("master_plan_id", id).in("status", ["done", "na"]))) >= 5,
   },
   {
+    key: "business-plan-complete", week: 3, dims: ["vision","leadership","finance"], title: "Finish your Business Plan: mark every section complete", why: "This unlocks your printable business plan (PDF and Word) for funding requests and partnership proposals.", href: "/business-plan",
+    check: async (id, db) => {
+      const total = getBlueprint("business")?.sections.length ?? 0;
+      const { data } = await db.from("plan_sections").select("content, status").eq("master_plan_id", id).eq("plan_type", "business");
+      return total > 0 && ((data || []) as { content: string | null; status: string | null }[]).filter((r) => r.status === "done" && (r.content || "").trim()).length >= total;
+    },
+  },
+  {
     key: "marketing-plan", week: 3, dims: ["marketing","sales"], title: "Write your Marketing Plan: your ideal client, positioning and channels", why: "So your content, outreach and assistant speak to the right people. Let your assistant draft each section from your assessments, then make it yours.", href: "/marketing-plan",
     check: async (id, db) => (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "marketing").not("content", "is", null))) >= 3,
   },
@@ -101,14 +109,6 @@ const STEPS: Def[] = [
       const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", id);
       const ids = ((plans ?? []) as { id: string }[]).map((p) => p.id);
       return ids.length ? (await count(db.from("client_plan_goals").select("id", { count: "exact", head: true }).in("plan_id", ids).neq("period", "year"))) > 0 : false;
-    },
-  },
-  {
-    key: "business-plan-complete", week: 4, dims: ["vision","leadership","finance"], title: "Finish your Business Plan: mark every section complete", why: "This unlocks your printable business plan (PDF and Word) for funding requests and partnership proposals.", href: "/business-plan",
-    check: async (id, db) => {
-      const total = getBlueprint("business")?.sections.length ?? 0;
-      const { data } = await db.from("plan_sections").select("content, status").eq("master_plan_id", id).eq("plan_type", "business");
-      return total > 0 && ((data || []) as { content: string | null; status: string | null }[]).filter((r) => r.status === "done" && (r.content || "").trim()).length >= total;
     },
   },
   {
