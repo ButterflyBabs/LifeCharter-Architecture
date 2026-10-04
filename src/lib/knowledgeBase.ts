@@ -387,7 +387,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "How does the AI in LifeCharter work?",
     answer:
-      "Your AI assistant (called Sidekick until you name it yourself in Settings → AI Assistant) is woven throughout the app: it grades your financial health, suggests Quick Wins tailored to your weakest areas, generates Daily Compass insights grounded in your 12 dimensions and 8 pillars, optimizes your tech stack, and answers your questions in the Travel Partner widget. It uses your own connected AI key.",
+      "Your AI assistant (called Sidekick until you name it yourself in Settings → AI Assistant) is woven throughout the app: it grades your financial health, suggests Quick Wins tailored to your weakest areas, generates Daily Compass insights grounded in your 12 dimensions and 8 pillars, optimizes your tech stack, and answers your questions in the Travel Partner widget. It uses your own connected AI key. It always has a short map of the whole Command Suite in mind (where things live, how scores work, what it can do for you), and it uses the Help library for step-by-step how-to questions.",
     keywords: ["ai", "mariposa", "bot", "assistant", "intelligence", "how ai works"],
   },
   {
