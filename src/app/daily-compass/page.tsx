@@ -16,6 +16,8 @@ import {
   Sparkles,
   Calendar,
   Zap,
+  ChevronDown,
+  ChevronUp,
   ArrowRight,
   Plus,
   AlertCircle,
@@ -133,6 +135,24 @@ export default function DailyCompassPage() {
   const DEFAULT_CARD_ORDER = ["progress", "quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
+  // Today's Focus can be folded down to just its title. Remembered on this device.
+  const [focusCollapsed, setFocusCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setFocusCollapsed(localStorage.getItem("compass-focus-collapsed") === "1");
+    } catch {
+      /* not remembered */
+    }
+  }, []);
+  const toggleFocus = () =>
+    setFocusCollapsed((c) => {
+      try {
+        localStorage.setItem("compass-focus-collapsed", c ? "0" : "1");
+      } catch {
+        /* not remembered */
+      }
+      return !c;
+    });
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(CARD_ORDER_KEY) || "null");
@@ -495,6 +515,15 @@ export default function DailyCompassPage() {
             <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
               {dragHandle("focus")}
               Today&apos;s Focus
+              <button
+                onClick={toggleFocus}
+                aria-expanded={!focusCollapsed}
+                aria-label={focusCollapsed ? "Expand Today's Focus" : "Collapse Today's Focus"}
+                title={focusCollapsed ? "Expand" : "Collapse"}
+                className="rounded-md p-1 text-[#7a8a99] hover:bg-[#1a2b4a]/10"
+              >
+                {focusCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+              </button>
             </h2>
             <div className="flex gap-2">
               <div className="relative">
@@ -521,6 +550,8 @@ export default function DailyCompassPage() {
             </div>
           </div>
 
+          {!focusCollapsed && (
+          <>
           {/* Energy Level Info */}
           {showEnergyInfo && (
             <Card className="border-[#c9a227]/30">
@@ -769,7 +800,8 @@ export default function DailyCompassPage() {
               </button>
             )}
           </div>
-
+          </>
+          )}
         </div>
 
         {/* Quick Actions — drag to reorder */}
