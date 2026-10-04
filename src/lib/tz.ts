@@ -1,7 +1,7 @@
 // Start and end of "today" (or of the next `days` days, starting today) in a given IANA timezone, returned as UTC ISO
 // instants. Calendar APIs and time formatting run on the server (UTC), so we
 // must anchor "today" and the displayed times to the viewer's real timezone.
-export function dayWindowUtc(timeZone: string, days = 1): { startISO: string; endISO: string } {
+export function dayWindowUtc(timeZone: string, days = 1, offsetDays = 0): { startISO: string; endISO: string } {
   const now = new Date();
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -23,8 +23,8 @@ export function dayWindowUtc(timeZone: string, days = 1): { startISO: string; en
   };
 
   return {
-    startISO: midnightUtc(y, m, d).toISOString(),
-    endISO: midnightUtc(y, m, d + days).toISOString(), // Date.UTC rolls month/year over
+    startISO: midnightUtc(y, m, d + offsetDays).toISOString(),
+    endISO: midnightUtc(y, m, d + offsetDays + days).toISOString(), // Date.UTC rolls month/year over
   };
 }
 

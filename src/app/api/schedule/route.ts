@@ -9,11 +9,14 @@ export const dynamic = "force-dynamic";
 
 type MergedEvent = ScheduleEvent & { account: string };
 
-// Today's events merged across every connected calendar (Google + Microsoft 365).
+// The day's events (today by default) merged across every connected calendar (Google + Microsoft 365).
 export async function GET(request: Request) {
   // Anchor "today" and displayed times to the viewer's time zone: their chosen
   // zone, else the auto-detected one the client sends (?tz=), else UTC.
-  const timeZone = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
+  const url = new URL(request.url);
+  const timeZone = await resolveUserTimeZone(url.searchParams.get("tz"));
+  // ?day=N pages the schedule forward: 0 is today, 1 tomorrow, up to 60 days out.
+  const day = Math.min(60, Math.max(0, Math.floor(Number(url.searchParams.get("day"))) || 0));
 
   const boxes = await openMailboxes();
   const events: MergedEvent[] = [];
@@ -24,8 +27,8 @@ export async function GET(request: Request) {
       try {
         const rows =
           box.provider === "google"
-            ? await google.fetchTodayEvents(box.token, timeZone)
-            : await microsoft.fetchTodayEvents(box.token, timeZone);
+            ? await google.fetchTodayEvents(box.token, timeZone, day)
+            : await microsoft.fetchTodayEvents(box.token, timeZone, day);
         events.push(...rows.map((e) => ({ ...e, account: box.label })));
       } catch (e) {
         console.error(`schedule ${box.provider}:`, e);

@@ -598,8 +598,9 @@ export async function createEvent(
   return (data.id as string) || "";
 }
 
-export async function fetchTodayEvents(accessToken: string, timeZone = "UTC"): Promise<ScheduleEvent[]> {
-  const { startISO, endISO } = dayWindowUtc(timeZone);
+// offsetDays: 0 is today, 1 is tomorrow, and so on (for paging the schedule forward).
+export async function fetchTodayEvents(accessToken: string, timeZone = "UTC", offsetDays = 0): Promise<ScheduleEvent[]> {
+  const { startISO, endISO } = dayWindowUtc(timeZone, 1, offsetDays);
   return fetchEventsBetween(accessToken, startISO, endISO, timeZone, 15);
 }
 

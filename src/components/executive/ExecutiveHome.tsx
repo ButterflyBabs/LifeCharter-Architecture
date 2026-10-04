@@ -15,6 +15,7 @@ import {
   MoreHorizontal,
   Bell,
   ChevronRight,
+  ChevronLeft,
   Plus,
   MoreVertical,
   GripVertical,
@@ -533,6 +534,26 @@ export default function ExecutiveHome() {
       .then((d) => d && setSchedule(d))
       .catch(() => {});
   }, [userTimezone]);
+
+  // Today's Schedule can be paged forward to future days. Day 0 is today (loaded above);
+  // any other day is fetched as needed.
+  const [scheduleDay, setScheduleDay] = useState(0);
+  const [dayEvents, setDayEvents] = useState<ScheduleEvent[] | null>(null);
+  useEffect(() => {
+    if (!userTimezone || scheduleDay === 0) {
+      setDayEvents(null);
+      return;
+    }
+    let live = true;
+    setDayEvents(null);
+    fetch(`/api/schedule?tz=${encodeURIComponent(userTimezone)}&day=${scheduleDay}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => live && setDayEvents(d?.events ?? []))
+      .catch(() => live && setDayEvents([]));
+    return () => {
+      live = false;
+    };
+  }, [userTimezone, scheduleDay]);
 
   const unreadCount = emails.filter((e) => e.unread).length;
   const visibleEmails = emails.filter(
@@ -1132,7 +1153,28 @@ export default function ExecutiveHome() {
   const timedTasks = tasks.filter(
     (t) => t.status !== "done" && t.due_has_time && t.due_at && todayKey && dayInTz(t.due_at, userTimezone) === todayKey
   );
-  const scheduleItems = [
+  // The calendar day being viewed (today, or a day ahead).
+  const viewKey = todayKey ? new Date(Date.parse(`${todayKey}T12:00:00Z`) + scheduleDay * 86_400_000).toISOString().slice(0, 10) : "";
+  const viewLabel = !viewKey
+    ? ""
+    : scheduleDay === 0
+    ? "Today"
+    : scheduleDay === 1
+    ? "Tomorrow"
+    : new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${viewKey}T12:00:00Z`));
+  const futureTasks = tasks.filter((t) => t.status !== "done" && t.due_has_time && t.due_at && viewKey && dayInTz(t.due_at, userTimezone) === viewKey);
+  const scheduleItems = scheduleDay > 0
+    ? [
+        ...(dayEvents ?? []).map((ev) => ({ key: `e-${ev.id}`, time: ev.time, title: ev.title, start: ev.start as string | null, chip: null as string | null })),
+        ...futureTasks.map((t) => ({
+          key: `t-${t.id}`,
+          time: timeInTz(t.due_at as string, userTimezone),
+          title: t.title,
+          start: t.due_at as string | null,
+          chip: (t.time_kind === "scheduled" ? "Task" : "Due by") as string | null,
+        })),
+      ].sort((a, b) => (a.start ? new Date(a.start).getTime() : Infinity) - (b.start ? new Date(b.start).getTime() : Infinity))
+    : [
     ...(schedule?.events ?? []).map((ev) => ({ key: `e-${ev.id}`, time: ev.time, title: ev.title, start: ev.start as string | null, chip: null as string | null })),
     ...timedTasks.map((t) => ({
       key: `t-${t.id}`,
@@ -1321,8 +1363,30 @@ export default function ExecutiveHome() {
           <button draggable onDragStart={() => setDragId("schedule")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
-          <div className="px-6 pt-5 pb-3">
-            <h3 className="font-serif text-base text-indigo-900">Today&apos;s Schedule</h3>
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-2">
+            <h3 className="font-serif text-base text-indigo-900">{scheduleDay === 0 ? "Today\u2019s Schedule" : `${viewLabel}\u2019s Schedule`}</h3>
+            <div className="flex items-center gap-1">
+              {scheduleDay > 0 && (
+                <button onClick={() => setScheduleDay(0)} className="mr-1 text-xs font-semibold text-[#2E7C83] hover:underline">Today</button>
+              )}
+              <button
+                onClick={() => setScheduleDay((d) => Math.max(0, d - 1))}
+                disabled={scheduleDay === 0}
+                aria-label="Previous day"
+                title="Previous day"
+                className="rounded-md p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setScheduleDay((d) => Math.min(60, d + 1))}
+                aria-label="Next day"
+                title="Next day"
+                className="rounded-md p-1 text-gray-500 hover:bg-gray-100"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           
           {/* Schedule Items (live Google Calendar) */}
@@ -1344,7 +1408,11 @@ export default function ExecutiveHome() {
               </div>
             )}
             {scheduleItems.length === 0 ? (
-              schedule?.connected ? <p className="text-sm text-gray-400">No meetings or timed tasks today</p> : null
+              schedule?.connected ? (
+                <p className="text-sm text-gray-400">
+                  {scheduleDay > 0 && dayEvents === null ? "Loading…" : scheduleDay === 0 ? "No meetings or timed tasks today" : "No meetings or timed tasks that day"}
+                </p>
+              ) : null
             ) : (
               scheduleItems.map((item, i) => {
                 const dots = ["#2E7C83", "#7B6B8D", "#c9a227", "#1a2b4a"];
