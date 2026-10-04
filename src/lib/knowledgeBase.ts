@@ -307,6 +307,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["operations", "8 pillars", "pillars", "operational", "acquisition", "onboarding", "fulfillment", "score", "scored"],
   },
   {
+    id: "op-pillar-not-scored",
+    category: "Operations",
+    question: "Why does an operational pillar say 'Not scored yet', and is it the same for every account?",
+    answer:
+      "Every account's pillars are scored the same way, from that account's own data only. A pillar shows 'Not scored yet' when the Suite has nothing to score it from: no Profit or Brain answers that apply, no Quick Pulse check-in, no matching activity in the Suite, and none of its Go deeper questions answered. Each answered input adds to the score, and a pillar's card lists exactly what it is built from and what is still missing. The quickest way to bring a pillar in is to answer its Go deeper questions on the Operations page, then take your Quick Pulse check-in. Open-text answers help your AI insights but are not scored; choice answers are.",
+    keywords: ["not scored", "pillar", "score", "go deeper", "operations", "why", "missing", "no score"],
+  },
+  {
     id: "op-status",
     category: "Operations",
     question: "How do I improve an operational pillar's score?",

@@ -45,7 +45,7 @@ export default function DomainScoresHelpPage() {
             <li><strong>Profit assessment:</strong> Your own rating of that area, one of its 12 business domains</li>
             <li><strong>Brain and Soul assessments:</strong> Your written answers about your systems, and about your purpose, values and story, scored by your AI assistant (anything you mark sensitive in the Soul assessment is never used)</li>
             <li><strong>Quick Pulse check-in:</strong> Your latest gut-check on how the area feels right now</li>
-            <li><strong>Live Suite data:</strong> Your income and expenses against your budget target, your sales activity, your operational pillars, your Legal &amp; Compliance checklist, and how complete your plans are</li>
+            <li><strong>Live Suite data:</strong> Your income and expenses against your budget target, your sales activity, your operational pillar scores (each pillar is scored for you), your Legal &amp; Compliance checklist, and how complete your plans are</li>
           </ul>
           <p>Each domain uses its own mix and weights. If an input hasn&apos;t been answered yet, its weight is shared among the inputs you do have, and the score is marked partial. Click any domain card on Executive Home to see every input, its score and what share of the total it carries.</p>
         </div>

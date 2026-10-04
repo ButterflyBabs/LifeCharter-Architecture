@@ -94,7 +94,7 @@ export default function TwelveDomainAlignmentPage() {
             <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">How we calculate it:</h4>
             <ul className="space-y-2 text-[#7b6b8d] dark:text-[#e8e4f0]">
               <li>• You take the Brain (systems &amp; operations), Soul (purpose, values &amp; story) and Profit (financial health) assessments, plus a short Quick Pulse check-in each month</li>
-              <li>• Your answers are blended with live data from the Suite, like your income and expenses, sales activity, operational pillars and plan completeness</li>
+              <li>• Your answers are blended with live data from the Suite, like your income and expenses, sales activity, operational pillar scores and plan completeness</li>
               <li>• Each domain receives a score from 0-100</li>
               <li>• We average your scored domains for your overall alignment score</li>
             </ul>
