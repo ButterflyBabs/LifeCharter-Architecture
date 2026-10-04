@@ -911,6 +911,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["assistant", "how do i", "where do i", "help", "ask", "how to", "mariposa", "sidekick", "guide"],
   },
   {
+    id: "ai-assistant-tasks",
+    category: "AI & Automation",
+    question: "Can my AI assistant tell me my top priorities or the easiest tasks to finish?",
+    answer:
+      "Yes. Ask it things like 'what are my top three priorities?' or 'what are the five easiest tasks I can finish?' and it answers from all of your open tasks, ranked the same way every time. Top priorities put overdue and critical work first, then what is due soonest, then high priority, then what you already moved to today or started. 'Easiest' uses the effort level you set on each task (low, medium or high), so set effort on your tasks for the best answer; most tasks default to medium, and it will tell you honestly when fewer than five are marked low. Tasks marked Waiting are left out because you can't do them yet. It can read your tasks but not change them: move one to Today from the Tasks page or Daily Compass.",
+    keywords: ["tasks", "priorities", "top three", "easiest", "quick wins", "what should i do", "assistant", "effort", "energy", "prioritize"],
+  },
+  {
     id: "ai-assistant-wrong-advice",
     category: "AI & Automation",
     question: "My assistant told me to do something I already finished. What do I do?",
