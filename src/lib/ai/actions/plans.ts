@@ -139,8 +139,15 @@ export const updatePlanSection: ActionTool = {
       const { error } = await ctx.db.from("plan_sections").insert({ master_plan_id: ctx.planId, plan_type: kind, section_key: sec.key, ...row });
       if (error) throw new Error("It didn't save.");
     }
+    // Keep the client moving: name the next section that is still empty.
+    const { data: all } = await ctx.db.from("plan_sections").select("section_key, content").eq("master_plan_id", ctx.planId).eq("plan_type", kind);
+    const filled = new Set(((all || []) as { section_key: string; content: string | null }[]).filter((r) => (r.content || "").trim()).map((r) => r.section_key));
+    const next = bp.sections.find((x) => x.key !== sec.key && !filled.has(x.key));
+    const nudge = next
+      ? ` Next up: ${next.title}. Say "next" and I'll draft it.`
+      : ` That was the last empty section. Read each one and press Mark section complete, or say "fill in the fields" and I'll fill the question fields from your text.`;
     return {
-      summary: `Saved to your ${bp.label} → ${sec.title}. You can open it in the plan builder to edit.`,
+      summary: `Saved to your ${bp.label} → ${sec.title}. You can open it in the plan builder to edit.${nudge}`,
       result: { plan_type: kind, section: sec.key },
       undo: { plan_type: kind, section: sec.key, existed: !!cur?.id, content: cur?.content ?? null, status: cur?.status ?? "empty", source: cur?.source ?? "client", ai_by: cur?.ai_by ?? null },
     };
