@@ -130,7 +130,7 @@ export default function DailyCompassPage() {
   // Executive Home's briefing cards: CSS `order` driven by native HTML5 drag
   // events, so differently-sized cards can freely swap places in one grid).
   const CARD_ORDER_KEY = "compass-card-order";
-  const DEFAULT_CARD_ORDER = ["focus", "quickActions", "coaching", "deals", "activity", "upcoming", "insights"];
+  const DEFAULT_CARD_ORDER = ["quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   useEffect(() => {
@@ -140,7 +140,24 @@ export default function DailyCompassPage() {
         setCardOrder((prev) => {
           const merged = saved.filter((id: string) => prev.includes(id));
           const missing = prev.filter((id) => !merged.includes(id));
-          return [...merged, ...missing];
+          const order = [...merged, ...missing];
+          // Quick Actions now sit above Today's Focus. Move it there once for an arrangement saved before
+          // that change; after this, wherever it is dragged is respected.
+          try {
+            if (!localStorage.getItem(CARD_ORDER_KEY + "-qa-first")) {
+              localStorage.setItem(CARD_ORDER_KEY + "-qa-first", "1");
+              const fi = order.indexOf("focus");
+              const qi = order.indexOf("quickActions");
+              if (fi !== -1 && qi > fi) {
+                order.splice(qi, 1);
+                order.splice(fi, 0, "quickActions");
+                localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(order));
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+          return order;
         });
       }
     } catch {
