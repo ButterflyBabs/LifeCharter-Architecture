@@ -235,3 +235,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Turned on for a couple of frames while the layout settles on load, so nothing slides into place. */
 html.no-anim *, html.no-anim *::before, html.no-anim *::after { transition: none !important; }
+
+/* Executive Home briefing cards: three to a row on wide areas, two on medium, one on small, measured
+   from the space the cards actually have (not the whole window), so the sidebar never squeezes them.
+   exec-card is one third, exec-half is half, exec-full is the whole row. */
+.exec-wrap { container-type: inline-size; }
+.exec-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+.exec-grid > .exec-full { grid-column: 1 / -1; }
+.exec-grid > .exec-top { align-self: start; }
+@container (min-width: 664px) {
+  .exec-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@container (min-width: 1000px) {
+  .exec-grid { grid-template-columns: repeat(6, 1fr); }
+  .exec-grid > .exec-card { grid-column: span 2; }
+  .exec-grid > .exec-half { grid-column: span 3; }
+}

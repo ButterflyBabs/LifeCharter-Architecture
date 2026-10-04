@@ -258,6 +258,7 @@ export default function ExecutiveHome() {
     "collective",
     "tasks",
     "inbox",
+    "ai",
   ]);
   const [dragId, setDragId] = useState<string | null>(null);
 
@@ -484,7 +485,7 @@ export default function ExecutiveHome() {
     style: { order: briefOrder.indexOf(id) },
     onDragOver: (e: React.DragEvent) => e.preventDefault(),
     onDrop: () => dropOn(id),
-    className: `relative group ${extra}`.trim(),
+    className: `relative group ${extra || "exec-card"}`.trim(),
   });
 
   // Load the merged inbox (Gmail + M365) at a given size.
@@ -1232,9 +1233,9 @@ export default function ExecutiveHome() {
       </header>
 
       {/* Executive Briefing — draggable cards */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-4 mb-5">
+      <div className="exec-wrap mb-5"><div className="exec-grid">
         {/* This week's coaching calls (full width so the week reads in one line) */}
-        <div {...briefCardProps("coaching", "col-span-full")}>
+        <div {...briefCardProps("coaching", "exec-full")}>
           <button draggable onDragStart={() => setDragId("coaching")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
           <CoachingCallsCard />
         </div>
@@ -1542,7 +1543,7 @@ export default function ExecutiveHome() {
         </div>
 
         {/* Priority Tasks */}
-        <div {...briefCardProps("tasks", "lg:col-span-3")}>
+        <div {...briefCardProps("tasks", "exec-full")}>
           <button draggable onDragStart={() => setDragId("tasks")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header with lighter background */}
@@ -1733,9 +1734,7 @@ export default function ExecutiveHome() {
         </div>
 
         {/* Inbox */}
-        {/* Inbox and AI Assistant sit side by side, half the screen each (stacked on small screens) */}
-        <div className="col-span-full grid grid-cols-1 items-start gap-4 lg:grid-cols-2" style={{ order: briefOrder.indexOf("inbox") }}>
-        <div {...briefCardProps("inbox")} style={{ order: 0 }}>
+        <div {...briefCardProps("inbox", "exec-half")}>
           <button draggable onDragStart={() => setDragId("inbox")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header */}
@@ -1971,8 +1970,9 @@ export default function ExecutiveHome() {
           </>)}
         </div>
         </div>
-        {/* AI Assistant (live Mariposa) */}
-        <div style={{ order: 1 }}>
+        {/* AI Assistant (live Mariposa): its own half-width card, draggable like the others */}
+        <div {...briefCardProps("ai", "exec-half exec-top")}>
+          <button draggable onDragStart={() => setDragId("ai")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden">
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -2049,8 +2049,7 @@ export default function ExecutiveHome() {
           </div>
         </div>
         </div>
-        </div>
-      </div>
+        </div></div>
 
 
       {/* 12 Business Dimensions (draggable) */}
