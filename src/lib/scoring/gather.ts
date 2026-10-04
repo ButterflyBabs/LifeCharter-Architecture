@@ -13,6 +13,8 @@ import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
 import { baselineCompleteness } from "@/lib/plans/blueprints";
 import { PULSE_LABEL_BY_ID } from "./pulseLabels";
+import { computePillarScores, averagePillarScore, type PillarResult } from "./pillarModel";
+import type { DeeperAnswers } from "@/lib/operationsDeeper";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -213,22 +215,6 @@ async function liveOperationalMetrics(
     /* optional */
   }
 
-  // Operations — how many of the 8 pillars are solid / in progress.
-  try {
-    const { data } = await supabase
-      .from("operations_pillars")
-      .select("status")
-      .eq("master_plan_id", scopeId);
-    const rows = (data || []) as { status: string | null }[];
-    if (rows.length) {
-      m.pillars_total = 8;
-      m.pillars_complete = rows.filter((r) => r.status === "complete").length;
-      m.pillars_inprogress = rows.filter((r) => r.status === "in_progress").length;
-    }
-  } catch {
-    /* optional */
-  }
-
   // Systems — documented processes (Playbook & SOPs): how many of the 8
   // operational areas have at least one SOP in use.
   try {
@@ -237,7 +223,56 @@ async function liveOperationalMetrics(
     if (rows.length) {
       m.sops_created = rows.length;
       m.sop_areas_covered = new Set(rows.map((r) => r.pillar_key || "general")).size;
+      // Per operational pillar, for that pillar's own score.
+      for (const r of rows) {
+        if (r.pillar_key) m[`sop_${r.pillar_key}`] = (m[`sop_${r.pillar_key}`] ?? 0) + 1;
+      }
     }
+  } catch {
+    /* optional */
+  }
+
+  // Operational pillars — what the Suite can see of acquisition, sales, communication, culture and referrals.
+  const count = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
+  try {
+    const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
+    const n = await count(supabase.from("seq_contacts").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId).gte("created_at", since30));
+    if (n > 0) m.new_contacts_30d = n;
+  } catch {
+    /* optional */
+  }
+  try {
+    const { data } = await supabase.from("pipeline_deals").select("next_step, closed_at").eq("master_plan_id", scopeId);
+    const open = ((data || []) as { next_step: string | null; closed_at: string | null }[]).filter((d) => !d.closed_at);
+    if (open.length) {
+      m.deals_open = open.length;
+      m.deals_next_step_pct = Math.round((open.filter((d) => (d.next_step || "").trim()).length / open.length) * 100);
+    }
+  } catch {
+    /* optional */
+  }
+  try {
+    const n = await count(supabase.from("sequences").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId).eq("active", true));
+    if (n > 0) m.sequences_active = n;
+  } catch {
+    /* optional */
+  }
+  try {
+    const since90 = new Date(Date.now() - 90 * 86400000).toISOString();
+    const n = await count(supabase.from("business_reviews").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId).eq("status", "completed").gte("created_at", since90));
+    if (n > 0) m.reviews_90d = n;
+    const r = await count(supabase.from("recurring_tasks").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId));
+    if (r > 0) m.recurring_tasks = r;
+  } catch {
+    /* optional */
+  }
+  try {
+    const a = await count(supabase.from("affiliates").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId));
+    if (a > 0) m.affiliates_total = a;
+    const rc = await count(supabase.from("seq_contacts").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId).not("referred_by_affiliate_id", "is", null));
+    if (rc > 0) m.referred_contacts = rc;
+    const t = await count(supabase.from("testimonials").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId));
+    if (t > 0) m.testimonials_total = t;
   } catch {
     /* optional */
   }
@@ -283,7 +318,7 @@ async function planCompletenessFor(
 
 export async function gatherAndCompute(
   planId?: string | null
-): Promise<ScoringOutput & { masterPlanId: string | null }> {
+): Promise<ScoringOutput & { masterPlanId: string | null; pillars: PillarResult[] }> {
   const supabase = createServerClient();
   const mp = await latestMasterPlan(supabase, planId);
   const scopeId = mp?.id ?? planId ?? null;
@@ -331,8 +366,25 @@ export async function gatherAndCompute(
     inputs.aiScores = kept;
   }
 
+  // The 8 operational pillars are scored from the same inputs, plus their own questions; the
+  // Operations dimension then takes their average as one of its inputs.
+  let pillars: PillarResult[] = [];
+  try {
+    const { data: prow } = await supabase.from("operations_pillars").select("pillar_key, answers").eq("master_plan_id", scopeId as string);
+    const answers: Record<string, DeeperAnswers | undefined> = {};
+    for (const r of (prow ?? []) as { pillar_key: string; answers: DeeperAnswers | null }[]) answers[r.pillar_key] = r.answers ?? undefined;
+    pillars = computePillarScores(inputs, answers);
+    const avg = averagePillarScore(pillars);
+    if (avg !== null) {
+      inputs.operational = { ...(inputs.operational ?? {}), pillar_score_avg: avg };
+      inputs.operationalAt = inputs.operationalAt ?? new Date().toISOString();
+    }
+  } catch (e) {
+    console.error("pillar scoring:", e);
+  }
+
   const output = computeDimensionScores(inputs);
-  return { ...output, masterPlanId: mp?.id ?? null };
+  return { ...output, pillars, masterPlanId: mp?.id ?? null };
 }
 
 

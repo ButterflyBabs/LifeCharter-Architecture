@@ -2,48 +2,32 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { OPERATIONS_PILLARS, PILLAR_STATUSES, type PillarStatus } from "@/lib/operations";
-import { answeredCount, type DeeperAnswers } from "@/lib/operationsDeeper";
+import { OPERATIONS_PILLARS } from "@/lib/operations";
+import { gatherAndCompute } from "@/lib/scoring/gather";
 
 export const dynamic = "force-dynamic";
 
-// GET — the 8 operational pillars merged with this client's saved status/notes.
+// GET: the 8 operational pillars, each SCORED (0-100) from the same kinds of input as the 12 dimensions
+// plus the pillar's own questions, with this client's notes. Nothing here is set by hand.
 export async function GET() {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
-  const { data } = await supabase
-    .from("operations_pillars")
-    .select("pillar_key, status, notes, answers")
-    .eq("master_plan_id", masterPlanId);
-
-  const saved = new Map(
-    ((data || []) as { pillar_key: string; status: string; notes: string | null; answers: DeeperAnswers | null }[]).map((r) => [
-      r.pillar_key,
-      r,
-    ])
-  );
-
-  const pillars = OPERATIONS_PILLARS.map((p) => {
-    const s = saved.get(p.key);
-    return {
-      key: p.key,
-      name: p.name,
-      description: p.description,
-      status: (s?.status as PillarStatus) || "not_started",
-      notes: s?.notes || "",
-      deeper: answeredCount(p.key, s?.answers),
-    };
-  });
-
+  if (!masterPlanId) return NextResponse.json({ pillars: [], counts: {} });
+  const [{ data }, scored] = await Promise.all([
+    supabase.from("operations_pillars").select("pillar_key, notes").eq("master_plan_id", masterPlanId),
+    gatherAndCompute(masterPlanId),
+  ]);
+  const notes = new Map(((data || []) as { pillar_key: string; notes: string | null }[]).map((r) => [r.pillar_key, r.notes || ""]));
+  const pillars = scored.pillars.map((p) => ({ ...p, notes: notes.get(p.key) || "" }));
   const counts = pillars.reduce<Record<string, number>>((m, p) => {
-    m[p.status] = (m[p.status] || 0) + 1;
+    const k = p.phase ?? "Not scored";
+    m[k] = (m[k] || 0) + 1;
     return m;
   }, {});
-
-  return NextResponse.json({ pillars, counts });
+  return NextResponse.json({ pillars, counts, operationsScore: scored.domains.find((d) => d.key === "operations")?.score ?? null });
 }
 
-// POST — update a pillar's status and/or notes.
+// POST: save a pillar's notes. (Status is no longer chosen: it is scored.)
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
@@ -56,11 +40,8 @@ export async function POST(request: Request) {
   if (!OPERATIONS_PILLARS.some((p) => p.key === pillarKey)) {
     return NextResponse.json({ error: "unknown pillar" }, { status: 400 });
   }
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (typeof body.status === "string" && PILLAR_STATUSES.includes(body.status as PillarStatus)) {
-    update.status = body.status;
-  }
-  if (typeof body.notes === "string") update.notes = body.notes;
+  if (typeof body.notes !== "string") return NextResponse.json({ error: "nothing to save" }, { status: 400 });
+  const update = { notes: body.notes.slice(0, 3000), updated_at: new Date().toISOString() };
 
   const { data: existing } = await supabase
     .from("operations_pillars")
@@ -73,9 +54,7 @@ export async function POST(request: Request) {
     const { error } = await supabase.from("operations_pillars").update(update).eq("id", existing.id);
     if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   } else {
-    const { error } = await supabase
-      .from("operations_pillars")
-      .insert({ master_plan_id: masterPlanId, pillar_key: pillarKey, ...update });
+    const { error } = await supabase.from("operations_pillars").insert({ master_plan_id: masterPlanId, pillar_key: pillarKey, ...update });
     if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

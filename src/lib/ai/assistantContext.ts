@@ -10,7 +10,6 @@ import { formatAnswerSections, type AnswerRow } from "@/lib/ai/assistantFormat";
 import { nowParts } from "@/lib/finance/period";
 import { isDueOn, type RecurringRule } from "@/lib/recurring";
 import { computePulse } from "@/lib/finance/pulse";
-import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { openMailboxes } from "@/lib/mailboxes";
 import { dayWindowUtc, dayInTz, timeInTz } from "@/lib/tz";
 import * as google from "@/lib/google";
@@ -81,8 +80,10 @@ export async function buildAssistantKnowledge(
   }
 
   // Their scores today (computed live from whatever they've answered).
+  let scoredNow: Awaited<ReturnType<typeof gatherAndCompute>> | null = null;
   try {
     const out = await gatherAndCompute(masterPlanId);
+    scoredNow = out;
     const scored = (out.domains || []).filter((d) => d.score !== null).map((d) => ({ label: d.label, score: Math.round(d.score as number) }));
     if (out.overall !== null) parts.push(`Overall alignment score: ${Math.round(out.overall)}/100.`);
     if (scored.length) {
@@ -184,19 +185,15 @@ export async function buildAssistantKnowledge(
     /* optional */
   }
 
-  // Their 8 operational pillars and where each stands.
+  // Their 8 operational pillars, each scored 0-100 by the Suite (not set by hand).
   try {
-    const { data } = await supabase.from("operations_pillars").select("pillar_key, status").eq("master_plan_id", masterPlanId);
-    const rows = (data ?? []) as { pillar_key: string; status: string }[];
-    if (rows.length) {
-      const nameOf = (k: string) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? k;
-      const by = (st: string) => rows.filter((r) => r.status === st).map((r) => nameOf(r.pillar_key));
-      const attn = by("needs_attention");
-      const prog = by("in_progress");
+    const scoredPillars = (scoredNow?.pillars ?? []).filter((p) => p.score !== null);
+    if (scoredPillars.length) {
+      const low = [...scoredPillars].sort((a, b) => (a.score as number) - (b.score as number)).slice(0, 3);
       parts.push(
-        `Operational pillars (8): ${by("complete").length} complete, ${prog.length} in progress` +
-          (attn.length ? `; they flagged as needing attention: ${attn.join(", ")}` : "") +
-          `; the rest not started.`
+        `Operational pillars (scored 0-100 from their answers and activity): ${scoredPillars.map((p) => `${p.name} ${p.score} (${p.phase})`).join(", ")}` +
+          (scoredPillars.length < 8 ? `; ${8 - scoredPillars.length} not scored yet (they can answer Go deeper on Operations)` : "") +
+          `. Lowest: ${low.map((p) => p.name).join(", ")}.`
       );
     }
     // Their written SOPs (Playbook & SOPs), by title.

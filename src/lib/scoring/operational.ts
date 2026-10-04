@@ -60,13 +60,10 @@ export function calculateSystemsHealthLike(m: Metrics): number | null {
   return Math.round(Math.max(0, Math.min(100, health)));
 }
 
-/** Operations: how many of the 8 pillars are solid (in-progress counts half). */
+/** Operations: the average of the 8 operational pillar scores (each scored from assessments, check-ins, live data and the pillar's own questions). */
 export function calculateOperationsHealthLike(m: Metrics): number | null {
-  if (!has(m, "pillars_total") || m.pillars_total <= 0) return null;
-  const complete = typeof m.pillars_complete === "number" ? m.pillars_complete : 0;
-  const inProgress = typeof m.pillars_inprogress === "number" ? m.pillars_inprogress : 0;
-  const health = ((complete + inProgress * 0.5) / m.pillars_total) * 100;
-  return Math.round(Math.max(0, Math.min(100, health)));
+  if (!has(m, "pillar_score_avg")) return null;
+  return Math.round(Math.max(0, Math.min(100, m.pillar_score_avg)));
 }
 
 /** Sales: lead volume and conversion rate, lightly. */
@@ -84,4 +81,53 @@ export function calculateSalesOpsLike(m: Metrics): number | null {
 /** Legal: share of the Legal & Compliance checklist done (in progress counts half). */
 export function calculateLegalChecklistLike(m: Metrics): number | null {
   return has(m, "legal_checklist_pct") ? Math.round(Math.max(0, Math.min(100, m.legal_checklist_pct))) : null;
+}
+
+// ---- Operational pillar formulas (each 0-100, or null when the account has no data for it) --------------
+
+const avg = (xs: Array<number | null>): number | null => {
+  const v = xs.filter((x): x is number => x !== null);
+  return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+};
+const cap = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+/** Documented process for one pillar: one active SOP is a start, two or more is covered. */
+export function sopCoverage(m: Metrics, pillarKey: string): number | null {
+  const n = m[`sop_${pillarKey}`];
+  return typeof n === "number" && n > 0 ? (n >= 2 ? 100 : 70) : null;
+}
+
+export function acquisitionOps(m: Metrics): number | null {
+  return avg([
+    has(m, "leads") ? cap((m.leads / 40) * 100) : null,
+    has(m, "new_contacts_30d") ? cap((m.new_contacts_30d / 40) * 100) : null,
+  ]);
+}
+
+export function salesJourneyOps(m: Metrics): number | null {
+  return avg([
+    has(m, "conversion_rate") ? cap((m.conversion_rate / 25) * 100) : null,
+    has(m, "deals_open", "deals_next_step_pct") && m.deals_open > 0 ? cap(m.deals_next_step_pct) : null,
+  ]);
+}
+
+export function communicationOps(m: Metrics): number | null {
+  return avg([has(m, "sequences_active") ? cap(40 + m.sequences_active * 20) : null, sopCoverage(m, "communication")]);
+}
+
+export function cultureOps(m: Metrics): number | null {
+  return avg([
+    has(m, "sops_created") ? cap((m.sops_created / 10) * 100) : null,
+    has(m, "reviews_90d") ? cap((m.reviews_90d / 3) * 100) : null,
+    has(m, "recurring_tasks") ? cap((m.recurring_tasks / 3) * 100) : null,
+  ]);
+}
+
+export function referralOps(m: Metrics): number | null {
+  return avg([
+    has(m, "affiliates_total") ? (m.affiliates_total >= 3 ? 100 : 70) : null,
+    has(m, "referred_contacts") ? (m.referred_contacts >= 5 ? 100 : 80) : null,
+    has(m, "testimonials_total") ? cap((m.testimonials_total / 5) * 100) : null,
+    sopCoverage(m, "referral"),
+  ]);
 }

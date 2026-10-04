@@ -45,7 +45,7 @@ export default function PillarDeeperPage({ params }: { params: { pillar: string 
       if (!res.ok) throw new Error(d.error || "Couldn't save.");
       setAnswers(d.answers);
       setSaved(d.answers);
-      setMsg("Saved. Your Operations insights will use these answers.");
+      setMsg("Saved. Your pillar score and Operations insights now use these answers.");
     } catch (e) {
       setMsg((e as Error).message);
     } finally {
@@ -63,11 +63,11 @@ export default function PillarDeeperPage({ params }: { params: { pillar: string 
       <header>
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Go deeper</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{def.name}</h1>
-        <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">{def.description}. Answer what you can; skip what doesn&rsquo;t apply. Your answers stay with this pillar and shape your Operations insights.</p>
+        <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">{def.description}. Answer what you can; skip what doesn&rsquo;t apply. Your answers are part of this pillar&rsquo;s score and shape your Operations insights.</p>
         {questions && <p className="mt-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{answered} of {questions.length} answered</p>}
         {PILLAR_PLAN_LINK[def.key] && (
           <p className="mt-3 rounded-xl bg-[#c9a227]/10 px-4 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-            You plan this in your {PILLAR_PLAN_LINK[def.key].plan} (&ldquo;{PILLAR_PLAN_LINK[def.key].section}&rdquo;). Here you rate how well it&apos;s running.{" "}
+            You plan this in your {PILLAR_PLAN_LINK[def.key].plan} (&ldquo;{PILLAR_PLAN_LINK[def.key].section}&rdquo;). Here you tell us how it&apos;s running, and your pillar score reflects it.{" "}
             <Link href={PILLAR_PLAN_LINK[def.key].href} className="font-semibold text-[#2E7C83] underline">Open the {PILLAR_PLAN_LINK[def.key].plan} →</Link>
           </p>
         )}

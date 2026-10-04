@@ -157,7 +157,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
         kind: "operational",
         method: "formula",
         weight: 25,
-        operationalMetrics: ["pillars_complete", "pillars_inprogress", "pillars_total"],
+        operationalMetrics: ["pillar_score_avg"],
       },
       { kind: "pulse", method: "scale", weight: 15, pulseLabels: ["Operational Stress"], invert: true },
     ],

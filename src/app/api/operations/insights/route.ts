@@ -4,8 +4,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant } from "@/lib/ai/planningAi";
-import { OPERATIONS_PILLARS, STATUS_LABEL, type PillarStatus } from "@/lib/operations";
 import { answersText, type DeeperAnswers } from "@/lib/operationsDeeper";
+import { gatherAndCompute } from "@/lib/scoring/gather";
 import { latestInsight, saveInsight } from "@/lib/ai/planKnowledge";
 import { memberAiGate } from "@/lib/ai/memberCap";
 
@@ -31,17 +31,25 @@ export async function POST(request: Request) {
 
   const { data } = await supabase
     .from("operations_pillars")
-    .select("pillar_key, status, notes, answers")
+    .select("pillar_key, notes, answers")
     .eq("master_plan_id", masterPlanId);
   const saved = new Map(
-    ((data || []) as { pillar_key: string; status: string; notes: string | null; answers: DeeperAnswers | null }[]).map((r) => [r.pillar_key, r])
+    ((data || []) as { pillar_key: string; notes: string | null; answers: DeeperAnswers | null }[]).map((r) => [r.pillar_key, r])
   );
 
-  const rows = OPERATIONS_PILLARS.map((p) => {
+  const scored = masterPlanId ? await gatherAndCompute(masterPlanId).catch(() => null) : null;
+  const rows = (scored?.pillars ?? []).map((p) => {
     const s = saved.get(p.key);
     return {
       name: p.name,
-      status: (s?.status as PillarStatus) || "not_started",
+      score: p.score,
+      phase: p.phase,
+      weakest: p.sources
+        .filter((x) => x.subScore !== null)
+        .sort((x, y) => (x.subScore as number) - (y.subScore as number))
+        .slice(0, 2)
+        .map((x) => `${x.label} ${x.subScore}`)
+        .join("; "),
       notes: (s?.notes || "").trim(),
       deeper: answersText(p.key, s?.answers),
     };
@@ -58,7 +66,7 @@ export async function POST(request: Request) {
   const dataText = rows
     .map(
       (r) =>
-        `${r.name}: ${STATUS_LABEL[r.status]}${r.notes ? ` — notes: ${r.notes}` : ""}${r.deeper ? ` — their answers: ${r.deeper}` : ""}`
+        `${r.name}: ${r.score === null ? "not scored yet" : `${r.score}/100 (${r.phase})`}${r.weakest ? ` — lowest inputs: ${r.weakest}` : ""}${r.notes ? ` — notes: ${r.notes}` : ""}${r.deeper ? ` — their answers: ${r.deeper}` : ""}`
     )
     .join("\n");
 
@@ -66,11 +74,11 @@ export async function POST(request: Request) {
     `You are ${name}, a sharp, supportive operations advisor for a small business owner. ` +
     (a.instructions ? `Their standing instructions for how you write: ${a.instructions}\n` : "") +
     `What you know about them (their own words and live numbers):\n${a.knowledge || "(nothing recorded yet)"}\n` +
-    "You're looking at their 8 operational pillars: each pillar's status, notes, and their answers to deeper questions about it. " +
+    "You're looking at their 8 operational pillars. Each is SCORED 0-100 by the Suite from their assessments, check-ins, real activity and their answers to deeper questions (the client does not set it). " +
     "Assess overall operational health and tell them where to focus next. " +
     'Return STRICT JSON: {"headline":"1-sentence read on operational health",' +
     '"insights":[{"pillar":"pillar name","priority":"high|medium|low","detail":"what to do and why it matters"}]}. ' +
-    "Prioritize pillars marked Needs attention or Not started, and weigh their notes. " +
+    "Prioritize the lowest-scoring pillars and ones not scored yet (suggest the Go deeper questions), and weigh their notes. " +
     "2-4 insights, most important first. Be specific and encouraging. Do not invent facts not in the data.";
 
   try {
@@ -93,7 +101,7 @@ export async function POST(request: Request) {
       parsed = {};
     }
     const result = {
-      headline: String(parsed.headline || "").trim() || "Set each pillar's status and I'll show you where to focus.",
+      headline: String(parsed.headline || "").trim() || "Answer the Go deeper questions on a few pillars and I'll show you where to focus.",
       insights: Array.isArray(parsed.insights) ? parsed.insights.slice(0, 5) : [],
     };
     // Saved so the page remembers them and the assistant knows what was advised.

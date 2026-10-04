@@ -1,5 +1,4 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { reminderLeadFor, minutesUntil, inMinutes, ownerTimezone, upcomingRecurringToday } from "@/lib/taskReminders";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 import { occurrences, type CallRow } from "@/lib/accountabilityCalls";
@@ -50,22 +49,20 @@ export async function deriveNotifications(
     /* best effort */
   }
 
-  // 2. Operational pillars marked "needs attention".
+  // 2. Operational pillars that score in the Survival phase (scored by the Suite, not set by hand).
   try {
-    const { data } = await supabase
-      .from("operations_pillars")
-      .select("pillar_key, status")
-      .eq("master_plan_id", masterPlanId)
-      .eq("status", "needs_attention");
-    const nameOf = (k: string) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name || k;
-    for (const row of (data || []) as { pillar_key: string }[]) {
-      out.push({
-        nkey: `pillar-attn:${row.pillar_key}`,
-        type: "action",
-        title: `${nameOf(row.pillar_key)} needs attention`,
-        body: "You flagged this operational pillar — take one step to move it forward.",
-        href: "/operations",
-      });
+    const { gatherAndCompute } = await import("@/lib/scoring/gather");
+    const scored = await gatherAndCompute(masterPlanId);
+    for (const p of scored.pillars) {
+      if (p.score !== null && p.score <= 40) {
+        out.push({
+          nkey: `pillar-attn:${p.key}`,
+          type: "action",
+          title: `${p.name} needs attention`,
+          body: `This operational pillar scores ${p.score}/100 (Survival). Open Operations to see what is lifting or lowering it, and take one step.`,
+          href: "/operations",
+        });
+      }
     }
   } catch {
     /* best effort */

@@ -106,3 +106,83 @@ export function answersText(pillarKey: string, answers: DeeperAnswers | null | u
     .map((q) => `${q.q} ${Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).join(", ") : answers[q.id]}`)
     .join(" | ");
 }
+
+// ---- Scoring the "Go deeper" answers -----------------------------------------------------------
+// Each choice answer carries a 0-100 value (best practice scores highest), listed in the same order as
+// the question's options. null = a fact about the business, not a quality, so it isn't scored.
+// Open-text answers are not scored (they inform the AI insights only).
+const CHOICE_SCORES: Record<string, Record<string, (number | null)[]>> = {
+  acquisition: {
+    leads_per_month: [20, 40, 60, 80, 100, 30],
+    lead_to_client: [20, 40, 60, 80, 100, 30],
+  },
+  "sales-journey": {
+    discovery_call: [100, 60, 40],
+    close_rate: [20, 40, 70, 100, 30],
+    cycle: [100, 90, 70, 50, 30],
+    follow_up: [100, 50, 20],
+  },
+  onboarding: {
+    welcome: [100, 60, 70, 20],
+    time_to_start: [100, 90, 70, 40, 30],
+  },
+  support: {
+    response_time: [100, 80, 50, 30],
+    who: [40, 60, 80, 80],
+  },
+  communication: {
+    cadence: [100, 70, 45, 25],
+    list: [100, 80, 60, 30, 20],
+    progress: [100, 60, 25],
+  },
+  fulfillment: {
+    templates: [100, 70, 40, 20],
+    results: [100, 75, 60, 25],
+  },
+  "internal-culture": {
+    team_size: [null, null, null, null, null],
+    sops: [100, 80, 50, 20],
+    rhythm: [100, 70, 50, 30],
+    delegation: [100, 70, 45, 20],
+  },
+  referral: {
+    program: [100, 60, 45, 20],
+    share: [100, 80, 60, 35, 30],
+    tracking: [100, 70, 90, 20],
+  },
+};
+
+// Multi-select answers score on breadth (one channel is fragile, three or more is resilient);
+// choosing only a "none yet" option scores low.
+const NONE_OPTIONS = new Set(["I don't ask yet"]);
+function multiScore(picked: string[]): number {
+  const real = picked.filter((x) => !NONE_OPTIONS.has(x));
+  if (real.length === 0) return 20;
+  return real.length === 1 ? 50 : real.length === 2 ? 75 : 100;
+}
+
+export interface DeeperScore {
+  score: number | null; // 0-100, or null when nothing scoreable is answered yet
+  scored: number; // answers that counted toward the score
+  answered: number;
+  total: number;
+}
+
+export function deeperScore(pillarKey: string, answers: DeeperAnswers | null | undefined): DeeperScore {
+  const qs = DEEPER_QUESTIONS[pillarKey] ?? [];
+  const { answered, total } = answeredCount(pillarKey, answers);
+  const vals: number[] = [];
+  for (const q of qs) {
+    const a = answers?.[q.id];
+    if (a === undefined) continue;
+    if (q.type === "choice" && typeof a === "string") {
+      const table = CHOICE_SCORES[pillarKey]?.[q.id];
+      const v = table ? table[q.options.indexOf(a)] : undefined;
+      if (typeof v === "number") vals.push(v);
+    } else if (q.type === "multi" && Array.isArray(a) && CHOICE_SCORES[pillarKey] !== undefined) {
+      // Only the "channels" style questions are scored on breadth.
+      if (q.id === "channels" || q.id === "ask") vals.push(multiScore(a));
+    }
+  }
+  return { score: vals.length ? Math.round(vals.reduce((x, y) => x + y, 0) / vals.length) : null, scored: vals.length, answered, total };
+}

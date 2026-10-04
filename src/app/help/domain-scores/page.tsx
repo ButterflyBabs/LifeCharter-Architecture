@@ -258,7 +258,7 @@ export default function DomainScoresHelpPage() {
             {[
               { name: "Marketing", focus: "Reaching and attracting your ideal clients" },
               { name: "Sales", focus: "Turning interest into paying clients" },
-              { name: "Operations", focus: "How your work gets delivered, including your 8 operational pillars" },
+              { name: "Operations", focus: "How your work gets delivered, including your 8 operational pillars (each scored for you, then averaged)" },
               { name: "Finance", focus: "Income, expenses and cash against your goals" },
               { name: "Team", focus: "The people and roles that help you run the business" },
               { name: "Systems", focus: "Documented processes, delegation and your tools" },

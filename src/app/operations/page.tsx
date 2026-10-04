@@ -3,16 +3,28 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Settings, CheckCircle2, Clock, AlertTriangle, Circle, Sparkles, Loader2 } from "lucide-react";
-import { STATUS_LABEL, PILLAR_PLAN_LINK } from "@/lib/operations";
+import { Settings, Sparkles, Loader2 } from "lucide-react";
+import { PILLAR_PLAN_LINK } from "@/lib/operations";
+import { PHASE_COLOR, type Phase } from "@/lib/scoring/phase";
+
+interface PillarSource {
+  kind: string;
+  label: string;
+  weightPct: number;
+  subScore: number | null;
+  note?: string;
+}
 
 interface Pillar {
   key: string;
   name: string;
   description: string;
-  status: "not_started" | "in_progress" | "needs_attention" | "complete";
+  score: number | null;
+  phase: Phase | null;
+  partial: boolean;
+  sources: PillarSource[];
   notes: string;
-  deeper?: { answered: number; total: number };
+  deeper: { answered: number; total: number };
 }
 
 interface OpInsight {
@@ -27,16 +39,12 @@ const PRIORITY_META: Record<string, { color: string; bg: string }> = {
   low: { color: "#1c5a60", bg: "#d3ebee" },
 };
 
-const STATUS_META: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
-  complete: { color: "#2c6b3f", bg: "#d8efdd", icon: <CheckCircle2 className="w-4 h-4" /> },
-  in_progress: { color: "#1c5a60", bg: "#d3ebee", icon: <Clock className="w-4 h-4" /> },
-  needs_attention: { color: "#8a6a15", bg: "#f4e6c9", icon: <AlertTriangle className="w-4 h-4" /> },
-  not_started: { color: "#8a7f74", bg: "#eee9e2", icon: <Circle className="w-4 h-4" /> },
-};
+const PHASES: Phase[] = ["Survival", "Growth", "Expansion", "Legacy"];
 
 export default function OperationsPage() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [opsScore, setOpsScore] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [insights, setInsights] = useState<OpInsight[]>([]);
@@ -51,6 +59,7 @@ export default function OperationsPage() {
       const d = await res.json().catch(() => ({}));
       if (Array.isArray(d.pillars)) setPillars(d.pillars);
       if (d.counts) setCounts(d.counts);
+      setOpsScore(typeof d.operationsScore === "number" ? d.operationsScore : null);
     } finally {
       setLoaded(true);
     }
@@ -93,26 +102,21 @@ export default function OperationsPage() {
     }
   }, []);
 
-  const save = async (key: string, patch: Partial<Pillar>) => {
-    setPillars((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
+  const saveNotes = async (key: string, notes: string) => {
+    setPillars((prev) => prev.map((p) => (p.key === key ? { ...p, notes } : p)));
     setSavingKey(key);
     try {
       await fetch("/api/operations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pillarKey: key, ...patch }),
+        body: JSON.stringify({ pillarKey: key, notes }),
       });
-      // Refresh counts.
-      const res = await fetch("/api/operations");
-      const d = await res.json().catch(() => ({}));
-      if (d.counts) setCounts(d.counts);
     } finally {
       setSavingKey(null);
     }
   };
 
-  const total = pillars.length || 8;
-  const solid = counts.complete || 0;
+  const scoredCount = pillars.filter((p) => p.score !== null).length;
 
   return (
     <div className="py-8 px-4 max-w-5xl mx-auto">
@@ -122,7 +126,7 @@ export default function OperationsPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Operations</h1>
-          <p className="text-[#b8a898]">Your 8 operational pillars</p>
+          <p className="text-[#b8a898]">Your 8 operational pillars, scored from your answers and your activity in the Suite</p>
         </div>
         <Link href="/operations/sops" className="ml-auto rounded-full border border-[#1a2b4a]/15 px-4 py-2 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] hover:border-[#c9a227]">
           Playbook & SOPs →
@@ -130,22 +134,25 @@ export default function OperationsPage() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        {(["complete", "in_progress", "needs_attention", "not_started"] as const).map((st) => (
-          <div key={st} className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
-            <div className="flex items-center gap-2" style={{ color: STATUS_META[st].color }}>
-              {STATUS_META[st].icon}
-              <span className="text-sm">{STATUS_LABEL[st]}</span>
-            </div>
-            <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mt-1">{counts[st] || 0}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+        <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#c9a227]/40 p-4">
+          <p className="text-xs text-[#b8a898]">Operations score</p>
+          <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mt-1">{opsScore ?? "—"}</p>
+        </div>
+        {PHASES.map((ph) => (
+          <div key={ph} className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
+            <span className="text-sm" style={{ color: PHASE_COLOR[ph] }}>{ph}</span>
+            <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mt-1">{counts[ph] || 0}</p>
           </div>
         ))}
       </div>
 
-      {solid >= 0 && loaded && (
-        <p className="text-sm text-[#b8a898] mb-4">
-          {solid} of {total} pillars solid. Set each pillar&apos;s status below — it feeds your Daily Compass
-          insights and overall business health.
+      {loaded && (
+        <p className="text-sm text-[#7b6b8d] dark:text-[#b8a898] mb-6 max-w-3xl">
+          Each pillar is scored for you, the same way your 12 dimensions are: from your Brain and Profit assessments, your Quick Pulse
+          check-ins, what you do in the Suite (leads, pipeline, SOPs, sequences, referrals), and the Go deeper questions for that pillar.
+          {scoredCount < 8 ? ` ${8 - scoredCount} of 8 can't be scored yet. Answer their Go deeper questions to bring them in.` : ""}
+          {" "}Your Operations score is built from these eight.
         </p>
       )}
 
@@ -176,7 +183,7 @@ export default function OperationsPage() {
           <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8]">Reading your pillars…</p>
         ) : !headline && insights.length === 0 ? (
           <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8]">
-            Set your pillar statuses below, then generate insights to see where to focus next.
+            Answer the Go deeper questions on a few pillars, then generate insights to see where to focus next.
           </p>
         ) : (
           <>
@@ -215,7 +222,7 @@ export default function OperationsPage() {
           <p className="text-sm text-[#b8a898]">Loading…</p>
         ) : (
           pillars.map((p) => {
-            const meta = STATUS_META[p.status];
+            const color = p.phase ? PHASE_COLOR[p.phase] : "#9CA3AF";
             return (
               <Card key={p.key}>
                 <CardHeader className="flex flex-row items-start justify-between gap-2">
@@ -223,32 +230,36 @@ export default function OperationsPage() {
                     <CardTitle className="text-base">{p.name}</CardTitle>
                     <p className="text-xs text-[#b8a898] mt-0.5">{p.description}</p>
                   </div>
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
-                    style={{ color: meta.color, backgroundColor: meta.bg }}
-                  >
-                    {meta.icon}
-                    {STATUS_LABEL[p.status]}
-                  </span>
+                  <div className="flex flex-col items-end flex-shrink-0">
+                    <span className="text-2xl font-bold leading-none" style={{ color }}>{p.score ?? "—"}</span>
+                    <span className="mt-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ color, backgroundColor: `${color}1f` }}>
+                      {p.phase ?? "Not scored yet"}
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <label className="block text-xs font-medium text-[#b8a898] mb-1">Status</label>
-                  <select
-                    value={p.status}
-                    disabled={savingKey === p.key}
-                    onChange={(e) => save(p.key, { status: e.target.value as Pillar["status"] })}
-                    className="w-full h-9 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] mb-3"
-                  >
-                    <option value="not_started">Not started</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="needs_attention">Needs attention</option>
-                    <option value="complete">Solid</option>
-                  </select>
+                  <p className="text-xs font-medium text-[#b8a898] mb-1.5">What your score is built from</p>
+                  <ul className="mb-3 space-y-1.5">
+                    {p.sources.map((s) => (
+                      <li key={s.label} className="text-xs text-[#3a3630] dark:text-[#d8d2c8]">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{s.label}</span>
+                          <span className="text-[#7b6b8d] dark:text-[#b8a898]">{s.subScore === null ? s.note ?? "No data yet" : `${s.subScore}`}</span>
+                        </div>
+                        {s.subScore !== null && (
+                          <div className="mt-0.5 h-1 rounded-full bg-[#1a2b4a]/10">
+                            <div className="h-1 rounded-full" style={{ width: `${s.subScore}%`, backgroundColor: color }} />
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                   <label className="block text-xs font-medium text-[#b8a898] mb-1">Notes</label>
                   <textarea
                     defaultValue={p.notes}
+                    disabled={savingKey === p.key}
                     onBlur={(e) => {
-                      if (e.target.value !== p.notes) save(p.key, { notes: e.target.value });
+                      if (e.target.value !== p.notes) saveNotes(p.key, e.target.value);
                     }}
                     rows={2}
                     placeholder="What's working, what needs attention…"
@@ -262,7 +273,7 @@ export default function OperationsPage() {
                   <Link href={`/operations/${p.key}`} className="mt-3 flex items-center justify-between rounded-lg border border-[#2E7C83]/25 px-3 py-2 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
                     <span>Go deeper</span>
                     <span className="text-xs font-normal text-[#7b6b8d]">
-                      {p.deeper && p.deeper.answered > 0 ? `${p.deeper.answered} of ${p.deeper.total} answered` : `${p.deeper?.total ?? ""} questions`} →
+                      {p.deeper.answered > 0 ? `${p.deeper.answered} of ${p.deeper.total} answered` : `${p.deeper.total} questions`} →
                     </span>
                   </Link>
                 </CardContent>

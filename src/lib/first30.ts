@@ -74,8 +74,11 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "pillars", week: 3, dims: ["operations","customer_experience"], title: "Rate your 8 operational pillars", why: "Shows where operations need attention.", href: "/operations",
-    check: async (id, db) => (await count(db.from("operations_pillars").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) >= 4,
+    key: "pillars", week: 3, dims: ["operations","customer_experience"], title: "Answer the Go deeper questions on 3 of your 8 operational pillars", why: "Your pillars are scored from your data and these answers, so this shows where operations need attention.", href: "/operations",
+    check: async (id, db) => {
+      const { data } = await db.from("operations_pillars").select("answers").eq("master_plan_id", id);
+      return ((data || []) as { answers: Record<string, unknown> | null }[]).filter((r) => r.answers && Object.keys(r.answers).length > 0).length >= 3;
+    },
   },
   {
     key: "legal", week: 3, dims: ["legal"], title: "Work through the Legal & Compliance checklist", why: "Contracts, insurance and filings, handled once.", href: "/compliance",

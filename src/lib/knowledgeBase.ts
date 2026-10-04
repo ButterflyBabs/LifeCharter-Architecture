@@ -85,7 +85,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Daily Rhythm",
     question: "What do the notifications (the bell) show?",
     answer:
-      "The bell in the top navigation is a live feed of things that need your attention: expenses that still need categorizing, operational pillars you've flagged as needing attention, tasks that are overdue, follow-ups that are ready, and deadline reminders — a timed task shows up as 'Due in 20 min' (or 'Starts in 20 min') once it's inside your reminder window. The bell refreshes every minute. Click any notification to jump to the relevant page, mark items read, dismiss them, or mark all read. You can also get deadline reminders by email — choose how far ahead and turn email on or off in Settings → Profile → Task reminders.",
+      "The bell in the top navigation is a live feed of things that need your attention: expenses that still need categorizing, operational pillars that score in the Survival phase, tasks that are overdue, follow-ups that are ready, and deadline reminders — a timed task shows up as 'Due in 20 min' (or 'Starts in 20 min') once it's inside your reminder window. The bell refreshes every minute. Click any notification to jump to the relevant page, mark items read, dismiss them, or mark all read. You can also get deadline reminders by email — choose how far ahead and turn email on or off in Settings → Profile → Task reminders.",
     keywords: ["notifications", "bell", "alerts", "unread", "top nav", "reminder", "reminders", "due soon"],
   },
   {
@@ -303,16 +303,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Operations",
     question: "What are the 8 operational pillars?",
     answer:
-      "The 8 pillars are the operational backbone of your business: Customer Acquisition, Sales Journey, Onboarding, Support/Customer Service, Communication, Fulfillment, Internal Process & Culture, and Referral Process. On the Operations page you set each pillar's status and notes; that feeds your Daily Compass insights and overall business health.",
-    keywords: ["operations", "8 pillars", "pillars", "operational", "acquisition", "onboarding", "fulfillment"],
+      "The 8 pillars are the operational backbone of your business: Customer Acquisition, Sales Journey, Onboarding, Support/Customer Service, Communication, Fulfillment, Internal Process & Culture, and Referral Process. You don't set them by hand: the Suite scores each pillar 0-100 from your Brain and Profit assessments, your Quick Pulse check-ins, what you do in the Suite (leads, pipeline, SOPs, email sequences, referrals) and the Go deeper questions for that pillar, using the same four phases as the rest of the app. The average of the eight feeds your Operations score and your overall business health.",
+    keywords: ["operations", "8 pillars", "pillars", "operational", "acquisition", "onboarding", "fulfillment", "score", "scored"],
   },
   {
     id: "op-status",
     category: "Operations",
-    question: "How do I update an operational pillar?",
+    question: "How do I improve an operational pillar's score?",
     answer:
-      "On the Operations page, set each pillar's status (Not started, In progress, Needs attention, or Solid) and add notes on what's working or needs attention. Marking a pillar 'Needs attention' surfaces a notification. The AI Operations Insights card reads your pillar statuses and tells you where to focus next.",
-    keywords: ["update pillar", "status", "needs attention", "solid", "operations insights", "notes"],
+      "Each pillar card on the Operations page shows its score and exactly what it is built from, so you can see what is lifting it and what is holding it back. To raise it: answer that pillar's Go deeper questions (some pillars cannot be scored until you do), write the matching SOP in Playbook & SOPs, take your Quick Pulse check-in, and keep using the Suite for that area (for example run a pipeline, set up email sequences, or track referrals). A pillar that scores 40 or below sends you a notification. Add notes on each card for yourself. The AI Operations Insights card reads your scores and tells you where to focus next.",
+    keywords: ["update pillar", "improve pillar", "pillar score", "status", "needs attention", "operations insights", "notes", "go deeper"],
   },
 
   // ---- Growth & Reviews ----
@@ -777,7 +777,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What is First 30 Days?",
     answer:
-      "First 30 Days (Getting Started → First 30 Days) starts with your three assessments (Brain, Soul and Profit), because everything else in the Suite is informed by your answers. Then come twelve small steps, one week at a time. Week 1: write your vision, add your offers and prices, put open opportunities in the Pipeline, set your monthly income goal. Week 2: record this month's income and expenses, add your regular bills, do your first weekly review. Week 3: write your first SOP, rate your 8 operational pillars, work through the Legal & Compliance checklist. Week 4: break a yearly goal into this quarter, take your first monthly Quick Pulse. Each week opens once the one before it is fully checked off, and steps tick themselves off from your own data. The ones that strengthen your lowest scores are marked for you. Your current stage also shows on Executive Home under Your first 30 days.",
+      "First 30 Days (Getting Started → First 30 Days) starts with your three assessments (Brain, Soul and Profit), because everything else in the Suite is informed by your answers. Then come twelve small steps, one week at a time. Week 1: write your vision, add your offers and prices, put open opportunities in the Pipeline, set your monthly income goal. Week 2: record this month's income and expenses, add your regular bills, do your first weekly review. Week 3: write your first SOP, answer the Go deeper questions on three of your 8 operational pillars, work through the Legal & Compliance checklist. Week 4: break a yearly goal into this quarter, take your first monthly Quick Pulse. Each week opens once the one before it is fully checked off, and steps tick themselves off from your own data. The ones that strengthen your lowest scores are marked for you. Your current stage also shows on Executive Home under Your first 30 days.",
     keywords: ["first 30 days", "30 days", "checklist", "getting started", "steps", "onboarding", "new client"],
   },
   {
