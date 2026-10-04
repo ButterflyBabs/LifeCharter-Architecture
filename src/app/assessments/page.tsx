@@ -254,22 +254,22 @@ export default function AssessmentsPage() {
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">0-30: Survival Mode</span>
-                <span className="text-[#b8a898]">— Urgent attention needed</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">0-40: Survival</span>
+                <span className="text-[#b8a898]">— One thing at a time; build stability</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">31-60: Building</span>
-                <span className="text-[#b8a898]">— Foundation in progress</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">41-60: Growth</span>
+                <span className="text-[#b8a898]">— Systems are taking shape</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">61-80: Growth</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">61-80: Expansion</span>
                 <span className="text-[#b8a898]">— Scaling and optimizing</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">81-100: Thriving</span>
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">81-100: Legacy</span>
                 <span className="text-[#b8a898]">— Industry leader potential</span>
               </div>
             </div>

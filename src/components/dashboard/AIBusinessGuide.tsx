@@ -56,11 +56,11 @@ export function AIBusinessGuide() {
       return "I'm your AI Business Guide. I can help you navigate challenges, prioritize your focus, and grow your business with alignment. What would you like guidance on today?";
     }
     if (score >= 81) {
-      return "You're in a strong position to grow. Strengthen your systems and cash flow predictability to move into Expansion. What would you like to focus on?";
+      return "You're in Legacy territory, with strong systems and a business that works beyond you. Let's look at how to protect it and build on it. What would you like to focus on?";
     } else if (score >= 61) {
-      return "You're building solid foundations. Focus on systematizing what's working and clarifying your next growth phase. How can I help you today?";
-    } else if (score >= 31) {
-      return "You're in the building phase. Let's identify the highest-impact areas to strengthen your foundation. What feels most urgent right now?";
+      return "You're in Expansion. Your foundations are solid, so the work now is scaling what works and building leadership capacity. How can I help you today?";
+    } else if (score >= 41) {
+      return "You're in Growth. Your systems are taking shape, so let's identify the highest-impact areas to strengthen next. What feels most urgent right now?";
     } else {
       return "You're in Survival Mode, and that's okay. Every thriving business started here. Let's identify the one thing that will create the most stability. What's your biggest challenge?";
     }
