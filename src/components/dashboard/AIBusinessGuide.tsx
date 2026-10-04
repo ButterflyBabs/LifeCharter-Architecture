@@ -28,7 +28,9 @@ export function AIBusinessGuide() {
       fetch("/api/ai-settings").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch("/api/alignment?ts=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch("/api/next-moves?ts=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([settings, alignment, moves]) => {
+      // The conversation so far (kept on the server), so it is still here after leaving the page.
+      fetch("/api/mariposa", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([settings, alignment, moves, history]) => {
       if (!live) return;
       const name = (settings?.assistantName as string) || "Your assistant";
       setAssistantName(name);
@@ -39,7 +41,10 @@ export function AIBusinessGuide() {
           : `I'm ${name}. Your alignment is ${score}/100 (${alignment.status}). ${getInitialMessage(score)}`;
       const fromMoves: string[] = moves?.hasData ? (moves.moves as { title: string }[]).map((m) => m.title).filter(Boolean).slice(0, 3) : [];
       const suggestions = fromMoves.length ? fromMoves : ["Where should I start?", "What does my score mean?", "What should I focus on this week?"];
-      setMessages((prev) => (prev.length === 0 ? [{ id: "welcome", role: "assistant", content: greeting, suggestions }] : prev));
+      const past: Message[] = Array.isArray(history?.messages)
+        ? (history.messages as { id: string; role: "user" | "assistant"; content: string }[]).map((m) => ({ id: m.id, role: m.role, content: m.content }))
+        : [];
+      setMessages((prev) => (prev.length === 0 ? (past.length ? past : [{ id: "welcome", role: "assistant", content: greeting, suggestions }]) : prev));
     });
     return () => {
       live = false;
