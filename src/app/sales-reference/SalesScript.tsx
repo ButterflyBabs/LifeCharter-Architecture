@@ -106,7 +106,7 @@ const PAIN_MAP: PainRow[] = [
   {
     pain: "“It all runs through me. No one else could run this.”",
     answer: "The machine gets documented, not just carried in your head.",
-    feature: "8 Operational Pillars — Acquisition, Onboarding, Fulfillment, Referral, and more",
+    feature: "8 Operational Pillars, each scored for you from your data — Acquisition, Onboarding, Fulfillment, Referral, and more",
   },
   {
     pain: "“I don’t actually know my numbers.”",
