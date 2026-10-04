@@ -137,6 +137,7 @@ export default function SettingsPage() {
   // AI Assistant state
   const [aiName, setAiName] = useState("");
   const [aiInstructions, setAiInstructions] = useState("");
+  const [aiNotes, setAiNotes] = useState("");
   const [aiKey, setAiKey] = useState("");
   const [aiHasKey, setAiHasKey] = useState(false);
   const [aiSaving, setAiSaving] = useState(false);
@@ -215,6 +216,7 @@ export default function SettingsPage() {
         if (!d) return;
         setAiName(d.assistantName === DEFAULT_ASSISTANT_NAME ? "" : d.assistantName || "");
         setAiInstructions(d.assistantInstructions || "");
+        setAiNotes(d.assistantNotes || "");
         setAiHasKey(Boolean(d.hasOpenAiKey));
       })
       .catch(() => {});
@@ -224,9 +226,10 @@ export default function SettingsPage() {
     setAiMsg(null);
     setAiSaving(true);
     try {
-      const payload: { assistantName: string; assistantInstructions: string; openaiApiKey?: string } = {
+      const payload: { assistantName: string; assistantInstructions: string; assistantNotes: string; openaiApiKey?: string } = {
         assistantName: aiName.trim(),
         assistantInstructions: aiInstructions.trim(),
+        assistantNotes: aiNotes.trim(),
       };
       // Only send the key if the user typed a new one (blank keeps the existing).
       if (aiKey.trim()) payload.openaiApiKey = aiKey.trim();
@@ -1942,6 +1945,27 @@ export default function SettingsPage() {
               They shape how it replies; it still only uses your own information and never makes things up.
               {" "}
               {aiInstructions.length}/1500
+            </p>
+          </div>
+
+          {/* What the assistant should know about them */}
+          <div>
+            <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+              What should {aiName.trim() || DEFAULT_ASSISTANT_NAME} know about you and how you work?
+            </label>
+            <textarea
+              value={aiNotes}
+              onChange={(e) => setAiNotes(e.target.value.slice(0, 3000))}
+              rows={6}
+              placeholder="e.g. My assistant Dana handles bookings. I don't work Fridays. My busy season is November to January. I'd rather lose a sale than discount. Mornings are for clients, afternoons are for content."
+              aria-label="Things your assistant should always remember about you"
+              className="w-full max-w-2xl rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] placeholder:text-[#b8a898]"
+            />
+            <p className="text-xs text-[#b8a898] mt-1.5">
+              Facts it should always keep in mind: your team, your schedule, your preferences, what matters most right now.
+              Private to your account. Update it whenever things change.
+              {" "}
+              {aiNotes.length}/3000
             </p>
           </div>
 

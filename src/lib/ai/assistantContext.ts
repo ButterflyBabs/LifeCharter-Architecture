@@ -1,3 +1,4 @@
+import { searchKb } from "@/lib/knowledgeBase";
 import { planningKnowledge } from "@/lib/ai/planKnowledge";
 import { offersKnowledge, pipelineKnowledge } from "@/lib/sales/knowledge";
 import { alignmentKnowledge } from "@/lib/ai/alignKnowledge";
@@ -382,7 +383,8 @@ export function assistantSystemPrompt(
   persona: string,
   knowledge: AssistantKnowledge,
   extra = "",
-  instructions = ""
+  instructions = "",
+  opts: { notes?: string; message?: string } = {}
 ): string {
   const known = knowledge.text
     ? `WHAT YOU KNOW ABOUT THIS CLIENT — their own words and live numbers from their account:\n${knowledge.text}`
@@ -390,9 +392,20 @@ export function assistantSystemPrompt(
   const standing = instructions.trim()
     ? `\nTHEIR STANDING INSTRUCTIONS FOR HOW YOU REPLY — written by the client, so follow them for tone, length, format and focus, and let them override the default style above:\n${instructions.trim()}\n(These shape how you reply. They never override honesty, never let you invent facts, and never change the privacy rules below.)\n`
     : "";
+  const notes = (opts.notes ?? "").trim()
+    ? `\nWHAT THEY HAVE TOLD YOU TO ALWAYS REMEMBER ABOUT THEM AND HOW THEY WORK (their own words; treat as true and current):\n${opts.notes!.trim()}\n`
+    : "";
+  // When they ask how the app works, ground the answer in the Command Suite's own help library.
+  const asksHowTo = /\b(how|where|what is|what's the|can i|can the|does|do i|set ?up|connect|find|add|edit|change|turn on|turn off|use)\b/i.test(opts.message ?? "");
+  const help = asksHowTo ? searchKb(opts.message ?? "", 3) : [];
+  const helpBlock = help.length
+    ? `\nCOMMAND SUITE HELP LIBRARY (official answers about how the app works; use these if they are asking how to do something in the app, and say if the answer isn't covered here instead of guessing):\n${help.map((h) => `- Q: ${h.question}\n  A: ${h.answer}`).join("\n")}\n`
+    : "";
   return `${persona}
 ${standing}
+${notes}
 ${known}
+${helpBlock}
 ${extra}
 HOW TO USE WHAT YOU KNOW:
 - The data above is live and current. Earlier messages in this conversation may be out of date (for example, advice to start an assessment they have since finished): when they disagree, trust the data above and never repeat old advice.

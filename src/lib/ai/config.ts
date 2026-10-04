@@ -61,26 +61,28 @@ export async function readAccountKey(profileId: string | null): Promise<string> 
   return ((data as string | null) || "").trim();
 }
 
-export async function resolveAiConfig(): Promise<{ name: string; key: string; instructions: string }> {
+export async function resolveAiConfig(): Promise<{ name: string; key: string; instructions: string; notes: string }> {
   const envKey = process.env.OPENAI_API_KEY || process.env.openai_api_key || "";
   try {
     const account = await resolveAiAccount();
     let name = DEFAULT_ASSISTANT_NAME;
     let instructions = "";
+    let notes = "";
     if (account.profileId) {
       const { data } = await createServerClient()
         .from("profiles")
-        .select("assistant_name, assistant_instructions")
+        .select("assistant_name, assistant_instructions, assistant_notes")
         .eq("id", account.profileId)
         .maybeSingle();
       name = ((data?.assistant_name as string) || "").trim() || name;
       instructions = ((data?.assistant_instructions as string) || "").trim();
+      notes = ((data?.assistant_notes as string) || "").trim();
     }
     const own = await readAccountKey(account.profileId);
-    return { name, key: own || (account.isOwner ? envKey : ""), instructions };
+    return { name, key: own || (account.isOwner ? envKey : ""), instructions, notes };
   } catch (e) {
     console.error("resolveAiConfig:", e);
-    return { name: DEFAULT_ASSISTANT_NAME, key: "", instructions: "" };
+    return { name: DEFAULT_ASSISTANT_NAME, key: "", instructions: "", notes: "" };
   }
 }
 

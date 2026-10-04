@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   }
   const page = typeof body?.page === "string" ? body.page.slice(0, 60) : "";
 
-  const { name, key, instructions } = await resolveAiConfig();
+  const { name, key, instructions, notes } = await resolveAiConfig();
   const overCap = await memberAiGate(key);
   if (overCap) return overCap;
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions),
+          content: assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions, { notes, message }),
         },
         ...history,
         { role: "user", content: message },

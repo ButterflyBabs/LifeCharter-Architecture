@@ -34,7 +34,7 @@ Provide guidance that is:
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, key, instructions } = await resolveAiConfig();
+    const { name, key, instructions, notes } = await resolveAiConfig();
     const overCap = await memberAiGate(key);
     if (overCap) return overCap;
     // Check if an OpenAI API key is configured (per-account or env)
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions) },
+        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions, { notes, message }) },
         ...history,
         { role: "user", content: message },
       ],

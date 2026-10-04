@@ -3,3 +3,4 @@
 export const DEFAULT_ASSISTANT_NAME = "Sidekick";
 
 export const MAX_ASSISTANT_INSTRUCTIONS = 1500;
+export const MAX_ASSISTANT_NOTES = 3000;

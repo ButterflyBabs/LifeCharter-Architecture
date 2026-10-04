@@ -2,23 +2,25 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { readAccountKey, resolveAiAccount } from "@/lib/ai/config";
-import { DEFAULT_ASSISTANT_NAME, MAX_ASSISTANT_INSTRUCTIONS } from "@/lib/ai/defaults";
+import { DEFAULT_ASSISTANT_NAME, MAX_ASSISTANT_INSTRUCTIONS, MAX_ASSISTANT_NOTES } from "@/lib/ai/defaults";
 
 export const dynamic = "force-dynamic";
 
 async function current(profileId: string | null) {
   let assistantName = DEFAULT_ASSISTANT_NAME;
   let assistantInstructions = "";
+  let assistantNotes = "";
   if (profileId) {
     const { data } = await createServerClient()
       .from("profiles")
-      .select("assistant_name, assistant_instructions")
+      .select("assistant_name, assistant_instructions, assistant_notes")
       .eq("id", profileId)
       .maybeSingle();
     assistantName = ((data?.assistant_name as string) || "").trim() || assistantName;
     assistantInstructions = ((data?.assistant_instructions as string) || "").trim();
+    assistantNotes = ((data?.assistant_notes as string) || "").trim();
   }
-  return { assistantName, assistantInstructions, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
+  return { assistantName, assistantInstructions, assistantNotes, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
 }
 
 // Returns this account's AI assistant name + whether its own OpenAI key is set
@@ -46,7 +48,8 @@ export async function POST(request: Request) {
   if (
     typeof body?.assistantName !== "string" &&
     typeof body?.openaiApiKey !== "string" &&
-    typeof body?.assistantInstructions !== "string"
+    typeof body?.assistantInstructions !== "string" &&
+    typeof body?.assistantNotes !== "string"
   ) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
@@ -68,6 +71,17 @@ export async function POST(request: Request) {
     const { error } = await supabase.from("profiles").update({ assistant_instructions: text || null }).eq("id", account.profileId);
     if (error) {
       console.error("POST /api/ai-settings instructions:", error);
+      return NextResponse.json({ error: "save failed" }, { status: 500 });
+    }
+  }
+  if (typeof body?.assistantNotes === "string") {
+    const text = body.assistantNotes.trim();
+    if (text.length > MAX_ASSISTANT_NOTES) {
+      return NextResponse.json({ error: `Keep your notes under ${MAX_ASSISTANT_NOTES} characters.` }, { status: 400 });
+    }
+    const { error } = await supabase.from("profiles").update({ assistant_notes: text || null }).eq("id", account.profileId);
+    if (error) {
+      console.error("POST /api/ai-settings notes:", error);
       return NextResponse.json({ error: "save failed" }, { status: 500 });
     }
   }
