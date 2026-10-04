@@ -33,36 +33,34 @@ export default function HealthTrendHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What is the Business Health Trend?",
-      answer: "The Business Health Trend tracks how your overall business health score changes over time. It shows you whether your business is improving, declining, or staying steady across weeks, months, or quarters. This trend line helps you see the impact of your actions and identify patterns in your business performance."
+      answer: "The Business Health Trend is a line on the Business Alignment page (Alignment in the left menu) that tracks how your overall business health score changes over time. It shows you whether your business is improving, declining, or staying steady. This trend line helps you see the impact of your actions and identify patterns in your business performance. The line appears once you have at least two dated points."
     },
     {
       question: "How is the trend calculated?",
       answer: (
         <div className="space-y-2">
-          <p>The trend is calculated by:</p>
+          <p>The trend is built from dated points on your score:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Recording your Overall Business Health score at regular intervals</li>
-            <li>Plotting these scores on a timeline</li>
-            <li>Calculating the moving average to smooth out short-term fluctuations</li>
-            <li>Identifying the direction and rate of change</li>
-            <li>Comparing current performance to your baseline</li>
+            <li>The first time you have scores, the Suite saves them as your baseline, the first point on the line</li>
+            <li>A new point is added each time you complete a Quick Pulse check-in, and when your Brain or Soul answers are re-scored</li>
+            <li>Each point is your Overall Business Health score on that date, plotted on a timeline from 0 to 100</li>
           </ul>
-          <p>The trend shows both the direction (up/down) and velocity (how fast) of change.</p>
+          <p>The card shows the line, and the Progress page shows the same history with your change since baseline.</p>
         </div>
       )
     },
     {
-      question: "What time periods can I view?",
+      question: "How do I see more detail or other time periods?",
       answer: (
         <div className="space-y-2">
-          <p>You can view trends across multiple timeframes:</p>
+          <p>Press View progress on the Business Health Trend card, or open Progress in the Alignment section of the left menu. There you will find:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Weekly:</strong> Best for seeing immediate impact of recent actions</li>
-            <li><strong>Monthly:</strong> Good for identifying short-term patterns</li>
-            <li><strong>Quarterly:</strong> Ideal for strategic review and seasonal patterns</li>
-            <li><strong>Yearly:</strong> Shows long-term trajectory and major milestones</li>
+            <li>Your overall score now, your baseline, and the change between them</li>
+            <li>A trend line with a menu to switch between Overall and any one of your 12 domains</li>
+            <li>Your change since baseline in every domain</li>
+            <li>How your plan goals are tracking (met, in progress, not started, slipped)</li>
           </ul>
-          <p>We recommend reviewing monthly trends during regular business reviews.</p>
+          <p>The line shows every recorded check-in, so the more often you check in, the more detail it holds. A monthly Quick Pulse during your regular business review is a good rhythm.</p>
         </div>
       )
     },
@@ -76,7 +74,7 @@ export default function HealthTrendHelpPage() {
     },
     {
       question: "What if my trend is flat?",
-      answer: "A flat trend means your business health is stable. This can be good or bad depending on context: If your score is high (70+), stability means you are maintaining strong performance. If your score is low (below 60), flat means you are stuck and need to shake things up. If you have been making changes but see no trend movement, your actions may not be impactful enough or may need more time. Use the flat period to dig deeper into specific domains."
+      answer: "A flat trend means your business health is stable. This can be good or bad depending on context: If your score is high (70+), stability means you are maintaining strong performance. If your score is lower (below 60), flat means you are stuck and may need to shake things up. If you have been making changes but see no trend movement, your actions may not be impactful enough or may need more time. Use the flat period to dig deeper into specific domains."
     },
     {
       question: "How do I improve my trend?",
@@ -96,11 +94,11 @@ export default function HealthTrendHelpPage() {
     },
     {
       question: "Can I see trends for individual domains?",
-      answer: "Yes! While the main trend shows overall health, you can drill down into trends for each of the 12 domains. This helps you identify: Which domains are driving overall improvement or decline. Whether changes in one domain are affecting others. Seasonal patterns in specific areas (e.g., Sales may spike in Q4). Access domain-specific trends from the Domain Scores section of your Dashboard."
+      answer: "Yes! While the card on Business Alignment shows overall health, the Progress page lets you choose any of the 12 domains from the menu above its trend line. This helps you identify: Which domains are driving overall improvement or decline. Whether changes in one domain are affecting others. The Domain Scores card also shows how far each domain has moved since your baseline."
     },
     {
       question: "How often should I check my trend?",
-      answer: "For most businesses, we recommend: Weekly: Quick check during operating rhythm meetings. Monthly: Deep review as part of monthly planning. Quarterly: Strategic assessment alongside quarterly reviews. Annually: Big-picture evaluation for annual planning. Avoid obsessing over daily fluctuations—trends matter more than single data points."
+      answer: "A monthly look is plenty for most businesses, right after your Quick Pulse check-in, with a bigger look each quarter alongside your Profit assessment. Avoid obsessing over single points. Trends matter more than any one data point."
     },
     {
       question: "What if my trend doesn't match how I feel about my business?",
@@ -111,9 +109,9 @@ export default function HealthTrendHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
+      <Link href="/help/qa" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Back to Help Center
+        Back to Help &amp; Q&amp;A
       </Link>
 
       {/* Hero Section */}
@@ -140,7 +138,7 @@ export default function HealthTrendHelpPage() {
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Your <strong>Business Health Trend</strong> is the story your data tells over time. While a single 
-            score shows where you are today, the trend reveals where you are heading—and how fast.
+            score shows where you are today, the trend reveals where you are heading.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -239,32 +237,32 @@ export default function HealthTrendHelpPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Short-Term (Weekly)</h4>
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">The Gold Marker</h4>
               <p className="text-sm text-[#b8a898] mb-2">
-                Shows immediate impact of recent actions. Useful for testing quick changes.
+                On the Progress page, the gold dot on your trend line marks your baseline: where you started.
               </p>
               <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
-                <strong>Best for:</strong> Checking if a new tactic is working, spotting urgent issues
+                <strong>Best for:</strong> Seeing how far you have come since your first scores
               </p>
             </div>
 
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Medium-Term (Monthly)</h4>
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Each Point on the Line</h4>
               <p className="text-sm text-[#b8a898] mb-2">
-                Reveals patterns and the effectiveness of your monthly focus areas.
+                Every point is a recorded check-in or re-score. Hover over a point to see its date and score.
               </p>
               <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
-                <strong>Best for:</strong> Monthly reviews, adjusting priorities, tracking campaign results
+                <strong>Best for:</strong> Checking whether a change you made is paying off, and spotting dips early
               </p>
             </div>
 
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
-              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Long-Term (Quarterly/Yearly)</h4>
+              <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">Overall or One Domain</h4>
               <p className="text-sm text-[#b8a898] mb-2">
-                Shows your true trajectory and the cumulative effect of your strategy.
+                The menu above the line on the Progress page switches between your overall score and any single domain.
               </p>
               <p className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0]">
-                <strong>Best for:</strong> Strategic planning, investor updates, annual reviews
+                <strong>Best for:</strong> Finding which domain is driving a rise or a dip
               </p>
             </div>
           </div>
@@ -381,11 +379,11 @@ export default function HealthTrendHelpPage() {
           <TrendingUp className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">See Your Trend</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
-            View your Business Health Trend on the Dashboard. Track your progress, 
+            View your Business Health Trend on the Business Alignment page, and open Progress for the full picture. Track your progress, 
             identify patterns, and make data-driven decisions.
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/dashboard">
+            <Link href="/progress">
               <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <LineChart className="w-4 h-4 mr-2" />
                 View My Trend

@@ -35,7 +35,7 @@ export default function MilestonesHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What are Milestones in LifeCharter Command Suite?",
-      answer: "Milestones are significant achievements and markers of progress in your business journey. They represent key accomplishments, transitions, and growth moments that deserve recognition. Milestones help you track progress, celebrate wins, and maintain momentum as you build your business. They range from small victories (first customer) to major achievements (hitting revenue goals, launching new products)."
+      answer: "Milestones are significant achievements and markers of progress in your business journey. They represent key accomplishments, transitions, and growth moments that deserve recognition. In the Suite, your milestones are the quarter goals on your Goal Ladder (Planning &amp; Numbers in the left menu), the stepping stones between your year&apos;s goals and your weekly work. They range from small victories (first customer) to major achievements (hitting revenue goals, launching new products)."
     },
     {
       question: "Why do Milestones matter?",
@@ -56,7 +56,7 @@ export default function MilestonesHelpPage() {
       question: "What types of Milestones should I track?",
       answer: (
         <div className="space-y-2">
-          <p>Track milestones across all 12 business domains:</p>
+          <p>You can set milestones in any of your 12 business domains. Common ones include:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Launch Milestones:</strong> Product launches, website live, first sale</li>
             <li><strong>Revenue Milestones:</strong> First $1K, $10K, $100K months</li>
@@ -109,7 +109,7 @@ export default function MilestonesHelpPage() {
     },
     {
       question: "How do Milestones relate to Domain Scores?",
-      answer: "Milestones and Domain Scores work together. Domain Scores show you WHERE to focus. Milestones define WHAT you will achieve in that domain. For example, if your Marketing domain score is low, you might set milestones like: Launch content calendar, Reach 1,000 email subscribers, Publish 10 blog posts. Each milestone improves the domain score, which improves overall health."
+      answer: "Milestones and Domain Scores work together. Domain Scores show you WHERE to focus. Milestones define WHAT you will achieve in that domain this quarter. For example, if your Marketing domain score is low, you might set milestones like: Launch content calendar, Reach 1,000 email subscribers, Publish 10 blog posts. The work behind each milestone, and the plan goals and tasks you keep up to date, feed back into your domain scores and your overall health."
     },
     {
       question: "Should I celebrate small Milestones?",
@@ -117,16 +117,16 @@ export default function MilestonesHelpPage() {
     },
     {
       question: "How do I track Milestones in LifeCharter Command Suite?",
-      answer: "Use the Milestones section of your Dashboard to: Set and view upcoming milestones, Track progress toward each milestone, Record completion dates, Celebrate achievements, Review milestone history. Connect milestones to specific domains so you can see how they impact your business health scores. The AI Guide can also suggest milestones based on your current domain scores."
+      answer: "Open the Goal Ladder (Planning &amp; Numbers in the left menu) and use the Milestone assessment at the top. Choose one of your 12 areas, answer four short questions (what a real win looks like this quarter, what is getting in the way, how much time you can give it each week, and one question specific to that area), and your AI assistant proposes this quarter&apos;s milestones for it, based on your answers and your live scores. Edit them, then add the ones you want to your Goal Ladder. You can also start the same assessment from any domain&apos;s detail page (click a domain on Executive Home). On the Goal Ladder each goal carries a status (not started, in progress, met or slipped), and your Progress page shows how your plan goals are tracking."
     }
   ];
 
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
+      <Link href="/help/qa" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Back to Help Center
+        Back to Help &amp; Q&amp;A
       </Link>
 
       {/* Hero Section */}
@@ -381,7 +381,7 @@ export default function MilestonesHelpPage() {
             Define it, pursue it, achieve it, celebrate it.
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/dashboard">
+            <Link href="/planning/goals">
               <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <Target className="w-4 h-4 mr-2" />
                 Set a Milestone

@@ -15,12 +15,12 @@ export default function OverallBusinessHealthPage() {
     {
       id: "what-good-score",
       question: "What is a good Overall Business Health score?",
-      answer: "Scores are categorized into four phases: Survival (0-30), Building (31-60), Growth (61-80), and Expansion (81-100). Most businesses operate healthily in the 60-80 range. The goal is progress, not perfection—moving from 45 to 65 represents significant business improvement."
+      answer: "Scores are grouped into four phases: Survival (0-40), Growth (41-60), Expansion (61-80), and Legacy (81-100). The goal is progress, not perfection. Moving from 45 to 65 represents significant business improvement, and your own trend matters more than any single number."
     },
     {
       id: "how-often-update",
       question: "How often does my Overall Business Health score update?",
-      answer: "Your score updates in real-time as you complete assessments and input data across the 12 domains. We recommend quarterly comprehensive reassessments to track meaningful progress and identify shifting priorities."
+      answer: "Your score updates as your answers and your live Suite data change: finishing or revisiting an assessment, a monthly Quick Pulse check-in, and the numbers you keep in your finances, sales activity, operations and plans. A good rhythm is a Quick Pulse every month, your Profit assessment every quarter, your Brain assessment twice a year, and your Soul assessment once a year."
     },
     {
       id: "why-score-dropped",
@@ -30,44 +30,44 @@ export default function OverallBusinessHealthPage() {
     {
       id: "focus-areas",
       question: "How are my Focus Areas determined?",
-      answer: "Focus Areas are automatically identified based on your lowest-scoring domains and recent assessment responses. These represent the areas where improvement will have the biggest impact on your overall business health and daily experience."
+      answer: "Your Primary focus on the Overall Business Health card is simply your three lowest-scoring domains. Those are the areas where improvement will move your overall health the most, and the areas your Next 3 Moves are built to address."
     },
     {
       id: "different-scores",
       question: "Why does my Overall score differ from my individual domain scores?",
-      answer: "Your Overall Business Health is a weighted calculation that considers not just domain scores, but also how well your domains work together. A business with all domains at 70% often scores higher than one with domains at 90% and 40%, because alignment matters as much as individual performance."
+      answer: "Your Overall Business Health is the average of your domain scores, so a very low domain pulls it down even when others are strong. A business with every domain at 70 scores higher than one with domains at 90 and 40. Each domain score is itself a blend of your assessment answers and your live data, which is why a domain can look different from the answers you remember giving."
     },
     {
       id: "improve-score",
       question: "What is the fastest way to improve my Overall Business Health score?",
-      answer: "Focus on your lowest-scoring domain first—improving a 35 to a 55 has more impact on your overall health than improving a 75 to an 85. Additionally, look for domains that support each other: improving Systems often helps Operations, Team, and Finance simultaneously."
+      answer: "Focus on your lowest-scoring domain first. Improving a 35 to a 55 has more impact on your overall health than improving a 75 to an 85. Also look for work that counts twice: some answers feed more than one domain (your operations and internal systems answers count toward both Operations and Systems, for example), so one strong piece of work can lift more than one score."
     }
   ];
 
   const healthPhases = [
     {
       range: "81-100",
-      name: "Expansion",
+      name: "Legacy",
       color: "bg-green-500",
-      description: "Your business is thriving with strong systems and predictable growth. Focus on scaling what works and developing leadership capacity.",
+      description: "Your business is thriving with strong systems and predictable growth. Focus on lasting impact and freedom, and on developing leadership capacity.",
       characteristics: ["Consistent cash flow", "Strong team autonomy", "Clear market position", "Systems that scale"]
     },
     {
       range: "61-80",
-      name: "Growth",
+      name: "Expansion",
       color: "bg-[#c9a227]",
-      description: "You are building momentum with working systems. Align your operations and cash flow to scale with ease and clarity.",
+      description: "You have working systems and real momentum. Align your operations and cash flow to scale what works with ease and clarity.",
       characteristics: ["Revenue growing", "Systems being built", "Team expanding", "Processes documented"]
     },
     {
-      range: "31-60",
-      name: "Building",
+      range: "41-60",
+      name: "Growth",
       color: "bg-yellow-500",
-      description: "You are establishing foundations. Focus on systematizing what works and clarifying your next growth phase.",
+      description: "You are building momentum and establishing foundations. Focus on systematizing what works and clarifying your next phase.",
       characteristics: ["Product-market fit found", "Early systems in place", "Revenue inconsistent", "Wearing many hats"]
     },
     {
-      range: "0-30",
+      range: "0-40",
       name: "Survival",
       color: "bg-red-500",
       description: "You are navigating immediate challenges. Identify the one thing that will create the most stability right now.",
@@ -99,10 +99,10 @@ export default function OverallBusinessHealthPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
-            Think of your Overall Business Health like a vital signs monitor for your company. Just as a doctor checks your heart rate, blood pressure, and temperature to assess your physical wellbeing, this score synthesizes data from all 12 business domains to reveal your organization&apos;s overall vitality.
+            Think of your Overall Business Health like a vital signs monitor for your company. Just as a doctor checks your heart rate, blood pressure, and temperature to assess your physical wellbeing, this score brings together all 12 business domains to reveal your organization&apos;s overall vitality. You will find it at the top of the Business Alignment page (Alignment in the left menu).
           </p>
           <p className="text-[#7b6b8d] dark:text-[#e8e4f0] leading-relaxed">
-            This isn&apos;t just an average of your domain scores. It&apos;s a sophisticated calculation that weighs how well your business areas work <em>together</em>. A business with balanced, aligned domains often scores higher than one with stellar performance in some areas and critical gaps in others.
+            It is the average of your 12 domain scores, and each domain score is built from your own answers and your own live data. That means a business with balanced, aligned domains scores higher than one with stellar performance in some areas and critical gaps in others. Your score appears once at least three domains have been scored.
           </p>
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Your Overall Business Health score helps you understand: Are you thriving? Are you surviving? Are you building toward something bigger? This number tells the story of where you truly are—and where you&apos;re headed.
@@ -124,11 +124,11 @@ export default function OverallBusinessHealthPage() {
           <div className="bg-[#1a2b4a]/5 dark:bg-[#e8e4f0]/10 rounded-lg p-4">
             <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">How we calculate it:</h4>
             <ul className="space-y-2 text-[#7b6b8d] dark:text-[#e8e4f0]">
-              <li>• We aggregate scores from all 12 business domains</li>
-              <li>• We weight domains based on their interdependence and impact</li>
-              <li>• We factor in trend direction—are you improving or declining?</li>
-              <li>• We consider alignment—how well do your domains support each other?</li>
-              <li>• The result is a 0-100 score that represents your holistic business vitality</li>
+              <li>• Each of your 12 domains gets its own 0-100 score</li>
+              <li>• A domain score blends your Brain, Soul and Profit assessment answers, your monthly Quick Pulse check-in, and live data from the Suite (your finances, sales activity, operational pillars, Legal &amp; Compliance checklist and plan completeness)</li>
+              <li>• If one of those inputs hasn&apos;t been answered yet, the others carry its weight until it is</li>
+              <li>• Your Overall Business Health is the average of your domain scores, a 0-100 number</li>
+              <li>• Once all three assessments are done, your Business Health Score, three next moves, a 90-day Growth Roadmap and your Alignment Profile are built from your own answers</li>
             </ul>
           </div>
           <p className="text-[#c9a227] font-medium">
@@ -192,39 +192,39 @@ export default function OverallBusinessHealthPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
-            Focus Areas are automatically identified based on your lowest-scoring domains and recent assessment responses. These represent the 3-5 areas where improvement will have the biggest impact on your overall business health.
+            Your Focus Areas (shown as &quot;Primary focus&quot; on the card) are your three lowest-scoring domains. These are the areas where improvement will have the biggest impact on your overall business health. Click any domain card on Executive Home to see exactly which inputs make up its score.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-5 h-5 text-red-500" />
-                <h4 className="font-semibold text-red-600">Critical</h4>
+                <h4 className="font-semibold text-red-600">Needs attention</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring below 40. These are creating significant friction and need immediate attention.
+                Domains scoring below 60. These are creating friction and are the best place to start.
               </p>
             </div>
             <div className="bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <Activity className="w-5 h-5 text-yellow-600" />
-                <h4 className="font-semibold text-yellow-600">Developing</h4>
+                <h4 className="font-semibold text-yellow-600">Solid, room to grow</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring 40-70. These are functional but have room for significant improvement.
+                Domains scoring 60-79. These are working but have room for real improvement.
               </p>
             </div>
             <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <h4 className="font-semibold text-green-600">Strong</h4>
+                <h4 className="font-semibold text-green-600">Thriving</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring above 70. These are working well and may be leveraged to support other areas.
+                Domains scoring 80 and above. These are working well and may be leveraged to support other areas.
               </p>
             </div>
           </div>
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-            We recommend focusing 70% of your improvement energy on Critical areas, 20% on Developing, and 10% on optimizing Strong domains.
+            Put most of your improvement energy into the Needs attention domains, keep the Solid ones moving, and let your Thriving domains keep doing what they do.
           </p>
         </CardContent>
       </Card>
@@ -243,7 +243,7 @@ export default function OverallBusinessHealthPage() {
           <ul className="space-y-3 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-[#c9a227] mt-2 flex-shrink-0"></span>
-              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Quarterly reassessments</strong> provide the most accurate picture of your trajectory</span>
+              <span><strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">Regular check-ins</strong> keep your picture current: a Quick Pulse monthly, Profit quarterly, Brain twice a year and Soul once a year</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-[#c9a227] mt-2 flex-shrink-0"></span>
@@ -259,7 +259,7 @@ export default function OverallBusinessHealthPage() {
             </li>
           </ul>
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] mt-4 font-medium">
-            Most businesses see 10-15 point improvements in their Overall Business Health within 6-12 months of focused, consistent action.
+            Each Quick Pulse and re-score adds a dated point to your Business Health Trend, so you can watch your own progress against your baseline on the Progress page.
           </p>
         </CardContent>
       </Card>
@@ -318,7 +318,7 @@ export default function OverallBusinessHealthPage() {
                 1
               </div>
               <div>
-                <p className="font-medium">Month 1: Baseline assessment reveals your starting point</p>
+                <p className="font-medium">Month 1: Your Brain, Soul and Profit assessments reveal your starting point, and your first scores become your baseline</p>
               </div>
             </div>
             <div className="flex items-start gap-4">

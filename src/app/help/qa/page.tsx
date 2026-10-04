@@ -100,7 +100,7 @@ export default function QAPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[#2E7C83] hover:underline mb-4">
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        <ArrowLeft className="w-4 h-4" /> Back to Executive Home
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
@@ -114,8 +114,8 @@ export default function QAPage() {
       </div>
 
       <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mb-6 flex items-center gap-1.5">
-        <Sparkles className="w-4 h-4 text-[#2E7C83]" />
-        Your Travel Partner widget answers from this same knowledge base — open it and switch to <strong className="mx-1">Ask</strong>.
+        <Sparkles className="w-4 h-4 text-[#2E7C83] flex-shrink-0" />
+        <span>Your Travel Partner widget answers from this same knowledge base. Open it, choose <strong className="mx-1">Help &amp; setup</strong>, then <strong className="mx-1">How do I…</strong>. Your AI assistant also draws on it when you ask how to do something in the Suite.</span>
       </p>
 
       {/* Search */}

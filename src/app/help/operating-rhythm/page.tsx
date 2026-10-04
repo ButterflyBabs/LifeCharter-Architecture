@@ -35,7 +35,22 @@ export default function OperatingRhythmHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What is Operating Rhythm?",
-      answer: "Operating Rhythm is the heartbeat of your business—the predictable cadence of meetings, reviews, and rituals that keep your business aligned, accountable, and moving forward. It is the drumbeat that ensures important things get done consistently, not just when you remember them. A strong operating rhythm reduces chaos, increases team alignment, and creates space for strategic thinking."
+      answer: "Operating Rhythm is the heartbeat of your business: the predictable cadence of routines, reviews, and rituals that keep your business aligned, accountable, and moving forward. It is the drumbeat that ensures important things get done consistently, not just when you remember them. A strong operating rhythm reduces chaos, increases team alignment, and creates space for strategic thinking. In the Suite, it is a card on your Business Alignment page where you set your routines once and check them off on the days they are due."
+    },
+    {
+      question: "How does the Operating Rhythm card work in the Suite?",
+      answer: (
+        <div className="space-y-2">
+          <p>On the Business Alignment page (Alignment in the left menu), the Operating Rhythm card holds your repeating routines. They are your own recurring tasks:</p>
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
+            <li><strong>Add a routine:</strong> Press Add a routine, give it a name, and choose Every day, Every week (and which day) or Every month (and which date)</li>
+            <li><strong>Or let your assistant suggest one:</strong> Press Suggest a rhythm, untick anything you don&apos;t want, and add the rest. This uses your own AI key from Settings, under AI Assistant</li>
+            <li><strong>Check it off:</strong> On the days a routine is due, it shows in Today&apos;s Schedule and your Daily Compass, and you tick it off there or on the card. The card shows how many of today&apos;s routines are done</li>
+            <li><strong>Remove one:</strong> Hover over a routine and click the trash can</li>
+          </ul>
+          <p>The card covers daily, weekly and monthly routines. For quarterly and yearly reviews, use the Reviews tab on each of your plans and your Goal Ladder.</p>
+        </div>
+      )
     },
     {
       question: "Why does Operating Rhythm matter?",
@@ -77,7 +92,7 @@ export default function OperatingRhythmHelpPage() {
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Identify what matters most:</strong> What decisions or reviews happen repeatedly?</li>
             <li><strong>Choose your cadence:</strong> How often does each activity need to happen?</li>
-            <li><strong>Calendar it:</strong> Block the time. Protect it.</li>
+            <li><strong>Put it in the Suite:</strong> Add it as a routine on the Operating Rhythm card so it shows up in your schedule on the right days. Block the time. Protect it.</li>
             <li><strong>Create agendas:</strong> Know what happens in each meeting</li>
             <li><strong>Start with one rhythm:</strong> Master weekly before adding quarterly</li>
             <li><strong>Iterate:</strong> Adjust based on what works</li>
@@ -106,15 +121,15 @@ export default function OperatingRhythmHelpPage() {
         <div className="space-y-2">
           <p><strong>Monthly Rhythm:</strong></p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Review Domain Scores and Overall Health</li>
+            <li>Take your Quick Pulse check-in and review your Domain Scores and Overall Health</li>
             <li>Assess progress on monthly goals</li>
             <li>Adjust tactics for the coming month</li>
             <li>Celebrate wins and learn from misses</li>
           </ul>
           <p><strong>Quarterly Rhythm:</strong></p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Deep strategic review</li>
-            <li>Set or adjust quarterly objectives</li>
+            <li>Deep strategic review, including your plans&apos; quarterly reviews and your Profit assessment</li>
+            <li>Set or adjust quarterly objectives on your Goal Ladder</li>
             <li>Resource allocation decisions</li>
             <li>Major initiative planning</li>
           </ul>
@@ -165,9 +180,9 @@ export default function OperatingRhythmHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
+      <Link href="/help/qa" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Back to Help Center
+        Back to Help &amp; Q&amp;A
       </Link>
 
       {/* Hero Section */}
@@ -254,7 +269,7 @@ export default function OperatingRhythmHelpPage() {
                   <li>• Monday kickoff meeting</li>
                   <li>• Mid-week progress check</li>
                   <li>• Friday review and celebration</li>
-                  <li>• Key metrics review</li>
+                  <li>• Weekly Review with your real numbers</li>
                 </ul>
               </div>
             </div>
@@ -268,7 +283,7 @@ export default function OperatingRhythmHelpPage() {
                 <p className="text-sm text-[#b8a898] mb-2">2-4 hours for review and adjustment</p>
                 <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
                   <li>• Business health review</li>
-                  <li>• Domain score assessment</li>
+                  <li>• Quick Pulse check-in and Domain Scores review</li>
                   <li>• Goal progress evaluation</li>
                   <li>• Next month planning</li>
                 </ul>
@@ -283,8 +298,8 @@ export default function OperatingRhythmHelpPage() {
                 <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Quarterly Rhythm</h4>
                 <p className="text-sm text-[#b8a898] mb-2">Half to full day for strategy</p>
                 <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
-                  <li>• Deep strategic review</li>
-                  <li>• Quarterly objectives setting</li>
+                  <li>• Deep strategic review and plan reviews</li>
+                  <li>• Quarterly objectives setting on your Goal Ladder</li>
                   <li>• Resource allocation</li>
                   <li>• Major initiative planning</li>
                 </ul>
@@ -388,11 +403,11 @@ export default function OperatingRhythmHelpPage() {
           <Timer className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Find Your Rhythm</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
-            Use the LifeCharter Command Suite platform to support your operating rhythm. 
-            Schedule reviews, track progress, and keep your business aligned.
+            Use the Operating Rhythm card on your Business Alignment page to set your routines once, 
+            see them in your schedule on the days they are due, and keep your business aligned.
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/dashboard">
+            <Link href="/business-alignment">
               <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <Calendar className="w-4 h-4 mr-2" />
                 Start Your Rhythm

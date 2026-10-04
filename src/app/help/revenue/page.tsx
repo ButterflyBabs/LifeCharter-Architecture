@@ -35,99 +35,89 @@ export default function RevenueSnapshotHelpPage() {
   const faqs: FAQItem[] = [
     {
       question: "What is the Revenue Snapshot?",
-      answer: "The Revenue Snapshot provides a quick, comprehensive view of your business's financial performance. It aggregates key revenue metrics from your connected accounts (Stripe, PayPal, QuickBooks) and manual entries to give you real-time insight into your income, trends, and financial health. Think of it as your business's financial pulse—always available, always current."
+      answer: "The Revenue Snapshot is a card on your Business Alignment page (Alignment in the left menu) that gives you a quick view of your business's financial performance. It is built from your own Finance Center ledger and your Sales Activities, so it shows only what you have recorded. Where nothing is recorded yet, it shows a dash instead of a made-up number."
     },
     {
-      question: "What metrics does the Revenue Snapshot show?",
+      question: "What does the Revenue Snapshot show?",
       answer: (
         <div className="space-y-2">
-          <p>The Revenue Snapshot includes:</p>
+          <p>The Revenue Snapshot includes four numbers and a chart:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Total Revenue:</strong> All income across all sources</li>
-            <li><strong>Monthly Recurring Revenue (MRR):</strong> Predictable subscription income</li>
-            <li><strong>Revenue by Source:</strong> Breakdown by product, service, or channel</li>
-            <li><strong>Revenue Trend:</strong> Month-over-month and year-over-year growth</li>
-            <li><strong>Average Revenue Per Customer:</strong> Customer value metrics</li>
-            <li><strong>Revenue Goals:</strong> Progress toward your targets</li>
+            <li><strong>Revenue this month:</strong> Your income so far this month, compared with the same days of last month</li>
+            <li><strong>Net this month:</strong> Income minus expenses, with your margin percentage</li>
+            <li><strong>Avg deal size:</strong> The average value of the deals you have marked won in Sales Activities</li>
+            <li><strong>Win rate:</strong> Deals won out of the people you have contacted, from Sales Activities</li>
+            <li><strong>Six-month chart:</strong> Your income and expenses for each of the last six months</li>
           </ul>
         </div>
       )
     },
     {
-      question: "How is Revenue Snapshot data updated?",
+      question: "Where does the Revenue Snapshot get its data?",
       answer: (
         <div className="space-y-2">
-          <p>Data updates through multiple channels:</p>
+          <p>Everything comes from what is in your account:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Automatic Sync:</strong> Connected payment processors (Stripe, PayPal) update in real-time or daily</li>
-            <li><strong>Bank Feeds:</strong> Linked business accounts import transactions</li>
-            <li><strong>Manual Entry:</strong> You can add cash transactions, offline sales, or other income</li>
-            <li><strong>File Upload:</strong> Import CSV statements from banks or payment platforms</li>
+            <li><strong>Income Tracker and Expense Manager:</strong> Add income and expenses by hand in the Finance Center, or from Quick Capture on your phone</li>
+            <li><strong>Statement import:</strong> On the Financial Pulse page in Finance, press Import, upload a CSV or paste your statement, check the transactions it finds, and commit them to your ledger. This uses your own AI key</li>
+            <li><strong>Stripe:</strong> Connect your Stripe account and your payments, fees and refunds flow into your ledger automatically</li>
+            <li><strong>Sales Activities:</strong> Log your calls, follow-ups and outcomes in the Daily Compass, and mark deals won</li>
           </ul>
-          <p>The more sources you connect, the more complete your snapshot becomes.</p>
+          <p>The more you record, the more complete your snapshot becomes.</p>
         </div>
       )
     },
     {
-      question: "How do I connect my revenue sources?",
+      question: "How do I connect Stripe?",
       answer: (
         <div className="space-y-2">
-          <p>To connect revenue sources:</p>
+          <p>To connect Stripe:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Go to Settings → Integrations</li>
-            <li>Select your payment processor or bank</li>
-            <li>Follow the secure authentication process</li>
-            <li>Grant read-only access to transaction data</li>
-            <li>Data will begin syncing automatically</li>
+            <li>In Stripe, create a read-only restricted key</li>
+            <li>Go to Settings → Integrations and find the Stripe card</li>
+            <li>Paste your restricted key and connect</li>
+            <li>The Suite brings in your last 90 days of payments right away, then syncs every morning</li>
           </ol>
-          <p>Supported integrations include Stripe, PayPal, Square, QuickBooks, and major banks.</p>
+          <p>You can also sync on demand from the same card, and disconnect any time. Payments already in your ledger stay there.</p>
         </div>
       )
-    },
-    {
-      question: "What is MRR and why does it matter?",
-      answer: "MRR (Monthly Recurring Revenue) is the predictable revenue you can expect every month from subscriptions, retainers, or ongoing contracts. It matters because: Predictability—You can forecast future income. Valuation—Businesses with MRR are valued higher than one-time sales. Stability—Recurring revenue smooths out seasonal fluctuations. Growth Measurement—MRR growth rate shows business momentum. Even if you don't have subscriptions, tracking repeat customer revenue similarly helps predict stability."
     },
     {
       question: "How do I set revenue goals?",
       answer: (
         <div className="space-y-2">
-          <p>Set SMART revenue goals:</p>
+          <p>Your monthly income goal is the income target in Finance → Budget Planner. You can also set it right on the Financial Pulse card on Executive Home, where you can switch between Week, Month and Year to see the percentage of your goal reached.</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Specific:</strong> &quot;$10,000 monthly&quot; not &quot;more revenue&quot;</li>
-            <li><strong>Measurable:</strong> Trackable in the Revenue Snapshot</li>
-            <li><strong>Achievable:</strong> Challenging but realistic based on current trajectory</li>
-            <li><strong>Relevant:</strong> Aligned with your business stage and capacity</li>
-            <li><strong>Time-bound:</strong> Monthly, quarterly, and annual targets</li>
+            <li><strong>Achievable:</strong> Challenging but realistic based on your current trajectory</li>
+            <li><strong>Time-bound:</strong> The yearly goal defaults to 12 times your monthly goal, and you can edit the week or year number yourself</li>
           </ul>
-          <p>Set goals in the Finance section. The Revenue Snapshot will track your progress automatically.</p>
+          <p>The Revenue Snapshot shows your income and trend; the Financial Pulse card shows your progress against your goal.</p>
         </div>
       )
     },
     {
       question: "What if my revenue is inconsistent?",
-      answer: "Inconsistent revenue is common, especially in early-stage businesses. The Revenue Snapshot helps by: Showing patterns—you might spot seasonal trends. Identifying reliable sources—focus on what consistently brings income. Highlighting one-time spikes—so you don't mistake them for sustainable growth. Tracking toward consistency—set goals around reducing variance. Consider strategies to create more predictable income: subscriptions, retainers, payment plans, or diversifying customer base."
+      answer: "Inconsistent revenue is common, especially in early-stage businesses. The six-month chart helps you spot patterns, like seasonal dips and spikes, and see which months carried you. Consider strategies to create more predictable income: subscriptions, retainers, payment plans, or diversifying your client base. The Forecasting page in the Planning section can project your income forward from your recent run-rate and your open pipeline."
     },
     {
       question: "How does Revenue Snapshot relate to Domain Scores?",
-      answer: "Revenue performance directly impacts multiple Domain Scores: Finance & Cash Flow—Obviously tied to revenue metrics. Sales & Conversion—Revenue reflects sales effectiveness. Products & Services—Revenue per product shows what's working. Customer Experience—Repeat revenue indicates satisfaction. Marketing & Visibility—Revenue by source shows channel effectiveness. Strong revenue lifts your Overall Business Health score. Declining revenue triggers alerts in the relevant domains."
+      answer: "Your Finance domain score is built partly from your live ledger: your income against your goal, your expenses and your cash. Your Sales domain score draws on your sales activity, including your conversion rate. Keeping your income, expenses and sales activity up to date makes both scores, and your Overall Business Health, more accurate."
     },
     {
-      question: "Can I export my Revenue Snapshot data?",
-      answer: "Yes, you can export Revenue Snapshot data in multiple formats: CSV for spreadsheet analysis, PDF for reports or investors, and API access for custom integrations. Export options are available in the Finance → Reports section. You can filter by date range, revenue source, or customer segment before exporting."
+      question: "Can I export my financial data?",
+      answer: "Yes. Open Finance → Financial Reports (P&L), choose the period you want, month, quarter, year or a custom date range, and download it as a CSV for spreadsheet analysis or a PDF for reports."
     },
     {
       question: "Is my financial data secure?",
       answer: (
         <div className="space-y-2">
-          <p className="font-medium text-[#4a9b9b]">Yes, security is our priority:</p>
+          <p className="font-medium text-[#4a9b9b]">Yes, we treat it with care:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Bank-level 256-bit encryption for all data</li>
-            <li>Read-only connections—no transactions can be initiated</li>
-            <li>SOC 2 Type II certified data centers</li>
-            <li>Regular security audits and penetration testing</li>
-            <li>You control data retention and can delete anytime</li>
-            <li>Never sold to third parties</li>
+            <li>Your finances are private to your own account</li>
+            <li>The Stripe connection uses a read-only key, so nothing can be charged or changed in your Stripe account</li>
+            <li>Your key is stored on the server only and is never shown back in the browser</li>
+            <li>You can disconnect Stripe at any time</li>
           </ul>
         </div>
       )
@@ -138,12 +128,12 @@ export default function RevenueSnapshotHelpPage() {
         <div className="space-y-2">
           <p>If you see declining revenue in your snapshot:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Investigate:</strong> Check which sources or products declined</li>
+            <li><strong>Investigate:</strong> Look at your Income Tracker to see which sources or offers declined</li>
             <li><strong>Context:</strong> Is this seasonal or industry-wide?</li>
-            <li><strong>Customer Feedback:</strong> Talk to customers about changes</li>
-            <li><strong>Quick Wins:</strong> Identify fastest ways to generate revenue</li>
-            <li><strong>Strategic Adjustments:</strong> Pivot marketing, pricing, or offers</li>
-            <li><strong>Get Help:</strong> Use the AI Guide for revenue recovery strategies</li>
+            <li><strong>Client Feedback:</strong> Talk to clients about changes</li>
+            <li><strong>Quick Wins:</strong> Identify the fastest ways to generate revenue, like following up with warm contacts in your Pipeline</li>
+            <li><strong>Strategic Adjustments:</strong> Revisit your marketing, pricing, or offers</li>
+            <li><strong>Get Help:</strong> Ask your AI assistant for ideas based on your numbers</li>
           </ol>
           <p>Early detection through the Revenue Snapshot gives you time to respond.</p>
         </div>
@@ -154,9 +144,9 @@ export default function RevenueSnapshotHelpPage() {
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <Link href="/help" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
+      <Link href="/help/qa" className="flex items-center gap-2 text-[#7b6b8d] hover:text-[#1a2b4a] mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Back to Help Center
+        Back to Help &amp; Q&amp;A
       </Link>
 
       {/* Hero Section */}
@@ -168,7 +158,7 @@ export default function RevenueSnapshotHelpPage() {
           Revenue Snapshot
         </h1>
         <p className="text-lg text-[#b8a898] max-w-2xl mx-auto">
-          Real-time visibility into your business income and financial health
+          A clear view of your income, expenses and sales results
         </p>
       </div>
 
@@ -182,26 +172,26 @@ export default function RevenueSnapshotHelpPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
-            The <strong>Revenue Snapshot</strong> is your business&apos;s financial dashboard. It brings together 
-            income from all sources—payments, transfers, cash sales—into one clear, real-time view. 
-            No more guessing. No more spreadsheets. Just the numbers you need to make smart decisions.
+            The <strong>Revenue Snapshot</strong> is your business&apos;s financial dashboard on the Business Alignment page. It brings together 
+            what you have recorded in your Finance Center and your Sales Activities into one clear view. 
+            No more guessing. Just the numbers you need to make smart decisions.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
               <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Total Income</h3>
-              <p className="text-sm text-[#b8a898]">All revenue sources combined</p>
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Income</h3>
+              <p className="text-sm text-[#b8a898]">This month, and how it compares to last month</p>
             </div>
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
               <TrendingUp className="w-8 h-8 text-[#7b6b8d] mx-auto mb-2" />
               <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Trends</h3>
-              <p className="text-sm text-[#b8a898]">Growth patterns over time</p>
+              <p className="text-sm text-[#b8a898]">Your last six months, income and expenses</p>
             </div>
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg text-center">
               <PieChart className="w-8 h-8 text-[#c9a227] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Breakdown</h3>
-              <p className="text-sm text-[#b8a898]">Revenue by source and product</p>
+              <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Sales Results</h3>
+              <p className="text-sm text-[#b8a898]">Average deal size and win rate</p>
             </div>
           </div>
         </CardContent>
@@ -220,44 +210,44 @@ export default function RevenueSnapshotHelpPage() {
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-5 h-5 text-green-600" />
-                <h4 className="font-semibold text-green-800 dark:text-green-200">Total Revenue</h4>
+                <h4 className="font-semibold text-green-800 dark:text-green-200">Revenue this month</h4>
               </div>
               <p className="text-sm text-green-700 dark:text-green-300">
-                The sum of all income across all sources for the selected time period. 
-                This is your top-line business performance number.
+                The income you have recorded so far this month, with the percentage change compared 
+                with the same days of last month. It shows &quot;nothing to compare yet&quot; until last month has income.
               </p>
             </div>
 
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-5 h-5 text-blue-600" />
-                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Monthly Recurring Revenue (MRR)</h4>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Net this month</h4>
               </div>
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                Predictable monthly income from subscriptions, retainers, or ongoing contracts. 
-                MRR is the foundation of sustainable business growth.
+                Income minus expenses for the month, with your margin percentage underneath. 
+                Keep your expenses categorized and up to date so this stays accurate.
               </p>
             </div>
 
             <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <div className="flex items-center gap-2 mb-2">
                 <PieChart className="w-5 h-5 text-purple-600" />
-                <h4 className="font-semibold text-purple-800 dark:text-purple-200">Revenue by Source</h4>
+                <h4 className="font-semibold text-purple-800 dark:text-purple-200">Avg deal size and Win rate</h4>
               </div>
               <p className="text-sm text-purple-700 dark:text-purple-300">
-                Breakdown showing which products, services, or channels generate your income. 
-                Helps identify your most valuable offerings.
+                Average deal size is the average value of the deals you have marked won in Sales Activities. 
+                Win rate is deals won out of the people you have contacted there. Both stay as dashes until you log some activity.
               </p>
             </div>
 
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-5 h-5 text-yellow-600" />
-                <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Goal Progress</h4>
+                <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Six-month chart</h4>
               </div>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                How close you are to hitting your revenue targets. Visual indicators show 
-                if you are on track, ahead, or behind.
+                Income and expenses side by side for each of your last six months. Hover over a bar to see the amounts. 
+                Your progress against your income goal lives on the Financial Pulse card.
               </p>
             </div>
           </div>
@@ -277,14 +267,12 @@ export default function RevenueSnapshotHelpPage() {
             <div className="p-4 bg-[#1a2b4a]/5 rounded-lg">
               <h4 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] mb-2 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                Automatic Connections
+                Automatic and Imported
               </h4>
               <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
-                <li>• Stripe payments</li>
-                <li>• PayPal transactions</li>
-                <li>• Square sales</li>
-                <li>• QuickBooks data</li>
-                <li>• Bank account feeds</li>
+                <li>• Stripe payments, fees and refunds (Settings → Integrations)</li>
+                <li>• Bank or card statements you import (CSV or pasted text)</li>
+                <li>• Sales you log in Sales Activities</li>
               </ul>
             </div>
 
@@ -294,10 +282,10 @@ export default function RevenueSnapshotHelpPage() {
                 Manual Entry
               </h4>
               <ul className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] space-y-1">
-                <li>• Cash transactions</li>
-                <li>• Offline sales</li>
+                <li>• The Income Tracker and Expense Manager in Finance</li>
+                <li>• Quick Capture on your phone</li>
+                <li>• Cash transactions and offline sales</li>
                 <li>• Check payments</li>
-                <li>• Barter arrangements</li>
                 <li>• Other income sources</li>
               </ul>
             </div>
@@ -367,7 +355,7 @@ export default function RevenueSnapshotHelpPage() {
               <div>
                 <h4 className="font-medium text-green-800 dark:text-green-200">Review Weekly</h4>
                 <p className="text-sm text-green-700 dark:text-green-300">
-                  Check your snapshot weekly during your operating rhythm. Spot trends early.
+                  Check your snapshot weekly, alongside your Weekly Review. Spot trends early.
                 </p>
               </div>
             </div>
@@ -377,7 +365,7 @@ export default function RevenueSnapshotHelpPage() {
               <div>
                 <h4 className="font-medium text-blue-800 dark:text-blue-200">Set Goals</h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Use the snapshot to set realistic revenue targets. Track progress visually.
+                  Use the snapshot to set realistic revenue targets in your Budget Planner, then watch your progress on the Financial Pulse card.
                 </p>
               </div>
             </div>
@@ -385,9 +373,9 @@ export default function RevenueSnapshotHelpPage() {
             <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <PieChart className="w-5 h-5 text-purple-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-purple-800 dark:text-purple-200">Analyze Sources</h4>
+                <h4 className="font-medium text-purple-800 dark:text-purple-200">Log Your Sales</h4>
                 <p className="text-sm text-purple-700 dark:text-purple-300">
-                  See which products or channels drive revenue. Double down on what works.
+                  Mark deals won in Sales Activities so your average deal size and win rate stay true.
                 </p>
               </div>
             </div>
@@ -397,7 +385,7 @@ export default function RevenueSnapshotHelpPage() {
               <div>
                 <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Watch for Red Flags</h4>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  Declining trends or missed goals trigger early warnings. Act quickly.
+                  A dip on the six-month chart or in this month&apos;s comparison is an early warning. Act quickly.
                 </p>
               </div>
             </div>
@@ -411,17 +399,17 @@ export default function RevenueSnapshotHelpPage() {
           <Wallet className="w-12 h-12 text-[#c9a227] mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-3">Know Your Numbers</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
-            Connect your revenue sources, set your goals, and get real-time visibility 
-            into your business financial health.
+            Record your income and expenses, connect Stripe if you use it, set your goals, and see 
+            your business&apos;s financial health at a glance.
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/finance">
+            <Link href="/business-alignment">
               <Button className="bg-[#c9a227] text-[#1a2b4a] hover:bg-[#c9a227]/90">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 View Revenue Snapshot
               </Button>
             </Link>
-            <Link href="/settings">
+            <Link href="/settings?tab=integrations">
               <Button variant="outline" className="border-[#c9a227] text-[#c9a227] hover:bg-[#c9a227]/10">
                 Connect Sources
               </Button>
