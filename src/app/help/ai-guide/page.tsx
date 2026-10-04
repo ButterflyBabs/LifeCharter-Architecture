@@ -85,8 +85,44 @@ export default function AIGuideHelpPage() {
       )
     },
     {
+      question: "Can my assistant do things for me, not just answer questions?",
+      answer: (
+        <div className="space-y-2">
+          <p>Yes. Ask in plain words and your assistant prepares the change for you. It can:</p>
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
+            <li>Tag or untag contacts, and add a contact</li>
+            <li>Create tasks and change their priority, effort, due date or status</li>
+            <li>Create an outreach pipeline, add people to it and move them between stages, and add a deal to your Sales Pipeline</li>
+            <li>Write a broadcast email or a full email campaign as a draft</li>
+            <li>Write social posts or a content plan and add them to your Content Calendar</li>
+            <li>Create a page in your own left menu, keep it updated, and delete it when you are done</li>
+            <li>Save lasting facts you mention (like who handles your bookings) to your Teach notes</li>
+          </ul>
+          <p>If it can&apos;t do something yet, it says so and offers the closest thing it can do.</p>
+        </div>
+      )
+    },
+    {
+      question: "What do Approve, Edit and Cancel mean?",
+      answer: (
+        <div className="space-y-2">
+          <p>Whenever your assistant wants to change something, it first shows a preview card and nothing happens yet.</p>
+          <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
+            <li><strong>Approve</strong> does it. Most actions then show an Undo link.</li>
+            <li><strong>Edit</strong> lets you say what to change (&quot;rename it&quot;, &quot;drop the third step&quot;, &quot;make it warmer&quot;). The old preview is cancelled and a corrected one comes back.</li>
+            <li><strong>Cancel</strong> throws the preview away. Nothing was changed.</li>
+          </ul>
+          <p>Emails are only ever saved as drafts. Your assistant never sends, schedules or turns on an email or message, and it never publishes a post right now. You review and send from Campaigns &amp; Broadcasts yourself. It only works in your own account, and a team member can only approve what their role allows.</p>
+        </div>
+      )
+    },
+    {
+      question: "Can I keep my assistant open while I work on another page?",
+      answer: "Yes. On the AI Assistant card on Executive Home, click Pop out. Your assistant floats over whatever page you open, tells you it knows which page you are on, and keeps the same conversation. Drag it by its title bar, resize it from the corner, minimize it, or press Bring back to Executive Home. The conversation lists newest first."
+    },
+    {
       question: "How does the AI Guide know which page I&apos;m on?",
-      answer: "When you ask from the Travel Partner widget, it sends the part of the app you are in (like Finance, Pipeline or the Business Plan) along with your question, so the answer fits what you are working on. The widget also offers a suggestion that picks up where you are, like &quot;Help me with my Finance.&quot; Your assistant doesn&apos;t see anything on your screen beyond that."
+      answer: "When you ask from the Travel Partner widget, it sends the part of the app you are in (like Finance, Pipeline or the Business Plan) along with your question, so the answer fits what you are working on. The widget also offers a suggestion that picks up where you are, like &quot;Help me with my Finance.&quot; Your assistant doesn&apos;t see anything on your screen beyond that. When you pop your assistant out, it does the same for the page you are on."
     },
     {
       question: "Can I use voice to talk to the AI Guide?",
@@ -156,7 +192,7 @@ export default function AIGuideHelpPage() {
     },
     {
       question: "Does the AI Guide remember past conversations?",
-      answer: "Yes. Your assistant remembers your recent conversation, roughly the last six hours, wherever you chat with it: Executive Home, the Travel Partner widget or the Business Alignment card. It is deliberately short so that older advice never overrides what is true in your account today. Each time you ask, it reads your account fresh. The Travel Partner widget also keeps your recent chat on screen in your browser."
+      answer: "Your conversation stays on the AI Assistant card (and in the Business Alignment panel), newest first, even when you leave the page and come back. For answering you, your assistant follows roughly the last six hours of it, so older advice never overrides what is true in your account today. Its long-term memory is your Teach notes in Settings, which it offers to add to when you mention something lasting. New conversation saves the current chat under Past conversations, where you can read it, continue it or delete it. Each time you ask, it reads your account fresh."
     },
     {
       question: "What if the AI Guide gives incorrect information?",
