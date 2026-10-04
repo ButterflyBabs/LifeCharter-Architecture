@@ -14,6 +14,9 @@ interface Side {
   ytdActual: number;
   mtdBudget: number;
   ytdBudget: number;
+  generalMonthly?: number;
+  monthKey?: string;
+  monthOwn?: boolean;
 }
 interface CatRow {
   category: string;
@@ -40,6 +43,9 @@ export default function BudgetPlannerPage() {
   const [newCat, setNewCat] = useState("");
   const [newCatAmt, setNewCatAmt] = useState("");
   const [saving, setSaving] = useState(false);
+  const [monthGoals, setMonthGoals] = useState<Record<string, string>>({});
+  const [savedMonthGoals, setSavedMonthGoals] = useState<Record<string, number>>({});
+  const [monthMsg, setMonthMsg] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/finance/entries?tz=${encodeURIComponent(tz())}`);
@@ -50,8 +56,13 @@ export default function BudgetPlannerPage() {
       setIncome(b.income);
       setCats(Array.isArray(b.byCategory) ? b.byCategory : []);
       setExpInput(b.expense?.monthly ? String(b.expense.monthly) : "");
-      setIncInput(b.income?.monthly ? String(b.income.monthly) : "");
+      setIncInput(b.income?.generalMonthly ? String(b.income.generalMonthly) : "");
     }
+    const mg = await fetch("/api/finance/month-goals", { cache: "no-store" }).then((r) => r.json()).catch(() => ({ goals: [] }));
+    const map: Record<string, number> = {};
+    for (const g of mg.goals ?? []) map[g.month] = g.amount;
+    setSavedMonthGoals(map);
+    setMonthGoals(Object.fromEntries(Object.entries(map).map(([k, v]) => [k, String(v)])));
     const g = await fetch("/api/finance/goals", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setWeekInput(g.week ? String(g.week) : "");
     setYearInput(g.year ? String(g.year) : "");
@@ -71,6 +82,31 @@ export default function BudgetPlannerPage() {
       setSaving(false);
     }
   };
+
+  // The next 12 months, starting with this one.
+  const nextMonths = (() => {
+    const out: { key: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      out.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleString("en-US", { month: "long", year: "numeric" }) });
+    }
+    return out;
+  })();
+  const saveMonthGoals = async () => {
+    setSaving(true);
+    setMonthMsg("");
+    try {
+      // Everything on screen plus any later months already saved stays as it is; only the 12 shown can change here.
+      const goals = nextMonths.map((m) => ({ month: m.key, amount: Number(monthGoals[m.key]) || 0 }));
+      const res = await fetch("/api/finance/month-goals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goals }) });
+      setMonthMsg(res.ok ? "Saved. Your Financial Pulse now follows these." : "Couldn't save.");
+      await load();
+    } finally {
+      setSaving(false);
+    }
+  };
+  const laterSaved = Object.keys(savedMonthGoals).filter((k) => !nextMonths.some((m) => m.key === k)).length;
 
   // Arriving from the dashboard's "Edit goals" link: bring the goals card into view.
   useEffect(() => {
@@ -160,7 +196,7 @@ export default function BudgetPlannerPage() {
                 <div className="mt-2">
                   {bar(income.mtdActual, income.monthly)}
                   <p className="text-[11px] text-[#b8a898] mt-1">
-                    {usd(income.mtdActual)} of {usd(income.monthly)} this month
+                    {usd(income.mtdActual)} of {usd(income.monthly)} this month{income.monthOwn ? " (this month's own goal)" : ""}
                   </p>
                 </div>
               )}
@@ -174,6 +210,32 @@ export default function BudgetPlannerPage() {
                 </Button>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Month-by-month goals (a ramp) */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Month-by-month income goals</CardTitle>
+          <p className="text-xs text-[#b8a898]">
+            Growing month by month? Give each month its own goal and your Financial Pulse follows the ramp. A month you leave blank uses your monthly goal above
+            {income?.generalMonthly ? ` (${usd(income.generalMonthly)})` : ""}.
+            {laterSaved > 0 ? ` ${laterSaved} later month${laterSaved === 1 ? " is" : "s are"} also saved and will show here as they come up.` : ""}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {nextMonths.map((m, i) => (
+              <label key={m.key} className="block text-xs font-medium text-[#b8a898]">
+                {m.label}{i === 0 ? " (this month)" : ""}
+                <Input type="number" min="0" className="mt-1" value={monthGoals[m.key] ?? ""} onChange={(e) => setMonthGoals((g) => ({ ...g, [m.key]: e.target.value }))} placeholder={income?.generalMonthly ? String(income.generalMonthly) : "Goal"} />
+              </label>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button variant="outline" size="sm" disabled={saving} onClick={saveMonthGoals}>Save month goals</Button>
+            {monthMsg && <span role="status" className="text-xs text-[#5a6472]">{monthMsg}</span>}
           </div>
         </CardContent>
       </Card>

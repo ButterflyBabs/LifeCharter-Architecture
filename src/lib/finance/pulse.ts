@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { nowParts, MONTHS } from "@/lib/finance/period";
+import { loadIncomeGoals } from "@/lib/finance/goals";
 
 // The Financial Pulse numbers for one client: income this week / month / year
 // in their time zone against their goals. Shared by the dashboard card and the
@@ -90,25 +91,32 @@ export async function computePulse(masterPlanId: string, tz: string, segmentIds?
   };
 
   // ── Goals ────────────────────────────────────────────────────────────────
-  const [{ data: budget }, { data: goals }] = await Promise.all([
-    supabase.from("finance_budgets").select("amount").eq("master_plan_id", masterPlanId).eq("type", "income").eq("category", "").maybeSingle(),
+  const [incomeGoals, { data: goals }] = await Promise.all([
+    loadIncomeGoals(masterPlanId, supabase),
     supabase.from("finance_goals").select("period, amount").eq("master_plan_id", masterPlanId),
   ]);
-  const monthGoal = Number(budget?.amount ?? 0) || null;
+  // This month's goal: the month's own goal if the account set one, else its general monthly goal.
+  const monthGoal = incomeGoals.forMonth(monthKey);
+  const monthOwn = incomeGoals.months.has(monthKey);
   const explicit = (p: "week" | "year") => {
     const v = Number((goals ?? []).find((g) => g.period === p)?.amount ?? 0);
     return v > 0 ? v : null;
   };
   const yearGoalSet = explicit("year");
   const weekGoalSet = explicit("week");
-  const yearGoal = yearGoalSet ?? (monthGoal ? monthGoal * 12 : null);
+  // The year: an explicit yearly goal, else the sum of this calendar year's month goals, else 12 x the monthly goal.
+  const fromMonths = incomeGoals.yearFromMonths(year);
+  const yearGoal = yearGoalSet ?? fromMonths ?? (monthGoal ? monthGoal * 12 : null);
+  // The week: an explicit weekly goal, else this month's goal spread over its weeks.
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   monthOut.goal = monthGoal;
   monthOut.goalSource = monthGoal ? "set" : null;
   yearOut.goal = yearGoal;
   yearOut.goalSource = yearGoalSet ? "set" : yearGoal ? "derived" : null;
-  week.goal = weekGoalSet ?? (yearGoal ? Math.round(yearGoal / 52) : null);
+  week.goal = weekGoalSet ?? (monthGoal ? Math.round((monthGoal * 7) / daysInMonth) : yearGoal ? Math.round(yearGoal / 52) : null);
   week.goalSource = weekGoalSet ? "set" : week.goal ? "derived" : null;
+  void monthOwn;
 
   for (const p of [week, monthOut, yearOut]) {
     p.changePct = p.prevIncome > 0 ? Math.round(((p.income - p.prevIncome) / p.prevIncome) * 100) : null;

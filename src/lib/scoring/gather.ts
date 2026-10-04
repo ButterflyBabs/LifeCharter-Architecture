@@ -193,6 +193,9 @@ async function liveOperationalMetrics(
       .eq("category", "")
       .maybeSingle();
     if (data?.amount != null) m.revenue_goal = Number(data.amount);
+    // A goal set for this very month (a ramp) wins over the general monthly goal.
+    const { data: mg } = await supabase.from("finance_month_goals").select("amount").eq("master_plan_id", scopeId).eq("month", monthStart.slice(0, 7)).maybeSingle();
+    if (mg?.amount != null && Number(mg.amount) > 0) m.revenue_goal = Number(mg.amount);
   } catch {
     /* optional */
   }

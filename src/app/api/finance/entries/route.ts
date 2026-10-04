@@ -5,6 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity } from "@/lib/activity";
 import { planSegmentIds } from "@/lib/planScope";
 import { periodRange } from "@/lib/finance/period";
+import { loadIncomeGoals } from "@/lib/finance/goals";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +118,11 @@ export async function GET(request: Request) {
   const cats = (t: string) => budgets.filter((b) => b.type === t && b.category !== "");
   const sumCats = (t: string) => cats(t).reduce((s, b) => s + b.amount, 0);
   const monthlyExpenseBudget = overall("expense") ?? (cats("expense").length ? sumCats("expense") : 0);
-  const monthlyIncomeTarget = overall("income") ?? (cats("income").length ? sumCats("income") : 0);
+  // This month's income goal: the month's own goal if set (a ramp), else the general monthly goal.
+  const incGoals = await loadIncomeGoals(masterPlanId as string, supabase);
+  const thisMonthKey = `${year}-${String(month).padStart(2, "0")}`;
+  const generalIncomeTarget = overall("income") ?? (cats("income").length ? sumCats("income") : 0);
+  const monthlyIncomeTarget = incGoals.months.get(thisMonthKey) ?? generalIncomeTarget;
 
   const byCategory = cats("expense").map((b) => ({
     category: b.category,
@@ -136,6 +141,9 @@ export async function GET(request: Request) {
     },
     income: {
       monthly: monthlyIncomeTarget,
+      generalMonthly: generalIncomeTarget, // the default for months without their own goal
+      monthKey: thisMonthKey,
+      monthOwn: incGoals.months.has(thisMonthKey),
       mtdBudget: monthlyIncomeTarget,
       mtdActual: mtd.income,
       ytdBudget: monthlyIncomeTarget * month,

@@ -114,8 +114,11 @@ export async function gatherNumbers(masterPlanId: string, p: ReviewPeriod, tz: s
       const g = Number(((goals || []) as { period: string; amount: number }[]).find((x) => x.period === want)?.amount ?? 0);
       if (g > 0) n.incomeGoal = g;
       else if (cadence === "monthly") {
+        const ym = new Date().toISOString().slice(0, 7);
+        const { data: mg } = await db.from("finance_month_goals").select("amount").eq("master_plan_id", masterPlanId).eq("month", ym).maybeSingle();
         const { data: b } = await db.from("finance_budgets").select("amount").eq("master_plan_id", masterPlanId).eq("type", "income").eq("category", "").maybeSingle();
-        if (Number(b?.amount) > 0) n.incomeGoal = Number(b?.amount);
+        const goal = Number(mg?.amount) > 0 ? Number(mg?.amount) : Number(b?.amount);
+        if (goal > 0) n.incomeGoal = goal;
       }
     })(),
     (async () => {

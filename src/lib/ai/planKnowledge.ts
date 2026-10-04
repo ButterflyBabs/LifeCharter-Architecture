@@ -95,7 +95,10 @@ export async function planningKnowledge(masterPlanId: string): Promise<string> {
     const { data: budgets } = await db.from("finance_budgets").select("type, category, amount").eq("master_plan_id", masterPlanId);
     const rows = (budgets ?? []) as { type: string; category: string | null; amount: number | string | null }[];
     if (rows.length) {
-      const inc = rows.find((b) => b.type === "income" && !(b.category || "").trim());
+      const inc0 = rows.find((b) => b.type === "income" && !(b.category || "").trim());
+      // A goal set for this month (a ramp) wins over the general monthly goal.
+      const { data: mg } = await db.from("finance_month_goals").select("amount").eq("master_plan_id", masterPlanId).eq("month", new Date().toISOString().slice(0, 7)).maybeSingle();
+      const inc = Number(mg?.amount) > 0 ? { ...(inc0 ?? { type: "income", category: "" }), amount: Number(mg?.amount) } : inc0;
       const exp = rows.filter((b) => b.type === "expense").sort((a, b) => Number(b.amount) - Number(a.amount));
       parts.push(
         `Budgets (monthly): ${inc ? `income goal ${usd(Number(inc.amount))}` : "no income goal set"}` +
