@@ -134,6 +134,7 @@ export const updatePlanSection: ActionTool = {
       }
     } catch (e) {
       console.error("plan section fields:", e);
+      lines.push("I couldn't fill the question fields just now. After you approve, say 'fill in the fields' and I'll do them.");
     }
     return { preview: { title: `${mode === "append" ? "Add to" : "Write"} the ${bp.label} → ${sec.title}`, lines } };
   },
