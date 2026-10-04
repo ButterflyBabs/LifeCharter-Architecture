@@ -182,13 +182,13 @@ async function extractAnswers(openai: OpenAI, sec: BlueprintSection, content: st
   const res = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     temperature: 0.2,
-    max_tokens: 900,
+    max_tokens: 1200,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
         content:
-          'You move facts from a business-plan section into its question fields. Use ONLY what the section text says; never add anything new. If the text does not answer a question, return an empty string for it. Keep each answer short, in the client\'s voice, plain text (no markdown). For a choice question return one of the listed options exactly, or "". Return STRICT JSON: {"answers":{"<id>":"<answer>"}}.',
+          'You move facts from a business-plan section into its question fields. Answer each question as fully as the section text supports, restating what the text says in the client\'s voice (a sentence or a few short lines, plain text, no markdown); the questions are prompts, so a good answer often draws on several parts of the text. Never add facts that are not in the text. Return an empty string only when the text has nothing relevant to that question. For a choice question return one of the listed options exactly, or "". Return STRICT JSON: {"answers":{"<id>":"<answer>"}}.',
       },
       { role: "user", content: `Section: ${sec.title}\n\nSection text:\n${content}\n\nQuestions to fill:\n${qs}` },
     ],
@@ -213,7 +213,7 @@ export const fillPlanAnswers: ActionTool = {
   kind: "write",
   apiPath: "/api/plans",
   description:
-    "Fill in the question fields at the top of plan sections from the section text that is already written (for example after you wrote sections with update_plan_section, or when the client says the fields are still empty). Pass plan_type, and optionally one 'section'; without a section it covers every section that has text but empty fields. It only fills fields that are EMPTY, never overwrites an answer, and uses only what the section text already says. The client sees every answer first and approves.",
+    "Fill in the question fields at the top of plan sections from the section text that is already written (for example after you wrote sections with update_plan_section, or when the client says the fields are still empty). Call it ONCE per plan: pass plan_type and leave 'section' out, which covers every section that has text but empty fields in a single approval. Only pass 'section' when the client names exactly one section. It only fills fields that are EMPTY, never overwrites an answer, and uses only what the section text already says. The client sees every answer first and approves.",
   parameters: {
     type: "object",
     properties: {

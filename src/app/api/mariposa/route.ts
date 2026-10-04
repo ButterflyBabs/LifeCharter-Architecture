@@ -35,11 +35,23 @@ function pageKind(page: string): string {
 }
 // If they are on a plan page and did not name a different plan, the plan on the page is the one they mean.
 function pinPlan(name: string, rawArgs: string, page: string, message: string): string {
-  if (name !== "update_plan_section" && name !== "read_plan") return rawArgs;
+  if (name !== "update_plan_section" && name !== "read_plan" && name !== "fill_plan_answers") return rawArgs;
   const kind = pageKind(page);
-  if (!kind || /\b(business|marketing|sales|forecast\w*)\b/i.test(message)) return rawArgs;
+  if (!kind || /\b(business|marketing|sales|forecast\w*)\b/i.test(message)) {
+    if (name !== "fill_plan_answers" || !/\b(each|every|all|whole|entire)\b/i.test(message)) return rawArgs;
+    try {
+      const a = JSON.parse(rawArgs);
+      delete a.section;
+      return JSON.stringify(a);
+    } catch {
+      return rawArgs;
+    }
+  }
   try {
-    return JSON.stringify({ ...JSON.parse(rawArgs), plan_type: kind });
+    const a = { ...JSON.parse(rawArgs), plan_type: kind };
+    // "each section" / "my whole plan" is ONE approval for the plan, not one card per section.
+    if (name === "fill_plan_answers" && /\b(each|every|all|whole|entire)\b/i.test(message)) delete a.section;
+    return JSON.stringify(a);
   } catch {
     return rawArgs;
   }
@@ -94,6 +106,7 @@ export async function POST(request: Request) {
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
     let reply = "";
     let nudged = false;
+    const usedOnce = new Set<string>();
     for (let round = 0; round < 4; round++) {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -117,7 +130,9 @@ export async function POST(request: Request) {
       if (!calls.length || !ctx) break;
       messages.push({ role: "assistant", content: msg?.content ?? null, tool_calls: msg!.tool_calls });
       for (const c of calls) {
-        const out = await handleToolCall(c.function.name, pinPlan(c.function.name, c.function.arguments, page, message), ctx, cards);
+        const once = c.function.name === "fill_plan_answers";
+        const out = once && usedOnce.has(c.function.name) ? "Already prepared in this reply; do not call it again." : await handleToolCall(c.function.name, pinPlan(c.function.name, c.function.arguments, page, message), ctx, cards);
+        if (once) usedOnce.add(c.function.name);
         messages.push({ role: "tool", tool_call_id: c.id, content: out });
       }
       reply = "";
