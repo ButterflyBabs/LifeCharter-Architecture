@@ -23,6 +23,7 @@ import * as microsoft from "@/lib/microsoft";
 
 const HISTORY_TURNS = 10;
 const KEEP_MESSAGES = 200;
+const HISTORY_MAX_AGE_MS = 6 * 3600 * 1000;
 
 export interface AssistantKnowledge {
   text: string;
@@ -345,6 +346,8 @@ export async function loadHistory(masterPlanId: string): Promise<{ role: "user" 
     .from("assistant_messages")
     .select("role, content")
     .eq("master_plan_id", masterPlanId)
+    // Only recent turns: older replies go stale (advice to start something they have since finished) and the model repeats them.
+    .gte("created_at", new Date(Date.now() - HISTORY_MAX_AGE_MS).toISOString())
     .order("created_at", { ascending: false })
     .limit(HISTORY_TURNS * 2);
   return ((data ?? []) as { role: "user" | "assistant"; content: string }[])
