@@ -18,7 +18,10 @@ const SUGGESTIONS = ["What's my focus today?", "Schedule focus time", "Draft ema
 //   variant "floating" → popped out, on top of whatever page you are working on
 export default function AssistantPanel({ variant, onPopOut, onBringBack }: { variant: "card" | "floating"; onPopOut?: () => void; onBringBack?: () => void }) {
   const pathname = usePathname();
-  const page = variant === "card" ? "Executive Home" : titleForPath(pathname);
+  // Where the client is, so the assistant knows what they are working on. Pages without a listed title get a readable name from the address.
+  const listed = titleForPath(pathname);
+  const fromPath = (pathname ?? "").split("/").filter(Boolean).slice(0, 2).map((x) => x.replace(/-/g, " ")).join(" / ");
+  const page = variant === "card" ? "Executive Home" : listed === "Dashboard" && pathname !== "/" ? fromPath || listed : listed;
   const floating = variant === "floating";
 
   const [name, setName] = useState(DEFAULT_ASSISTANT_NAME);
