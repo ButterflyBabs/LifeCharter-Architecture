@@ -69,6 +69,7 @@ export async function POST(request: Request) {
     const cards: ActionCard[] = [];
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
     let reply = "";
+    let nudged = false;
     for (let round = 0; round < 4; round++) {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -80,6 +81,15 @@ export async function POST(request: Request) {
       const msg = completion.choices[0]?.message;
       reply = msg?.content?.trim() ?? "";
       const calls = (msg?.tool_calls ?? []).filter((c) => c.type === "function");
+      // The assistant said it prepared something but never called a tool: nothing exists to approve.
+      // Push it once to actually do it, rather than showing the client a promise with no preview.
+      if (!calls.length && ctx && cards.length === 0 && !nudged && /\b(i['’]?ve prepared|i have prepared|i prepared|ready for your approval|press approve|prepared (it|this|that|the))\b/i.test(reply)) {
+        nudged = true;
+        messages.push({ role: "assistant", content: reply });
+        messages.push({ role: "user", content: "You said you prepared something, but you did not call a tool, so there is nothing for me to approve. Call the right tool now with the complete details." });
+        reply = "";
+        continue;
+      }
       if (!calls.length || !ctx) break;
       messages.push({ role: "assistant", content: msg?.content ?? null, tool_calls: msg!.tool_calls });
       for (const c of calls) {
@@ -109,7 +119,12 @@ export async function GET() {
     .eq("master_plan_id", planId)
     .order("created_at", { ascending: false })
     .limit(40);
-  return NextResponse.json({ messages: ((data ?? []) as { id: string; role: string; content: string; created_at: string }[]).reverse() });
+  return NextResponse.json({
+    messages: ((data ?? []) as { id: string; role: string; content: string; created_at: string }[])
+      .reverse()
+      // The morning briefing is asked with a long behind-the-scenes prompt; show it as a short line.
+      .map((m) => (m.role === "user" && m.content.startsWith("Give me my morning briefing") ? { ...m, content: "Give me my morning briefing" } : m)),
+  });
 }
 
 // Forget the conversation so far (the assessments themselves are untouched).
