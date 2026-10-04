@@ -28,12 +28,12 @@ function findSection(kind: PlanKind, ref: string) {
 async function loadSection(ctx: ActionCtx, kind: string, key: string) {
   const { data } = await ctx.db
     .from("plan_sections")
-    .select("id, content, status, source, ai_by")
+    .select("id, content, status, source, ai_by, answers")
     .eq("master_plan_id", ctx.planId)
     .eq("plan_type", kind)
     .eq("section_key", key)
     .maybeSingle();
-  return data as { id: string; content: string | null; status: string | null; source: string | null; ai_by: string | null } | null;
+  return data as { id: string; content: string | null; status: string | null; source: string | null; ai_by: string | null; answers: Record<string, string> | null } | null;
 }
 
 export const readPlan: ActionTool = {
@@ -118,6 +118,23 @@ export const updatePlanSection: ActionTool = {
     if (before && mode === "replace") lines.push(`Now: ${clip(before.replace(/\s+/g, " "), 240)}`);
     lines.push("New text:");
     for (const p of content.split(/\n{1,}/).map((s) => s.trim()).filter(Boolean).slice(0, 14)) lines.push(clip(p, 600));
+    // The section's question fields get filled from this same text in the same approval (empty ones only).
+    try {
+      const key = (await resolveAiConfig()).key;
+      const have = cur?.answers || {};
+      const empty = sectionQuestions(sec).filter((q) => !String(have[q.id] ?? "").trim());
+      if (key && empty.length) {
+        const full = mode === "append" && before ? `${before}\n\n${content}` : content;
+        const got = await extractAnswers(new OpenAI({ apiKey: key }), sec, full, empty);
+        if (Object.keys(got).length) {
+          args.computedAnswers = got;
+          lines.push(`Fields I'll fill from this text (${Object.keys(got).length} of ${sectionQuestions(sec).length}; only empty ones):`);
+          for (const q of empty) if (got[q.id]) lines.push(`• ${clip(q.question, 70)} → ${clip(got[q.id].replace(/\s+/g, " "), 130)}`);
+        }
+      }
+    } catch (e) {
+      console.error("plan section fields:", e);
+    }
     return { preview: { title: `${mode === "append" ? "Add to" : "Write"} the ${bp.label} → ${sec.title}`, lines } };
   },
   run: async (args, ctx) => {
@@ -131,7 +148,13 @@ export const updatePlanSection: ActionTool = {
     const before = (cur?.content || "").trim();
     const next = args.mode === "append" && before ? `${before}\n\n${content}`.slice(0, MAX_CONTENT) : content;
     const status = STATUSES.includes(String(args.status)) ? String(args.status) : "drafted";
-    const row = { content: next, status, source: "ai", ai_by: (await resolveAiConfig()).name, updated_at: new Date().toISOString() };
+    // Fill the empty question fields with the answers the client just saw in the preview (never overwrite an answer).
+    const have = cur?.answers || {};
+    const planned = (args.computedAnswers && typeof args.computedAnswers === "object" ? args.computedAnswers : {}) as Record<string, string>;
+    const add: Record<string, string> = {};
+    for (const q of sectionQuestions(sec)) if (typeof planned[q.id] === "string" && planned[q.id].trim() && !String(have[q.id] ?? "").trim()) add[q.id] = planned[q.id].trim().slice(0, MAX_ANSWER);
+    const filledFields = Object.keys(add).length;
+    const row = { content: next, status, source: "ai", ai_by: (await resolveAiConfig()).name, updated_at: new Date().toISOString(), ...(filledFields ? { answers: { ...have, ...add } } : {}) };
     if (cur?.id) {
       const { error } = await ctx.db.from("plan_sections").update(row).eq("id", cur.id);
       if (error) throw new Error("It didn't save.");
@@ -147,9 +170,9 @@ export const updatePlanSection: ActionTool = {
       ? ` Next up: ${nextEmpty.title}. Say "next" and I'll draft it.`
       : ` That was the last empty section. Read each one and press Mark section complete, or say "fill in the fields" and I'll fill the question fields from your text.`;
     return {
-      summary: `Saved to your ${bp.label} → ${sec.title}. You can open it in the plan builder to edit.${nudge}`,
+      summary: `Saved to your ${bp.label} → ${sec.title}${filledFields ? ` and filled ${filledFields} of its fields` : ""}. You can open it in the plan builder to edit.${nudge}`,
       result: { plan_type: kind, section: sec.key },
-      undo: { plan_type: kind, section: sec.key, existed: !!cur?.id, content: cur?.content ?? null, status: cur?.status ?? "empty", source: cur?.source ?? "client", ai_by: cur?.ai_by ?? null },
+      undo: { plan_type: kind, section: sec.key, existed: !!cur?.id, answers: cur?.answers ?? {}, content: cur?.content ?? null, status: cur?.status ?? "empty", source: cur?.source ?? "client", ai_by: cur?.ai_by ?? null },
     };
   },
   undo: async (u, ctx) => {
@@ -161,7 +184,7 @@ export const updatePlanSection: ActionTool = {
     else
       await ctx.db
         .from("plan_sections")
-        .update({ content: u.content, status: u.status, source: u.source, ai_by: u.ai_by, updated_at: new Date().toISOString() })
+        .update({ content: u.content, status: u.status, source: u.source, ai_by: u.ai_by, answers: (u.answers as Record<string, string>) ?? {}, updated_at: new Date().toISOString() })
         .eq("id", cur.id);
     return "Put the section back the way it was.";
   },
