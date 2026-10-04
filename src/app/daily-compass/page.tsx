@@ -206,9 +206,27 @@ export default function DailyCompassPage() {
     return {
       style: { order: idx === -1 ? 999 : idx },
       onDragOver: (e: React.DragEvent) => e.preventDefault(),
-      onDrop: () => dropCardOn(id),
+      onDrop: (e: React.DragEvent) => {
+        e.stopPropagation(); // the drop belongs to this card, not the empty space around it
+        dropCardOn(id);
+      },
     };
   };
+  // Dropping on empty space in the grid (for example the open spot beside the last card) moves the
+  // dragged card to the end, which is that open spot.
+  const dropOnEmptySpace = useCallback(() => {
+    if (!dragCardId) return;
+    setCardOrder((prev) => {
+      const next = [...prev.filter((id) => id !== dragCardId), dragCardId];
+      try {
+        localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+    setDragCardId(null);
+  }, [dragCardId]);
   const dragHandle = (id: string) => (
     <button
       draggable
@@ -485,7 +503,7 @@ export default function DailyCompassPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" onDragOver={(e) => e.preventDefault()} onDrop={dropOnEmptySpace}>
         {/* Today's Progress — drag to reorder */}
         <div className="lg:col-span-3" {...cardProps("progress")}>
           <div className="bg-white dark:bg-[#1a2b4a] rounded-xl p-4 shadow-sm">

@@ -484,7 +484,10 @@ export default function ExecutiveHome() {
   const briefCardProps = (id: string, extra = "") => ({
     style: { order: briefOrder.indexOf(id) },
     onDragOver: (e: React.DragEvent) => e.preventDefault(),
-    onDrop: () => dropOn(id),
+    onDrop: (e: React.DragEvent) => {
+      e.stopPropagation(); // the drop belongs to this card, not the empty space around it
+      dropOn(id);
+    },
     className: `relative group ${extra || "exec-card"}`.trim(),
   });
 
@@ -1233,7 +1236,7 @@ export default function ExecutiveHome() {
       </header>
 
       {/* Executive Briefing — draggable cards */}
-      <div className="exec-wrap mb-5"><div className="exec-grid">
+      <div className="exec-wrap mb-5"><div className="exec-grid" onDragOver={(e) => e.preventDefault()} onDrop={() => dropOn("")}>
         {/* This week's coaching calls (full width so the week reads in one line) */}
         <div {...briefCardProps("coaching", "exec-full")}>
           <button draggable onDragStart={() => setDragId("coaching")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
