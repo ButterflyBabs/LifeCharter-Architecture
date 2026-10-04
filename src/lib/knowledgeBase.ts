@@ -935,6 +935,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["my pages", "custom page", "new page", "left menu", "tracker", "checklist", "table", "create a page"],
   },
   {
+    id: "gs-menu-arrange",
+    category: "Getting Started",
+    question: "Can I rearrange the left menu?",
+    answer:
+      "Yes, two ways. Drag a whole SECTION (Daily Operations, Clients & Sales, Growth and so on) by the small grip that appears to the left of its heading when you hover, and drop it where you want it. Or drag a single page within its section by the grip on its right. You can also click a section heading to fold it, and with the keyboard, focus a section's grip and press the up or down arrow. Your order is remembered on the device you are using.",
+    keywords: ["left menu", "navigation", "sections", "drag", "rearrange", "reorder", "move section", "sidebar", "order"],
+  },
+  {
+    id: "ai-assistant-popout",
+    category: "AI & Automation",
+    question: "Can I keep my AI assistant open while I work on another page?",
+    answer:
+      "Yes. On the AI Assistant card on Executive Home, click Pop out. Your assistant floats over whatever page you open next, so you can work on a task and ask for help side by side, and it knows which page you are on. Drag it by its title bar, resize it from the corner, minimize it to a small button, or press Bring back to Executive Home (or the X) to put it back. It is the same conversation in both places, so nothing is lost.",
+    keywords: ["pop out", "popout", "float", "floating", "assistant", "side by side", "keep open", "window", "minimize"],
+  },
+  {
     id: "ai-assistant-wrong-advice",
     category: "AI & Automation",
     question: "My assistant told me to do something I already finished. What do I do?",
