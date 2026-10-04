@@ -15,6 +15,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -458,6 +459,33 @@ function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; i
   );
 }
 
+// A whole menu section (Daily Operations, Clients & Sales...) that can be dragged to a new place by the
+// grip beside its heading. The grip is a separate button so clicking the heading still folds the section.
+function SortableSection({ id, title, className, withGrip, children }: { id: string; title: string; className: string; withGrip: boolean; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.7 : 1, zIndex: isDragging ? 30 : undefined }}
+      className={cn("relative group/section", className, isDragging && "rounded-lg bg-[#1a2b4a] shadow-lg")}
+    >
+      {withGrip && (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`Move the ${title} section (Space, then arrow keys)`}
+          title="Drag to move this whole section"
+          className="absolute left-[-6px] top-1.5 z-10 p-1 rounded-md text-white/25 opacity-0 group-hover/section:opacity-100 focus-visible:opacity-100 hover:text-white/80 cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export function CollapsibleSidebar() {
   const { theme, toggleTheme, mounted } = useTheme();
   const { isCollapsed: isCollapsedDesktop, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
@@ -571,6 +599,16 @@ export function CollapsibleSidebar() {
   // a page not in the saved list (new, or just became visible to you) is
   // appended at the end rather than dropped.
   const [navOrder, setNavOrder] = useState<Record<string, string[]>>({});
+  // The order of the sections themselves (remembered on this device, like the pages inside them).
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("nav-section-order") || "[]");
+      if (Array.isArray(saved)) setSectionOrder(saved.filter((t) => typeof t === "string"));
+    } catch {
+      /* keep the default order */
+    }
+  }, []);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("nav-item-order") || "{}");
@@ -579,7 +617,16 @@ export function CollapsibleSidebar() {
       /* keep the default order */
     }
   }, []);
-  const orderedSections = sections.map((s) => {
+  // The demo keeps its tour order; every real account can arrange its own sections. A section that is
+  // new, or not in the saved list, goes at the end.
+  const arranged = isDemo || !sectionOrder.length
+    ? sections
+    : [...sections].sort((a, b) => {
+        const ia = sectionOrder.indexOf(a.title);
+        const ib = sectionOrder.indexOf(b.title);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+  const orderedSections = arranged.map((s) => {
     const saved = navOrder[s.title];
     if (!saved) return s;
     const byId = new Map(s.items.map((i) => [i.id, i]));
@@ -592,9 +639,28 @@ export function CollapsibleSidebar() {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+  // Pages only compete with pages, and sections with sections.
+  const navCollision: CollisionDetection = (args) => {
+    const sectionDrag = String(args.active.id).startsWith("section:");
+    return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:") === sectionDrag) });
+  };
   const handleNavDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    if (String(active.id).startsWith("section:")) {
+      const titles = orderedSections.map((s) => s.title);
+      const from = titles.indexOf(String(active.id).slice(8));
+      const to = titles.indexOf(String(over.id).slice(8));
+      if (from < 0 || to < 0) return;
+      const next = arrayMove(titles, from, to);
+      setSectionOrder(next);
+      try {
+        localStorage.setItem("nav-section-order", JSON.stringify(next));
+      } catch {
+        /* not remembered */
+      }
+      return;
+    }
     // Reordering only ever happens within one section; ignore any attempt to
     // drop into a different one.
     const section = orderedSections.find((s) => s.items.some((i) => i.id === active.id));
@@ -745,11 +811,12 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} onDragEnd={handleNavDragEnd}>
+        <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
           return (
-          <div key={section.title} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
+          <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
             {!isCollapsed ? (
               <button
@@ -790,9 +857,10 @@ export function CollapsibleSidebar() {
                 </SortableContext>
               )}
             </div>
-          </div>
+          </SortableSection>
           );
         })}
+        </SortableContext>
         </DndContext>
 
         {/* Help Section */}
