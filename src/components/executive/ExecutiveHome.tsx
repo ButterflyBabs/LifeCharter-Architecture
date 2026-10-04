@@ -2104,7 +2104,7 @@ export default function ExecutiveHome() {
             {/* Reply */}
             {(aiLoading || aiReply) && (
               <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
-                {aiLoading ? `${assistantName} is thinking…` : aiReply}
+                {aiLoading ? `${assistantName} is thinking…` : (aiReply ?? "").split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
               </div>
             )}
 

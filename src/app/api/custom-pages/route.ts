@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
     return NextResponse.json({ page: data });
   }
-  const { data } = await db.from("custom_pages").select("slug, title, position").eq("master_plan_id", planId).order("position").order("created_at");
+  const { data } = await db.from("custom_pages").select("slug, title, position, nav_section").eq("master_plan_id", planId).order("position").order("created_at");
   return NextResponse.json({ pages: data ?? [] });
 }
 

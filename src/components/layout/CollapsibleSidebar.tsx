@@ -180,7 +180,7 @@ const ownerSection = {
     { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "sneak-peek-run-of-show", label: "Sneak Peek Run of Show", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
-    { id: "demo-account", label: "Demo Account", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
+    { id: "demo-account", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
     { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
     { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
@@ -541,7 +541,7 @@ export function CollapsibleSidebar() {
     return !key || (features[key] ?? "none") !== "none";
   };
   // The client's own pages (made by them or their AI assistant), in a section at the end of the menu.
-  const [customPages, setCustomPages] = useState<{ slug: string; title: string }[]>([]);
+  const [customPages, setCustomPages] = useState<{ slug: string; title: string; nav_section?: string }[]>([]);
   useEffect(() => {
     const load = () =>
       fetch("/api/custom-pages", { cache: "no-store" })
@@ -556,12 +556,13 @@ export function CollapsibleSidebar() {
       window.removeEventListener("focus", load);
     };
   }, []);
-  const mySection = customPages.length
-    ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: customPages.map((p) => ({ id: `page-${p.slug}`, label: p.title, icon: FileText, href: `/my-pages/${p.slug}` })) }]
-    : [];
+  const pageItem = (p: { slug: string; title: string }) => ({ id: `page-${p.slug}`, label: p.title, icon: FileText, href: `/my-pages/${p.slug}` });
+  const architectPages = customPages.filter((p) => p.nav_section === "alignment_architect").map(pageItem);
+  const myPages = customPages.filter((p) => p.nav_section !== "alignment_architect").map(pageItem);
+  const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
-  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, ownerSection] : demoOrderedSections), ...mySection]
+  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }] : demoOrderedSections), ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
@@ -633,7 +634,7 @@ export function CollapsibleSidebar() {
   // Get active item based on current path
   const getActiveItem = () => {
     // The most specific match wins (so /sales/pipeline lights Pipeline, not Sales Plan).
-    const item = [...navigationItems, ...mySection.flatMap((m) => m.items)]
+    const item = [...navigationItems, ...myPages, ...architectPages]
       .filter((i) => i.href !== "/" && !i.href.includes("?") && (pathname === i.href || pathname?.startsWith(i.href + "/")))
       .sort((a, b) => b.href.length - a.href.length)[0];
     if (item) return item.id;

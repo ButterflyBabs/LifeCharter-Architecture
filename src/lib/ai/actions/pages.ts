@@ -1,5 +1,6 @@
 import type { ActionTool, ActionCtx } from "./types";
 import { cleanBlocks, outline, slugify, newId, type Block } from "@/lib/customPages";
+import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
@@ -27,6 +28,8 @@ function toBlocks(raw: unknown): Block[] {
   });
   return cleanBlocks(list);
 }
+
+const sectionOf = (args: Record<string, unknown>): "my_pages" | "alignment_architect" => (args.menu_section === "alignment_architect" ? "alignment_architect" : "my_pages");
 
 async function findPage(ctx: ActionCtx, name: string) {
   const { data } = await ctx.db.from("custom_pages").select("id, slug, title, blocks").eq("master_plan_id", ctx.planId).order("position");
@@ -57,13 +60,23 @@ export const createPage: ActionTool = {
   apiPath: "/api/custom-pages",
   description:
     "Create a new page in the client's own left menu (under MY PAGES) and fill it in. A page is made of blocks: headings, text, checklists, tables and links. Use it for trackers, plans, notes, SOP checklists, client lists and reference pages. It is a content page, not new app functionality. The client approves first.",
-  parameters: { type: "object", properties: { title: { type: "string" }, blocks: { type: "array", items: BLOCK_SCHEMA } }, required: ["title"] },
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      menu_section: { type: "string", enum: ["my_pages", "alignment_architect"], description: "Where it appears in the left menu. Default my_pages (the MY PAGES section). Use alignment_architect only when the account owner asks for the page under Alignment Architect." },
+      blocks: { type: "array", items: BLOCK_SCHEMA },
+    },
+    required: ["title"],
+  },
   plan: async (args, ctx) => {
     const title = str(args.title, 80);
     if (!title) return { error: "What should the page be called?" };
     if (await findPage(ctx, title)) return { error: `They already have a page called "${title}". I can update it instead.` };
+    const section = sectionOf(args);
+    if (section === "alignment_architect" && (ctx.userEmail || "").toLowerCase() !== ALIGNMENT_ARCHITECT_EMAIL) return { error: "The Alignment Architect section is only for the account owner. I can put it under MY PAGES instead." };
     const blocks = toBlocks(args.blocks);
-    return { preview: { title: `Create the page "${title}" in your left menu`, lines: describe(blocks) } };
+    return { preview: { title: `Create the page "${title}" in your left menu${section === "alignment_architect" ? " under Alignment Architect" : " under MY PAGES"}`, lines: describe(blocks) } };
   },
   run: async (args, ctx) => {
     const title = str(args.title, 80);
@@ -76,7 +89,7 @@ export const createPage: ActionTool = {
       if (!hit) break;
       slug = `${base}-${i}`;
     }
-    const { data, error } = await ctx.db.from("custom_pages").insert({ master_plan_id: ctx.planId, slug, title, blocks: toBlocks(args.blocks), position: count ?? 0, created_by: ctx.userEmail }).select("id, slug").single();
+    const { data, error } = await ctx.db.from("custom_pages").insert({ master_plan_id: ctx.planId, slug, title, nav_section: sectionOf(args), blocks: toBlocks(args.blocks), position: count ?? 0, created_by: ctx.userEmail }).select("id, slug").single();
     if (error || !data) throw new Error("The page didn't save.");
     return { summary: `Created the page "${title}". Find it in your left menu under MY PAGES.`, result: { slug: data.slug }, undo: { id: data.id } };
   },
@@ -90,8 +103,8 @@ function describe(blocks: Block[]): string[] {
   const out = blocks.slice(0, 10).map((b) =>
     b.type === "heading" ? `Heading: ${b.text}`
     : b.type === "text" ? `Text: ${b.text.slice(0, 80)}${b.text.length > 80 ? "…" : ""}`
-    : b.type === "checklist" ? `Checklist "${b.title}" (${b.items.length} items)`
-    : b.type === "table" ? `Table "${b.title}": ${b.columns.join(" | ")} (${b.rows.length} rows)`
+    : b.type === "checklist" ? `Checklist "${b.title || "Checklist"}" (${b.items.length} items)`
+    : b.type === "table" ? `Table${b.title ? ` "${b.title}"` : ""}: ${b.columns.join(" | ")} (${b.rows.length} rows)`
     : `Link: ${b.label}`
   );
   if (blocks.length > 10) out.push(`…and ${blocks.length - 10} more`);

@@ -98,7 +98,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
 
             {b.type === "checklist" && (
               <div>
-                <input aria-label="Checklist title" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-2 w-full bg-transparent font-semibold text-[#1a2b4a] outline-none dark:text-[#F8F5F0]" />
+                <input aria-label="Checklist title" placeholder="Checklist title" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-2 w-full bg-transparent font-semibold text-[#1a2b4a] outline-none dark:text-[#F8F5F0]" />
                 <ul className="space-y-1.5">
                   {b.items.map((it) => (
                     <li key={it.id} className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
 
             {b.type === "table" && (
               <div>
-                <input aria-label="Table title" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-2 w-full bg-transparent font-semibold text-[#1a2b4a] outline-none dark:text-[#F8F5F0]" />
+                <input aria-label="Table title" placeholder="Table title" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-2 w-full bg-transparent font-semibold text-[#1a2b4a] outline-none dark:text-[#F8F5F0]" />
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
