@@ -461,8 +461,9 @@ function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; i
 
 // A whole menu section (Daily Operations, Clients & Sales...) that can be dragged to a new place by the
 // grip beside its heading. The grip is a separate button so clicking the heading still folds the section.
-function SortableSection({ id, title, className, withGrip, children }: { id: string; title: string; className: string; withGrip: boolean; children: React.ReactNode }) {
+function SortableSection({ id, title, className, withGrip, onMove, children }: { id: string; title: string; className: string; withGrip: boolean; onMove: (dir: -1 | 1) => void; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { onKeyDown: dndKeyDown, ...pointerListeners } = (listeners ?? {}) as Record<string, unknown> & { onKeyDown?: React.KeyboardEventHandler };
   return (
     <div
       ref={setNodeRef}
@@ -473,8 +474,17 @@ function SortableSection({ id, title, className, withGrip, children }: { id: str
         <button
           type="button"
           {...attributes}
-          {...listeners}
-          aria-label={`Move the ${title} section (Space, then arrow keys)`}
+          {...pointerListeners}
+          onKeyDown={(e) => {
+            // Arrow keys move the section straight away (keyboard and screen reader friendly).
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              onMove(e.key === "ArrowUp" ? -1 : 1);
+              return;
+            }
+            dndKeyDown?.(e);
+          }}
+          aria-label={`Move the ${title} section (arrow up or down)`}
           title="Drag to move this whole section"
           className="absolute left-[-6px] top-1.5 z-10 p-1 rounded-md text-white/25 opacity-0 group-hover/section:opacity-100 focus-visible:opacity-100 hover:text-white/80 cursor-grab active:cursor-grabbing"
         >
@@ -644,6 +654,21 @@ export function CollapsibleSidebar() {
     const sectionDrag = String(args.active.id).startsWith("section:");
     return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:") === sectionDrag) });
   };
+  const saveSectionOrder = (next: string[]) => {
+    setSectionOrder(next);
+    try {
+      localStorage.setItem("nav-section-order", JSON.stringify(next));
+    } catch {
+      /* not remembered */
+    }
+  };
+  const moveSection = (title: string, dir: -1 | 1) => {
+    const titles = orderedSections.map((s) => s.title);
+    const i = titles.indexOf(title);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= titles.length) return;
+    saveSectionOrder(arrayMove(titles, i, j));
+  };
   const handleNavDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -652,13 +677,7 @@ export function CollapsibleSidebar() {
       const from = titles.indexOf(String(active.id).slice(8));
       const to = titles.indexOf(String(over.id).slice(8));
       if (from < 0 || to < 0) return;
-      const next = arrayMove(titles, from, to);
-      setSectionOrder(next);
-      try {
-        localStorage.setItem("nav-section-order", JSON.stringify(next));
-      } catch {
-        /* not remembered */
-      }
+      saveSectionOrder(arrayMove(titles, from, to));
       return;
     }
     // Reordering only ever happens within one section; ignore any attempt to
@@ -816,7 +835,7 @@ export function CollapsibleSidebar() {
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
           return (
-          <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
+          <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} onMove={(d) => moveSection(section.title, d)} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
             {!isCollapsed ? (
               <button
