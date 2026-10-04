@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, Target, Sparkles, ClipboardList } from "lucide-react";
+import { FileText, Target, Sparkles, ClipboardList, Download } from "lucide-react";
+import PlanExport from "@/components/plans/PlanExport";
 import PlanBuilder from "@/components/plans/PlanBuilder";
 import ReviewsPanel from "@/components/plans/ReviewsPanel";
 import PlanView, { type PlanType } from "@/components/plans/PlanView";
@@ -13,7 +14,7 @@ const META: Record<string, { label: string; blurb: string }> = {
   sales: { label: "Sales Plan", blurb: "Turning interest into committed, well-served clients." },
 };
 
-type Tab = "build" | "goals" | "reviews";
+type Tab = "build" | "goals" | "reviews" | "export";
 
 export default function PlanWorkspace({ planType, extra }: { planType: PlanType; extra?: React.ReactNode }) {
   const [tab, setTab] = useState<Tab>("build");
@@ -23,6 +24,8 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
     { id: "build", label: "Build", icon: <FileText className="w-4 h-4" /> },
     { id: "goals", label: "Goals", icon: <Target className="w-4 h-4" /> },
     { id: "reviews", label: "Check-ins", icon: <Sparkles className="w-4 h-4" /> },
+    // Only the Business Plan builds a printable document.
+    ...(planType === "business" ? [{ id: "export" as Tab, label: "Print / Share", icon: <Download className="w-4 h-4" /> }] : []),
   ];
 
   return (
@@ -75,6 +78,7 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
         </div>
       )}
       {tab === "reviews" && <ReviewsPanel planType={planType} />}
+      {tab === "export" && planType === "business" && <PlanExport onOpenBuild={() => setTab("build")} />}
     </div>
   );
 }
