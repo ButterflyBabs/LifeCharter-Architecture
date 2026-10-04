@@ -2067,7 +2067,7 @@ export default function ExecutiveHome() {
               >
                 Clear memory
               </button>
-              <a href="/settings" className="hover:text-[#2E7C83] hover:underline" title={`Tell ${assistantName} about you, your team and how you work`}>
+              <a href="/settings?tab=ai" className="hover:text-[#2E7C83] hover:underline" title={`Tell ${assistantName} about you, your team and how you work`}>
                 Teach {assistantName}
               </a>
               <span>Powered by {assistantName}</span>
