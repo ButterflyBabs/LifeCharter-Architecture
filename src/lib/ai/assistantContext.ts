@@ -1,4 +1,5 @@
 import { searchKb } from "@/lib/knowledgeBase";
+import { APP_MAP } from "@/lib/ai/appMap";
 import { rankTasksText, type RankTask } from "@/lib/ai/taskRanking";
 import { planningKnowledge } from "@/lib/ai/planKnowledge";
 import { offersKnowledge, pipelineKnowledge } from "@/lib/sales/knowledge";
@@ -419,6 +420,9 @@ export function assistantSystemPrompt(
   return `${persona}
 ${standing}
 ${notes}${acting}
+ABOUT THE COMMAND SUITE (what exists and where; point clients to the right place, and use the help library below for step-by-step answers):
+${APP_MAP}
+
 ${known}
 ${helpBlock}
 ${extra}
