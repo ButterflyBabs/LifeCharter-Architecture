@@ -92,24 +92,45 @@ export async function buildAssistantKnowledge(
     /* scoring optional */
   }
 
-  // Their own assessment answers, as far as they've gone.
+  // Their own assessment answers, as far as they've gone. Counted and read per assessment,
+  // so a long one (Brain has 535 answers) can never push another off the end of a shared cap.
   try {
-    const { data } = await supabase
-      .from("unified_client_responses")
-      .select("assessment_type, section_name, question_text, answer_text, answer_value, score, max_score, answered_at")
-      .eq("master_plan_id", masterPlanId)
-      .in("assessment_type", ["brain", "soul", "profit_architecture", "command_shift", "quick_pulse"])
-      .order("answered_at", { ascending: false })
-      .limit(800);
-    const rows = (data ?? []) as AnswerRow[];
-    const counts = new Map<string, number>();
-    for (const r of rows) {
-      if ((r.answer_value as { sensitive?: boolean } | null)?.sensitive === true) continue;
-      counts.set(r.assessment_type, (counts.get(r.assessment_type) ?? 0) + 1);
+    const types = ["brain", "soul", "profit_architecture", "command_shift", "quick_pulse"];
+    const per = await Promise.all(
+      types.map(async (t) => {
+        const [{ count }, { data }] = await Promise.all([
+          supabase.from("unified_client_responses").select("id", { count: "exact", head: true }).eq("master_plan_id", masterPlanId).eq("assessment_type", t),
+          supabase
+            .from("unified_client_responses")
+            .select("assessment_type, section_name, question_text, answer_text, answer_value, score, max_score, answered_at")
+            .eq("master_plan_id", masterPlanId)
+            .eq("assessment_type", t)
+            .order("answered_at", { ascending: false })
+            .limit(250),
+        ]);
+        return { t, count: count ?? 0, rows: (data ?? []) as AnswerRow[] };
+      })
+    );
+    const rows = per.flatMap((x) => x.rows);
+    const counts = new Map(per.map((x) => [x.t, x.count]));
+    answered = per.reduce((a, x) => a + x.count, 0);
+    // Profit is also "done" once its scores exist (same rule as the setup checklist).
+    let profitDone = (counts.get("profit_architecture") ?? 0) > 0;
+    try {
+      const { data: mp } = await supabase.from("client_master_plans").select("domain_scores, profit_score").eq("id", masterPlanId).maybeSingle();
+      const ds = (mp?.domain_scores as Record<string, unknown> | null) || null;
+      profitDone = profitDone || Boolean((ds && Object.keys(ds).length > 0) || mp?.profit_score);
+    } catch {
+      /* optional */
     }
-    answered = Array.from(counts.values()).reduce((a, b) => a + b, 0);
-    const progress = Object.keys(TYPE_LABEL).filter((t) => (t !== "command_shift" && t !== "quick_pulse") || counts.get(t)).map((t) => `${TYPE_LABEL[t]}: ${counts.get(t) ? `${counts.get(t)} answers so far` : "not started"}`);
+    const done = (t: string) => (t === "profit_architecture" ? profitDone : (counts.get(t) ?? 0) > 0);
+    const progress = types
+      .filter((t) => (t !== "command_shift" && t !== "quick_pulse") || counts.get(t))
+      .map((t) => `${TYPE_LABEL[t]}: ${done(t) ? `COMPLETED (${counts.get(t)} answers)` : "not started"}`);
     parts.push(`Assessment progress — ${progress.join("; ")}.`);
+    if (done("brain") && done("soul") && done("profit_architecture")) {
+      parts.push("They have finished all three core assessments (Brain, Soul and Profit). Never suggest taking or starting any of them; build on the results instead.");
+    }
     parts.push(formatAnswerSections(rows));
   } catch {
     /* optional */
@@ -371,6 +392,7 @@ ${standing}
 ${known}
 ${extra}
 HOW TO USE WHAT YOU KNOW:
+- The data above is live and current. Earlier messages in this conversation may be out of date (for example, advice to start an assessment they have since finished): when they disagree, trust the data above and never repeat old advice.
 - Ground your answers in the specifics above. Refer to what they told you naturally ("you mentioned…", "your Marketing score is…") — never recite it as a list.
 - Never invent facts, numbers or history that aren't shown. If you don't know something, say so plainly.
 - ${knowledge.answered === 0 ? "They haven't answered any assessment questions yet, so once, gently, point them to the Brain, Soul or Profit assessment — every answer they give makes your guidance more specific to them." : "If a question touches an area they haven't answered yet, suggest the relevant assessment section as the way to sharpen your advice."}
