@@ -1970,10 +1970,10 @@ export default function ExecutiveHome() {
           </>)}
         </div>
         </div>
-        {/* AI Assistant (live Mariposa): its own half-width card, draggable like the others */}
-        <div {...briefCardProps("ai", "exec-half exec-top")}>
+        {/* AI Assistant (live Mariposa): its own half-width card, draggable like the others; stretches to match a taller card beside it */}
+        <div {...briefCardProps("ai", "exec-half")}>
           <button draggable onDragStart={() => setDragId("ai")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
-        <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden h-full">
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">

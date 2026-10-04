@@ -242,7 +242,6 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after { transition: none
 .exec-wrap { container-type: inline-size; }
 .exec-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .exec-grid > .exec-full { grid-column: 1 / -1; }
-.exec-grid > .exec-top { align-self: start; }
 @container (min-width: 664px) {
   .exec-grid { grid-template-columns: repeat(2, 1fr); }
 }
