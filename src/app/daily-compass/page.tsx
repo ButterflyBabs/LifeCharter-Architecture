@@ -130,7 +130,7 @@ export default function DailyCompassPage() {
   // Executive Home's briefing cards: CSS `order` driven by native HTML5 drag
   // events, so differently-sized cards can freely swap places in one grid).
   const CARD_ORDER_KEY = "compass-card-order";
-  const DEFAULT_CARD_ORDER = ["quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
+  const DEFAULT_CARD_ORDER = ["progress", "quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function DailyCompassPage() {
         setCardOrder((prev) => {
           const merged = saved.filter((id: string) => prev.includes(id));
           const missing = prev.filter((id) => !merged.includes(id));
-          const order = [...merged, ...missing];
+          const order = [...missing.filter((id) => id === "progress"), ...merged, ...missing.filter((id) => id !== "progress")];
           // Quick Actions now sit above Today's Focus. Move it there once for an arrangement saved before
           // that change; after this, wherever it is dragged is respected.
           try {
@@ -463,28 +463,31 @@ export default function DailyCompassPage() {
             </Link>
           </div>
         </div>
-
-        {/* Progress Bar */}
-        <div className="bg-white dark:bg-[#1a2b4a] rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Today&apos;s Progress
-            </span>
-            <span className="text-sm text-[#b8a898]">
-              {completedCount} of {totalCount} completed
-              {recurringToday.total > 0 ? ` · incl. ${recurringToday.done} of ${recurringToday.total} recurring` : ""}
-            </span>
-          </div>
-          <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
-            <div
-              className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-3 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Today's Progress — drag to reorder */}
+        <div className="lg:col-span-3" {...cardProps("progress")}>
+          <div className="bg-white dark:bg-[#1a2b4a] rounded-xl p-4 shadow-sm">
+              <div className="mb-1">{dragHandle("progress")}</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                Today&apos;s Progress
+              </span>
+              <span className="text-sm text-[#b8a898]">
+                {completedCount} of {totalCount} completed
+                {recurringToday.total > 0 ? ` · incl. ${recurringToday.done} of ${recurringToday.total} recurring` : ""}
+              </span>
+            </div>
+            <div className="w-full bg-[#1a2b4a]/10 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-[#4a9b9b] to-[#c9a227] h-3 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Today's Focus — drag to reorder */}
         <div className="lg:col-span-2 space-y-6" {...cardProps("focus")}>
           {/* Action Bar */}
@@ -797,7 +800,7 @@ export default function DailyCompassPage() {
         </div>
 
         {/* Upcoming scheduled follow-ups — drag to reorder */}
-        <div {...cardProps("upcoming")}>
+        <div {...cardProps("upcoming")} draggable onDragStart={() => setDragCardId("upcoming")}>
           {upcoming.length > 0 && (
             <Card>
               <CardHeader>
@@ -845,7 +848,7 @@ export default function DailyCompassPage() {
         </div>
 
         {/* AI Insights — drag to reorder */}
-        <div {...cardProps("insights")}>
+        <div {...cardProps("insights")} draggable onDragStart={() => setDragCardId("insights")}>
           <Card className="bg-gradient-to-br from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0]">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
