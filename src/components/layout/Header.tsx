@@ -47,6 +47,7 @@ const PAGE_TITLES: Record<string, string> = {
 function titleForPath(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/my-pages/")) return "My Pages";
   const match = Object.keys(PAGE_TITLES)
     .filter((p) => p !== "/" && pathname.startsWith(p))
     .sort((a, b) => b.length - a.length)[0];
