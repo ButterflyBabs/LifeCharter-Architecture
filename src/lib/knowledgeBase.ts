@@ -539,6 +539,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- Content & Social ----
   {
+    id: "gs-lc-beacon",
+    category: "Content & Social",
+    question: "What is LC Beacon, and does my Content Calendar change?",
+    answer:
+      "LC Beacon (beacon.lccommandsuite.com) is LifeCharter's own social posting app: you connect your social accounts once, then write, schedule and publish posts to them from one place. It is live for AmiLynne today with Bluesky, Facebook Pages, Instagram, LinkedIn and YouTube working, and more platforms are being added and approved. It is not open to clients yet. Nothing changes for you now: your Content Calendar still publishes through PostStream exactly as before. When Beacon is approved for every platform, the Content Calendar will move over to it, you will be told ahead of time, and this Help library will explain the new steps.",
+    keywords: ["beacon", "lc beacon", "social posting", "publish", "poststream", "content calendar", "social accounts", "schedule posts"],
+  },
+  {
     id: "cs-connect",
     category: "Content & Social",
     question: "How do I connect my social accounts?",
