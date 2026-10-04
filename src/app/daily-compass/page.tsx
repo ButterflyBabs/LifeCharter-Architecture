@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +32,7 @@ import Link from "next/link";
 import { TodaysActivity } from "./TodaysActivity";
 import { DealsToMove } from "./DealsToMove";
 import { QuickActions } from "./QuickActions";
+import { useMasonry } from "@/lib/hooks/useMasonry";
 import QuickWins from "@/components/QuickWins";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 
@@ -135,6 +136,8 @@ export default function DailyCompassPage() {
   const DEFAULT_CARD_ORDER = ["progress", "quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  useMasonry(gridRef, 24);
   // Today's Focus can be folded down to just its title. Remembered on this device.
   const [focusCollapsed, setFocusCollapsed] = useState(false);
   useEffect(() => {
@@ -503,7 +506,7 @@ export default function DailyCompassPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" onDragOver={(e) => e.preventDefault()} onDrop={dropOnEmptySpace}>
+      <div ref={gridRef} className="masonry-grid" onDragOver={(e) => e.preventDefault()} onDrop={dropOnEmptySpace}>
         {/* Today's Progress — drag to reorder */}
         <div className="lg:col-span-3" {...cardProps("progress")}>
           <div className="bg-white dark:bg-[#1a2b4a] rounded-xl p-4 shadow-sm">
@@ -527,7 +530,7 @@ export default function DailyCompassPage() {
         </div>
 
         {/* Today's Focus — drag to reorder */}
-        <div className="lg:col-span-3 space-y-6" {...cardProps("focus")}>
+        <div className={`lg:col-span-3 space-y-6 ${focusCollapsed ? "rounded-xl bg-white p-4 shadow-sm dark:bg-[#1a2b4a]" : ""}`} {...cardProps("focus")}>
           {/* Action Bar */}
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
