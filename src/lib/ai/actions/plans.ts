@@ -5,6 +5,8 @@ import { resolveAiConfig } from "@/lib/ai/config";
 const MAX_CONTENT = 8000;
 const STATUSES = ["drafted", "edited", "done"];
 const kindEnum = PLAN_KINDS as string[];
+// The plan builder shows plain text, so drop markdown the model sometimes adds.
+const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/^\s*[*]\s+/gm, "- ").trim();
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s);
 
 // Match what the assistant says ("Ideal client", "ideal_client") to a real section of the plan.
@@ -102,7 +104,7 @@ export const updatePlanSection: ActionTool = {
     if (!bp) return { error: `I only know these plans: ${PLAN_KINDS.join(", ")}.` };
     const sec = findSection(kind as PlanKind, String(args.section || ""));
     if (!sec) return { error: `I couldn't find that section in the ${bp.label}. Sections: ${bp.sections.map((s) => `${s.key} (${s.title})`).join("; ")}.` };
-    const content = typeof args.content === "string" ? args.content.trim() : "";
+    const content = typeof args.content === "string" ? plain(args.content) : "";
     if (content.length < 20) return { error: "The section text is missing. Write the full text first." };
     if (content.length > MAX_CONTENT) return { error: `That is too long for one section (limit ${MAX_CONTENT} characters). Tighten it.` };
     const mode = args.mode === "append" ? "append" : "replace";
@@ -122,7 +124,7 @@ export const updatePlanSection: ActionTool = {
     const bp = getBlueprint(kind);
     const sec = bp && findSection(kind as PlanKind, String(args.section || ""));
     if (!bp || !sec) throw new Error("That section no longer exists.");
-    const content = typeof args.content === "string" ? args.content.trim().slice(0, MAX_CONTENT) : "";
+    const content = typeof args.content === "string" ? plain(args.content).slice(0, MAX_CONTENT) : "";
     if (!content) throw new Error("There was no text to save.");
     const cur = await loadSection(ctx, kind, sec.key);
     const before = (cur?.content || "").trim();

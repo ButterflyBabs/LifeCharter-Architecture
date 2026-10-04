@@ -26,6 +26,15 @@ Be warm, grounded, and concise. Prioritize one clear next action over long lists
 
 // Ask the assistant. It answers from THIS client's own assessments, live scores
 // and today's tasks, and remembers the conversation so far.
+// A request to write or revise a plan section: the answer must come back as an Approve card, not as text in the chat.
+const PLAN_WRITE_ASK = /\b(write|draft|fill|revise|rewrite|update|complete|add to)\b[^.?!]{0,60}\b(section|plan)\b/i;
+
+// On a plan page, tell the assistant which plan they mean so "my Ideal Client section" lands in the right one.
+function planHint(page: string): string {
+  const kind = /marketing plan/i.test(page) ? "marketing" : /sales plan/i.test(page) ? "sales" : /business plan/i.test(page) ? "business" : /forecast/i.test(page) ? "forecasting" : "";
+  return kind ? ` If they ask you to write or change a plan section here, they mean their ${kind} plan: use plan_type "${kind}" unless they name a different plan.` : "";
+}
+
 // Body: { message, page? } — page is the section of the app they're on.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
@@ -64,7 +73,7 @@ export async function POST(request: Request) {
     const openai = new OpenAI({ apiKey: key });
     // The assistant can also DO things (tools). Not in the public demo, which is view-only.
     const canAct = !!planId && !isDemoRequest();
-    const sys = assistantSystemPrompt(name, persona(name), knowledge, page ? `\nThey are currently on the "${page}" part of the app.` : "", instructions, { notes, message, canAct });
+    const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), instructions, { notes, message, canAct });
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...history, { role: "user", content: message }];
     const cards: ActionCard[] = [];
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
@@ -74,7 +83,7 @@ export async function POST(request: Request) {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages,
-        max_tokens: 700,
+        max_tokens: canAct ? 1600 : 700,
         temperature: 0.5,
         ...(canAct ? { tools: openAiToolDefs() } : {}),
       });
@@ -83,10 +92,10 @@ export async function POST(request: Request) {
       const calls = (msg?.tool_calls ?? []).filter((c) => c.type === "function");
       // The assistant said it prepared something but never called a tool: nothing exists to approve.
       // Push it once to actually do it, rather than showing the client a promise with no preview.
-      if (!calls.length && ctx && cards.length === 0 && !nudged && /\b(i['’]?ve prepared|i have prepared|i prepared|ready for your approval|press approve|prepared (it|this|that|the))\b/i.test(reply)) {
+      if (!calls.length && ctx && cards.length === 0 && !nudged && (/\b(i['’]?ve prepared|i have prepared|i prepared|ready for your approval|press approve|prepared (it|this|that|the))\b/i.test(reply) || (reply.length > 300 && PLAN_WRITE_ASK.test(message)))) {
         nudged = true;
         messages.push({ role: "assistant", content: reply });
-        messages.push({ role: "user", content: "You said you prepared something, but you did not call a tool, so there is nothing for me to approve. Call the right tool now with the complete details." });
+        messages.push({ role: "user", content: "You wrote this in the chat without calling a tool, so there is nothing for me to approve or save. Call read_plan if you need the section keys, then call update_plan_section (or the right tool) now with the complete text, and keep your chat reply to one short line." });
         reply = "";
         continue;
       }
