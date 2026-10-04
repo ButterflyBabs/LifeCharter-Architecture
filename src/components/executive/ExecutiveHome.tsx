@@ -2140,7 +2140,7 @@ export default function ExecutiveHome() {
               fresh={aiActions}
               onRevise={(card, instruction) =>
                 askMariposa(
-                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nPrepare the corrected version for my approval.`,
+                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nThat earlier preview has been cancelled and nothing was created, so do not look for it or update anything in my account. Call the ${card.tool} tool again now with the full corrected details to prepare a NEW preview for my approval.`,
                   `Change "${card.title}": ${instruction}`
                 )
               }
