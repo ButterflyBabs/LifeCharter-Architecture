@@ -785,7 +785,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Is there a step-by-step guide to setting up?",
     answer:
-      "Yes. The Starter Guide is a checklist that takes you from your first sign-in to a Suite that knows you, one small step at a time. Day 1 has five steps (connect your AI, take the Brain, Soul and Profit assessments, and connect one tool), each with where to click and how you will know it worked. It also covers a look around Executive Home, your first week of coaching calls, your First 30 Days, and next steps for when you are ready. Tick each box as you go; your ticks are saved on your device. Open it from Getting Started → Starter Guide in the menu, or from the Set up Suite page.",
+      "Yes. The Starter Guide is a checklist that takes you from your first sign-in to a Suite that knows you, one small step at a time. Day 1 has five steps (connect your AI, take the Brain, Soul and Profit assessments, and connect one tool), each with where to click and how you will know it worked. It also covers a look around Executive Home, your first week of coaching calls, your First 30 Days, and next steps for when you are ready (like bringing your contacts in and connecting your own Resend account so you can email them). Tick each box as you go; your ticks are saved on your device. Open it from Getting Started → Starter Guide in the menu, or from the Set up Suite page.",
     keywords: ["starter guide", "setup guide", "checklist", "step by step", "getting started", "onboarding", "first steps", "set up"],
   },
   {
