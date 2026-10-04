@@ -245,7 +245,6 @@ export default function ExecutiveHome() {
   const [forwardNote, setForwardNote] = useState("");
   const [sendingForward, setSendingForward] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
-  // The running conversation, kept on the server so it is still here after you leave and come back.
   const assistantPopped = usePopped();
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
