@@ -191,6 +191,11 @@ export function renderPdf(d: PlanDoc): Buffer {
         });
         y += rh;
       };
+      // Keep a short table on one page.
+      font("normal", 10.5);
+      const heights = [b.head, ...b.rows].map((cells) => Math.max(...cells.map((c, i) => lines(c, widths[i] - 14).length), 1) * 13 + 10);
+      const total = heights.reduce((a, c) => a + c, 0);
+      if (y + total > BOTTOM && total < BOTTOM - M) newPage();
       drawRow(b.head, true);
       b.rows.forEach((r) => drawRow(r, false));
       y += 12;

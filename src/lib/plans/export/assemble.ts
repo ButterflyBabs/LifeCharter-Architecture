@@ -47,6 +47,13 @@ export async function defaultNames(db: Db, planId: string): Promise<{ business: 
   return { business: ((ws?.[0] as { name?: string } | undefined)?.name || "").trim(), preparedBy };
 }
 
+// A section that opens with its own title as a heading would show the title twice.
+const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function dropRepeatedTitle(blocks: Block[], title: string): Block[] {
+  const first = blocks[0];
+  return first && first.t === "h3" && norm(first.text) === norm(title) ? blocks.slice(1) : blocks;
+}
+
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const monthName = (ym: string) => new Date(`${ym}-01T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 
@@ -65,8 +72,11 @@ async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
     if (e.type === "income") inc += a;
     else exp += a;
   }
-  blocks.push({ t: "h2", text: `Year to date (${now.getUTCFullYear()})` });
-  blocks.push({ t: "table", head: ["", "Amount"], rows: [["Income", usd(inc)], ["Expenses", usd(exp)], ["Net", usd(inc - exp)]], widths: [3, 2] });
+  // Only show actual results once there are some; a table of zeros helps nobody.
+  if (inc > 0 || exp > 0) {
+    blocks.push({ t: "h2", text: `Year to date (${now.getUTCFullYear()})` });
+    blocks.push({ t: "table", head: ["", "Amount"], rows: [["Income", usd(inc)], ["Expenses", usd(exp)], ["Net", usd(inc - exp)]], widths: [3, 2] });
+  }
 
   const months: string[][] = [];
   for (let i = 0; i < 12; i++) {
@@ -76,12 +86,14 @@ async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
     if (g) months.push([monthName(ym), usd(g)]);
   }
   if (months.length) {
-    blocks.push({ t: "h2", text: "Income goals, next 12 months" });
-    blocks.push({ t: "table", head: ["Month", "Income goal"], rows: [...months, ["Total", usd(months.reduce((a, r) => a + Number(r[1].replace(/[^0-9]/g, "")), 0))]], widths: [3, 2] });
+    blocks.push({ t: "h2", text: "Revenue targets, next 12 months" });
+    blocks.push({ t: "note", text: "Targets set by the owner in the business's revenue model. They are goals, not results." });
+    blocks.push({ t: "table", head: ["Month", "Revenue target"], rows: [...months, ["Total", usd(months.reduce((a, r) => a + Number(r[1].replace(/[^0-9]/g, "")), 0))]], widths: [3, 2] });
   }
 
   try {
     const f = await buildForecast(planId);
+    if (!f.scenarios.some((sc) => sc.totalRevenue > 0)) throw new Error("no forecast yet");
     blocks.push({ t: "h2", text: `Forecast, next ${f.assumptions.horizonMonths} months` });
     blocks.push({
       t: "note",
@@ -121,7 +133,7 @@ export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Pro
   const biz = getBlueprint("business")!;
   biz.sections.forEach((s, i) => {
     const text = textOf("business", s.key);
-    if (text) parts.push({ title: `${i + 1}. ${s.title}`, level: 1, blocks: textToBlocks(text) });
+    if (text) parts.push({ title: `${i + 1}. ${s.title}`, level: 1, blocks: dropRepeatedTitle(textToBlocks(text), s.title) });
   });
   if (o.includeFinance) {
     const fb = await financeBlocks(db, planId);
@@ -135,7 +147,7 @@ export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Pro
     parts.push({ title: `Appendix ${letter}: ${bp.label}`, level: 1, pageBreakBefore: true, blocks: [{ t: "note", text: bp.tagline }] });
     for (const s of bp.sections) {
       const text = textOf(k, s.key);
-      if (text) parts.push({ title: s.title, level: 2, blocks: textToBlocks(text) });
+      if (text) parts.push({ title: s.title, level: 2, blocks: dropRepeatedTitle(textToBlocks(text), s.title) });
     }
   }
 

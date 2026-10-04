@@ -125,6 +125,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 
   // ---- Planning ----
   {
+    id: "pl-print-plan",
+    category: "Planning",
+    question: "How do I print or share my business plan (PDF or Word) for a funder or partner?",
+    answer:
+      "Open Alignment > Business Plan and choose the Print / Share tab. It unlocks when EVERY Business Plan section is marked Complete (open a section on the Build tab and press Mark section complete; the tab shows which ones are left). Then: (1) pick who it is for: a funding request, a partnership proposal, or a general copy; (2) add your business name, your name and, if you like, the recipient and organization; (3) say what you are asking for or proposing and press Write the cover letter (your assistant drafts it from your plan, and you can edit every word; leave it blank and a simple letter is made for you); (4) choose what goes in: a financial overview made from your own numbers (your revenue targets, and your year-to-date results and forecast once you have entered income) and, as appendices, your Marketing, Sales and Forecast plans (each is offered once all of its sections are complete). Then download a PDF to send, or a Word file you can keep editing. The file has a branded cover, your cover letter, contents with page numbers, every section in order, and a footer on each page. It is built from your plan as it is right now, so download a fresh copy after you change anything.",
+    keywords: ["print business plan", "business plan pdf", "word document", "funding request", "grant", "investor", "partnership proposal", "share my plan", "attach plan", "cover letter", "export plan", "download plan", "print share"],
+  },
+  {
     id: "pl-business-plan",
     category: "Planning",
     question: "What goes in the Business Plan?",

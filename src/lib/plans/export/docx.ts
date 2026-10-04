@@ -29,19 +29,19 @@ function blockToDocx(b: Block): (Paragraph | Table)[] {
   const widths = (b.widths && b.widths.length === b.head.length ? b.widths : b.head.map(() => 1)).map((w) => Math.floor((w / total) * CONTENT_W));
   const align = b.align || b.head.map((_, i) => (i === 0 ? "l" : "r"));
   const border = { style: BorderStyle.SINGLE, size: 4, color: LINE };
-  const cell = (text: string, i: number, header: boolean) =>
+  const cell = (text: string, i: number, header: boolean, keep: boolean) =>
     new TableCell({
       width: { size: widths[i], type: WidthType.DXA },
       margins: { top: 70, bottom: 70, left: 100, right: 100 },
       borders: { top: border, bottom: border, left: border, right: border },
       shading: header ? { type: ShadingType.CLEAR, fill: INDIGO, color: "auto" } : undefined,
-      children: [new Paragraph({ children: [run(text, { bold: header, size: 21, color: header ? "FAF8F3" : INK })], alignment: align[i] === "r" ? AlignmentType.RIGHT : AlignmentType.LEFT })],
+      children: [new Paragraph({ children: [run(text, { bold: header, size: 21, color: header ? "FAF8F3" : INK })], alignment: align[i] === "r" ? AlignmentType.RIGHT : AlignmentType.LEFT, keepNext: keep })],
     });
   return [
     new Table({
       width: { size: CONTENT_W, type: WidthType.DXA },
       columnWidths: widths,
-      rows: [new TableRow({ tableHeader: true, children: b.head.map((h, i) => cell(h, i, true)) }), ...b.rows.map((r) => new TableRow({ children: r.map((c, i) => cell(c, i, false)) }))],
+      rows: [new TableRow({ tableHeader: true, cantSplit: true, children: b.head.map((h, i) => cell(h, i, true, true)) }), ...b.rows.map((r, ri) => new TableRow({ cantSplit: true, children: r.map((c, i) => cell(c, i, false, ri < b.rows.length - 1 && b.rows.length <= 14)) }))],
     }),
     new Paragraph({ children: [], spacing: { after: 160 } }),
   ];
