@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, Undo2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Undo2, XCircle } from "lucide-react";
 
 export interface ActionCardData {
   id: string;
@@ -12,13 +12,16 @@ export interface ActionCardData {
   summary?: string;
   error?: string;
   canUndo?: boolean;
+  args?: Record<string, unknown>;
 }
 
 // What the AI assistant has prepared. Nothing runs until the client presses Approve here.
-export default function AssistantActionCards({ fresh }: { fresh: ActionCardData[] }) {
+export default function AssistantActionCards({ fresh, onRevise }: { fresh: ActionCardData[]; onRevise?: (card: ActionCardData, instruction: string) => Promise<void> }) {
   const [cards, setCards] = useState<ActionCardData[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [note, setNote] = useState("");
 
   // Anything still waiting for approval from earlier (survives a page reload).
   useEffect(() => {
@@ -50,6 +53,25 @@ export default function AssistantActionCards({ fresh }: { fresh: ActionCardData[
     setBusy(null);
   }
 
+  // Ask the assistant to change what it prepared: the old preview is cancelled and a corrected one comes back.
+  async function revise(c: ActionCardData) {
+    if (!onRevise || !note.trim()) return;
+    setBusy(c.id);
+    setErr("");
+    try {
+      const res = await fetch("/api/assistant/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id, decision: "cancel" }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "That didn't work.");
+      setCards((cur) => cur.filter((x) => x.id !== c.id));
+      setEditing(null);
+      const instruction = note.trim();
+      setNote("");
+      await onRevise(c, instruction);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+    setBusy(null);
+  }
+
   if (!cards.length) return null;
   return (
     <div className="mb-4 space-y-3">
@@ -66,11 +88,27 @@ export default function AssistantActionCards({ fresh }: { fresh: ActionCardData[
               <button onClick={() => decide(c.id, "approve")} disabled={busy === c.id} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60">
                 {busy === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Approve
               </button>
+              {onRevise && (
+                <button onClick={() => { setEditing(editing === c.id ? null : c.id); setNote(""); }} disabled={busy === c.id} aria-expanded={editing === c.id} className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a227] px-4 py-2 text-xs font-semibold text-[#1a2b4a] hover:bg-[#c9a227]/10 dark:text-[#F8F5F0]">
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </button>
+              )}
               <button onClick={() => decide(c.id, "cancel")} disabled={busy === c.id} className="rounded-lg border border-[#1a2b4a]/20 px-4 py-2 text-xs font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0]">
                 Cancel
               </button>
               <span className="text-[11px] text-[#7a8a99]">Nothing changes until you approve.</span>
             </div>
+          )}
+          {c.status === "proposed" && editing === c.id && (
+            <div className="mt-3 rounded-lg border border-[#1a2b4a]/10 bg-white p-3 dark:bg-[#1a2b4a]/30">
+              <label className="block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]" htmlFor={`edit-${c.id}`}>What should change?</label>
+              <textarea id={`edit-${c.id}`} rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Rename it, drop the third step, add a column for Date, make it sound warmer…" className="mt-1 w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 text-xs text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]" />
+              <div className="mt-2 flex items-center gap-2">
+                <button onClick={() => revise(c)} disabled={busy === c.id || !note.trim()} className="rounded-lg bg-[#1a2b4a] px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Send changes</button>
+                <button onClick={() => setEditing(null)} className="text-xs text-[#7a8a99] hover:underline">Never mind</button>
+              </div>
+            </div>
+          
           )}
           {c.status === "executed" && (
             <div className="mt-2 flex flex-wrap items-center gap-3">

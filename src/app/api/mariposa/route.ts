@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
-  if (message.length > 2000) {
+  if (message.length > 12000) {
     return NextResponse.json({ error: "message too long" }, { status: 413 });
   }
   const page = typeof body?.page === "string" ? body.page.slice(0, 60) : "";

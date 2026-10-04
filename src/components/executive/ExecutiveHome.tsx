@@ -2108,7 +2108,14 @@ export default function ExecutiveHome() {
               </div>
             )}
 
-            <AssistantActionCards fresh={aiActions} />
+            <AssistantActionCards
+              fresh={aiActions}
+              onRevise={(card, instruction) =>
+                askMariposa(
+                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nPrepare the corrected version for my approval.`
+                )
+              }
+            />
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">

@@ -13,6 +13,7 @@ export interface ActionCard {
   summary?: string;
   error?: string;
   canUndo?: boolean;
+  args?: Record<string, unknown>; // only while waiting for approval, so the client can ask for changes
 }
 
 const MAX_ARGS_BYTES = 20000;
@@ -44,7 +45,7 @@ export async function handleToolCall(
       .select("id")
       .single();
     if (error || !data) return "I couldn't prepare that just now.";
-    cards.push({ id: data.id as string, tool: tool.name, status: "proposed", title: planned.preview.title, lines: planned.preview.lines });
+    cards.push({ id: data.id as string, tool: tool.name, status: "proposed", title: planned.preview.title, lines: planned.preview.lines, args });
     return `Prepared for the client's approval: "${planned.preview.title}". NOTHING has changed yet. Tell them to review it and press Approve.`;
   } catch (e) {
     console.error("assistant tool", name, e);
@@ -64,6 +65,7 @@ const toCard = (r: Record<string, unknown>): ActionCard => {
     summary: res.summary,
     error: (r.error as string) ?? undefined,
     canUndo: r.status === "executed" && !!r.undo && !!toolByName(r.tool as string)?.undo,
+    ...(r.status === "proposed" ? { args: (r.args ?? {}) as Record<string, unknown> } : {}),
   };
 };
 
