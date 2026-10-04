@@ -1,7 +1,7 @@
 // LifeCharter knowledge base — the comprehensive Q&A behind the Help page and
 // the Travel Partner "Ask" widget. This is the single source of truth for how
 // every feature works. Update it whenever a feature ships or changes (last full
-// refresh: Sept 2026). As new features ship, add their Q&A here (and clients can
+// refresh: Oct 4 2026). As new features ship, add their Q&A here (and clients can
 // add their own entries via the Help page, stored in the qa_entries table).
 export interface KbEntry {
   id: string;
@@ -187,7 +187,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Can I rearrange the cards on Executive Home?",
     answer:
-      "Yes. Hover over a card and drag it by the grip in its top-right corner to where you want it: This week's coaching calls, Your Morning Brief, Today's Schedule, First 30 Days, Pipeline, The Collective, Financial Pulse, Priority Tasks and your inbox all move. Your layout is remembered in that browser. In the Recurring column of Priority Tasks, click a task's name to edit or delete it.",
+      "Yes. Hover over a card and drag it by the grip in its top-right corner to where you want it. Every card moves on its own: the coaching calls, Your Morning Brief, Today's Schedule, First 30 Days, Pipeline, The Collective, Financial Pulse, Priority Tasks, your inbox and the AI Assistant. You can also drop a card into an empty space, and the cards fill the gaps. Your layout is remembered in that browser. Today's Schedule shows today; use its arrows to look at future days. In the Recurring column of Priority Tasks, click a task's name to edit or delete it.",
     keywords: ["executive home", "rearrange", "drag", "layout", "cards", "move card", "dashboard"],
   },
   {
@@ -727,7 +727,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "Does my AI assistant learn from my assessments?",
     answer:
-      "Yes. Your assistant reads your own Brain, Soul and Profit assessment answers — each one counts as soon as you give it (the Brain and Soul assessments save as you go; you don't have to finish) — along with your live dimension scores, your open and recurring tasks for today, your income against your goals, today's events from the calendars you've connected, and your recent conversation with it, so its advice is about your business rather than generic. Anything you mark sensitive in the Soul assessment is never shown to it. Your data is only ever used for your own account. You can wipe its memory of your conversations any time with 'Clear memory' on the dashboard's AI Assistant card; that doesn't touch your assessments.",
+      "Yes. Your assistant reads your own Brain, Soul and Profit assessment answers — each one counts as soon as you give it (the Brain and Soul assessments save as you go; you don't have to finish) — along with your live dimension scores, your open and recurring tasks for today, your income against your goals, today's events from the calendars you've connected, and your recent conversation with it, so its advice is about your business rather than generic. Anything you mark sensitive in the Soul assessment is never shown to it. Your data is only ever used for your own account. It also keeps the facts you give it under Settings → AI Assistant → 'What should your assistant know about you and how you work?' (see 'How do I teach my AI assistant about me, my team and how I work?'). It remembers your recent conversation (about the last six hours), so older advice never overrides what is true in your account today. You can wipe its memory of your conversations any time with 'Clear memory' on the dashboard's AI Assistant card; that doesn't touch your assessments.",
     keywords: ["assistant", "ai", "learn", "learns", "assessments", "memory", "remember", "personalized", "sensitive", "private", "clear memory", "brain", "soul", "profit"],
   },
   {
@@ -883,6 +883,80 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Founder's Half Hour is a free 30-minute coaching and mentoring call with Babs every Tuesday at 1pm Mountain, open to everyone. Bring a question about your business and leave with a next step. Yes, invite a friend or a fellow founder: they register at https://us02web.zoom.us/meeting/register/Yv6WtkGmRaGGDLhoPrMMfw",
     keywords: ["founder's half hour", "founders half hour", "free call", "public call", "invite", "friend", "tuesday noon"],
+  },
+
+  // ---- Added Oct 4 2026 ----
+  {
+    id: "ai-assistant-teach",
+    category: "AI & Automation",
+    question: "How do I teach my AI assistant about me, my team and how I work?",
+    answer:
+      "Go to Settings → AI Assistant and fill in the box 'What should your assistant know about you and how you work?' (the 'Teach' link on the dashboard's AI Assistant card opens it). Write plain sentences: who is on your team and what each person handles, the days and hours you work, your busy season, what matters most this quarter, how you like to sell, anything it should always keep in mind. Up to 3,000 characters, private to your account, and you can edit it any time. It is different from 'How should your assistant reply?', which controls its style (short, direct, bullets). Click Save and it applies to your next question.",
+    keywords: ["teach", "train", "assistant", "remember", "know about me", "notes", "team", "preferences", "personalize", "ai", "learn"],
+  },
+  {
+    id: "ai-assistant-howto",
+    category: "AI & Automation",
+    question: "Can my AI assistant tell me how to do things in the Command Suite?",
+    answer:
+      "Yes. Ask it things like 'where do I add an offer?' or 'how do I connect my calendar?' and it answers from the Command Suite Help library, the same answers you find under Help. If the Help library does not cover your question it says so instead of guessing, and you can reach support from Help → Contact Support.",
+    keywords: ["assistant", "how do i", "where do i", "help", "ask", "how to", "mariposa", "sidekick", "guide"],
+  },
+  {
+    id: "ai-assistant-wrong-advice",
+    category: "AI & Automation",
+    question: "My assistant told me to do something I already finished. What do I do?",
+    answer:
+      "Your assistant reads your account fresh every time you ask, so it should know what you have completed. If an answer still looks out of date, click 'Clear memory' on the AI Assistant card (this only clears your conversation, not your assessments or data) and ask again. If it is still wrong, send us what it said from Help → Contact Support, or with the light bulb, and we will fix it for everyone.",
+    keywords: ["wrong", "outdated", "already did", "stale", "assistant", "clear memory", "incorrect", "mistake", "repeat"],
+  },
+  {
+    id: "gs-contact-support",
+    category: "Getting Started",
+    question: "How do I contact support, and how fast will I hear back?",
+    answer:
+      "Click the lifebuoy icon in the top-right corner (or open Help → Contact Support). Fill in the form and we reply within 24 hours on business days (Monday to Friday, 9am to 5pm Mountain). You also get an email when we reply, and you can read and answer the conversation on the same page under My requests, where each request shows Open, In progress, Waiting or Resolved. You can email support@lccommandsuite.com too. VIP members have priority support with 4-hour response times, plus an urgent line: text or WhatsApp \"URGENT\" to (720) 987-2080 (VIP members only). Command Suite Office Hours is the live call for anything tech related.",
+    keywords: ["support", "contact", "help", "email", "lifebuoy", "response time", "urgent", "vip", "ticket", "request", "hours", "whatsapp", "text"],
+  },
+  {
+    id: "gs-whats-new",
+    category: "Getting Started",
+    question: "Where can I see what's new, what's been fixed, and answers other clients got?",
+    answer:
+      "Open Help → Contact Support (the lifebuoy icon) and scroll down. 'What's new' lists the updates and fixes we have made, newest first, so when you report something you can watch for the fix there. 'Recently answered' shows questions other clients asked and how we resolved them, with names removed, so your answer may already be there before you write in. Above them are the Suggestions and General Feedback boards, where you can vote for what you want built next.",
+    keywords: ["what's new", "whats new", "updates", "fixes", "changelog", "release", "recently answered", "resolved", "support log", "new features"],
+  },
+  {
+    id: "ba-assessment-flow",
+    category: "Business Alignment",
+    question: "What happens when I finish an assessment, and how do I know which is next?",
+    answer:
+      "When you finish Brain, Soul or Profit, the Suite points you straight to the next one you have not done. On the Assessments page each card shows Start, Continue or Completed, and the 'Complete the Full Assessment' card at the bottom reflects what is already done and what is outstanding. Once all three are complete, your Business Health Score, your three next moves, your Growth Roadmap and your Alignment Profile are all built from your own answers. The Assessments page also has your Quick Pulse check-in to track progress over time.",
+    keywords: ["assessment", "next assessment", "complete", "finished", "brain", "soul", "profit", "full assessment", "progress", "completed"],
+  },
+  {
+    id: "dr-compass-layout",
+    category: "Daily Rhythm",
+    question: "Can I rearrange or collapse cards on the Daily Compass?",
+    answer:
+      "Yes. Hover over any Daily Compass card and drag it by its grip to move it, including into empty space; the cards fill the gaps. Today's Focus spans the full width and starts collapsed so the page is calm: click it to open it, and it shows with a white background when collapsed so you do not overlook it. Quick Actions sits above it. Your layout is remembered in that browser.",
+    keywords: ["daily compass", "drag", "rearrange", "collapse", "today's focus", "layout", "cards", "quick actions"],
+  },
+  {
+    id: "dr-schedule-future",
+    category: "Daily Rhythm",
+    question: "Can I see my schedule for future days on Executive Home?",
+    answer:
+      "Yes. Today's Schedule shows today's events from the calendars you have connected. Use the arrows on that card to move forward to future days (and back again). The coaching calls card has This week and Next week tabs, so you can plan the following week's calls ahead of time.",
+    keywords: ["schedule", "future", "next day", "arrows", "calendar", "tomorrow", "upcoming", "today's schedule", "next week"],
+  },
+  {
+    id: "ai-content-calendar-nav",
+    category: "Content & Social",
+    question: "Where is the Content Calendar in the menu?",
+    answer:
+      "In the left menu under Daily Operations, there is a Content Calendar link next to the Accountability Partner. It opens the same calendar you reach from the Daily Compass, where you plan and schedule your posts.",
+    keywords: ["content calendar", "menu", "navigation", "left menu", "daily operations", "social", "posts", "calendar"],
   },
 ];
 
