@@ -1,8 +1,9 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
+import { getBlueprint } from "@/lib/plans/blueprints";
 
 // The first 30 days: the three assessments first (everything else is informed by
-// their answers), then twelve small steps over four weeks that turn
+// their answers), then small steps over four weeks that turn
 // the Suite's tools into habits. Each step is checked live from the client's own
 // data, so it ticks itself off the moment it's done.
 
@@ -70,6 +71,12 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("business_reviews").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("status", "completed"))) > 0,
   },
   {
+    key: "forecast", week: 2, dims: ["finance","sustainability"], title: "Check your forecast and set its assumptions", why: "Your recorded numbers become a 6-month projection in three scenarios, and it goes into your printable business plan.", href: "/planning/forecast",
+    check: async (id, db) =>
+      (await count(db.from("forecast_assumptions").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0 ||
+      (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "forecasting").not("content", "is", null))) > 0,
+  },
+  {
     key: "sop", week: 3, dims: ["systems","operations"], title: "Write down your first SOP", why: "Start with the process you explain most often.", href: "/operations/sops",
     check: async (id, db) => (await count(db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
@@ -85,11 +92,23 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("legal_checklist").select("id", { count: "exact", head: true }).eq("master_plan_id", id).in("status", ["done", "na"]))) >= 5,
   },
   {
+    key: "marketing-plan", week: 3, dims: ["marketing","sales"], title: "Write your Marketing Plan: your ideal client, positioning and channels", why: "So your content, outreach and assistant speak to the right people. Let your assistant draft each section from your assessments, then make it yours.", href: "/marketing-plan",
+    check: async (id, db) => (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "marketing").not("content", "is", null))) >= 3,
+  },
+  {
     key: "goal-ladder", week: 4, dims: ["vision","leadership"], title: "Break a yearly goal into this quarter", why: "Connects the big picture to this week.", href: "/planning/goals",
     check: async (id, db) => {
       const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", id);
       const ids = ((plans ?? []) as { id: string }[]).map((p) => p.id);
       return ids.length ? (await count(db.from("client_plan_goals").select("id", { count: "exact", head: true }).in("plan_id", ids).neq("period", "year"))) > 0 : false;
+    },
+  },
+  {
+    key: "business-plan-complete", week: 4, dims: ["vision","leadership","finance"], title: "Finish your Business Plan: mark every section complete", why: "This unlocks your printable business plan (PDF and Word) for funding requests and partnership proposals.", href: "/business-plan",
+    check: async (id, db) => {
+      const total = getBlueprint("business")?.sections.length ?? 0;
+      const { data } = await db.from("plan_sections").select("content, status").eq("master_plan_id", id).eq("plan_type", "business");
+      return total > 0 && ((data || []) as { content: string | null; status: string | null }[]).filter((r) => r.status === "done" && (r.content || "").trim()).length >= total;
     },
   },
   {

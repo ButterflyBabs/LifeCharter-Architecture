@@ -10,7 +10,7 @@ const WEEK_TITLES: Record<number, string> = {
   0: "Start here · Your assessments",
   1: "Week 1 · Your foundation",
   2: "Week 2 · Money & rhythm",
-  3: "Week 3 · Systems",
+  3: "Week 3 · Systems & plans",
   4: "Week 4 · Momentum",
 };
 
@@ -26,7 +26,7 @@ export default function First30Page() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your First 30 Days</h1>
-          <p className="text-[#7a8a99]">Start with your three assessments, since everything else is informed by your answers. Then twelve small steps, one week at a time, turn the Suite into how you run your business. Each week opens once the one before it is done. Each one ticks itself off when it&apos;s done, and the ones that strengthen your lowest scores are marked for you. <a className="font-semibold text-[#2E7C83] hover:underline" href={STARTER_GUIDE_URL} target="_blank" rel="noopener noreferrer">Open the Starter Guide</a> for a checklist version.</p>
+          <p className="text-[#7a8a99]">Start with your three assessments, since everything else is informed by your answers. Then a few small steps a week, one week at a time, turn the Suite into how you run your business. Each week opens once the one before it is done. Each one ticks itself off when it&apos;s done, and the ones that strengthen your lowest scores are marked for you. <a className="font-semibold text-[#2E7C83] hover:underline" href={STARTER_GUIDE_URL} target="_blank" rel="noopener noreferrer">Open the Starter Guide</a> for a checklist version.</p>
         </div>
       </div>
       {d && (
