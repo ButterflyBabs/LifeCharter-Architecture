@@ -30,8 +30,23 @@ Be warm, grounded, and concise. Prioritize one clear next action over long lists
 const PLAN_WRITE_ASK = /\b(write|draft|fill|revise|rewrite|update|complete|add to)\b[^.?!]{0,60}\b(section|plan)\b/i;
 
 // On a plan page, tell the assistant which plan they mean so "my Ideal Client section" lands in the right one.
+function pageKind(page: string): string {
+  return /marketing plan/i.test(page) ? "marketing" : /sales plan/i.test(page) ? "sales" : /business plan/i.test(page) ? "business" : /forecast/i.test(page) ? "forecasting" : "";
+}
+// If they are on a plan page and did not name a different plan, the plan on the page is the one they mean.
+function pinPlan(name: string, rawArgs: string, page: string, message: string): string {
+  if (name !== "update_plan_section" && name !== "read_plan") return rawArgs;
+  const kind = pageKind(page);
+  if (!kind || /\b(business|marketing|sales|forecast\w*)\b/i.test(message)) return rawArgs;
+  try {
+    return JSON.stringify({ ...JSON.parse(rawArgs), plan_type: kind });
+  } catch {
+    return rawArgs;
+  }
+}
+
 function planHint(page: string): string {
-  const kind = /marketing plan/i.test(page) ? "marketing" : /sales plan/i.test(page) ? "sales" : /business plan/i.test(page) ? "business" : /forecast/i.test(page) ? "forecasting" : "";
+  const kind = pageKind(page);
   return kind ? ` If they ask you to write or change a plan section here, they mean their ${kind} plan: use plan_type "${kind}" unless they name a different plan.` : "";
 }
 
@@ -102,7 +117,7 @@ export async function POST(request: Request) {
       if (!calls.length || !ctx) break;
       messages.push({ role: "assistant", content: msg?.content ?? null, tool_calls: msg!.tool_calls });
       for (const c of calls) {
-        const out = await handleToolCall(c.function.name, c.function.arguments, ctx, cards);
+        const out = await handleToolCall(c.function.name, pinPlan(c.function.name, c.function.arguments, page, message), ctx, cards);
         messages.push({ role: "tool", tool_call_id: c.id, content: out });
       }
       reply = "";
