@@ -1,5 +1,6 @@
 "use client";
 
+import AddMoneyEntryModal from "@/components/finance/AddMoneyEntryModal";
 import AssistantPanel from "@/components/assistant/AssistantPanel";
 import { setPopped, usePopped } from "@/lib/assistantPopout";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
@@ -188,6 +189,7 @@ export default function ExecutiveHome() {
   const [rtEditId, setRtEditId] = useState<string | null>(null);
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>("month");
   const [showAddTask, setShowAddTask] = useState(false);
+  const [moneyModal, setMoneyModal] = useState<null | "income" | "expense">(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState("today");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
@@ -307,13 +309,16 @@ export default function ExecutiveHome() {
   }, []);
 
   // Fetch live financial pulse (month boundaries follow the chosen time zone)
-  useEffect(() => {
+  const loadPulse = useCallback(() => {
     if (!userTimezone) return;
-    fetch(`/api/financial-pulse?tz=${encodeURIComponent(userTimezone)}`)
+    fetch(`/api/financial-pulse?tz=${encodeURIComponent(userTimezone)}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFinance(d))
       .catch(() => {});
   }, [userTimezone]);
+  useEffect(() => {
+    loadPulse();
+  }, [loadPulse]);
 
   // Recurring tasks: what's due today in the chosen time zone. Refreshed every
   // few minutes and when the tab regains focus so a new day rolls over on its own.
@@ -1472,7 +1477,9 @@ export default function ExecutiveHome() {
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-2">
-            <h3 className="font-serif text-base text-indigo-900">Financial Pulse</h3>
+            <h3 className="font-serif text-base text-indigo-900">
+              <Link href="/finance/pulse" className="hover:text-[#2E7C83] hover:underline" title="Open your full Financial Pulse">Financial Pulse</Link>
+            </h3>
             <div className="flex items-center gap-1">
               <div className="inline-flex rounded-lg border border-gray-200 p-0.5 text-xs" role="tablist" aria-label="Period">
                 {(["week", "month", "year"] as PulsePeriod[]).map((p) => (
@@ -1522,6 +1529,17 @@ export default function ExecutiveHome() {
                   `${lbl.name} · no revenue recorded yet`
                 )}
               </p>
+            </div>
+
+            {/* Add money in / out without leaving the dashboard */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setMoneyModal("income")} className="inline-flex items-center gap-1.5 rounded-lg bg-[#2E7C83] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#256b71]">
+                <Plus className="h-4 w-4" /> Income
+              </button>
+              <button onClick={() => setMoneyModal("expense")} className="inline-flex items-center gap-1.5 rounded-lg border border-[#b06a5a] px-3 py-1.5 text-sm font-medium text-[#b06a5a] hover:bg-[#b06a5a]/5">
+                <Plus className="h-4 w-4" /> Expense
+              </button>
+              <Link href="/finance/pulse" className="ml-auto text-xs text-[#2E7C83] hover:underline">Open Financial Pulse →</Link>
             </div>
 
             {/* % of goal reached */}
@@ -1581,15 +1599,21 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Notification Banner */}
-            <Link href="/revenue">
-              <div className="flex items-center gap-3 p-3 bg-[#F8F5F0] rounded-xl border border-[#e8e4e0] hover:bg-[#f5f3ef] transition-colors cursor-pointer">
+            {finance?.hasData ? (
+              <Link href="/revenue">
+                <div className="flex items-center gap-3 p-3 bg-[#F8F5F0] rounded-xl border border-[#e8e4e0] hover:bg-[#f5f3ef] transition-colors cursor-pointer">
+                  <Bell className="w-4 h-4 text-[#c9a227]" />
+                  <span className="text-sm text-[#3F4654] flex-1">View revenue by segment</span>
+                  <ChevronRight className="w-4 h-4 text-[#c9a227]" />
+                </div>
+              </Link>
+            ) : (
+              <button onClick={() => setMoneyModal("income")} className="flex w-full items-center gap-3 p-3 bg-[#F8F5F0] rounded-xl border border-[#e8e4e0] text-left hover:bg-[#f5f3ef] transition-colors">
                 <Bell className="w-4 h-4 text-[#c9a227]" />
-                <span className="text-sm text-[#3F4654] flex-1">
-                  {finance?.hasData ? "View revenue by segment" : "Add revenue to see your pulse"}
-                </span>
+                <span className="text-sm text-[#3F4654] flex-1">Add your first income to see your pulse</span>
                 <ChevronRight className="w-4 h-4 text-[#c9a227]" />
-              </div>
-            </Link>
+              </button>
+            )}
           </div>
             );
           })()}
@@ -2245,6 +2269,8 @@ export default function ExecutiveHome() {
           </div>
         </div>
       )}
+
+      {moneyModal && <AddMoneyEntryModal initialType={moneyModal} onClose={() => setMoneyModal(null)} onSaved={loadPulse} />}
 
       {/* Add Task Modal */}
       {showAddTask && (

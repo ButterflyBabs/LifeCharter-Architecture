@@ -96,6 +96,15 @@ export default function FinancialPulsePage() {
     fetchSegmentOptions().then(setSegments).catch(() => {});
   }, []);
 
+  // /finance/pulse?add=income or ?add=expense opens the Add entry form already set (used by links from the dashboard).
+  useEffect(() => {
+    const a = new URLSearchParams(window.location.search).get("add");
+    if (a === "income" || a === "expense") {
+      setType(a);
+      setShowAdd(true);
+    }
+  }, []);
+
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [expBudgetInput, setExpBudgetInput] = useState("");
