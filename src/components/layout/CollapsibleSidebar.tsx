@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { STARTER_GUIDE_URL } from "@/lib/starterGuide";
 import {
   LayoutDashboard,
+  FileText,
   Mail,
   Handshake,
   PhoneCall,
@@ -539,9 +540,28 @@ export function CollapsibleSidebar() {
     const key = featureForPage(href.split("?")[0]);
     return !key || (features[key] ?? "none") !== "none";
   };
+  // The client's own pages (made by them or their AI assistant), in a section at the end of the menu.
+  const [customPages, setCustomPages] = useState<{ slug: string; title: string }[]>([]);
+  useEffect(() => {
+    const load = () =>
+      fetch("/api/custom-pages", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setCustomPages(Array.isArray(d?.pages) ? d.pages : []))
+        .catch(() => {});
+    load();
+    window.addEventListener("custom-pages-changed", load);
+    window.addEventListener("focus", load);
+    return () => {
+      window.removeEventListener("custom-pages-changed", load);
+      window.removeEventListener("focus", load);
+    };
+  }, []);
+  const mySection = customPages.length
+    ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: customPages.map((p) => ({ id: `page-${p.slug}`, label: p.title, icon: FileText, href: `/my-pages/${p.slug}` })) }]
+    : [];
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
-  const sections = (superAdmin && !isDemo ? [...demoOrderedSections, ownerSection] : demoOrderedSections)
+  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, ownerSection] : demoOrderedSections), ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
     .filter((s) => s.items.length > 0);
 
@@ -613,7 +633,7 @@ export function CollapsibleSidebar() {
   // Get active item based on current path
   const getActiveItem = () => {
     // The most specific match wins (so /sales/pipeline lights Pipeline, not Sales Plan).
-    const item = navigationItems
+    const item = [...navigationItems, ...mySection.flatMap((m) => m.items)]
       .filter((i) => i.href !== "/" && !i.href.includes("?") && (pathname === i.href || pathname?.startsWith(i.href + "/")))
       .sort((a, b) => b.href.length - a.href.length)[0];
     if (item) return item.id;
