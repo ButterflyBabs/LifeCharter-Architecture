@@ -142,9 +142,9 @@ export const updatePlanSection: ActionTool = {
     // Keep the client moving: name the next section that is still empty.
     const { data: all } = await ctx.db.from("plan_sections").select("section_key, content").eq("master_plan_id", ctx.planId).eq("plan_type", kind);
     const filled = new Set(((all || []) as { section_key: string; content: string | null }[]).filter((r) => (r.content || "").trim()).map((r) => r.section_key));
-    const next = bp.sections.find((x) => x.key !== sec.key && !filled.has(x.key));
-    const nudge = next
-      ? ` Next up: ${next.title}. Say "next" and I'll draft it.`
+    const nextEmpty = bp.sections.find((x) => x.key !== sec.key && !filled.has(x.key));
+    const nudge = nextEmpty
+      ? ` Next up: ${nextEmpty.title}. Say "next" and I'll draft it.`
       : ` That was the last empty section. Read each one and press Mark section complete, or say "fill in the fields" and I'll fill the question fields from your text.`;
     return {
       summary: `Saved to your ${bp.label} → ${sec.title}. You can open it in the plan builder to edit.${nudge}`,
