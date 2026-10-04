@@ -138,11 +138,12 @@ export default function DailyCompassPage() {
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   useMasonry(gridRef, 24);
-  // Today's Focus can be folded down to just its title. Remembered on this device.
-  const [focusCollapsed, setFocusCollapsed] = useState(false);
+  // Today's Focus can be folded down to just its title.
+  // It starts folded; once someone opens it, that choice is remembered on this device.
+  const [focusCollapsed, setFocusCollapsed] = useState(true);
   useEffect(() => {
     try {
-      setFocusCollapsed(localStorage.getItem("compass-focus-collapsed") === "1");
+      setFocusCollapsed(localStorage.getItem("compass-focus-collapsed") !== "0");
     } catch {
       /* not remembered */
     }
