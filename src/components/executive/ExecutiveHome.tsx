@@ -1,6 +1,7 @@
 "use client";
 
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
+import PastConversations from "@/components/assistant/PastConversations";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 import { useState, useEffect, useCallback } from "react";
@@ -247,6 +248,8 @@ export default function ExecutiveHome() {
   const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiActions, setAiActions] = useState<ActionCardData[]>([]);
+  const [pastOpen, setPastOpen] = useState(false);
+  const [pastNote, setPastNote] = useState(false);
   // The running conversation, kept on the server so it is still here after you leave and come back.
   const [aiThread, setAiThread] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
@@ -2076,15 +2079,19 @@ export default function ExecutiveHome() {
             <div className="flex items-center gap-3 text-xs text-gray-400">
               <button
                 onClick={async () => {
-                  if (!confirm(`Clear what ${assistantName} remembers from your conversations? Your assessments aren't affected.`)) return;
-                  await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
+                  await fetch("/api/assistant/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "new" }) }).catch(() => {});
                   setAiReply(null);
                   setAiThread([]);
+                  setAiActions([]);
+                  setPastNote(true);
                 }}
                 className="hover:text-[#2E7C83] hover:underline"
-                title="Clear the conversation history"
+                title={`Start a fresh conversation. This one is saved under Past conversations, and ${assistantName} still knows your account, your notes and your settings.`}
               >
-                Clear memory
+                New conversation
+              </button>
+              <button onClick={() => setPastOpen((o) => !o)} className="hover:text-[#2E7C83] hover:underline" aria-expanded={pastOpen} title="Read, continue or delete earlier conversations">
+                Past conversations
               </button>
               <a href="/settings?tab=ai" className="hover:text-[#2E7C83] hover:underline" title={`Tell ${assistantName} about you, your team and how you work`}>
                 Teach {assistantName}
@@ -2118,6 +2125,19 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Reply */}
+            <PastConversations
+              open={pastOpen}
+              onClose={() => setPastOpen(false)}
+              onContinued={() => {
+                fetch("/api/mariposa", { cache: "no-store" })
+                  .then((r) => r.json())
+                  .then((d) => setAiThread((d.messages ?? []).map((m: { id: string; role: "user" | "assistant"; content: string }) => ({ id: m.id, role: m.role, content: m.content }))))
+                  .catch(() => {});
+              }}
+            />
+            {pastNote && aiThread.length === 0 && (
+              <p className="mb-3 text-xs text-[#7a8a99]">Your last conversation is saved under Past conversations. {assistantName} still knows your account, your notes and your settings.</p>
+            )}
             <AssistantActionCards
               fresh={aiActions}
               onRevise={(card, instruction) =>

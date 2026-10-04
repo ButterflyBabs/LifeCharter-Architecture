@@ -735,15 +735,15 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "Does my AI assistant learn from my assessments?",
     answer:
-      "Yes. Your assistant reads your own Brain, Soul and Profit assessment answers — each one counts as soon as you give it (the Brain and Soul assessments save as you go; you don't have to finish) — along with your live dimension scores, your open and recurring tasks for today, your income against your goals, today's events from the calendars you've connected, and your recent conversation with it, so its advice is about your business rather than generic. Anything you mark sensitive in the Soul assessment is never shown to it. Your data is only ever used for your own account. It also keeps the facts you give it under Settings → AI Assistant → 'What should your assistant know about you and how you work?' (see 'How do I teach my AI assistant about me, my team and how I work?'). It remembers your recent conversation (about the last six hours), so older advice never overrides what is true in your account today. You can wipe its memory of your conversations any time with 'Clear memory' on the dashboard's AI Assistant card; that doesn't touch your assessments.",
-    keywords: ["assistant", "ai", "learn", "learns", "assessments", "memory", "remember", "personalized", "sensitive", "private", "clear memory", "brain", "soul", "profit"],
+      "Yes. Your assistant reads your own Brain, Soul and Profit assessment answers — each one counts as soon as you give it (the Brain and Soul assessments save as you go; you don't have to finish) — along with your live dimension scores, your open and recurring tasks for today, your income against your goals, today's events from the calendars you've connected, and your recent conversation with it, so its advice is about your business rather than generic. Anything you mark sensitive in the Soul assessment is never shown to it. Your data is only ever used for your own account. It also keeps the facts you give it under Settings → AI Assistant → 'What should your assistant know about you and how you work?' (see 'How do I teach my AI assistant about me, my team and how I work?'). It remembers your recent conversation (about the last six hours), so older advice never overrides what is true in your account today. Your conversation stays on the AI Assistant card, newest first. 'New conversation' starts a fresh one and saves the old one under 'Past conversations' (read, continue or delete it); your assistant still knows your account, your Teach notes and your settings. When you tell it something lasting about you or your team, it offers to save it to your Teach notes so you never repeat yourself.",
+    keywords: ["assistant", "ai", "learn", "learns", "assessments", "memory", "remember", "personalized", "sensitive", "private", "clear memory", "new conversation", "past conversations", "brain", "soul", "profit"],
   },
   {
     id: "ai-assistant-instructions",
     category: "AI & Automation",
     question: "Can I tell my AI assistant how to reply?",
     answer:
-      "Yes. In Settings → AI Assistant, the 'How should your assistant reply?' box holds standing instructions it follows every time — for example 'be direct and skip the pep talk', 'keep answers under 80 words', 'use short bullet points', or 'always end with one next step'. Tap the suggestions to add them, edit freely (up to 1,500 characters), and click Save. Instructions shape tone, length, format and focus; your assistant still only uses your own information and never invents facts. You can rename it in the same place, and clear its memory of past conversations with 'Clear memory' on the dashboard's AI Assistant card.",
+      "Yes. In Settings → AI Assistant, the 'How should your assistant reply?' box holds standing instructions it follows every time — for example 'be direct and skip the pep talk', 'keep answers under 80 words', 'use short bullet points', or 'always end with one next step'. Tap the suggestions to add them, edit freely (up to 1,500 characters), and click Save. Instructions shape tone, length, format and focus; your assistant still only uses your own information and never invents facts. You can rename it in the same place, and start a fresh conversation with 'New conversation' on the dashboard's AI Assistant card (the old one is saved under Past conversations).",
     keywords: ["instructions", "how to reply", "tone", "style", "shorter", "bullet", "customize", "assistant", "name", "rename", "personality", "format"],
   },
 
@@ -939,8 +939,8 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "My assistant told me to do something I already finished. What do I do?",
     answer:
-      "Your assistant reads your account fresh every time you ask, so it should know what you have completed. If an answer still looks out of date, click 'Clear memory' on the AI Assistant card (this only clears your conversation, not your assessments or data) and ask again. If it is still wrong, send us what it said from Help → Contact Support, or with the light bulb, and we will fix it for everyone.",
-    keywords: ["wrong", "outdated", "already did", "stale", "assistant", "clear memory", "incorrect", "mistake", "repeat"],
+      "Your assistant reads your account fresh every time you ask, so it should know what you have completed. If an answer still looks out of date, click 'New conversation' on the AI Assistant card (your old one is saved, and your assessments and data are untouched) and ask again. If it is still wrong, send us what it said from Help → Contact Support, or with the light bulb, and we will fix it for everyone.",
+    keywords: ["wrong", "outdated", "already did", "stale", "assistant", "clear memory", "new conversation", "past conversations", "incorrect", "mistake", "repeat"],
   },
   {
     id: "gs-contact-support",

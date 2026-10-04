@@ -61,7 +61,7 @@ export default function AIGuideHelpPage() {
           <p>You can reach your assistant in three places:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong>Travel Partner widget:</strong> Look for the Travel Partner button, with the compass icon, in the bottom-right corner of the page (you can drag it elsewhere). Open it and choose the &quot;Ask&quot; tab with your assistant&apos;s name. The other tab, Help &amp; setup, guides you through setting up and answers how-to questions.</li>
-            <li><strong>Executive Home:</strong> The AI Assistant card has an ask box, a Clear memory link and a Teach link.</li>
+            <li><strong>Executive Home:</strong> The AI Assistant card has an ask box, your conversation (newest first), and links for New conversation, Past conversations and Teach.</li>
             <li><strong>Business Alignment:</strong> The AI Business Guide card shows a greeting built from your score and your next moves, with an Ask button to chat.</li>
           </ol>
           <p>All three share the same memory of your recent conversation. To change its name, replies or notes, click AI Assistant under Systems in the left menu.</p>
@@ -177,12 +177,12 @@ export default function AIGuideHelpPage() {
       question: "How do I clear my conversation history?",
       answer: (
         <div className="space-y-2">
-          <p>To clear what your assistant remembers from your conversations:</p>
+          <p>To start a fresh conversation (the old one is saved, not erased):</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Click Clear memory on the AI Assistant card on Executive Home, or</li>
+            <li>Click New conversation on the AI Assistant card on Executive Home, or</li>
             <li>Click New conversation in the Travel Partner widget&apos;s Ask tab</li>
           </ol>
-          <p>This only clears your conversation, not your assessments or data.</p>
+          <p>Your old conversation is kept under Past conversations, where you can read it, continue it or delete it. Your assistant still knows your account, your Teach notes and your settings.</p>
         </div>
       )
     },

@@ -357,6 +357,7 @@ export async function loadHistory(masterPlanId: string): Promise<{ role: "user" 
     .from("assistant_messages")
     .select("role, content")
     .eq("master_plan_id", masterPlanId)
+    .is("archive_id", null)
     // Only recent turns: older replies go stale (advice to start something they have since finished) and the model repeats them.
     .gte("created_at", new Date(Date.now() - HISTORY_MAX_AGE_MS).toISOString())
     .order("created_at", { ascending: false })
@@ -378,13 +379,14 @@ export async function saveTurn(masterPlanId: string, source: string, question: s
     .from("assistant_messages")
     .select("id")
     .eq("master_plan_id", masterPlanId)
+    .is("archive_id", null)
     .order("created_at", { ascending: false })
     .range(KEEP_MESSAGES, KEEP_MESSAGES + 200);
   if (old && old.length) await supabase.from("assistant_messages").delete().in("id", old.map((o) => o.id as string));
 }
 
 export async function clearHistory(masterPlanId: string): Promise<void> {
-  await createServerClient().from("assistant_messages").delete().eq("master_plan_id", masterPlanId);
+  await createServerClient().from("assistant_messages").delete().eq("master_plan_id", masterPlanId).is("archive_id", null);
 }
 
 // The assistant's system prompt: its persona plus everything it knows.
@@ -412,7 +414,7 @@ export function assistantSystemPrompt(
     ? `\nCOMMAND SUITE HELP LIBRARY (official answers about how the app works; use these if they are asking how to do something in the app, and say if the answer isn't covered here instead of guessing):\n${help.map((h) => `- Q: ${h.question}\n  A: ${h.answer}`).join("\n")}\n`
     : "";
   const acting = opts.canAct
-    ? `\nWHAT YOU CAN DO FOR THEM: you have tools that change their account: contacts and tags, tasks, outreach pipelines and sales deals, email broadcast and campaign DRAFTS, content posts for the Content Calendar, and custom pages in their left menu (create a page and fill it in, or update one). A tool never runs when you call it: the client sees a preview and must press Approve, so never say something is done; say you have prepared it for their approval, and ONLY say you prepared something after you actually called the tool in this same reply. Look things up first (find_contacts, list_pipelines, read_my_pages) so you change the right thing, and ask a short question if the request is unclear. Emails are only ever saved as drafts: you never send, schedule or turn on an email or message, and you never publish a post right now. Be honest about what you cannot do yet (for example finance entries, SOPs, plans, booking links, or building brand-new app features) and offer the closest thing you can do. When asked to write emails or posts, write them fully in the client's voice before calling the tool.\n`
+    ? `\nWHAT YOU CAN DO FOR THEM: you have tools that change their account: contacts and tags, tasks, outreach pipelines and sales deals, email broadcast and campaign DRAFTS, content posts for the Content Calendar, and custom pages in their left menu (create a page and fill it in, or update one). A tool never runs when you call it: the client sees a preview and must press Approve, so never say something is done; say you have prepared it for their approval, and ONLY say you prepared something after you actually called the tool in this same reply. Look things up first (find_contacts, list_pipelines, read_my_pages) so you change the right thing, and ask a short question if the request is unclear. Emails are only ever saved as drafts: you never send, schedule or turn on an email or message, and you never publish a post right now. Be honest about what you cannot do yet (for example finance entries, SOPs, plans, booking links, or building brand-new app features) and offer the closest thing you can do. When asked to write emails or posts, write them fully in the client's voice before calling the tool. Memory: when the client tells you something LASTING about themselves, their team, schedule, business or preferences that isn't already in what you know, also call remember_about_me with that one fact (at most one per reply) so you never need to be told twice; skip one-off details and never ask permission in words, the preview card is the ask.\n`
     : "";
   return `${persona}
 ${standing}

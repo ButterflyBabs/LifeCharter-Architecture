@@ -117,6 +117,7 @@ export async function GET() {
     .from("assistant_messages")
     .select("id, role, content, created_at")
     .eq("master_plan_id", planId)
+    .is("archive_id", null)
     .order("created_at", { ascending: false })
     .limit(40);
   return NextResponse.json({
