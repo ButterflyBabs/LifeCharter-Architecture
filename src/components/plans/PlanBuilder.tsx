@@ -61,6 +61,25 @@ export default function PlanBuilder({ planType }: { planType: string }) {
     load();
   }, [load]);
 
+  // The AI assistant just saved (or undid) a plan section: re-read the plan quietly, keeping whatever
+  // section the client is typing in and which sections are open.
+  useEffect(() => {
+    const refresh = async () => {
+      const res = await fetch(`/api/plans/sections?type=${planType}`);
+      const d = await res.json().catch(() => ({}));
+      if (!d.sections) return;
+      const active = document.activeElement as HTMLElement | null;
+      const typingIn = active?.closest?.("[id^='section-']")?.id.replace("section-", "") || "";
+      setData((prev) => {
+        if (!prev || !typingIn) return d;
+        const mine = prev.sections.find((s) => s.key === typingIn);
+        return mine ? { ...d, sections: (d.sections as Section[]).map((s) => (s.key === typingIn ? mine : s)) } : d;
+      });
+    };
+    window.addEventListener("lc-plan-changed", refresh);
+    return () => window.removeEventListener("lc-plan-changed", refresh);
+  }, [planType]);
+
   const patchLocal = (key: string, patch: Partial<Section>) =>
     setData((prev) =>
       prev ? { ...prev, sections: prev.sections.map((s) => (s.key === key ? { ...s, ...patch } : s)) } : prev

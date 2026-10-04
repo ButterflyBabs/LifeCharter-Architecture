@@ -47,6 +47,8 @@ export default function AssistantActionCards({ fresh, onRevise }: { fresh: Actio
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "That didn't work.");
       setCards((cur) => cur.map((c) => (c.id === id ? (d.card as ActionCardData) : c)));
+      // Tell any plan page that's open that a section just changed (approved or undone), so it reloads itself.
+      if ((d.card as ActionCardData).tool === "update_plan_section" && decision !== "cancel") window.dispatchEvent(new Event("lc-plan-changed"));
     } catch (e) {
       setErr((e as Error).message);
     }
