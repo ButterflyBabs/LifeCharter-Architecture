@@ -14,6 +14,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
   const [saved, setSaved] = useState<"saved" | "saving" | "error">("saved");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const first = useRef(true);
 
@@ -73,6 +74,13 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
       : type === "table" ? { id: rid(), type, title: "Table", columns: ["Name", "Notes"], rows: [["", ""]] }
       : { id: rid(), type: "link", label: "Link", url: "https://" },
     ]);
+
+  async function deletePage() {
+    if (timer.current) clearTimeout(timer.current);
+    await fetch("/api/custom-pages", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: params.slug }) }).catch(() => {});
+    window.dispatchEvent(new Event("custom-pages-changed"));
+    window.location.assign("/");
+  }
 
   if (state === "loading") return <p className="p-8 text-sm text-[#7b6b8d]">Loading…</p>;
   if (state === "missing") return <p className="p-8 text-sm text-[#7b6b8d]">That page isn&apos;t here. It may have been removed.</p>;
@@ -169,6 +177,17 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
         {(["heading", "text", "checklist", "table", "link"] as const).map((t) => (
           <button key={t} onClick={() => add(t)} className="rounded-full border border-[#1a2b4a]/15 px-3 py-1 text-xs font-medium capitalize text-[#1a2b4a] hover:border-[#c9a227] dark:text-[#F8F5F0] dark:border-white/15">{t}</button>
         ))}
+      </div>
+      <div className="mt-8 border-t border-[#1a2b4a]/10 pt-4">
+        {!confirmDelete ? (
+          <button onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1 text-xs text-[#8a2f2f] hover:underline"><Trash2 className="h-3.5 w-3.5" /> Delete this page</button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <span className="text-[#3F4654] dark:text-[#d8d2c8]">Delete &ldquo;{title}&rdquo; and everything on it for good?</span>
+            <button onClick={deletePage} className="rounded-lg bg-[#8a2f2f] px-3 py-1.5 font-semibold text-white">Yes, delete it</button>
+            <button onClick={() => setConfirmDelete(false)} className="text-[#2E7C83] hover:underline">Keep it</button>
+          </div>
+        )}
       </div>
       <p className="mt-6 text-xs text-[#7b6b8d]">Tip: ask your AI assistant to add to or update this page for you. It shows you what it will change and waits for your approval.</p>
     </div>

@@ -217,4 +217,56 @@ export const updatePage: ActionTool = {
   },
 };
 
-export const PAGE_TOOLS: ActionTool[] = [listPages, createPage, updatePage];
+export const deletePage: ActionTool = {
+  name: "delete_page",
+  kind: "write",
+  apiPath: "/api/custom-pages",
+  description:
+    "Permanently delete one or more of the client's custom pages from their left menu (the page and everything on it is removed; do not just rename it). Read the page first if unsure which one. The client approves first and can undo right after.",
+  parameters: { type: "object", properties: { pages: { type: "array", items: { type: "string" }, description: "Titles of the pages to delete (up to 10)." } }, required: ["pages"] },
+  plan: async (args, ctx) => {
+    const names = (Array.isArray(args.pages) ? args.pages : []).map((n) => str(n, 80)).filter(Boolean).slice(0, 10);
+    if (!names.length) return { error: "Which page should I delete?" };
+    const found: { title: string; blocks: Block[] }[] = [];
+    const missing: string[] = [];
+    for (const n of names) {
+      const p = await findPage(ctx, n);
+      if (p && !found.some((f) => f.title === p.title)) found.push(p);
+      else if (!p) missing.push(n);
+    }
+    if (!found.length) return { error: `I can't find ${missing.length === 1 ? `a page called "${missing[0]}"` : "those pages"}.` };
+    return {
+      preview: {
+        title: `Permanently delete ${found.length === 1 ? `the page "${found[0].title}"` : `${found.length} pages`}`,
+        lines: [
+          ...found.map((f) => `"${f.title}" (${f.blocks.length} block${f.blocks.length === 1 ? "" : "s"}: ${describe(f.blocks).slice(0, 2).join("; ")})`),
+          ...(missing.length ? [`Not found, skipped: ${missing.join(", ")}`] : []),
+          "It is removed from your left menu for good. You can Undo right after.",
+        ],
+      },
+    };
+  },
+  run: async (args, ctx) => {
+    const names = (Array.isArray(args.pages) ? args.pages : []).map((n) => str(n, 80)).filter(Boolean).slice(0, 10);
+    const removed: Record<string, unknown>[] = [];
+    for (const n of names) {
+      const p = await findPage(ctx, n);
+      if (!p || removed.some((r) => r.id === p.id)) continue;
+      const { data: full } = await ctx.db.from("custom_pages").select("*").eq("id", p.id).eq("master_plan_id", ctx.planId).maybeSingle();
+      const { error } = await ctx.db.from("custom_pages").delete().eq("id", p.id).eq("master_plan_id", ctx.planId);
+      if (!error && full) removed.push(full as Record<string, unknown>);
+    }
+    if (!removed.length) throw new Error("Nothing was deleted.");
+    return { summary: `Deleted ${removed.length === 1 ? `the page "${removed[0].title}"` : `${removed.length} pages`}.`, result: { count: removed.length }, undo: { rows: removed } };
+  },
+  undo: async (u, ctx) => {
+    let n = 0;
+    for (const row of (u.rows as Record<string, unknown>[]) ?? []) {
+      const { error } = await ctx.db.from("custom_pages").insert({ ...row, master_plan_id: ctx.planId });
+      if (!error) n++;
+    }
+    return `Restored ${n} page${n === 1 ? "" : "s"}.`;
+  },
+};
+
+export const PAGE_TOOLS: ActionTool[] = [listPages, createPage, updatePage, deletePage];
