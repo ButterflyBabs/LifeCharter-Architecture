@@ -1,5 +1,6 @@
 "use client";
 
+import AssistantPopout from "@/components/assistant/AssistantPopout";
 import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, useSidebar } from "./CollapsibleSidebar";
@@ -65,6 +66,9 @@ function AppLayoutContent({ children }: AppLayoutProps) {
 
       {/* Travel Partner: the one floating button (Ask the assistant, or Help & setup) */}
       <TravelPartnerWidget />
+
+      {/* The AI assistant, when popped out: floats over any page */}
+      <AssistantPopout />
     </div>
   );
 }

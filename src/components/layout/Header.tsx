@@ -44,7 +44,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings": "Settings",
 };
 
-function titleForPath(pathname: string | null): string {
+export function titleForPath(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   if (pathname.startsWith("/my-pages/")) return "My Pages";

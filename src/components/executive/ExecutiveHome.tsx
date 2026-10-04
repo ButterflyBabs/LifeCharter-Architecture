@@ -1,7 +1,7 @@
 "use client";
 
-import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
-import PastConversations from "@/components/assistant/PastConversations";
+import AssistantPanel from "@/components/assistant/AssistantPanel";
+import { setPopped, usePopped } from "@/lib/assistantPopout";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 import { useState, useEffect, useCallback } from "react";
@@ -167,7 +167,6 @@ const PULSE_LABELS: Record<PulsePeriod, { name: string; prev: string; noun: stri
 };
 
 export default function ExecutiveHome() {
-  const [aiInput, setAiInput] = useState("");
   const [tasks, setTasks] = useState<RealTask[]>([]);
   const [finance, setFinance] = useState<{
     hasData: boolean;
@@ -246,13 +245,8 @@ export default function ExecutiveHome() {
   const [forwardNote, setForwardNote] = useState("");
   const [sendingForward, setSendingForward] = useState(false);
   const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
-  const [aiReply, setAiReply] = useState<string | null>(null);
-  const [aiActions, setAiActions] = useState<ActionCardData[]>([]);
-  const [pastOpen, setPastOpen] = useState(false);
-  const [pastNote, setPastNote] = useState(false);
   // The running conversation, kept on the server so it is still here after you leave and come back.
-  const [aiThread, setAiThread] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
+  const assistantPopped = usePopped();
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
   const first30 = useFirst30();
@@ -1043,40 +1037,6 @@ export default function ExecutiveHome() {
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-
-  useEffect(() => {
-    fetch("/api/mariposa", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (Array.isArray(d?.messages)) setAiThread(d.messages.map((m: { id: string; role: "user" | "assistant"; content: string }) => ({ id: m.id, role: m.role, content: m.content })));
-      })
-      .catch(() => {});
-  }, []);
-
-  // `shown` is what the chat displays when the text sent is long (an edit request carries the draft's details).
-  const askMariposa = async (q?: string, shown?: string) => {
-    const message = (q ?? aiInput).trim();
-    if (!message || aiLoading) return;
-    setAiLoading(true);
-    setAiReply(null);
-    setAiThread((t) => [...t, { id: `u${Date.now()}`, role: "user", content: shown ?? message }]);
-    if (!q) setAiInput("");
-    try {
-      const res = await fetch("/api/mariposa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, shown, page: "Executive Home", tz: userTimezone }),
-      });
-      const data = await res.json();
-      const reply = data.reply ?? "Sorry, I couldn't respond right now.";
-      setAiReply(reply);
-      setAiThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: reply }]);
-      setAiActions(Array.isArray(data.actions) ? data.actions : []);
-    } catch {
-      setAiThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: "Sorry, I couldn't respond right now." }]);
-    }
-    setAiLoading(false);
-  };
 
   const fetchTasks = async () => {
     try {
@@ -2068,119 +2028,20 @@ export default function ExecutiveHome() {
         {/* AI Assistant (live Mariposa): its own half-width card, draggable like the others; stretches to match a taller card beside it */}
         <div {...briefCardProps("ai", "exec-half")}>
           <button draggable onDragStart={() => setDragId("ai")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
-        <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden h-full">
-          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        {assistantPopped ? (
+          <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden h-full px-6 py-5">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-400">
-              <button
-                onClick={async () => {
-                  await fetch("/api/assistant/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "new" }) }).catch(() => {});
-                  setAiReply(null);
-                  setAiThread([]);
-                  setAiActions([]);
-                  setPastNote(true);
-                }}
-                className="hover:text-[#2E7C83] hover:underline"
-                title={`Start a fresh conversation. This one is saved under Past conversations, and ${assistantName} still knows your account, your notes and your settings.`}
-              >
-                New conversation
-              </button>
-              <button onClick={() => setPastOpen((o) => !o)} className="hover:text-[#2E7C83] hover:underline" aria-expanded={pastOpen} title="Read, continue or delete earlier conversations">
-                Past conversations
-              </button>
-              <a href="/settings?tab=ai" className="hover:text-[#2E7C83] hover:underline" title={`Tell ${assistantName} about you, your team and how you work`}>
-                Teach {assistantName}
-              </a>
-              <span>Powered by {assistantName}</span>
-            </div>
+            <p className="text-sm text-gray-600">{assistantName} is popped out and floating over your pages, so you can ask for help while you work.</p>
+            <button onClick={() => setPopped(false)} className="mt-3 rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Bring {assistantName} back here</button>
           </div>
-
-          <div className="px-6 pb-6">
-            {/* Input */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") askMariposa();
-                  }}
-                  placeholder={`Ask ${assistantName} anything about your business...`}
-                  className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
-                />
-              </div>
-              <button
-                onClick={() => askMariposa()}
-                disabled={aiLoading || !aiInput.trim()}
-                className="w-11 h-11 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50"
-              >
-                <ArrowRight className="w-5 h-5 text-white" />
-              </button>
-            </div>
-
-            {/* Reply */}
-            <PastConversations
-              open={pastOpen}
-              onClose={() => setPastOpen(false)}
-              onContinued={() => {
-                fetch("/api/mariposa", { cache: "no-store" })
-                  .then((r) => r.json())
-                  .then((d) => setAiThread((d.messages ?? []).map((m: { id: string; role: "user" | "assistant"; content: string }) => ({ id: m.id, role: m.role, content: m.content }))))
-                  .catch(() => {});
-              }}
-            />
-            {pastNote && aiThread.length === 0 && (
-              <p className="mb-3 text-xs text-[#7a8a99]">Your last conversation is saved under Past conversations. {assistantName} still knows your account, your notes and your settings.</p>
-            )}
-            <AssistantActionCards
-              fresh={aiActions}
-              onRevise={(card, instruction) =>
-                askMariposa(
-                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nThat earlier preview has been cancelled and nothing was created, so do not look for it or update anything in my account. Call the ${card.tool} tool again now with the full corrected details to prepare a NEW preview for my approval.`,
-                  `Change "${card.title}": ${instruction}`
-                )
-              }
-            />
-
-            {(aiLoading || aiThread.length > 0) && (
-              <div className="mb-4 max-h-96 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654]" aria-live="polite" aria-label="Conversation, newest first">
-                {aiLoading && <div className="text-xs text-[#7a8a99]">{assistantName} is thinking…</div>}
-                {[...aiThread].reverse().map((m) => (
-                  <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                    <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
-                      {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                "What's my focus today?",
-                "Schedule focus time",
-                "Draft email to team",
-                "Review weekly goals",
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => askMariposa(suggestion)}
-                  disabled={aiLoading}
-                  className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        ) : (
+          <AssistantPanel variant="card" onPopOut={() => setPopped(true)} />
+        )}
         </div>
         </div></div>
 
