@@ -955,7 +955,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Content & Social",
     question: "Where is the Content Calendar in the menu?",
     answer:
-      "In the left menu under Daily Operations, there is a Content Calendar link next to the Accountability Partner. It opens the same calendar you reach from the Daily Compass, where you plan and schedule your posts.",
+      "In the left menu under Daily Operations, there is a Content Calendar link, right below the Daily Compass. It opens the same calendar you reach from the Daily Compass, where you plan and schedule your posts.",
     keywords: ["content calendar", "menu", "navigation", "left menu", "daily operations", "social", "posts", "calendar"],
   },
 ];
