@@ -253,7 +253,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Finance",
     question: "What is the Financial Pulse?",
     answer:
-      "The Financial Pulse has two faces. On your dashboard it's a card you can switch between Week, Month and Year: it shows your income so far, how that compares with the previous week/month/year, the percentage of your income goal reached, and bars for the period (days, weeks or months). The Finance Center's Financial Pulse page goes deeper: income, expenses and net for week-to-date, month-to-date and year-to-date, your budget status, and an AI-graded health score. Both pull live from your Finance Center ledger, and the periods follow your time zone.",
+      "The Financial Pulse has two faces. On your dashboard it's a card you can switch between Week, Month and Year: it shows your income so far, how that compares with the previous week/month/year, the percentage of your income goal reached, and bars for the period (days, weeks or months). The Finance Center's Financial Pulse page goes deeper: income, expenses and net for week-to-date, month-to-date and year-to-date, your budget status, and an AI-graded health score. Both pull live from your Finance Center ledger, and the periods follow your time zone. To add money in or out, use the Income and Expense buttons right on the dashboard card (a small window opens, you save, and the card updates), or click the card's title to open the full Financial Pulse page, which also has Add entry, Import and P&L.",
     keywords: ["financial pulse", "pulse", "cash flow", "dashboard", "mtd", "ytd", "health", "week", "month", "year", "goal"],
   },
   {
