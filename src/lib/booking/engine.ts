@@ -419,8 +419,8 @@ export function fmt(iso: string, tz: string, style: "long" | "short" = "long") {
 
 const SUITE_NAME = "LifeCharter Command Suite";
 
-// Babs's account: exactly as always (reminders@lccommandsuite.com, her support
-// address). A client account: only from its own verified domain, with its own
+// Babs's account: exactly as always (reminders@lccommandsuite.com, the Command Suite
+// support address). A client account: only from its own verified domain, with its own
 // support address; if it can't send yet, nothing is emailed (never a Babs address).
 async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
   if (!who.ok) return;
@@ -428,7 +428,7 @@ async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?
   if (!key) return;
   const fromAddr = who.house ? "reminders@lccommandsuite.com" : who.fromEmail;
   const fromName = who.house ? m.fromName : m.fromName === SUITE_NAME ? who.fromName : m.fromName;
-  const support = who.house ? "support@amilynnecarroll.com" : who.supportEmail;
+  const support = who.house ? "support@lccommandsuite.com" : who.supportEmail;
   const body = m.lines.filter(Boolean).map((l) => `<p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#2E3A46">${l}</p>`).join("");
   const button = m.button
     ? `<p style="margin:18px 0 6px"><a href="${m.button.url}" style="display:inline-block;background:#2E7C83;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;font-size:14px;padding:11px 22px;border-radius:999px">${esc(m.button.label)}</a></p>`
