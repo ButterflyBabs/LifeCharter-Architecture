@@ -1733,7 +1733,9 @@ export default function ExecutiveHome() {
         </div>
 
         {/* Inbox */}
-        <div {...briefCardProps("inbox", "col-span-full lg:w-1/2")}>
+        {/* Inbox and AI Assistant sit side by side, half the screen each (stacked on small screens) */}
+        <div className="col-span-full grid grid-cols-1 items-start gap-4 lg:grid-cols-2" style={{ order: briefOrder.indexOf("inbox") }}>
+        <div {...briefCardProps("inbox")} style={{ order: 0 }}>
           <button draggable onDragStart={() => setDragId("inbox")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E4E0] overflow-hidden h-full">
           {/* Header */}
@@ -1969,84 +1971,87 @@ export default function ExecutiveHome() {
           </>)}
         </div>
         </div>
-      </div>
-
-      {/* BOTTOM - AI Assistant Full Width (live Mariposa) */}
-      <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 pt-5 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+        {/* AI Assistant (live Mariposa) */}
+        <div style={{ order: 1 }}>
+        <div className="bg-[#FFFFFF] rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5E3B6C] to-[#2E7C83] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
             </div>
-            <h3 className="font-serif text-base text-indigo-900">AI Assistant</h3>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <button
-              onClick={async () => {
-                if (!confirm(`Clear what ${assistantName} remembers from your conversations? Your assessments aren't affected.`)) return;
-                await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
-                setAiReply(null);
-              }}
-              className="hover:text-[#2E7C83] hover:underline"
-              title="Clear the conversation history"
-            >
-              Clear memory
-            </button>
-            <span>Powered by {assistantName}</span>
-          </div>
-        </div>
-
-        <div className="px-6 pb-6">
-          {/* Input */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={aiInput}
-                onChange={(e) => setAiInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") askMariposa();
-                }}
-                placeholder={`Ask ${assistantName} anything about your business...`}
-                className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
-              />
-            </div>
-            <button
-              onClick={() => askMariposa()}
-              disabled={aiLoading || !aiInput.trim()}
-              className="w-11 h-11 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50"
-            >
-              <ArrowRight className="w-5 h-5 text-white" />
-            </button>
-          </div>
-
-          {/* Reply */}
-          {(aiLoading || aiReply) && (
-            <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
-              {aiLoading ? `${assistantName} is thinking…` : aiReply}
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              "What's my focus today?",
-              "Schedule focus time",
-              "Draft email to team",
-              "Review weekly goals",
-            ].map((suggestion) => (
+            <div className="flex items-center gap-3 text-xs text-gray-400">
               <button
-                key={suggestion}
-                onClick={() => askMariposa(suggestion)}
-                disabled={aiLoading}
-                className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                onClick={async () => {
+                  if (!confirm(`Clear what ${assistantName} remembers from your conversations? Your assessments aren't affected.`)) return;
+                  await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
+                  setAiReply(null);
+                }}
+                className="hover:text-[#2E7C83] hover:underline"
+                title="Clear the conversation history"
               >
-                {suggestion}
+                Clear memory
               </button>
-            ))}
+              <span>Powered by {assistantName}</span>
+            </div>
+          </div>
+
+          <div className="px-6 pb-6">
+            {/* Input */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") askMariposa();
+                  }}
+                  placeholder={`Ask ${assistantName} anything about your business...`}
+                  className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
+                />
+              </div>
+              <button
+                onClick={() => askMariposa()}
+                disabled={aiLoading || !aiInput.trim()}
+                className="w-11 h-11 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50"
+              >
+                <ArrowRight className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Reply */}
+            {(aiLoading || aiReply) && (
+              <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
+                {aiLoading ? `${assistantName} is thinking…` : aiReply}
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                "What's my focus today?",
+                "Schedule focus time",
+                "Draft email to team",
+                "Review weekly goals",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => askMariposa(suggestion)}
+                  disabled={aiLoading}
+                  className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+        </div>
+        </div>
       </div>
+
 
       {/* 12 Business Dimensions (draggable) */}
       <DimensionCards />
