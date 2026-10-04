@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const db = createServerClient();
   const slug = new URL(request.url).searchParams.get("slug");
   if (slug) {
-    const { data } = await db.from("custom_pages").select("slug, title, blocks, updated_at").eq("master_plan_id", planId).eq("slug", slug).maybeSingle();
+    const { data } = await db.from("custom_pages").select("slug, title, blocks, nav_section, updated_at").eq("master_plan_id", planId).eq("slug", slug).maybeSingle();
     if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
     return NextResponse.json({ page: data });
   }

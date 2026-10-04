@@ -7,8 +7,8 @@ const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0
 const BLOCK_SCHEMA = {
   type: "object",
   properties: {
-    type: { type: "string", enum: ["heading", "text", "checklist", "table", "link"] },
-    text: { type: "string", description: "For heading and text blocks." },
+    type: { type: "string", enum: ["heading", "text", "callout", "checklist", "table", "link"], description: "heading = a section title; text = paragraphs; callout = a highlighted note or key takeaway; checklist; table; link." },
+    text: { type: "string", description: "For heading, text and callout blocks." },
     title: { type: "string", description: "For checklist and table blocks." },
     items: { type: "array", items: { type: "string" }, description: "Checklist items." },
     columns: { type: "array", items: { type: "string" }, description: "Table column names." },
@@ -103,6 +103,7 @@ function describe(blocks: Block[]): string[] {
   const out = blocks.slice(0, 10).map((b) =>
     b.type === "heading" ? `Heading: ${b.text}`
     : b.type === "text" ? `Text: ${b.text.slice(0, 80)}${b.text.length > 80 ? "…" : ""}`
+    : b.type === "callout" ? `Highlighted note: ${b.text.slice(0, 70)}${b.text.length > 70 ? "…" : ""}`
     : b.type === "checklist" ? `Checklist "${b.title || "Checklist"}" (${b.items.length} items)`
     : b.type === "table" ? `Table${b.title ? ` "${b.title}"` : ""}: ${b.columns.join(" | ")} (${b.rows.length} rows)`
     : `Link: ${b.label}`

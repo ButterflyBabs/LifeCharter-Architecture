@@ -7,6 +7,7 @@ export type Block =
   | { id: string; type: "text"; text: string }
   | { id: string; type: "checklist"; title: string; items: { id: string; text: string; done: boolean }[] }
   | { id: string; type: "table"; title: string; columns: string[]; rows: string[][] }
+  | { id: string; type: "callout"; text: string }
   | { id: string; type: "link"; label: string; url: string };
 
 const MAX_BLOCKS = 80;
@@ -54,6 +55,9 @@ export function cleanBlocks(raw: unknown): Block[] {
         });
         break;
       }
+      case "callout":
+        out.push({ id, type: "callout", text: s(b.text, 2000) });
+        break;
       case "link": {
         const url = s(b.url, 600).trim();
         if (/^https?:\/\//i.test(url)) out.push({ id, type: "link", label: s(b.label, 200) || url, url });
@@ -72,6 +76,7 @@ export function outline(blocks: Block[]): string {
     .map((b) => {
       if (b.type === "heading") return `# ${b.text}`;
       if (b.type === "text") return b.text.slice(0, 400);
+      if (b.type === "callout") return `[Callout] ${b.text.slice(0, 300)}`;
       if (b.type === "checklist") return `[Checklist "${b.title}"] ${b.items.map((i) => `${i.done ? "[x]" : "[ ]"} ${i.text}`).join("; ")}`;
       if (b.type === "table") return `[Table "${b.title}"] columns: ${b.columns.join(" | ")}; ${b.rows.length} rows${b.rows.length ? "; e.g. " + b.rows.slice(0, 3).map((r) => r.join(" | ")).join(" / ") : ""}`;
       return `[Link] ${b.label} ${b.url}`;
