@@ -403,7 +403,7 @@ function NavItem({
       <Link
         ref={linkRef}
         href={item.href}
-        {...(item.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        {...(item.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer", prefetch: false } : {})}
         onMouseEnter={() => isCollapsed && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
