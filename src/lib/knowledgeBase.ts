@@ -939,7 +939,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Can I rearrange the left menu?",
     answer:
-      "Yes, two ways. Drag a whole SECTION (Daily Operations, Clients & Sales, Growth and so on) by the small grip that appears to the left of its heading when you hover, and drop it where you want it. Or drag a single page within its section by the grip on its right. You can also click a section heading to fold it, and with the keyboard, focus a section's grip and press the up or down arrow. Your order is remembered on the device you are using.",
+      "Yes, two ways. Drag a whole SECTION (Daily Operations, Clients & Sales, Growth and so on) by the small grip that appears to the left of its heading when you hover, and drop it where you want it. Or drag a single page within its section by the grip on its right. You can also click a section heading to fold it, and with the keyboard, focus a section's grip and press the up or down arrow. Your order is saved to your account, so it is the same on every device and for your team, and you can change it any time by dragging again. 'Reset menu order' at the bottom of the menu puts it back to the standard order.",
     keywords: ["left menu", "navigation", "sections", "drag", "rearrange", "reorder", "move section", "sidebar", "order"],
   },
   {
