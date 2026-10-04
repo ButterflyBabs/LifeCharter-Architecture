@@ -1364,7 +1364,10 @@ export default function ExecutiveHome() {
         <div className="bg-[#FFFFFF] rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden h-full">
           {/* Card Header */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between gap-2">
-            <h3 className="font-serif text-base text-indigo-900">{scheduleDay === 0 ? "Today\u2019s Schedule" : `${viewLabel}\u2019s Schedule`}</h3>
+            <div>
+              <h3 className="font-serif text-base text-indigo-900">{scheduleDay === 0 ? "Today\u2019s Schedule" : `${viewLabel}\u2019s Schedule`}</h3>
+              <p className="text-[11px] text-gray-400">Use the arrows to show future dates</p>
+            </div>
             <div className="flex items-center gap-1">
               {scheduleDay > 0 && (
                 <button onClick={() => setScheduleDay(0)} className="mr-1 text-xs font-semibold text-[#2E7C83] hover:underline">Today</button>
