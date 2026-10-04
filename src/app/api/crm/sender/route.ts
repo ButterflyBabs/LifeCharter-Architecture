@@ -4,6 +4,7 @@ import { resolveActor } from "@/lib/authz";
 import { crmAccount } from "../guard";
 import { isHouseDomain, senderProfile, senderVerdict, cleanName } from "@/lib/email/accountSender";
 import { createDomain, deleteDomain, getDomain, verifyDomain } from "@/lib/email/resendDomains";
+import { checkResendKey, setAccountResendKey } from "@/lib/email/resendKey";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,9 @@ export const dynamic = "force-dynamic";
 //   GET → the account's sending domain (status + DNS records) and sender profile
 //   POST { action } with action one of:
 //     save-profile { senderName, replyTo, signoff, supportEmail, address, fromLocal }
-//     add-domain { domain }      (account owner only)
+//     save-resend-key { key }    (account owner only; the key is checked, then stored encrypted)
+//     remove-resend-key          (account owner only)
+//     add-domain { domain }      (account owner only; needs the Resend key first)
 //     check-domain               → asks the email service to verify, then refreshes status/records
 //     remove-domain              (account owner only)
 // Babs's account keeps its existing sender setup; nothing here changes it.
@@ -31,6 +34,7 @@ async function view(planId: string) {
   return {
     house: false,
     available: !p.columnsMissing,
+    resendConnected: Boolean(p.resendKey),
     domain: p.domain ? { name: p.domain, status: p.status, records: p.records, fromEmail: p.fromEmail } : null,
     fromLocal: p.fromLocal,
     saved: p.saved,
@@ -81,11 +85,32 @@ export async function POST(request: Request) {
     return NextResponse.json(await view(a.planId));
   }
 
-  if (b.action === "add-domain" || b.action === "remove-domain") {
+  if (b.action === "save-resend-key" || b.action === "remove-resend-key" || b.action === "add-domain" || b.action === "remove-domain") {
     // Connecting a domain is like connecting any outside account: the account owner only.
     const actor = await resolveActor();
     if (actor.kind === "member") return NextResponse.json({ error: "Only the account owner can set up or remove the sending domain." }, { status: 403 });
   }
+
+  if (b.action === "save-resend-key") {
+    const key = str(b.key, 200);
+    const c = await checkResendKey(key);
+    if (!c.ok) return NextResponse.json({ error: c.error }, { status: 400 });
+    // A different Resend account than before: the old domain isn't in it, so start the domain step again.
+    if (p.resendKey && p.resendKey !== key) await save({ sending_domain: null, resend_domain_id: null, sending_domain_status: "not_started", sending_domain_records: [] });
+    if (!(await setAccountResendKey(a.planId, key, db))) return NextResponse.json({ error: "Couldn't save the key." }, { status: 500 });
+    return NextResponse.json(await view(a.planId));
+  }
+
+  if (b.action === "remove-resend-key") {
+    // Take the domain off their Resend account first, then forget the key.
+    if (p.resendKey && p.domainId) await deleteDomain(p.resendKey, p.domainId);
+    await save({ sending_domain: null, resend_domain_id: null, sending_domain_status: "not_started", sending_domain_records: [] });
+    await setAccountResendKey(a.planId, "", db);
+    return NextResponse.json(await view(a.planId));
+  }
+
+  if (b.action === "add-domain" && !p.resendKey) return NextResponse.json({ error: "Connect your Resend account first (step 1)." }, { status: 400 });
+  if ((b.action === "check-domain") && !p.resendKey) return NextResponse.json({ error: "Connect your Resend account first (step 1)." }, { status: 400 });
 
   if (b.action === "add-domain") {
     if (p.domainId) return NextResponse.json({ error: "Remove the current domain first." }, { status: 400 });
@@ -94,11 +119,11 @@ export async function POST(request: Request) {
     if (isHouseDomain(domain)) return NextResponse.json({ error: "Please use a domain your business owns." }, { status: 400 });
     const { data: taken } = await db.from("client_master_plans").select("id").ilike("sending_domain", domain).neq("id", a.planId).limit(1);
     if (taken?.length) return NextResponse.json({ error: "That domain is already in use by another account." }, { status: 409 });
-    const r = await createDomain(domain);
+    const r = await createDomain(p.resendKey!, domain);
     if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status >= 500 ? 502 : 400 });
     const err = await save({ sending_domain: domain, resend_domain_id: r.data.id, sending_domain_status: r.data.status, sending_domain_records: r.data.records });
     if (err) {
-      await deleteDomain(r.data.id); // don't leave an orphan at the email service
+      await deleteDomain(p.resendKey!, r.data.id); // don't leave an orphan at the email service
       return NextResponse.json({ error: err.code === "23505" ? "That domain is already in use by another account." : "Couldn't save the domain." }, { status: 400 });
     }
     return NextResponse.json(await view(a.planId));
@@ -106,9 +131,9 @@ export async function POST(request: Request) {
 
   if (b.action === "check-domain") {
     if (!p.domainId) return NextResponse.json({ error: "Add your domain first." }, { status: 400 });
-    const v = await verifyDomain(p.domainId);
+    const v = await verifyDomain(p.resendKey!, p.domainId);
     if (!v.ok && v.status !== 409) return NextResponse.json({ error: v.error }, { status: 400 });
-    const g = await getDomain(p.domainId);
+    const g = await getDomain(p.resendKey!, p.domainId);
     if (!g.ok) return NextResponse.json({ error: g.error }, { status: 400 });
     // Only ever trust the record this account created.
     if (g.data.name.toLowerCase() !== (p.domain || "")) return NextResponse.json({ error: "That domain doesn't match. Remove it and add it again." }, { status: 400 });
@@ -117,8 +142,8 @@ export async function POST(request: Request) {
   }
 
   if (b.action === "remove-domain") {
-    if (p.domainId) {
-      const r = await deleteDomain(p.domainId);
+    if (p.domainId && p.resendKey) {
+      const r = await deleteDomain(p.resendKey, p.domainId);
       if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
     }
     const err = await save({ sending_domain: null, resend_domain_id: null, sending_domain_status: "not_started", sending_domain_records: [] });

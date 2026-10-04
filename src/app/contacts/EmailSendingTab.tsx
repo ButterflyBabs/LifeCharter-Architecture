@@ -16,6 +16,7 @@ interface Profile { senderName: string | null; replyTo: string | null; signoff: 
 interface View {
   house: boolean;
   available?: boolean;
+  resendConnected?: boolean;
   domain?: { name: string; status: Status; records: DnsRecord[]; fromEmail: string | null } | null;
   fromLocal?: string;
   saved?: Profile;
@@ -36,6 +37,7 @@ export default function EmailSendingTab({ setMsg }: { setMsg: (m: string) => voi
   const [v, setV] = useState<View | null>(null);
   const [busy, setBusy] = useState(false);
   const [domain, setDomain] = useState("");
+  const [resendKey, setResendKey] = useState("");
   const [p, setP] = useState({ senderName: "", replyTo: "", signoff: "", supportEmail: "", address: "", fromLocal: "hello" });
 
   const apply = useCallback((d: View) => {
@@ -84,10 +86,10 @@ export default function EmailSendingTab({ setMsg }: { setMsg: (m: string) => voi
         <CardContent className="p-5 space-y-2 text-sm">
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">How your emails go out</p>
           <p className="text-[#5a6472]">
-            Campaigns, broadcasts and booking emails are sent from your own domain, so they come from your business and land in inboxes. Until your domain is verified, the Suite doesn&rsquo;t email your contacts at all. Calendar invites from a host&rsquo;s connected Google or Microsoft calendar still go out.
+            Campaigns, broadcasts and booking emails are sent through YOUR OWN Resend account and from your own domain, so they come from your business, count on your own plan and land in inboxes. Until your Resend account is connected and your domain is verified, the Suite doesn&rsquo;t email your contacts at all. Calendar invites from a host&rsquo;s connected Google or Microsoft calendar still go out.
           </p>
           <ul className="space-y-1">
-            <li>{v.ready?.bookings ? "✓" : "○"} Booking confirmations and reminders {v.ready?.bookings ? "are on" : "are waiting on your verified domain"}</li>
+            <li>{v.ready?.bookings ? "✓" : "○"} Booking confirmations and reminders {v.ready?.bookings ? "are on" : "are waiting on your Resend account and verified domain"}</li>
             <li>{v.ready?.marketing ? "✓" : "○"} Campaigns and broadcasts {v.ready?.marketing ? "are ready to send" : `are waiting: ${v.ready?.reason ?? ""}`}</li>
           </ul>
         </CardContent>
@@ -96,14 +98,49 @@ export default function EmailSendingTab({ setMsg }: { setMsg: (m: string) => voi
       <Card>
         <CardContent className="p-5 space-y-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">1. Your sending domain</p>
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">1. Your Resend account</p>
+            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${v.resendConnected ? BADGE.verified.cls : BADGE.not_started.cls}`}>
+              {v.resendConnected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />} {v.resendConnected ? "Connected" : "Not connected yet"}
+            </span>
+          </div>
+          <p className="text-[#5a6472]">
+            Resend is the service that delivers your email. You use your own free account, so your sending is yours: it counts on your plan, your domain and your reputation, and nobody else&rsquo;s. Only the account owner can connect or change it.
+          </p>
+          {!v.resendConnected ? (
+            <>
+              <ol className="list-decimal pl-5 space-y-1 text-[#5a6472]">
+                <li>Create a free account at <a href="https://resend.com/signup" target="_blank" rel="noopener noreferrer" className="text-[#2E7C83] underline">resend.com/signup</a> (or sign in).</li>
+                <li>Open <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-[#2E7C83] underline">API Keys</a>, click <strong>Create API Key</strong>, and choose <strong>Full access</strong>. (A key that can only send can&rsquo;t add your domain.)</li>
+                <li>Copy the key (it starts with <code>re_</code>) and paste it below. You only see it once in Resend.</li>
+              </ol>
+              <div className="flex flex-wrap gap-2">
+                <Input className="max-w-md" type="password" autoComplete="off" placeholder="re_…" value={resendKey} onChange={(e) => setResendKey(e.target.value)} aria-label="Resend API key" />
+                <Button disabled={busy || !resendKey.trim()} onClick={async () => { await act({ action: "save-resend-key", key: resendKey }, "Resend connected."); setResendKey(""); }}>Connect Resend</Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[#5a6472]">Your key is stored encrypted and is never shown again.</span>
+              <Button variant="outline" disabled={busy} onClick={() => confirm("Disconnect Resend? Your sending domain is removed from your Resend account and emails from the Suite stop until you connect again.") && act({ action: "remove-resend-key" }, "Resend disconnected.")}>
+                <Trash2 className="w-4 h-4 mr-1" /> Disconnect
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-5 space-y-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">2. Your sending domain</p>
             {badge && (
               <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${badge.cls}`}>
                 <badge.Icon className="w-3.5 h-3.5" /> {badge.label}
               </span>
             )}
           </div>
-          {!d && (
+          {!d && !v.resendConnected && <p className="text-[#7a8a99]">Connect your Resend account above first.</p>}
+          {!d && v.resendConnected && (
             <>
               <p className="text-[#5a6472]">
                 Use a subdomain of your business website, like <strong>mail.yourbusiness.com</strong>. It keeps your everyday email untouched. Only the account owner can add or remove it.
@@ -171,7 +208,7 @@ export default function EmailSendingTab({ setMsg }: { setMsg: (m: string) => voi
 
       <Card>
         <CardContent className="p-5 space-y-3 text-sm">
-          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">2. Who your emails come from</p>
+          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">3. Who your emails come from</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">From name
               <Input placeholder={v.defaults?.senderName} value={p.senderName} onChange={(e) => setP({ ...p, senderName: e.target.value })} />

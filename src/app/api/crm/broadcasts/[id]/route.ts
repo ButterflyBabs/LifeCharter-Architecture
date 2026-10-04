@@ -113,7 +113,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const to = testRecipient(a, profile.defaults.replyTo);
     if (!to) return NextResponse.json({ error: "There's no email address to send the test to." }, { status: 400 });
     const mail = renderBroadcast(b, { id: "test", first_name: house ? "Babs" : profile.defaults.signoff || null }, "[Test] ", who.house ? undefined : who.footer);
-    const s = await sendRendered(who.house ? b : clientFrom(who), to, "test", mail);
+    const s = await sendRendered(who.house ? b : clientFrom(who), to, "test", mail, who.house ? undefined : who.resendKey);
     return s.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: s.error || "Couldn't send." }, { status: 500 });
   }
 
@@ -155,7 +155,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const who = senderVerdict(await senderProfile(b.master_plan_id, db), true);
     if (!who.ok) return NextResponse.json({ error: who.reason, setup: true }, { status: 400 });
     const mail = renderBroadcast(b, { id: c.id, first_name: c.first_name }, "", who.house ? undefined : who.footer);
-    const s = await sendRendered(who.house ? b : clientFrom(who), c.email, c.id, mail);
+    const s = await sendRendered(who.house ? b : clientFrom(who), c.email, c.id, mail, who.house ? undefined : who.resendKey);
     if (!s.ok) return NextResponse.json({ error: s.error || "Couldn't send." }, { status: 500 });
     await db.from("crm_broadcast_sends").upsert({ broadcast_id: b.id, contact_id: c.id, email: c.email, status: "sent", resend_id: s.id ?? null, sent_at: now(), error: null }, { onConflict: "broadcast_id,contact_id" });
     await logEvent(b.master_plan_id, c.id, "email", `Resent broadcast: “${mail.subject}”`, { broadcast: b.id, name: b.name, resend: true }, db).catch(() => {});

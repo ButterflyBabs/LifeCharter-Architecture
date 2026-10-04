@@ -424,7 +424,8 @@ const SUITE_NAME = "LifeCharter Command Suite";
 // support address; if it can't send yet, nothing is emailed (never a Babs address).
 async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
   if (!who.ok) return;
-  const key = process.env.RESEND_API_KEY;
+  // A client account sends through its own Resend key; Babs's account uses the Suite's.
+  const key = who.house ? process.env.RESEND_API_KEY : who.resendKey;
   if (!key) return;
   const fromAddr = who.house ? "reminders@lccommandsuite.com" : who.fromEmail;
   const fromName = who.house ? m.fromName : m.fromName === SUITE_NAME ? who.fromName : m.fromName;

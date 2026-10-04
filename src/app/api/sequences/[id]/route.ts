@@ -153,7 +153,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       contact: { id: "test", first_name: house ? "Babs" : profile.defaults.signoff || null },
       footer: who.house ? undefined : who.footer,
     });
-    const r = await sendRendered(who.house ? seq : clientFrom(who), to, "test", mail);
+    const r = await sendRendered(who.house ? seq : clientFrom(who), to, "test", mail, who.house ? undefined : who.resendKey);
     return r.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r.error || "Couldn't send." }, { status: 500 });
   }
 
@@ -198,7 +198,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const who = senderVerdict(await senderProfile(planId, db), true);
     if (!who.ok) return NextResponse.json({ error: who.reason, setup: true }, { status: 400 });
     const mail = renderStep({ brand: seq.brand, subject: step.subject, preview: step.preview, body: step.body, buttonLabel: step.button_label, buttonUrl: step.button_url, contact: { id: c.id, first_name: c.first_name }, footer: who.house ? undefined : who.footer });
-    const r = await sendRendered(who.house ? seq : clientFrom(who), c.email, c.id, mail);
+    const r = await sendRendered(who.house ? seq : clientFrom(who), c.email, c.id, mail, who.house ? undefined : who.resendKey);
     if (!r.ok) return NextResponse.json({ error: r.error || "Couldn't send." }, { status: 500 });
     await db.from("sequence_sends").upsert({ enrollment_id: enr.id, step_id: step.id, status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString(), error: null }, { onConflict: "enrollment_id,step_id" });
     await logEvent(planId, c.id, "email", `Resent “${step.subject}” (${seq.name})`, { sequence: seq.key, step: step.id, resend: true }, db).catch(() => {});

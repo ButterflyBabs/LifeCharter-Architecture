@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
 import { mapStatus, type DnsRecord, type DomainStatus } from "@/lib/email/resendDomains";
+import { getAccountResendKey } from "@/lib/email/resendKey";
 
 // Who an account's emails come from.
 //
@@ -34,6 +35,7 @@ export interface EmailFooter {
 export interface SenderProfile {
   house: boolean;
   columnsMissing: boolean; // the sending columns aren't in the database yet
+  resendKey: string | null; // the account's own Resend key (server only: never put this in a response)
   domain: string | null;
   domainId: string | null;
   status: DomainStatus;
@@ -54,8 +56,8 @@ export interface SenderProfile {
 
 export type AccountSender =
   | { ok: true; house: true }
-  | { ok: true; house: false; from: string; fromName: string; fromEmail: string; replyTo: string; signoff: string; supportEmail: string; address: string; footer: EmailFooter }
-  | { ok: false; house: false; reason: string; code: "not_available" | "no_domain" | "unverified" | "no_address" | "no_reply_to" };
+  | { ok: true; house: false; resendKey: string; from: string; fromName: string; fromEmail: string; replyTo: string; signoff: string; supportEmail: string; address: string; footer: EmailFooter }
+  | { ok: false; house: false; reason: string; code: "not_available" | "no_resend_key" | "no_domain" | "unverified" | "no_address" | "no_reply_to" };
 
 const SENDER_COLS = "sending_domain, resend_domain_id, sending_domain_status, sending_domain_records, sending_from_local, sender_name, sender_reply_to, sender_signoff, sender_support_email, business_address";
 const txt = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -66,7 +68,7 @@ export async function senderProfile(planId: string, db: Db = createServerClient(
   if (house) {
     // Babs's account: nothing here is used; her existing sender setup applies.
     const none = { senderName: "", replyTo: "", signoff: "", supportEmail: "" };
-    return { house, columnsMissing: false, domain: null, domainId: null, status: "not_started", records: [], fromLocal: "hello", saved: { senderName: null, replyTo: null, signoff: null, supportEmail: null, address: null }, defaults: none, ...none, address: "", fromEmail: null };
+    return { house, columnsMissing: false, resendKey: null, domain: null, domainId: null, status: "not_started", records: [], fromLocal: "hello", saved: { senderName: null, replyTo: null, signoff: null, supportEmail: null, address: null }, defaults: none, ...none, address: "", fromEmail: null };
   }
   const [{ data: plan }, { data: row, error }, { data: ws }] = await Promise.all([
     db.from("client_master_plans").select("user_id, client_name, client_email").eq("id", planId).maybeSingle(),
@@ -76,6 +78,7 @@ export async function senderProfile(planId: string, db: Db = createServerClient(
   const r = (error ? {} : row ?? {}) as Record<string, unknown>;
   const { data: prof } = plan?.user_id ? await db.from("profiles").select("full_name, email").eq("id", plan.user_id).maybeSingle() : { data: null };
 
+  const resendKey = await getAccountResendKey(planId, db);
   const fullName = txt(prof?.full_name) || "";
   const ownerEmail = (txt(prof?.email) || txt(plan?.client_email) || "").toLowerCase();
   const clientName = txt(plan?.client_name);
@@ -99,6 +102,7 @@ export async function senderProfile(planId: string, db: Db = createServerClient(
   return {
     house,
     columnsMissing: Boolean(error),
+    resendKey,
     domain,
     domainId: txt(r.resend_domain_id),
     status: domain ? mapStatus(r.sending_domain_status || "not_started") : "not_started",
@@ -127,12 +131,13 @@ export function senderVerdict(p: SenderProfile, marketing: boolean): AccountSend
   if (p.house) return { ok: true, house: true };
   const where = "Contacts → Email sending";
   if (p.columnsMissing) return { ok: false, house: false, code: "not_available", reason: "Email sending isn't switched on for your account yet. Please contact support." };
+  if (!p.resendKey) return { ok: false, house: false, code: "no_resend_key", reason: `Nothing can be emailed until you connect your own Resend account in ${where}.` };
   if (!p.domain || !p.fromEmail) return { ok: false, house: false, code: "no_domain", reason: `Nothing can be emailed until you set up your own sending domain in ${where}.` };
   if (p.status !== "verified") return { ok: false, house: false, code: "unverified", reason: `Your sending domain (${p.domain}) isn't verified yet. Add its DNS records, then click Check verification in ${where}.` };
   if (!EMAIL_RE.test(p.replyTo)) return { ok: false, house: false, code: "no_reply_to", reason: `Add a reply-to email in ${where}.` };
   if (marketing && !p.address.trim()) return { ok: false, house: false, code: "no_address", reason: `Add your business mailing address in ${where}. The law requires it on every marketing email.` };
   const footer: EmailFooter = { signoff: p.signoff, supportEmail: p.supportEmail || p.replyTo, address: p.address };
-  return { ok: true, house: false, from: `"${p.senderName}" <${p.fromEmail}>`, fromName: p.senderName, fromEmail: p.fromEmail, replyTo: p.replyTo, signoff: p.signoff, supportEmail: footer.supportEmail, address: p.address, footer };
+  return { ok: true, house: false, resendKey: p.resendKey, from: `"${p.senderName}" <${p.fromEmail}>`, fromName: p.senderName, fromEmail: p.fromEmail, replyTo: p.replyTo, signoff: p.signoff, supportEmail: footer.supportEmail, address: p.address, footer };
 }
 
 export async function accountSender(planId: string, opts: { marketing: boolean }, db: Db = createServerClient()): Promise<AccountSender> {

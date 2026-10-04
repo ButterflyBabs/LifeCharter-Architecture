@@ -1,5 +1,5 @@
 // Resend Domains API: each client account sends from its OWN verified domain.
-// Uses the app's existing RESEND_API_KEY (never logged or returned).
+// Uses the ACCOUNT'S OWN Resend key (their Resend account holds their domain; never logged or returned).
 
 export type DomainStatus = "not_started" | "pending" | "verified" | "failed";
 export interface DnsRecord {
@@ -20,7 +20,7 @@ export interface ResendDomain {
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; status: number };
 
 const API = "https://api.resend.com/domains";
-const UNAVAILABLE = "Sending domains aren't available yet. Please contact support.";
+const UNAVAILABLE = "Resend said this key can't manage domains. Make a key with Full access in your Resend account and connect that one.";
 
 // Resend's statuses → the four the Suite shows.
 export function mapStatus(s: unknown): DomainStatus {
@@ -44,9 +44,8 @@ function cleanRecords(v: unknown): DnsRecord[] {
   }));
 }
 
-async function call(method: string, path: string, body?: unknown): Promise<Result<Record<string, unknown>>> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { ok: false, error: UNAVAILABLE, status: 503 };
+async function call(key: string, method: string, path: string, body?: unknown): Promise<Result<Record<string, unknown>>> {
+  if (!key) return { ok: false, error: "Connect your Resend account first.", status: 400 };
   try {
     const res = await fetch(`${API}${path}`, {
       method,
@@ -68,25 +67,25 @@ async function call(method: string, path: string, body?: unknown): Promise<Resul
 
 const toDomain = (d: Record<string, unknown>): ResendDomain => ({ id: String(d.id ?? ""), name: String(d.name ?? ""), status: mapStatus(d.status), records: cleanRecords(d.records) });
 
-export async function createDomain(name: string): Promise<Result<ResendDomain>> {
-  const r = await call("POST", "", { name });
+export async function createDomain(key: string, name: string): Promise<Result<ResendDomain>> {
+  const r = await call(key, "POST", "", { name });
   if (!r.ok) return r;
   if (!r.data.id) return { ok: false, error: "The email service didn't return the domain. Please try again.", status: 502 };
   return { ok: true, data: toDomain(r.data) };
 }
 
-export async function getDomain(id: string): Promise<Result<ResendDomain>> {
-  const r = await call("GET", `/${encodeURIComponent(id)}`);
+export async function getDomain(key: string, id: string): Promise<Result<ResendDomain>> {
+  const r = await call(key, "GET", `/${encodeURIComponent(id)}`);
   return r.ok ? { ok: true, data: toDomain(r.data) } : r;
 }
 
-export async function verifyDomain(id: string): Promise<Result<true>> {
-  const r = await call("POST", `/${encodeURIComponent(id)}/verify`);
+export async function verifyDomain(key: string, id: string): Promise<Result<true>> {
+  const r = await call(key, "POST", `/${encodeURIComponent(id)}/verify`);
   return r.ok ? { ok: true, data: true } : r;
 }
 
-export async function deleteDomain(id: string): Promise<Result<true>> {
-  const r = await call("DELETE", `/${encodeURIComponent(id)}`);
+export async function deleteDomain(key: string, id: string): Promise<Result<true>> {
+  const r = await call(key, "DELETE", `/${encodeURIComponent(id)}`);
   if (!r.ok && r.status !== 404) return r; // already gone is fine
   return { ok: true, data: true };
 }

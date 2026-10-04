@@ -159,10 +159,12 @@ export async function sendRendered(
   seq: Pick<SeqRow, "from_name" | "from_email" | "reply_to">,
   to: string,
   contactId: string,
-  mail: { subject: string; html: string; text: string }
+  mail: { subject: string; html: string; text: string },
+  // A client account sends through its OWN Resend key; Babs's account (and the Suite's own mail) use the Suite's.
+  accountKey?: string
 ): Promise<{ ok: boolean; id?: string; error?: string; status?: number }> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { ok: false, error: "RESEND_API_KEY not set" };
+  const key = accountKey || process.env.RESEND_API_KEY;
+  if (!key) return { ok: false, error: "No Resend key to send with" };
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -232,7 +234,7 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
       .select("id");
     if (!claim?.length) continue; // another run already has it
     const mail = renderStep({ brand: s.brand, subject: st.subject, preview: st.preview, body: st.body, buttonLabel: st.button_label, buttonUrl: st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null }, footer: who.house ? undefined : who.footer });
-    const r = await sendRendered(who.house ? s : clientFrom(who), contact.email as string, contact.id as string, mail);
+    const r = await sendRendered(who.house ? s : clientFrom(who), contact.email as string, contact.id as string, mail, who.house ? undefined : who.resendKey);
     await db
       .from("sequence_sends")
       .update(r.ok ? { status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString() } : { status: "failed", error: (r.error || "").slice(0, 500) })
