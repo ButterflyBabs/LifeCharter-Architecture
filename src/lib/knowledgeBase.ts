@@ -711,7 +711,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Finance",
     question: "How do I set an income goal and see my progress?",
     answer:
-      "Your monthly income goal is the income target in Finance → Budget (you can also set it right on the dashboard's Financial Pulse card). Switch the card to Month to see the percentage of it reached. Yearly defaults to 12 times your monthly goal and weekly to the yearly goal divided by 52 — or click 'Edit goal' on the Week or Year view to set your own number for that period. The percentage is your income so far in that period divided by its goal. Goals are private to your account.",
+      "Your monthly income goal is the income target in Finance → Budget (you can also set it right on the dashboard's Financial Pulse card). Switch the card to Month to see the percentage of it reached. Yearly defaults to 12 times your monthly goal and weekly to the yearly goal divided by 52 — or click 'Edit goal' on the Week or Year view to set your own number for that period. The percentage is your income so far in that period divided by its goal. Growing month by month? In Finance → Budget, the Month-by-month income goals card lets you give each of the next 12 months its own goal. Your Financial Pulse follows it: this month's goal is that month's own number, the week is that goal spread over its weeks, and the year adds up your month goals for the calendar year. A month with no goal of its own uses your monthly goal. Goals are private to your account.",
     keywords: ["goal", "income goal", "revenue goal", "target", "percent", "progress", "financial pulse", "weekly goal", "yearly goal", "monthly goal"],
   },
   {
