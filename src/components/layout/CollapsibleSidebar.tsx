@@ -609,8 +609,50 @@ export function CollapsibleSidebar() {
   // a page not in the saved list (new, or just became visible to you) is
   // appended at the end rather than dropped.
   const [navOrder, setNavOrder] = useState<Record<string, string[]>>({});
-  // The order of the sections themselves (remembered on this device, like the pages inside them).
+  // The order of the sections themselves.
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+  // The order is saved on the ACCOUNT (so it is the same on every device and for the account's team);
+  // this device keeps a copy so the menu doesn't jump while the saved order loads.
+  const [navLoaded, setNavLoaded] = useState(false);
+  const skipSave = useRef(true);
+  useEffect(() => {
+    if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) {
+      setNavLoaded(true);
+      return;
+    }
+    fetch("/api/nav-order", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.has) {
+          skipSave.current = true;
+          setSectionOrder(Array.isArray(d.sectionOrder) ? d.sectionOrder : []);
+          setNavOrder(d.itemOrder && typeof d.itemOrder === "object" ? d.itemOrder : {});
+        } else {
+          // Nothing saved on the account yet: if this device has an arrangement, keep it and save it to the account.
+          try {
+            const localItems = JSON.parse(localStorage.getItem("nav-item-order") || "{}");
+            const localSections = JSON.parse(localStorage.getItem("nav-section-order") || "[]");
+            if (Object.keys(localItems).length || localSections.length) skipSave.current = false;
+          } catch {
+            /* nothing to migrate */
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setNavLoaded(true));
+  }, []);
+  useEffect(() => {
+    if (!navLoaded) return;
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) return;
+    const t = setTimeout(() => {
+      fetch("/api/nav-order", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sectionOrder, itemOrder: navOrder }) }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(t);
+  }, [sectionOrder, navOrder, navLoaded]);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("nav-section-order") || "[]");
@@ -653,6 +695,18 @@ export function CollapsibleSidebar() {
   const navCollision: CollisionDetection = (args) => {
     const sectionDrag = String(args.active.id).startsWith("section:");
     return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:") === sectionDrag) });
+  };
+  const resetMenuOrder = () => {
+    skipSave.current = true;
+    setSectionOrder([]);
+    setNavOrder({});
+    try {
+      localStorage.removeItem("nav-item-order");
+      localStorage.removeItem("nav-section-order");
+    } catch {
+      /* nothing to clear */
+    }
+    fetch("/api/nav-order", { method: "DELETE" }).catch(() => {});
   };
   const saveSectionOrder = (next: string[]) => {
     setSectionOrder(next);
@@ -881,6 +935,12 @@ export function CollapsibleSidebar() {
         })}
         </SortableContext>
         </DndContext>
+
+        {!isCollapsed && !isDemo && (sectionOrder.length > 0 || Object.keys(navOrder).length > 0) && (
+          <button type="button" onClick={resetMenuOrder} className="mt-6 w-full px-4 text-left text-[11px] text-white/40 hover:text-white/80 hover:underline" title="Put the menu back in the standard order">
+            Reset menu order
+          </button>
+        )}
 
         {/* Help Section */}
         {!isCollapsed && (
