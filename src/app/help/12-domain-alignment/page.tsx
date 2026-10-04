@@ -138,20 +138,24 @@ export default function TwelveDomainAlignmentPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
-            The space between where a domain is today and where you want it isn&apos;t a problem. <strong>It&apos;s your opportunity</strong>. The Suite groups each domain score into one of three bands:
+            The space between where a domain is today and where you want it isn&apos;t a problem. <strong>It&apos;s your opportunity</strong>. The Suite uses the same four phases for each domain as it does for your overall score:
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
-              <h4 className="font-semibold text-green-600 mb-2">Thriving (80 and above)</h4>
-              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">You&apos;re doing well; fine-tuning will create excellence</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
+              <h4 className="font-semibold text-red-600 mb-2">Survival (0-40)</h4>
+              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">This domain is likely creating friction; addressing it unlocks energy for everything else</p>
             </div>
             <div className="bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/20">
-              <h4 className="font-semibold text-yellow-600 mb-2">Solid, room to grow (60-79)</h4>
+              <h4 className="font-semibold text-yellow-600 mb-2">Growth (41-60)</h4>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">This is your growth edge; focused attention here yields big results</p>
             </div>
-            <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
-              <h4 className="font-semibold text-red-600 mb-2">Needs attention (below 60)</h4>
-              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">This domain is likely creating friction; addressing it unlocks energy for everything else</p>
+            <div className="bg-teal-500/10 rounded-lg p-4 border border-teal-500/20">
+              <h4 className="font-semibold text-teal-600 mb-2">Expansion (61-80)</h4>
+              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">Working well; scale what works and keep it steady</p>
+            </div>
+            <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
+              <h4 className="font-semibold text-green-600 mb-2">Legacy (81-100)</h4>
+              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">You&apos;re doing well; fine-tuning will create excellence</p>
             </div>
           </div>
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">

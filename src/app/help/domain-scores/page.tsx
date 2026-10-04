@@ -56,16 +56,20 @@ export default function DomainScoresHelpPage() {
       answer: (
         <div className="space-y-2">
           <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
-            <span className="font-bold text-red-600">Below 60:</span>
-            <span className="text-red-700 dark:text-red-300">Needs attention - This area is the best place to start</span>
+            <span className="font-bold text-red-600">0-40:</span>
+            <span className="text-red-700 dark:text-red-300">Survival - The best place to start, one thing at a time</span>
           </div>
           <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
-            <span className="font-bold text-yellow-600">60-79:</span>
-            <span className="text-yellow-700 dark:text-yellow-300">Solid, room to grow - Working well with room for optimization</span>
+            <span className="font-bold text-yellow-600">41-60:</span>
+            <span className="text-yellow-700 dark:text-yellow-300">Growth - The foundation is there and systems are taking shape</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-teal-50 dark:bg-teal-900/20 rounded">
+            <span className="font-bold text-teal-600">61-80:</span>
+            <span className="text-teal-700 dark:text-teal-300">Expansion - Working well, ready to scale</span>
           </div>
           <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded">
-            <span className="font-bold text-green-600">80-100:</span>
-            <span className="text-green-700 dark:text-green-300">Thriving - This domain is a strength</span>
+            <span className="font-bold text-green-600">81-100:</span>
+            <span className="text-green-700 dark:text-green-300">Legacy - This domain is a strength</span>
           </div>
         </div>
       )
@@ -102,7 +106,7 @@ export default function DomainScoresHelpPage() {
         <div className="space-y-2">
           <p>Usually, yes, but consider both score AND what matters to you right now:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Fix Needs attention first:</strong> Domains below 60, especially ones critical to how you operate</li>
+            <li><strong>Fix Survival first:</strong> Domains scoring 0-40, especially ones critical to how you operate</li>
             <li><strong>Quick wins second:</strong> Domains where a small effort yields a big score improvement</li>
             <li><strong>Strengths third:</strong> High-scoring domains that could become your advantage</li>
           </ul>
@@ -194,10 +198,10 @@ export default function DomainScoresHelpPage() {
                 <TrendingDown className="w-8 h-8 text-red-600 dark:text-red-300" />
               </div>
               <div>
-                <h3 className="font-semibold text-red-800 dark:text-red-200">Below 60: Needs attention</h3>
+                <h3 className="font-semibold text-red-800 dark:text-red-200">0-40: Survival</h3>
                 <p className="text-sm text-red-700 dark:text-red-300">
-                  This domain needs real work. It may be blocking growth or creating risk. 
-                  Prioritize improvements here. On Executive Home, a domain in this range also links to short lessons on how to lift it.
+                  This domain needs real work and may be blocking growth or creating risk. Start here, one thing at a time.
+                  On Executive Home, a domain scoring below 60 also links to short lessons on how to lift it.
                 </p>
               </div>
             </div>
@@ -207,10 +211,21 @@ export default function DomainScoresHelpPage() {
                 <Minus className="w-8 h-8 text-yellow-600 dark:text-yellow-300" />
               </div>
               <div>
-                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">60-79: Solid, room to grow</h3>
+                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">41-60: Growth</h3>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  This domain supports your business well but could become exceptional. 
-                  Keep it moving with steady, focused effort.
+                  The foundation is there and systems are taking shape. Strengthen this domain next with steady, focused effort.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
+              <div className="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-800 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-8 h-8 text-teal-600 dark:text-teal-300" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-teal-800 dark:text-teal-200">61-80: Expansion</h3>
+                <p className="text-sm text-teal-700 dark:text-teal-300">
+                  This domain supports your business well. The work now is scaling what works and keeping it steady.
                 </p>
               </div>
             </div>
@@ -220,10 +235,9 @@ export default function DomainScoresHelpPage() {
                 <TrendingUp className="w-8 h-8 text-green-600 dark:text-green-300" />
               </div>
               <div>
-                <h3 className="font-semibold text-green-800 dark:text-green-200">80-100: Thriving</h3>
+                <h3 className="font-semibold text-green-800 dark:text-green-200">81-100: Legacy</h3>
                 <p className="text-sm text-green-700 dark:text-green-300">
-                  This domain is a strength. Maintain it while focusing 
-                  on other areas.
+                  This domain is a strength. Protect it, and lean on it while you focus on other areas.
                 </p>
               </div>
             </div>

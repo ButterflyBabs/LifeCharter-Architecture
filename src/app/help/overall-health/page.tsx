@@ -194,37 +194,46 @@ export default function OverallBusinessHealthPage() {
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             Your Focus Areas (shown as &quot;Primary focus&quot; on the card) are your three lowest-scoring domains. These are the areas where improvement will have the biggest impact on your overall business health. Click any domain card on Executive Home to see exactly which inputs make up its score.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-5 h-5 text-red-500" />
-                <h4 className="font-semibold text-red-600">Needs attention</h4>
+                <h4 className="font-semibold text-red-600">Survival (0-40)</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring below 60. These are creating friction and are the best place to start.
+                These domains are creating the most friction and are the best place to start. One thing at a time.
               </p>
             </div>
             <div className="bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <Activity className="w-5 h-5 text-yellow-600" />
-                <h4 className="font-semibold text-yellow-600">Solid, room to grow</h4>
+                <h4 className="font-semibold text-yellow-600">Growth (41-60)</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring 60-79. These are working but have room for real improvement.
+                The foundation is there and systems are taking shape. Strengthen these next.
+              </p>
+            </div>
+            <div className="bg-teal-500/10 rounded-lg p-4 border border-teal-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-5 h-5 text-teal-600" />
+                <h4 className="font-semibold text-teal-600">Expansion (61-80)</h4>
+              </div>
+              <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
+                Working well. The work here is scaling what works and keeping it steady.
               </p>
             </div>
             <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <h4 className="font-semibold text-green-600">Thriving</h4>
+                <h4 className="font-semibold text-green-600">Legacy (81-100)</h4>
               </div>
               <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0]">
-                Domains scoring 80 and above. These are working well and may be leveraged to support other areas.
+                A real strength. Protect it, and lean on it to support your other areas.
               </p>
             </div>
           </div>
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-            Put most of your improvement energy into the Needs attention domains, keep the Solid ones moving, and let your Thriving domains keep doing what they do.
+            The same four phases describe your overall score and each of the 12 domains, so one scale is all you need to learn. Put most of your improvement energy into your Survival and Growth domains, keep the Expansion ones moving, and let your Legacy domains keep doing what they do.
           </p>
         </CardContent>
       </Card>

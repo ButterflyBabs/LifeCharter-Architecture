@@ -74,7 +74,7 @@ export default function HealthTrendHelpPage() {
     },
     {
       question: "What if my trend is flat?",
-      answer: "A flat trend means your business health is stable. This can be good or bad depending on context: If your score is high (70+), stability means you are maintaining strong performance. If your score is lower (below 60), flat means you are stuck and may need to shake things up. If you have been making changes but see no trend movement, your actions may not be impactful enough or may need more time. Use the flat period to dig deeper into specific domains."
+      answer: "A flat trend means your business health is stable. This can be good or bad depending on context: If your score is high (Expansion or Legacy, above 60), stability means you are maintaining strong performance. If your score is lower (Survival or Growth, 60 or below), flat means you are stuck and may need to shake things up. If you have been making changes but see no trend movement, your actions may not be impactful enough or may need more time. Use the flat period to dig deeper into specific domains."
     },
     {
       question: "How do I improve my trend?",

@@ -1,5 +1,6 @@
 "use client";
 
+import { phaseFor, PHASE_COLOR } from "@/lib/scoring/phase";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import DimensionLessons from "@/components/lessons/DimensionLessons";
@@ -26,8 +27,8 @@ interface DimensionResult {
   sources: SourceBreakdown[];
 }
 
-const healthColor = (s: number) => (s < 60 ? "#D83A34" : s < 80 ? "#c9a227" : "#2E7C83");
-const bandLabel = (s: number) => (s < 60 ? "Needs attention" : s < 80 ? "Solid, room to grow" : "Thriving");
+const healthColor = (s: number) => PHASE_COLOR[phaseFor(s)];
+const bandLabel = (s: number) => phaseFor(s);
 
 // What each source is, and where the client goes to improve it. Keyed by
 // (source kind, dimension key) because the same kind means different things

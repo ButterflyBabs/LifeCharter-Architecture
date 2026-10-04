@@ -119,7 +119,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Business Alignment",
     question: "What do the business phases mean?",
     answer:
-      "Your overall alignment score places you in a phase: Survival (0-40) is about stabilizing the fundamentals, Growth (41-60) about building momentum, Expansion (61-80) about scaling what works, and Legacy (81-100) about lasting impact. The phase shapes the guidance you get.",
+      "Your overall alignment score places you in a phase: Survival (0-40) is about stabilizing the fundamentals, Growth (41-60) about building momentum, Expansion (61-80) about scaling what works, and Legacy (81-100) about lasting impact. The phase shapes the guidance you get. The same four phases and cutoffs describe each of your 12 domains and your Quick Pulse result, so there is only one scale to learn: a domain at 72 is in Expansion, just like an overall score of 72.",
     keywords: ["phase", "survival", "growth", "expansion", "legacy", "stage"],
   },
 

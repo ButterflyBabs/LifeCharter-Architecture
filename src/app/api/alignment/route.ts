@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { phaseFor } from "@/lib/scoring/phase";
 import { gatherAndCompute, isMeaningful } from "@/lib/scoring/gather";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { createServerClient } from "@/lib/supabase/server";
@@ -20,12 +21,7 @@ const ICON: Record<string, string> = {
   leadership: "L", vision: "V", product: "P", customer_experience: "C", legal: "Le", sustainability: "Su",
 };
 
-function phase(overall: number): string {
-  if (overall <= 40) return "Survival";
-  if (overall <= 60) return "Growth";
-  if (overall <= 80) return "Expansion";
-  return "Legacy";
-}
+const phase = phaseFor;
 
 function buildResponse(
   overall: number,
