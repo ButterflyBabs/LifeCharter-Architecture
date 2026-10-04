@@ -3,7 +3,7 @@
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
 import {
@@ -247,6 +247,9 @@ export default function ExecutiveHome() {
   const [schedule, setSchedule] = useState<{ connected: boolean; providers?: { google: boolean; microsoft: boolean }; events: ScheduleEvent[] } | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiActions, setAiActions] = useState<ActionCardData[]>([]);
+  // The running conversation, kept on the server so it is still here after you leave and come back.
+  const [aiThread, setAiThread] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
+  const threadEnd = useRef<HTMLDivElement | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [assistantName, setAssistantName] = useState<string>(DEFAULT_ASSISTANT_NAME);
@@ -1039,25 +1042,41 @@ export default function ExecutiveHome() {
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-  const askMariposa = async (q?: string) => {
+  useEffect(() => {
+    fetch("/api/mariposa", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.messages)) setAiThread(d.messages.map((m: { id: string; role: "user" | "assistant"; content: string }) => ({ id: m.id, role: m.role, content: m.content })));
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    threadEnd.current?.scrollIntoView({ block: "nearest" });
+  }, [aiThread.length, aiLoading]);
+
+  // `shown` is what the chat displays when the text sent is long (an edit request carries the draft's details).
+  const askMariposa = async (q?: string, shown?: string) => {
     const message = (q ?? aiInput).trim();
     if (!message || aiLoading) return;
     setAiLoading(true);
     setAiReply(null);
+    setAiThread((t) => [...t, { id: `u${Date.now()}`, role: "user", content: shown ?? message }]);
+    if (!q) setAiInput("");
     try {
       const res = await fetch("/api/mariposa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, page: "Executive Home", tz: userTimezone }),
+        body: JSON.stringify({ message, shown, page: "Executive Home", tz: userTimezone }),
       });
       const data = await res.json();
-      setAiReply(data.reply ?? "Sorry, I couldn't respond right now.");
+      const reply = data.reply ?? "Sorry, I couldn't respond right now.";
+      setAiReply(reply);
+      setAiThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: reply }]);
       setAiActions(Array.isArray(data.actions) ? data.actions : []);
     } catch {
-      setAiReply("Sorry, I couldn't respond right now.");
+      setAiThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: "Sorry, I couldn't respond right now." }]);
     }
     setAiLoading(false);
-    if (!q) setAiInput("");
   };
 
   const fetchTasks = async () => {
@@ -2064,6 +2083,7 @@ export default function ExecutiveHome() {
                   if (!confirm(`Clear what ${assistantName} remembers from your conversations? Your assessments aren't affected.`)) return;
                   await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
                   setAiReply(null);
+                  setAiThread([]);
                 }}
                 className="hover:text-[#2E7C83] hover:underline"
                 title="Clear the conversation history"
@@ -2102,9 +2122,17 @@ export default function ExecutiveHome() {
             </div>
 
             {/* Reply */}
-            {(aiLoading || aiReply) && (
-              <div className="mb-4 p-4 rounded-xl bg-[#F8F5F0] border border-gray-200/60 text-sm text-[#3F4654] whitespace-pre-wrap">
-                {aiLoading ? `${assistantName} is thinking…` : (aiReply ?? "").split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
+            {(aiLoading || aiThread.length > 0) && (
+              <div className="mb-4 max-h-96 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654]" aria-live="polite">
+                {aiThread.map((m) => (
+                  <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                    <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
+                      {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
+                    </div>
+                  </div>
+                ))}
+                {aiLoading && <div className="text-xs text-[#7a8a99]">{assistantName} is thinking…</div>}
+                <div ref={threadEnd} />
               </div>
             )}
 
@@ -2112,7 +2140,8 @@ export default function ExecutiveHome() {
               fresh={aiActions}
               onRevise={(card, instruction) =>
                 askMariposa(
-                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nPrepare the corrected version for my approval.`
+                  `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nPrepare the corrected version for my approval.`,
+                  `Change "${card.title}": ${instruction}`
                 )
               }
             />

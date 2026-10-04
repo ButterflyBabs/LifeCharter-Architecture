@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "message too long" }, { status: 413 });
   }
   const page = typeof body?.page === "string" ? body.page.slice(0, 60) : "";
+  // What the chat shows for this message when the text sent to the assistant is long (for example an edit request).
+  const shown = typeof body?.shown === "string" && body.shown.trim() ? body.shown.trim().slice(0, 300) : message;
 
   const { name, key, instructions, notes } = await resolveAiConfig();
   const overCap = await memberAiGate(key);
@@ -87,7 +89,7 @@ export async function POST(request: Request) {
       reply = "";
     }
     if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
-    if (planId && reply) await saveTurn(planId, "mariposa", message, reply).catch((e) => console.error("saveTurn:", e));
+    if (planId && reply) await saveTurn(planId, "mariposa", shown, reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply, actions: cards });
   } catch (e) {
     console.error("POST /api/mariposa:", e);
@@ -95,6 +97,19 @@ export async function POST(request: Request) {
       reply: `I hit a snag reaching my brain just now — give me a moment and try again. — ${name}`,
     });
   }
+}
+
+// The recent conversation, so the chat is still there when the client comes back to the page.
+export async function GET() {
+  const planId = await resolveMasterPlanId();
+  if (!planId) return NextResponse.json({ messages: [] });
+  const { data } = await createServerClient()
+    .from("assistant_messages")
+    .select("id, role, content, created_at")
+    .eq("master_plan_id", planId)
+    .order("created_at", { ascending: false })
+    .limit(40);
+  return NextResponse.json({ messages: ((data ?? []) as { id: string; role: string; content: string; created_at: string }[]).reverse() });
 }
 
 // Forget the conversation so far (the assessments themselves are untouched).
