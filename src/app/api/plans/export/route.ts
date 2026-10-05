@@ -17,7 +17,7 @@ export const maxDuration = 60;
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const VERSIONS: Version[] = ["funding", "partnership", "general"];
 // Plans that can be printed: each unlocks only when EVERY one of its own sections is marked Complete.
-const PRINTABLE: PlanKind[] = ["business", "marketing", "sales"];
+const PRINTABLE: PlanKind[] = ["business", "marketing", "sales", "forecasting"];
 
 // GET: how far along each plan is, and the names to prefill. The printable plan unlocks only when EVERY section of
 // the Business Plan is marked Complete.

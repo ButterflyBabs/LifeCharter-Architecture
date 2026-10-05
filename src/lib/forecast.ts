@@ -38,7 +38,21 @@ export interface ScenarioProjection {
   totalNet: number;
 }
 
+// Used when no income has been recorded yet: the client's own income goals (for example the month-by-month ramp from
+// their revenue model) shown as a revenue plan. Revenue only: expenses are not known, so no net is claimed.
+export interface RevenuePlanScenario {
+  key: "conservative" | "expected" | "optimistic";
+  label: string;
+  months: { label: string; revenue: number; cumulativeRevenue: number }[];
+  totalRevenue: number;
+}
+export interface RevenuePlan {
+  note: string;
+  scenarios: RevenuePlanScenario[];
+}
+
 export interface ForecastResult {
+  revenuePlan?: RevenuePlan;
   baseMonthlyRevenue: number;
   derivedExpenseRatio: number;
   assumptions: ForecastAssumptions;

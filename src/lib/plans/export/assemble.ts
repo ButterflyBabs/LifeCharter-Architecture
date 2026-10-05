@@ -111,6 +111,33 @@ async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
   return blocks;
 }
 
+// The forecast figures for the printable Forecast Plan: the revenue plan while no income is recorded, otherwise the
+// three projected scenarios.
+async function forecastBlocks(planId: string): Promise<Block[]> {
+  const f = await buildForecast(planId);
+  const blocks: Block[] = [];
+  if (f.revenuePlan) {
+    const exp = f.revenuePlan.scenarios.find((x) => x.key === "expected") || f.revenuePlan.scenarios[0];
+    blocks.push({ t: "note", text: f.revenuePlan.note });
+    blocks.push({ t: "h2", text: "Scenarios" });
+    blocks.push({ t: "table", head: ["Scenario", `Planned revenue (${exp.months.length} months)`], rows: f.revenuePlan.scenarios.map((x) => [x.label, usd(x.totalRevenue)]), widths: [3, 3] });
+    blocks.push({ t: "h2", text: "Expected plan, month by month" });
+    blocks.push({ t: "table", head: ["Month", "Planned revenue", "Cumulative"], rows: exp.months.map((m) => [m.label, usd(m.revenue), usd(m.cumulativeRevenue)]), widths: [3, 3, 3] });
+    return blocks;
+  }
+  if (!f.scenarios.some((sc) => sc.totalRevenue > 0)) return blocks;
+  const exp = f.scenarios.find((x) => x.key === "expected") || f.scenarios[0];
+  blocks.push({
+    t: "note",
+    text: `Based on recent actual income (about ${usd(f.baseMonthlyRevenue)} a month), ${f.assumptions.monthlyGrowthPct}% monthly growth and ${f.assumptions.pipelineClosePct}% of the open pipeline closing. Projections, not guarantees.`,
+  });
+  blocks.push({ t: "h2", text: "Scenarios" });
+  blocks.push({ t: "table", head: ["Scenario", "Revenue", "Expenses", "Net"], rows: f.scenarios.map((x) => [x.label, usd(x.totalRevenue), usd(x.totalExpenses), usd(x.totalNet)]), widths: [3, 2, 2, 2] });
+  blocks.push({ t: "h2", text: "Expected scenario, month by month" });
+  blocks.push({ t: "table", head: ["Month", "Revenue", "Expenses", "Net"], rows: exp.months.map((m) => [`Month ${m.monthIndex}`, usd(m.revenue), usd(m.expenses), usd(m.net)]), widths: [2, 2, 2, 2] });
+  return blocks;
+}
+
 export interface ExportOptions {
   kind: PlanKind; // which plan the document is about: business, marketing or sales
   version: Version;
@@ -138,6 +165,10 @@ export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Pro
     const text = textOf(o.kind, s.key);
     if (text) parts.push({ title: `${i + 1}. ${s.title}`, level: 1, blocks: dropRepeatedTitle(textToBlocks(text), s.title) });
   });
+  if (o.kind === "forecasting" && o.includeFinance) {
+    const fg = await forecastBlocks(planId);
+    if (fg.length) parts.push({ title: "Forecast Figures", level: 1, pageBreakBefore: true, blocks: fg });
+  }
   if (isBusiness && o.includeFinance) {
     const fb = await financeBlocks(db, planId);
     if (fb.length) parts.push({ title: "Financial Overview", level: 1, pageBreakBefore: true, blocks: fb });

@@ -33,7 +33,7 @@ const FIELD = "w-full px-3 py-2 text-sm rounded-lg border border-[#1a2b4a]/15 bg
 const LABEL = "block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1";
 
 // The printable business plan. Locked until EVERY Business Plan section is marked Complete.
-export default function PlanExport({ planType, onOpenBuild }: { planType: "business" | "marketing" | "sales"; onOpenBuild: () => void }) {
+export default function PlanExport({ planType, onOpenBuild }: { planType: "business" | "marketing" | "sales" | "forecasting"; onOpenBuild: () => void }) {
   const [info, setInfo] = useState<Info | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [version, setVersion] = useState<Version>("funding");
@@ -80,7 +80,7 @@ export default function PlanExport({ planType, onOpenBuild }: { planType: "busin
           <div>
             <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your printable {biz.label} unlocks when every section is complete</h2>
             <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf]">
-              {biz.complete} of {biz.total} sections marked complete. Open a section on the Build tab and press <b>Mark section complete</b> when you are happy with it.
+              {biz.complete} of {biz.total} sections marked complete. Open a section {planType === "forecasting" ? "above" : "on the Build tab"} and press <b>Mark section complete</b> when you are happy with it.
             </p>
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function PlanExport({ planType, onOpenBuild }: { planType: "busin
           ))}
         </ul>
         <button onClick={onOpenBuild} className="text-sm font-medium px-4 py-2 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71]">
-          Go to the Build tab
+          {planType === "forecasting" ? "Go to the Forecast Plan sections" : "Go to the Build tab"}
         </button>
       </div>
     );
@@ -230,6 +230,18 @@ export default function PlanExport({ planType, onOpenBuild }: { planType: "busin
           );
         })}
       </div>
+      )}
+
+      {planType === "forecasting" && (
+        <div className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-5 space-y-3">
+          <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">3. What goes in</h3>
+          <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <input type="checkbox" checked={finance} onChange={(e) => setFinance(e.target.checked)} className="mt-1" />
+            <span>
+              Forecast figures <span className="text-[#7a8a99]">(your revenue plan month by month, or your projections once income is recorded, in three scenarios)</span>
+            </span>
+          </label>
+        </div>
       )}
 
       {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
