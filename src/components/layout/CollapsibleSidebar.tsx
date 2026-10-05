@@ -98,6 +98,9 @@ const navigationSections = [
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },
+      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+      { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
+      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
     ],
   },
   // The CRM: every account, each seeing only its own people, deals, calendars and emails.
@@ -113,16 +116,6 @@ const navigationSections = [
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "short-links", label: "Short Links", icon: Link2, href: "/short-links" },
-    ],
-  },
-  // What you sell, how you're seen, and the money.
-  {
-    title: "GROWTH & NUMBERS",
-    color: "text-[#4a9b9b]",
-    items: [
-      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-      { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
-      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
     ],
   },
   // The big picture, the four plans and how the business runs, all in one place.
@@ -678,7 +671,7 @@ export function CollapsibleSidebar() {
   // The demo keeps its tour order; every real account can arrange its own sections. A section that is
   // new, or not in the saved list, goes at the end.
   // Sections that were renamed keep the place the account had saved for them.
-  const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS", "PLANNING & NUMBERS": "GROWTH & NUMBERS", GROWTH: "GROWTH & NUMBERS" };
+  const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS" };
   const savedOrder = sectionOrder.map((t) => RENAMED[t] ?? t).filter((t, i, a) => a.indexOf(t) === i);
   const arranged = isDemo || !savedOrder.length
     ? sections

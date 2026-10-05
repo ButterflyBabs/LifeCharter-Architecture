@@ -777,7 +777,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Growth & Numbers is the money and what you sell: Finance, Offers & Packages and Testimonials. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Progress, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Weekly Review, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite, First 30 Days, the Starter Guide and Website Review. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Content Calendar, Tasks, Accountability Partner, Quick Capture, The Collective, Finance, Offers & Packages and Testimonials. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Progress, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Weekly Review, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite, First 30 Days, the Starter Guide and Website Review. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
@@ -841,7 +841,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "What goes in Offers & Packages?",
     answer:
-      "Offers & Packages (Growth & Numbers → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
+      "Offers & Packages (Daily Operations → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
     keywords: ["offers", "packages", "pricing", "products", "services", "what I sell", "retired"],
   },
   {
