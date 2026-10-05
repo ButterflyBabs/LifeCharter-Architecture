@@ -387,6 +387,11 @@ function NavTooltip({
 // Navigation item with tooltip — left-border accent on the active item
 // (rather than a filled pill), matching the Executive Dashboard's
 // dark-sidebar nav treatment.
+// Letting go of a dragged menu page also counts as a click on its link, which used to open the page instead of
+// just moving it. While a drag is on, and for a moment after, link clicks are ignored.
+let navDragActive = false;
+let navDragEndedAt = 0;
+
 function NavItem({
   item,
   isActive,
@@ -412,6 +417,9 @@ function NavItem({
         // page look as if it will not move (or opens it instead). The menu handles the dragging itself.
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
+        onClick={(e) => {
+          if (navDragActive || Date.now() - navDragEndedAt < 500) e.preventDefault();
+        }}
         className={cn(
           "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-2 select-none",
           isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
@@ -913,7 +921,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragEnd={handleNavDragEnd}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={() => { navDragActive = true; }} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); handleNavDragEnd(e); }}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
