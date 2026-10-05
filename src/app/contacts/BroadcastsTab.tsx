@@ -50,6 +50,7 @@ interface Detail {
   problems: string[];
   failures: { contact_id: string; email: string; error: string | null }[];
   people: PickedContact[];
+  recipients?: { contactId: string; email: string; name: string; status: string; sentAt: string | null; error: string | null }[];
 }
 
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm";
@@ -307,6 +308,28 @@ function Editor({ id, allTags, templates, tz, sender, setMsg: setPageMsg, onChan
                 </p>
               ))}
             </div>
+          )}
+          {!!d.recipients?.length && (
+            <details className="rounded-xl border border-[#1a2b4a]/10" open={b.status === "sent"}>
+              <summary className="cursor-pointer px-4 py-2 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">People · who this went to ({d.recipients.length})</summary>
+              <div className="overflow-x-auto border-t border-[#1a2b4a]/10">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-[11px] uppercase tracking-wide text-[#7a8a99]">
+                    <tr><th className="px-4 py-2">Name</th><th className="px-4 py-2">Email</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">When</th></tr>
+                  </thead>
+                  <tbody>
+                    {d.recipients.map((x) => (
+                      <tr key={x.contactId} className="border-t border-[#1a2b4a]/10">
+                        <td className="px-4 py-1.5 text-[#1a2b4a] dark:text-[#F8F5F0]">{x.name || "—"}</td>
+                        <td className="px-4 py-1.5 break-all text-[#5a6472] dark:text-[#b8c2cf]">{x.email}</td>
+                        <td className={`px-4 py-1.5 ${x.status === "sent" ? "text-[#1F5E63]" : x.status === "failed" ? "text-[#C76F56]" : "text-[#7a8a99]"}`}>{x.status === "sent" ? "Sent" : x.status === "failed" ? "Failed" : x.status === "skipped" ? `Skipped${x.error ? ` (${x.error})` : ""}` : "Waiting"}</td>
+                        <td className="px-4 py-1.5 text-[#7a8a99]">{x.sentAt ? mt(x.sentAt, b.timezone || tz) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           )}
           {(b.status === "sent" || b.status === "canceled") && (
             <div className="space-y-1">

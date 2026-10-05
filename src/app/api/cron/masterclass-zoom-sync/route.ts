@@ -5,6 +5,8 @@ import { eventSetting, eventTemplates, sendDueEventEmails, suiteEmailsLive, type
 import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { advanceCards } from "@/lib/dmPipeline";
+import { sessionTag } from "@/lib/masterclass/followUp";
+import { registrantOccurrence } from "@/lib/eventEmails";
 
 export const dynamic = "force-dynamic";
 
@@ -126,7 +128,13 @@ async function run(request: Request) {
       // Switch on: first seen now → the Suite emails them, Global Control is never tagged.
       const status = suiteOn ? "suite" : await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
       if (housePlan) {
-        const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags: [`${ev.key}-registered`] }).catch(() => null);
+        // MasterClass registrants also get their session's own tag, e.g. lcmc-oct-8-registered.
+        const tags = [`${ev.key}-registered`];
+        if (ev.key === "masterclass") {
+          const occ = await cachedSchedule(ev.meetingId, scheduleCache).then((s) => registrantOccurrence(s, r.createTime || null)).catch(() => null);
+          if (occ) tags.push(sessionTag(occ.start, "registered"));
+        }
+        const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags }).catch(() => null);
         if (c) await logEvent(housePlan, c.id, "form", `Registered for the ${ev.key === "incubator" ? "LifeCharter Incubator" : "Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
         // Their card on the MasterClass Pipeline moves to Registered by itself.
         if (c && ev.key === "masterclass") await advanceCards(supabase, housePlan, { contactId: c.id, email: r.email }, "registered").catch((e) => console.error("[zoom-sync] card move:", e));

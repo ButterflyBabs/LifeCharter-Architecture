@@ -75,7 +75,19 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const { data: people } = ids.length
     ? await db.from("seq_contacts").select("id, email, first_name, last_name, unsubscribed_at").eq("master_plan_id", b.master_plan_id).in("id", ids.slice(0, 2000))
     : { data: [] };
-  return NextResponse.json({ broadcast: b, reach, counts, problems: problems(b), failures: failures ?? [], people: people ?? [] });
+  // Who it went to (once it has been queued): name, address, and what happened.
+  const { data: sentTo } = b.queued_at
+    ? await db.from("crm_broadcast_sends").select("contact_id, email, status, sent_at, error, seq_contacts(first_name, last_name)").eq("broadcast_id", b.id).order("email").limit(2000)
+    : { data: [] };
+  const recipients = ((sentTo ?? []) as unknown as { contact_id: string; email: string; status: string; sent_at: string | null; error: string | null; seq_contacts: { first_name: string | null; last_name: string | null } | null }[]).map((x) => ({
+    contactId: x.contact_id,
+    email: x.email,
+    name: [x.seq_contacts?.first_name, x.seq_contacts?.last_name].filter(Boolean).join(" "),
+    status: x.status,
+    sentAt: x.sent_at,
+    error: x.error,
+  }));
+  return NextResponse.json({ broadcast: b, reach, counts, problems: problems(b), failures: failures ?? [], people: people ?? [], recipients });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {

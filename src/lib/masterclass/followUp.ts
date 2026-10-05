@@ -29,6 +29,15 @@ const STAND_IN = /REPLACE-WITH-REPLAY-LINK/i;
 const LATE_ENROLL_MS = 48 * 3600_000;
 const CONSULT_SLUG = "executive-consultation";
 
+// Each session gets its own tags, e.g. lcmc-oct-8-registered, lcmc-oct-8-attended, lcmc-oct-8-no-show
+// (matching the invite tag lcmc-oct-8-invite), next to the general masterclass-... ones.
+export const sessionTag = (startIso: string, what: "registered" | "attended" | "no-show") => {
+  const d = new Date(startIso);
+  const mon = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", month: "short" }).format(d).toLowerCase();
+  const day = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", day: "numeric" }).format(d);
+  return `lcmc-${mon}-${day}-${what}`;
+};
+
 export const isReplayUrl = (v: unknown): v is string => typeof v === "string" && /^https:\/\/\S+$/i.test(v.trim()) && !STAND_IN.test(v) && v.trim().length <= 600;
 const dayMT = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date(iso));
 const longDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
@@ -87,7 +96,7 @@ export async function tagSession(db: Db, housePlan: string, occ: ZoomOccurrence,
     const upgrade = prior && prior.outcome === "no_show" && outcome === "attended" && !prior.enrolled_at;
     if (prior && !upgrade) continue;
     const [first, ...rest] = (came.get(email) || "").trim().split(/\s+/);
-    const contact = await upsertContact({ masterPlanId: housePlan, email, firstName: first || null, lastName: rest.join(" ") || null, source: "zoom:masterclass", tags: [outcome === "attended" ? TAG_ATTENDED : TAG_NO_SHOW] }, db).catch(() => null);
+    const contact = await upsertContact({ masterPlanId: housePlan, email, firstName: first || null, lastName: rest.join(" ") || null, source: "zoom:masterclass", tags: [outcome === "attended" ? TAG_ATTENDED : TAG_NO_SHOW, sessionTag(occ.start, outcome === "attended" ? "attended" : "no-show")] }, db).catch(() => null);
     if (!contact) continue;
     const row = { session_date: session, email, outcome, contact_id: contact.id, tagged_at: now.toISOString() };
     const { error } = upgrade
