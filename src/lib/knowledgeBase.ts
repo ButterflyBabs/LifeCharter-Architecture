@@ -89,6 +89,30 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["notifications", "bell", "alerts", "unread", "top nav", "reminder", "reminders", "due soon"],
   },
   {
+    id: "dr-projects",
+    category: "Daily Rhythm",
+    question: "What is the Projects page and how do I start a project?",
+    answer:
+      "Projects (Daily Operations → Projects) group your tasks into the things you are building: a launch, a challenge, a client, a program. A project's tasks are ordinary tasks, so they also appear on your Tasks board and nothing is entered twice. Press New project and start blank, or from a ready-made plan: MasterClass (promotion, registration, the event, the replay and follow-up) or the 21-Day Challenge, which is Command Shift (the build, the launch, the three weeks and the wrap-up with an offer). Pick the date to plan around (the MasterClass day, or Day 1 of the challenge) and every task is dated for you; change any date afterwards. You can also ask your AI assistant: 'set up a 21-Day Challenge starting January 11'. It shows you a preview first and you press Approve.",
+    keywords: ["projects", "project management", "new project", "template", "masterclass template", "21 day challenge", "command shift", "launch plan", "group tasks"],
+  },
+  {
+    id: "dr-project-views",
+    category: "Daily Rhythm",
+    question: "How do the Board, List and Timeline views work in a project?",
+    answer:
+      "Open a project and choose a view. Board: your tasks as cards in columns (To do, Today, In progress, Waiting, Done), like a pipeline. Drag a card to another column, or up and down inside one; click a card to edit its name, notes, stage, priority, start and due dates and who it is assigned to. List: every task in one table, soonest first, with a stage menu in each row and a box to add tasks. Timeline: a Gantt chart with a bar for each task from its start to its due date, diamonds for milestones and a line for today; click a bar to edit the task. Details & sharing: the goal, status, dates, owner, notes, milestones and who the project is shared with. The progress bar at the top counts done tasks.",
+    keywords: ["board", "gantt", "timeline", "list view", "drag and drop", "kanban", "cards", "milestones", "project progress"],
+  },
+  {
+    id: "dr-project-share",
+    category: "Daily Rhythm",
+    question: "Can I share a project with a client or a contractor?",
+    answer:
+      "Yes. In a project, open Details & sharing, add their name, choose Client or Contractor and press Create link. Copy the link and send it yourself; nothing is emailed for you, and they need no account. A client sees the project, its progress, the milestones and only the tasks you mark 'Show this task to the clients and contractors' (open a card to tick it); they cannot change anything. A contractor sees the same and can also move the tasks assigned to them (assign a task to a contractor from the card). Remove the person any time and their link stops working. Your team members work inside the project as usual: assign them tasks from the card, and what they can open follows their role and feature access.",
+    keywords: ["share project", "client link", "contractor", "guest", "invite", "private link", "team", "assign", "view only"],
+  },
+  {
     id: "dr-tasks",
     category: "Daily Rhythm",
     question: "How do tasks work?",
