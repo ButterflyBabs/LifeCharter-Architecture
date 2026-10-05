@@ -382,6 +382,8 @@ function NavTooltip({
 // just moving it. While a drag is on, and for a moment after, link clicks are ignored.
 let navDragActive = false;
 let navDragEndedAt = 0;
+// Where the mouse went down, so a press that travelled is treated as a drag and never as a click on the page.
+let navDown: { x: number; y: number } | null = null;
 
 function NavItem({
   item,
@@ -408,8 +410,13 @@ function NavItem({
         // page look as if it will not move (or opens it instead). The menu handles the dragging itself.
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          navDown = { x: e.clientX, y: e.clientY };
+        }}
         onClick={(e) => {
-          if (navDragActive || Date.now() - navDragEndedAt < 500) e.preventDefault();
+          // A real mouse click has e.detail >= 1; a keyboard activation has 0 and must always go through.
+          const travelled = navDown && e.detail > 0 ? Math.hypot(e.clientX - navDown.x, e.clientY - navDown.y) : 0;
+          if (travelled > 4 || navDragActive || Date.now() - navDragEndedAt < 500) e.preventDefault();
         }}
         className={cn(
           "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-2 select-none",
@@ -624,6 +631,8 @@ export function CollapsibleSidebar() {
   // a page not in the saved list (new, or just became visible to you) is
   // appended at the end rather than dropped.
   const [navOrder, setNavOrder] = useState<Record<string, string[]>>({});
+  const navOrderRef = useRef<Record<string, string[]>>({});
+  navOrderRef.current = navOrder;
   // The order of the sections themselves.
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   // The order is saved on the ACCOUNT (so it is the same on every device and for the account's team);
@@ -753,8 +762,16 @@ export function CollapsibleSidebar() {
     }
     fetch("/api/nav-order", { method: "DELETE" }).catch(() => {});
   };
+  // Saved the moment it changes (and kept alive if the page changes), so an order can never be lost to a page change.
+  const sectionOrderRef = useRef<string[]>([]);
+  sectionOrderRef.current = sectionOrder;
+  const persistNow = (sections: string[], items: Record<string, string[]>) => {
+    if (typeof document !== "undefined" && document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) return;
+    fetch("/api/nav-order", { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sectionOrder: sections, itemOrder: items }) }).catch(() => {});
+  };
   const saveSectionOrder = (next: string[]) => {
     setSectionOrder(next);
+    persistNow(next, navOrderRef.current);
     try {
       localStorage.setItem("nav-section-order", JSON.stringify(next));
     } catch {
@@ -777,6 +794,8 @@ export function CollapsibleSidebar() {
       } catch {
         /* not remembered */
       }
+      navOrderRef.current = merged;
+      persistNow(sectionOrderRef.current, merged);
       return merged;
     });
   };
@@ -888,6 +907,8 @@ export function CollapsibleSidebar() {
       } catch {
         /* not remembered */
       }
+      navOrderRef.current = merged;
+      persistNow(sectionOrderRef.current, merged);
       return merged;
     });
   };
@@ -902,6 +923,8 @@ export function CollapsibleSidebar() {
       } catch {
         /* not remembered */
       }
+      navOrderRef.current = merged;
+      persistNow(sectionOrderRef.current, merged);
       return merged;
     });
   };
