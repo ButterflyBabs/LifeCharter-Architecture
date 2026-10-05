@@ -124,7 +124,7 @@ export default function ForecastPage() {
               <Sliders className="w-4 h-4 text-[#2E7C83]" />
               <h2 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Assumptions</h2>
               <span className="text-xs text-[#b8a898]">
-                Base revenue {usd(forecast.baseMonthlyRevenue)}/mo · expense ratio {forecast.derivedExpenseRatio}%
+                {forecast.revenuePlan ? "No income recorded yet" : `Base revenue ${usd(forecast.baseMonthlyRevenue)}/mo · expense ratio ${forecast.derivedExpenseRatio}%`}
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
