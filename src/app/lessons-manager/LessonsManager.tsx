@@ -13,12 +13,13 @@ interface Lesson {
   title: string;
   summary: string | null;
   body: string | null;
+  video_script: string | null;
   video_url: string | null;
   resource_url: string | null;
   sort_order: number;
   published: boolean;
 }
-const EMPTY = { id: "", dimensionKey: "marketing" as DimensionKey, title: "", summary: "", body: "", videoUrl: "", resourceUrl: "", published: false };
+const EMPTY = { id: "", dimensionKey: "marketing" as DimensionKey, title: "", summary: "", body: "", videoScript: "", videoUrl: "", resourceUrl: "", published: false };
 
 export default function LessonsManager() {
   const [lessons, setLessons] = useState<Lesson[] | null>(null);
@@ -76,9 +77,10 @@ export default function LessonsManager() {
           </div>
           <Input placeholder="One-line summary" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
           <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={5} placeholder="The lesson (plain text; short paragraphs work best)" className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm" />
+          <textarea value={form.videoScript} onChange={(e) => setForm({ ...form, videoScript: e.target.value })} rows={5} placeholder="Video script (your recording notes; clients never see this)" aria-label="Video script" className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 p-3 text-sm" />
           <div className="grid gap-2 md:grid-cols-2">
             <Input placeholder="Video link (Vimeo, YouTube, MasterClass clip)" value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} />
-            <Input placeholder="Resource link (worksheet, Collective Library item)" value={form.resourceUrl} onChange={(e) => setForm({ ...form, resourceUrl: e.target.value })} />
+            <Input placeholder="Handout or resource link (worksheet, Collective Library item)" value={form.resourceUrl} onChange={(e) => setForm({ ...form, resourceUrl: e.target.value })} />
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} className="h-4 w-4" /> Live for clients</label>
           <div className="flex gap-2">
@@ -102,7 +104,7 @@ export default function LessonsManager() {
                     <div key={l.id} className="mt-2 flex items-center gap-2 text-sm">
                       <button
                         className="flex-1 text-left text-[#1a2b4a] dark:text-[#F8F5F0] hover:underline"
-                        onClick={() => setForm({ id: l.id, dimensionKey: l.dimension_key, title: l.title, summary: l.summary ?? "", body: l.body ?? "", videoUrl: l.video_url ?? "", resourceUrl: l.resource_url ?? "", published: l.published })}
+                        onClick={() => setForm({ id: l.id, dimensionKey: l.dimension_key, title: l.title, summary: l.summary ?? "", body: l.body ?? "", videoScript: l.video_script ?? "", videoUrl: l.video_url ?? "", resourceUrl: l.resource_url ?? "", published: l.published })}
                       >
                         {l.title}
                       </button>

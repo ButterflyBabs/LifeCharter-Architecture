@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Loader2, PlayCircle, Sparkles } from "lucide-react";
+import { Download, ExternalLink, Loader2, PlayCircle, Sparkles } from "lucide-react";
 
 interface Lesson {
   id: string;
@@ -68,11 +68,16 @@ export default function DimensionLessons({ dimension, label, score }: { dimensio
                         <PlayCircle className="w-4 h-4" /> Watch
                       </a>
                     )}
-                    {l.resource_url && (
-                      <a href={l.resource_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline">
-                        <ExternalLink className="w-4 h-4" /> Open the resource
-                      </a>
-                    )}
+                    {l.resource_url &&
+                      (/\.pdf($|\?)/i.test(l.resource_url) ? (
+                        <a href={l.resource_url} download className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline">
+                          <Download className="w-4 h-4" /> Download the handout
+                        </a>
+                      ) : (
+                        <a href={l.resource_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline">
+                          <ExternalLink className="w-4 h-4" /> Open the resource
+                        </a>
+                      ))}
                   </div>
                 </div>
               )}

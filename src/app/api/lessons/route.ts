@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 
 const DIMS = new Set<string>(DIMENSION_KEYS);
 const SELECT = "id, dimension_key, title, summary, body, video_url, resource_url, sort_order, published, updated_at";
+// The recording script is the architect's working copy; clients never receive it.
+const ARCHITECT_SELECT = `${SELECT}, video_script`;
 const url = (v: unknown) => (typeof v === "string" && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 500) : null);
 
 function clean(b: Record<string, unknown>) {
@@ -20,6 +22,7 @@ function clean(b: Record<string, unknown>) {
   if (typeof b.title === "string") out.title = b.title.trim().slice(0, 160);
   if (typeof b.summary === "string") out.summary = b.summary.trim().slice(0, 500) || null;
   if (typeof b.body === "string") out.body = b.body.trim().slice(0, 8000) || null;
+  if (typeof b.videoScript === "string") out.video_script = b.videoScript.trim().slice(0, 6000) || null;
   if (b.videoUrl !== undefined) out.video_url = url(b.videoUrl);
   if (b.resourceUrl !== undefined) out.resource_url = url(b.resourceUrl);
   if (b.sortOrder !== undefined && Number.isFinite(Number(b.sortOrder))) out.sort_order = Math.round(Number(b.sortOrder));
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
   const db = createServerClient();
   if (u.searchParams.get("all") === "1") {
     if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "Not found." }, { status: 404 });
-    const { data } = await db.from("dimension_lessons").select(SELECT).order("dimension_key").order("sort_order");
+    const { data } = await db.from("dimension_lessons").select(ARCHITECT_SELECT).order("dimension_key").order("sort_order");
     return NextResponse.json({ lessons: data ?? [] });
   }
   const dim = u.searchParams.get("dimension") || "";
@@ -52,7 +55,7 @@ export async function POST(request: Request) {
   if (denied) return denied;
   const row = clean(await request.json().catch(() => ({})));
   if (!row.dimension_key || !row.title) return NextResponse.json({ error: "Choose an area and give the lesson a title." }, { status: 400 });
-  const { data, error } = await createServerClient().from("dimension_lessons").insert(row).select(SELECT).single();
+  const { data, error } = await createServerClient().from("dimension_lessons").insert(row).select(ARCHITECT_SELECT).single();
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   return NextResponse.json({ lesson: data });
 }
@@ -66,7 +69,7 @@ export async function PATCH(request: Request) {
     .from("dimension_lessons")
     .update({ ...clean(body), updated_at: new Date().toISOString() })
     .eq("id", body.id)
-    .select(SELECT)
+    .select(ARCHITECT_SELECT)
     .single();
   if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   return NextResponse.json({ lesson: data });
