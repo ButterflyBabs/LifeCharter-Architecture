@@ -73,9 +73,18 @@ export async function PATCH(request: Request) {
   // A review page whose notes are approved one by one: the page is approved once every note is,
   // and its "DRAFT ..." note comes off then.
   if (patch.blocks !== undefined && b.review === undefined) {
+    const { data: cur } = await db.from("custom_pages").select("review_status, blocks").eq("master_plan_id", planId).eq("slug", String(b.slug || "")).maybeSingle();
+    // A tab opened before a note was put up for review doesn't know about it and would save the note
+    // without its status. Keep the stored status for any block that arrives without one.
+    const stored = new Map(cleanBlocks(cur?.blocks).filter((x) => x.review).map((x) => [x.id, x]));
+    if (stored.size) {
+      patch.blocks = (patch.blocks as ReturnType<typeof cleanBlocks>).map((x) => {
+        const was = stored.get(x.id);
+        return !x.review && was ? { ...x, review: was.review, ...(was.approvedAt ? { approvedAt: was.approvedAt } : {}) } : x;
+      });
+    }
     const notes = (patch.blocks as ReturnType<typeof cleanBlocks>).filter((x) => x.review);
     if (notes.length) {
-      const { data: cur } = await db.from("custom_pages").select("review_status").eq("master_plan_id", planId).eq("slug", String(b.slug || "")).maybeSingle();
       if (cur?.review_status) {
         const all = notes.every((x) => x.review === "approved");
         if (all && cur.review_status !== "approved") Object.assign(patch, { review_status: "approved", approved_at: new Date().toISOString() });
