@@ -16,6 +16,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
   type CollisionDetection,
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -446,6 +447,7 @@ function SortableNavRow({ item, isActive, onMove }: { item: typeof navigationIte
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1, zIndex: isDragging ? 20 : undefined }}
       className="relative group"
+      data-nav-id={item.id}
       {...pointerListeners}
     >
       <NavItem item={item} isActive={isActive} isCollapsed={false} />
@@ -728,6 +730,7 @@ export function CollapsibleSidebar() {
     const { active, over } = e;
     if (String(active.id).startsWith("section:")) return;
     let why = "";
+    if (rowUnderPointer(e)) return;
     if (!over) why = "nothing under the pointer";
     else if (active.id !== over.id) {
       const sec = orderedSections.find((x) => x.items.some((i) => i.id === active.id));
@@ -784,8 +787,85 @@ export function CollapsibleSidebar() {
     if (i < 0 || j < 0 || j >= titles.length) return;
     saveSectionOrder(arrayMove(titles, i, j));
   };
+  // Where the rows of the dragged page's section were when the drag began, so the drop can be decided from where the
+  // pointer is (up and down alike) rather than from a guess about what is "over" what.
+  const dragSnap = useRef<{ ids: string[]; rects: { top: number; bottom: number }[]; scroll: number; startY: number } | null>(null);
+  const startNavDrag = (e: DragStartEvent) => {
+    navDragActive = true;
+    dragSnap.current = null;
+    const activeId = String(e.active.id);
+    if (activeId.startsWith("section:")) return;
+    const section = orderedSections.find((sec) => sec.items.some((i) => i.id === activeId));
+    const navEl = document.querySelector("nav.overflow-y-auto") as HTMLElement | null;
+    if (!section) return;
+    const ids: string[] = [];
+    const rects: { top: number; bottom: number }[] = [];
+    for (const i of section.items) {
+      const el = document.querySelector(`[data-nav-id="${i.id}"]`);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      ids.push(i.id);
+      rects.push({ top: r.top, bottom: r.bottom });
+    }
+    const ev = e.activatorEvent as PointerEvent | undefined;
+    dragSnap.current = { ids, rects, scroll: navEl?.scrollTop ?? 0, startY: ev && typeof ev.clientY === "number" ? ev.clientY : NaN };
+  };
+  // The row under the pointer when the drag ended (nearest row if it is between two).
+  const rowUnderPointer = (e: DragEndEvent): string | null => {
+    const snap = dragSnap.current;
+    if (!snap || !snap.ids.length || Number.isNaN(snap.startY)) return null;
+    // delta already includes any auto-scroll, so this is the pointer in the coordinates the rows had when the drag began.
+    const y = snap.startY + e.delta.y;
+    let best = 0;
+    let bestD = Infinity;
+    snap.rects.forEach((r, i) => {
+      if (y >= r.top && y <= r.bottom) {
+        best = i;
+        bestD = -1;
+      } else if (bestD >= 0) {
+        const d = Math.min(Math.abs(y - r.top), Math.abs(y - r.bottom));
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+    });
+    return snap.ids[best];
+  };
+  const reportNavDrag = (e: DragEndEvent, decided: string | null, result: string) => {
+    try {
+      const snap = dragSnap.current;
+      fetch("/api/nav-debug", {
+        method: "POST",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          result,
+          active: String(e.active.id),
+          over: e.over ? String(e.over.id) : null,
+          decided,
+          deltaY: Math.round(e.delta.y),
+          startY: snap ? Math.round(snap.startY) : null,
+          rows: snap ? snap.ids.map((id, i) => `${id}:${Math.round(snap.rects[i].top)}-${Math.round(snap.rects[i].bottom)}`) : null,
+          scroll: snap ? snap.scroll : null,
+          collisions: (e.collisions ?? []).slice(0, 4).map((c) => String(c.id)),
+          ua: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 120) : "",
+          vh: typeof window !== "undefined" ? window.innerHeight : null,
+        }),
+      }).catch(() => {});
+    } catch {
+      /* diagnostics only */
+    }
+  };
   const handleNavDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active } = event;
+    let over = event.over;
+    if (!String(active.id).startsWith("section:")) {
+      // Items: the row under the pointer decides (falls back to dnd-kit's own answer).
+      const decided = rowUnderPointer(event);
+      reportNavDrag(event, decided, !event.over ? "no-over" : decided && decided !== String(event.over.id) ? "differs" : "same");
+      if (decided) over = { ...(event.over ?? ({} as NonNullable<typeof event.over>)), id: decided } as NonNullable<typeof event.over>;
+    }
     if (!over || active.id === over.id) return;
     if (String(active.id).startsWith("section:")) {
       const titles = orderedSections.map((s) => s.title);
@@ -959,7 +1039,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={() => { navDragActive = true; }} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); noteDrag(e); handleNavDragEnd(e); }}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={startNavDrag} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); noteDrag(e); handleNavDragEnd(e); }}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
