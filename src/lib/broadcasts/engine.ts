@@ -31,6 +31,7 @@ export interface BroadcastRow {
   contact_ids: string[];
   tag_match: "any" | "all";
   skip_prior_template: boolean;
+  skip_active_sequences?: string[] | null; // campaign keys: leave out anyone still receiving one of these
   variables: Record<string, string>;
   status: "draft" | "scheduled" | "sending" | "sent" | "canceled";
   scheduled_at: string | null;
@@ -59,8 +60,32 @@ export async function accountTimezone(db: Db, planId: string, house: boolean): P
 
 const isUrl = (v: string) => /^https?:\/\/\S+$/i.test(v);
 
-// Everyone this broadcast would reach right now (not unsubscribed).
+// Contacts who are still in the middle of any of these campaigns (an active enrollment).
+async function inActiveCampaigns(db: Db, planId: string, keys: string[]): Promise<Set<string>> {
+  const busy = new Set<string>();
+  if (!keys.length) return busy;
+  const { data: seqs } = await db.from("sequences").select("id").eq("master_plan_id", planId).in("key", keys);
+  const ids = ((seqs ?? []) as { id: string }[]).map((x) => x.id);
+  if (!ids.length) return busy;
+  for (let from = 0; ; from += 1000) {
+    const { data } = await db.from("sequence_enrollments").select("contact_id").in("sequence_id", ids).eq("status", "active").range(from, from + 999);
+    for (const r of (data ?? []) as { contact_id: string }[]) busy.add(r.contact_id);
+    if (!data || data.length < 1000) break;
+  }
+  return busy;
+}
+
+// Everyone this broadcast would reach right now (not unsubscribed, and not still in a campaign it skips).
 export async function listRecipients(
+  db: Db,
+  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key" | "skip_active_sequences">
+): Promise<{ id: string; email: string }[]> {
+  const busy = await inActiveCampaigns(db, b.master_plan_id, b.skip_active_sequences ?? []);
+  const everyone = await matchingRecipients(db, b);
+  return busy.size ? everyone.filter((c) => !busy.has(c.id)) : everyone;
+}
+
+async function matchingRecipients(
   db: Db,
   b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key">
 ): Promise<{ id: string; email: string }[]> {

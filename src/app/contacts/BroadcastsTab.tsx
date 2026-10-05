@@ -33,6 +33,7 @@ interface Full extends Summary {
   tag_match: "any" | "all";
   contact_ids: string[];
   skip_prior_template: boolean;
+  skip_active_sequences?: string[] | null;
   variables: Record<string, string>;
 }
 interface Template {
@@ -160,6 +161,14 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   const [session, setSession] = useState(todayMt(tz));
   const [when, setWhen] = useState({ date: addDays(todayMt(tz), 1), time: "09:00" });
   const [resendQ, setResendQ] = useState("");
+  // The account's campaigns, for "skip anyone still receiving ...".
+  const [campaigns, setCampaigns] = useState<{ key: string; name: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/sequences", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => setCampaigns(((x?.sequences ?? []) as { key: string; name: string }[]).map((q) => ({ key: q.key, name: q.name }))))
+      .catch(() => {});
+  }, []);
   const tpl = templates.find((t) => t.key === f?.template_key) ?? null;
 
   const load = useCallback(async () => {
@@ -181,15 +190,15 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
   }, [session, tpl, d?.broadcast.status]);
 
   const draft = f
-    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, variables: f.variables }
+    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], variables: f.variables }
     : null;
 
   // Live recipient count as tags change.
-  const tagKey = f ? `${f.tags.join(",")}|${(f.contact_ids ?? []).join(",")}|${f.tag_match}|${f.skip_prior_template}` : "";
+  const tagKey = f ? `${f.tags.join(",")}|${(f.contact_ids ?? []).join(",")}|${f.tag_match}|${f.skip_prior_template}|${(f.skip_active_sequences ?? []).join(",")}` : "";
   useEffect(() => {
     if (!f || !d || d.broadcast.status !== "draft") return;
     const t = setTimeout(async () => {
-      const r = await post({ action: "count", draft: { tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template } }, true);
+      const r = await post({ action: "count", draft: { tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [] } }, true);
       if (r) setReach(r.reach);
     }, 300);
     return () => clearTimeout(t);
@@ -346,6 +355,23 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
               </label>
             )}
           </div>
+          {campaigns.length > 0 && (
+            <div className="pt-2 border-t border-[#1a2b4a]/10 space-y-1.5">
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Skip anyone still receiving</p>
+              <p className="text-xs text-[#7a8a99]">People in the middle of a campaign you tick are left out of this broadcast, so they aren&rsquo;t sent two things at once.</p>
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+                {campaigns.map((c) => {
+                  const on = (f.skip_active_sequences ?? []).includes(c.key);
+                  return (
+                    <label key={c.key} className="flex items-center gap-2">
+                      <input type="checkbox" disabled={!editable} checked={on} onChange={(e) => set({ skip_active_sequences: e.target.checked ? [...(f.skip_active_sequences ?? []), c.key] : (f.skip_active_sequences ?? []).filter((k) => k !== c.key) })} />
+                      {c.name}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="pt-2 border-t border-[#1a2b4a]/10 space-y-2">
             <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Plus people you add by name</p>
             {picked.length > 0 && (
