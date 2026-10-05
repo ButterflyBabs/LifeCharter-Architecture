@@ -94,7 +94,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
   if (state === "missing") return <p className="p-8 font-ui text-sm text-[#9A8E7F]">That page isn&apos;t here. It may have been removed.</p>;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 font-ui sm:px-6">
+    <div className="w-full px-4 py-10 font-ui sm:px-6 lg:px-10">
       <header className="mb-8">
         <p className="font-ui text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">{section === "alignment_architect" ? "Alignment Architect" : "My Pages"}</p>
         <div className="mt-2 flex items-start justify-between gap-3">
@@ -131,7 +131,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
             {b.type === "text" && (
               <textarea
                 aria-label="Text"
-                rows={Math.max(3, Math.min(16, b.text.split("\n").length + 1))}
+                rows={Math.max(3, Math.min(60, b.text.split("\n").length + 1))}
                 value={b.text}
                 onChange={(e) => set(b.id, { text: e.target.value })}
                 placeholder="Write here…"
