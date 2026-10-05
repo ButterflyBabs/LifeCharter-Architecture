@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { OWNER_TZ, addDays, slotsIn, zonedParts } from "@/lib/broadcasts/shared";
-import { byOffer, offersOf } from "@/lib/offerSections";
+import { offersOf } from "@/lib/offerSections";
+import OfferSections from "@/components/crm/OfferSections";
 import ContactPicker, { personName, type PickedContact } from "./ContactPicker";
 import { Pill } from "./ContactRecord";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
@@ -120,10 +121,8 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
           </Button>
         </div>
         <div className="pt-2 space-y-2">
-          {byOffer(list ?? []).map(([offer, group]) => (
-            <div key={offer} className="space-y-2">
-              <h3 className="mt-3 border-b border-[#c9a227]/50 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">{offer} <span className="font-normal text-[#7a8a99]">{group.length}</span></h3>
-          {group.map((b) => (
+          <OfferSections items={list ?? []} storageKey="broadcasts">
+          {(b) => (
             <button
               key={b.id}
               onClick={() => setOpenId(b.id)}
@@ -136,9 +135,8 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
                 {b.recipient_count ? ` · ${b.recipient_count} people` : ""}
               </p>
             </button>
-          ))}
-            </div>
-          ))}
+          )}
+          </OfferSections>
           {list && !list.length && <p className="text-sm text-[#7a8a99]">No broadcasts yet.</p>}
         </div>
       </div>

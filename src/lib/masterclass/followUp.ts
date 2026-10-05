@@ -19,6 +19,8 @@ type Db = ReturnType<typeof createServerClient>;
 export const SEQ_ATTENDED = "masterclass-replay-attended";
 export const SEQ_MISSED = "masterclass-replay-missed";
 export const SEQ_FOLLOW_UP = "masterclass-follow-up";
+// No-shows get their own series once it exists and is switched on; until then they share the one above.
+export const SEQ_FOLLOW_UP_MISSED = "masterclass-follow-up-missed";
 export const TAG_ATTENDED = "masterclass-attended";
 export const TAG_NO_SHOW = "masterclass-no-show";
 // Sessions before this one are never tagged or emailed after the fact.
@@ -119,6 +121,8 @@ export async function enrollPending(db: Db, housePlan: string, session: string, 
   if (!rel || !isReplayUrl(rel.replay_url)) return { started: 0, note: "replay not released" };
   if (now.getTime() - new Date(rel.released_at as string).getTime() > LATE_ENROLL_MS) return { started: 0, note: "release window closed" };
   const { data: rows } = await db.from("masterclass_followups").select("email, outcome").eq("session_date", session).is("enrolled_at", null);
+  const { data: missedSeries } = await db.from("sequences").select("active").eq("master_plan_id", housePlan).eq("key", SEQ_FOLLOW_UP_MISSED).maybeSingle();
+  const missedLive = missedSeries?.active === true;
   let started = 0;
   for (const r of (rows ?? []) as { email: string; outcome: string }[]) {
     // Claim first, so two runs can never start the same person twice.
@@ -126,7 +130,7 @@ export async function enrollPending(db: Db, housePlan: string, session: string, 
     if (!claim?.length) continue;
     const base = { masterPlanId: housePlan, email: r.email, source: "masterclass", sourceRef: session };
     await enrolContact({ ...base, sequenceKey: r.outcome === "attended" ? SEQ_ATTENDED : SEQ_MISSED }).catch((e) => console.error("[masterclass-follow-up] replay enrol:", e));
-    await enrolContact({ ...base, sequenceKey: SEQ_FOLLOW_UP }).catch((e) => console.error("[masterclass-follow-up] series enrol:", e));
+    await enrolContact({ ...base, sequenceKey: r.outcome !== "attended" && missedLive ? SEQ_FOLLOW_UP_MISSED : SEQ_FOLLOW_UP }).catch((e) => console.error("[masterclass-follow-up] series enrol:", e));
     started++;
   }
   return { started };
@@ -141,7 +145,9 @@ export async function releaseReplay(db: Db, housePlan: string, session: string, 
   const { data: seqs } = await db.from("sequences").select("id, key, active").eq("master_plan_id", housePlan).in("key", [SEQ_ATTENDED, SEQ_MISSED, SEQ_FOLLOW_UP]);
   const list = (seqs ?? []) as { id: string; key: string; active: boolean }[];
   if (list.length < 3 || list.some((s) => !s.active)) return { ok: false, error: "The three MasterClass campaigns need to be on in Campaigns & Broadcasts first." };
-  const { data: steps } = await db.from("sequence_steps").select("id, body, button_label, button_url").in("sequence_id", list.map((s) => s.id));
+  // The no-show series, when there is one, carries the replay link too.
+  const { data: extra } = await db.from("sequences").select("id").eq("master_plan_id", housePlan).eq("key", SEQ_FOLLOW_UP_MISSED);
+  const { data: steps } = await db.from("sequence_steps").select("id, body, button_label, button_url").in("sequence_id", [...list.map((s) => s.id), ...((extra ?? []) as { id: string }[]).map((s) => s.id)]);
   const { data: last } = await db.from("masterclass_replays").select("replay_url").order("released_at", { ascending: false }).limit(1).maybeSingle();
   const olds = ["https://vimeo.com/REPLACE-WITH-REPLAY-LINK", (last?.replay_url as string) || ""].filter((o) => o && o !== link);
   for (const st of (steps ?? []) as { id: string; body: string; button_label: string | null; button_url: string | null }[]) {
@@ -160,7 +166,7 @@ export async function releaseReplay(db: Db, housePlan: string, session: string, 
 // Step 3. Anyone in the follow-up series who has booked an Executive Consultation stops receiving it. That
 // includes people who booked in the two weeks before they were added (in the room, from the QR code).
 export async function stopBooked(db: Db = createServerClient()): Promise<number> {
-  const { data: seqs } = await db.from("sequences").select("id, master_plan_id").eq("key", SEQ_FOLLOW_UP);
+  const { data: seqs } = await db.from("sequences").select("id, master_plan_id").in("key", [SEQ_FOLLOW_UP, SEQ_FOLLOW_UP_MISSED]);
   let stopped = 0;
   for (const s of (seqs ?? []) as { id: string; master_plan_id: string }[]) {
     const { data: enrs } = await db.from("sequence_enrollments").select("id, contact_id, enrolled_at").eq("sequence_id", s.id).eq("status", "active").limit(2000);

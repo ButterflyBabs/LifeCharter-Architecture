@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
 import WelcomeSeriesTab from "./WelcomeSeriesTab";
 import EventEmailsTab from "./EventEmailsTab";
-import { byOffer, offersOf } from "@/lib/offerSections";
+import { offersOf } from "@/lib/offerSections";
+import OfferSections from "@/components/crm/OfferSections";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
 import ContactLookupInput from "@/components/crm/ContactLookupInput";
 
@@ -191,10 +192,8 @@ export default function SequencesManager() {
       {pageTab === "events" ? <EventEmailsTab /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
-          {byOffer(list ?? []).map(([offer, group]) => (
-            <div key={offer} className="space-y-2">
-              <h3 className="mt-3 border-b border-[#c9a227]/50 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">{offer} <span className="font-normal text-[#7a8a99]">{group.length}</span></h3>
-          {group.map((s) => (
+          <OfferSections items={list ?? []} storageKey="campaigns">
+          {(s) => (
             <button
               key={s.id}
               onClick={() => { setOpenId(s.id); setForm(null); setPreview(null); }}
@@ -205,9 +204,8 @@ export default function SequencesManager() {
                 {s.active ? "Live" : "Paused"} · {s.step_count ?? 0} emails · {s.people?.active ?? 0} active
               </p>
             </button>
-          ))}
-            </div>
-          ))}
+          )}
+          </OfferSections>
           <div className="flex gap-2 pt-2">
             <Input placeholder="New campaign name" value={newName} onChange={(e) => setNewName(e.target.value)} />
             <Button onClick={createSeq} aria-label="Create campaign"><Plus className="w-4 h-4" /></Button>
