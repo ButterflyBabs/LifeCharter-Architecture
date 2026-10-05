@@ -33,7 +33,7 @@ const FIELD = "w-full px-3 py-2 text-sm rounded-lg border border-[#1a2b4a]/15 bg
 const LABEL = "block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1";
 
 // The printable business plan. Locked until EVERY Business Plan section is marked Complete.
-export default function PlanExport({ planType, onOpenBuild }: { planType: "business" | "marketing"; onOpenBuild: () => void }) {
+export default function PlanExport({ planType, onOpenBuild }: { planType: "business" | "marketing" | "sales"; onOpenBuild: () => void }) {
   const [info, setInfo] = useState<Info | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [version, setVersion] = useState<Version>("funding");

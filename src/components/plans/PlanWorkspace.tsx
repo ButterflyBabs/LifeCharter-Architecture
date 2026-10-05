@@ -24,8 +24,8 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
     { id: "build", label: "Build", icon: <FileText className="w-4 h-4" /> },
     { id: "goals", label: "Goals", icon: <Target className="w-4 h-4" /> },
     { id: "reviews", label: "Check-ins", icon: <Sparkles className="w-4 h-4" /> },
-    // The Business and Marketing Plans build a printable document.
-    ...(planType === "business" || planType === "marketing" ? [{ id: "export" as Tab, label: "Print / Share", icon: <Download className="w-4 h-4" /> }] : []),
+    // The Business, Marketing and Sales Plans build a printable document.
+    ...(planType === "business" || planType === "marketing" || planType === "sales" ? [{ id: "export" as Tab, label: "Print / Share", icon: <Download className="w-4 h-4" /> }] : []),
   ];
 
   return (
@@ -78,7 +78,7 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
         </div>
       )}
       {tab === "reviews" && <ReviewsPanel planType={planType} />}
-      {tab === "export" && (planType === "business" || planType === "marketing") && <PlanExport planType={planType} onOpenBuild={() => setTab("build")} />}
+      {tab === "export" && (planType === "business" || planType === "marketing" || planType === "sales") && <PlanExport planType={planType} onOpenBuild={() => setTab("build")} />}
     </div>
   );
 }
