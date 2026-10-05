@@ -408,8 +408,12 @@ function NavItem({
         {...(item.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer", prefetch: false } : {})}
         onMouseEnter={() => isCollapsed && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        // A link can be dragged by the browser on its own, which fights the menu's own drag-and-drop and makes a
+        // page look as if it will not move (or opens it instead). The menu handles the dragging itself.
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         className={cn(
-          "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-2",
+          "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-2 select-none",
           isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
           isActive
             ? "bg-white/10 text-[#c9a227] border-[#c9a227]"
@@ -452,7 +456,7 @@ function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; i
         {...attributes}
         onKeyDown={onKeyDown}
         aria-label={`Reorder ${item.label} (Space, then arrow keys)`}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-white/25 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-white/70 cursor-grab active:cursor-grabbing"
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-white/25 opacity-40 group-hover:opacity-100 focus-visible:opacity-100 hover:text-white/70 cursor-grab active:cursor-grabbing touch-none"
       >
         <GripVertical className="w-3.5 h-3.5" />
       </button>
