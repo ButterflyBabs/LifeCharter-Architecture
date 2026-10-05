@@ -1,5 +1,5 @@
 // Builds the downloadable lesson handouts (one-page PDFs) into public/handouts/lessons.
-//   node scripts/lesson-handouts/build.mjs
+//   node scripts/lesson-handouts/build.mjs [slug ...]
 // Needs Google Chrome installed; it prints each handout page to PDF.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -42,6 +42,7 @@ function page(l) {
   .line { flex: 1; min-height: 19px; border-bottom: 1px solid #C9B8A7; }
   .week { margin-top: 18px; border: 1px solid #D4AF63; border-radius: 10px; background: #fff; padding: 10px 16px 11px; }
   .week p { font-size: 11.2pt; line-height: 1.32; margin-top: 3px; }
+  .credit { margin-top: 8px; font-size: 8.5pt; font-style: italic; color: #7a7468; }
   footer { margin-top: 11px; display: flex; justify-content: space-between; font-family: Montserrat, Arial, sans-serif; font-size: 7pt; letter-spacing: 0.06em; color: #7a7468; }
 </style></head><body>
 <header><img src="${LOGO}" alt="LifeCharter Command Suite"><div class="eyebrow">Lesson handout<span>${esc(l.area)}</span></div></header>
@@ -52,13 +53,16 @@ function page(l) {
     .map((p) => `<div class="prompt" style="flex:${p.lines}"><p>${esc(p.q)}</p>${'<div class="line"></div>'.repeat(p.lines)}</div>`)
     .join("")}</div></section>
 <section class="week"><p class="eyebrow">This week</p><p>${esc(l.thisWeek)}</p></section>
+${l.credit ? `<p class="credit">${esc(l.credit)}</p>` : ""}
 <footer><span>LifeCharter Command Suite · Align your business. Lead your legacy.</span><span>© ${new Date().getFullYear()} Sacred Kaleidoscope Community LLC</span></footer>
 </body></html>`;
 }
 
 mkdirSync(OUT, { recursive: true });
 const tmp = mkdtempSync(join(tmpdir(), "lesson-handouts-"));
-for (const l of LESSONS) {
+// Pass slugs to rebuild only those handouts; with none, every handout is rebuilt.
+const only = process.argv.slice(2);
+for (const l of LESSONS.filter((x) => !only.length || only.includes(x.slug))) {
   const html = join(tmp, `${l.slug}.html`);
   writeFileSync(html, page(l));
   execFileSync(CHROME, ["--headless=new", "--disable-gpu", "--no-pdf-header-footer", "--virtual-time-budget=8000", `--print-to-pdf=${join(OUT, `${l.slug}.pdf`)}`, `file://${html}`], { stdio: "ignore" });

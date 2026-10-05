@@ -339,4 +339,143 @@ Your handout will help you write your criteria.
 
 Head up - Wings out.`,
   },
+  {
+    slug: "say-yes-we-can-to-the-right-request",
+    area: "Product",
+    title: "Say \"yes, we can\" to the right request",
+    credit: `Inspired by John Mullins, "6 Tips on Being a Successful Entrepreneur" (TED).`,
+    bigIdea: "When a customer you love serving asks for something you do not offer yet, do not rush to say no. That request may be showing you your next offer.",
+    remember: [
+      "Your best customers often see your next offer before you do.",
+      "\"We do not do that\" protects your comfort. It can also close a door.",
+      "Yes is for the right request from the right customer. It is not yes to everyone.",
+    ],
+    prompts: [
+      { q: "Things customers have asked me for that I do not offer:", lines: 4 },
+      { q: "Which of those came from my A customers?", lines: 2 },
+      { q: "Which one fits my mission and would I be glad to do again?", lines: 2 },
+      { q: "What I would need to learn, borrow or partner on to deliver it:", lines: 3 },
+      { q: "A small first version I could offer to the one customer who asked:", lines: 3 },
+    ],
+    thisWeek: "Go back to one request you turned down from a customer you love serving. Ask them to tell you more about what they needed.",
+    script: `What do you say when a good customer asks for something you do not do?
+
+Most of us were taught to stay in our lane. Know what you are good at. Stick to it. And if someone asks for something outside of that, the answer is, "Sorry, we do not do that."
+
+I heard an entrepreneurship professor named John Mullins turn that upside down. He says the businesses that keep growing are often the ones that answer, "Yes, we can." And then they figure out how.
+
+Now hear me carefully. This is not yes to everyone. You know how I feel about that. This is yes to the right request, from the kind of customer you love to serve, when it fits your mission.
+
+Because your best customers can often see your next offer before you can.
+
+So think back. What have people asked you for that you turned down? Your handout will help you sort through those requests and find the one worth a yes.
+
+Head up - Wings out.`,
+  },
+  {
+    slug: "start-with-the-problem-not-the-product",
+    area: "Product",
+    title: "Start with the problem, not the product",
+    credit: `Inspired by John Mullins, "6 Tips on Being a Successful Entrepreneur" (TED).`,
+    bigIdea: "People do not buy products. They pay to have a problem solved. Start with the problem, then find the people who feel it most.",
+    remember: [
+      "Fall in love with the problem, not with your product.",
+      "A new feature is not innovation. Solving a real problem better is.",
+      "If growth is slow, look for the people who feel the problem more urgently.",
+    ],
+    prompts: [
+      { q: "The problem my business solves, in my customer's words:", lines: 3 },
+      { q: "What that problem costs them (time, money, peace of mind):", lines: 3 },
+      { q: "Who feels this problem the most urgently?", lines: 3 },
+      { q: "Where I am describing my product instead of their problem:", lines: 2 },
+      { q: "My offer, rewritten to lead with the problem:", lines: 3 },
+    ],
+    thisWeek: "Ask three customers, \"What was going on that made you look for help?\" Write down their exact words.",
+    script: `Let me ask you a question. What problem do you solve?
+
+Not what you sell. Not what is included. What problem do you solve?
+
+It is so easy to fall in love with our product. We add a feature. We change the colors. We call it new and improved. And we think that is innovation.
+
+An entrepreneurship professor named John Mullins says entrepreneurs who win think the other way around. Problem first. Product second.
+
+Because nobody wakes up wanting your product. They wake up with a problem they want gone.
+
+So start there. What is the problem? What is it costing them? And here is the part people miss. Who feels that problem the most? If your growth is slow, you may have the right solution in front of people who only feel it a little.
+
+Find the ones who feel it deeply.
+
+Your handout will help you put the problem in your customer's own words. Ask three of them this week.
+
+Head up - Wings out.`,
+  },
+  {
+    slug: "ask-for-the-cash-first",
+    area: "Finance",
+    title: "Ask for the cash first",
+    credit: `Inspired by John Mullins, "6 Tips on Being a Successful Entrepreneur" (TED).`,
+    bigIdea: "Cash is the lifeblood of a small business. When customers pay before you deliver, their commitment funds the work and proves the demand.",
+    remember: [
+      "Being paid up front is not pushy. It is how a small business stays healthy.",
+      "A deposit or pre-sale is proof that people want what you are building.",
+      "Money received in advance comes with a promise. Deliver what you said, when you said.",
+    ],
+    prompts: [
+      { q: "Where I currently do the work first and get paid later:", lines: 3 },
+      { q: "What that delay costs me (cash flow, stress, chasing invoices):", lines: 2 },
+      { q: "One offer where I could ask for payment or a deposit up front:", lines: 2 },
+      { q: "Something new I could pre-sell before I build it:", lines: 3 },
+      { q: "The words I will use to ask:", lines: 3 },
+    ],
+    thisWeek: "Choose one offer and change its terms so payment, or a deposit, comes before the work begins.",
+    script: `I want to talk about something that makes a lot of heart-centered business owners uncomfortable. Asking for the money first.
+
+So many of us do the work, send the invoice, and then wait. And hope. Meanwhile the bills do not wait.
+
+An entrepreneurship professor named John Mullins puts it simply. Cash is the lifeblood of a small business. And the healthiest businesses often get paid before they deliver.
+
+A deposit. Payment up front. A pre-sale on something you have not built yet.
+
+That is not being pushy. When someone pays first, two things happen. Their commitment funds the work, so you are not carrying it alone. And you find out, for certain, that people want what you are making.
+
+It also comes with a promise. When you take the money first, you deliver what you said, when you said.
+
+So look at where you are working first and being paid later. Your handout will help you choose one place to change that.
+
+Head up - Wings out.`,
+  },
+  {
+    slug: "borrow-before-you-buy",
+    area: "Operations",
+    title: "Borrow before you buy",
+    credit: `Inspired by John Mullins, "6 Tips on Being a Successful Entrepreneur" (TED).`,
+    bigIdea: "You do not have to own everything you need. Someone already has it, and may be glad to share it when the arrangement serves them too.",
+    remember: [
+      "Ask \"who already has this?\" before you ask \"how do I pay for this?\"",
+      "The best arrangements serve both sides. Know what the other party is trying to grow.",
+      "Start small. Prove it works, then ask for more.",
+    ],
+    prompts: [
+      { q: "What I think I need to buy or build to grow (space, equipment, audience, tools, team):", lines: 4 },
+      { q: "Who already has each of those?", lines: 3 },
+      { q: "What would they gain from sharing it with me?", lines: 3 },
+      { q: "A small trial I could propose to one of them:", lines: 3 },
+    ],
+    thisWeek: "Pick the one thing you were about to spend money on. Find one person or organization who already has it and start the conversation.",
+    script: `Before you spend money on the next thing your business needs, I want you to ask a different question.
+
+Not "how do I pay for this?" Ask, "who already has it?"
+
+An entrepreneurship professor named John Mullins teaches this. Most of us think we have to own everything. The space. The equipment. The audience. So we wait until we can afford it, or we go into debt to get it.
+
+But very often, someone already has exactly what you need. And they have a goal of their own that you could help with.
+
+That is the key. This is not asking for a handout. The best arrangements serve both sides. They have the room and want more people in it. You have the people and need a room.
+
+So start small. Propose a trial. Prove that it works for both of you. Then ask for more.
+
+Your handout will help you list what you think you need to buy, and who already has it.
+
+Head up - Wings out.`,
+  },
 ];
