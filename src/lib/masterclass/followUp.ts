@@ -46,7 +46,7 @@ export async function tagSession(db: Db, housePlan: string, occ: ZoomOccurrence,
   const start = new Date(occ.start).getTime();
   const end = start + occ.duration * 60_000;
   if (session < FOLLOW_UP_FROM) return { session, attended: 0, noShows: 0, skipped: "before follow-up began" };
-  if (now.getTime() < end + 60 * 60_000) return { session, attended: 0, noShows: 0, skipped: "session not over yet" };
+  if (now.getTime() < end + 45 * 60_000) return { session, attended: 0, noShows: 0, skipped: "session not over yet" };
 
   const prevStart = previous ? new Date(previous.start).getTime() : 0;
   const [{ data: att }, { data: regs }, { data: ledger }] = await Promise.all([
@@ -54,19 +54,23 @@ export async function tagSession(db: Db, housePlan: string, occ: ZoomOccurrence,
     db.from("zoom_registrant_syncs").select("email, registered_at, synced_at").eq("event_key", "masterclass"),
     db.from("masterclass_followups").select("email, outcome, enrolled_at").eq("session_date", session),
   ]);
+  // Registered for this session = signed up after the previous one started, up to the end of this one.
+  const everRegistered = new Set<string>();
+  const registered = new Set<string>();
+  for (const r of (regs ?? []) as { email: string; registered_at: string | null; synced_at: string | null }[]) {
+    const e = r.email.trim().toLowerCase();
+    everRegistered.add(e);
+    const t = new Date(r.registered_at || r.synced_at || 0).getTime();
+    if (t >= prevStart && t <= end) registered.add(e);
+  }
+  // Nobody at all in Zoom's report means the report isn't in yet (or the session didn't run): tag no one.
+  if (!(att ?? []).length) return { session, attended: 0, noShows: 0, skipped: "no attendance from Zoom yet" };
+  // Only registrants count as attendees, so the host and the team in the room are never tagged or emailed.
   const came = new Map<string, string | null>();
   for (const a of (att ?? []) as { email: string; name: string | null; minutes: number }[]) {
     const e = (a.email || "").trim().toLowerCase();
-    if (e.includes("@") && a.minutes >= 1) came.set(e, a.name);
+    if (everRegistered.has(e) && a.minutes >= 1) came.set(e, a.name);
   }
-  // Registered for this session = signed up after the previous one started, up to the end of this one.
-  const registered = new Set<string>();
-  for (const r of (regs ?? []) as { email: string; registered_at: string | null; synced_at: string | null }[]) {
-    const t = new Date(r.registered_at || r.synced_at || 0).getTime();
-    if (t >= prevStart && t <= end) registered.add(r.email.trim().toLowerCase());
-  }
-  // Nobody at all in Zoom's report means the report isn't in yet (or the session didn't run): tag no one.
-  if (!came.size) return { session, attended: 0, noShows: 0, skipped: "no attendance from Zoom yet" };
 
   const known = new Map(((ledger ?? []) as { email: string; outcome: string; enrolled_at: string | null }[]).map((l) => [l.email, l]));
   const want = new Map<string, "attended" | "no_show">();
@@ -140,7 +144,8 @@ export async function releaseReplay(db: Db, housePlan: string, session: string, 
   return { ok: true, started: out.started };
 }
 
-// Step 3. Anyone in the follow-up series who has booked an Executive Consultation since it began stops receiving it.
+// Step 3. Anyone in the follow-up series who has booked an Executive Consultation stops receiving it. That
+// includes people who booked in the two weeks before they were added (in the room, from the QR code).
 export async function stopBooked(db: Db = createServerClient()): Promise<number> {
   const { data: seqs } = await db.from("sequences").select("id, master_plan_id").eq("key", SEQ_FOLLOW_UP);
   let stopped = 0;
@@ -153,12 +158,13 @@ export async function stopBooked(db: Db = createServerClient()): Promise<number>
     if (!calIds.length) continue;
     const { data: contacts } = await db.from("seq_contacts").select("id, email").in("id", active.map((e) => e.contact_id));
     const emailOf = new Map(((contacts ?? []) as { id: string; email: string }[]).map((c) => [c.id, c.email.toLowerCase()]));
-    const since = active.reduce((m, e) => (e.enrolled_at < m ? e.enrolled_at : m), active[0].enrolled_at);
+    const from = (iso: string) => new Date(new Date(iso).getTime() - 14 * 86400_000).toISOString();
+    const since = from(active.reduce((m, e) => (e.enrolled_at < m ? e.enrolled_at : m), active[0].enrolled_at));
     const { data: booked } = await db.from("bookings").select("contact_id, invitee_email, created_at").in("calendar_id", calIds).in("status", ["confirmed", "completed"]).gte("created_at", since);
     const rows = (booked ?? []) as { contact_id: string | null; invitee_email: string | null; created_at: string }[];
     for (const e of active) {
       const email = emailOf.get(e.contact_id);
-      const hit = rows.some((b) => b.created_at >= e.enrolled_at && (b.contact_id === e.contact_id || (!!email && (b.invitee_email || "").toLowerCase() === email)));
+      const hit = rows.some((b) => new Date(b.created_at).getTime() >= new Date(from(e.enrolled_at)).getTime() && (b.contact_id === e.contact_id || (!!email && (b.invitee_email || "").toLowerCase() === email)));
       if (!hit) continue;
       const { data: done } = await db.from("sequence_enrollments").update({ status: "stopped" }).eq("id", e.id).eq("status", "active").select("id");
       if (!done?.length) continue;
