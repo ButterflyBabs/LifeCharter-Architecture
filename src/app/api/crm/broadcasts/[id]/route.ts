@@ -48,6 +48,7 @@ function fields(d: Record<string, unknown>, cur: BroadcastRow, house: boolean): 
       : cur.contact_ids ?? [],
     tag_match: d.tagMatch === "all" ? "all" : d.tagMatch === "any" ? "any" : cur.tag_match,
     skip_prior_template: typeof d.skipPriorTemplate === "boolean" ? d.skipPriorTemplate : cur.skip_prior_template,
+    skip_tags: Array.isArray(d.skipTags) ? Array.from(new Set(d.skipTags.map((x) => String(x).trim().toLowerCase()).filter((x) => /^[a-z0-9-]{1,60}$/.test(x)))).slice(0, 30) : cur.skip_tags ?? [],
     skip_active_sequences: Array.isArray(d.skipActiveSequences)
       ? Array.from(new Set(d.skipActiveSequences.map((x) => String(x).trim()).filter((x) => /^[a-z0-9-]{1,80}$/.test(x)))).slice(0, 20)
       : cur.skip_active_sequences ?? [],

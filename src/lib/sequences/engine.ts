@@ -72,14 +72,17 @@ export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: strin
   const db = createServerClient();
   const email = i.email.trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return { enrollmentId: null, reason: "invalid email" };
-  const { data: seq } = await db.from("sequences").select("id, name, active, notify_on_join").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
+  const { data: seq } = await db.from("sequences").select("id, name, active, notify_on_join, skip_tags").eq("master_plan_id", i.masterPlanId).eq("key", i.sequenceKey).maybeSingle();
   if (!seq) return { enrollmentId: null, reason: `no sequence "${i.sequenceKey}"` };
+  const skipTags = ((seq.skip_tags as string[] | null) ?? []).filter(Boolean);
 
   const contact = await upsertContact({ masterPlanId: i.masterPlanId, email, firstName: i.firstName, lastName: i.lastName, phone: i.phone, timezone: i.timezone, source: i.source, tags: i.tags }, db);
   if (!contact) return { enrollmentId: null, reason: "couldn't save contact" };
   const contactId = contact.id;
   if (contact.unsubscribed) return { enrollmentId: null, contactId, reason: "unsubscribed" };
-  const { data: c } = await db.from("seq_contacts").select("timezone").eq("id", contactId).maybeSingle();
+  const { data: c } = await db.from("seq_contacts").select("timezone, tags").eq("id", contactId).maybeSingle();
+  // The campaign skips anyone carrying one of its skip tags: they are never started.
+  if (skipTags.length && ((c?.tags as string[] | null) ?? []).some((t) => skipTags.includes(t))) return { enrollmentId: null, contactId, reason: "carries a tag this campaign skips" };
   const tz = c?.timezone && isValidTz(c.timezone as string) ? (c.timezone as string) : "America/Denver";
 
   const { data: enr, error: enrErr } = await db
@@ -200,8 +203,8 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
     .maybeSingle();
   if (!enr || enr.status !== "active") return 0;
   const [{ data: seq }, { data: contact }, { data: steps }, { data: sent }] = await Promise.all([
-    db.from("sequences").select("id, master_plan_id, name, brand, from_name, from_email, reply_to, send_hour, active").eq("id", enr.sequence_id).maybeSingle(),
-    db.from("seq_contacts").select("id, email, first_name, timezone, unsubscribed_at").eq("id", enr.contact_id).maybeSingle(),
+    db.from("sequences").select("id, master_plan_id, name, brand, from_name, from_email, reply_to, send_hour, active, skip_tags").eq("id", enr.sequence_id).maybeSingle(),
+    db.from("seq_contacts").select("id, email, first_name, timezone, unsubscribed_at, tags").eq("id", enr.contact_id).maybeSingle(),
     db.from("sequence_steps").select("id, position, day_offset, subject, preview, body, button_label, button_url").eq("sequence_id", enr.sequence_id).order("position"),
     db.from("sequence_sends").select("step_id").eq("enrollment_id", enr.id),
   ]);
@@ -210,6 +213,12 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
   const who = await sender(s.master_plan_id, true);
   if (!who.ok) return 0; // client account not ready to send: nothing goes out, nothing is claimed
   if (contact.unsubscribed_at) {
+    await db.from("sequence_enrollments").update({ status: "stopped" }).eq("id", enr.id);
+    return 0;
+  }
+  // Someone who has picked up one of the campaign's skip tags is taken out before the next email.
+  const skip = ((seq as { skip_tags?: string[] | null } | null)?.skip_tags ?? []).filter(Boolean);
+  if (skip.length && ((contact.tags as string[] | null) ?? []).some((t) => skip.includes(t))) {
     await db.from("sequence_enrollments").update({ status: "stopped" }).eq("id", enr.id);
     return 0;
   }

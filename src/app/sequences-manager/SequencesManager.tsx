@@ -26,6 +26,7 @@ interface Seq {
   brand: string;
   send_hour: number;
   offer?: string | null;
+  skip_tags?: string[] | null;
   notify_on_join?: boolean;
   active: boolean;
   step_count?: number;
@@ -245,6 +246,18 @@ export default function SequencesManager() {
                       className="h-9 w-64 rounded-lg border border-[#1a2b4a]/20 bg-white px-2 dark:bg-[#1a2b4a]/20"
                     />
                     <datalist id="campaign-offers">{offersOf(list ?? []).map((o) => <option key={o} value={o} />)}</datalist>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    Skip anyone tagged
+                    <input
+                      key={`${seq.id}:skip:${(seq.skip_tags ?? []).join(",")}`}
+                      defaultValue={(seq.skip_tags ?? []).join(", ")}
+                      placeholder="tags, separated by commas"
+                      title="Anyone carrying one of these tags is not started on this campaign, and is taken out of it if they pick the tag up later."
+                      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      onBlur={(e) => { const v = e.target.value.split(",").map((t) => t.trim()).filter(Boolean); if (v.join(",") !== (seq.skip_tags ?? []).join(",")) void saveSettings({ skipTags: v }, v.length ? `This campaign now skips anyone tagged ${v.join(", ")}.` : "This campaign no longer skips any tags."); }}
+                      className="h-9 w-64 rounded-lg border border-[#1a2b4a]/20 bg-white px-2 dark:bg-[#1a2b4a]/20"
+                    />
                   </label>
                   <label className="flex items-center gap-2">
                     Daily send time

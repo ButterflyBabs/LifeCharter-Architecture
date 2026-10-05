@@ -32,6 +32,7 @@ export interface BroadcastRow {
   tag_match: "any" | "all";
   skip_prior_template: boolean;
   offer?: string | null; // the section it sits under in Campaigns & Broadcasts
+  skip_tags?: string[] | null; // leave out anyone carrying any of these tags
   skip_active_sequences?: string[] | null; // campaign keys: leave out anyone still receiving one of these
   variables: Record<string, string>;
   status: "draft" | "scheduled" | "sending" | "sent" | "canceled";
@@ -79,9 +80,17 @@ async function inActiveCampaigns(db: Db, planId: string, keys: string[]): Promis
 // Everyone this broadcast would reach right now (not unsubscribed, and not still in a campaign it skips).
 export async function listRecipients(
   db: Db,
-  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key" | "skip_active_sequences">
+  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key" | "skip_active_sequences" | "skip_tags">
 ): Promise<{ id: string; email: string }[]> {
   const busy = await inActiveCampaigns(db, b.master_plan_id, b.skip_active_sequences ?? []);
+  const skipTags = (b.skip_tags ?? []).filter(Boolean);
+  if (skipTags.length) {
+    for (let from = 0; ; from += 1000) {
+      const { data } = await db.from("seq_contacts").select("id").eq("master_plan_id", b.master_plan_id).overlaps("tags", skipTags).range(from, from + 999);
+      for (const r of (data ?? []) as { id: string }[]) busy.add(r.id);
+      if (!data || data.length < 1000) break;
+    }
+  }
   const everyone = await matchingRecipients(db, b);
   return busy.size ? everyone.filter((c) => !busy.has(c.id)) : everyone;
 }

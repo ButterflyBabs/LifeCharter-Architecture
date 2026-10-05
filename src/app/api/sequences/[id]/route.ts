@@ -85,6 +85,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (typeof b.name === "string" && b.name.trim()) patch.name = str(b.name, 120);
     if (typeof b.description === "string") patch.description = str(b.description, 500) || null;
     if (typeof b.offer === "string") patch.offer = str(b.offer, 80) || null;
+    if (Array.isArray(b.skipTags)) patch.skip_tags = Array.from(new Set((b.skipTags as unknown[]).map((x) => String(x).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")).filter(Boolean))).slice(0, 30);
     // From name/address: Babs's account only. A client always sends as their Email sending profile.
     if (house && typeof b.fromName === "string" && b.fromName.trim()) patch.from_name = str(b.fromName, 80);
     if (house && typeof b.fromEmail === "string" && /^[^@\s]+@(lifecharter\.life|lccommandsuite\.com)$/i.test(b.fromEmail.trim())) patch.from_email = b.fromEmail.trim().toLowerCase();

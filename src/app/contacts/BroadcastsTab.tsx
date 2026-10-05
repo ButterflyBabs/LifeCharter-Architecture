@@ -37,6 +37,7 @@ interface Full extends Summary {
   contact_ids: string[];
   skip_prior_template: boolean;
   skip_active_sequences?: string[] | null;
+  skip_tags?: string[] | null;
   variables: Record<string, string>;
 }
 interface Template {
@@ -203,15 +204,15 @@ function Editor({ id, offers, allTags, templates, tz, sender, setMsg: setPageMsg
   }, [session, tpl, d?.broadcast.status]);
 
   const draft = f
-    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], offer: f.offer ?? "", variables: f.variables }
+    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], skipTags: f.skip_tags ?? [], offer: f.offer ?? "", variables: f.variables }
     : null;
 
   // Live recipient count as tags change.
-  const tagKey = f ? `${f.tags.join(",")}|${(f.contact_ids ?? []).join(",")}|${f.tag_match}|${f.skip_prior_template}|${(f.skip_active_sequences ?? []).join(",")}` : "";
+  const tagKey = f ? `${f.tags.join(",")}|${(f.contact_ids ?? []).join(",")}|${f.tag_match}|${f.skip_prior_template}|${(f.skip_active_sequences ?? []).join(",")}|${(f.skip_tags ?? []).join(",")}` : "";
   useEffect(() => {
     if (!f || !d || d.broadcast.status !== "draft") return;
     const t = setTimeout(async () => {
-      const r = await post({ action: "count", draft: { tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [] } }, true);
+      const r = await post({ action: "count", draft: { tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], skipTags: f.skip_tags ?? [] } }, true);
       if (r) setReach(r.reach);
     }, 300);
     return () => clearTimeout(t);
@@ -388,6 +389,23 @@ function Editor({ id, offers, allTags, templates, tz, sender, setMsg: setPageMsg
                 <input type="checkbox" disabled={!editable} checked={f.skip_prior_template} onChange={(e) => set({ skip_prior_template: e.target.checked })} />
                 Skip anyone who already got an earlier one of these
               </label>
+            )}
+          </div>
+          <div className="pt-2 border-t border-[#1a2b4a]/10 space-y-1.5">
+            <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Skip anyone with these tags</p>
+            <p className="text-xs text-[#7a8a99]">Anyone carrying a tag you pick here is left out, even if they match the tags above.</p>
+            <div className="flex flex-wrap gap-2">
+              {Array.from(new Set([...allTags, ...(f.skip_tags ?? [])])).sort().map((t) => {
+                const on = (f.skip_tags ?? []).includes(t);
+                return (
+                  <button key={t} type="button" disabled={!editable} aria-pressed={on} onClick={() => set({ skip_tags: on ? (f.skip_tags ?? []).filter((x) => x !== t) : [...(f.skip_tags ?? []), t] })} className={`rounded-full px-3 py-1 text-xs border ${on ? "bg-[#8a2f2f] text-white border-[#8a2f2f]" : "border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+            {editable && (
+              <input aria-label="Skip a tag that isn't on anyone yet" placeholder="Or type a tag that isn't on anyone yet, then press Enter" onKeyDown={(e) => { if (e.key !== "Enter") return; e.preventDefault(); const v = e.currentTarget.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); if (v && !(f.skip_tags ?? []).includes(v)) set({ skip_tags: [...(f.skip_tags ?? []), v] }); e.currentTarget.value = ""; }} className="h-9 w-full max-w-md rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" />
             )}
           </div>
           {campaigns.length > 0 && (
