@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Plus, Trash2, X } from "lucide-react";
-import { PROJECT_STATUS_LABEL, fmtDay, type PData } from "./types";
+import { PROJECT_STATUS_LABEL, type PData } from "./types";
 
 const FIELD = "w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
 const LABEL = "mb-1 block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
@@ -100,13 +100,34 @@ export default function ProjectDetails({ data, api, onChanged, onDeleted }: { da
 
       <section className={CARD}>
         <h3 className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Milestones</h3>
-        <p className="mb-3 text-xs text-[#7a8a99]">The big moments. They show as diamonds on the timeline.</p>
+        <p className="mb-3 text-xs text-[#7a8a99]">The big moments. They show as diamonds on the timeline. Click a name or a date to change it.</p>
         <ul className="space-y-1.5">
           {data.milestones.map((m) => (
             <li key={m.id} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={m.done} aria-label={`Done: ${m.title}`} onChange={(e) => run(() => call(`${api}/milestones/${m.id}`, "PATCH", { done: e.target.checked }))} />
-              <span className={`flex-1 text-[#1a2b4a] dark:text-[#F8F5F0] ${m.done ? "line-through opacity-60" : ""}`}>{m.title}</span>
-              <span className="text-xs text-[#7a8a99]">{fmtDay(m.dueDay)}</span>
+              <input
+                key={`t:${m.id}:${m.title}`}
+                defaultValue={m.title}
+                aria-label={`Milestone name: ${m.title}`}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (!v) e.target.value = m.title;
+                  else if (v !== m.title) run(() => call(`${api}/milestones/${m.id}`, "PATCH", { title: v }));
+                }}
+                className={`min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[#1a2b4a] hover:border-[#1a2b4a]/15 focus:border-[#2E7C83] focus:bg-white dark:text-[#F8F5F0] dark:focus:bg-[#1a2b4a]/40 ${m.done ? "line-through opacity-60" : ""}`}
+              />
+              <input
+                key={`d:${m.id}:${m.dueDay ?? ""}`}
+                type="date"
+                defaultValue={m.dueDay ?? ""}
+                aria-label={`Date for ${m.title}`}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v !== (m.dueDay ?? "")) run(() => call(`${api}/milestones/${m.id}`, "PATCH", { dueDay: v || null }));
+                }}
+                className="rounded-md border border-[#1a2b4a]/15 bg-white px-1.5 py-1 text-xs text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]"
+              />
               <button onClick={() => run(() => call(`${api}/milestones/${m.id}`, "DELETE"))} aria-label={`Remove ${m.title}`} className="text-[#7a8a99] hover:text-[#8a2f2f]"><X className="h-4 w-4" /></button>
             </li>
           ))}
