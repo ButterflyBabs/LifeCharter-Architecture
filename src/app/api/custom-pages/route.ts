@@ -70,6 +70,20 @@ export async function PATCH(request: Request) {
   if (typeof b.title === "string" && b.title.trim()) patch.title = b.title.trim().slice(0, 80);
   if (b.blocks !== undefined) patch.blocks = cleanBlocks(b.blocks);
   const db = createServerClient();
+  // A review page whose notes are approved one by one: the page is approved once every note is,
+  // and its "DRAFT ..." note comes off then.
+  if (patch.blocks !== undefined && b.review === undefined) {
+    const notes = (patch.blocks as ReturnType<typeof cleanBlocks>).filter((x) => x.review);
+    if (notes.length) {
+      const { data: cur } = await db.from("custom_pages").select("review_status").eq("master_plan_id", planId).eq("slug", String(b.slug || "")).maybeSingle();
+      if (cur?.review_status) {
+        const all = notes.every((x) => x.review === "approved");
+        if (all && cur.review_status !== "approved") Object.assign(patch, { review_status: "approved", approved_at: new Date().toISOString() });
+        if (!all && cur.review_status !== "draft") Object.assign(patch, { review_status: "draft", approved_at: null });
+        if (all) patch.blocks = (patch.blocks as ReturnType<typeof cleanBlocks>).filter((x) => !(x.type === "callout" && /^\s*draft\b/i.test(x.text)));
+      }
+    }
+  }
   if (b.review === "approved" || b.review === "draft") {
     const { data: cur } = await db.from("custom_pages").select("blocks, review_status").eq("master_plan_id", planId).eq("slug", String(b.slug || "")).maybeSingle();
     if (!cur) return NextResponse.json({ error: "Couldn't save." }, { status: 404 });

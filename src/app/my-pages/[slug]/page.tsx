@@ -26,7 +26,24 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [approving, setApproving] = useState(false);
-  const editing = !review || editMode;
+  // Notes that carry their own approval: each has its own Edit and Approve buttons, and the page-wide ones step aside.
+  const [editIds, setEditIds] = useState<string[]>([]);
+  const notes = blocks.filter((x) => x.review);
+  const hasNotes = notes.length > 0;
+  const editing = !review || (!hasNotes && editMode);
+  // The note a block belongs to: itself, or (for a heading) the note right under it.
+  const noteOf = (i: number) => (blocks[i]?.review ? blocks[i] : blocks[i]?.type === "heading" && blocks[i + 1]?.review ? blocks[i + 1] : null);
+  const canEdit = (i: number) => {
+    if (!review) return true;
+    if (!hasNotes) return editMode;
+    const n = noteOf(i);
+    return !!n && editIds.includes(n.id);
+  };
+  const toggleEdit = (id: string) => setEditIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  const approveNote = (id: string, approved: boolean) => {
+    setBlocks((bs) => bs.map((x) => (x.id === id ? ({ ...x, review: approved ? "approved" : "draft", approvedAt: approved ? new Date().toISOString() : undefined } as Block) : x)));
+    setEditIds((ids) => ids.filter((x) => x !== id));
+  };
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const first = useRef(true);
 
@@ -137,10 +154,12 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
         </div>
         {review && (
           <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#E8E0D4] bg-white px-4 py-3 shadow-[0_6px_20px_-8px_rgba(15,26,56,0.18)] dark:border-[#334060] dark:bg-[#1E2A48]">
-            <span className={`rounded-full px-3 py-1 font-ui text-xs font-semibold ${review === "approved" ? "bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#8fd0d6]" : "bg-[#FAF3DF] text-[#8a6a15]"}`} role="status">
-              {review === "approved" ? `Approved${approvedAt ? ` ${new Date(approvedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}` : "Draft · waiting for your approval"}
+            <span className={`rounded-full px-3 py-1 font-ui text-xs font-semibold ${(hasNotes ? notes.every((x) => x.review === "approved") : review === "approved") ? "bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#8fd0d6]" : "bg-[#FAF3DF] text-[#8a6a15]"}`} role="status">
+              {(hasNotes ? notes.every((x) => x.review === "approved") : review === "approved") ? `Approved${!hasNotes && approvedAt ? ` ${new Date(approvedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}` : "Draft · waiting for your approval"}
             </span>
+            {hasNotes && <span className="font-ui text-sm text-[#5d5a78] dark:text-[#b8c2cf]">{notes.filter((x) => x.review === "approved").length} of {notes.length} approved. Each note below has its own Edit and Approve buttons.</span>}
             <span className="flex-1" />
+            {!hasNotes && (<>
             <button onClick={() => setEditMode((v) => !v)} aria-pressed={editMode} className="inline-flex items-center gap-1.5 rounded-full border border-[#0F1A38]/25 px-5 py-2 font-ui text-sm font-semibold text-[#0F1A38] hover:border-[#D4AF63] dark:border-white/25 dark:text-[#FAF8F3]">
               <Pencil className="h-4 w-4" /> {editMode ? "Done editing" : "Edit"}
             </button>
@@ -151,29 +170,51 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
             ) : (
               <button onClick={() => setReviewStatus("draft")} disabled={approving} className="font-ui text-xs text-[#2E7C83] hover:underline disabled:opacity-60">Reopen as a draft</button>
             )}
+            </>)}
           </div>
         )}
       </header>
 
       <div className="space-y-5">
-        {blocks.map((b, i) => (
+        {blocks.map((b, i) => {
+          const ed = canEdit(i);
+          return (
           <section key={b.id} className={b.type === "heading" ? "group relative pt-2" : b.type === "callout" ? "group relative" : card}>
-            <div className={`mb-1 justify-end gap-1 opacity-0 transition focus-within:opacity-100 group-hover:opacity-100 ${editing ? "flex" : "hidden"}`}>
+            <div className={`mb-1 justify-end gap-1 opacity-0 transition focus-within:opacity-100 group-hover:opacity-100 ${ed ? "flex" : "hidden"}`}>
               <button aria-label="Move up" onClick={() => move(i, -1)} className="rounded p-1 text-[#9A8E7F] hover:bg-[#E8E0D4]/50"><ArrowUp className="h-3.5 w-3.5" /></button>
               <button aria-label="Move down" onClick={() => move(i, 1)} className="rounded p-1 text-[#9A8E7F] hover:bg-[#E8E0D4]/50"><ArrowDown className="h-3.5 w-3.5" /></button>
               <button aria-label="Delete this block" onClick={() => setBlocks((bs) => bs.filter((x) => x.id !== b.id))} className="rounded p-1 text-[#D83A34] hover:bg-[#D83A34]/10"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
 
+            {b.review && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-[#E8E0D4] pb-3 dark:border-[#334060]">
+                <span className={`rounded-full px-3 py-1 font-ui text-xs font-semibold ${b.review === "approved" ? "bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#8fd0d6]" : "bg-[#FAF3DF] text-[#8a6a15]"}`} role="status">
+                  {b.review === "approved" ? `Approved${b.approvedAt ? ` ${new Date(b.approvedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}` : "Draft · waiting for your approval"}
+                </span>
+                <span className="flex-1" />
+                <button onClick={() => toggleEdit(b.id)} aria-pressed={ed} className="inline-flex items-center gap-1.5 rounded-full border border-[#0F1A38]/25 px-5 py-2 font-ui text-sm font-semibold text-[#0F1A38] hover:border-[#D4AF63] dark:border-white/25 dark:text-[#FAF8F3]">
+                  <Pencil className="h-4 w-4" /> {ed ? "Done editing" : "Edit"}
+                </button>
+                {b.review === "draft" ? (
+                  <button onClick={() => approveNote(b.id, true)} className="inline-flex items-center gap-1.5 rounded-full bg-[#2E7C83] px-5 py-2 font-ui text-sm font-semibold text-white hover:opacity-90">
+                    <CheckCircle2 className="h-4 w-4" /> Approve
+                  </button>
+                ) : (
+                  <button onClick={() => approveNote(b.id, false)} className="font-ui text-xs text-[#2E7C83] hover:underline">Reopen as a draft</button>
+                )}
+              </div>
+            )}
+
             {b.type === "heading" && (
               <div className="flex items-center gap-3">
                 <span className="h-6 w-1 rounded-full bg-[#D4AF63]" aria-hidden="true" />
-                <input aria-label="Section heading" readOnly={!editing} value={b.text} onChange={(e) => set(b.id, { text: e.target.value })} className="w-full bg-transparent font-display text-3xl font-semibold text-[#0F1A38] outline-none dark:text-[#FAF8F3]" />
+                <input aria-label="Section heading" readOnly={!ed} value={b.text} onChange={(e) => set(b.id, { text: e.target.value })} className="w-full bg-transparent font-display text-3xl font-semibold text-[#0F1A38] outline-none dark:text-[#FAF8F3]" />
               </div>
             )}
 
             {b.type === "text" && (
               <textarea
-                aria-label="Text" readOnly={!editing}
+                aria-label="Text" readOnly={!ed}
                 rows={Math.max(3, Math.min(60, b.text.split("\n").length + 1))}
                 value={b.text}
                 onChange={(e) => set(b.id, { text: e.target.value })}
@@ -185,13 +226,13 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
             {b.type === "callout" && (
               <div className="rounded-2xl border border-[#D4AF63]/50 border-l-4 border-l-[#D4AF63] bg-[#FAF3DF] p-5 dark:bg-[#2a2415]">
                 <p className={`${label} mb-1 text-[#9A7B22]`}>Key note</p>
-                <textarea aria-label="Highlighted note" readOnly={!editing} rows={Math.max(2, Math.min(10, b.text.split("\n").length + 1))} value={b.text} onChange={(e) => set(b.id, { text: e.target.value })} placeholder="The one thing to remember…" className="w-full resize-y bg-transparent font-editorial text-[17px] italic leading-relaxed text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#E8E0D4]" />
+                <textarea aria-label="Highlighted note" readOnly={!ed} rows={Math.max(2, Math.min(10, b.text.split("\n").length + 1))} value={b.text} onChange={(e) => set(b.id, { text: e.target.value })} placeholder="The one thing to remember…" className="w-full resize-y bg-transparent font-editorial text-[17px] italic leading-relaxed text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#E8E0D4]" />
               </div>
             )}
 
             {b.type === "checklist" && (
               <div>
-                <input aria-label="Checklist title" readOnly={!editing} placeholder="Checklist" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-3 w-full bg-transparent font-display text-2xl font-semibold text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#FAF8F3]" />
+                <input aria-label="Checklist title" readOnly={!ed} placeholder="Checklist" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-3 w-full bg-transparent font-display text-2xl font-semibold text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#FAF8F3]" />
                 <ul className="space-y-2">
                   {b.items.map((it) => (
                     <li key={it.id} className="flex items-center gap-3">
@@ -203,24 +244,24 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
                       >
                         {it.done && <Check className="h-3.5 w-3.5" />}
                       </button>
-                      <input aria-label="Checklist item" readOnly={!editing} value={it.text} onChange={(e) => set(b.id, { items: b.items.map((x) => (x.id === it.id ? { ...x, text: e.target.value } : x)) } as Partial<Block>)} className={`w-full bg-transparent font-editorial text-[17px] outline-none ${it.done ? "text-[#9A8E7F] line-through" : "text-[#0F1A38] dark:text-[#E8E0D4]"}`} />
-                      <button hidden={!editing} aria-label="Remove item" onClick={() => set(b.id, { items: b.items.filter((x) => x.id !== it.id) } as Partial<Block>)} className="text-[#C9B8A7] opacity-0 hover:text-[#D83A34] group-hover:opacity-100"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <input aria-label="Checklist item" readOnly={!ed} value={it.text} onChange={(e) => set(b.id, { items: b.items.map((x) => (x.id === it.id ? { ...x, text: e.target.value } : x)) } as Partial<Block>)} className={`w-full bg-transparent font-editorial text-[17px] outline-none ${it.done ? "text-[#9A8E7F] line-through" : "text-[#0F1A38] dark:text-[#E8E0D4]"}`} />
+                      <button hidden={!ed} aria-label="Remove item" onClick={() => set(b.id, { items: b.items.filter((x) => x.id !== it.id) } as Partial<Block>)} className="text-[#C9B8A7] opacity-0 hover:text-[#D83A34] group-hover:opacity-100"><Trash2 className="h-3.5 w-3.5" /></button>
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => set(b.id, { items: [...b.items, { id: rid(), text: "", done: false }] } as Partial<Block>)} className={`${ghost} mt-3 ${editing ? "" : "!hidden"}`}><Plus className="h-3.5 w-3.5" /> Add item</button>
+                <button onClick={() => set(b.id, { items: [...b.items, { id: rid(), text: "", done: false }] } as Partial<Block>)} className={`${ghost} mt-3 ${ed ? "" : "!hidden"}`}><Plus className="h-3.5 w-3.5" /> Add item</button>
               </div>
             )}
 
             {b.type === "table" && (
               <div>
-                <input aria-label="Table title" readOnly={!editing} placeholder="Table" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-3 w-full bg-transparent font-display text-2xl font-semibold text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#FAF8F3]" />
+                <input aria-label="Table title" readOnly={!ed} placeholder="Table" value={b.title} onChange={(e) => set(b.id, { title: e.target.value })} className="mb-3 w-full bg-transparent font-display text-2xl font-semibold text-[#0F1A38] outline-none placeholder:text-[#C9B8A7] dark:text-[#FAF8F3]" />
                 <div className="overflow-x-auto rounded-xl border border-[#E8E0D4] dark:border-[#334060]">
                   <table className="min-w-full text-sm">
                     <thead className="bg-[#0F1A38] text-[#E9D7A9]">
                       <tr>
                         {b.columns.map((c, ci) => (
-                          <th key={ci} className="px-3 py-2 text-left"><input aria-label="Column name" readOnly={!editing} value={c} onChange={(e) => set(b.id, { columns: b.columns.map((x, k) => (k === ci ? e.target.value : x)) } as Partial<Block>)} className="w-full min-w-[7rem] bg-transparent font-ui text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E9D7A9] outline-none placeholder:text-[#9A8E7F]" /></th>
+                          <th key={ci} className="px-3 py-2 text-left"><input aria-label="Column name" readOnly={!ed} value={c} onChange={(e) => set(b.id, { columns: b.columns.map((x, k) => (k === ci ? e.target.value : x)) } as Partial<Block>)} className="w-full min-w-[7rem] bg-transparent font-ui text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E9D7A9] outline-none placeholder:text-[#9A8E7F]" /></th>
                         ))}
                         <th className="w-8" />
                       </tr>
@@ -229,15 +270,15 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
                       {b.rows.map((r, ri) => (
                         <tr key={ri} className={ri % 2 ? "bg-[#FAF8F3] dark:bg-[#17213a]" : "bg-white dark:bg-[#1E2A48]"}>
                           {b.columns.map((_, ci) => (
-                            <td key={ci} className="px-2 py-1.5"><input aria-label="Cell" readOnly={!editing} value={r[ci] ?? ""} onChange={(e) => set(b.id, { rows: b.rows.map((row, k) => (k === ri ? b.columns.map((__, c2) => (c2 === ci ? e.target.value : row[c2] ?? "")) : row)) } as Partial<Block>)} className="w-full rounded-md bg-transparent px-1.5 py-1 font-editorial text-[16px] text-[#0F1A38] outline-none focus:bg-white focus:ring-1 focus:ring-[#D4AF63] dark:text-[#E8E0D4] dark:focus:bg-[#0E162A]" /></td>
+                            <td key={ci} className="px-2 py-1.5"><input aria-label="Cell" readOnly={!ed} value={r[ci] ?? ""} onChange={(e) => set(b.id, { rows: b.rows.map((row, k) => (k === ri ? b.columns.map((__, c2) => (c2 === ci ? e.target.value : row[c2] ?? "")) : row)) } as Partial<Block>)} className="w-full rounded-md bg-transparent px-1.5 py-1 font-editorial text-[16px] text-[#0F1A38] outline-none focus:bg-white focus:ring-1 focus:ring-[#D4AF63] dark:text-[#E8E0D4] dark:focus:bg-[#0E162A]" /></td>
                           ))}
-                          <td><button hidden={!editing} aria-label="Remove row" onClick={() => set(b.id, { rows: b.rows.filter((_, k) => k !== ri) } as Partial<Block>)} className="p-1 text-[#C9B8A7] hover:text-[#D83A34]"><Trash2 className="h-3.5 w-3.5" /></button></td>
+                          <td><button hidden={!ed} aria-label="Remove row" onClick={() => set(b.id, { rows: b.rows.filter((_, k) => k !== ri) } as Partial<Block>)} className="p-1 text-[#C9B8A7] hover:text-[#D83A34]"><Trash2 className="h-3.5 w-3.5" /></button></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className={`mt-3 gap-4 ${editing ? "flex" : "hidden"}`}>
+                <div className={`mt-3 gap-4 ${ed ? "flex" : "hidden"}`}>
                   <button onClick={() => set(b.id, { rows: [...b.rows, b.columns.map(() => "")] } as Partial<Block>)} className={ghost}><Plus className="h-3.5 w-3.5" /> Add row</button>
                   {b.columns.length < 12 && (
                     <button onClick={() => set(b.id, { columns: [...b.columns, "New column"], rows: b.rows.map((r) => [...r, ""]) } as Partial<Block>)} className={ghost}><Plus className="h-3.5 w-3.5" /> Add column</button>
@@ -248,8 +289,8 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
 
             {b.type === "link" && (
               <div className="grid gap-2 sm:grid-cols-2">
-                <input aria-label="Link text" readOnly={!editing} value={b.label} onChange={(e) => set(b.id, { label: e.target.value })} className={inputBase} />
-                <input aria-label="Link address" readOnly={!editing} value={b.url} onChange={(e) => set(b.id, { url: e.target.value })} className={inputBase} />
+                <input aria-label="Link text" readOnly={!ed} value={b.label} onChange={(e) => set(b.id, { label: e.target.value })} className={inputBase} />
+                <input aria-label="Link address" readOnly={!ed} value={b.url} onChange={(e) => set(b.id, { url: e.target.value })} className={inputBase} />
                 {/^https?:\/\//i.test(b.url) && (
                   <a href={b.url} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-2 rounded-full bg-[#0F1A38] px-4 py-2 font-ui text-xs font-semibold text-[#E9D7A9] hover:opacity-90 sm:col-span-2">
                     {b.label || b.url} →
@@ -258,7 +299,8 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
               </div>
             )}
           </section>
-        ))}
+          );
+        })}
       </div>
 
       <div className={`mt-8 flex-wrap items-center gap-2 ${editing ? "flex" : "hidden"}`}>

@@ -2,13 +2,17 @@
 // A page is a list of simple blocks. Everything stored is cleaned here so a page can never hold anything
 // but plain text, checklists, tables and web links.
 
-export type Block =
+// A block can be a note waiting for the owner's approval: it then shows its own Edit and Approve buttons.
+export type BlockReview = { review?: "draft" | "approved"; approvedAt?: string };
+export type Block = (
   | { id: string; type: "heading"; text: string }
   | { id: string; type: "text"; text: string }
   | { id: string; type: "checklist"; title: string; items: { id: string; text: string; done: boolean }[] }
   | { id: string; type: "table"; title: string; columns: string[]; rows: string[][] }
   | { id: string; type: "callout"; text: string }
-  | { id: string; type: "link"; label: string; url: string };
+  | { id: string; type: "link"; label: string; url: string }
+) &
+  BlockReview;
 
 const MAX_BLOCKS = 80;
 const MAX_ITEMS = 200;
@@ -25,6 +29,7 @@ export function cleanBlocks(raw: unknown): Block[] {
     if (!r || typeof r !== "object") continue;
     const b = r as Record<string, unknown>;
     const id = s(b.id, 20) || newId();
+    const before = out.length;
     switch (b.type) {
       case "heading":
         out.push({ id, type: "heading", text: s(b.text, 200) });
@@ -63,6 +68,11 @@ export function cleanBlocks(raw: unknown): Block[] {
         if (/^https?:\/\//i.test(url)) out.push({ id, type: "link", label: s(b.label, 200) || url, url });
         break;
       }
+    }
+    if (out.length > before && (b.review === "draft" || b.review === "approved")) {
+      const last = out[out.length - 1];
+      last.review = b.review;
+      if (b.review === "approved") last.approvedAt = s(b.approvedAt, 40) || new Date().toISOString();
     }
   }
   return out;
