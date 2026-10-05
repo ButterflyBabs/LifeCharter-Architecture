@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { isZoomConfigured, listMasterclassPastInstances, listPastParticipants } from "@/lib/zoom";
+import { isZoomConfigured, listMasterclassPastInstances, listPastParticipants, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
+import { ownerMasterPlanId } from "@/lib/housePlan";
+import { enrollPending, scheduledSession, tagSession } from "@/lib/masterclass/followUp";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Daily (vercel.json): for every MasterClass occurrence in the last 14 days, pull Zoom's list of
+ * Twice a day (vercel.json; one run lands on Thursday evening Mountain time): for every MasterClass occurrence in the last 14 days, pull Zoom's list of
  * who attended and store one row per person per session in masterclass_attendance (their joins
  * summed). Re-running is safe: rows are upserted. People who joined without an email (phone
  * dial-in, guests) are counted under their name so the show rate stays honest.
+ *
+ * Then the follow-up (src/lib/masterclass/followUp.ts): each scheduled session's registrants are
+ * tagged attended or no-show in Contacts, and, once Babs has released that session's replay, the
+ * replay and follow-up campaigns start for anyone not yet started.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -68,5 +74,24 @@ export async function GET(request: Request) {
     summary.push({ session: sessionDate, attendees: rows.length });
   }
 
-  return NextResponse.json({ checked: recent.length, summary });
+  // Follow-up. A failure here never loses the attendance saved above.
+  const followUp: unknown[] = [];
+  try {
+    const housePlan = await ownerMasterPlanId();
+    const schedule = await meetingSchedule(masterclassMeetingId());
+    const seen = new Set<string>();
+    for (const inst of recent) {
+      const match = scheduledSession(inst.startTime, schedule.occurrences); // null = a test or tech-check start
+      if (!housePlan || !match || seen.has(match.occurrence.start)) continue;
+      seen.add(match.occurrence.start);
+      const tagged = await tagSession(supabase, housePlan, match.occurrence, match.previous);
+      const started = tagged.skipped ? { started: 0 } : await enrollPending(supabase, housePlan, tagged.session);
+      followUp.push({ ...tagged, ...started });
+    }
+  } catch (err) {
+    console.error("[masterclass-attendance] follow-up:", err);
+    followUp.push({ error: String(err) });
+  }
+
+  return NextResponse.json({ checked: recent.length, summary, followUp });
 }

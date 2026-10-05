@@ -384,6 +384,13 @@ let navDragActive = false;
 let navDragEndedAt = 0;
 // Where the mouse went down, so a press that travelled is treated as a drag and never as a click on the page.
 let navDown: { x: number; y: number } | null = null;
+// While a menu page is being dragged (and for a moment after), swallow any click on the page, whatever it landed on.
+const blockNavClick = (ev: MouseEvent) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+};
+const startClickBlock = () => window.addEventListener("click", blockNavClick, true);
+const stopClickBlock = () => setTimeout(() => window.removeEventListener("click", blockNavClick, true), 400);
 
 function NavItem({
   item,
@@ -414,8 +421,9 @@ function NavItem({
           navDown = { x: e.clientX, y: e.clientY };
         }}
         onClick={(e) => {
-          // A real mouse click has e.detail >= 1; a keyboard activation has 0 and must always go through.
-          const travelled = navDown && e.detail > 0 ? Math.hypot(e.clientX - navDown.x, e.clientY - navDown.y) : 0;
+          // A keyboard activation (no pointer position) must always go through.
+          const keyboard = (e.nativeEvent as PointerEvent).pointerType === "" && e.clientX === 0 && e.clientY === 0;
+          const travelled = navDown && !keyboard ? Math.hypot(e.clientX - navDown.x, e.clientY - navDown.y) : 0;
           if (travelled > 4 || navDragActive || Date.now() - navDragEndedAt < 500) e.preventDefault();
         }}
         className={cn(
@@ -811,6 +819,7 @@ export function CollapsibleSidebar() {
   const dragSnap = useRef<{ ids: string[]; rects: { top: number; bottom: number }[]; scroll: number; startY: number } | null>(null);
   const startNavDrag = (e: DragStartEvent) => {
     navDragActive = true;
+    startClickBlock();
     dragSnap.current = null;
     const activeId = String(e.active.id);
     if (activeId.startsWith("section:")) return;
@@ -1062,7 +1071,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={startNavDrag} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); noteDrag(e); handleNavDragEnd(e); }}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={startNavDrag} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); stopClickBlock(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); stopClickBlock(); noteDrag(e); handleNavDragEnd(e); }}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isAlignmentArchitect } from "@/lib/authz";
 import { FIRST_YEAR_VALUE, masterclassResults, type SessionRow } from "@/lib/masterclass/results";
+import ReplayRelease from "./ReplayRelease";
 
 export const metadata: Metadata = { title: "MasterClass results" };
 export const dynamic = "force-dynamic";
@@ -48,6 +49,8 @@ export default async function MasterclassResultsPage() {
           </div>
         ))}
       </section>
+
+      <ReplayRelease />
 
       <section className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
         <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">By session</h2>

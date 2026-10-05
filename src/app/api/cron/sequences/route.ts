@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processDue } from "@/lib/sequences/engine";
+import { stopBooked } from "@/lib/masterclass/followUp";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -12,8 +13,13 @@ async function run(request: Request) {
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  // First, so nobody who has booked an Executive Consultation gets the next follow-up email.
+  const stopped = await stopBooked().catch((e) => {
+    console.error("masterclass follow-up stop:", e);
+    return 0;
+  });
   const out = await processDue();
-  return NextResponse.json(out);
+  return NextResponse.json({ ...out, stopped });
 }
 
 export const GET = run;
