@@ -136,6 +136,7 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
 
         <AssistantActionCards
           fresh={actions}
+          onFinished={(line) => setThread((t) => [...t, { id: `d${Date.now()}`, role: "assistant", content: line }])}
           onRevise={(card, instruction) =>
             ask(
               `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nThat earlier preview has been cancelled and nothing was created, so do not look for it or update anything in my account. Call the ${card.tool} tool again now with the full corrected details to prepare a NEW preview for my approval.`,
@@ -147,7 +148,12 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
         {(loading || thread.length > 0) && (
           <div className={`mb-4 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654] ${floating ? "min-h-[8rem] flex-1" : "max-h-96"}`} aria-live="polite" aria-label="Conversation, newest first">
             {loading && <div className="text-xs text-[#7a8a99]">{name} is thinking…</div>}
-            {[...thread].reverse().map((m) => (
+            {[...thread].reverse().map((m) => /^(Done|Undone): /.test(m.content) && m.role === "assistant" ? (
+              <div key={m.id} className="flex items-start gap-1.5 px-1 text-xs text-[#5a6472]">
+                <span aria-hidden className={m.content.startsWith("Undone") ? "text-[#7a8a99]" : "text-[#2c6b3f]"}>{m.content.startsWith("Undone") ? "↶" : "✓"}</span>
+                <span>{m.content.replace(/^(Done|Undone): /, m.content.startsWith("Undone") ? "Undone: " : "")}</span>
+              </div>
+            ) : (
               <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
                   {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}

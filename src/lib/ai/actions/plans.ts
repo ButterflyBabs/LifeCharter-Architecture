@@ -87,14 +87,14 @@ export const updatePlanSection: ActionTool = {
   kind: "write",
   apiPath: "/api/plans",
   description:
-    "Write or revise ONE section of the client's business, marketing, sales or forecasting plan, using what you know from their Brain, Soul, Profit and Command Shift assessments and what they've told you. Call read_plan first for the real section key and to see what is already there. Write the full, finished section text in the client's own voice (plain paragraphs and short lists, no markdown headings). mode 'replace' (default) swaps the section's text; mode 'append' adds to the end and keeps what is there. Never invent facts: if the assessments don't say, leave it out or ask. The client sees the new text and approves it first, and can undo it afterwards. One section per call.",
+    "Write or revise ONE section of the client's business, marketing, sales or forecasting plan, using what you know from their Brain, Soul, Profit and Command Shift assessments and what they've told you. Call read_plan first for the real section key and to see what is already there. Write the full, finished section text in the client's own voice (plain paragraphs and short lists, no markdown headings). If the section is EMPTY leave mode out. If it already has text, do not guess: ask the client whether to replace it or add to it, and only then pass mode 'replace' (swaps the text) or 'append' (adds to the end and keeps what is there), unless they already said which in their request. Never invent facts: if the assessments don't say, leave it out or ask. The client sees the new text and approves it first, and can undo it afterwards. One section per call.",
   parameters: {
     type: "object",
     properties: {
       plan_type: { type: "string", enum: kindEnum },
       section: { type: "string", description: "The section key from read_plan (or its title)." },
       content: { type: "string", description: "The full text for the section." },
-      mode: { type: "string", enum: ["replace", "append"] },
+      mode: { type: "string", enum: ["replace", "append"], description: "Only when the section already has text AND the client said whether to replace it or add to it." },
       status: { type: "string", enum: STATUSES, description: "drafted (default) when it is a first draft for them to review." },
     },
     required: ["plan_type", "section", "content"],
@@ -108,9 +108,13 @@ export const updatePlanSection: ActionTool = {
     const content = typeof args.content === "string" ? plain(args.content) : "";
     if (content.length < 20) return { error: "The section text is missing. Write the full text first." };
     if (content.length > MAX_CONTENT) return { error: `That is too long for one section (limit ${MAX_CONTENT} characters). Tighten it.` };
-    const mode = args.mode === "append" ? "append" : "replace";
     const cur = await loadSection(ctx, kind, sec.key);
     const before = (cur?.content || "").trim();
+    // A section that already has text is never touched until the client has said replace or add: the model must ask first.
+    if (before && args.mode !== "replace" && args.mode !== "append") {
+      return { error: `The ${sec.title} section already has text (${before.length} characters). Do NOT prepare anything yet. Ask the client in one short line: "This section already has text. Do you want me to replace it, or add to it?" Then call this tool again with mode "replace" or "append" according to their answer.` };
+    }
+    const mode = args.mode === "append" ? "append" : "replace";
     const lines: string[] = [];
     if (!before) lines.push("This section is empty now, so nothing is overwritten.");
     else if (mode === "append") lines.push("Added to the end of what you already have. Your existing text stays.");

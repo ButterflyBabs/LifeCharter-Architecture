@@ -33,7 +33,7 @@ const FIELD = "w-full px-3 py-2 text-sm rounded-lg border border-[#1a2b4a]/15 bg
 const LABEL = "block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-1";
 
 // The printable business plan. Locked until EVERY Business Plan section is marked Complete.
-export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void }) {
+export default function PlanExport({ planType, onOpenBuild }: { planType: "business" | "marketing"; onOpenBuild: () => void }) {
   const [info, setInfo] = useState<Info | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [version, setVersion] = useState<Version>("funding");
@@ -68,8 +68,9 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
   if (!loaded) return <p className="text-sm text-[#b8a898]">Checking your plan…</p>;
   if (!info) return <p className="text-sm text-[#b8a898]">Couldn&apos;t load this.</p>;
 
-  const biz = info.progress.business;
-  if (!info.unlocked) {
+  const biz = info.progress[planType];
+  const isBiz = planType === "business";
+  if (!biz.ready) {
     return (
       <div className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-6">
         <div className="flex items-center gap-3 mb-3">
@@ -77,7 +78,7 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
             <Lock className="w-5 h-5 text-[#8a6a15]" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your printable business plan unlocks when every section is complete</h2>
+            <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Your printable {biz.label} unlocks when every section is complete</h2>
             <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf]">
               {biz.complete} of {biz.total} sections marked complete. Open a section on the Build tab and press <b>Mark section complete</b> when you are happy with it.
             </p>
@@ -100,7 +101,7 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
     );
   }
 
-  const payload = () => ({ version, business, preparedBy, recipient, organization, ask, appendices, includeFinance: finance, letter: letter.trim() ? letter.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean) : null });
+  const payload = () => ({ kind: planType, version, business, preparedBy, recipient, organization, ask, appendices, includeFinance: finance, letter: letter.trim() ? letter.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean) : null });
 
   async function writeLetter() {
     setBusy("letter");
@@ -146,7 +147,7 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
       <div className="rounded-2xl border border-[#2c6b3f]/25 bg-[#2c6b3f]/5 p-4 flex items-start gap-3">
         <Check className="w-5 h-5 text-[#2c6b3f] mt-0.5" />
         <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-          All {biz.total} Business Plan sections are complete. Build a branded copy to attach to a funding request or partnership proposal. It is made from what is in your plan right now.
+          All {biz.total} {biz.label} sections are complete. Build a branded copy to share{isBiz ? " with a funder or partner" : " with a partner, agency or funder"}. It is made from what is in your plan right now.
         </p>
       </div>
 
@@ -200,6 +201,7 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
         <textarea className={`${FIELD} leading-relaxed`} rows={9} value={letter} onChange={(e) => setLetter(e.target.value)} placeholder="Your letter appears here so you can edit it. Separate paragraphs with a blank line. The greeting is the first paragraph; the sign-off is added for you." />
       </div>
 
+      {isBiz && (
       <div className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-5 space-y-3">
         <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">3. What goes in</h3>
         <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -228,6 +230,7 @@ export default function PlanExport({ onOpenBuild }: { onOpenBuild: () => void })
           );
         })}
       </div>
+      )}
 
       {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
       {msg && <p className="text-sm text-[#2c6b3f]">{msg}</p>}

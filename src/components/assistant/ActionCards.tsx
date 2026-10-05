@@ -16,7 +16,7 @@ export interface ActionCardData {
 }
 
 // What the AI assistant has prepared. Nothing runs until the client presses Approve here.
-export default function AssistantActionCards({ fresh, onRevise }: { fresh: ActionCardData[]; onRevise?: (card: ActionCardData, instruction: string) => Promise<void> }) {
+export default function AssistantActionCards({ fresh, onRevise, onFinished }: { fresh: ActionCardData[]; onRevise?: (card: ActionCardData, instruction: string) => Promise<void>; onFinished?: (line: string) => void }) {
   const [cards, setCards] = useState<ActionCardData[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
@@ -48,6 +48,10 @@ export default function AssistantActionCards({ fresh, onRevise }: { fresh: Actio
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "That didn't work.");
       setCards((cur) => cur.map((c) => (c.id === id ? (d.card as ActionCardData) : c)));
+      // What was done drops into the conversation thread, so the record stays where the conversation is.
+      const done = d.card as ActionCardData;
+      if (done.status === "executed") onFinished?.(`Done: ${done.summary || done.title}`);
+      else if (done.status === "undone") onFinished?.(`Undone: ${done.title}`);
       // Tell any plan page that's open that a section just changed (approved or undone), so it reloads itself.
       if (["update_plan_section", "fill_plan_answers"].includes((d.card as ActionCardData).tool) && decision !== "cancel") window.dispatchEvent(new Event("lc-plan-changed"));
     } catch (e) {

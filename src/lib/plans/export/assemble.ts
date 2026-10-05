@@ -112,6 +112,7 @@ async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
 }
 
 export interface ExportOptions {
+  kind: PlanKind; // which plan the document is about: business, marketing or sales
   version: Version;
   business: string;
   preparedBy: string;
@@ -124,23 +125,25 @@ export interface ExportOptions {
 }
 
 export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Promise<PlanDoc> {
-  const kinds: PlanKind[] = ["business", ...APPENDIX_ORDER.filter((k) => o.appendices.includes(k))];
+  const main = getBlueprint(o.kind)!;
+  // Appendices and the financial overview belong to the business plan only.
+  const isBusiness = o.kind === "business";
+  const kinds: PlanKind[] = [o.kind, ...(isBusiness ? APPENDIX_ORDER.filter((k) => o.appendices.includes(k)) : [])];
   const { data } = await db.from("plan_sections").select("plan_type, section_key, content").eq("master_plan_id", planId).in("plan_type", kinds);
   const rows = (data || []) as { plan_type: string; section_key: string; content: string | null }[];
   const textOf = (kind: string, key: string) => (rows.find((r) => r.plan_type === kind && r.section_key === key)?.content || "").trim();
 
   const parts: Part[] = [];
-  const biz = getBlueprint("business")!;
-  biz.sections.forEach((s, i) => {
-    const text = textOf("business", s.key);
+  main.sections.forEach((s, i) => {
+    const text = textOf(o.kind, s.key);
     if (text) parts.push({ title: `${i + 1}. ${s.title}`, level: 1, blocks: dropRepeatedTitle(textToBlocks(text), s.title) });
   });
-  if (o.includeFinance) {
+  if (isBusiness && o.includeFinance) {
     const fb = await financeBlocks(db, planId);
     if (fb.length) parts.push({ title: "Financial Overview", level: 1, pageBreakBefore: true, blocks: fb });
   }
   let letterIdx = 0;
-  for (const k of APPENDIX_ORDER) {
+  for (const k of isBusiness ? APPENDIX_ORDER : []) {
     if (!kinds.includes(k)) continue;
     const bp = getBlueprint(k)!;
     const letter = String.fromCharCode(65 + letterIdx++);
@@ -151,6 +154,9 @@ export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Pro
     }
   }
 
+  // A line from the plan itself for the cover letter ("In brief: ...").
+  const brief = ["vision_mission", "positioning", "ideal_prospect", "ideal_client"].map((k) => textOf(o.kind, k)).find(Boolean) || "";
+
   const letter =
     o.version === "general" && !o.letter
       ? null
@@ -158,11 +164,11 @@ export async function assembleDoc(db: Db, planId: string, o: ExportOptions): Pro
         ? o.letter
         : o.version === "general"
           ? null
-          : templateLetter(o.version, { business: o.business, recipient: o.recipient, organization: o.organization, ask: o.ask, vision: textOf("business", "vision_mission") });
+          : templateLetter(o.version, { business: o.business, recipient: o.recipient, organization: o.organization, ask: o.ask, vision: brief, plan: main.label.toLowerCase() });
 
   return {
-    label: "Business Plan",
-    tagline: VERSION_LABEL[o.version],
+    label: main.label,
+    tagline: VERSION_LABEL[o.version] || main.label,
     business: o.business,
     preparedBy: o.preparedBy,
     preparedFor: [o.recipient, o.organization].map((s) => s.trim()).filter(Boolean).join(", "),

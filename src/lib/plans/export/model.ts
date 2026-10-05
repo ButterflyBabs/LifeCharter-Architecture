@@ -73,21 +73,22 @@ export type Version = "funding" | "partnership" | "general";
 export const VERSION_LABEL: Record<Version, string> = {
   funding: "Funding Request",
   partnership: "Partnership Proposal",
-  general: "Business Plan",
+  general: "",
 };
 
 const firstSentences = (s: string, n = 2) => (s.replace(/\s+/g, " ").trim().match(/[^.!?]+[.!?]+/g) || [s]).slice(0, n).join(" ").trim();
 
 // A plain cover letter built from the client's own words; the AI can write a richer one.
-export function templateLetter(v: Version, f: { business: string; recipient: string; organization: string; ask: string; vision: string }): string[] {
+export function templateLetter(v: Version, f: { business: string; recipient: string; organization: string; ask: string; vision: string; plan?: string }): string[] {
+  const plan = f.plan || "business plan";
   const to = f.recipient.trim() ? `Dear ${f.recipient.trim()},` : f.organization.trim() ? `Dear ${f.organization.trim()} team,` : "To whom it may concern,";
   const ask = f.ask.trim().replace(/[.\s]+$/, "");
   const brief = f.vision.trim() ? firstSentences(f.vision) : "";
   const paras: string[] = [to];
   if (v === "funding") {
-    paras.push(`I am writing on behalf of ${f.business} to request ${ask || "your support"}${f.organization.trim() ? ` from ${f.organization.trim()}` : ""}. The attached business plan sets out who we serve, what we offer, how we earn revenue and the financial picture behind this request.`);
+    paras.push(`I am writing on behalf of ${f.business} to request ${ask || "your support"}${f.organization.trim() ? ` from ${f.organization.trim()}` : ""}. The attached ${plan} sets out the work behind this request.`);
   } else {
-    paras.push(`I am writing on behalf of ${f.business} to propose a partnership${f.organization.trim() ? ` with ${f.organization.trim()}` : ""}${ask ? `: ${ask}` : ""}. The attached business plan shows who we serve, what we offer and where we are headed, so you can see how our work could fit together.`);
+    paras.push(`I am writing on behalf of ${f.business} to propose a partnership${f.organization.trim() ? ` with ${f.organization.trim()}` : ""}${ask ? `: ${ask}` : ""}. The attached ${plan} shows how we reach and serve the people we work for, so you can see how our work could fit together.`);
   }
   if (brief) paras.push(`In brief: ${brief}`);
   paras.push("I would welcome the chance to walk you through the plan and answer any questions. Thank you for your time and consideration.");
