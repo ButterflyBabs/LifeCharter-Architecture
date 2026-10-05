@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, Pencil, Undo2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Undo2, X, XCircle } from "lucide-react";
 
 export interface ActionCardData {
   id: string;
@@ -22,6 +22,7 @@ export default function AssistantActionCards({ fresh, onRevise }: { fresh: Actio
   const [err, setErr] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [dismissed, setDismissed] = useState<string[]>([]);
 
   // Anything still waiting for approval from earlier (survives a page reload).
   useEffect(() => {
@@ -74,10 +75,33 @@ export default function AssistantActionCards({ fresh, onRevise }: { fresh: Actio
     setBusy(null);
   }
 
-  if (!cards.length) return null;
+  // Only what still needs a decision gets the big yellow card. What is finished shrinks to ONE thin line (the
+  // newest one) so the conversation stays in view; the chat already records what was done.
+  const waiting = cards.filter((c) => c.status === "proposed");
+  const lastDone = cards.find((c) => c.status !== "proposed" && !dismissed.includes(c.id));
+  if (!waiting.length && !lastDone) return null;
   return (
-    <div className="mb-4 space-y-3">
-      {cards.map((c) => (
+    <div className="mb-3 space-y-2">
+      {lastDone && (
+        <div className="flex items-center gap-2 rounded-lg border border-[#c9a227]/30 bg-[#FBF7EC] px-3 py-1.5 text-xs text-[#3F4654] dark:bg-[#2a2415] dark:text-[#e8e4f0]">
+          {lastDone.status === "executed" && <CheckCircle2 className="h-3.5 w-3.5 flex-none text-[#2c6b3f]" />}
+          {lastDone.status === "undone" && <Undo2 className="h-3.5 w-3.5 flex-none text-[#7a8a99]" />}
+          {lastDone.status === "cancelled" && <XCircle className="h-3.5 w-3.5 flex-none text-[#7a8a99]" />}
+          <span className="min-w-0 flex-1 truncate" title={lastDone.title}>
+            {lastDone.status === "executed" ? "Done: " : lastDone.status === "undone" ? "Undone: " : lastDone.status === "cancelled" ? "Cancelled: " : "Didn't work: "}
+            {lastDone.title}
+          </span>
+          {lastDone.status === "executed" && lastDone.canUndo && (
+            <button onClick={() => decide(lastDone.id, "undo")} disabled={busy === lastDone.id} className="inline-flex flex-none items-center gap-1 text-[#2E7C83] hover:underline">
+              {busy === lastDone.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />} Undo
+            </button>
+          )}
+          <button onClick={() => setDismissed((d) => [...d, lastDone.id])} aria-label="Hide" className="flex-none text-[#7a8a99] hover:text-[#1a2b4a]">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+      {waiting.map((c) => (
         <div key={c.id} className="rounded-xl border border-[#c9a227]/40 bg-[#FBF7EC] p-4 text-sm text-[#3F4654] dark:bg-[#2a2415] dark:text-[#e8e4f0]">
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.title}</p>
           {c.lines.length > 0 && c.status === "proposed" && (
