@@ -860,38 +860,12 @@ export function CollapsibleSidebar() {
     });
     return snap.ids[best];
   };
-  const reportNavDrag = (e: DragEndEvent, decided: string | null, result: string) => {
-    try {
-      const snap = dragSnap.current;
-      fetch("/api/nav-debug", {
-        method: "POST",
-        keepalive: true,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          result,
-          active: String(e.active.id),
-          over: e.over ? String(e.over.id) : null,
-          decided,
-          deltaY: Math.round(e.delta.y),
-          startY: snap ? Math.round(snap.startY) : null,
-          rows: snap ? snap.ids.map((id, i) => `${id}:${Math.round(snap.rects[i].top)}-${Math.round(snap.rects[i].bottom)}`) : null,
-          scroll: snap ? snap.scroll : null,
-          collisions: (e.collisions ?? []).slice(0, 4).map((c) => String(c.id)),
-          ua: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 120) : "",
-          vh: typeof window !== "undefined" ? window.innerHeight : null,
-        }),
-      }).catch(() => {});
-    } catch {
-      /* diagnostics only */
-    }
-  };
   const handleNavDragEnd = (event: DragEndEvent) => {
     const { active } = event;
     let over = event.over;
     if (!String(active.id).startsWith("section:")) {
       // Items: the row under the pointer decides (falls back to dnd-kit's own answer).
       const decided = rowUnderPointer(event);
-      reportNavDrag(event, decided, !event.over ? "no-over" : decided && decided !== String(event.over.id) ? "differs" : "same");
       if (decided) over = { ...(event.over ?? ({} as NonNullable<typeof event.over>)), id: decided } as NonNullable<typeof event.over>;
     }
     if (!over || active.id === over.id) return;
