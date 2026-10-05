@@ -129,7 +129,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Planning",
     question: "How do I print or share my business plan marketing plan or sales plan (PDF or Word) for a funder, partner or agency?",
     answer:
-      "Open Alignment > Business Plan (or Growth > Marketing Plan, or Growth > Sales Plan; for the Forecast Plan, scroll to Print / Share at the bottom of Planning > Forecasting) and choose the Print / Share tab. It unlocks when EVERY section of that plan is marked Complete (open a section on the Build tab and press Mark section complete; the tab shows which ones are left). Then: (1) pick who it is for: a funding request, a partnership proposal, or a general copy; (2) add your business name, your name and, if you like, the recipient and organization; (3) say what you are asking for or proposing and press Write the cover letter (your assistant drafts it from your plan, and you can edit every word; leave it blank and a simple letter is made for you); (4) choose what goes in: a financial overview made from your own numbers (your revenue targets, and your year-to-date results and forecast once you have entered income) and, as appendices, your Marketing, Sales and Forecast plans (each is offered once all of its sections are complete). The Marketing Plan and Sales Plan versions are the same flow without the financial overview and appendices (those belong to the business plan). Then download a PDF to send, or a Word file you can keep editing. The file has a branded cover, your cover letter, contents with page numbers, every section in order, and a footer on each page. It is built from your plan as it is right now, so download a fresh copy after you change anything.",
+      "Open Alignment & Systems > Business Plan (or Marketing Plan, or Sales Plan; for the Forecast Plan, open Forecasting and scroll to Print / Share at the bottom) and choose the Print / Share tab. It unlocks when EVERY section of that plan is marked Complete (open a section on the Build tab and press Mark section complete; the tab shows which ones are left). Then: (1) pick who it is for: a funding request, a partnership proposal, or a general copy; (2) add your business name, your name and, if you like, the recipient and organization; (3) say what you are asking for or proposing and press Write the cover letter (your assistant drafts it from your plan, and you can edit every word; leave it blank and a simple letter is made for you); (4) choose what goes in: a financial overview made from your own numbers (your revenue targets, and your year-to-date results and forecast once you have entered income) and, as appendices, your Marketing, Sales and Forecast plans (each is offered once all of its sections are complete). The Marketing Plan and Sales Plan versions are the same flow without the financial overview and appendices (those belong to the business plan). Then download a PDF to send, or a Word file you can keep editing. The file has a branded cover, your cover letter, contents with page numbers, every section in order, and a footer on each page. It is built from your plan as it is right now, so download a fresh copy after you change anything.",
     keywords: ["print business plan", "business plan pdf", "word document", "funding request", "grant", "investor", "partnership proposal", "share my plan", "attach plan", "cover letter", "export plan", "download plan", "print share"],
   },
   {
@@ -777,7 +777,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Planning & Numbers is your weekly and monthly rhythm, plans first and then the numbers: Weekly Review, Goal Ladder, Planning Hub, Finance and Forecasting. Growth is what you sell and how you're seen: Offers & Packages, Sales Plan, Marketing Plan, Testimonials and Website Review. Alignment is the big picture: Business Alignment, Alignment Profile, Progress, your Business Plan and Business Segments. Systems is how the business runs: Operations, Playbook & SOPs, Legal & Compliance, AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Planning & Numbers is your weekly rhythm and the money: Weekly Review, Finance and Progress. Growth is what you sell and how you're seen: Offers & Packages, Testimonials and Website Review. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
@@ -833,7 +833,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Planning",
     question: "What is the Goal Ladder?",
     answer:
-      "The Goal Ladder (Planning & Numbers → Goal Ladder) breaks your year's goals into this quarter, this month and this week, so a big goal always has a next step. Choose an area, answer four short questions, and your assistant proposes this quarter's milestones for it; edit them before you save.",
+      "The Goal Ladder (Alignment & Systems → Goal Ladder) breaks your year's goals into this quarter, this month and this week, so a big goal always has a next step. Choose an area, answer four short questions, and your assistant proposes this quarter's milestones for it; edit them before you save.",
     keywords: ["goal ladder", "goals", "quarter", "quarterly", "milestones", "yearly goal", "break down"],
   },
   {
@@ -849,7 +849,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Operations",
     question: "How do Playbook & SOPs work?",
     answer:
-      "Playbook & SOPs (Systems → Playbook & SOPs) is how your business runs, written down once. Name a process, jot how you do it today in your own words, and your assistant drafts clean, numbered steps you can edit. Your SOPs make it easier to hand work to a team member and keep things consistent.",
+      "Playbook & SOPs (Alignment & Systems → Playbook & SOPs) is how your business runs, written down once. Name a process, jot how you do it today in your own words, and your assistant drafts clean, numbered steps you can edit. Your SOPs make it easier to hand work to a team member and keep things consistent.",
     keywords: ["sop", "sops", "playbook", "process", "procedures", "standard operating procedure", "document", "delegate"],
   },
   {
@@ -857,7 +857,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Operations",
     question: "What is Legal & Compliance?",
     answer:
-      "Legal & Compliance (Systems → Legal & Compliance) is one checklist for contracts, insurance, licenses and filings. Use 'What applies to my business?' and your assistant suggests which items matter for you. Ticking items off feeds your Legal score in your business health. It's a checklist to keep you organized, not legal advice; check anything important with a qualified professional.",
+      "Legal & Compliance (Alignment & Systems → Legal & Compliance) is one checklist for contracts, insurance, licenses and filings. Use 'What applies to my business?' and your assistant suggests which items matter for you. Ticking items off feeds your Legal score in your business health. It's a checklist to keep you organized, not legal advice; check anything important with a qualified professional.",
     keywords: ["legal", "compliance", "contracts", "insurance", "licenses", "filings", "checklist", "legal score"],
   },
   {

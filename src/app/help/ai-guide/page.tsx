@@ -64,7 +64,7 @@ export default function AIGuideHelpPage() {
             <li><strong>Executive Home:</strong> The AI Assistant card has an ask box, your conversation (newest first), and links for New conversation, Past conversations and Teach.</li>
             <li><strong>Business Alignment:</strong> The AI Business Guide card shows a greeting built from your score and your next moves, with an Ask button to chat.</li>
           </ol>
-          <p>All three share the same memory of your recent conversation. To change its name, replies or notes, click AI Assistant under Systems in the left menu.</p>
+          <p>All three share the same memory of your recent conversation. To change its name, replies or notes, click AI Assistant under Settings in the left menu.</p>
         </div>
       )
     },
@@ -148,7 +148,7 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>Your assistant runs on your own OpenAI key:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Click AI Assistant under Systems in the left menu (or go to Settings → AI Assistant)</li>
+            <li>Click AI Assistant under Settings in the left menu (or go to Settings → AI Assistant)</li>
             <li>Use the &quot;Get an OpenAI key&quot; link to create a key on OpenAI&apos;s site</li>
             <li>Paste it into the OpenAI API key box</li>
             <li>Click Save AI settings</li>

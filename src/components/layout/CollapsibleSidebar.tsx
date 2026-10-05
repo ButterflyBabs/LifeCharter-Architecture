@@ -115,16 +115,14 @@ const navigationSections = [
       { id: "short-links", label: "Short Links", icon: Link2, href: "/short-links" },
     ],
   },
-  // Plans first, then the numbers.
+  // Your weekly rhythm and the money.
   {
     title: "PLANNING & NUMBERS",
     color: "text-[#4a9b9b]",
     items: [
       { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
-      { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
-      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
+      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
     ],
   },
   // What you sell and how you're seen.
@@ -133,30 +131,33 @@ const navigationSections = [
     color: "text-[#c9855e]",
     items: [
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
-      { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
-      { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
+  // The big picture, the four plans and how the business runs, all in one place.
   {
-    title: "ALIGNMENT",
+    title: "ALIGNMENT & SYSTEMS",
     color: "text-[#7b6b8d]",
     items: [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
-      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
+      { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
+      { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
+      { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
+      { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
+      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
-    ],
-  },
-  {
-    title: "SYSTEMS",
-    color: "text-[#b8a898]",
-    items: [
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },
       { id: "compliance", label: "Legal & Compliance", icon: Scale, href: "/compliance" },
+    ],
+  },
+  {
+    title: "SETTINGS",
+    color: "text-[#b8a898]",
+    items: [
       { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
     ],
@@ -671,11 +672,14 @@ export function CollapsibleSidebar() {
   }, []);
   // The demo keeps its tour order; every real account can arrange its own sections. A section that is
   // new, or not in the saved list, goes at the end.
-  const arranged = isDemo || !sectionOrder.length
+  // Sections that were renamed keep the place the account had saved for them.
+  const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS" };
+  const savedOrder = sectionOrder.map((t) => RENAMED[t] ?? t).filter((t, i, a) => a.indexOf(t) === i);
+  const arranged = isDemo || !savedOrder.length
     ? sections
     : [...sections].sort((a, b) => {
-        const ia = sectionOrder.indexOf(a.title);
-        const ib = sectionOrder.indexOf(b.title);
+        const ia = savedOrder.indexOf(a.title);
+        const ib = savedOrder.indexOf(b.title);
         return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       });
   const orderedSections = arranged.map((s) => {
