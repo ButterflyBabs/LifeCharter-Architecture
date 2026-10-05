@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   PointerSensor,
   TouchSensor,
   KeyboardSensor,
@@ -716,7 +717,26 @@ export function CollapsibleSidebar() {
       return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:")) });
     }
     const mine = new Set((orderedSections.find((sec) => sec.items.some((i) => i.id === args.active.id))?.items ?? []).map((i) => String(i.id)));
-    return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => mine.has(String(c.id))) });
+    const own = { ...args, droppableContainers: args.droppableContainers.filter((c) => mine.has(String(c.id))) };
+    // Where the pointer is decides the drop (up or down alike); if it is between rows, the nearest row wins.
+    const under = pointerWithin(own);
+    return under.length ? under : closestCenter(own);
+  };
+  // If a drop does not land, say so (and point to the arrows) instead of the page quietly snapping back.
+  const [dragNote, setDragNote] = useState("");
+  const noteDrag = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (String(active.id).startsWith("section:")) return;
+    let why = "";
+    if (!over) why = "nothing under the pointer";
+    else if (active.id !== over.id) {
+      const sec = orderedSections.find((x) => x.items.some((i) => i.id === active.id));
+      if (!sec || !sec.items.some((i) => i.id === over.id)) why = "dropped in a different section";
+    }
+    if (why) {
+      setDragNote(`That drop didn't land (${why}). Use the small up and down arrows beside the page, or try again.`);
+      setTimeout(() => setDragNote(""), 7000);
+    }
   };
   const resetMenuOrder = () => {
     skipSave.current = true;
@@ -939,7 +959,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={() => { navDragActive = true; }} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); handleNavDragEnd(e); }}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={() => { navDragActive = true; }} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); noteDrag(e); handleNavDragEnd(e); }}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
@@ -1003,6 +1023,11 @@ export function CollapsibleSidebar() {
         })}
         </SortableContext>
         </DndContext>
+        {dragNote && (
+          <div role="status" className="fixed bottom-24 left-3 z-[60] w-[13.5rem] rounded-lg bg-[#c9a227] px-3 py-2 text-xs font-medium text-[#0F1A38] shadow-lg">
+            {dragNote}
+          </div>
+        )}
 
         {!isCollapsed && !isDemo && (sectionOrder.length > 0 || Object.keys(navOrder).length > 0) && (
           <button type="button" onClick={resetMenuOrder} className="mt-6 w-full px-4 text-left text-[11px] text-white/40 hover:text-white/80 hover:underline" title="Put the menu back in the standard order">
