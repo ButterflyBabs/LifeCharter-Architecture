@@ -1,12 +1,13 @@
 import { createServerClient } from "@/lib/supabase/server";
 
 // MasterClass performance, per session and cumulative (Babs approved 2026-09-27).
-// Sessions: weekly Thursdays at 5pm MT from Sept 24 to Dec 17, 2026. Mirror of
-// commandsuite-landing-page app/masterclass/sessions.ts (keep SKIP in step with it).
-const FIRST_SESSION = "2026-09-24";
-const LAST_SESSION = "2026-12-17";
+// Sessions: every other Thursday at 5pm MT, starting Oct 8, 2026 (Babs, 2026-10-05; none ran before
+// that). Add a date to SKIP if a session is cancelled.
+const FIRST_SESSION = "2026-10-08";
+const LAST_SESSION = "2027-12-30";
+const EVERY_DAYS = 14;
 const SKIP: string[] = [];
-const CREDIT_DAYS = 7; // a booking or sale counts for the most recent session within this many days
+const CREDIT_DAYS = 14; // a booking or sale counts for the most recent session within this many days (the follow-up series runs two weeks)
 
 // First-year value per tier: implementation + 12 months.
 export const FIRST_YEAR_VALUE: Record<string, number> = { starter: 6661, growth: 8961, vip: 16961 };
@@ -47,7 +48,7 @@ export type SessionRow = {
 export async function masterclassResults(): Promise<{ sessions: SessionRow[]; totals: Omit<SessionRow, "date" | "showRate" | "noShows"> & { showRate: number | null; sessions: number } }> {
   const today = todayMT();
   const dates: string[] = [];
-  for (let d = FIRST_SESSION; d <= LAST_SESSION && d <= today; d = addDays(d, 7)) if (!SKIP.includes(d)) dates.push(d);
+  for (let d = FIRST_SESSION; d <= LAST_SESSION && d <= today; d = addDays(d, EVERY_DAYS)) if (!SKIP.includes(d)) dates.push(d);
 
   const supabase = createServerClient();
   const [regs, att, quals, subs, intakes] = await Promise.all([

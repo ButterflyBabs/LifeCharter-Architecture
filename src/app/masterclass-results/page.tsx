@@ -15,7 +15,7 @@ const clientsLine = (c: SessionRow["newClients"]) => {
   return parts.length ? parts.join(" · ") : "—";
 };
 
-// Owner-only: how each weekly MasterClass performs, and whether the series is compounding.
+// Owner-only: how each MasterClass performs, and whether the series is compounding.
 export default async function MasterclassResultsPage() {
   if (!(await isAlignmentArchitect())) notFound();
   const { sessions, totals } = await masterclassResults();
@@ -37,7 +37,7 @@ export default async function MasterclassResultsPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Private · only you can see this</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">MasterClass results</h1>
         <p className="mt-2 max-w-3xl text-[15px] text-[#5b5f73] dark:text-[#b8a898]">
-          Every Thursday session from September 24. Bookings and sales are credited to the most recent session within 7 days. First-year revenue uses implementation plus 12 months: Starter {usd(FIRST_YEAR_VALUE.starter)}, Growth {usd(FIRST_YEAR_VALUE.growth)}, VIP {usd(FIRST_YEAR_VALUE.vip)}.
+          Every other Thursday from October 8. Bookings and sales are credited to the most recent session, for the two weeks until the next one. First-year revenue uses implementation plus 12 months: Starter {usd(FIRST_YEAR_VALUE.starter)}, Growth {usd(FIRST_YEAR_VALUE.growth)}, VIP {usd(FIRST_YEAR_VALUE.vip)}.
         </p>
       </header>
 
