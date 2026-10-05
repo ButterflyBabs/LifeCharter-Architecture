@@ -42,6 +42,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/operations": "Operations",
   "/reviews": "Testimonials",
   "/settings": "Settings",
+  "/projects": "Projects",
+  "/tasks": "Tasks",
 };
 
 export function titleForPath(pathname: string | null): string {

@@ -15,10 +15,10 @@ export default function ProjectTimeline({ data, onOpen }: { data: PData; onOpen:
       ...data.milestones.map((m) => m.dueDay),
       data.project.startDate,
       data.project.dueDate,
-      todayStr(),
     ].filter((d): d is string => !!d);
-    const min = all.reduce((a, b) => (a < b ? a : b));
-    const max = all.reduce((a, b) => (a > b ? a : b));
+    const base = all.length ? all : [todayStr()];
+    const min = base.reduce((a, b) => (a < b ? a : b));
+    const max = base.reduce((a, b) => (a > b ? a : b));
     const start = addDay(min, -2);
     const n = dayNum(max) - dayNum(start) + 4;
     return {
@@ -87,7 +87,7 @@ export default function ProjectTimeline({ data, onOpen }: { data: PData; onOpen:
           );
         })}
         {/* today */}
-        {today >= rangeStart && <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-[#b3392b]/60" style={{ left: LABEL + x(today) + ppd / 2 }} title="Today" />}
+        {today >= rangeStart && today <= addDay(rangeStart, days) && <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-[#b3392b]/60" style={{ left: LABEL + x(today) + ppd / 2 }} title="Today" />}
       </div>
       {tasks.length === 0 && <p className="p-5 text-sm text-[#7a8a99]">Give your tasks a start or due date and they appear here as bars.</p>}
       {undated.length > 0 && (
