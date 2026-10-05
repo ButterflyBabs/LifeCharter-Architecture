@@ -777,7 +777,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Planning & Numbers is your weekly rhythm and the money: Weekly Review, Finance and Progress. Growth is what you sell and how you're seen: Offers & Packages, Testimonials and Website Review. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite and First 30 Days. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Tasks, Quick Capture and The Collective. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Growth & Numbers is the money and what you sell: Finance, Offers & Packages and Testimonials. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Progress, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Weekly Review, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started, at the bottom, holds Set up Suite, First 30 Days, the Starter Guide and Website Review. Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
@@ -825,7 +825,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Planning",
     question: "How does the Weekly Review work?",
     answer:
-      "Weekly Review (Planning & Numbers → Weekly Review) is a short weekly sit-down with your real numbers: what came in and went out, your tasks and goals, and your assistant's read on what they mean. It suggests next steps with due dates; edit them, untick any you don't want, and they go straight onto your task list. Finishing it marks that week's planning session complete, with the review saved as its notes.",
+      "Weekly Review (Alignment & Systems → Weekly Review) is a short weekly sit-down with your real numbers: what came in and went out, your tasks and goals, and your assistant's read on what they mean. It suggests next steps with due dates; edit them, untick any you don't want, and they go straight onto your task list. Finishing it marks that week's planning session complete, with the review saved as its notes.",
     keywords: ["weekly review", "review", "weekly", "planning session", "rhythm", "check in", "next steps"],
   },
   {
@@ -841,7 +841,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "What goes in Offers & Packages?",
     answer:
-      "Offers & Packages (Growth → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
+      "Offers & Packages (Growth & Numbers → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
     keywords: ["offers", "packages", "pricing", "products", "services", "what I sell", "retired"],
   },
   {
@@ -865,7 +865,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Growth & Reviews",
     question: "What is the Website Alignment Review?",
     answer:
-      "Every Command Suite client gets a Website Alignment Review, included. Add your website address in Set up Suite or on the Website Review page (Growth → Website Review), and within 14 days of joining we read your site against the positioning, voice and offer you build in the Suite and give you the five changes that matter most. You'll get an email when it's ready, and it stays on your Website Review page. If your site needs rebuilding, ask about the Website Build.",
+      "Every Command Suite client gets a Website Alignment Review, included. Add your website address in Set up Suite or on the Website Review page (Getting Started → Website Review), and within 14 days of joining we read your site against the positioning, voice and offer you build in the Suite and give you the five changes that matter most. You'll get an email when it's ready, and it stays on your Website Review page. If your site needs rebuilding, ask about the Website Build.",
     keywords: ["website review", "website alignment", "website", "site", "review", "five changes", "website build"],
   },
   {

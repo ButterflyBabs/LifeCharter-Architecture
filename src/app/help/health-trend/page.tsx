@@ -53,7 +53,7 @@ export default function HealthTrendHelpPage() {
       question: "How do I see more detail or other time periods?",
       answer: (
         <div className="space-y-2">
-          <p>Press View progress on the Business Health Trend card, or open Progress in the Planning & Numbers section of the left menu. There you will find:</p>
+          <p>Press View progress on the Business Health Trend card, or open Progress in the Alignment & Systems section of the left menu. There you will find:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Your overall score now, your baseline, and the change between them</li>
             <li>A trend line with a menu to switch between Overall and any one of your 12 domains</li>

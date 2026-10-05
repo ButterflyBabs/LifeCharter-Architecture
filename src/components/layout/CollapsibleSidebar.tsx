@@ -115,24 +115,14 @@ const navigationSections = [
       { id: "short-links", label: "Short Links", icon: Link2, href: "/short-links" },
     ],
   },
-  // Your weekly rhythm and the money.
+  // What you sell, how you're seen, and the money.
   {
-    title: "PLANNING & NUMBERS",
+    title: "GROWTH & NUMBERS",
     color: "text-[#4a9b9b]",
     items: [
-      { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
-    ],
-  },
-  // What you sell and how you're seen.
-  {
-    title: "GROWTH",
-    color: "text-[#c9855e]",
-    items: [
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
-      { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
   // The big picture, the four plans and how the business runs, all in one place.
@@ -142,12 +132,14 @@ const navigationSections = [
     items: [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
       { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
+      { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
       { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
       { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
       { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
+      { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },
@@ -169,6 +161,7 @@ const navigationSections = [
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
       { id: "starter-guide", label: "Starter Guide", icon: BookOpen, href: STARTER_GUIDE_URL },
+      { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
 ];
@@ -685,7 +678,7 @@ export function CollapsibleSidebar() {
   // The demo keeps its tour order; every real account can arrange its own sections. A section that is
   // new, or not in the saved list, goes at the end.
   // Sections that were renamed keep the place the account had saved for them.
-  const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS" };
+  const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS", "PLANNING & NUMBERS": "GROWTH & NUMBERS", GROWTH: "GROWTH & NUMBERS" };
   const savedOrder = sectionOrder.map((t) => RENAMED[t] ?? t).filter((t, i, a) => a.indexOf(t) === i);
   const arranged = isDemo || !savedOrder.length
     ? sections
