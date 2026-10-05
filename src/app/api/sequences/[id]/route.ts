@@ -84,6 +84,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (typeof b.name === "string" && b.name.trim()) patch.name = str(b.name, 120);
     if (typeof b.description === "string") patch.description = str(b.description, 500) || null;
+    if (typeof b.offer === "string") patch.offer = str(b.offer, 80) || null;
     // From name/address: Babs's account only. A client always sends as their Email sending profile.
     if (house && typeof b.fromName === "string" && b.fromName.trim()) patch.from_name = str(b.fromName, 80);
     if (house && typeof b.fromEmail === "string" && /^[^@\s]+@(lifecharter\.life|lccommandsuite\.com)$/i.test(b.fromEmail.trim())) patch.from_email = b.fromEmail.trim().toLowerCase();

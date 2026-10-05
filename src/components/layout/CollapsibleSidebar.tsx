@@ -33,6 +33,7 @@ import {
   Presentation,
   MonitorPlay,
   MailCheck,
+  Tags,
   CalendarDays,
   Package,
   KanbanSquare,
@@ -114,6 +115,7 @@ const navigationSections = [
     color: "text-[#2E7C83]",
     items: [
       { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
+      { id: "tags", label: "Tag Library", icon: Tags, href: "/tags" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },

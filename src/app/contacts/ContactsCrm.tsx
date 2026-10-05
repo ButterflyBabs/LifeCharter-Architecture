@@ -106,6 +106,11 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
   const [tags, setTags] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [tag, setTag] = useState("");
+  // Arriving from the Tag Library: /contacts?tag=<tag> opens the list already filtered.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tag");
+    if (t) setTag(t);
+  }, []);
   const [openId, setOpenId] = useState("");
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);

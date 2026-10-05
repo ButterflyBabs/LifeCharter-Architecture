@@ -17,7 +17,7 @@ export async function GET() {
   const [{ data }, { data: all }, profile, tz] = await Promise.all([
     db
       .from("crm_broadcasts")
-      .select("id, template_key, name, subject, status, scheduled_at, timezone, recipient_count, tags, tag_match, created_at, finished_at")
+      .select("id, template_key, name, subject, status, scheduled_at, timezone, recipient_count, tags, tag_match, created_at, finished_at, offer")
       .eq("master_plan_id", a.planId)
       .order("created_at", { ascending: false })
       .limit(100),

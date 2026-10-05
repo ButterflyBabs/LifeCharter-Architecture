@@ -38,6 +38,7 @@ function fields(d: Record<string, unknown>, cur: BroadcastRow, house: boolean): 
     button_label: typeof d.buttonLabel === "string" ? str(d.buttonLabel, 60) || null : cur.button_label,
     button_url: typeof d.buttonUrl === "string" ? (/^https?:\/\//i.test(buttonUrl) || /^\{\{\s*[a-z0-9_]+\s*\}\}$/i.test(buttonUrl) ? buttonUrl : null) : cur.button_url,
     brand: str(d.brand, 60) || cur.brand,
+    offer: typeof d.offer === "string" ? str(d.offer, 80) || null : cur.offer ?? null,
     // From name/address: Babs's account only; a client always sends as their Email sending profile.
     from_name: house ? str(d.fromName, 80) || cur.from_name : cur.from_name,
     from_email: house && typeof d.fromEmail === "string" && FROM_RE.test(d.fromEmail.trim()) ? d.fromEmail.trim().toLowerCase() : cur.from_email,

@@ -31,6 +31,7 @@ export interface BroadcastRow {
   contact_ids: string[];
   tag_match: "any" | "all";
   skip_prior_template: boolean;
+  offer?: string | null; // the section it sits under in Campaigns & Broadcasts
   skip_active_sequences?: string[] | null; // campaign keys: leave out anyone still receiving one of these
   variables: Record<string, string>;
   status: "draft" | "scheduled" | "sending" | "sent" | "canceled";

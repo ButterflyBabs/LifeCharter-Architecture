@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
 import WelcomeSeriesTab from "./WelcomeSeriesTab";
 import EventEmailsTab from "./EventEmailsTab";
+import { byOffer, offersOf } from "@/lib/offerSections";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
 import ContactLookupInput from "@/components/crm/ContactLookupInput";
 
@@ -23,6 +24,7 @@ interface Seq {
   from_email: string;
   brand: string;
   send_hour: number;
+  offer?: string | null;
   notify_on_join?: boolean;
   active: boolean;
   step_count?: number;
@@ -189,7 +191,10 @@ export default function SequencesManager() {
       {pageTab === "events" ? <EventEmailsTab /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
-          {(list ?? []).map((s) => (
+          {byOffer(list ?? []).map(([offer, group]) => (
+            <div key={offer} className="space-y-2">
+              <h3 className="mt-3 border-b border-[#c9a227]/50 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">{offer} <span className="font-normal text-[#7a8a99]">{group.length}</span></h3>
+          {group.map((s) => (
             <button
               key={s.id}
               onClick={() => { setOpenId(s.id); setForm(null); setPreview(null); }}
@@ -200,6 +205,8 @@ export default function SequencesManager() {
                 {s.active ? "Live" : "Paused"} · {s.step_count ?? 0} emails · {s.people?.active ?? 0} active
               </p>
             </button>
+          ))}
+            </div>
           ))}
           <div className="flex gap-2 pt-2">
             <Input placeholder="New campaign name" value={newName} onChange={(e) => setNewName(e.target.value)} />
@@ -228,6 +235,19 @@ export default function SequencesManager() {
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <label className="flex items-center gap-2">
+                    Offer
+                    <input
+                      key={`${seq.id}:${seq.offer ?? ""}`}
+                      defaultValue={seq.offer ?? ""}
+                      list="campaign-offers"
+                      placeholder="Section it sits under"
+                      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      onBlur={(e) => { const v = e.target.value.trim(); if (v !== (seq.offer ?? "")) void saveSettings({ offer: v }, v ? `Filed under ${v}.` : "Taken out of its section."); }}
+                      className="h-9 w-64 rounded-lg border border-[#1a2b4a]/20 bg-white px-2 dark:bg-[#1a2b4a]/20"
+                    />
+                    <datalist id="campaign-offers">{offersOf(list ?? []).map((o) => <option key={o} value={o} />)}</datalist>
+                  </label>
                   <label className="flex items-center gap-2">
                     Daily send time
                     <select value={seq.send_hour} onChange={(e) => saveSettings({ sendHour: Number(e.target.value) }, "Send time saved.")} className="h-9 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-2">

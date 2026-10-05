@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { OWNER_TZ, addDays, slotsIn, zonedParts } from "@/lib/broadcasts/shared";
+import { byOffer, offersOf } from "@/lib/offerSections";
 import ContactPicker, { personName, type PickedContact } from "./ContactPicker";
 import { Pill } from "./ContactRecord";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
@@ -20,6 +21,7 @@ interface Summary {
   recipient_count: number;
   tags: string[];
   created_at: string;
+  offer?: string | null;
 }
 interface Full extends Summary {
   timezone: string;
@@ -118,7 +120,10 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
           </Button>
         </div>
         <div className="pt-2 space-y-2">
-          {(list ?? []).map((b) => (
+          {byOffer(list ?? []).map(([offer, group]) => (
+            <div key={offer} className="space-y-2">
+              <h3 className="mt-3 border-b border-[#c9a227]/50 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">{offer} <span className="font-normal text-[#7a8a99]">{group.length}</span></h3>
+          {group.map((b) => (
             <button
               key={b.id}
               onClick={() => setOpenId(b.id)}
@@ -132,12 +137,14 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
               </p>
             </button>
           ))}
+            </div>
+          ))}
           {list && !list.length && <p className="text-sm text-[#7a8a99]">No broadcasts yet.</p>}
         </div>
       </div>
       <div className="min-w-0">
         {openId ? (
-          <Editor key={openId} id={openId} allTags={allTags} templates={templates} tz={tz} sender={sender} setMsg={setMsg} onChange={load} onGone={() => { setOpenId(""); void load(); }} />
+          <Editor key={openId} id={openId} offers={offersOf(list ?? [])} allTags={allTags} templates={templates} tz={tz} sender={sender} setMsg={setMsg} onChange={load} onGone={() => { setOpenId(""); void load(); }} />
         ) : (
           <Card>
             <CardContent className="p-6 text-sm text-[#7a8a99]">
@@ -152,7 +159,7 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
   );
 }
 
-function Editor({ id, allTags, templates, tz, sender, setMsg: setPageMsg, onChange, onGone }: { id: string; allTags: string[]; templates: Template[]; tz: string; sender: Sender | null; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
+function Editor({ id, offers, allTags, templates, tz, sender, setMsg: setPageMsg, onChange, onGone }: { id: string; offers: string[]; allTags: string[]; templates: Template[]; tz: string; sender: Sender | null; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
   const [d, setD] = useState<Detail | null>(null);
   const [f, setF] = useState<Full | null>(null);
   // What just happened (saved, test sent, or what went wrong), shown right beside the buttons as well as
@@ -198,7 +205,7 @@ function Editor({ id, allTags, templates, tz, sender, setMsg: setPageMsg, onChan
   }, [session, tpl, d?.broadcast.status]);
 
   const draft = f
-    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], variables: f.variables }
+    ? { name: f.name, subject: f.subject, preview: f.preview ?? "", body: f.body, buttonLabel: f.button_label ?? "", buttonUrl: f.button_url ?? "", brand: f.brand, fromName: f.from_name, fromEmail: f.from_email, tags: f.tags, contactIds: f.contact_ids ?? [], tagMatch: f.tag_match, skipPriorTemplate: f.skip_prior_template, skipActiveSequences: f.skip_active_sequences ?? [], offer: f.offer ?? "", variables: f.variables }
     : null;
 
   // Live recipient count as tags change.
@@ -434,6 +441,8 @@ function Editor({ id, allTags, templates, tz, sender, setMsg: setPageMsg, onChan
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">The email</p>
           <fieldset disabled={!editable} className="space-y-3">
             <Input placeholder="Name (only you see this)" value={f.name} onChange={(e) => set({ name: e.target.value })} />
+            <Input placeholder="Offer: the section it sits under (for example LCMC)" list="broadcast-offers" value={f.offer ?? ""} onChange={(e) => set({ offer: e.target.value })} />
+            <datalist id="broadcast-offers">{offers.map((o) => <option key={o} value={o} />)}</datalist>
             {slots.map((k) => {
               const meta = tpl?.slots.find((s) => s.key === k);
               return (
