@@ -696,9 +696,16 @@ export function CollapsibleSidebar() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
   // Pages only compete with pages, and sections with sections.
+  // A page only ever competes with the other pages in ITS OWN section, so a drop near the top or bottom of a
+  // section (the first and last pages, and the taller two-line ones) always lands on a neighbour in the same
+  // section instead of on a page in the section next door, which used to be ignored.
   const navCollision: CollisionDetection = (args) => {
     const sectionDrag = String(args.active.id).startsWith("section:");
-    return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:") === sectionDrag) });
+    if (sectionDrag) {
+      return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith("section:")) });
+    }
+    const mine = new Set((orderedSections.find((sec) => sec.items.some((i) => i.id === args.active.id))?.items ?? []).map((i) => String(i.id)));
+    return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => mine.has(String(c.id))) });
   };
   const resetMenuOrder = () => {
     skipSave.current = true;
@@ -888,7 +895,7 @@ export function CollapsibleSidebar() {
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", isCollapsed ? "py-4 px-2" : "py-4 px-3")}>
-        <DndContext sensors={navSensors} collisionDetection={navCollision} onDragEnd={handleNavDragEnd}>
+        <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragEnd={handleNavDragEnd}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
