@@ -766,6 +766,20 @@ export function CollapsibleSidebar() {
     });
   };
 
+  // One click puts a section's pages in A to Z order (drag them afterwards to arrange for the day).
+  const sortSectionAZ = (title: string, items: { id: string; label: string }[]) => {
+    const ids = [...items].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })).map((i) => i.id);
+    setNavOrder((prev) => {
+      const merged = { ...prev, [title]: ids };
+      try {
+        localStorage.setItem("nav-item-order", JSON.stringify(merged));
+      } catch {
+        /* not remembered */
+      }
+      return merged;
+    });
+  };
+
   // Load the profile name + headshot for the footer block.
   useEffect(() => {
     fetch("/api/profile", { cache: "no-store" })
@@ -907,12 +921,13 @@ export function CollapsibleSidebar() {
           <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} onMove={(d) => moveSection(section.title, d)} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
             {!isCollapsed ? (
+              <div className="mb-3 flex items-center gap-1 group/head">
               <button
                 type="button"
                 onClick={() => toggleSection(section.title)}
                 aria-expanded={!foldedSections[section.title]}
                 aria-label={`${foldedSections[section.title] ? "Expand" : "Collapse"} ${section.title}`}
-                className="w-full px-4 mb-3 flex items-center gap-2 rounded-md hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c9a227] py-1"
+                className="min-w-0 flex-1 px-4 flex items-center gap-2 rounded-md hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c9a227] py-1"
               >
                 <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
                 <h3
@@ -927,6 +942,18 @@ export function CollapsibleSidebar() {
                   className={cn("ml-auto w-3.5 h-3.5 text-white/40 transition-transform duration-200", foldedSections[section.title] && "-rotate-90")}
                 />
               </button>
+              {!isDemo && section.items.length > 2 && !foldedSections[section.title] && (
+                <button
+                  type="button"
+                  onClick={() => sortSectionAZ(section.title, section.items)}
+                  title={`Put the pages in ${section.title.toLowerCase()} in A to Z order`}
+                  aria-label={`Sort ${section.title} A to Z`}
+                  className="flex-none rounded-md px-1.5 py-1 text-[9px] font-semibold tracking-wider text-white/30 opacity-0 group-hover/head:opacity-100 focus-visible:opacity-100 hover:text-white/80"
+                >
+                  A–Z
+                </button>
+              )}
+              </div>
             ) : (
               <div className="px-2 mb-3 flex justify-center">
                 <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
