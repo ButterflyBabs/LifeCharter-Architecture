@@ -52,6 +52,7 @@ import {
   Menu,
   HelpCircle,
   ChevronDown,
+  ChevronUp,
   X,
   LifeBuoy,
   HeartPulse,
@@ -434,7 +435,7 @@ function NavItem({
 // has no room for a grip handle). The row itself is the drag surface (press
 // and hold on touch); the grip button is there so reordering works from the
 // keyboard too (Tab to it, Space to pick up, arrow keys to move).
-function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; isActive: boolean }) {
+function SortableNavRow({ item, isActive, onMove }: { item: typeof navigationItems[0]; isActive: boolean; onMove?: (dir: -1 | 1) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const { onKeyDown, ...pointerListeners } = (listeners ?? {}) as Record<string, unknown> & { onKeyDown?: React.KeyboardEventHandler };
   return (
@@ -445,6 +446,16 @@ function SortableNavRow({ item, isActive }: { item: typeof navigationItems[0]; i
       {...pointerListeners}
     >
       <NavItem item={item} isActive={isActive} isCollapsed={false} />
+      {onMove && (
+        <span className="absolute right-8 top-1/2 flex -translate-y-1/2 flex-col opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+          <button type="button" onClick={() => onMove(-1)} aria-label={`Move ${item.label} up`} title="Move up" className="rounded p-0.5 text-white/30 hover:text-white/80">
+            <ChevronUp className="h-3 w-3" />
+          </button>
+          <button type="button" onClick={() => onMove(1)} aria-label={`Move ${item.label} down`} title="Move down" className="rounded p-0.5 text-white/30 hover:text-white/80">
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        </span>
+      )}
       <button
         type="button"
         {...attributes}
@@ -725,6 +736,25 @@ export function CollapsibleSidebar() {
       /* not remembered */
     }
   };
+  // Move one page up or down inside its section (the arrow buttons on each row; always works, drag or no drag).
+  const moveItem = (sectionTitle: string, id: string, dir: -1 | 1) => {
+    const section = orderedSections.find((x) => x.title === sectionTitle);
+    if (!section) return;
+    const ids = section.items.map((i) => i.id);
+    const i = ids.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    const next = arrayMove(ids, i, j);
+    setNavOrder((prev) => {
+      const merged = { ...prev, [sectionTitle]: next };
+      try {
+        localStorage.setItem("nav-item-order", JSON.stringify(merged));
+      } catch {
+        /* not remembered */
+      }
+      return merged;
+    });
+  };
   const moveSection = (title: string, dir: -1 | 1) => {
     const titles = orderedSections.map((s) => s.title);
     const i = titles.indexOf(title);
@@ -961,7 +991,7 @@ export function CollapsibleSidebar() {
               ) : (
                 <SortableContext items={visibleItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                   {visibleItems.map((item) => (
-                    <SortableNavRow key={item.id} item={item} isActive={activeItem === item.id} />
+                    <SortableNavRow key={item.id} item={item} isActive={activeItem === item.id} onMove={(d) => moveItem(section.title, item.id, d)} />
                   ))}
                 </SortableContext>
               )}
