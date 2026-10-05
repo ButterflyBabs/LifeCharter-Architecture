@@ -76,6 +76,15 @@ export const VERSION_LABEL: Record<Version, string> = {
   general: "",
 };
 
+// The first real sentence or two of a section: skip its heading and list numbers.
+function briefFrom(raw: string): string {
+  const blocks = textToBlocks(raw);
+  const para = blocks.find((b) => b.t === "p");
+  if (para && para.t === "p") return para.text;
+  const list = blocks.find((b) => b.t === "bullets");
+  return list && list.t === "bullets" ? list.items[0] || "" : raw;
+}
+
 const firstSentences = (s: string, n = 2) => (s.replace(/\s+/g, " ").trim().match(/[^.!?]+[.!?]+/g) || [s]).slice(0, n).join(" ").trim();
 
 // A plain cover letter built from the client's own words; the AI can write a richer one.
@@ -83,7 +92,7 @@ export function templateLetter(v: Version, f: { business: string; recipient: str
   const plan = f.plan || "business plan";
   const to = f.recipient.trim() ? `Dear ${f.recipient.trim()},` : f.organization.trim() ? `Dear ${f.organization.trim()} team,` : "To whom it may concern,";
   const ask = f.ask.trim().replace(/[.\s]+$/, "");
-  const brief = f.vision.trim() ? firstSentences(f.vision) : "";
+  const brief = f.vision.trim() ? firstSentences(briefFrom(f.vision)) : "";
   const paras: string[] = [to];
   if (v === "funding") {
     paras.push(`I am writing on behalf of ${f.business} to request ${ask || "your support"}${f.organization.trim() ? ` from ${f.organization.trim()}` : ""}. The attached ${plan} sets out the work behind this request.`);
