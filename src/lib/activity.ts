@@ -11,6 +11,7 @@ export type ActivityArea = "tasks" | "finance" | "pipeline" | "operations" | "pl
 
 export type EntityType =
   | "task"
+  | "project"
   | "expense"
   | "income"
   | "bill"
@@ -24,6 +25,7 @@ export type EntityType =
 // Which filter area each entity belongs to on the Activity screen.
 export const ENTITY_AREA: Record<EntityType, ActivityArea> = {
   task: "tasks",
+  project: "tasks",
   expense: "finance",
   income: "finance",
   bill: "finance",

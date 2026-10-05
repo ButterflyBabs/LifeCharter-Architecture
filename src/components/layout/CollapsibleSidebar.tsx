@@ -79,6 +79,7 @@ import {
   Smartphone,
   MessageCircle,
   GripVertical,
+  FolderKanban,
   Link2,
 } from "lucide-react";
 
@@ -96,6 +97,7 @@ const navigationSections = [
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
       { id: "content-calendar", label: "Content Calendar", icon: CalendarDays, href: "/daily-compass/calendar" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
+      { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: "/community" },

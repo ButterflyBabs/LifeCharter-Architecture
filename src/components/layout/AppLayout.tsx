@@ -28,6 +28,7 @@ const BARE_ROUTES = [
   "/book",
   "/a", // an affiliate's private dashboard
   "/partner", // an outside accountability partner's private page
+  "/p", // a client or contractor's private project page
   "/r", // affiliate links (redirect)
   "/login",
   "/logout",

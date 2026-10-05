@@ -86,13 +86,14 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 // accounts and other members' details stay closed whatever the features say.
 
 export type FeatureKey =
-  | "tasks" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
+  | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
 export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[] }[] = [
   { key: "tasks", label: "Tasks", pages: ["/tasks"], apis: ["/api/tasks", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
+  { key: "projects", label: "Projects", pages: ["/projects"], apis: ["/api/projects"] },
   { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
   { key: "content", label: "Content Calendar & Studio", pages: ["/daily-compass/calendar", "/daily-compass/content-studio"], apis: ["/api/content", "/api/social"] },
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },
@@ -114,7 +115,7 @@ const ONLY = (keys: FeatureKey[], extra: FeatureMap = {}) =>
   ({ ...Object.fromEntries(FEATURES.map((f) => [f.key, keys.includes(f.key) ? "edit" : "none"])), ...extra }) as FeatureMap;
 
 export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap }[] = [
-  { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["tasks", "daily_compass", "content", "scripts"]) },
+  { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["tasks", "projects", "daily_compass", "content", "scripts"]) },
   { key: "bookkeeper", label: "Bookkeeper", blurb: "Finance only.", features: ONLY(["finance"]) },
   { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
   { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["content", "testimonials", "scripts", "tasks"]) },
