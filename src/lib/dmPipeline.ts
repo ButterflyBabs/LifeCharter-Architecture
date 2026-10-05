@@ -21,6 +21,11 @@ export const CARD_PLATFORMS = [
   { id: "TXT", label: "Text" },
 ] as const;
 export const platformLabel = (id: string | null) => CARD_PLATFORMS.find((p) => p.id === id)?.label ?? "";
+// The tag a contact carries so Contacts shows (and can filter by) where the conversation started.
+export const platformTag = (id: string | null | undefined) => {
+  const label = platformLabel(id ?? null);
+  return label ? `from-${label.toLowerCase()}` : null;
+};
 
 // Stage templates for a new board.
 const DM_TEMPLATE: { key: string; name: string; slug: string; followUpDays: number | null; kind: "open" | "booked" | "closed" }[] = [
@@ -250,7 +255,7 @@ export async function createCard(
   if (stage.kind === "booked") extra.deal_id = await bookDeal(db, planId, card as Card, board.name);
   if (stage.key === "affiliate_active") await ensureAffiliate(db, planId, card as Card).catch((e) => console.error("affiliate from pipeline:", e));
   const { data: saved } = await db.from("dm_cards").update(extra).eq("id", card.id).select("*").single();
-  await retagContact(db, planId, input.contactId ?? null, [board.tag, stage.tag], []);
+  await retagContact(db, planId, input.contactId ?? null, [board.tag, stage.tag, platformTag(input.platform)], []);
   if (input.contactId) {
     await logEvent(planId, input.contactId, "manual", `${board.name}: added to ${stage.name}${input.scriptTitle ? ` · script: ${input.scriptTitle}` : ""}`, { dm_card: card.id }, db as never).catch(() => {});
   }

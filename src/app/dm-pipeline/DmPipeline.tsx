@@ -32,11 +32,13 @@ type ScriptLite = { id: string; title: string; platforms: string[]; channel: str
 type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
 const PLATFORMS = [
-  { id: "IG", label: "Instagram", short: "IG", color: "bg-[#E1306C]/10 text-[#B0245A] border-[#E1306C]/30" },
-  { id: "FB", label: "Facebook", short: "FB", color: "bg-[#1877F2]/10 text-[#1459B8] border-[#1877F2]/30" },
-  { id: "LI", label: "LinkedIn", short: "LI", color: "bg-[#0A66C2]/10 text-[#0A4F96] border-[#0A66C2]/30" },
-  { id: "Email", label: "Email", short: "Email", color: "bg-[#2E7C83]/10 text-[#1F5E63] border-[#2E7C83]/30" },
-  { id: "TXT", label: "Text", short: "Text", color: "bg-[#c9a227]/15 text-[#6b5410] border-[#c9a227]/40" },
+  // solid = the badge on each card; bar = the stripe down the card's left edge. Facebook and LinkedIn are
+  // both "blue" brands, so LinkedIn takes a deep navy here to keep the two apart at a glance.
+  { id: "IG", label: "Instagram", short: "IG", color: "bg-[#E1306C]/10 text-[#B0245A] border-[#E1306C]/30", solid: "bg-[#C13584] text-white", bar: "border-l-[#C13584]" },
+  { id: "FB", label: "Facebook", short: "FB", color: "bg-[#1877F2]/10 text-[#1459B8] border-[#1877F2]/30", solid: "bg-[#1877F2] text-white", bar: "border-l-[#1877F2]" },
+  { id: "LI", label: "LinkedIn", short: "LI", color: "bg-[#0A66C2]/10 text-[#0A4F96] border-[#0A66C2]/30", solid: "bg-[#0A3D62] text-white", bar: "border-l-[#0A3D62]" },
+  { id: "Email", label: "Email", short: "Email", color: "bg-[#2E7C83]/10 text-[#1F5E63] border-[#2E7C83]/30", solid: "bg-[#2E7C83] text-white", bar: "border-l-[#2E7C83]" },
+  { id: "TXT", label: "Text", short: "Text", color: "bg-[#c9a227]/15 text-[#6b5410] border-[#c9a227]/40", solid: "bg-[#8a6a15] text-white", bar: "border-l-[#8a6a15]" },
 ] as const;
 const plat = (id: string | null) => PLATFORMS.find((p) => p.id === id) ?? null;
 const KIND_LABEL = { open: "Open", booked: "Booked (adds a Sales Pipeline deal)", closed: "Closed" };
@@ -193,6 +195,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
             className={`rounded-full px-3 py-1.5 text-xs font-medium border ${filter === p.id ? "bg-[#1a2b4a] text-white border-[#1a2b4a]" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
           >
             {p.label}
+            {cards ? <span className="ml-1.5 tabular-nums opacity-70">{p.id === "All" ? cards.length : cards.filter((c) => c.platform === p.id).length}</span> : null}
           </button>
         ))}
         {board?.tag && (
@@ -239,13 +242,11 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                           draggable
                           onDragStart={() => setDragId(c.id)}
                           onDragEnd={() => setDragId(null)}
-                          className={`rounded-xl border bg-white p-3 shadow-sm dark:bg-[#1a2b4a]/60 cursor-grab active:cursor-grabbing ${overdue ? "border-[#C76F56]/60" : due ? "border-[#c9a227]/70" : "border-[#1a2b4a]/10 dark:border-white/10"}`}
+                          className={`rounded-xl border border-l-4 bg-white p-3 shadow-sm dark:bg-[#1a2b4a]/60 cursor-grab active:cursor-grabbing ${overdue ? "border-[#C76F56]/60" : due ? "border-[#c9a227]/70" : "border-[#1a2b4a]/10 dark:border-white/10"} ${p ? p.bar : "border-l-[#b8a898]"}`}
                         >
                           <button onClick={() => setOpenId(c.id)} className="block w-full text-left">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</p>
-                              {p && <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${p.color}`}>{p.short}</span>}
-                            </div>
+                            <span className={`mb-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${p ? p.solid : "bg-[#b8a898]/25 text-[#5a6472] dark:text-[#b8c2cf]"}`}>{p ? p.label : "No platform set"}</span>
+                            <p className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</p>
                             {c.handle && <p className="text-xs text-[#7b6b8d] truncate">{c.handle}</p>}
                             {c.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">Script: {c.script_title}</p>}
                             <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">

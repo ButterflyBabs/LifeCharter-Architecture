@@ -97,7 +97,11 @@ async function run(request: Request) {
       urgent: t.priority === "critical",
     });
   }
-  if (!items.length) return NextResponse.json({ sent: 0, note: "nothing due" });
+  // Pipeline follow-ups ("Follow up with ... on Instagram") can run to dozens a day: count them, link the board.
+  const isFollowUp = (i: Item) => /^Follow up with /.test(i.title) && !i.project;
+  const followUps = items.filter((i) => isFollowUp(i) && i.day <= today).length;
+  for (let n = items.length - 1; n >= 0; n--) if (isFollowUp(items[n])) items.splice(n, 1);
+  if (!items.length && !followUps) return NextResponse.json({ sent: 0, note: "nothing due" });
   const order = (a: Item, b: Item) => a.day.localeCompare(b.day) || Number(b.urgent) - Number(a.urgent) || (a.project || "~").localeCompare(b.project || "~") || a.title.localeCompare(b.title);
   const overdue = items.filter((i) => i.day < today).sort(order);
   const dueToday = items.filter((i) => i.day === today).sort(order);
@@ -115,7 +119,7 @@ async function run(request: Request) {
   const html = `<div style="font-family:Arial,sans-serif;font-size:14.5px;line-height:1.45;max-width:600px;color:#1a2b4a">
 <h1 style="font-size:20px;margin:0 0 4px">What I need from you today</h1>
 <p style="color:#7a8a99;margin:0">${esc(nice(today))}${first ? ` · Good morning, ${esc(first)}` : ""}</p>
-${section("Due today", dueToday, false)}${section("Overdue", overdue, true, MAX_OVERDUE)}${section("Coming in the next three days", soon, true)}
+${followUps ? `<p style="margin:18px 0 0;padding:10px 14px;background:#F3EFE6;border-radius:10px"><a href="${APP_URL}/dm-pipeline" style="color:#1a2b4a;font-weight:600;text-decoration:none">${followUps} pipeline follow-up${followUps === 1 ? "" : "s"} due</a> <span style="color:#7a8a99;font-size:12.5px">· open your pipeline to see who</span></p>` : ""}${section("Due today", dueToday, false)}${section("Overdue", overdue, true, MAX_OVERDUE)}${section("Coming in the next three days", soon, true)}
 <p style="margin:24px 0 0"><a href="${APP_URL}/projects" style="display:inline-block;background:#1a2b4a;color:#fff;font-weight:bold;padding:10px 18px;border-radius:999px;text-decoration:none">Open Projects</a></p>
 <p style="color:#7a8a99;font-size:12px;margin:18px 0 0">Only tasks that need you are listed. Tasks assigned to your team, and ones being built for you, are left out.</p></div>`;
   const subject = `What I need from you today: ${dueToday.length} due${overdue.length ? `, ${overdue.length} overdue` : ""}`;

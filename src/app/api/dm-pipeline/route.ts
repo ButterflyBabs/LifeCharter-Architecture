@@ -4,7 +4,7 @@ import { crmAccount } from "../crm/guard";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, EMAIL_RE } from "@/lib/crm";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, retagContact, slugTag, shapeStage, type Board } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, type Board } from "@/lib/dmPipeline";
 import { zonedToUtcISO } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
@@ -204,7 +204,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ card: r.card });
   }
 
-  const { data: card } = await db.from("dm_cards").select("id, board_id, stage_id, contact_id, follow_up_task_id").eq("id", str(b.cardId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+  const { data: card } = await db.from("dm_cards").select("id, board_id, stage_id, contact_id, follow_up_task_id, platform").eq("id", str(b.cardId, 40)).eq("master_plan_id", a.planId).maybeSingle();
   if (!card) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const board = boardOf(card.board_id);
   if (!board) return NextResponse.json({ error: "Not found." }, { status: 404 });
@@ -227,7 +227,11 @@ export async function POST(request: Request) {
       if (e && !EMAIL_RE.test(e)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
       patch.email = e || null;
     }
-    if (b.platform !== undefined) patch.platform = PLATFORM_IDS.includes(b.platform) ? b.platform : null;
+    if (b.platform !== undefined) {
+      patch.platform = PLATFORM_IDS.includes(b.platform) ? b.platform : null;
+      // The contact's "from-..." tag follows the card's platform.
+      if (patch.platform !== card.platform) await retagContact(db, a.planId, card.contact_id as string | null, [platformTag(patch.platform as string | null)], [platformTag(card.platform as string | null)]);
+    }
     if (b.notes !== undefined) patch.notes = str(b.notes, 2000) || null;
     if (b.followUpOn !== undefined) {
       // A new follow-up date moves its task too (or clears both).
