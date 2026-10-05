@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
 import WelcomeSeriesTab from "./WelcomeSeriesTab";
+import EventEmailsTab from "./EventEmailsTab";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
 import ContactLookupInput from "@/components/crm/ContactLookupInput";
 
@@ -71,11 +72,12 @@ export default function SequencesManager() {
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
   const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
-  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome">("campaigns");
+  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events">("campaigns");
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "broadcasts") setPageTab("broadcasts");
     if (t === "welcome") setPageTab("welcome");
+    if (t === "events") setPageTab("events");
   }, []);
 
   const loadList = useCallback(async () => {
@@ -159,6 +161,8 @@ export default function SequencesManager() {
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
               : pageTab === "welcome"
               ? <>The LCCS New Client Welcome emails: read and edit them, and see who has been sent what and what is waiting.</>
+              : pageTab === "events"
+              ? <>Event emails are the confirmation and reminders for your Zoom events (MasterClass and Incubator): sent right after someone registers, the day before, and one hour before, each with their own join link.</>
               : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
           </p>
         </div>
@@ -175,14 +179,14 @@ export default function SequencesManager() {
       )}
 
       <div className="flex gap-2 mb-5">
-        {((sender?.house ? ["campaigns", "broadcasts", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome")[]).map((t) => (
+        {((sender?.house ? ["campaigns", "broadcasts", "events", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome" | "events")[]).map((t) => (
           <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : "LCCS New Client Welcome"}
+            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : t === "events" ? "Event emails" : "LCCS New Client Welcome"}
           </button>
         ))}
       </div>
 
-      {pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
+      {pageTab === "events" ? <EventEmailsTab /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 md:grid-cols-[240px_1fr]">
         <div className="space-y-2">
           {(list ?? []).map((s) => (

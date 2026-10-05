@@ -177,7 +177,6 @@ const ownerSection = {
     { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
     { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
-    { id: "event-emails", label: "Event Emails", icon: Mail, href: "/event-emails" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },

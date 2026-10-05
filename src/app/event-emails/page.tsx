@@ -1,11 +1,6 @@
-import { notFound } from "next/navigation";
-import { isAlignmentArchitect } from "@/lib/authz";
-import EventEmailsManager from "./EventEmailsManager";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-// Alignment Architect only: the Suite's MasterClass and Incubator confirmation + reminder emails.
-export default async function EventEmailsPage() {
-  if (!(await isAlignmentArchitect())) notFound();
-  return <EventEmailsManager />;
+// The event emails moved into Campaigns & Broadcasts (2026-10-05). Old links land on their tab there.
+export default function EventEmailsPage() {
+  redirect("/sequences-manager?tab=events");
 }

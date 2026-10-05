@@ -10,7 +10,10 @@ const EVENT_NAME: Record<string, string> = { masterclass: "Command Shift MasterC
 const KIND_NAME: Record<string, string> = { confirm: "Confirmation (right after they register)", day_before: "Reminder (the day before)", hour_before: "Reminder (one hour before)" };
 const KINDS = ["confirm", "day_before", "hour_before"];
 
-export default function EventEmailsManager() {
+// The confirmation and reminder emails for the Zoom events (MasterClass, Incubator). They live here with
+// the other emails, but they are sent by their own engine: each goes out on the event's clock (right
+// after registering, the day before, one hour before) and carries the person's own Zoom join link.
+export default function EventEmailsTab() {
   const [events, setEvents] = useState<Ev[] | null>(null);
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -39,9 +42,8 @@ export default function EventEmailsManager() {
   }
 
   return (
-    <div className="py-8 px-4 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Event Emails</h1>
-      <p className="text-[#7a8a99] mt-1 mb-6">The Suite&apos;s confirmation and reminder emails for your Zoom events. Send yourself a test of any email; each arrives with &quot;[Test]&quot; in the subject, a sample join link and the next session&apos;s real date and time.</p>
+    <div>
+      <p className="text-[#7a8a99] mb-6">Send yourself a test of any email; each arrives with &quot;[Test]&quot; in the subject, a sample join link and the next session&apos;s real date and time.</p>
       {!events ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : (
