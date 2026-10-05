@@ -36,6 +36,21 @@ export default function ProjectTimeline({ data, onOpen }: { data: PData; onOpen:
   const weeks: string[] = [];
   for (let i = 0; i < days; i += 7) weeks.push(addDay(rangeStart, i));
   const LABEL = 200;
+  // Milestones that sit close together would print on top of each other, so each one takes the first
+  // line where it fits: its diamond plus its label, measured roughly from the label's length.
+  const LANE_H = 22;
+  const lanes: number[] = []; // where each line's last label ends
+  const placed = data.milestones
+    .filter((m) => m.dueDay)
+    .sort((p, q) => p.dueDay!.localeCompare(q.dueDay!) || p.title.localeCompare(q.title))
+    .map((m) => {
+      const left = x(m.dueDay!) - 6;
+      const right = left + 18 + Math.min(140, m.title.length * 6.2) + 10;
+      let lane = lanes.findIndex((end) => end <= left);
+      if (lane < 0) lane = lanes.length;
+      lanes[lane] = right;
+      return { m, left, lane };
+    });
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20">
@@ -53,9 +68,9 @@ export default function ProjectTimeline({ data, onOpen }: { data: PData; onOpen:
         {data.milestones.length > 0 && (
           <div className="flex border-b border-[#1a2b4a]/10">
             <div style={{ width: LABEL }} className="sticky left-0 z-10 flex-none bg-white px-3 py-2 text-xs font-semibold text-[#c9a227] dark:bg-[#14213a]">Milestones</div>
-            <div className="relative h-9" style={{ width }}>
-              {data.milestones.filter((m) => m.dueDay).map((m) => (
-                <div key={m.id} className="absolute top-1.5 flex items-center gap-1 whitespace-nowrap text-[10px] text-[#1a2b4a] dark:text-[#F8F5F0]" style={{ left: x(m.dueDay!) - 6 }} title={`${m.title} · ${fmtDay(m.dueDay)}`}>
+            <div className="relative" style={{ width, height: Math.max(1, lanes.length) * LANE_H + 14 }}>
+              {placed.map(({ m, left, lane }) => (
+                <div key={m.id} className="absolute flex items-center gap-1 whitespace-nowrap text-[10px] text-[#1a2b4a] dark:text-[#F8F5F0]" style={{ left, top: 7 + lane * LANE_H }} title={`${m.title} · ${fmtDay(m.dueDay)}`}>
                   <span className={`h-3 w-3 rotate-45 ${m.done ? "bg-[#8fb58a]" : "bg-[#c9a227]"}`} />
                   <span className="max-w-[140px] truncate">{m.title}</span>
                 </div>
