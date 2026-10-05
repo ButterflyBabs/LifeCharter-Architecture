@@ -112,6 +112,17 @@ export default function PreFounderCall() {
 
   const concernLine = useMemo(() => draft.concerns.map((k) => CONCERNS.find((c) => c.key === k)?.label).filter(Boolean).join(", "), [draft.concerns]);
 
+  // One press after a yes: their account, their login email, and a billing task for month six.
+  const [login, setLogin] = useState({ ask: false, busy: false, note: "" });
+  async function issueLogin() {
+    if (!sel) return;
+    setLogin({ ask: true, busy: true, note: "" });
+    const r = await fetch("/api/pre-founder-call/issue-login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId: sel }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r?.ok) return setLogin({ ask: false, busy: false, note: d.error || "That didn't work. Nothing was emailed." });
+    setLogin({ ask: false, busy: false, note: d.emailed ? `Done. ${d.isNewAccount ? "Account created" : "They already had an account"}; the login email went to ${d.email}. Six free months run to ${d.freeUntil}, and a billing task is on your list.` : `${d.isNewAccount ? "Account created" : "They already had an account"}, but the email did not send. Give them this link yourself: ${d.loginUrl || "(no link was made; use Forgot password)"}` });
+  }
+
   async function save() {
     if (!sel || !draft.interest) return setMsg("Choose where they landed (Their decision) before saving.");
     setBusy(true);
@@ -288,6 +299,21 @@ export default function PreFounderCall() {
               ))}
             </div>
             {draft.interest === "ready" && <p className={`${say} mt-3`}>&ldquo;Wonderful. Here&apos;s what happens next. I&apos;ll set up your account, and your login and password come to you by email right after we talk. Your first step is Set up Suite, which walks you through everything, and there&apos;s a New Client Launch Call every other Thursday for your first 30 days. Is {cardData.contact.email} the best email for your login?&rdquo;</p>}
+            {draft.interest === "ready" && (
+              <div className="mt-3 rounded-xl border border-[#2E7C83]/40 bg-[#2E7C83]/5 p-4">
+                <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Create their account and email their login</p>
+                <p className="mt-1 text-xs text-[#5a6472] dark:text-[#b8c2cf]">Creates their Command Suite account, emails {cardData.contact.email} a link to choose a password, tags their card, and leaves you a task to set up billing before the six free months end. No card is taken now.</p>
+                {!login.ask ? (
+                  <button type="button" onClick={() => setLogin({ ...login, ask: true })} disabled={login.busy} className="mt-3 rounded-lg bg-[#2E7C83] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Create account and email login</button>
+                ) : (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={issueLogin} disabled={login.busy} className="rounded-lg bg-[#8a2f2f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{login.busy ? "Working…" : `Yes, email ${cardData.contact.email}`}</button>
+                    <button type="button" onClick={() => setLogin({ ...login, ask: false })} className="rounded-lg border border-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Cancel</button>
+                  </div>
+                )}
+                {login.note && <p role="status" className="mt-2 break-all text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{login.note}</p>}
+              </div>
+            )}
             {draft.interest === "maybe" && <p className={`${say} mt-3`}>&ldquo;That&apos;s fair. What would you want to be true to say yes? When should I check back with you?&rdquo;</p>}
             {draft.interest === "not-now" && <p className={`${say} mt-3`}>&ldquo;No pressure at all. Can I keep you on my list? And I&apos;d love you to come to the free MasterClass on Thursday, October 8 at 5pm Mountain.&rdquo;</p>}
             {draft.interest === "not-a-fit" && <p className={`${say} mt-3`}>&ldquo;Thank you for telling me honestly. That helps me more than a polite yes. Is there anyone who comes to mind who it might fit?&rdquo;</p>}
