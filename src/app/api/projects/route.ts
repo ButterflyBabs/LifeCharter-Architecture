@@ -10,14 +10,14 @@ import { logActivity, q } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
-// GET: every project with how far along it is. POST: create one, blank or from a template.
+// GET: every project with how far along it is. POST: create one, blank or from a template. PATCH: save the order of the cards.
 export async function GET(request: Request) {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ projects: [], templates: [] });
   const db = createServerClient();
   const tz = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
   const [{ data: projects }, { data: tasks }, { data: members }] = await Promise.all([
-    db.from("projects").select("*").eq("master_plan_id", planId).order("created_at", { ascending: false }),
+    db.from("projects").select("*").eq("master_plan_id", planId).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
     db.from("tasks").select("id, project_id, status, due_at, title").eq("master_plan_id", planId).not("project_id", "is", null),
     db.from("project_milestones").select("project_id, title, due_date, done").eq("master_plan_id", planId),
   ]);
@@ -61,4 +61,21 @@ export async function POST(request: Request) {
     console.error("POST /api/projects:", e);
     return NextResponse.json({ error: "Couldn't create the project." }, { status: 500 });
   }
+}
+
+export async function PATCH(request: Request) {
+  if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  const planId = await resolveMasterPlanId();
+  if (!planId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const b = await request.json().catch(() => ({}));
+  const order = Array.isArray(b.order) ? (b.order as unknown[]).filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x)).slice(0, 500) : [];
+  if (!order.length) return NextResponse.json({ error: "Nothing to reorder." }, { status: 400 });
+  const db = createServerClient();
+  const results = await Promise.all(order.map((id, i) => db.from("projects").update({ sort_order: i }).eq("master_plan_id", planId).eq("id", id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) {
+    console.error("PATCH /api/projects:", failed.error.message);
+    return NextResponse.json({ error: "Couldn't save the order." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
 }

@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, FolderKanban, Plus, X } from "lucide-react";
+import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { CalendarDays, ChevronDown, ChevronUp, FolderKanban, GripVertical, Plus, X } from "lucide-react";
 import { PROJECT_STATUS_LABEL, fmtDay, tzParam } from "@/components/projects/types";
 
 interface ProjectCard {
@@ -29,6 +32,36 @@ interface Template {
 
 const FIELD = "w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
 const LABEL = "mb-1 block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
+
+const CTRL = "rounded-md p-1 text-[#7a8a99] hover:bg-[#1a2b4a]/10 hover:text-[#1a2b4a] disabled:opacity-30 dark:hover:text-[#F8F5F0]";
+
+// One project card. Drag it by the grip to reorder; the arrows do the same one step at a time.
+function SortableProject({ p, first, last, onStep }: { p: ProjectCard; first: boolean; last: boolean; onStep: (id: string, by: number) => void }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
+  const pct = p.tasks ? Math.round((p.done / p.tasks) * 100) : 0;
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition, borderTop: `4px solid ${p.color || "#2E7C83"}`, zIndex: isDragging ? 10 : undefined }} className={`relative rounded-2xl border border-[#1a2b4a]/10 bg-white shadow-sm transition-shadow hover:border-[#2E7C83]/50 hover:shadow-md dark:bg-[#1a2b4a]/20 ${isDragging ? "shadow-lg" : ""}`}>
+      <Link href={`/projects/${p.id}`} draggable={false} className="block p-5 pb-11">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <h2 className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</h2>
+          <span className="flex-none rounded-full bg-[#1a2b4a]/8 px-2 py-0.5 text-[10px] font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{PROJECT_STATUS_LABEL[p.status] || p.status}</span>
+        </div>
+        {p.goal && <p className="mb-3 line-clamp-2 text-xs text-[#7a8a99]">{p.goal}</p>}
+        <div className="mb-1 h-2 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${pct}%` }} /></div>
+        <p className="mb-3 text-[11px] text-[#7a8a99]">{p.done} of {p.tasks} tasks done · {pct}%</p>
+        <div className="space-y-1 text-xs text-[#7a8a99]">
+          {p.next && <p className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Next: {p.next.title} ({fmtDay(p.next.day)})</p>}
+          {(p.startDate || p.dueDate) && <p>{fmtDay(p.startDate)} to {fmtDay(p.dueDate)}{p.openMilestones ? ` · ${p.openMilestones} milestone${p.openMilestones === 1 ? "" : "s"} ahead` : ""}</p>}
+        </div>
+      </Link>
+      <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
+        <button type="button" onClick={() => onStep(p.id, -1)} disabled={first} aria-label={`Move ${p.name} earlier`} title="Move earlier" className={CTRL}><ChevronUp className="h-4 w-4" /></button>
+        <button type="button" onClick={() => onStep(p.id, 1)} disabled={last} aria-label={`Move ${p.name} later`} title="Move later" className={CTRL}><ChevronDown className="h-4 w-4" /></button>
+        <button type="button" ref={setActivatorNodeRef} {...attributes} {...listeners} aria-label={`Drag ${p.name} to reorder`} title="Drag to reorder" className={`${CTRL} cursor-grab touch-none active:cursor-grabbing`}><GripVertical className="h-4 w-4" /></button>
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -69,6 +102,24 @@ export default function ProjectsPage() {
 
   const list = projects.filter((p) => show === "all" || p.status !== "done");
 
+  // Save a new order for the cards on screen; anything hidden by the filter keeps its place after them.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const reorder = async (from: number, to: number) => {
+    if (from < 0 || to < 0 || to >= list.length || from === to) return;
+    const shown = arrayMove(list, from, to);
+    const next = [...shown, ...projects.filter((p) => !shown.includes(p))];
+    setProjects(next);
+    const res = await fetch("/api/projects", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order: next.map((p) => p.id) }) }).catch(() => null);
+    if (!res?.ok) load();
+  };
+  const dragEnd = (e: DragEndEvent) => {
+    if (e.over) reorder(list.findIndex((p) => p.id === e.active.id), list.findIndex((p) => p.id === e.over?.id));
+  };
+  const step = (id: string, by: number) => {
+    const from = list.findIndex((p) => p.id === id);
+    reorder(from, from + by);
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -97,26 +148,15 @@ export default function ProjectsPage() {
           <button onClick={() => setCreating(true)} className="rounded-lg bg-[#2E7C83] px-5 py-2 text-sm font-semibold text-white">Start a project</button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((p) => {
-            const pct = p.tasks ? Math.round((p.done / p.tasks) * 100) : 0;
-            return (
-              <Link key={p.id} href={`/projects/${p.id}`} className="group rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm transition hover:border-[#2E7C83]/50 hover:shadow-md dark:bg-[#1a2b4a]/20" style={{ borderTop: `4px solid ${p.color || "#2E7C83"}` }}>
-                <div className="mb-1 flex items-start justify-between gap-2">
-                  <h2 className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</h2>
-                  <span className="flex-none rounded-full bg-[#1a2b4a]/8 px-2 py-0.5 text-[10px] font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{PROJECT_STATUS_LABEL[p.status] || p.status}</span>
-                </div>
-                {p.goal && <p className="mb-3 line-clamp-2 text-xs text-[#7a8a99]">{p.goal}</p>}
-                <div className="mb-1 h-2 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${pct}%` }} /></div>
-                <p className="mb-3 text-[11px] text-[#7a8a99]">{p.done} of {p.tasks} tasks done · {pct}%</p>
-                <div className="space-y-1 text-xs text-[#7a8a99]">
-                  {p.next && <p className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Next: {p.next.title} ({fmtDay(p.next.day)})</p>}
-                  {(p.startDate || p.dueDate) && <p>{fmtDay(p.startDate)} to {fmtDay(p.dueDate)}{p.openMilestones ? ` · ${p.openMilestones} milestone${p.openMilestones === 1 ? "" : "s"} ahead` : ""}</p>}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
+          <SortableContext items={list.map((p) => p.id)} strategy={rectSortingStrategy}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {list.map((p, i) => (
+                <SortableProject key={p.id} p={p} first={i === 0} last={i === list.length - 1} onStep={step} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {creating && (
