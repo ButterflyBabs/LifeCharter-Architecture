@@ -20,7 +20,8 @@ const demo = () => {
 //   GET            → the list (for the menu)
 //   GET ?slug=     → one page with its blocks
 //   POST { title, blocks? }            → a new page
-//   PATCH { slug, title?, blocks? }    → edit a page
+//   PATCH { slug, title?, blocks?, review? }  → edit a page; review "approved" approves a page made for
+//                                        review (and drops its "DRAFT ..." note), "draft" reopens it
 //   DELETE { slug }
 export async function GET(request: Request) {
   const planId = await resolveMasterPlanId();
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
   const db = createServerClient();
   const slug = new URL(request.url).searchParams.get("slug");
   if (slug) {
-    const { data } = await db.from("custom_pages").select("slug, title, blocks, nav_section, updated_at").eq("master_plan_id", planId).eq("slug", slug).maybeSingle();
+    const { data } = await db.from("custom_pages").select("slug, title, blocks, nav_section, updated_at, review_status, approved_at").eq("master_plan_id", planId).eq("slug", slug).maybeSingle();
     if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
     return NextResponse.json({ page: data });
   }
@@ -68,7 +69,17 @@ export async function PATCH(request: Request) {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof b.title === "string" && b.title.trim()) patch.title = b.title.trim().slice(0, 80);
   if (b.blocks !== undefined) patch.blocks = cleanBlocks(b.blocks);
-  const { data, error } = await createServerClient().from("custom_pages").update(patch).eq("master_plan_id", planId).eq("slug", String(b.slug || "")).select("slug, title, updated_at").maybeSingle();
+  const db = createServerClient();
+  if (b.review === "approved" || b.review === "draft") {
+    const { data: cur } = await db.from("custom_pages").select("blocks, review_status").eq("master_plan_id", planId).eq("slug", String(b.slug || "")).maybeSingle();
+    if (!cur) return NextResponse.json({ error: "Couldn't save." }, { status: 404 });
+    if (!cur.review_status) return NextResponse.json({ error: "This page isn't waiting for approval." }, { status: 400 });
+    patch.review_status = b.review;
+    patch.approved_at = b.review === "approved" ? new Date().toISOString() : null;
+    // Approving takes the "DRAFT for your approval" note off the page.
+    if (b.review === "approved") patch.blocks = cleanBlocks(patch.blocks ?? cur.blocks).filter((x) => !(x.type === "callout" && /^\s*draft\b/i.test(x.text)));
+  }
+  const { data, error } = await db.from("custom_pages").update(patch).eq("master_plan_id", planId).eq("slug", String(b.slug || "")).select("slug, title, updated_at, blocks, review_status, approved_at").maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save." }, { status: error ? 500 : 404 });
   return NextResponse.json({ page: data });
 }
