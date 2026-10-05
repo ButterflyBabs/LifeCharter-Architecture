@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCorners, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
+import { CollisionDetection, DndContext, DragEndEvent, DragOverlay, DragStartEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCorners, pointerWithin, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, Plus, Share2 } from "lucide-react";
@@ -51,12 +51,12 @@ function Column({ colKey, label, tasks, whoOf, onOpen, onAdd }: { colKey: string
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   return (
-    <div className={`flex w-64 flex-none flex-col rounded-2xl bg-[#1a2b4a]/5 p-2.5 ${isOver ? "ring-2 ring-[#2E7C83]/40" : ""}`}>
+    <div ref={setNodeRef} className={`flex w-64 flex-none flex-col rounded-2xl bg-[#1a2b4a]/5 p-2.5 ${isOver ? "ring-2 ring-[#2E7C83]/40" : ""}`}>
       <div className="mb-2 flex items-center justify-between px-1">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</h3>
         <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-[#7a8a99] dark:bg-[#1a2b4a]/40">{tasks.length}</span>
       </div>
-      <div ref={setNodeRef} className="flex min-h-[3rem] flex-1 flex-col gap-2">
+      <div className="flex min-h-[3rem] flex-1 flex-col gap-2">
         <SortableContext items={tasks.map((t) => `t:${t.id}`)} strategy={verticalListSortingStrategy}>
           {tasks.map((t) => (
             <SortableCard key={t.id} t={t} who={whoOf(t)} onOpen={onOpen} />
@@ -85,6 +85,12 @@ function Column({ colKey, label, tasks, whoOf, onOpen, onAdd }: { colKey: string
 }
 
 // A board like a pipeline: drag cards between stages (and up or down inside one); click a card to edit it.
+// Where the pointer is wins (a card, or the empty body of a column); otherwise the nearest one.
+const collide: CollisionDetection = (args) => {
+  const hit = pointerWithin(args);
+  return hit.length ? hit : closestCorners(args);
+};
+
 export default function ProjectBoard({ data, onOpen, onMove, onAdd }: { data: PData; onOpen: (t: PTask) => void; onMove: (moves: { id: number; status: string; position: number }[]) => Promise<void>; onAdd: (status: string, title: string) => Promise<void> }) {
   const [dragId, setDragId] = useState<number | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -127,7 +133,7 @@ export default function ProjectBoard({ data, onOpen, onMove, onAdd }: { data: PD
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e: DragStartEvent) => setDragId(Number(String(e.active.id).slice(2)))} onDragCancel={() => setDragId(null)} onDragEnd={end}>
+    <DndContext sensors={sensors} collisionDetection={collide} onDragStart={(e: DragStartEvent) => setDragId(Number(String(e.active.id).slice(2)))} onDragCancel={() => setDragId(null)} onDragEnd={end}>
       <div className="flex gap-3 overflow-x-auto pb-3">
         {COLUMNS.map((c) => (
           <Column key={c.key} colKey={c.key} label={c.label} tasks={byCol(c.key)} whoOf={whoOf} onOpen={onOpen} onAdd={onAdd} />
