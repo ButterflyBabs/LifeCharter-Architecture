@@ -219,6 +219,42 @@ export async function moveCard(db: Db, planId: string, cardId: string, stage: Dm
   return saved;
 }
 
+// Cards that move by themselves. When the Suite sees something happen to a person (they registered,
+// attended, did not show, booked a consultation), every card of theirs on a board that has a stage
+// with that key moves there, exactly as if it had been dragged: follow-up, tags and timeline included.
+// A card only ever moves forward, and never out of a closed stage (Client, Not now, ...).
+const AUTO_RANK: Record<string, number> = { to_reach: 0, sent: 1, followed_up: 1, conversation: 2, invited: 3, nurture: 3, registered: 4, no_show: 5, attended: 6, booked: 7 };
+export type AutoStageKey = "registered" | "attended" | "no_show" | "booked";
+
+export async function advanceCards(db: Db, planId: string, who: { contactId?: string | null; email?: string | null }, toKey: AutoStageKey, tz = "America/Denver", dealId?: string | null): Promise<number> {
+  const email = (who.email || "").trim().toLowerCase();
+  if (!who.contactId && !email) return 0;
+  const { data: targets } = await db.from("dm_stages").select(STAGE_SEL).eq("master_plan_id", planId).eq("key", toKey);
+  let moved = 0;
+  for (const stage of (targets ?? []).map(shapeStage)) {
+    const sel = "id, stage_id, deal_id";
+    const [byContact, byEmail] = await Promise.all([
+      who.contactId ? db.from("dm_cards").select(sel).eq("master_plan_id", planId).eq("board_id", stage.boardId).eq("contact_id", who.contactId) : Promise.resolve({ data: [] }),
+      email ? db.from("dm_cards").select(sel).eq("master_plan_id", planId).eq("board_id", stage.boardId).eq("email", email) : Promise.resolve({ data: [] }),
+    ]);
+    const cards = new Map<string, { id: string; stage_id: string; deal_id: string | null }>();
+    for (const c of [...((byContact.data ?? []) as never[]), ...((byEmail.data ?? []) as never[])] as { id: string; stage_id: string; deal_id: string | null }[]) cards.set(c.id, c);
+    if (!cards.size) continue;
+    const { data: board } = await db.from("pipeline_boards").select("name").eq("id", stage.boardId).maybeSingle();
+    for (const card of Array.from(cards.values())) {
+      if (card.stage_id === stage.id) continue;
+      const { data: cur } = await db.from("dm_stages").select("key, kind").eq("id", card.stage_id).maybeSingle();
+      if (!cur || cur.kind === "closed") continue;
+      const rank = cur.kind === "booked" ? AUTO_RANK.booked : AUTO_RANK[(cur.key as string) ?? ""] ?? 0;
+      if (AUTO_RANK[toKey] <= rank) continue;
+      // A booking that already opened a Sales Pipeline deal: reuse it, so "booked" never makes a second one.
+      if (dealId && !card.deal_id) await db.from("dm_cards").update({ deal_id: dealId }).eq("id", card.id).eq("master_plan_id", planId);
+      if (await moveCard(db, planId, card.id, stage, (board?.name as string) || "Pipeline", tz)) moved++;
+    }
+  }
+  return moved;
+}
+
 // New card in a stage (with its follow-up and tags), optionally linked to a contact.
 export async function createCard(
   db: Db,

@@ -4,6 +4,7 @@ import { cachedSchedule, incubatorMeetingId, isZoomConfigured, listMasterclassRe
 import { eventSetting, eventTemplates, sendDueEventEmails, suiteEmailsLive, type EventKey } from "@/lib/eventEmails";
 import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
+import { advanceCards } from "@/lib/dmPipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -127,6 +128,8 @@ async function run(request: Request) {
       if (housePlan) {
         const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags: [`${ev.key}-registered`] }).catch(() => null);
         if (c) await logEvent(housePlan, c.id, "form", `Registered for the ${ev.key === "incubator" ? "LifeCharter Incubator" : "Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
+        // Their card on the MasterClass Pipeline moves to Registered by itself.
+        if (c && ev.key === "masterclass") await advanceCards(supabase, housePlan, { contactId: c.id, email: r.email }, "registered").catch((e) => console.error("[zoom-sync] card move:", e));
       }
       await supabase.from("zoom_registrant_syncs").upsert(
         {

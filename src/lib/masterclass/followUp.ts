@@ -1,6 +1,8 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { upsertContact, logEvent } from "@/lib/crm";
 import { enrolContact } from "@/lib/sequences/engine";
+import { advanceCards } from "@/lib/dmPipeline";
+import { ownerMasterPlanId } from "@/lib/housePlan";
 import type { ZoomOccurrence } from "@/lib/zoom";
 
 type Db = ReturnType<typeof createServerClient>;
@@ -93,6 +95,8 @@ export async function tagSession(db: Db, housePlan: string, occ: ZoomOccurrence,
       : await db.from("masterclass_followups").insert(row);
     if (error) continue; // another run has it
     await logEvent(housePlan, contact.id, "tag", outcome === "attended" ? `Attended the Command Shift MasterClass (${longDay(session)})` : `Registered for the Command Shift MasterClass (${longDay(session)}) and did not attend`, { session, outcome }, db).catch(() => {});
+    // Their card on the MasterClass Pipeline moves to Attended or No-show by itself.
+    await advanceCards(db, housePlan, { contactId: contact.id, email }, outcome === "attended" ? "attended" : "no_show").catch((e) => console.error("[masterclass-follow-up] card move:", e));
     if (outcome === "attended") attended++;
     else noShows++;
   }
@@ -173,6 +177,23 @@ export async function stopBooked(db: Db = createServerClient()): Promise<number>
     }
   }
   return stopped;
+}
+
+// Anyone who booked an Executive Consultation in the last few days: their pipeline card moves to
+// "Consultation booked". Safe to run every few minutes; a card already there (or closed) is left alone.
+export async function moveBookedCards(db: Db = createServerClient()): Promise<number> {
+  const planId = await ownerMasterPlanId(db);
+  if (!planId) return 0;
+  const { data: cals } = await db.from("booking_calendars").select("id").eq("master_plan_id", planId).ilike("slug", `${CONSULT_SLUG}%`);
+  const calIds = ((cals ?? []) as { id: string }[]).map((c) => c.id);
+  if (!calIds.length) return 0;
+  const since = new Date(Date.now() - 3 * 86400_000).toISOString();
+  const { data: booked } = await db.from("bookings").select("contact_id, invitee_email, deal_id").in("calendar_id", calIds).in("status", ["confirmed", "completed"]).gte("created_at", since);
+  let moved = 0;
+  for (const b of (booked ?? []) as { contact_id: string | null; invitee_email: string | null; deal_id: string | null }[]) {
+    moved += await advanceCards(db, planId, { contactId: b.contact_id, email: b.invitee_email }, "booked", "America/Denver", b.deal_id).catch(() => 0);
+  }
+  return moved;
 }
 
 // For the MasterClass Results page: recent sessions, who is waiting, and whether the replay went out.
