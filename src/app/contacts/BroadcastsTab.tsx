@@ -151,9 +151,16 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
   );
 }
 
-function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }: { id: string; allTags: string[]; templates: Template[]; tz: string; sender: Sender | null; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
+function Editor({ id, allTags, templates, tz, sender, setMsg: setPageMsg, onChange, onGone }: { id: string; allTags: string[]; templates: Template[]; tz: string; sender: Sender | null; setMsg: (m: string) => void; onChange: () => void; onGone: () => void }) {
   const [d, setD] = useState<Detail | null>(null);
   const [f, setF] = useState<Full | null>(null);
+  // What just happened (saved, test sent, or what went wrong), shown right beside the buttons as well as
+  // at the top of the page, which is out of sight from the bottom of a long email.
+  const [note, setNote] = useState("");
+  const setMsg = (m: string) => {
+    setNote(m);
+    setPageMsg(m);
+  };
   const [reach, setReach] = useState<number | null>(null);
   const [known, setKnown] = useState<Record<string, PickedContact>>({});
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
@@ -436,10 +443,12 @@ function Editor({ id, allTags, templates, tz, sender, setMsg, onChange, onGone }
             <Button variant="outline" disabled={busy} onClick={() => run(async () => { const r = await post({ action: "preview", draft }); if (r) setPreview(r); })}>
               <Eye className="w-4 h-4 mr-1" /> Preview
             </Button>
-            <Button variant="outline" disabled={busy} onClick={() => run(async () => { if (editable && !(await save())) return; if (await post({ action: "test" })) setMsg("Test sent to your inbox."); })}>
+            <Button variant="outline" disabled={busy} onClick={() => run(async () => { if (editable && !(await save())) return; if (await post({ action: "test" })) setMsg("Test sent to your inbox. If it isn't there in a minute, look in Junk."); })}>
               <Send className="w-4 h-4 mr-1" /> Send me a test
             </Button>
+            {busy && <span className="self-center text-sm text-[#7a8a99]" role="status">Working…</span>}
           </div>
+          {note && !busy && <p role="status" aria-live="polite" className="rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{note}</p>}
           {preview && (
             <div className="rounded-xl border border-[#1a2b4a]/10 overflow-hidden">
               <p className="px-4 py-2 text-sm bg-[#1a2b4a]/5 break-words"><strong>Subject:</strong> {preview.subject} <span className="text-[#7a8a99]">(as Eloise)</span></p>

@@ -77,8 +77,11 @@ export function renderStep(r: RenderInput) {
   const unsub = unsubscribeUrl(r.contact.id);
   const button = r.buttonLabel && r.buttonUrl ? { label: fill(r.buttonLabel), url: r.buttonUrl } : null;
   const f = r.footer;
-  const signHtml = f ? esc(f.signoff).replace(/\n/g, "<br>") : SIGN_OFF_HTML;
-  const signText = f ? f.signoff : SIGN_OFF_TEXT;
+  // When the email itself already closes with "Head up - Wings out" (typed above a fuller signature),
+  // the automatic sign-off is left off so the closing never appears twice.
+  const closesItself = !f && /head up\s*[-\u2013\u2014]\s*wings out/i.test(body);
+  const signHtml = f ? esc(f.signoff).replace(/\n/g, "<br>") : closesItself ? "" : SIGN_OFF_HTML;
+  const signText = f ? f.signoff : closesItself ? "" : SIGN_OFF_TEXT;
   const support = f ? f.supportEmail : "support@lccommandsuite.com";
   const address = f ? f.address : BUSINESS_ADDRESS;
   const html = `<!doctype html><html><body style="margin:0;background:#FBF8F1">
