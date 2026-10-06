@@ -48,7 +48,7 @@ export default function ReportView({ r }: { r: AffiliateReport }) {
               {r.sales.map((s, i) => (
                 <li key={i} className="flex justify-between gap-2 py-1.5">
                   <span>{day(s.date)} · {s.description}</span>
-                  <span className="whitespace-nowrap">{s.status === "review" ? "being confirmed" : `${money(s.commission)} · ${s.status}`}</span>
+                  <span className="whitespace-nowrap">{s.status === "review" ? "being confirmed" : `${money(s.commission)} · ${s.status === "owed" && s.payableOn ? `payable ${day(s.payableOn)}` : s.status}`}</span>
                 </li>
               ))}
             </ul>

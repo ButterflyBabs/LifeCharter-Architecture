@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { EMAIL_RE, upsertContact } from "@/lib/crm";
-import { slugCode, uniqueCode, rateFor, recordReferral } from "@/lib/affiliates";
+import { slugCode, uniqueCode, rateFor, recordReferral, payableOn } from "@/lib/affiliates";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   }
 
   const [{ data: affs }, { data: offers }, { data: programs }, { data: clicks }, { data: refs }, { data: sales }, { data: earnings }] = await Promise.all([
-    db.from("affiliates").select("id, name, email, code, status, default_rate, contact_id, portal_token, landing_url, created_at").eq("master_plan_id", a.planId).order("created_at"),
+    db.from("affiliates").select("id, name, email, code, status, default_rate, payout_delay_days, contact_id, portal_token, landing_url, created_at").eq("master_plan_id", a.planId).order("created_at"),
     db.from("sales_offers").select("id, name, price, affiliate_rate, status").eq("master_plan_id", a.planId).order("sort_order"),
     db.from("affiliate_programs").select("*").eq("master_plan_id", a.planId).order("created_at"),
     db.from("affiliate_clicks").select("affiliate_id").eq("master_plan_id", a.planId).limit(20000),
@@ -77,6 +77,7 @@ export async function POST(request: Request) {
   const db = createServerClient();
   const b = await request.json().catch(() => ({}));
   const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+  const days = (v: unknown) => (v === null || v === "" || v === undefined || !Number.isFinite(Number(v)) ? null : Math.max(0, Math.min(365, Math.round(Number(v)))));
   const pct = (v: unknown) => (v === null || v === "" || v === undefined ? null : Math.max(0, Math.min(100, Number(v))));
   const url = (v: unknown) => {
     const u = str(v, 500);
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       const code = await uniqueCode(db, str(b.code, 40) || name.split(/\s+/)[0] || name);
       const { data, error } = await db
         .from("affiliates")
-        .insert({ master_plan_id: a.planId, contact_id: contactId, name, email, code, default_rate: pct(b.defaultRate), landing_url: url(b.landingUrl), notes: str(b.notes, 2000) || null, agreement_on: str(b.agreementOn, 10) || null })
+        .insert({ master_plan_id: a.planId, contact_id: contactId, name, email, code, default_rate: pct(b.defaultRate), payout_delay_days: days(b.payoutDelayDays), landing_url: url(b.landingUrl), notes: str(b.notes, 2000) || null, agreement_on: str(b.agreementOn, 10) || null })
         .select("*")
         .single();
       if (error) return NextResponse.json({ error: "Couldn't add them." }, { status: 500 });
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
       if (b.email !== undefined) patch.email = str(b.email, 200).toLowerCase() || null;
       if (b.status === "active" || b.status === "paused") patch.status = b.status;
       if (b.defaultRate !== undefined) patch.default_rate = pct(b.defaultRate);
+      if (b.payoutDelayDays !== undefined) patch.payout_delay_days = days(b.payoutDelayDays);
       if (b.landingUrl !== undefined) patch.landing_url = url(b.landingUrl);
       if (b.notes !== undefined) patch.notes = str(b.notes, 2000) || null;
       if (b.agreementOn !== undefined) patch.agreement_on = str(b.agreementOn, 10) || null;
@@ -172,6 +174,7 @@ export async function POST(request: Request) {
       const offer = str(b.offerId, 40) ? await own("sales_offers", b.offerId) : null;
       const rate = pct(b.rate) ?? (await rateFor(db, f.id as string, (offer?.id as string) ?? null));
       const description = str(b.description, 300) || (offer?.name as string) || "Sale";
+      const saleDate = str(b.saleDate, 10) || new Date().toISOString().slice(0, 10);
       const { data, error } = await db
         .from("affiliate_sales")
         .insert({
@@ -183,7 +186,8 @@ export async function POST(request: Request) {
           amount: money(amount),
           rate,
           commission: rate != null ? money((amount * rate) / 100) : 0,
-          sale_date: str(b.saleDate, 10) || new Date().toISOString().slice(0, 10),
+          sale_date: saleDate,
+          payable_on: await payableOn(db, f.id as string, saleDate),
           status: rate == null ? "review" : "owed",
           source: "manual",
         })

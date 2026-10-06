@@ -15,6 +15,7 @@ type Affiliate = {
   code: string;
   status: "active" | "paused";
   default_rate: number | null;
+  payout_delay_days?: number | null;
   contact_id: string | null;
   portal_token: string;
   landing_url: string | null;
@@ -29,7 +30,7 @@ type Affiliate = {
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
 type Program = { id: string; name: string; website: string | null; my_link: string | null; my_code: string | null; commission_terms: string | null; login_url: string | null; status: string; notes: string | null; earnings: Earning[]; expected: number; paid: number };
-type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
+type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
 type Referral = { id: string; kind: string; source: string | null; created_at: string; seq_contacts: { id: string; first_name: string | null; last_name: string | null; email: string } | null };
 
 const TABS = [
@@ -310,7 +311,7 @@ export default function Affiliates() {
 }
 
 function AddAffiliate({ onClose, onSaved, post }: { onClose: () => void; onSaved: () => void; post: (b: Record<string, unknown>) => Promise<Record<string, unknown> | null> }) {
-  const [d, setD] = useState({ name: "", email: "", contactId: null as string | null, code: "", defaultRate: "", landingUrl: "", notes: "" });
+  const [d, setD] = useState({ name: "", email: "", contactId: null as string | null, code: "", defaultRate: "", payoutDelayDays: "", landingUrl: "", notes: "" });
   const [busy, setBusy] = useState(false);
   return (
     <Modal title="Add an affiliate" onClose={onClose}>
@@ -322,6 +323,7 @@ function AddAffiliate({ onClose, onSaved, post }: { onClose: () => void; onSaved
           <label className="block text-xs font-medium text-[#5a6472]">Email<Input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} disabled={Boolean(d.contactId)} /></label>
           <label className="block text-xs font-medium text-[#5a6472]">Link code<Input value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} placeholder={d.name.split(/\s+/)[0]?.toLowerCase() || "grace"} /></label>
           <label className="block text-xs font-medium text-[#5a6472]">Default commission % (when a product has none)<Input type="number" min={0} max={100} value={d.defaultRate} onChange={(e) => setD({ ...d, defaultRate: e.target.value })} /></label>
+          <label className="block text-xs font-medium text-[#5a6472]">Pay commission this many days after the payment (optional)<Input type="number" min={0} max={365} value={d.payoutDelayDays} onChange={(e) => setD({ ...d, payoutDelayDays: e.target.value })} placeholder="30" /></label>
           <label className="block text-xs font-medium text-[#5a6472]">Their link goes to (optional)<Input value={d.landingUrl} onChange={(e) => setD({ ...d, landingUrl: e.target.value })} placeholder="Your website" /></label>
         </div>
         <label className="block text-xs font-medium text-[#5a6472]">Notes<textarea rows={2} value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} className={box} /></label>
@@ -340,7 +342,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
   const [refs, setRefs] = useState<Referral[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [clicks30, setClicks30] = useState(0);
-  const [edit, setEdit] = useState({ name: "", email: "", code: "", status: "active", defaultRate: "", landingUrl: "", notes: "", agreementOn: "" });
+  const [edit, setEdit] = useState({ name: "", email: "", code: "", status: "active", defaultRate: "", payoutDelayDays: "", landingUrl: "", notes: "", agreementOn: "" });
   const [sale, setSale] = useState({ offerId: "", description: "", amount: "", saleDate: new Date().toISOString().slice(0, 10), rate: "" });
   const [refName, setRefName] = useState("");
 
@@ -353,7 +355,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
     setSales(d.sales ?? []);
     setClicks30(d.clicks30 ?? 0);
     const f = d.affiliate;
-    setEdit({ name: f.name, email: f.email ?? "", code: f.code, status: f.status, defaultRate: f.default_rate == null ? "" : String(f.default_rate), landingUrl: f.landing_url ?? "", notes: f.notes ?? "", agreementOn: f.agreement_on ?? "" });
+    setEdit({ name: f.name, email: f.email ?? "", code: f.code, status: f.status, defaultRate: f.default_rate == null ? "" : String(f.default_rate), payoutDelayDays: f.payout_delay_days == null ? "" : String(f.payout_delay_days), landingUrl: f.landing_url ?? "", notes: f.notes ?? "", agreementOn: f.agreement_on ?? "" });
   }, [id]);
   useEffect(() => {
     void load();
@@ -395,6 +397,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
               <select value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })} className={`${box} h-10`}><option value="active">Active</option><option value="paused">Paused (link stops crediting)</option></select>
             </label>
             <label className="block text-xs font-medium text-[#5a6472]">Default commission %<Input type="number" min={0} max={100} value={edit.defaultRate} onChange={(e) => setEdit({ ...edit, defaultRate: e.target.value })} /></label>
+            <label className="block text-xs font-medium text-[#5a6472]">Pay this many days after each payment (applies to new sales)<Input type="number" min={0} max={365} value={edit.payoutDelayDays} onChange={(e) => setEdit({ ...edit, payoutDelayDays: e.target.value })} placeholder="none" /></label>
             <label className="block text-xs font-medium text-[#5a6472]">Agreement date<Input type="date" value={edit.agreementOn} onChange={(e) => setEdit({ ...edit, agreementOn: e.target.value })} /></label>
             <label className="block text-xs font-medium text-[#5a6472] sm:col-span-2">Their link goes to<Input value={edit.landingUrl} onChange={(e) => setEdit({ ...edit, landingUrl: e.target.value })} placeholder="Your website" /></label>
             <label className="block text-xs font-medium text-[#5a6472] sm:col-span-2">Notes<textarea rows={2} value={edit.notes} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} className={box} /></label>
@@ -469,7 +472,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
             <div className="overflow-x-auto rounded-lg border border-[#1a2b4a]/10">
               <table className="w-full text-sm">
                 <thead className="bg-[#1a2b4a]/5 text-left text-xs">
-                  <tr><th className="p-2">Date</th><th className="p-2">Sale</th><th className="p-2 text-right">Amount</th><th className="p-2 text-right">%</th><th className="p-2 text-right">Commission</th><th className="p-2">Status</th></tr>
+                  <tr><th className="p-2">Date</th><th className="p-2">Sale</th><th className="p-2 text-right">Amount</th><th className="p-2 text-right">%</th><th className="p-2 text-right">Commission</th><th className="p-2">Payable</th><th className="p-2">Status</th></tr>
                 </thead>
                 <tbody>
                   {sales.map((s) => (
@@ -483,6 +486,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
                         ) : s.rate != null ? `${s.rate}%` : "—"}
                       </td>
                       <td className="p-2 text-right font-medium">{money(s.commission)}</td>
+                      <td className="p-2 whitespace-nowrap text-xs text-[#5a6472]">{s.payable_on && s.status !== "paid" && s.status !== "void" ? (s.payable_on <= new Date().toISOString().slice(0, 10) ? <span className="font-semibold text-[#2c6b3f]">Ready to pay</span> : `Hold until ${day(s.payable_on)}`) : "—"}</td>
                       <td className="p-2">
                         <select value={s.status} onChange={async (e) => { if (await post({ action: "sale-update", saleId: s.id, status: e.target.value })) void load(); }} className="rounded border border-[#1a2b4a]/20 px-1 py-0.5 text-xs" aria-label="Status">
                           <option value="review">Needs a %</option>

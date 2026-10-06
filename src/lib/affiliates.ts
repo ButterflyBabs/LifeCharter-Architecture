@@ -39,6 +39,16 @@ export async function rateFor(db: Db, affiliateId: string, offerId: string | nul
 
 const money = (n: number) => Math.round(n * 100) / 100;
 
+// The first day a commission can be paid: the sale date plus the affiliate's hold (null when they have none).
+export async function payableOn(db: Db, affiliateId: string, saleDate: string): Promise<string | null> {
+  const { data } = await db.from("affiliates").select("payout_delay_days").eq("id", affiliateId).maybeSingle();
+  const n = data?.payout_delay_days;
+  if (n == null) return null;
+  const d = new Date(`${saleDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + Number(n));
+  return d.toISOString().slice(0, 10);
+}
+
 // The affiliate a visitor came through (cookie or a ?ref / _ref code), if it belongs to this account and is active.
 export async function affiliateByCode(db: Db, planId: string, code: string | null | undefined) {
   const c = slugCode(code || "");
@@ -85,6 +95,7 @@ export async function creditSale(
     offerId = ((offers ?? []) as { id: string; name: string }[]).find((o) => d.includes(o.name.toLowerCase()))?.id ?? null;
   }
   const rate = await rateFor(db, affiliateId, offerId);
+  const saleDate = input.saleDate ?? new Date().toISOString().slice(0, 10);
   const { data } = await db
     .from("affiliate_sales")
     .insert({
@@ -96,7 +107,8 @@ export async function creditSale(
       amount: money(input.amount),
       rate,
       commission: rate != null ? money((input.amount * rate) / 100) : 0,
-      sale_date: input.saleDate ?? new Date().toISOString().slice(0, 10),
+      sale_date: saleDate,
+      payable_on: await payableOn(db, affiliateId, saleDate),
       // Automatic sales with no rate yet wait for a quick review.
       status: rate == null ? "review" : "owed",
       source: input.source ?? "manual",
@@ -115,7 +127,7 @@ export type AffiliateReport = {
   affiliate: { name: string; code: string; status: string };
   clicks: number;
   referrals: { firstName: string; kind: string; date: string }[];
-  sales: { date: string; description: string; amount: number; rate: number | null; commission: number; status: string }[];
+  sales: { date: string; description: string; amount: number; rate: number | null; commission: number; status: string; payableOn: string | null }[];
   byProduct: { product: string; sales: number; amount: number; commission: number }[];
   month_totals: { revenue: number; commission: number; owed: number; paid: number; pending: number };
   lifetime: { clicks: number; referrals: number; revenue: number; commissionPaid: number; commissionOwed: number };
@@ -131,7 +143,7 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
   const [{ count: clicks }, { data: refs }, { data: sales }, { count: lifeClicks }, { count: lifeRefs }, { data: lifeSales }] = await Promise.all([
     db.from("affiliate_clicks").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliateId).gte("created_at", from.toISOString()).lt("created_at", to.toISOString()),
     db.from("affiliate_referrals").select("kind, created_at, seq_contacts(first_name)").eq("affiliate_id", affiliateId).gte("created_at", from.toISOString()).lt("created_at", to.toISOString()).order("created_at"),
-    db.from("affiliate_sales").select("description, amount, rate, commission, status, sale_date, sales_offers(name)").eq("affiliate_id", affiliateId).neq("status", "void").gte("sale_date", from.toISOString().slice(0, 10)).lt("sale_date", to.toISOString().slice(0, 10)).order("sale_date"),
+    db.from("affiliate_sales").select("description, amount, rate, commission, status, sale_date, payable_on, sales_offers(name)").eq("affiliate_id", affiliateId).neq("status", "void").gte("sale_date", from.toISOString().slice(0, 10)).lt("sale_date", to.toISOString().slice(0, 10)).order("sale_date"),
     db.from("affiliate_clicks").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliateId),
     db.from("affiliate_referrals").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliateId),
     db.from("affiliate_sales").select("amount, commission, status").eq("affiliate_id", affiliateId).neq("status", "void"),
@@ -144,6 +156,7 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
     rate: s.rate == null ? null : Number(s.rate),
     commission: Number(s.commission),
     status: s.status as string,
+    payableOn: (s.payable_on as string | null) ?? null,
   }));
   const byProduct = new Map<string, { product: string; sales: number; amount: number; commission: number }>();
   for (const r of rows) {
@@ -160,7 +173,7 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
     affiliate: { name: aff.name as string, code: aff.code as string, status: aff.status as string },
     clicks: clicks ?? 0,
     referrals: (refs ?? []).map((r) => ({ firstName: (r.seq_contacts as unknown as { first_name: string | null } | null)?.first_name || "Someone", kind: r.kind as string, date: (r.created_at as string).slice(0, 10) })),
-    sales: rows.map((r) => ({ date: r.date, description: r.description, amount: r.amount, rate: r.rate, commission: r.commission, status: r.status })),
+    sales: rows.map((r) => ({ date: r.date, description: r.description, amount: r.amount, rate: r.rate, commission: r.commission, status: r.status, payableOn: r.payableOn })),
     byProduct: Array.from(byProduct.values()).sort((a, b) => b.amount - a.amount),
     month_totals: {
       revenue: money(rows.reduce((t, r) => t + r.amount, 0)),
@@ -200,8 +213,8 @@ export function reportCsv(r: AffiliateReport): string {
     ["By product", "Sales", "Revenue", "Commission"],
     ...r.byProduct.map((p) => [p.product, p.sales, p.amount, p.commission]),
     [],
-    ["Date", "Sale", "Amount", "Rate %", "Commission", "Status"],
-    ...r.sales.map((s) => [s.date, s.description, s.amount, s.rate ?? "", s.commission, s.status === "review" ? "pending" : s.status]),
+    ["Date", "Sale", "Amount", "Rate %", "Commission", "Status", "Payable on"],
+    ...r.sales.map((s) => [s.date, s.description, s.amount, s.rate ?? "", s.commission, s.status === "review" ? "pending" : s.status, s.payableOn ?? ""]),
     [],
     ["Date", "Referred", "How"],
     ...r.referrals.map((x) => [x.date, x.firstName, x.kind === "booking" ? "booked a call" : x.kind === "manual" ? "credited" : "signed up"]),
