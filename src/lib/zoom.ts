@@ -149,9 +149,9 @@ export interface ZoomPastInstance {
 }
 
 /** The occurrences of the recurring MasterClass meeting that have already happened. */
-export async function listMasterclassPastInstances(): Promise<ZoomPastInstance[]> {
+export async function listMasterclassPastInstances(meetingId: string = masterclassMeetingId()): Promise<ZoomPastInstance[]> {
   const token = await getAccessToken();
-  const res = await fetch(`https://api.zoom.us/v2/past_meetings/${encodeURIComponent(masterclassMeetingId())}/instances`, {
+  const res = await fetch(`https://api.zoom.us/v2/past_meetings/${encodeURIComponent(meetingId)}/instances`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`Zoom past instances request failed: ${res.status} ${await res.text()}`);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface Session {
+  event?: "masterclass" | "incubator";
   date: string;
   attended: number;
   noShows: number;
@@ -29,10 +30,10 @@ export default function ReplayRelease() {
       .catch(() => setSessions([]));
   }, []);
 
-  const send = async (date: string) => {
+  const send = async (date: string, event: string) => {
     setBusy(date);
     setNote((n) => ({ ...n, [date]: "" }));
-    const res = await fetch("/api/masterclass/replay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionDate: date, url: url[date] || "" }) }).catch(() => null);
+    const res = await fetch("/api/masterclass/replay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionDate: date, url: url[date] || "", event }) }).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
     setBusy("");
     setConfirm("");
@@ -45,19 +46,19 @@ export default function ReplayRelease() {
     <section className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
       <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Replay and follow-up</h2>
       <p className="mt-1 max-w-3xl text-sm text-[#5b5f73] dark:text-[#b8a898]">
-        After a MasterClass, everyone is tagged attended or no-show in Contacts. Paste the Vimeo replay link here and press Send: attendees get the thank-you replay email, no-shows get the &ldquo;we missed you&rdquo; one, and everyone starts the follow-up series. Nothing is emailed until you press Send. Anyone who books an Executive Consultation stops receiving the series.
+        After a MasterClass or an Incubator, everyone is tagged attended or no-show in Contacts. Paste the Vimeo replay link here and press Send: attendees get the thank-you replay email, no-shows get the &ldquo;we missed you&rdquo; one, and everyone starts the follow-up series. Nothing is emailed until you press Send. Anyone who books an Executive Consultation stops receiving the series.
       </p>
       {sessions === null ? (
         <p className="mt-4 text-sm text-[#7b6b8d]">Loading…</p>
       ) : sessions.length === 0 ? (
-        <p className="mt-4 text-sm text-[#7b6b8d] dark:text-[#b8a898]">No session is ready yet. Attendance arrives from Zoom the evening of each MasterClass and again the next morning.</p>
+        <p className="mt-4 text-sm text-[#7b6b8d] dark:text-[#b8a898]">No session is ready yet. Attendance arrives from Zoom the evening of each MasterClass or Incubator and again the next morning.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {sessions.map((s) => {
             const total = s.attended + s.noShows;
             return (
               <li key={s.date} className="rounded-xl border border-[#1a2b4a]/10 p-4 dark:border-white/10">
-                <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{day(s.date)}</p>
+                <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.event === "incubator" ? "LifeCharter Incubator" : "MasterClass"} · {day(s.date)}</p>
                 <p className="text-sm text-[#5b5f73] dark:text-[#b8a898]">
                   {s.attended} attended · {s.noShows} registered and did not come
                   {s.releasedAt ? ` · replay sent ${when(s.releasedAt)} MT` : ""}
@@ -71,7 +72,7 @@ export default function ReplayRelease() {
                     <input id={`replay-${s.date}`} type="url" inputMode="url" placeholder="https://vimeo.com/…" value={url[s.date] || ""} onChange={(e) => { setUrl({ ...url, [s.date]: e.target.value }); setConfirm(""); }} className="min-w-0 flex-1 rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]" />
                     {confirm === s.date ? (
                       <>
-                        <button onClick={() => send(s.date)} disabled={busy === s.date} className="rounded-lg bg-[#8a2f2f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy === s.date ? "Sending…" : `Yes, email ${total} ${total === 1 ? "person" : "people"}`}</button>
+                        <button onClick={() => send(s.date, s.event || "masterclass")} disabled={busy === s.date} className="rounded-lg bg-[#8a2f2f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy === s.date ? "Sending…" : `Yes, email ${total} ${total === 1 ? "person" : "people"}`}</button>
                         <button onClick={() => setConfirm("")} className="rounded-lg border border-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Cancel</button>
                       </>
                     ) : (

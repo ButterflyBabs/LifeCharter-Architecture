@@ -42,12 +42,12 @@ export const createProjectTool: ActionTool = {
   kind: "write",
   apiPath: "/api/projects",
   description:
-    "Create a project for the client, blank or from a template, with its tasks dated for them. Templates: 'masterclass' (a first or one-off live workshop or webinar; anchor_date = the MasterClass day), 'masterclass-cycle' (a MasterClass that repeats: four weeks from the reset after the last session to the end of follow-up; anchor_date = the MasterClass day) and 'challenge21' (the 21-Day Challenge / Command Shift; anchor_date = Day 1). A template needs anchor_date (YYYY-MM-DD); ask for the date if you don't have it. For a blank project you can pass due_date. The client approves first.",
+    "Create a project for the client, blank or from a template, with its tasks dated for them. Templates: 'masterclass' (a first or one-off live workshop or webinar; anchor_date = the MasterClass day), 'masterclass-cycle' (a MasterClass that repeats: four weeks from the reset after the last session to the end of follow-up; anchor_date = the MasterClass day), 'monthly-event' (a workshop, incubator or open evening held every month: reset, three weeks of filling the room, the event, three weeks of follow-up; anchor_date = the event day) and 'challenge21' (the 21-Day Challenge / Command Shift; anchor_date = Day 1). A template needs anchor_date (YYYY-MM-DD); ask for the date if you don't have it. For a blank project you can pass due_date. The client approves first.",
   parameters: {
     type: "object",
     properties: {
       name: { type: "string" },
-      template: { type: "string", enum: ["masterclass", "masterclass-cycle", "challenge21", "blank"] },
+      template: { type: "string", enum: ["masterclass", "masterclass-cycle", "monthly-event", "challenge21", "blank"] },
       anchor_date: { type: "string", description: "YYYY-MM-DD: the event day, or Day 1 of the challenge. Required for a template." },
       goal: { type: "string" },
       due_date: { type: "string", description: "YYYY-MM-DD, for a blank project." },
@@ -58,7 +58,7 @@ export const createProjectTool: ActionTool = {
     const name = clean(args.name, 160);
     if (!name) return { error: "What should the project be called?" };
     const tpl = args.template && args.template !== "blank" ? templateByKey(String(args.template)) : null;
-    if (args.template && args.template !== "blank" && !tpl) return { error: "I only have the MasterClass, repeating MasterClass and 21-Day Challenge templates, or a blank project." };
+    if (args.template && args.template !== "blank" && !tpl) return { error: "I only have the MasterClass, repeating MasterClass, Monthly event and 21-Day Challenge templates, or a blank project." };
     const anchor = clean(args.anchor_date, 10);
     if (tpl && !isDay(anchor)) return { error: `What date should I plan around? (${tpl.anchorLabel}, as YYYY-MM-DD.)` };
     const lines: string[] = [];
