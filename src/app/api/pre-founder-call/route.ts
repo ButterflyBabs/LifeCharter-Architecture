@@ -70,6 +70,16 @@ export async function POST(request: Request) {
     data["Price"] = "Corrected the $397 mentioned at the Sneak Peek: $497/mo, locked for life of their account after six free months.";
   }
   if (b.affiliate) flags.push("interested in the affiliate program");
+  const wantsReview = b.websiteReview === true;
+  const build = b.websiteBuild === "link-sent" ? "link-sent" : b.websiteBuild === "interested" ? "interested" : "";
+  if (wantsReview) {
+    flags.push("wants the Website Alignment Review");
+    data["Website Alignment Review"] = "Wants the free Website Alignment Review.";
+  }
+  if (build) {
+    flags.push(build === "link-sent" ? "Website Build checkout sent" : "interested in the Website Build");
+    data["Website Build"] = build === "link-sent" ? "Website Build checkout link was made on the call ($1,997 founding rate)." : "Interested in the Website Build ($1,997 founding rate); no link sent yet.";
+  }
   await logEvent(a.planId, contact.id as string, "note", `Pre-Founder 1:1 call · ${interest.label}${flags.length ? ` · ${flags.join(" · ")}` : ""}`, { data, call: "pre-founder" }, db);
 
   // 2. Custom fields: make sure the account has them, then fill this contact's.
@@ -96,6 +106,8 @@ export async function POST(request: Request) {
   if (interest.key === "ready") tags.add("pre-founder-needs-login");
   if (b.affiliate) tags.add("affiliate-interest");
   if (b.priceCorrected) tags.add("price-corrected-497");
+  if (wantsReview) tags.add("website-review-requested");
+  if (build) tags.add(build === "link-sent" ? "website-build-checkout-sent" : "website-build-interest");
   const about = (b.about && typeof b.about === "object" ? b.about : {}) as Record<string, unknown>;
   const patch: Record<string, unknown> = { custom, tags: Array.from(tags), tag_source: "pre-founder-call", updated_at: new Date().toISOString() };
   for (const [k, col, n] of [["company", "company", 160], ["jobTitle", "job_title", 120], ["phone", "phone", 40], ["website", "website", 300]] as const) {

@@ -22,6 +22,7 @@ export const NOTE_FIELDS: { key: string; label: string; custom?: string }[] = [
   { key: "yearOut", label: "A year from now if nothing changes" },
   { key: "firstUse", label: "What they would use first" },
   { key: "concerns", label: "Concerns raised", custom: "pf_concerns" },
+  { key: "website", label: "Their website today" },
   { key: "referrals", label: "People who came to mind" },
   { key: "nextStep", label: "Agreed next step", custom: "pf_next_step" },
   { key: "extra", label: "Anything else" },

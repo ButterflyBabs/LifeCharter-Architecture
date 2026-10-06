@@ -12,13 +12,13 @@ interface Card {
   events: { id: string; kind: string; title: string; created_at: string }[];
 }
 type Notes = Record<string, string>;
-interface Draft { notes: Notes; interest: InterestKey | ""; concerns: string[]; affiliate: boolean; priceCorrected: boolean; about: Record<string, string>; followUpOn: string }
+interface Draft { notes: Notes; interest: InterestKey | ""; concerns: string[]; affiliate: boolean; priceCorrected: boolean; websiteReview: boolean; websiteBuild: "" | "interested" | "link-sent"; about: Record<string, string>; followUpOn: string }
 
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/30 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40 p-5";
 const say = "rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-[15px] leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]";
 const ask = "text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]";
-const emptyDraft = (): Draft => ({ notes: {}, interest: "", concerns: [], affiliate: false, priceCorrected: false, about: {}, followUpOn: "" });
+const emptyDraft = (): Draft => ({ notes: {}, interest: "", concerns: [], affiliate: false, priceCorrected: false, websiteReview: false, websiteBuild: "", about: {}, followUpOn: "" });
 const nameOf = (c: { first_name: string | null; last_name: string | null; email: string }) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const localDay = (add = 0) => {
@@ -35,6 +35,7 @@ const PHASES = [
   { id: "questions", time: "15:00", title: "Their questions" },
   { id: "decide", time: "19:00", title: "Their decision" },
   { id: "share", time: "23:00", title: "Who else, and the affiliate program" },
+  { id: "website", time: "24:00", title: "Website Alignment" },
   { id: "close", time: "25:00", title: "Close" },
 ];
 
@@ -123,18 +124,32 @@ export default function PreFounderCall() {
     setLogin({ ask: false, busy: false, note: d.emailed ? `Done. ${d.isNewAccount ? "Account created" : "They already had an account"}; the login email went to ${d.email}. Six free months run to ${d.freeUntil}, and a billing task is on your list.` : `${d.isNewAccount ? "Account created" : "They already had an account"}, but the email did not send. Give them this link yourself: ${d.loginUrl || "(no link was made; use Forgot password)"}` });
   }
 
+  // Website Alignment: the Build checkout (a real Stripe link, made only when you press a button).
+  const [site, setSite] = useState({ busy: "" as "" | "full" | "two_pay", url: "", error: "", copied: false });
+  async function sendBuild(plan: "full" | "two_pay") {
+    if (!cardData || site.busy) return;
+    setSite((x) => ({ ...x, busy: plan, error: "", url: "" }));
+    const r = await fetch("/api/sales/website-build-checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, email: cardData.contact.email, fullName: nameOf(cardData.contact), sessionSource: "pre-founder-call" }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r?.ok || !d.url) return setSite((x) => ({ ...x, busy: "", error: d.error || "That didn't work. No checkout was made." }));
+    setSite((x) => ({ ...x, busy: "", url: d.url }));
+    setDraft((dr) => ({ ...dr, websiteBuild: "link-sent" }));
+  }
+
   async function save() {
     if (!sel || !draft.interest) return setMsg("Choose where they landed (Their decision) before saving.");
     setBusy(true);
     setMsg("");
     const notes = { ...draft.notes, concerns: [concernLine, draft.notes.concerns].filter(Boolean).join(". ") };
-    const r = await fetch("/api/pre-founder-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId: sel, interest: draft.interest, notes, affiliate: draft.affiliate, priceCorrected: draft.priceCorrected, about: draft.about }) });
+    const r = await fetch("/api/pre-founder-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId: sel, interest: draft.interest, notes, affiliate: draft.affiliate, priceCorrected: draft.priceCorrected, websiteReview: draft.websiteReview, websiteBuild: draft.websiteBuild, about: draft.about }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
       setBusy(false);
       return setMsg(d.error || "That didn't save. Your notes are still here; try again.");
     }
     const done: string[] = [`Note added to ${d.name}'s timeline`, "Pre-Founder fields filled in on their card", `Tagged ${(d.tags as string[]).filter((t) => t.startsWith("pre-founder")).join(", ")}`, d.bookingCompleted ? "Booking marked completed" : "Call logged as attended"];
+    if (draft.websiteReview) done.push("Website Alignment Review requested (tagged)");
+    if (draft.websiteBuild) done.push(draft.websiteBuild === "link-sent" ? "Website Build checkout link sent (tagged)" : "Interested in the Website Build (tagged)");
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const post = (body: Record<string, unknown>) => fetch("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tz, ...body }) });
     if (draft.interest === "ready") {
@@ -331,6 +346,32 @@ export default function PreFounderCall() {
             <p className={say}>&ldquo;Who comes to mind who&apos;s a business owner stuck being their own bottleneck? Send them to the free MasterClass, Thursday, October 8 at 5pm Mountain. And if someone you refer signs up with the Command Suite, you earn 10% commission through our affiliate program. Want me to set you up?&rdquo;</p>
             <label className="mt-3 flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"><input type="checkbox" checked={draft.affiliate} onChange={(e) => setDraft((d) => ({ ...d, affiliate: e.target.checked }))} /> They want the affiliate link</label>
             <div className="mt-3">{area("referrals", "People who came to mind", 2)}</div>
+          </section>
+
+          <section id="pf-website" className={card}>
+            <h2 className="mb-3 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Website Alignment <span className="text-xs font-normal text-[#7a8a99]">24:00</span></h2>
+            <p className={say}>&ldquo;One more thing that comes with your account: a free Website Alignment Review. We measure your website against the positioning, brand voice and offer you write in the Command Suite, and you get the five changes that matter most, within 14 days. If your site needs rebuilding, the Website Build is up to 5 pages, live within 30 days, $1,997 for founding clients (about $3,997 after the season), and I only take 5 a month.&rdquo;</p>
+            <p className={`${ask} mt-4`}>&ldquo;Where does your website stand today? Does it say what you actually do?&rdquo;</p>
+            <div className="mt-2">{area("website", "Their website, in their words", 2, "Outdated, DIY, no site yet...")}</div>
+            <div className="mt-3 space-y-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={draft.websiteReview} onChange={(e) => setDraft((d) => ({ ...d, websiteReview: e.target.checked }))} /> They want the free Website Alignment Review</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={draft.websiteBuild !== ""} disabled={draft.websiteBuild === "link-sent"} onChange={(e) => setDraft((d) => ({ ...d, websiteBuild: e.target.checked ? "interested" : "" }))} /> They are interested in the Website Build{draft.websiteBuild === "link-sent" ? " (link made)" : ""}</label>
+            </div>
+            <div className="mt-3 rounded-xl border border-[#2E7C83]/40 bg-[#2E7C83]/5 p-4">
+              <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Send the Website Build checkout</p>
+              <p className="mt-1 text-xs text-[#5a6472] dark:text-[#b8c2cf]">Only if they say yes. Makes a real Stripe checkout for {cardData.contact.email}; nothing is charged until they pay.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => sendBuild("full")} disabled={!!site.busy} className="rounded-lg bg-[#2E7C83] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{site.busy === "full" ? "Creating…" : "Pay in full: $1,997"}</button>
+                <button type="button" onClick={() => sendBuild("two_pay")} disabled={!!site.busy} className="rounded-lg border border-[#2E7C83] px-4 py-2 text-sm font-semibold text-[#2E7C83] disabled:opacity-60">{site.busy === "two_pay" ? "Creating…" : "2 payments: $998.50 each"}</button>
+              </div>
+              {site.error && <p className="mt-2 text-xs text-[#8a2f2f]">{site.error}</p>}
+              {site.url && (
+                <div className="mt-3 flex items-center gap-2">
+                  <p className="flex-1 truncate text-xs text-[#5a6472] dark:text-[#b8c2cf]">{site.url}</p>
+                  <button type="button" className="whitespace-nowrap text-xs font-semibold text-[#2E7C83] underline" onClick={() => { navigator.clipboard.writeText(site.url).catch(() => {}); setSite((x) => ({ ...x, copied: true })); setTimeout(() => setSite((x) => ({ ...x, copied: false })), 1600); }}>{site.copied ? "Copied" : "Copy link"}</button>
+                </div>
+              )}
+            </div>
           </section>
 
           <section id="pf-close" className={card}>
