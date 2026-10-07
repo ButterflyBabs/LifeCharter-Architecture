@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -65,6 +65,7 @@ export default function SequencesManager() {
   const [list, setList] = useState<Seq[] | null>(null);
   const [sender, setSender] = useState<Sender | null>(null);
   const [openId, setOpenId] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null); // the editor sits above a long list; scroll to it when one is picked
   const [seq, setSeq] = useState<Seq | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -197,7 +198,7 @@ export default function SequencesManager() {
           {(s) => (
             <button
               key={s.id}
-              onClick={() => { setOpenId(s.id); setForm(null); setPreview(null); }}
+              onClick={() => { setOpenId(s.id); setForm(null); setPreview(null); setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
               className={`w-full text-left rounded-xl border p-3 transition ${s.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
             >
               <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.name}</p>
@@ -214,7 +215,7 @@ export default function SequencesManager() {
         </div>
 
         {seq && (
-          <div className="space-y-4 min-w-0">
+          <div ref={editorRef} className="space-y-4 min-w-0 scroll-mt-4">
             <Card>
               <CardContent className="p-5 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">

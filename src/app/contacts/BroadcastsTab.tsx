@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Eye, Send, CalendarClock, Megaphone, Plus, Trash2, XCircle, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +75,12 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
   const [tz, setTz] = useState(OWNER_TZ);
   const [sender, setSender] = useState<Sender | null>(null);
   const [openId, setOpenId] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
+  // On a wide screen the editor sits above a long list; bring it into view when a broadcast is picked.
+  const pick = (id: string) => {
+    setOpenId(id);
+    setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
   const [newName, setNewName] = useState("");
 
   const load = useCallback(async () => {
@@ -126,7 +132,7 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
           {(b) => (
             <button
               key={b.id}
-              onClick={() => setOpenId(b.id)}
+              onClick={() => pick(b.id)}
               className={`w-full text-left rounded-xl border p-3 transition ${b.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
             >
               <p className="truncate font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{b.name}</p>
@@ -141,7 +147,7 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
           {list && !list.length && <p className="text-sm text-[#7a8a99]">No broadcasts yet.</p>}
         </div>
       </div>
-      <div className="min-w-0">
+      <div ref={editorRef} className="min-w-0 scroll-mt-4">
         {openId ? (
           <Editor key={openId} id={openId} offers={offersOf(list ?? [])} allTags={allTags} templates={templates} tz={tz} sender={sender} setMsg={setMsg} onChange={load} onGone={() => { setOpenId(""); void load(); }} />
         ) : (
