@@ -293,3 +293,18 @@ export async function listAccountRecordings(fromYmd: string, toYmd: string): Pro
   } while (next);
   return out;
 }
+
+// Registers someone for the (register-once) MasterClass meeting, exactly as if they had filled in Zoom's own
+// form: Zoom emails them their confirmation and personal join link. Zoom returns the same registrant when the
+// email is already registered. Needs the app scope meeting:write:registrant:admin.
+export async function addMeetingRegistrant(meetingId: string, r: { email: string; firstName: string; lastName: string }): Promise<{ id: string; joinUrl: string }> {
+  const token = await getAccessToken();
+  const res = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}/registrants`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: r.email, first_name: r.firstName, last_name: r.lastName || "-" }),
+  });
+  if (!res.ok) throw new Error(`Zoom add registrant failed: ${res.status} ${await res.text()}`);
+  const d = (await res.json()) as { registrant_id?: string; id?: string; join_url?: string };
+  return { id: d.registrant_id || d.id || "", joinUrl: d.join_url || "" };
+}
