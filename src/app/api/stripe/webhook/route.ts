@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
-import { creditSale } from "@/lib/affiliates";
+import { creditSale, implementationAmount } from "@/lib/affiliates";
 import { createServerClient as affDb } from "@/lib/supabase/server";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
@@ -89,7 +89,20 @@ export async function POST(req: NextRequest) {
             if (c) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
             if (c && typeof session.amount_total === "number") {
-              await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+              await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, implementationAmount: await implementationAmount(stripe, session.id).catch(() => null), stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+            }
+          }
+        }
+
+        // An implementation-fee Payment Link bought on a call (no metadata): credit whoever referred this person.
+        if (!meta.flow && !meta.userId) {
+          const buyer = session.customer_details?.email || session.customer_email;
+          const plan = buyer ? await ownerMasterPlanId().catch(() => null) : null;
+          if (buyer && plan) {
+            const impl = await implementationAmount(stripe, session.id).catch(() => null);
+            if (impl && impl > 0) {
+              const { data: person } = await affDb().from("seq_contacts").select("id").eq("master_plan_id", plan).eq("email", buyer.toLowerCase()).maybeSingle();
+              if (person) await creditSale(affDb(), plan, { contactId: person.id as string, description: "LifeCharter Command Suite (implementation fee)", amount: session.amount_total != null ? session.amount_total / 100 : impl, implementationAmount: impl, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
             }
           }
         }

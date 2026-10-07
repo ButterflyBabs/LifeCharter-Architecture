@@ -30,7 +30,7 @@ type Affiliate = {
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
 type Program = { id: string; name: string; website: string | null; my_link: string | null; my_code: string | null; commission_terms: string | null; login_url: string | null; status: string; notes: string | null; earnings: Earning[]; expected: number; paid: number };
-type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused"; expires_at?: string | null };
+type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused"; expires_at?: string | null; commission_on?: "all" | "implementation" };
 type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
 type Referral = { id: string; kind: string; source: string | null; created_at: string; seq_contacts: { id: string; first_name: string | null; last_name: string | null; email: string } | null };
 
@@ -344,7 +344,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
   const [sales, setSales] = useState<Sale[]>([]);
   const [clicks30, setClicks30] = useState(0);
   const [links, setLinks] = useState<ProductLink[]>([]);
-  const [nl, setNl] = useState({ product: "", landingUrl: "", code: "", rate: "" });
+  const [nl, setNl] = useState({ product: "", landingUrl: "", code: "", rate: "", commissionOn: "all" });
   const [edit, setEdit] = useState({ name: "", email: "", code: "", status: "active", defaultRate: "", payoutDelayDays: "", landingUrl: "", notes: "", agreementOn: "" });
   const [sale, setSale] = useState({ offerId: "", description: "", amount: "", saleDate: new Date().toISOString().slice(0, 10), rate: "" });
   const [refName, setRefName] = useState("");
@@ -401,6 +401,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
                   <span className="break-all text-xs text-[#5a6472]">{`${APP}/r/${l.code}`}</span>
                   <CopyButton text={`${APP}/r/${l.code}`} label="Copy" />
                   {l.rate != null && <span className="text-xs text-[#7a8a99]">{l.rate}%</span>}
+                  <select value={l.commission_on ?? "all"} onChange={async (e) => { if (await post({ action: "link-update", linkId: l.id, commissionOn: e.target.value })) void load(); }} className="rounded border border-[#1a2b4a]/20 px-1 py-0.5 text-xs" aria-label="Commission applies to"><option value="all">Earns on every credited payment</option><option value="implementation">Earns on the implementation fee only</option></select>
                   {l.expires_at && (() => { const left = Math.ceil((new Date(l.expires_at).getTime() - Date.now()) / 86_400_000); return <span className={`text-xs ${left <= 0 ? "font-semibold text-[#8a2f2f]" : left <= 30 ? "font-semibold text-[#6b5410]" : "text-[#7a8a99]"}`}>{left <= 0 ? "Expired" : `Expires ${day(l.expires_at)}`}</span>; })()}
                   <button onClick={async () => { if (await post({ action: "link-renew", linkId: l.id })) void load(); }} className="rounded-full border border-[#1a2b4a]/20 px-2 py-0.5 text-xs">Renew 365 days</button>
                   <button onClick={async () => { if (await post({ action: "link-update", linkId: l.id, status: l.status === "active" ? "paused" : "active" })) void load(); }} className={`rounded-full px-2 py-0.5 text-xs ${l.status === "active" ? "bg-green-500/10 text-green-700" : "bg-[#c9a227]/15 text-[#6b5410]"}`}>{l.status === "active" ? "Active" : "Paused"}</button>
@@ -411,11 +412,12 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
           ) : (
             <p className="mt-1 text-xs text-[#7a8a99]">No product links yet. The general link above works for everything until you add one.</p>
           )}
-          <div className="mt-2 grid gap-2 sm:grid-cols-4">
+          <div className="mt-2 grid gap-2 sm:grid-cols-5">
             <Input value={nl.product} onChange={(e) => setNl({ ...nl, product: e.target.value })} placeholder="Product (e.g. MasterClass)" aria-label="Product" />
             <Input value={nl.landingUrl} onChange={(e) => setNl({ ...nl, landingUrl: e.target.value })} placeholder="Where it goes (https://…)" aria-label="Where the link goes" />
             <Input value={nl.code} onChange={(e) => setNl({ ...nl, code: e.target.value })} placeholder="Code (optional)" aria-label="Link code" />
-            <Button disabled={!nl.product.trim()} onClick={async () => { const r = await post({ action: "link-add", affiliateId: a.id, ...nl, rate: nl.rate === "" ? null : Number(nl.rate) }); if (r) { setNl({ product: "", landingUrl: "", code: "", rate: "" }); void load(); } }}>Add link</Button>
+            <select value={nl.commissionOn} onChange={(e) => setNl({ ...nl, commissionOn: e.target.value })} className="rounded border border-[#1a2b4a]/20 px-2 text-sm" aria-label="Commission applies to"><option value="all">Every credited payment</option><option value="implementation">Implementation fee only</option></select>
+            <Button disabled={!nl.product.trim()} onClick={async () => { const r = await post({ action: "link-add", affiliateId: a.id, ...nl, rate: nl.rate === "" ? null : Number(nl.rate) }); if (r) { setNl({ product: "", landingUrl: "", code: "", rate: "", commissionOn: "all" }); void load(); } }}>Add link</Button>
           </div>
         </div>
 

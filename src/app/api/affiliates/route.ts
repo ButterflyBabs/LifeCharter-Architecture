@@ -173,7 +173,7 @@ export async function POST(request: Request) {
       const product = str(b.product, 120);
       if (!product) return NextResponse.json({ error: "Name the product this link is for." }, { status: 400 });
       const code = await uniqueCode(db, str(b.code, 40) || `${f.code}-${product}`);
-      const { data, error } = await db.from("affiliate_links").insert({ affiliate_id: f.id, master_plan_id: a.planId, product, code, landing_url: url(b.landingUrl), rate: pct(b.rate) }).select("*").single();
+      const { data, error } = await db.from("affiliate_links").insert({ affiliate_id: f.id, master_plan_id: a.planId, product, code, landing_url: url(b.landingUrl), rate: pct(b.rate), commission_on: b.commissionOn === "implementation" ? "implementation" : "all" }).select("*").single();
       if (error) return NextResponse.json({ error: "Couldn't add the link." }, { status: 500 });
       return NextResponse.json({ link: data });
     }
@@ -184,6 +184,7 @@ export async function POST(request: Request) {
       if (str(b.product, 120)) patch.product = str(b.product, 120);
       if (b.landingUrl !== undefined) patch.landing_url = url(b.landingUrl);
       if (b.rate !== undefined) patch.rate = pct(b.rate);
+      if (b.commissionOn === "implementation" || b.commissionOn === "all") patch.commission_on = b.commissionOn;
       if (b.status === "active" || b.status === "paused") patch.status = b.status;
       const { data } = await db.from("affiliate_links").update(patch).eq("id", l.id).select("*").single();
       return NextResponse.json({ link: data });

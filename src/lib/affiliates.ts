@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type Stripe from "stripe";
 import { logEvent } from "@/lib/crm";
 
 // Affiliates: people promoting an account's offers. Each has a tracked link
@@ -42,6 +43,27 @@ export async function rateFor(db: Db, affiliateId: string, offerId: string | nul
 }
 
 const money = (n: number) => Math.round(n * 100) / 100;
+
+// The Command Suite implementation fee prices (Starter, Growth, VIP). Lines are also recognised by name,
+// so a Payment Link made from another price still counts.
+const IMPLEMENTATION_PRICE_IDS = ["price_1UFx60LtotgP5J18Vih3WrJs", "price_1UFx7VLtotgP5J18pOPwa8yO", "price_1UFx9vLtotgP5J18LDbeFXIE"];
+
+// What the customer actually paid toward the implementation fee on a Checkout Session (after any discount),
+// in dollars, or null when the session has no implementation line.
+export async function implementationAmount(stripe: Stripe, sessionId: string): Promise<number | null> {
+  const items = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 20, expand: ["data.price.product"] });
+  let cents = 0;
+  let found = false;
+  for (const li of items.data) {
+    const prod = li.price?.product;
+    const name = `${li.description ?? ""} ${typeof prod === "object" && prod && "name" in prod ? (prod as Stripe.Product).name : ""}`;
+    if ((li.price?.id && IMPLEMENTATION_PRICE_IDS.includes(li.price.id)) || /implementation/i.test(name)) {
+      found = true;
+      cents += li.amount_total ?? 0;
+    }
+  }
+  return found ? cents / 100 : null;
+}
 
 // The first day a commission can be paid: the sale date plus the affiliate's hold (null when they have none).
 export async function payableOn(db: Db, affiliateId: string, saleDate: string): Promise<string | null> {
@@ -91,7 +113,7 @@ export async function recordReferral(db: Db, planId: string, affiliate: Affiliat
 export async function creditSale(
   db: Db,
   planId: string,
-  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
+  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; implementationAmount?: number | null; offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
 ) {
   let affiliateId: string | null = null;
   let linkId: string | null = null;
@@ -106,6 +128,15 @@ export async function creditSale(
     linkId = (c?.referred_by_link_id as string) ?? null;
   }
   if (!affiliateId) return null;
+  // A link that earns on the implementation fee only credits that part of a payment, and nothing else.
+  let amount = input.amount;
+  if (linkId) {
+    const { data: lk } = await db.from("affiliate_links").select("commission_on").eq("id", linkId).maybeSingle();
+    if (lk?.commission_on === "implementation") {
+      if (!input.implementationAmount || input.implementationAmount <= 0) return null;
+      amount = input.implementationAmount;
+    }
+  }
   if (input.stripeRef) {
     const { data: dup } = await db.from("affiliate_sales").select("id").eq("stripe_ref", input.stripeRef).maybeSingle();
     if (dup) return dup;
@@ -127,9 +158,9 @@ export async function creditSale(
       offer_id: offerId,
       link_id: linkId,
       description: input.description.slice(0, 300),
-      amount: money(input.amount),
+      amount: money(amount),
       rate,
-      commission: rate != null ? money((input.amount * rate) / 100) : 0,
+      commission: rate != null ? money((amount * rate) / 100) : 0,
       sale_date: saleDate,
       payable_on: await payableOn(db, affiliateId, saleDate),
       // Automatic sales with no rate yet wait for a quick review.
