@@ -26,6 +26,7 @@ type Affiliate = {
   owed: number;
   paid: number;
   review: number;
+  links?: { id: string; product: string; code: string; status: string }[];
 };
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
@@ -243,7 +244,11 @@ export default function Affiliates() {
                         {a.email && <span className="block text-xs text-[#7a8a99]">{a.email}</span>}
                       </button>
                     </td>
-                    <td className="p-3 whitespace-nowrap"><span className="mr-2 text-xs text-[#5a6472]">/r/{a.code}</span><CopyButton text={`${APP}/r/${a.code}`} /></td>
+                    <td className="p-3">
+                      {a.links?.length ? a.links.map((l) => (
+                        <div key={l.id} className="whitespace-nowrap"><span className="mr-2 text-xs text-[#5a6472]">{l.product} · /r/{l.code}{l.status === "paused" ? " (paused)" : ""}</span><CopyButton text={`${APP}/r/${l.code}`} /></div>
+                      )) : <div className="whitespace-nowrap"><span className="mr-2 text-xs text-[#5a6472]">/r/{a.code}</span><CopyButton text={`${APP}/r/${a.code}`} /></div>}
+                    </td>
                     <td className="p-3 text-right">{a.clicks}</td>
                     <td className="p-3 text-right">{a.referrals}</td>
                     <td className="p-3 text-right">{a.salesCount ? `${a.salesCount} · ${money(a.revenue)}` : "0"}</td>

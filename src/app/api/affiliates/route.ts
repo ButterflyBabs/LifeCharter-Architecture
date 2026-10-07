@@ -51,11 +51,13 @@ export async function GET(request: Request) {
     db.from("affiliate_sales").select("affiliate_id, commission, amount, status").eq("master_plan_id", a.planId).limit(20000),
     db.from("affiliate_program_earnings").select("*").eq("master_plan_id", a.planId).order("earned_on", { ascending: false }),
   ]);
+  const { data: allLinks } = await db.from("affiliate_links").select("id, affiliate_id, product, code, status").eq("master_plan_id", a.planId).order("created_at");
   const count = (rows: { affiliate_id: string }[] | null, id: string) => (rows ?? []).filter((r) => r.affiliate_id === id).length;
   const list = (affs ?? []).map((f) => {
     const mine = (sales ?? []).filter((s) => s.affiliate_id === f.id && s.status !== "void");
     return {
       ...f,
+      links: (allLinks ?? []).filter((l) => l.affiliate_id === f.id),
       clicks: count(clicks as { affiliate_id: string }[], f.id as string),
       referrals: count(refs as { affiliate_id: string }[], f.id as string),
       salesCount: mine.length,
