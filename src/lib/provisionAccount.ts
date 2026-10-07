@@ -24,7 +24,8 @@ function serviceClient() {
 export async function provisionAccountForEmail(
   email: string,
   planId: string,
-  fullName?: string | null
+  fullName?: string | null,
+  opts: { skipWelcome?: boolean } = {}
 ): Promise<{ userId: string; workspaceId: string | null; isNewAccount: boolean }> {
   const supabase = serviceClient();
   const normalizedEmail = email.trim().toLowerCase();
@@ -111,7 +112,7 @@ export async function provisionAccountForEmail(
 
   await joinCommandSuiteCommunity(supabase, userId, displayName);
   // Email 1 of the welcome sequence (no-op until WELCOME_EMAILS_ENABLED=true; sends once).
-  await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
+  if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
 
   return { userId, workspaceId: workspace.id, isNewAccount: true };
 }

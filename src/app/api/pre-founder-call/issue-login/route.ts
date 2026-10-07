@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         html: `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;max-width:560px;color:#0F1A38">
 <p>${first ? `Hi ${esc(first)},` : "Hi there,"}</p>
 <p>Welcome, Pre-Founder. Your LifeCharter Command Suite account is ready.</p>
-<p>Press the button below to choose your password and sign in. The link works once and expires after a day; if it has expired, use "Forgot password" on the sign-in page with this email address and a fresh one comes to you.</p>
+<p>Press the button below to choose your password and sign in. The link works once and expires after an hour; if it has expired, use "Forgot password" on the sign-in page with this email address and a fresh one comes to you.</p>
 <p style="margin:22px 0"><a href="${esc(loginUrl)}" style="display:inline-block;background:#0F1A38;color:#E9D7A9;font-weight:bold;padding:12px 22px;border-radius:999px;text-decoration:none">Choose my password and sign in</a></p>
 <p>Your first step inside is <strong>Set up Suite</strong>, which guides you through everything in order. After that, sign in any time at <a href="${APP_URL}/login">${APP_URL.replace("https://", "")}/login</a>.</p>
 <p>Questions? Just reply to this email.</p>
