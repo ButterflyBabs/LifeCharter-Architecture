@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { logEvent } from "@/lib/crm";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
-import { DEFAULT_SUBJECT, defaultBody, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
+import { DEFAULT_SUBJECT, bodyFor, type EmailKind, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
 import { crmAccount } from "../crm/guard";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,9 @@ export const dynamic = "force-dynamic";
 // The automatic welcome series is held for these people (its Day 1 email says to start the Brain assessment
 // today); its six keys are recorded as claimed so none go out.
 //   GET                                   → the people and their emails, each with their MasterClass link
-//   POST { action: "add", email, oneToOne? }       → a person from Contacts, with the starting email
+//   POST { action: "add", email, kind?, when? }    → a person from Contacts, with the starting email for their kind:
+//        "pre-founder" (waits for the 1:1), "client" (waits for the New Client Implementation Call) or "team"
+//        (a LifeCharter team member exploring their own account: no assessments, the setup gate is switched off)
 //   POST { action: "save", id, subject, body, oneToOne? } → saves an edit (back to Draft: approve again)
 //   POST { action: "approve", id }                 → approved (needs {{password_link}} in the text)
 //   POST { action: "preview", id }                 → the email as it will look (nothing created or sent)
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
   const db = createServerClient();
   const row = async () => {
     const { data } = await db.from("new_client_emails").select("*").eq("id", str(b.id, 40)).eq("master_plan_id", a.planId).maybeSingle();
-    return data as { id: string; contact_id: string | null; email: string; name: string | null; subject: string; body: string; one_to_one: string | null; status: string; sent_result: string | null } | null;
+    return data as { id: string; contact_id: string | null; email: string; name: string | null; subject: string; body: string; one_to_one: string | null; status: string; sent_result: string | null; skip_setup_gate: boolean } | null;
   };
   const firstOf = (name: string | null, email: string) => (name || "").trim().split(/\s+/)[0] || email.split("@")[0];
 
@@ -67,8 +69,9 @@ export async function POST(request: Request) {
       const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name").eq("master_plan_id", a.planId).eq("email", email).maybeSingle();
       if (!c) return NextResponse.json({ error: "That email isn't in your Contacts." }, { status: 404 });
       const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
-      const oneToOne = str(b.oneToOne, 120) || null;
-      const { data, error } = await db.from("new_client_emails").upsert({ master_plan_id: a.planId, contact_id: c.id, email, name, subject: DEFAULT_SUBJECT, body: defaultBody(oneToOne), one_to_one: oneToOne }, { onConflict: "master_plan_id,email", ignoreDuplicates: true }).select("id").maybeSingle();
+      const kind: EmailKind = b.kind === "client" || b.kind === "team" ? b.kind : "pre-founder";
+      const oneToOne = str(b.when ?? b.oneToOne, 120) || null;
+      const { data, error } = await db.from("new_client_emails").upsert({ master_plan_id: a.planId, contact_id: c.id, email, name, subject: DEFAULT_SUBJECT, body: bodyFor(kind, oneToOne), one_to_one: oneToOne, kind, skip_setup_gate: kind === "team" }, { onConflict: "master_plan_id,email", ignoreDuplicates: true }).select("id").maybeSingle();
       if (error) return NextResponse.json({ error: "Couldn't add them." }, { status: 500 });
       return NextResponse.json({ ok: true, id: data?.id ?? null });
     }
@@ -125,6 +128,11 @@ export async function POST(request: Request) {
         await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
       }
       const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+      // Team members who only explore their own account: switch the Getting Started gate off for this account.
+      if (r.skip_setup_gate) {
+        const { data: prof } = await db.from("profiles").select("preferences").eq("email", r.email).maybeSingle();
+        await db.from("profiles").update({ preferences: { ...((prof?.preferences as Record<string, unknown>) ?? {}), setupBypass: true } }).eq("email", r.email);
+      }
       const { data: gen } = await admin.auth.admin.generateLink({ type: "recovery", email: r.email, options: { redirectTo: `${APP_URL}/auth/callback?next=/reset-password` } });
       const loginUrl = gen?.properties?.action_link ?? null;
       const emailed = loginUrl ? await sendRendered(r.email, renderAccountEmail(r.subject, r.body, { firstName: firstOf(r.name, r.email), loginUrl, masterclassLink: await mcLink(db, a.planId, r.contact_id) })) : false;

@@ -12,10 +12,9 @@ export const DEFAULT_SUBJECT = "Your LifeCharter Command Suite account is ready"
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-// The starting text for a new person. oneToOne reads like "Thursday, October 8 at 9:00 AM Mountain" (blank when not booked yet).
-export function defaultBody(oneToOne?: string | null): string {
-  const when = oneToOne ? `at our 1:1, ${oneToOne}` : "at our 1:1";
-  return `{{greeting}}
+export type EmailKind = "pre-founder" | "client" | "team";
+
+const OPEN = `{{greeting}}
 
 Your LifeCharter Command Suite account is ready, and I'm so glad you're here.
 
@@ -23,20 +22,54 @@ Your LifeCharter Command Suite account is ready, and I'm so glad you're here.
 
 {{password_link}}
 
-The link works once and expires after an hour. If it has expired, go to lccommandsuite.com/login, click "Forgot or set your password?", enter this email address, and a fresh link comes straight to you. After that, you always sign in at lccommandsuite.com/login with this email and your new password.
+The link works once and expires after an hour. If it has expired, go to lccommandsuite.com/login, click "Forgot or set your password?", enter this email address, and a fresh link comes straight to you. After that, you always sign in at lccommandsuite.com/login with this email and your new password.`;
 
-**Step 2: Then pause and wait for me.** The first page you'll see is Set up Suite, and it will ask you to begin your assessments (Brain, Soul and Profit). Please don't start them yet. I want us to go through them together ${when}, so they're set up right from the start. If you'd like to look around first, choose "skip for now" on that page.
-
-**Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
-Share it with the people in your world. Anyone who registers through it is tracked back to you, and I'll walk you through how it works at our 1:1.
-
-Questions? Just reply to this email.
+const CLOSE = `Questions? Just reply to this email.
 
 Head up - Wings out,
 
 AmiLynne "Babs" Carroll
 Executive, Alignment Architect, and Chief Travel Partner
 LifeCharter by AmiLynne Carroll`;
+
+// A paying client: they wait for their New Client Implementation Call (it may be a group call) before the assessments.
+// callWhen reads like "Thursday, October 15 at 5:00 PM Mountain" (blank when not set yet).
+export function defaultClientBody(callWhen?: string | null): string {
+  const when = callWhen ? `on your New Client Implementation Call, ${callWhen}` : "on your New Client Implementation Call";
+  return `${OPEN}
+
+**Step 2: Then pause and wait for your New Client Implementation Call.** The first page you'll see is Set up Suite, and it will ask you to begin your assessments (Brain, Soul and Profit). Please don't start them yet. We'll go through them together ${when}, so they're set up right from the start. If you'd like to look around first, choose "skip for now" on that page.
+
+${CLOSE}`;
+}
+
+// A LifeCharter team member with their own account to test and explore: no assessments or setup required.
+export function defaultTeamBody(): string {
+  return `${OPEN}
+
+**Step 2: Explore.** This is your own account to look around in, test and play with. You don't need to complete Getting Started or the assessments to use it, so that first-page reminder is switched off for you.
+
+**Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
+Share it with the people in your world. Anyone who registers through it is tracked back to you.
+
+${CLOSE}`;
+}
+
+// A Pre-Founder: oneToOne reads like "Thursday, October 8 at 9:00 AM Mountain" (blank when not booked yet).
+export function defaultBody(oneToOne?: string | null): string {
+  const when = oneToOne ? `at our 1:1, ${oneToOne}` : "at our 1:1";
+  return `${OPEN}
+
+**Step 2: Then pause and wait for me.** The first page you'll see is Set up Suite, and it will ask you to begin your assessments (Brain, Soul and Profit). Please don't start them yet. I want us to go through them together ${when}, so they're set up right from the start. If you'd like to look around first, choose "skip for now" on that page.
+
+**Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
+Share it with the people in your world. Anyone who registers through it is tracked back to you, and I'll walk you through how it works at our 1:1.
+
+${CLOSE}`;
+}
+
+export function bodyFor(kind: EmailKind, when?: string | null): string {
+  return kind === "client" ? defaultClientBody(when) : kind === "team" ? defaultTeamBody() : defaultBody(when);
 }
 
 export type Merge = { firstName: string; loginUrl: string; masterclassLink: string | null };

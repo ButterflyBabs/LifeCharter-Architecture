@@ -18,3 +18,7 @@ create table if not exists new_client_emails (
   unique (master_plan_id, email)
 );
 alter table new_client_emails enable row level security;
+
+-- 2026-10-07: what kind of person the email is for, and whether their Getting Started gate is switched off.
+alter table new_client_emails add column if not exists kind text not null default 'pre-founder' check (kind in ('pre-founder','client','team'));
+alter table new_client_emails add column if not exists skip_setup_gate boolean not null default false;
