@@ -5,6 +5,7 @@ import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { logEvent } from "@/lib/crm";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
 import { DEFAULT_SUBJECT, bodyFor, type EmailKind, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
+import { ensureClientTemplate, STANDARD_CLIENT } from "@/lib/email/clientTemplate";
 import { crmAccount } from "../crm/guard";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +34,14 @@ export async function GET() {
   if ("denied" in a) return a.denied;
   if (!a.isArchitect) return NextResponse.json({ error: "This is private." }, { status: 403 });
   const db = createServerClient();
+  await ensureClientTemplate(db, a.planId);
   const { data: rows } = await db.from("new_client_emails").select("*").eq("master_plan_id", a.planId).order("created_at");
   const out = [];
-  for (const r of rows ?? []) {
+  for (const r of [...(rows ?? [])].sort((x, y) => Number(y.email === STANDARD_CLIENT) - Number(x.email === STANDARD_CLIENT))) {
+    if (r.email === STANDARD_CLIENT) {
+      out.push({ ...r, masterclassLink: null, hasAccount: false, template: true });
+      continue;
+    }
     const link = await mcLink(db, a.planId, r.contact_id as string | null);
     const { data: plan } = await db.from("client_master_plans").select("id").eq("client_email", r.email).limit(1).maybeSingle();
     out.push({ ...r, masterclassLink: link, hasAccount: Boolean(plan) });
@@ -103,7 +109,7 @@ export async function POST(request: Request) {
     case "test": {
       const r = await row();
       if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      const m = { firstName: firstOf(r.name, r.email), loginUrl: `${APP_URL}/login`, masterclassLink: await mcLink(db, a.planId, r.contact_id) };
+      const m = { firstName: r.email === STANDARD_CLIENT ? "Sample" : firstOf(r.name, r.email), loginUrl: `${APP_URL}/login`, masterclassLink: await mcLink(db, a.planId, r.contact_id) };
       const out = renderAccountEmail(r.subject, r.body, m);
       if (b.action === "preview") return NextResponse.json({ ...out, to: r.email, copyTo: ACCOUNT_EMAIL_COPY_TO });
       const ok = await sendRendered(a.userEmail || ACCOUNT_EMAIL_COPY_TO, { ...out, subject: `TEST (not sent to ${r.name || r.email}) · ${out.subject}`, html: `<p style="font-family:Arial;color:#8a2f2f"><b>This is a test for you only. The password button below is a stand-in and does nothing.</b></p>${out.html}` }, { bcc: false });
@@ -112,6 +118,7 @@ export async function POST(request: Request) {
     case "send": {
       const r = await row();
       if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.email === STANDARD_CLIENT) return NextResponse.json({ error: "This is the standard email. It goes out by itself from the Sales Reference button." }, { status: 400 });
       if (r.status !== "approved") return NextResponse.json({ error: "Approve it first." }, { status: 409 });
       const { data: have } = await db.from("client_master_plans").select("id").eq("client_email", r.email).limit(1).maybeSingle();
       // A retry after the account was made but the email failed only resends the email.
@@ -147,7 +154,7 @@ export async function POST(request: Request) {
     case "remove": {
       const r = await row();
       if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      if (r.status === "sent") return NextResponse.json({ error: "This one has already been sent." }, { status: 409 });
+      if (r.status === "sent" || r.email === STANDARD_CLIENT) return NextResponse.json({ error: "This one can't be removed." }, { status: 409 });
       await db.from("new_client_emails").delete().eq("id", r.id);
       return NextResponse.json({ ok: true });
     }

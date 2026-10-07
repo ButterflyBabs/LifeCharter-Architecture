@@ -99,13 +99,13 @@ export function renderAccountEmail(subject: string, body: string, m: Merge): { s
 }
 
 // Sends it, with the hidden copy to AmiLynne. Returns whether Resend accepted it.
-export async function sendRendered(to: string, r: { subject: string; html: string; text: string }, opts: { bcc?: boolean } = {}): Promise<boolean> {
+export async function sendRendered(to: string, r: { subject: string; html: string; text: string }, opts: { bcc?: boolean; extraBcc?: string[] } = {}): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM, to, ...(opts.bcc === false ? {} : { bcc: [ACCOUNT_EMAIL_COPY_TO] }), reply_to: REPLY_TO, subject: r.subject, html: r.html, text: r.text }),
+    body: JSON.stringify({ from: FROM, to, ...(opts.bcc === false ? {} : { bcc: Array.from(new Set([ACCOUNT_EMAIL_COPY_TO, ...(opts.extraBcc ?? [])].map((x) => x.toLowerCase()))).filter((x) => x !== to.toLowerCase()) }), reply_to: REPLY_TO, subject: r.subject, html: r.html, text: r.text }),
   }).catch(() => null);
   if (res && !res.ok) console.error("account-ready email failed:", res.status, await res.text().catch(() => ""));
   return Boolean(res?.ok);

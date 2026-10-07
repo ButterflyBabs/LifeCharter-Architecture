@@ -14,6 +14,7 @@ interface Person {
   sent_at: string | null;
   masterclassLink: string | null;
   hasAccount: boolean;
+  template?: boolean;
 }
 
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
@@ -34,6 +35,7 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const locked = p.status === "sent";
+  const tpl = Boolean(p.template);
 
   const preview = useCallback(async () => {
     const { ok, d } = await api({ action: "preview", id: p.id });
@@ -60,8 +62,8 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
     <section className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 dark:bg-[#1a2b4a]/40">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name || p.email}</h2>
-          <p className="text-sm text-[#7a8a99]">{p.email} · stand-alone VIP account{p.masterclassLink ? <> · MasterClass link <span className="select-all">{p.masterclassLink}</span></> : ""}</p>
+          <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{tpl ? "Standard email · every new paying client" : p.name || p.email}</h2>
+          <p className="text-sm text-[#7a8a99]">{tpl ? "Goes out by itself when the New Client button on Sales Reference is pressed (to the client, with copies to you and to whoever pressed it). Nothing is sent until you approve it." : <>{p.email} · stand-alone VIP account{p.masterclassLink ? <> · MasterClass link <span className="select-all">{p.masterclassLink}</span></> : ""}</>}</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pill}`}>{p.status === "draft" ? "Draft: needs your approval" : p.status === "approved" ? "Approved" : "Sent"}</span>
       </div>
@@ -82,7 +84,7 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
         <div className="mt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">Subject</p>
           <p className="mb-3 text-[15px] font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.subject}</p>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">What {first} will receive (the password button is a stand-in here)</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{tpl ? "What each new client will receive (name and password button are stand-ins here)" : <>What {first} will receive (the password button is a stand-in here)</>}</p>
           <div className="mt-1 rounded-xl border border-[#1a2b4a]/10 bg-[#faf8f3] p-5 text-[#2E3A46]" dangerouslySetInnerHTML={{ __html: html }} />
           <p className="mt-2 text-xs text-[#7a8a99]">A copy always goes to {copyTo} as a hidden copy.</p>
         </div>
@@ -94,14 +96,14 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
           {p.status === "draft" && <button disabled={busy} className={`${btn} bg-[#2c6b3f] text-white`} onClick={() => run(() => api({ action: "approve", id: p.id }), "Approved.")}><CheckCircle2 className="mr-1 inline h-4 w-4" />Approve</button>}
           {p.status === "approved" && <button disabled={busy} className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => run(() => api({ action: "unapprove", id: p.id }), "Back to draft.")}>Take back my approval</button>}
           {!locked && <button disabled={busy} className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => run(() => api({ action: "test", id: p.id }), `A test was emailed to you only. ${p.name || p.email} received nothing.`)}><Mail className="mr-1 inline h-4 w-4" />Email me a test</button>}
-          {p.status === "approved" && !confirm && <button disabled={busy} className={`${btn} bg-[#1a2b4a] text-[#F8F5F0] dark:bg-[#c9a227] dark:text-[#1a2b4a]`} onClick={() => setConfirm(true)}>Create account and email {first}</button>}
-          {p.status === "approved" && confirm && (
+          {p.status === "approved" && !tpl && !confirm && <button disabled={busy} className={`${btn} bg-[#1a2b4a] text-[#F8F5F0] dark:bg-[#c9a227] dark:text-[#1a2b4a]`} onClick={() => setConfirm(true)}>Create account and email {first}</button>}
+          {p.status === "approved" && !tpl && confirm && (
             <>
               <button disabled={busy} className={`${btn} bg-[#8a2f2f] text-white`} onClick={() => run(() => api({ action: "send", id: p.id }), `Done. ${p.name || p.email}'s account is created and the email is on its way.`)}>{busy ? "Working…" : `Yes: create ${first}'s account and send now`}</button>
               <button className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => setConfirm(false)}>Not yet</button>
             </>
           )}
-          {p.status === "draft" && <button disabled={busy} className="ml-auto text-sm text-[#8a2f2f] underline" onClick={() => { if (window.confirm(`Remove ${p.name || p.email} from this page?`)) void run(() => api({ action: "remove", id: p.id }), "Removed."); }}>Remove</button>}
+          {p.status === "draft" && !tpl && <button disabled={busy} className="ml-auto text-sm text-[#8a2f2f] underline" onClick={() => { if (window.confirm(`Remove ${p.name || p.email} from this page?`)) void run(() => api({ action: "remove", id: p.id }), "Removed."); }}>Remove</button>}
         </div>
       )}
       {p.status === "sent" && <p className="mt-3 text-sm text-[#2c6b3f]">Sent{p.sent_at ? ` ${new Date(p.sent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : ""}. Their account exists, and Day 1 of First 30 Days started when it was created.</p>}

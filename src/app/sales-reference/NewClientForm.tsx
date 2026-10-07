@@ -59,7 +59,7 @@ const DIMENSIONS = [
   "Leadership", "Vision", "Product", "Client Experience", "Legal", "Sustainability",
 ];
 
-type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null } | null;
+type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null; emailed?: boolean; standardEmailApproved?: boolean } | null;
 
 export function NewClientForm() {
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -139,17 +139,26 @@ export function NewClientForm() {
         <p className="mt-2 text-sm text-[#b8a898]">
           Contacts:{" "}
           {result.contactSaved ? (
-            <span className="text-[#7FC4C9]">saved and tagged command-suite-customer</span>
+            <span className="text-[#7FC4C9]">saved as a new LCCS paying client (tagged command-suite-customer and lccs-paying-client)</span>
           ) : (
             <span className="text-[#E3C27C]">couldn&apos;t update their contact — add the tag from Contacts</span>
           )}
         </p>
 
+        {result.emailed && (
+          <p className="mt-3 rounded-lg bg-[#2c6b3f]/20 px-3 py-2 text-sm text-[#bfe3c9]">
+            The account-ready email is on its way to {form.loginEmail || form.email}, with the password link. Copies went to AmiLynne and to you.
+          </p>
+        )}
+        {result.isNewAccount && result.standardEmailApproved && !result.emailed && (
+          <p className="mt-3 rounded-lg bg-[#8a2f2f]/25 px-3 py-2 text-sm text-[#f3c4c4]">The account was created, but the email did NOT send. Send them the link below yourself and tell AmiLynne.</p>
+        )}
         {result.loginUrl ? (
           <div className="mt-4">
             <p className="text-xs text-[#b8a898] mb-2">
-              Send this link to the client — it lets them set their own password and sign in.
-              There&apos;s no automatic email yet, so copy and send it yourself.
+              {result.emailed
+                ? "A backup copy of their password link, in case it is needed. It works once and expires after an hour."
+                : "Send this link to the client — it lets them set their own password and sign in. The automatic email isn't switched on yet, so copy and send it yourself."}
             </p>
             <div className="flex gap-2 flex-wrap">
               <input

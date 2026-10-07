@@ -3,6 +3,10 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/housePlan";
+import { sessionUser } from "@/lib/authz";
+import { approvedClientTemplate } from "@/lib/email/clientTemplate";
+import { renderAccountEmail, sendRendered } from "@/lib/email/accountReadyEmail";
+import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
 
 /**
  * Called from the New Client form on /sales-reference after Marcello closes
@@ -15,8 +19,14 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
  * 2. Provision their Command Suite account — same provisionAccountForEmail
  *    helper the self-serve flow uses, so this is idempotent and safe even
  *    if they already have an account (e.g. a Starter customer upgrading).
- * 3. Save them in Babs's own Suite contacts, tagged command-suite-customer,
- *    with "Onboarded as a Command Suite client" on their timeline.
+ * 3. Save them in Babs's own Suite contacts, tagged command-suite-customer and
+ *    lccs-paying-client, with "New LCCS paying client" on their timeline.
+ * 4. Once Babs has approved the standard client email (New Client Accounts page),
+ *    email it to a NEW client with their one-time password link, copies to Babs and to
+ *    whoever pressed the button. That email replaces the automatic welcome email 1, and
+ *    the welcome series' Day 1 email ("start the Brain assessment today") is held, because
+ *    new clients wait for their New Client Implementation Call. Until it is approved,
+ *    nothing changes: the login link is shown on screen, as before.
  */
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
@@ -62,6 +72,10 @@ export async function POST(req: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    const houseId = await ownerMasterPlanId().catch(() => null);
+    const tpl = houseId ? await approvedClientTemplate(supabase, houseId).catch(() => null) : null;
+    const presser = (await sessionUser().catch(() => null))?.email?.toLowerCase() || null;
+
     // 1. Provision the account first — need the user id before we can link the
     // submission row to it. Idempotent: an existing client (e.g. upgrading, or
     // Marcello correcting/adding detail on a follow-up call) gets updated in
@@ -69,8 +83,12 @@ export async function POST(req: NextRequest) {
     const { userId, workspaceId, isNewAccount } = await provisionAccountForEmail(
       body.loginEmail || body.email,
       body.tier,
-      body.fullName
+      body.fullName,
+      { skipWelcome: Boolean(tpl) }
     );
+    if (tpl && isNewAccount) {
+      await supabase.from("lccs_welcome_log").upsert(["welcome", "day1"].filter((k) => WELCOME_EMAILS.some((w) => w.key === k)).map((k) => ({ user_id: userId, email_key: k })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+    }
 
     // 2. Store the full intake record.
     const { error: insertError } = await supabase.from("client_intake_submissions").insert({
@@ -166,10 +184,10 @@ export async function POST(req: NextRequest) {
           phone: body.phone || null,
           timezone: body.timezone || null,
           source: body.sessionSource || "sales-onboarding",
-          tags: ["command-suite-customer"],
+          tags: ["command-suite-customer", "lccs-paying-client"],
         });
         if (c) {
-          await logEvent(planId, c.id, "manual", "Onboarded as a Command Suite client", {
+          await logEvent(planId, c.id, "manual", `New LCCS paying client (${body.tier})`, {
             tier: body.tier,
             companyName: body.companyName || null,
             sessionSource: body.sessionSource || null,
@@ -192,7 +210,19 @@ export async function POST(req: NextRequest) {
 
     if (linkError || !linkData?.properties?.action_link) {
       console.error("generateLink failed:", linkError?.message);
-      return NextResponse.json({ success: true, isNewAccount, contactSaved, loginUrl: null });
+      return NextResponse.json({ success: true, isNewAccount, contactSaved, loginUrl: null, emailed: false });
+    }
+
+    // 5. The approved standard email, to a new client only (an existing client already has a login).
+    let emailed = false;
+    if (tpl && isNewAccount) {
+      const to = (body.loginEmail || body.email).toLowerCase();
+      const rendered = renderAccountEmail(tpl.subject, tpl.body, { firstName: body.fullName.trim().split(/\s+/)[0] || "", loginUrl: linkData.properties.action_link, masterclassLink: null });
+      emailed = await sendRendered(to, rendered, { extraBcc: presser ? [presser] : [] });
+      if (houseId && contactSaved) {
+        const { data: cc } = await supabase.from("seq_contacts").select("id").eq("master_plan_id", houseId).eq("email", body.email.toLowerCase()).maybeSingle();
+        if (cc) await logEvent(houseId, cc.id as string, "manual", emailed ? "Account-ready email sent (copies to AmiLynne" + (presser ? " and " + presser : "") + ")" : "Account-ready email did NOT send", {}).catch(() => {});
+      }
     }
 
     return NextResponse.json({
@@ -200,6 +230,8 @@ export async function POST(req: NextRequest) {
       isNewAccount,
       contactSaved,
       loginUrl: linkData.properties.action_link,
+      emailed,
+      standardEmailApproved: Boolean(tpl),
     });
   } catch (error) {
     console.error("Onboard client error:", error);

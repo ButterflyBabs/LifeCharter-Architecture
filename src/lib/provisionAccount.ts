@@ -45,7 +45,7 @@ export async function provisionAccountForEmail(
     if (fullName?.trim()) update.full_name = fullName.trim();
     await supabase.from("profiles").update(update).eq("id", existingProfile.id);
     await joinCommandSuiteCommunity(supabase, existingProfile.id, fullName);
-    await sendWelcomeEmail(supabase, { userId: existingProfile.id, email: normalizedEmail, name: fullName ?? null, planId, enrolledAt: new Date().toISOString() }, "welcome");
+    if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId: existingProfile.id, email: normalizedEmail, name: fullName ?? null, planId, enrolledAt: new Date().toISOString() }, "welcome");
     return { userId: existingProfile.id, workspaceId: existingProfile.workspace_id, isNewAccount: false };
   }
 
