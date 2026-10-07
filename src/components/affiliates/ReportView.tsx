@@ -26,6 +26,20 @@ export default function ReportView({ r }: { r: AffiliateReport }) {
       </div>
       {r.month_totals.pending > 0 && <p className="text-xs text-[#6b5410]">{r.month_totals.pending} sale{r.month_totals.pending === 1 ? " is" : "s are"} being confirmed.</p>}
 
+      {r.byLink.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-sm font-semibold text-[#1F3A3D] dark:text-[#F8F5F0]">Your links, all time</p>
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-[#7a8a99]"><tr><th className="pb-1">Link</th><th className="pb-1 text-right">Clicks</th><th className="pb-1 text-right">Referred</th><th className="pb-1 text-right">Sales</th><th className="pb-1 text-right">Commission</th></tr></thead>
+            <tbody className="divide-y divide-[#F0E8DA] dark:divide-white/10">
+              {r.byLink.map((l) => (
+                <tr key={l.code}><td className="py-1.5">{l.product}</td><td className="py-1.5 text-right">{l.clicks}</td><td className="py-1.5 text-right">{l.referrals}</td><td className="py-1.5 text-right">{money(l.revenue)}</td><td className="py-1.5 text-right">{money(l.commission)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {r.byProduct.length > 0 && (
         <div>
           <p className="mb-1.5 text-sm font-semibold text-[#1F3A3D] dark:text-[#F8F5F0]">By product</p>

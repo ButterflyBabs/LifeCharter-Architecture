@@ -38,7 +38,8 @@ export async function GET(request: Request) {
       db.from("affiliate_sales").select("*").eq("affiliate_id", id).order("sale_date", { ascending: false }).limit(500),
       db.from("affiliate_clicks").select("id", { count: "exact", head: true }).eq("affiliate_id", id).gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString()),
     ]);
-    return NextResponse.json({ affiliate: aff, rates: rates ?? [], referrals: refs ?? [], sales: sales ?? [], clicks30: clicks30 ?? 0 });
+    const { data: links } = await db.from("affiliate_links").select("*").eq("affiliate_id", id).order("created_at");
+    return NextResponse.json({ affiliate: aff, rates: rates ?? [], referrals: refs ?? [], sales: sales ?? [], clicks30: clicks30 ?? 0, links: links ?? [] });
   }
 
   const [{ data: affs }, { data: offers }, { data: programs }, { data: clicks }, { data: refs }, { data: sales }, { data: earnings }] = await Promise.all([
@@ -164,6 +165,33 @@ export async function POST(request: Request) {
       const rate = pct(b.rate);
       if (rate == null) await db.from("affiliate_offer_rates").delete().eq("affiliate_id", f.id).eq("offer_id", o.id);
       else await db.from("affiliate_offer_rates").upsert({ affiliate_id: f.id, offer_id: o.id, master_plan_id: a.planId, rate }, { onConflict: "affiliate_id,offer_id" });
+      return NextResponse.json({ ok: true });
+    }
+    case "link-add": {
+      const f = await own("affiliates", b.affiliateId);
+      if (!f) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      const product = str(b.product, 120);
+      if (!product) return NextResponse.json({ error: "Name the product this link is for." }, { status: 400 });
+      const code = await uniqueCode(db, str(b.code, 40) || `${f.code}-${product}`);
+      const { data, error } = await db.from("affiliate_links").insert({ affiliate_id: f.id, master_plan_id: a.planId, product, code, landing_url: url(b.landingUrl), rate: pct(b.rate) }).select("*").single();
+      if (error) return NextResponse.json({ error: "Couldn't add the link." }, { status: 500 });
+      return NextResponse.json({ link: data });
+    }
+    case "link-update": {
+      const l = await own("affiliate_links", b.linkId);
+      if (!l) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      const patch: Record<string, unknown> = {};
+      if (str(b.product, 120)) patch.product = str(b.product, 120);
+      if (b.landingUrl !== undefined) patch.landing_url = url(b.landingUrl);
+      if (b.rate !== undefined) patch.rate = pct(b.rate);
+      if (b.status === "active" || b.status === "paused") patch.status = b.status;
+      const { data } = await db.from("affiliate_links").update(patch).eq("id", l.id).select("*").single();
+      return NextResponse.json({ link: data });
+    }
+    case "link-delete": {
+      const l = await own("affiliate_links", b.linkId);
+      if (!l) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      await db.from("affiliate_links").delete().eq("id", l.id);
       return NextResponse.json({ ok: true });
     }
     case "sale-add": {

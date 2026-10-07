@@ -3,35 +3,39 @@ import { logEvent } from "@/lib/crm";
 
 // Affiliates: people promoting an account's offers. Each has a tracked link
 // (lccommandsuite.com/r/<code>) that counts clicks and remembers the visitor for
-// 60 days (cookie AFF_COOKIE); a sign-up on that account's Suite forms or a booking
+// 365 days (cookie AFF_COOKIE); a sign-up on that account's Suite forms or a booking
 // is then credited to them, and so are later purchases by that person. Commission %
 // comes from the relationship (this affiliate on this offer), else the offer's own %,
 // else the affiliate's default %.
 
 export const AFF_COOKIE = "lc_aff";
-export const AFF_COOKIE_DAYS = 60;
+export const AFF_COOKIE_DAYS = 365;
 
 type Db = SupabaseClient;
 
 export const slugCode = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24).replace(/-$/, "");
 
-// A code no other affiliate (in any account) uses yet.
+// A code no other affiliate or product link (in any account) uses yet.
 export async function uniqueCode(db: Db, wanted: string): Promise<string> {
   const base = slugCode(wanted) || "partner";
   for (let i = 0; i < 50; i++) {
     const code = i === 0 ? base : `${base}-${i + 1}`;
-    const { data } = await db.from("affiliates").select("id").eq("code", code).maybeSingle();
-    if (!data) return code;
+    const [{ data }, { data: link }] = await Promise.all([db.from("affiliates").select("id").eq("code", code).maybeSingle(), db.from("affiliate_links").select("id").eq("code", code).maybeSingle()]);
+    if (!data && !link) return code;
   }
   return `${base}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export async function rateFor(db: Db, affiliateId: string, offerId: string | null): Promise<number | null> {
+export async function rateFor(db: Db, affiliateId: string, offerId: string | null, linkId: string | null = null): Promise<number | null> {
   if (offerId) {
     const { data: rel } = await db.from("affiliate_offer_rates").select("rate").eq("affiliate_id", affiliateId).eq("offer_id", offerId).maybeSingle();
     if (rel?.rate != null) return Number(rel.rate);
     const { data: offer } = await db.from("sales_offers").select("affiliate_rate").eq("id", offerId).maybeSingle();
     if (offer?.affiliate_rate != null) return Number(offer.affiliate_rate);
+  }
+  if (linkId) {
+    const { data: link } = await db.from("affiliate_links").select("rate").eq("id", linkId).maybeSingle();
+    if (link?.rate != null) return Number(link.rate);
   }
   const { data: aff } = await db.from("affiliates").select("default_rate").eq("id", affiliateId).maybeSingle();
   return aff?.default_rate != null ? Number(aff.default_rate) : null;
@@ -50,23 +54,31 @@ export async function payableOn(db: Db, affiliateId: string, saleDate: string): 
 }
 
 // The affiliate a visitor came through (cookie or a ?ref / _ref code), if it belongs to this account and is active.
-export async function affiliateByCode(db: Db, planId: string, code: string | null | undefined) {
+// The code is either the affiliate's own code or one of their product links (which also names the link).
+export type AffiliateRef = { id: string; name: string; code: string; linkId?: string | null; product?: string | null };
+export async function affiliateByCode(db: Db, planId: string, code: string | null | undefined): Promise<AffiliateRef | null> {
   const c = slugCode(code || "");
   if (!c) return null;
+  const { data: link } = await db.from("affiliate_links").select("id, product, status, affiliates!inner(id, name, code, status, master_plan_id)").eq("code", c).maybeSingle();
+  const la = link?.affiliates as unknown as { id: string; name: string; code: string; status: string; master_plan_id: string } | null | undefined;
+  if (link && la) {
+    if (link.status !== "active" || la.status !== "active" || la.master_plan_id !== planId) return null;
+    return { id: la.id, name: la.name, code: la.code, linkId: link.id as string, product: link.product as string };
+  }
   const { data } = await db.from("affiliates").select("id, name, code").eq("code", c).eq("master_plan_id", planId).eq("status", "active").maybeSingle();
-  return data as { id: string; name: string; code: string } | null;
+  return data as AffiliateRef | null;
 }
 
 // Credits a lead or booking to an affiliate: logged once per person and kind; the person's
 // first affiliate becomes their "referred by" (so later purchases are credited too).
-export async function recordReferral(db: Db, planId: string, affiliate: { id: string; name: string; code: string }, contactId: string, kind: "lead" | "booking" | "manual", source: string) {
+export async function recordReferral(db: Db, planId: string, affiliate: AffiliateRef, contactId: string, kind: "lead" | "booking" | "manual", source: string) {
   const { data: dup } = await db.from("affiliate_referrals").select("id").eq("affiliate_id", affiliate.id).eq("contact_id", contactId).eq("kind", kind).maybeSingle();
-  if (!dup) await db.from("affiliate_referrals").insert({ affiliate_id: affiliate.id, master_plan_id: planId, contact_id: contactId, kind, source });
+  if (!dup) await db.from("affiliate_referrals").insert({ affiliate_id: affiliate.id, master_plan_id: planId, contact_id: contactId, kind, source, link_id: affiliate.linkId ?? null });
   const { data: c } = await db.from("seq_contacts").select("referred_by_affiliate_id, tags").eq("id", contactId).eq("master_plan_id", planId).maybeSingle();
   if (c && !c.referred_by_affiliate_id) {
     const tags = Array.from(new Set([...((c.tags as string[]) ?? []), `referred-by-${affiliate.code}`]));
-    await db.from("seq_contacts").update({ referred_by_affiliate_id: affiliate.id, tags, tag_source: "affiliate" }).eq("id", contactId).eq("master_plan_id", planId);
-    await logEvent(planId, contactId, "manual", `Referred by affiliate ${affiliate.name}`, { affiliate: affiliate.code }, db as never).catch(() => {});
+    await db.from("seq_contacts").update({ referred_by_affiliate_id: affiliate.id, referred_by_link_id: affiliate.linkId ?? null, tags, tag_source: "affiliate" }).eq("id", contactId).eq("master_plan_id", planId);
+    await logEvent(planId, contactId, "manual", `Referred by affiliate ${affiliate.name}${affiliate.product ? ` (${affiliate.product})` : ""}`, { affiliate: affiliate.code, link: affiliate.linkId ?? null }, db as never).catch(() => {});
   }
 }
 
@@ -78,10 +90,16 @@ export async function creditSale(
   input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
 ) {
   let affiliateId: string | null = null;
-  if (input.affiliateCode) affiliateId = (await affiliateByCode(db, planId, input.affiliateCode))?.id ?? null;
+  let linkId: string | null = null;
+  if (input.affiliateCode) {
+    const ref = await affiliateByCode(db, planId, input.affiliateCode);
+    affiliateId = ref?.id ?? null;
+    linkId = ref?.linkId ?? null;
+  }
   if (!affiliateId && input.contactId) {
-    const { data: c } = await db.from("seq_contacts").select("referred_by_affiliate_id").eq("id", input.contactId).eq("master_plan_id", planId).maybeSingle();
+    const { data: c } = await db.from("seq_contacts").select("referred_by_affiliate_id, referred_by_link_id").eq("id", input.contactId).eq("master_plan_id", planId).maybeSingle();
     affiliateId = (c?.referred_by_affiliate_id as string) ?? null;
+    linkId = (c?.referred_by_link_id as string) ?? null;
   }
   if (!affiliateId) return null;
   if (input.stripeRef) {
@@ -94,7 +112,7 @@ export async function creditSale(
     const d = input.description.toLowerCase();
     offerId = ((offers ?? []) as { id: string; name: string }[]).find((o) => d.includes(o.name.toLowerCase()))?.id ?? null;
   }
-  const rate = await rateFor(db, affiliateId, offerId);
+  const rate = await rateFor(db, affiliateId, offerId, linkId);
   const saleDate = input.saleDate ?? new Date().toISOString().slice(0, 10);
   const { data } = await db
     .from("affiliate_sales")
@@ -103,6 +121,7 @@ export async function creditSale(
       master_plan_id: planId,
       contact_id: input.contactId,
       offer_id: offerId,
+      link_id: linkId,
       description: input.description.slice(0, 300),
       amount: money(input.amount),
       rate,
@@ -130,6 +149,7 @@ export type AffiliateReport = {
   sales: { date: string; description: string; amount: number; rate: number | null; commission: number; status: string; payableOn: string | null }[];
   byProduct: { product: string; sales: number; amount: number; commission: number }[];
   month_totals: { revenue: number; commission: number; owed: number; paid: number; pending: number };
+  byLink: { product: string; code: string; clicks: number; referrals: number; revenue: number; commission: number }[];
   lifetime: { clicks: number; referrals: number; revenue: number; commissionPaid: number; commissionOwed: number };
 };
 
@@ -166,6 +186,23 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
     cur.commission = money(cur.commission + r.commission);
     byProduct.set(r.product, cur);
   }
+  const [{ data: lk }, { data: lkClicks }, { data: lkRefs }, { data: lkSales }] = await Promise.all([
+    db.from("affiliate_links").select("id, product, code").eq("affiliate_id", affiliateId).order("created_at"),
+    db.from("affiliate_clicks").select("link_id").eq("affiliate_id", affiliateId).not("link_id", "is", null).limit(50000),
+    db.from("affiliate_referrals").select("link_id").eq("affiliate_id", affiliateId).not("link_id", "is", null).limit(50000),
+    db.from("affiliate_sales").select("link_id, amount, commission").eq("affiliate_id", affiliateId).neq("status", "void").not("link_id", "is", null).limit(50000),
+  ]);
+  const byLink = ((lk ?? []) as { id: string; product: string; code: string }[]).map((l) => {
+    const mine = (lkSales ?? []).filter((x) => x.link_id === l.id);
+    return {
+      product: l.product,
+      code: l.code,
+      clicks: (lkClicks ?? []).filter((x) => x.link_id === l.id).length,
+      referrals: (lkRefs ?? []).filter((x) => x.link_id === l.id).length,
+      revenue: money(mine.reduce((t, x) => t + Number(x.amount), 0)),
+      commission: money(mine.reduce((t, x) => t + Number(x.commission), 0)),
+    };
+  });
   const sum = (xs: { commission: number }[]) => money(xs.reduce((t, x) => t + x.commission, 0));
   const life = (lifeSales ?? []).map((s) => ({ amount: Number(s.amount), commission: Number(s.commission), status: s.status as string }));
   return {
@@ -182,6 +219,7 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
       paid: sum(rows.filter((r) => r.status === "paid")),
       pending: rows.filter((r) => r.status === "review").length,
     },
+    byLink,
     lifetime: {
       clicks: lifeClicks ?? 0,
       referrals: lifeRefs ?? 0,
@@ -212,6 +250,9 @@ export function reportCsv(r: AffiliateReport): string {
     [],
     ["By product", "Sales", "Revenue", "Commission"],
     ...r.byProduct.map((p) => [p.product, p.sales, p.amount, p.commission]),
+    [],
+    ["Product link", "Clicks", "People referred", "Revenue", "Commission"],
+    ...r.byLink.map((l) => [l.product, l.clicks, l.referrals, l.revenue, l.commission]),
     [],
     ["Date", "Sale", "Amount", "Rate %", "Commission", "Status", "Payable on"],
     ...r.sales.map((s) => [s.date, s.description, s.amount, s.rate ?? "", s.commission, s.status === "review" ? "pending" : s.status, s.payableOn ?? ""]),

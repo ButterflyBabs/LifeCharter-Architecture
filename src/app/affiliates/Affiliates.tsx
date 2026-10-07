@@ -30,6 +30,7 @@ type Affiliate = {
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
 type Program = { id: string; name: string; website: string | null; my_link: string | null; my_code: string | null; commission_terms: string | null; login_url: string | null; status: string; notes: string | null; earnings: Earning[]; expected: number; paid: number };
+type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused" };
 type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
 type Referral = { id: string; kind: string; source: string | null; created_at: string; seq_contacts: { id: string; first_name: string | null; last_name: string | null; email: string } | null };
 
@@ -342,6 +343,8 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
   const [refs, setRefs] = useState<Referral[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [clicks30, setClicks30] = useState(0);
+  const [links, setLinks] = useState<ProductLink[]>([]);
+  const [nl, setNl] = useState({ product: "", landingUrl: "", code: "", rate: "" });
   const [edit, setEdit] = useState({ name: "", email: "", code: "", status: "active", defaultRate: "", payoutDelayDays: "", landingUrl: "", notes: "", agreementOn: "" });
   const [sale, setSale] = useState({ offerId: "", description: "", amount: "", saleDate: new Date().toISOString().slice(0, 10), rate: "" });
   const [refName, setRefName] = useState("");
@@ -354,6 +357,7 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
     setRefs(d.referrals ?? []);
     setSales(d.sales ?? []);
     setClicks30(d.clicks30 ?? 0);
+    setLinks(d.links ?? []);
     const f = d.affiliate;
     setEdit({ name: f.name, email: f.email ?? "", code: f.code, status: f.status, defaultRate: f.default_rate == null ? "" : String(f.default_rate), payoutDelayDays: f.payout_delay_days == null ? "" : String(f.payout_delay_days), landingUrl: f.landing_url ?? "", notes: f.notes ?? "", agreementOn: f.agreement_on ?? "" });
   }, [id]);
@@ -386,6 +390,32 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
           </div>
         </div>
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">{clicks30} clicks in the last 30 days · {refs.length} referred · {money(owed)} owed</p>
+
+        <div className="rounded-lg border border-[#1a2b4a]/10 p-3">
+          <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Product links <span className="text-xs font-normal text-[#7a8a99]">(one link per product, each tracked on its own; remembered for 365 days)</span></p>
+          {links.length ? (
+            <ul className="mt-2 divide-y divide-[#1a2b4a]/10">
+              {links.map((l) => (
+                <li key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+                  <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{l.product}</span>
+                  <span className="break-all text-xs text-[#5a6472]">{`${APP}/r/${l.code}`}</span>
+                  <CopyButton text={`${APP}/r/${l.code}`} label="Copy" />
+                  {l.rate != null && <span className="text-xs text-[#7a8a99]">{l.rate}%</span>}
+                  <button onClick={async () => { if (await post({ action: "link-update", linkId: l.id, status: l.status === "active" ? "paused" : "active" })) void load(); }} className={`rounded-full px-2 py-0.5 text-xs ${l.status === "active" ? "bg-green-500/10 text-green-700" : "bg-[#c9a227]/15 text-[#6b5410]"}`}>{l.status === "active" ? "Active" : "Paused"}</button>
+                  <button onClick={async () => { if (confirm(`Remove the ${l.product} link? It stops working; past credits stay.`) && (await post({ action: "link-delete", linkId: l.id }))) void load(); }} className="ml-auto text-xs text-[#C76F56] hover:underline">Remove</button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-xs text-[#7a8a99]">No product links yet. The general link above works for everything until you add one.</p>
+          )}
+          <div className="mt-2 grid gap-2 sm:grid-cols-4">
+            <Input value={nl.product} onChange={(e) => setNl({ ...nl, product: e.target.value })} placeholder="Product (e.g. MasterClass)" aria-label="Product" />
+            <Input value={nl.landingUrl} onChange={(e) => setNl({ ...nl, landingUrl: e.target.value })} placeholder="Where it goes (https://…)" aria-label="Where the link goes" />
+            <Input value={nl.code} onChange={(e) => setNl({ ...nl, code: e.target.value })} placeholder="Code (optional)" aria-label="Link code" />
+            <Button disabled={!nl.product.trim()} onClick={async () => { const r = await post({ action: "link-add", affiliateId: a.id, ...nl, rate: nl.rate === "" ? null : Number(nl.rate) }); if (r) { setNl({ product: "", landingUrl: "", code: "", rate: "" }); void load(); } }}>Add link</Button>
+          </div>
+        </div>
 
         <details className="rounded-lg border border-[#1a2b4a]/10 p-3">
           <summary className="cursor-pointer text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Details</summary>

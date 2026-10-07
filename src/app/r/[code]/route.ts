@@ -5,17 +5,21 @@ import { isHousePlan } from "@/lib/housePlan";
 
 export const dynamic = "force-dynamic";
 
-// An affiliate's tracked link: counts the click, remembers the affiliate for 60 days
+// An affiliate's tracked link: counts the click, remembers the affiliate for 365 days
 // (so a sign-up or booking on this account's Suite pages is credited to them), then
 // sends the visitor on with ?ref=<code> so the account's own site can pass it along.
 export async function GET(request: Request, { params }: { params: { code: string } }) {
   const db = createServerClient();
   const code = slugCode(params.code);
-  const { data: aff } = code ? await db.from("affiliates").select("id, master_plan_id, code, status, landing_url").eq("code", code).maybeSingle() : { data: null };
+  // The code is a product link (one per product) or an affiliate's own code.
+  const { data: link } = code ? await db.from("affiliate_links").select("id, code, status, landing_url, affiliate_id, affiliates!inner(id, master_plan_id, code, status, landing_url)").eq("code", code).maybeSingle() : { data: null };
+  const la = link?.affiliates as unknown as { id: string; master_plan_id: string; code: string; status: string; landing_url: string | null } | null | undefined;
+  const { data: own } = !link && code ? await db.from("affiliates").select("id, master_plan_id, code, status, landing_url").eq("code", code).maybeSingle() : { data: null };
+  const aff = link && la ? { id: la.id, master_plan_id: la.master_plan_id, code: link.code as string, status: link.status === "active" ? la.status : "paused", landing_url: (link.landing_url as string | null) || la.landing_url } : own;
   const origin = new URL(request.url).origin;
   if (!aff || aff.status !== "active") return NextResponse.redirect(`${origin}/`);
 
-  await db.from("affiliate_clicks").insert({ affiliate_id: aff.id, master_plan_id: aff.master_plan_id, referrer: (request.headers.get("referer") || "").slice(0, 300) || null });
+  await db.from("affiliate_clicks").insert({ affiliate_id: aff.id, master_plan_id: aff.master_plan_id, link_id: link ? (link.id as string) : null, referrer: (request.headers.get("referer") || "").slice(0, 300) || null });
 
   let dest = (aff.landing_url as string) || "";
   if (!/^https?:\/\//i.test(dest)) {
