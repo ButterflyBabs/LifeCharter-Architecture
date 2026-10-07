@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { EMAIL_RE, upsertContact } from "@/lib/crm";
-import { slugCode, uniqueCode, rateFor, recordReferral, payableOn } from "@/lib/affiliates";
+import { slugCode, uniqueCode, rateFor, recordReferral, payableOn, AFF_LINK_DAYS } from "@/lib/affiliates";
 
 export const dynamic = "force-dynamic";
 
@@ -186,6 +186,14 @@ export async function POST(request: Request) {
       if (b.rate !== undefined) patch.rate = pct(b.rate);
       if (b.status === "active" || b.status === "paused") patch.status = b.status;
       const { data } = await db.from("affiliate_links").update(patch).eq("id", l.id).select("*").single();
+      return NextResponse.json({ link: data });
+    }
+    case "link-renew": {
+      const l = await own("affiliate_links", b.linkId);
+      if (!l) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      // 365 days from the later of today and the current end, so renewing early loses nothing.
+      const base = Math.max(Date.now(), l.expires_at ? new Date(l.expires_at as string).getTime() : 0);
+      const { data } = await db.from("affiliate_links").update({ expires_at: new Date(base + AFF_LINK_DAYS * 86_400_000).toISOString(), expiry_notified_at: null, status: "active" }).eq("id", l.id).select("*").single();
       return NextResponse.json({ link: data });
     }
     case "link-delete": {

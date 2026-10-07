@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/collective-replays",
       "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/affiliate-link-expiry",
+      "schedule": "0 15 * * *"
     }
   ],
   "rewrites": [

@@ -55,14 +55,18 @@ export async function payableOn(db: Db, affiliateId: string, saleDate: string): 
 
 // The affiliate a visitor came through (cookie or a ?ref / _ref code), if it belongs to this account and is active.
 // The code is either the affiliate's own code or one of their product links (which also names the link).
+// A product link lapses 365 days after it was made or last renewed. People already credited keep their credit.
+export const AFF_LINK_DAYS = 365;
+export const linkExpired = (expiresAt: string | null | undefined) => !!expiresAt && new Date(expiresAt).getTime() <= Date.now();
+
 export type AffiliateRef = { id: string; name: string; code: string; linkId?: string | null; product?: string | null };
 export async function affiliateByCode(db: Db, planId: string, code: string | null | undefined): Promise<AffiliateRef | null> {
   const c = slugCode(code || "");
   if (!c) return null;
-  const { data: link } = await db.from("affiliate_links").select("id, product, status, affiliates!inner(id, name, code, status, master_plan_id)").eq("code", c).maybeSingle();
+  const { data: link } = await db.from("affiliate_links").select("id, product, status, expires_at, affiliates!inner(id, name, code, status, master_plan_id)").eq("code", c).maybeSingle();
   const la = link?.affiliates as unknown as { id: string; name: string; code: string; status: string; master_plan_id: string } | null | undefined;
   if (link && la) {
-    if (link.status !== "active" || la.status !== "active" || la.master_plan_id !== planId) return null;
+    if (link.status !== "active" || la.status !== "active" || la.master_plan_id !== planId || linkExpired(link.expires_at as string | null)) return null;
     return { id: la.id, name: la.name, code: la.code, linkId: link.id as string, product: link.product as string };
   }
   const { data } = await db.from("affiliates").select("id, name, code").eq("code", c).eq("master_plan_id", planId).eq("status", "active").maybeSingle();
@@ -149,7 +153,7 @@ export type AffiliateReport = {
   sales: { date: string; description: string; amount: number; rate: number | null; commission: number; status: string; payableOn: string | null }[];
   byProduct: { product: string; sales: number; amount: number; commission: number }[];
   month_totals: { revenue: number; commission: number; owed: number; paid: number; pending: number };
-  byLink: { product: string; code: string; clicks: number; referrals: number; revenue: number; commission: number }[];
+  byLink: { product: string; code: string; expiresAt: string | null; clicks: number; referrals: number; revenue: number; commission: number }[];
   lifetime: { clicks: number; referrals: number; revenue: number; commissionPaid: number; commissionOwed: number };
 };
 
@@ -187,16 +191,17 @@ export async function affiliateReport(db: Db, affiliateId: string, month: string
     byProduct.set(r.product, cur);
   }
   const [{ data: lk }, { data: lkClicks }, { data: lkRefs }, { data: lkSales }] = await Promise.all([
-    db.from("affiliate_links").select("id, product, code").eq("affiliate_id", affiliateId).order("created_at"),
+    db.from("affiliate_links").select("id, product, code, expires_at").eq("affiliate_id", affiliateId).order("created_at"),
     db.from("affiliate_clicks").select("link_id").eq("affiliate_id", affiliateId).not("link_id", "is", null).limit(50000),
     db.from("affiliate_referrals").select("link_id").eq("affiliate_id", affiliateId).not("link_id", "is", null).limit(50000),
     db.from("affiliate_sales").select("link_id, amount, commission").eq("affiliate_id", affiliateId).neq("status", "void").not("link_id", "is", null).limit(50000),
   ]);
-  const byLink = ((lk ?? []) as { id: string; product: string; code: string }[]).map((l) => {
+  const byLink = ((lk ?? []) as { id: string; product: string; code: string; expires_at: string | null }[]).map((l) => {
     const mine = (lkSales ?? []).filter((x) => x.link_id === l.id);
     return {
       product: l.product,
       code: l.code,
+      expiresAt: l.expires_at,
       clicks: (lkClicks ?? []).filter((x) => x.link_id === l.id).length,
       referrals: (lkRefs ?? []).filter((x) => x.link_id === l.id).length,
       revenue: money(mine.reduce((t, x) => t + Number(x.amount), 0)),

@@ -30,7 +30,7 @@ type Affiliate = {
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
 type Program = { id: string; name: string; website: string | null; my_link: string | null; my_code: string | null; commission_terms: string | null; login_url: string | null; status: string; notes: string | null; earnings: Earning[]; expected: number; paid: number };
-type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused" };
+type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused"; expires_at?: string | null };
 type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
 type Referral = { id: string; kind: string; source: string | null; created_at: string; seq_contacts: { id: string; first_name: string | null; last_name: string | null; email: string } | null };
 
@@ -401,6 +401,8 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
                   <span className="break-all text-xs text-[#5a6472]">{`${APP}/r/${l.code}`}</span>
                   <CopyButton text={`${APP}/r/${l.code}`} label="Copy" />
                   {l.rate != null && <span className="text-xs text-[#7a8a99]">{l.rate}%</span>}
+                  {l.expires_at && (() => { const left = Math.ceil((new Date(l.expires_at).getTime() - Date.now()) / 86_400_000); return <span className={`text-xs ${left <= 0 ? "font-semibold text-[#8a2f2f]" : left <= 30 ? "font-semibold text-[#6b5410]" : "text-[#7a8a99]"}`}>{left <= 0 ? "Expired" : `Expires ${day(l.expires_at)}`}</span>; })()}
+                  <button onClick={async () => { if (await post({ action: "link-renew", linkId: l.id })) void load(); }} className="rounded-full border border-[#1a2b4a]/20 px-2 py-0.5 text-xs">Renew 365 days</button>
                   <button onClick={async () => { if (await post({ action: "link-update", linkId: l.id, status: l.status === "active" ? "paused" : "active" })) void load(); }} className={`rounded-full px-2 py-0.5 text-xs ${l.status === "active" ? "bg-green-500/10 text-green-700" : "bg-[#c9a227]/15 text-[#6b5410]"}`}>{l.status === "active" ? "Active" : "Paused"}</button>
                   <button onClick={async () => { if (confirm(`Remove the ${l.product} link? It stops working; past credits stay.`) && (await post({ action: "link-delete", linkId: l.id }))) void load(); }} className="ml-auto text-xs text-[#C76F56] hover:underline">Remove</button>
                 </li>
