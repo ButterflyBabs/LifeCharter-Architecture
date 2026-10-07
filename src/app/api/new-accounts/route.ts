@@ -4,78 +4,146 @@ import { createServerClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { logEvent } from "@/lib/crm";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
-import { renderAccountReadyEmail, sendAccountReadyEmail, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
+import { DEFAULT_SUBJECT, defaultBody, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
 import { crmAccount } from "../crm/guard";
 
 export const dynamic = "force-dynamic";
 
-// Creates stand-alone VIP Command Suite accounts for people in Babs's Contacts and emails each a
-// choose-your-password link (Babs only). The new account starts at Set up Suite (the first-run gate) and
-// Day 1 of First 30 Days is the day it is created, so create them when the email goes out.
-//   POST { people: [{ email, oneToOne? }], send: false }  → preview: the exact emails, nothing created or sent
-//   POST { people: [...], send: true }                    → create, email (hidden copy to AmiLynne), tag, log
-// The automatic welcome series is held for these people (its Day 1 email tells them to start the Brain
-// assessment today); the six welcome keys are recorded as "claimed" so none go out.
+// New Client Accounts (Babs only): the "your account is ready" email for each person is written, edited and
+// approved on /new-clients, and only then is their stand-alone VIP account created and the email sent (hidden
+// copy to AmiLynne). Day 1 of First 30 Days is the day the account is created, so send when they should start.
+// The automatic welcome series is held for these people (its Day 1 email says to start the Brain assessment
+// today); its six keys are recorded as claimed so none go out.
+//   GET                                   → the people and their emails, each with their MasterClass link
+//   POST { action: "add", email, oneToOne? }       → a person from Contacts, with the starting email
+//   POST { action: "save", id, subject, body, oneToOne? } → saves an edit (back to Draft: approve again)
+//   POST { action: "approve", id }                 → approved (needs {{password_link}} in the text)
+//   POST { action: "preview", id }                 → the email as it will look (nothing created or sent)
+//   POST { action: "test", id }                    → a preview emailed to AmiLynne only, link not real
+//   POST { action: "send", id }                    → approved only: create the account, email them
+//   POST { action: "remove", id }                  → drops a draft
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+const pretty = (s: string) => s.replace(/\r/g, "").slice(0, 20000);
 
-type Person = { email: string; oneToOne?: string };
+export async function GET() {
+  const a = await crmAccount();
+  if ("denied" in a) return a.denied;
+  if (!a.isArchitect) return NextResponse.json({ error: "This is private." }, { status: 403 });
+  const db = createServerClient();
+  const { data: rows } = await db.from("new_client_emails").select("*").eq("master_plan_id", a.planId).order("created_at");
+  const out = [];
+  for (const r of rows ?? []) {
+    const link = await mcLink(db, a.planId, r.contact_id as string | null);
+    const { data: plan } = await db.from("client_master_plans").select("id").eq("client_email", r.email).limit(1).maybeSingle();
+    out.push({ ...r, masterclassLink: link, hasAccount: Boolean(plan) });
+  }
+  return NextResponse.json({ people: out, copyTo: ACCOUNT_EMAIL_COPY_TO });
+}
+
+async function mcLink(db: ReturnType<typeof createServerClient>, planId: string, contactId: string | null) {
+  if (!contactId) return null;
+  const { data: aff } = await db.from("affiliates").select("id").eq("master_plan_id", planId).eq("contact_id", contactId).maybeSingle();
+  if (!aff) return null;
+  const { data: link } = await db.from("affiliate_links").select("code").eq("affiliate_id", aff.id as string).eq("status", "active").order("created_at").limit(1).maybeSingle();
+  return link ? `${APP_URL}/r/${link.code}` : null;
+}
 
 export async function POST(request: Request) {
   const a = await crmAccount(request);
   if ("denied" in a) return a.denied;
   if (!a.isArchitect) return NextResponse.json({ error: "This is private." }, { status: 403 });
-  const b = (await request.json().catch(() => ({}))) as { people?: Person[]; send?: boolean };
-  const people = (Array.isArray(b.people) ? b.people : []).slice(0, 10);
-  if (!people.length) return NextResponse.json({ error: "Name the people." }, { status: 400 });
-  const send = b.send === true;
+  const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const db = createServerClient();
-  const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
-  const out: Record<string, unknown>[] = [];
+  const row = async () => {
+    const { data } = await db.from("new_client_emails").select("*").eq("id", str(b.id, 40)).eq("master_plan_id", a.planId).maybeSingle();
+    return data as { id: string; contact_id: string | null; email: string; name: string | null; subject: string; body: string; one_to_one: string | null; status: string; sent_result: string | null } | null;
+  };
+  const firstOf = (name: string | null, email: string) => (name || "").trim().split(/\s+/)[0] || email.split("@")[0];
 
-  for (const p of people) {
-    const email = String(p.email || "").trim().toLowerCase();
-    const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name, tags").eq("master_plan_id", a.planId).eq("email", email).maybeSingle();
-    if (!c) {
-      out.push({ email, error: "Not in your Contacts." });
-      continue;
+  switch (b.action) {
+    case "add": {
+      const email = str(b.email, 200).toLowerCase();
+      const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name").eq("master_plan_id", a.planId).eq("email", email).maybeSingle();
+      if (!c) return NextResponse.json({ error: "That email isn't in your Contacts." }, { status: 404 });
+      const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
+      const oneToOne = str(b.oneToOne, 120) || null;
+      const { data, error } = await db.from("new_client_emails").upsert({ master_plan_id: a.planId, contact_id: c.id, email, name, subject: DEFAULT_SUBJECT, body: defaultBody(oneToOne), one_to_one: oneToOne }, { onConflict: "master_plan_id,email", ignoreDuplicates: true }).select("id").maybeSingle();
+      if (error) return NextResponse.json({ error: "Couldn't add them." }, { status: 500 });
+      return NextResponse.json({ ok: true, id: data?.id ?? null });
     }
-    const first = (c.first_name as string | null) || "";
-    const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
-    const { data: plan } = await db.from("client_master_plans").select("id").eq("client_email", email).limit(1).maybeSingle();
-    // Their MasterClass link: the first active product link of their affiliate record.
-    const { data: aff } = await db.from("affiliates").select("id").eq("master_plan_id", a.planId).eq("contact_id", c.id as string).maybeSingle();
-    const { data: link } = aff ? await db.from("affiliate_links").select("code").eq("affiliate_id", aff.id as string).eq("status", "active").order("created_at").limit(1).maybeSingle() : { data: null };
-    const masterclassLink = link ? `${APP_URL}/r/${link.code}` : null;
-    const input = { firstName: first, loginUrl: "https://lccommandsuite.com/…the-one-time-link-is-made-at-send…", oneToOne: p.oneToOne?.trim() || null, holdAssessments: true, masterclassLink };
-
-    if (!send) {
-      out.push({ email, name: fullName, alreadyHasAccount: Boolean(plan), copyTo: ACCOUNT_EMAIL_COPY_TO, ...renderAccountReadyEmail(input) });
-      continue;
+    case "save": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.status === "sent") return NextResponse.json({ error: "This one has already been sent." }, { status: 409 });
+      const subject = str(b.subject, 200);
+      const body = pretty(String(b.body ?? ""));
+      if (!subject || !body.trim()) return NextResponse.json({ error: "The subject and the email can't be empty." }, { status: 400 });
+      await db.from("new_client_emails").update({ subject, body, one_to_one: str(b.oneToOne, 120) || r.one_to_one, status: "draft", approved_at: null, updated_at: new Date().toISOString() }).eq("id", r.id);
+      return NextResponse.json({ ok: true });
     }
-    if (plan) {
-      out.push({ email, error: "This email already has an account. Nothing was changed." });
-      continue;
+    case "approve": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.status === "sent") return NextResponse.json({ error: "This one has already been sent." }, { status: 409 });
+      if (!r.body.includes("{{password_link}}")) return NextResponse.json({ error: "The email needs {{password_link}} on a line of its own, so they can choose their password." }, { status: 400 });
+      await db.from("new_client_emails").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", r.id);
+      return NextResponse.json({ ok: true });
     }
-
-    let userId: string;
-    try {
-      ({ userId } = await provisionAccountForEmail(email, "vip", fullName, { skipWelcome: true }));
-    } catch (e) {
-      console.error("[new-accounts] provision failed:", e);
-      out.push({ email, error: "The account couldn't be created. Nothing was emailed." });
-      continue;
+    case "unapprove": {
+      const r = await row();
+      if (!r || r.status !== "approved") return NextResponse.json({ error: "Not found." }, { status: 404 });
+      await db.from("new_client_emails").update({ status: "draft", approved_at: null }).eq("id", r.id);
+      return NextResponse.json({ ok: true });
     }
-    // Hold the automatic welcome series for them.
-    await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
-
-    const { data: gen } = await admin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${APP_URL}/auth/callback?next=/reset-password` } });
-    const loginUrl = gen?.properties?.action_link ?? null;
-    const emailed = loginUrl ? await sendAccountReadyEmail(email, { ...input, loginUrl }) : false;
-
-    const tags = Array.from(new Set([...((c.tags as string[]) ?? []), "lccs-account", "vip-account"]));
-    await db.from("seq_contacts").update({ tags, tag_source: "new-accounts" }).eq("id", c.id as string);
-    await logEvent(a.planId, c.id as string, "manual", `Command Suite VIP account created${emailed ? "; password email sent (copy to AmiLynne)" : "; the password email did NOT send"}`, { holdAssessments: true }, db).catch(() => {});
-    out.push({ email, name: fullName, created: true, emailed, loginUrl: emailed ? undefined : loginUrl });
+    case "preview":
+    case "test": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      const m = { firstName: firstOf(r.name, r.email), loginUrl: `${APP_URL}/login`, masterclassLink: await mcLink(db, a.planId, r.contact_id) };
+      const out = renderAccountEmail(r.subject, r.body, m);
+      if (b.action === "preview") return NextResponse.json({ ...out, to: r.email, copyTo: ACCOUNT_EMAIL_COPY_TO });
+      const ok = await sendRendered(a.userEmail || ACCOUNT_EMAIL_COPY_TO, { ...out, subject: `TEST (not sent to ${r.name || r.email}) · ${out.subject}`, html: `<p style="font-family:Arial;color:#8a2f2f"><b>This is a test for you only. The password button below is a stand-in and does nothing.</b></p>${out.html}` }, { bcc: false });
+      return NextResponse.json({ ok, sentTo: a.userEmail || ACCOUNT_EMAIL_COPY_TO });
+    }
+    case "send": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.status !== "approved") return NextResponse.json({ error: "Approve it first." }, { status: 409 });
+      const { data: have } = await db.from("client_master_plans").select("id").eq("client_email", r.email).limit(1).maybeSingle();
+      // A retry after the account was made but the email failed only resends the email.
+      const retry = Boolean(have) && Boolean(r.sent_result?.includes("did NOT"));
+      if (have && !retry) return NextResponse.json({ error: "This email already has an account. Nothing was changed." }, { status: 409 });
+      if (!retry) {
+        let userId: string;
+        try {
+          ({ userId } = await provisionAccountForEmail(r.email, "vip", r.name, { skipWelcome: true }));
+        } catch (e) {
+          console.error("[new-accounts] provision failed:", e);
+          return NextResponse.json({ error: "The account couldn't be created. Nothing was emailed." }, { status: 500 });
+        }
+        await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+      }
+      const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+      const { data: gen } = await admin.auth.admin.generateLink({ type: "recovery", email: r.email, options: { redirectTo: `${APP_URL}/auth/callback?next=/reset-password` } });
+      const loginUrl = gen?.properties?.action_link ?? null;
+      const emailed = loginUrl ? await sendRendered(r.email, renderAccountEmail(r.subject, r.body, { firstName: firstOf(r.name, r.email), loginUrl, masterclassLink: await mcLink(db, a.planId, r.contact_id) })) : false;
+      await db.from("new_client_emails").update({ status: emailed ? "sent" : "approved", sent_at: emailed ? new Date().toISOString() : null, sent_result: emailed ? "sent" : "account created; email did NOT send" }).eq("id", r.id);
+      if (r.contact_id) {
+        const { data: c } = await db.from("seq_contacts").select("tags").eq("id", r.contact_id).maybeSingle();
+        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), "lccs-account", "vip-account"])), tag_source: "new-accounts" }).eq("id", r.contact_id);
+        await logEvent(a.planId, r.contact_id, "manual", `Command Suite VIP account created${emailed ? "; password email sent (copy to AmiLynne)" : "; the password email did NOT send"}`, { holdAssessments: true }, db).catch(() => {});
+      }
+      return NextResponse.json({ ok: true, emailed, loginUrl: emailed ? undefined : loginUrl });
+    }
+    case "remove": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.status === "sent") return NextResponse.json({ error: "This one has already been sent." }, { status: 409 });
+      await db.from("new_client_emails").delete().eq("id", r.id);
+      return NextResponse.json({ ok: true });
+    }
+    default:
+      return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }
-  return NextResponse.json({ send, results: out });
 }
