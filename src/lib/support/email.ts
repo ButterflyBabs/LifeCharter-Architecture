@@ -45,6 +45,16 @@ export function notifyNewRequest(r: { id: string; name: string; email: string; s
   );
 }
 
+// A new suggestion or general feedback on the shared boards: tell support, so nothing posted goes unseen.
+export function notifyNewIdea(i: { kind: "suggestion" | "feedback"; name: string; email: string; title: string; description: string }) {
+  const label = i.kind === "suggestion" ? "Suggestion" : "General feedback";
+  return send(
+    SUPPORT_INBOX,
+    `[${label}] ${i.title}`,
+    wrap(`${label} from ${i.name}`, `<p><strong>${esc(i.title)}</strong></p><p>${para(i.description)}</p><p style="color:#8A8BA3;font-size:13px">${esc(i.name)} · ${esc(i.email)} · it is now on the shared board for every account</p>`, { href: `${APP_URL}/help/contact`, label: "See the board" })
+  );
+}
+
 export function confirmToClient(r: { email: string; name: string; subject: string }) {
   const first = r.name.trim().split(/\s+/)[0] || "there";
   return send(

@@ -91,6 +91,25 @@ export function MyGlitches({ refreshKey = 0 }: { refreshKey?: number }) {
 export function CommunityBoard({ kind, title, icon: Icon }: { kind: "suggestion" | "feedback"; title: string; icon: typeof ThumbsUp }) {
   const [items, setItems] = useState<BoardItem[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "" });
+  const [sending, setSending] = useState(false);
+  const [note, setNote] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (sending) return;
+    setSending(true);
+    setNote("");
+    const r = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...form }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    setSending(false);
+    if (!r?.ok) return setNote(d.error || "Couldn't post that. Please try again.");
+    setForm({ title: "", description: "" });
+    setOpen(false);
+    setNote(kind === "suggestion" ? "Thank you. Your suggestion is on the board and our team has been told." : "Thank you. Your feedback is on the board and our team has been told.");
+    void load();
+  }
 
   const load = useCallback(async () => {
     const d = await fetch(`/api/feedback?kind=${kind}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -119,6 +138,19 @@ export function CommunityBoard({ kind, title, icon: Icon }: { kind: "suggestion"
           <Icon className="w-5 h-5 text-[#c9a227]" /> {title}
         </CardTitle>
         <p className="text-sm text-[#7a8a99]">Visible to everyone with a Command Suite login. Vote for ideas you&apos;d like to see too.</p>
+        {open ? (
+          <form onSubmit={submit} className="mt-3 space-y-2">
+            <input className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]" placeholder={kind === "suggestion" ? "Your idea in a few words" : "What you'd like to tell us, in a few words"} value={form.title} maxLength={200} onChange={(e) => setForm({ ...form, title: e.target.value })} required aria-label="Title" />
+            <textarea className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]" rows={4} placeholder="Tell us more" value={form.description} maxLength={4000} onChange={(e) => setForm({ ...form, description: e.target.value })} required aria-label="Details" />
+            <div className="flex gap-2">
+              <button disabled={sending} className="rounded-full bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-[#F8F5F0] disabled:opacity-60 dark:bg-[#c9a227] dark:text-[#1a2b4a]">{sending ? "Posting…" : kind === "suggestion" ? "Post my suggestion" : "Post my feedback"}</button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-full border border-[#1a2b4a]/20 px-4 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Cancel</button>
+            </div>
+          </form>
+        ) : (
+          <button onClick={() => { setOpen(true); setNote(""); }} className="mt-3 rounded-full border border-[#c9a227] px-4 py-2 text-sm font-semibold text-[#6b5410] hover:bg-[#c9a227]/10 dark:text-[#E3C27C]">{kind === "suggestion" ? "Share a suggestion" : "Share your feedback"}</button>
+        )}
+        {note && <p role="status" className="mt-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{note}</p>}
       </CardHeader>
       <CardContent className="divide-y divide-[#1a2b4a]/10">
         {items === null ? (

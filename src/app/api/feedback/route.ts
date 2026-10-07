@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { sessionUser } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { isDemoRequest, resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { notifyNewRequest, confirmToClient } from "@/lib/support/email";
+import { notifyNewRequest, confirmToClient, notifyNewIdea } from "@/lib/support/email";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +93,10 @@ export async function POST(request: Request) {
   if (error || !created) {
     console.error("POST /api/feedback:", error?.message);
     return NextResponse.json({ error: "Couldn't submit that. Please try again." }, { status: 500 });
+  }
+
+  if (kind === "suggestion" || kind === "feedback") {
+    await Promise.allSettled([notifyNewIdea({ kind, name: fullName || submitterName, email: ((prof?.email as string) || user.email || "").trim(), title, description })]);
   }
 
   let ticketCreated = false;
