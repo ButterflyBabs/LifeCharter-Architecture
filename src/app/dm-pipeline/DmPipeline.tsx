@@ -435,7 +435,7 @@ function DmSentPick({ card, scripts, onPick }: { card: Card; scripts: ScriptLite
 }
 
 const TITLE_WORDS = /^(dr|mr|mrs|ms|prof|rev|col|colonel)\.?$/i;
-const firstNameOf = (name: string) => name.split(",")[0].split(/\s+/).find((w) => w && !TITLE_WORDS.test(w)) ?? name;
+const firstNameOf = (name: string) => name.split(",")[0].split(/\s+/).find((w) => w && !TITLE_WORDS.test(w) && !w.startsWith("(")) ?? name;
 const niceDate = (iso: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Denver" }).format(new Date(iso));
 
 // The message for one card: the script with their name, the session date and their personal link filled in.
