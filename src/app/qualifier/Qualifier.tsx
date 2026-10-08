@@ -12,7 +12,8 @@ import { parseDelimited } from "@/lib/contactImport";
 type Board = { id: string; name: string };
 type Offer = { id: string; name: string; transformation: string; idealClient: string; notFor: string };
 type Audience = { id: string; name: string; icp_id: string | null; total: number; created_at: string };
-type ListRow = { name: string; url: string; code: string; facts: string };
+type ListRow = { name: string; url: string; code: string; email: string; facts: string };
+const onNames = (q: Qual) => (q.on_boards ?? []).map((b) => b.name).join(", ");
 
 const PLATFORMS = [
   { id: "LI", label: "LinkedIn" },
@@ -150,10 +151,11 @@ function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText
         disabled={busy || !ids.length}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform })) as { added?: number; skipped?: number; board?: string } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string } | null;
           setBusy(false);
           if (r) {
-            setMsg(`${r.added} added to ${r.board}${r.skipped ? `, ${r.skipped} skipped (already on it)` : ""}. High priority starts in To reach out; Medium and Low start in Nurture.`);
+            const dup = r.skipped ? ` ${r.skipped} not added because ${r.skipped === 1 ? "they are" : "they are"} already on ${r.board}: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}.` : "";
+            setMsg(`${r.added} added to ${r.board}.${dup}${r.failed ? ` ${r.failed} couldn't be added.` : ""}${r.added ? " High priority starts in To reach out; Medium and Low start in Nurture." : ""}`);
             onAdded();
           }
         }}
@@ -222,12 +224,11 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
                 <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{shown.name}</h2>
                 {shown.profile_url && <a href={shown.profile_url} target="_blank" rel="noreferrer" className="text-sm text-[#2E7C83] hover:underline">Open their profile</a>}
               </div>
-              {shown.card_id ? (
-                <Link href="/dm-pipeline" className="text-sm font-medium text-[#2E7C83] hover:underline">On your pipeline</Link>
-              ) : shown.priority !== "SKIP" ? (
-                <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => { setShown({ ...shown, card_id: "added" }); onChanged(); }} />
+              {shown.priority !== "SKIP" ? (
+                <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} />
               ) : null}
             </div>
+            {onNames(shown) && <p className="mb-3 rounded-lg bg-[#c9a227]/10 px-3 py-2 text-sm text-[#6b5410] dark:text-[#e6d28a]">Already on: <strong>{onNames(shown)}</strong>. They can&rsquo;t be added to the same pipeline twice.</p>}
             <QualResult q={shown} />
           </div>
         ) : (
@@ -243,7 +244,7 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
                   <button onClick={() => { setShown(q); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="min-w-0 flex-1 truncate text-left text-sm font-medium text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{q.name}</button>
                   <PriorityBadge priority={q.priority} small />
                   <span className="text-xs text-[#7a8a99]">{q.level}</span>
-                  {q.card_id && <span className="text-xs text-[#2E7C83]">on a pipeline</span>}
+                  {onNames(q) && <span className="text-xs text-[#2E7C83]">on {onNames(q)}</span>}
                   <span className="text-xs text-[#7a8a99]">{new Date(q.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                   <button aria-label={`Delete the score for ${q.name}`} onClick={async () => { if (confirm(`Delete the score for ${q.name}?`) && (await post({ action: "delete", id: q.id }))) { if (shown?.id === q.id) setShown(null); onChanged(); } }} className="rounded p-1 text-[#7a8a99] hover:text-[#D83A34]"><Trash2 className="h-4 w-4" /></button>
                 </li>
@@ -262,13 +263,14 @@ const FIRST_COL = /^first[ _]?name$/i;
 const LAST_COL = /^last[ _]?name$/i;
 const URL_COL = /^(url|profile[ _]?url|linkedin([ _]?url)?|profile([ _]?link)?|link)$/i;
 const CODE_COL = /^personal[ _]?code$/i;
+const EMAIL_COL = /^(e-?mail([ _]?address)?|enriched[ _]?email|work[ _]?email)$/i;
 const SKIP_COL = /email|phone|catchall|^group$|^id$/i;
 
 function rowsFromTable(table: string[][]): ListRow[] {
   if (table.length < 2) return [];
   const head = table[0].map((h) => h.trim());
   const idx = (re: RegExp) => head.findIndex((h) => re.test(h));
-  const [iName, iFirst, iLast, iUrl, iCode] = [idx(NAME_COL), idx(FIRST_COL), idx(LAST_COL), idx(URL_COL), idx(CODE_COL)];
+  const [iName, iFirst, iLast, iUrl, iCode, iEmail] = [idx(NAME_COL), idx(FIRST_COL), idx(LAST_COL), idx(URL_COL), idx(CODE_COL), idx(EMAIL_COL)];
   const used = new Set([iName, iFirst, iLast, iUrl, iCode]);
   return table.slice(1).map((r) => {
     const cell = (i: number) => (i >= 0 ? (r[i] ?? "").trim() : "");
@@ -277,7 +279,7 @@ function rowsFromTable(table: string[][]): ListRow[] {
       .map((h, i) => (used.has(i) || SKIP_COL.test(h) || !(r[i] ?? "").trim() ? "" : `${h.replace(/_/g, " ")}: ${(r[i] ?? "").trim().slice(0, 300)}`))
       .filter(Boolean)
       .join("\n");
-    return { name, url: cell(iUrl), code: cell(iCode), facts };
+    return { name, url: cell(iUrl), code: cell(iCode), email: cell(iEmail), facts };
   }).filter((r) => r.name && r.facts);
 }
 
@@ -289,6 +291,9 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
   const [limit, setLimit] = useState("");
   const [pasting, setPasting] = useState(false);
   const [pasted, setPasted] = useState("");
+  // For each person waiting to be scored: the pipelines they are already on.
+  const [onNow, setOnNow] = useState<string[][]>([]);
+  const [skipOn, setSkipOn] = useState(true);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const stop = useRef(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -301,7 +306,7 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
     const d = await fetch(`/api/qualifier?audience=${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     const list = (d.rows ?? []) as Qual[];
     setRows(list);
-    setPicked(new Set(list.filter((r) => r.priority === "HIGH" && !r.card_id).map((r) => r.id)));
+    setPicked(new Set(list.filter((r) => r.priority === "HIGH" && !(r.on_boards ?? []).length).map((r) => r.id)));
     setShow("ALL");
   }, []);
 
@@ -311,6 +316,9 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
     if (!list.length) { setMsg(`Couldn't find people in that. ${NEEDS}`); return; }
     setPending(list);
     setLimit("");
+    setOnNow([]);
+    setSkipOn(true);
+    void post({ action: "list-check", people: list.slice(0, 2000).map((r) => ({ name: r.name, url: r.url, email: r.email })) }).then((r) => setOnNow(((r as { on?: string[][] } | null)?.on) ?? []));
     if (name && !listName) setListName(name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
     setMsg("");
   }
@@ -330,8 +338,10 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
   }
 
   async function run() {
-    const total = Math.min(pending.length, Math.max(1, Number(limit) || pending.length), 1000);
-    const todo = pending.slice(0, total);
+    const fresh = skipOn ? pending.filter((_, i) => !(onNow[i]?.length)) : pending;
+    if (!fresh.length) { setMsg("Everyone on this list is already on a pipeline."); return; }
+    const total = Math.min(fresh.length, Math.max(1, Number(limit) || fresh.length), 1000);
+    const todo = fresh.slice(0, total);
     const made = (await post({ action: "audience-create", name: listName || "Untitled list", icpId, total })) as { audience?: Audience } | null;
     if (!made?.audience) return;
     stop.current = false;
@@ -381,6 +391,12 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
         {pending.length > 0 && !progress && (
           <div className="rounded-xl bg-[#1a2b4a]/[0.04] p-3 dark:bg-white/5">
             <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"><strong>{pending.length}</strong> people found. First one: {pending[0].name}. {pending.length > 1000 ? "Up to 1,000 are scored per list." : ""}</p>
+            {onNow.some((x) => x.length) && (
+              <label className="mt-2 flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <input type="checkbox" className="mt-1" checked={skipOn} onChange={(e) => setSkipOn(e.target.checked)} />
+                <span><strong>{onNow.filter((x) => x.length).length}</strong> of them are already on a pipeline ({Array.from(new Set(onNow.flat())).join(", ")}). Leave them out, so no score is spent on them.</span>
+              </label>
+            )}
             <div className="mt-2 flex flex-wrap items-end gap-2">
               <label className={label}>How many to score (blank for all)
                 <Input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={String(Math.min(pending.length, 1000))} className="w-40" />
@@ -433,7 +449,7 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
               <thead>
                 <tr className="border-b border-[#1a2b4a]/10 text-[11px] font-semibold uppercase tracking-wide text-[#7a8a99]">
                   <th className="w-8 py-2">
-                    <input type="checkbox" aria-label="Select everyone shown" checked={visible.filter((r) => !r.card_id).length > 0 && visible.filter((r) => !r.card_id).every((r) => picked.has(r.id))} onChange={(e) => { const n = new Set(picked); visible.filter((r) => !r.card_id).forEach((r) => (e.target.checked ? n.add(r.id) : n.delete(r.id))); setPicked(n); }} />
+                    <input type="checkbox" aria-label="Select everyone shown" checked={visible.length > 0 && visible.every((r) => picked.has(r.id))} onChange={(e) => { const n = new Set(picked); visible.forEach((r) => (e.target.checked ? n.add(r.id) : n.delete(r.id))); setPicked(n); }} />
                   </th>
                   <th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Priority</th><th className="py-2 pr-3">Fit</th><th className="py-2 pr-3">Why</th><th className="py-2">Likely level</th>
                 </tr>
@@ -444,10 +460,11 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
                   const headline = (res.facts ?? "").split("\n").find((l) => /^(headline|position title|title)/i.test(l))?.replace(/^[^:]+:\s*/, "") ?? "";
                   return (
                     <tr key={r.id} className="border-b border-[#1a2b4a]/5 align-top">
-                      <td className="py-2">{r.card_id ? <span className="text-[11px] text-[#2E7C83]" title="Already on a pipeline">✓</span> : <input type="checkbox" aria-label={`Select ${r.name}`} checked={picked.has(r.id)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(r.id); else n.delete(r.id); setPicked(n); }} />}</td>
+                      <td className="py-2">{<input type="checkbox" aria-label={`Select ${r.name}`} checked={picked.has(r.id)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(r.id); else n.delete(r.id); setPicked(n); }} />}</td>
                       <td className="py-2 pr-3">
                         {r.profile_url ? <a href={r.profile_url} target="_blank" rel="noreferrer" className="font-medium text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{r.name}</a> : <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</span>}
                         {headline && <p className="max-w-md truncate text-xs text-[#7a8a99]" title={headline}>{headline}</p>}
+                        {onNames(r) && <p className="text-xs font-medium text-[#8a6a15] dark:text-[#e6d28a]">Also on: {onNames(r)}</p>}
                       </td>
                       <td className="py-2 pr-3"><PriorityBadge priority={r.priority} small /></td>
                       <td className="py-2 pr-3 text-xs font-semibold text-[#5a6472] dark:text-[#b8c2cf]">{r.fit === "BORDERLINE" ? "Borderline" : r.fit === "YES" ? "Yes" : "No"}</td>

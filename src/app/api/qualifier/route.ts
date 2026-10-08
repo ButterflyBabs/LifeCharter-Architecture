@@ -32,7 +32,7 @@ export const maxDuration = 60;
 const MODEL = "gpt-4o-mini";
 const PROFILE_MODEL = "gpt-4o";
 const PLATFORM_IDS = CARD_PLATFORMS.map((p) => p.id) as string[];
-const QUAL_COLUMNS = "id, icp_id, icp_name, kind, audience_id, card_id, name, platform, profile_url, fit, level, priority, dm_angle, result, created_at";
+const QUAL_COLUMNS = "id, icp_id, icp_name, kind, audience_id, card_id, name, platform, profile_url, email, fit, level, priority, dm_angle, result, created_at";
 const RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2, SKIP: 3 };
 
 type Db = ReturnType<typeof createServerClient>;
@@ -44,6 +44,38 @@ async function gate(request?: Request): Promise<CrmAccount | { denied: NextRespo
   if ("denied" in a) return a;
   if (!QUALIFIER_OPEN_TO_ALL && !a.isArchitect) return { denied: NextResponse.json({ error: "Not found." }, { status: 404 }) };
   return a;
+}
+
+// Who is already on a pipeline. A person matches a card by profile link, by email, or by exact name (a name
+// match is ignored when both have a profile link and the links differ: two people can share a name).
+type Person = { name?: string | null; url?: string | null; email?: string | null };
+const normUrl = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+const normName = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+const normEmail = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+async function pipelineIndex(db: Db, planId: string) {
+  const [{ data: cards }, { data: boards }] = await Promise.all([
+    db.from("dm_cards").select("board_id, name, email, profile_url").eq("master_plan_id", planId).limit(20000),
+    db.from("pipeline_boards").select("id, name").eq("master_plan_id", planId),
+  ]);
+  type C = { board_id: string; name: string; email: string | null; profile_url: string | null };
+  const byUrl = new Map<string, C[]>();
+  const byEmail = new Map<string, C[]>();
+  const byName = new Map<string, C[]>();
+  const put = (m: Map<string, C[]>, k: string, c: C) => { if (k) m.set(k, [...(m.get(k) ?? []), c]); };
+  const add = (c: C) => { put(byUrl, normUrl(c.profile_url), c); put(byEmail, normEmail(c.email), c); put(byName, normName(c.name), c); };
+  for (const c of (cards ?? []) as C[]) add(c);
+  const boardName = new Map((boards ?? []).map((b) => [b.id as string, b.name as string]));
+  // The ids of every board this person is already on.
+  const boardsOf = (p: Person): string[] => {
+    const url = normUrl(p.url);
+    const hits = [
+      ...(byUrl.get(url) ?? []),
+      ...(byEmail.get(normEmail(p.email)) ?? []),
+      ...(byName.get(normName(p.name)) ?? []).filter((c) => !url || !normUrl(c.profile_url) || normUrl(c.profile_url) === url),
+    ];
+    return Array.from(new Set(hits.map((c) => c.board_id)));
+  };
+  return { boardsOf, add, names: (ids: string[]) => ids.map((id) => ({ id, name: boardName.get(id) ?? "a pipeline" })) };
 }
 
 async function loadIcp(db: Db, planId: string, id: string): Promise<Icp | null> {
@@ -86,7 +118,10 @@ export async function GET(request: Request) {
   const audienceId = u.searchParams.get("audience");
   if (audienceId) {
     const { data } = await db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("audience_id", audienceId).limit(2000);
-    const rows = (data ?? []).sort((x, y) => (RANK[x.priority as string] ?? 9) - (RANK[y.priority as string] ?? 9));
+    const idx = await pipelineIndex(db, a.planId);
+    const rows = (data ?? [])
+      .map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })) }))
+      .sort((x, y) => (RANK[x.priority as string] ?? 9) - (RANK[y.priority as string] ?? 9));
     return NextResponse.json({ rows });
   }
 
@@ -101,7 +136,11 @@ export async function GET(request: Request) {
     icps: (icps ?? []).map(shapeIcp),
     offers: (offers ?? []).map((o) => ({ id: o.id, name: o.name, transformation: o.transformation ?? "", idealClient: o.ideal_client ?? "", notFor: o.not_for ?? "" })),
     boards,
-    recent: recent ?? [],
+    recent: await (async () => {
+      if (!recent?.length) return [];
+      const idx = await pipelineIndex(db, a.planId);
+      return recent.map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })) }));
+    })(),
     audiences: audiences ?? [],
     defaultLevels: DEFAULT_LEVELS,
   });
@@ -168,22 +207,24 @@ export async function POST(request: Request) {
     const stages = await boardStages(db, a.planId, board.id);
     if (!stages.length) return NextResponse.json({ error: "Add a stage to that pipeline first." }, { status: 400 });
     const tz = await resolveUserTimeZone(str(b.tz, 60) || null);
-    const { data: quals } = await db.from("icp_qualifications").select("id, name, platform, profile_url, link_code, fit, level, priority, card_id, result").eq("master_plan_id", a.planId).in("id", ids);
-    const { data: existing } = await db.from("dm_cards").select("profile_url").eq("master_plan_id", a.planId).eq("board_id", board.id).not("profile_url", "is", null).limit(5000);
-    const have = new Set((existing ?? []).map((c) => String(c.profile_url).toLowerCase().replace(/\/+$/, "")));
+    const { data: quals } = await db.from("icp_qualifications").select("id, name, platform, profile_url, email, link_code, fit, level, priority, card_id, result").eq("master_plan_id", a.planId).in("id", ids);
+    // Never twice on the same pipeline; being on another pipeline is allowed.
+    const idx = await pipelineIndex(db, a.planId);
     let added = 0;
-    let skipped = 0;
+    const already: string[] = [];
+    let failed = 0;
     for (const q of quals ?? []) {
       const url = ((q.profile_url as string) || "").trim();
-      const norm = url.toLowerCase().replace(/\/+$/, "");
-      if (q.card_id || !q.name || (norm && have.has(norm))) { skipped++; continue; }
+      const email = normEmail(q.email as string | null);
+      if (!q.name) { failed++; continue; }
+      if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) { already.push(q.name as string); continue; }
       const key = stageKeyFor(q.priority as string);
       const stage = stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
       const platform = PLATFORM_IDS.includes(q.platform as string) ? (q.platform as string) : PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
       const why = str((q.result as { fitReason?: string; reason?: string })?.fitReason, 300) || str((q.result as { reason?: string })?.reason, 300);
       const notes = `[${dateIn(tz, 0)}] Qualifier: ${q.priority} priority · Fit ${q.fit}${q.level ? ` · ${q.level}` : ""}${why ? `\n${why}` : ""}`;
-      const r = await createCard(db, a.planId, board, stage, tz, { name: q.name as string, profileUrl: url || null, platform, notes });
-      if ("error" in r || !r.card) { skipped++; continue; }
+      const r = await createCard(db, a.planId, board, stage, tz, { name: q.name as string, profileUrl: url || null, email: email || null, platform, notes });
+      if ("error" in r || !r.card) { failed++; continue; }
       const patch: Record<string, unknown> = { qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id };
       // A personal registration link that came with the list stays with the person.
       if (q.link_code) {
@@ -192,10 +233,18 @@ export async function POST(request: Request) {
       }
       await db.from("dm_cards").update(patch).eq("id", r.card.id).eq("master_plan_id", a.planId);
       await db.from("icp_qualifications").update({ card_id: r.card.id }).eq("id", q.id).eq("master_plan_id", a.planId);
-      if (norm) have.add(norm);
+      idx.add({ board_id: board.id, name: q.name as string, email: email || null, profile_url: url || null });
       added++;
     }
-    return NextResponse.json({ added, skipped, board: board.name });
+    return NextResponse.json({ added, skipped: already.length, already: already.slice(0, 12), failed, board: board.name });
+  }
+
+  // Which people on a list are already on a pipeline (asked before scoring, so no score is spent on them).
+  if (b.action === "list-check") {
+    const idx = await pipelineIndex(db, a.planId);
+    const people = (Array.isArray(b.people) ? b.people : []).slice(0, 2000) as Person[];
+    const on = people.map((p) => idx.names(idx.boardsOf({ name: str(p.name, 120), url: str(p.url, 500), email: str(p.email, 200) })).map((x) => x.name));
+    return NextResponse.json({ on });
   }
 
   // ── Everything below spends an AI request ──
@@ -294,7 +343,7 @@ export async function POST(request: Request) {
     if (!aud) return NextResponse.json({ error: "That list wasn't found." }, { status: 404 });
     const icp = await loadIcp(db, a.planId, (aud.icp_id as string) ?? "");
     if (!icp) return NextResponse.json({ error: "The Ideal Client Profile for this list was deleted." }, { status: 400 });
-    const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 10).map((r: Record<string, unknown>) => ({ name: str(r.name, 120), url: str(r.url, 500), code: str(r.code, 40), facts: str(r.facts, 1200) })).filter((r: { name: string }) => r.name);
+    const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 10).map((r: Record<string, unknown>) => ({ name: str(r.name, 120), url: str(r.url, 500), code: str(r.code, 40), email: str(r.email, 200).toLowerCase(), facts: str(r.facts, 1200) })).filter((r: { name: string }) => r.name);
     if (!rows.length) return NextResponse.json({ rows: [] });
     const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
     let out: Record<string, unknown> | null;
@@ -305,7 +354,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Couldn't reach the AI just now." }, { status: 502 });
     }
     const scored = Array.isArray(out?.rows) ? (out!.rows as Record<string, unknown>[]) : [];
-    const insert = rows.map((r: { name: string; url: string; code: string; facts: string }, i: number) => {
+    const insert = rows.map((r: { name: string; url: string; code: string; email: string; facts: string }, i: number) => {
       const sc = scored.find((x) => Number(x.i) === i + 1) ?? scored[i] ?? {};
       const fit = cleanFit(sc.fit);
       const priority = fit === "NO" ? "SKIP" : cleanPriority(sc.priority);
@@ -319,6 +368,7 @@ export async function POST(request: Request) {
         platform,
         profile_url: r.url || null,
         link_code: r.code || null,
+        email: r.email || null,
         source_text: r.facts,
         fit,
         level: str(sc.likelyLevel, 60),
