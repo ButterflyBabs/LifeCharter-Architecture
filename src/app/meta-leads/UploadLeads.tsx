@@ -65,7 +65,7 @@ export default function UploadLeads({ address }: { address: string }) {
   return (
     <div className="mt-2 rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/40">
       <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">
-        In Meta's Leads Center, download your leads, then choose the file here. Each person is registered on the MasterClass Zoom meeting and gets a card in Registered. Someone already registered is simply kept as they are.
+        In the Leads Center in Meta, download your leads, then choose the file here. Each person is registered on the MasterClass Zoom meeting and gets a card in Registered. Someone already registered is simply kept as they are.
       </p>
       <input type="file" accept=".csv,.tsv,.txt,text/csv" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} className="mt-3 block text-sm" aria-label="Leads file" />
       {busy && <p className="mt-2 text-sm text-[#7a8a99]">Registering…</p>}
