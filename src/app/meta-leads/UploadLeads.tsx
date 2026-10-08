@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 // Reads the file downloaded from Meta's Leads Center (CSV or tab-separated, UTF-8 or UTF-16) and sends each row to the same
-// address the automatic link uses, so every lead is registered on Zoom, saved as a contact and given a card in Registered.
+// address the automatic link uses, so every lead is saved as a contact and added to your pipeline (and registered on Zoom in the house account).
 function parse(text: string): Record<string, string>[] {
   const first = text.split(/\r?\n/, 1)[0] ?? "";
   const delim = first.includes("\t") ? "\t" : ",";
@@ -58,17 +58,17 @@ export default function UploadLeads({ address }: { address: string }) {
         bad.push(`${body.email}: no connection`);
       }
     }
-    setLog([`${ok} of ${leads.length} leads registered.`, ...bad]);
+    setLog([`${ok} of ${leads.length} leads added.`, ...bad]);
     setBusy(false);
   }
 
   return (
     <div className="mt-2 rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/40">
       <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">
-        In the Leads Center in Meta, download your leads, then choose the file here. Each person is registered on the MasterClass Zoom meeting and gets a card in Registered. Someone already registered is simply kept as they are.
+        In the Leads Center in Meta, download your leads, then choose the file here. Each person is added exactly as if they had come through the automatic link. Someone already added is simply kept as they are.
       </p>
       <input type="file" accept=".csv,.tsv,.txt,text/csv" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} className="mt-3 block text-sm" aria-label="Leads file" />
-      {busy && <p className="mt-2 text-sm text-[#7a8a99]">Registering…</p>}
+      {busy && <p className="mt-2 text-sm text-[#7a8a99]">Adding…</p>}
       {log.map((l, i) => <p key={i} className={`mt-1 text-sm ${i === 0 ? "font-medium text-[#1a2b4a] dark:text-[#F8F5F0]" : "text-[#A4523C]"}`}>{l}</p>)}
     </div>
   );

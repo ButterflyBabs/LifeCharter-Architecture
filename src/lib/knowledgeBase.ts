@@ -239,6 +239,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["dm", "dms", "direct message", "instagram", "facebook", "linkedin", "dm pipeline", "outreach", "follow up", "prospecting", "social selling"],
   },
   {
+    id: "sa-meta-lead-ads",
+    category: "Sales",
+    question: "How do I send leads from my Facebook or Instagram lead ads into the Suite?",
+    answer:
+      "Open Clients & Sales → Meta Lead Ads. The page gives you your own private address and step-by-step instructions for setting up a free Make account (make.com) that watches your Meta lead form and sends each new lead to that address the moment it arrives. Each person is saved in Contacts with the tags lead-meta-ad and the ad's own tag, and gets a card in the pipeline you pick on the page (choose Contacts only to skip the card). Meta's own test leads are logged and ignored, so you can test as often as you like. The Latest leads list shows every lead and whether it was saved. If Make is ever down, download your leads from Meta's Leads Center and upload the file on the same page. Keep your address private, because anyone who has it can add contacts to your account.",
+    keywords: ["meta", "facebook lead ads", "instagram lead ads", "lead form", "make", "make.com", "zapier", "instant form", "ad leads", "webhook"],
+  },
+  {
     id: "gr-affiliates",
     category: "Growth",
     question: "How do affiliates work in the Suite?",

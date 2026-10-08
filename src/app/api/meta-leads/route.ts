@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
+import { isHousePlan } from "@/lib/housePlan";
 import { addMeetingRegistrant, isZoomConfigured, masterclassMeetingId } from "@/lib/zoom";
 import { advanceCards, boardStages, createCard, slugTag, type Board } from "@/lib/dmPipeline";
 
@@ -11,7 +12,8 @@ export const dynamic = "force-dynamic";
 // attend any session), saved as a contact tagged lead-meta-ad and the ad's own tag, and given a card in Registered
 // on the MasterClass Pipeline. Zoom's own confirmation goes out at once; the Suite's emails follow the next sync.
 // Accepts flat fields (email, first_name, last_name, full_name, ad_name, form_name, ...) or Meta's field_data list.
-// ?dry=1 checks the payload and the secret and changes nothing.
+// Every other account: the lead is saved as a contact (same tags) and, if the account chose a pipeline on the page, given a
+// card in that pipeline's first stage; there is no Zoom step. ?dry=1 checks the payload and the secret and changes nothing.
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : typeof v === "number" ? String(v) : "");
 
 function flatten(b: Record<string, unknown>): Record<string, string> {
@@ -34,9 +36,10 @@ export async function POST(request: Request) {
   const u = new URL(request.url);
   const key = u.searchParams.get("k") || "";
   const db = createServerClient();
-  const { data: set } = key.length >= 24 ? await db.from("meta_lead_settings").select("master_plan_id").eq("secret", key).maybeSingle() : { data: null };
+  const { data: set } = key.length >= 24 ? await db.from("meta_lead_settings").select("master_plan_id, board_id").eq("secret", key).maybeSingle() : { data: null };
   if (!set) return NextResponse.json({ error: "Unknown key." }, { status: 401 });
   const plan = set.master_plan_id as string;
+  const house = await isHousePlan(plan, db);
   const dry = u.searchParams.get("dry") === "1";
 
   // JSON, or a plain form (Make's "x-www-form-urlencoded" body).
@@ -72,26 +75,29 @@ export async function POST(request: Request) {
   if (!c) { await setStatus("failed", "Couldn't save the contact"); return NextResponse.json({ error: "Couldn't save the contact." }, { status: 500 }); }
   if (c.unsubscribed) { await setStatus("skipped", "Previously unsubscribed"); return NextResponse.json({ ok: true, skipped: "unsubscribed" }); }
 
-  // 2. Their card on the MasterClass Pipeline, in Registered.
+  // 2. Their card: Babs's account uses the MasterClass Pipeline's Registered stage; every other account uses the pipeline it chose.
   try {
-    const { data: board } = await db.from("pipeline_boards").select("id, name, tag, sort_order").eq("master_plan_id", plan).eq("tag", "masterclass-dm").maybeSingle();
+    const sel = db.from("pipeline_boards").select("id, name, tag, sort_order").eq("master_plan_id", plan);
+    const { data: board } = house ? await sel.eq("tag", "masterclass-dm").maybeSingle() : set.board_id ? await sel.eq("id", set.board_id as string).maybeSingle() : { data: null };
     if (board) {
       const b: Board = { id: board.id as string, name: board.name as string, tag: (board.tag as string) ?? null, sortOrder: board.sort_order as number };
       const stages = await boardStages(db, plan, b.id);
-      const reg = stages.find((s) => s.key === "registered");
+      const target = house ? stages.find((s) => s.key === "registered") : stages[0];
       const { data: have } = await db.from("dm_cards").select("id").eq("master_plan_id", plan).eq("board_id", b.id).or(`email.eq.${email},contact_id.eq.${c.id}`).limit(1);
-      if (have?.length) await advanceCards(db, plan, { contactId: c.id, email }, "registered").catch(() => {});
-      else if (reg) {
+      if (have?.length) { if (house) await advanceCards(db, plan, { contactId: c.id, email }, "registered").catch(() => {}); }
+      else if (target) {
         const notes = [`Meta lead ad${ad ? `: ${ad}` : ""}${form ? ` (${form})` : ""}`, ...Object.entries(answers).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)].join("\n");
-        await createCard(db, plan, b, reg, "America/Denver", { name: `${first} ${last}`.trim(), email, platform: "FB", contactId: c.id, notes });
+        await createCard(db, plan, b, target, "America/Denver", { name: `${first} ${last}`.trim(), email, platform: "FB", contactId: c.id, notes });
       }
     }
   } catch (e) {
     console.error("meta-leads card:", (e as Error).message);
   }
-  await logEvent(plan, c.id, "form", `Meta lead ad${ad ? `: ${ad}` : ""}: registered for the MasterClass`, { form, answers }, db as never).catch(() => {});
+  await logEvent(plan, c.id, "form", `Meta lead ad${ad ? `: ${ad}` : ""}${house ? ": registered for the MasterClass" : ""}`, { form, answers }, db as never).catch(() => {});
 
-  // 3. Register on the MasterClass Zoom meeting. A failure is reported so the sender retries; everything above is repeat-safe.
+  if (!house) { await setStatus("saved", "Saved to Contacts"); return NextResponse.json({ ok: true }); }
+
+  // 3. Register on the MasterClass Zoom meeting (Babs's account only). A failure is reported so the sender retries; everything above is repeat-safe.
   if (!isZoomConfigured()) { await setStatus("failed", "Zoom isn't configured"); return NextResponse.json({ error: "Registration is unavailable." }, { status: 503 }); }
   try {
     await addMeetingRegistrant(masterclassMeetingId(), { email, firstName: first, lastName: last });
