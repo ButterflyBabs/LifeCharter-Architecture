@@ -65,7 +65,7 @@ export default function QualResult({ q, compact, angleAction }: { q: Qual; compa
         </div>
         {txt(r.fitReason) && <p className="mt-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{txt(r.fitReason)}</p>}
         {info && <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]"><span className="font-semibold">What to do: </span>{info.todo}</p>}
-        {txt(r.warmSignal) && <p className="mt-1 text-sm text-[#1F5E63] dark:text-[#8fd0d6]"><span className="font-semibold">Warm signal: </span>{txt(r.warmSignal)}</p>}
+        {txt(r.warmSignal) && !/^(none|no\b|n\/a|not )/i.test(txt(r.warmSignal)) && <p className="mt-1 text-sm text-[#1F5E63] dark:text-[#8fd0d6]"><span className="font-semibold">Warm signal: </span>{txt(r.warmSignal)}</p>}
       </div>
 
       {angle && angle.toLowerCase() !== "skip" && (
