@@ -155,6 +155,20 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
+  // Coming back from the DM window (or another tab) refreshes the cards and the daily counters, even if the window's
+  // message didn't arrive.
+  useEffect(() => {
+    let last = Date.now();
+    const onFocus = () => {
+      if (Date.now() - last < 4000 || document.visibilityState === "hidden") return;
+      last = Date.now();
+      void load(board?.id);
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); };
+  }, [load, board?.id]);
+
   async function move(cardId: string, stageId: string) {
     const card = cards?.find((c) => c.id === cardId);
     if (!card || card.stage_id === stageId) return;
