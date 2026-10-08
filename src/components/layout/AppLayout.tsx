@@ -30,6 +30,7 @@ const BARE_ROUTES = [
   "/partner", // an outside accountability partner's private page
   "/p", // a client or contractor's private project page
   "/masterclass-signup", // public MasterClass signup
+  "/m", // a prospect's personal registration link (redirects)
   "/r", // affiliate links (redirect)
   "/login",
   "/logout",

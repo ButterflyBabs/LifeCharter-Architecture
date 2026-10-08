@@ -6,6 +6,8 @@ import { upsertContact } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { addMeetingRegistrant, isZoomConfigured, masterclassMeetingId } from "@/lib/zoom";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
+import { advanceCards } from "@/lib/dmPipeline";
+import { logEvent } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,17 @@ export async function POST(request: Request) {
       if (c && code) {
         const aff = await affiliateByCode(db, plan, code);
         if (aff) await recordReferral(db, plan, aff, c.id, "lead", "masterclass-signup");
+      }
+      // Came through a prospect's personal link (lccommandsuite.com/m/<code>): tie their outreach card to this contact
+      // and move it to Registered, whatever email they used.
+      const cardCode = str(b._card, 24);
+      if (c && cardCode) {
+        const { data: card } = await db.from("dm_cards").select("id, contact_id, email").eq("master_plan_id", plan).eq("link_code", cardCode).maybeSingle();
+        if (card) {
+          await db.from("dm_cards").update({ contact_id: (card.contact_id as string | null) ?? c.id, email: (card.email as string | null) ?? email }).eq("id", card.id);
+          await advanceCards(db, plan, { cardId: card.id as string, contactId: c.id }, "registered").catch((e) => console.error("masterclass-signup card:", e));
+          await logEvent(plan, c.id, "form", "Registered for the MasterClass through their personal link", { card: card.id }, db).catch(() => {});
+        }
       }
     }
   } catch (e) {

@@ -227,19 +227,20 @@ const AUTO_RANK: Record<string, number> = { to_reach: 0, sent: 1, followed_up: 1
 // The lci_ keys are the Incubator Pipeline's own stages, so a MasterClass registration never moves an Incubator card (or the reverse).
 export type AutoStageKey = "registered" | "attended" | "no_show" | "booked" | "lci_registered" | "lci_attended" | "lci_no_show";
 
-export async function advanceCards(db: Db, planId: string, who: { contactId?: string | null; email?: string | null }, toKey: AutoStageKey, tz = "America/Denver", dealId?: string | null): Promise<number> {
+export async function advanceCards(db: Db, planId: string, who: { contactId?: string | null; email?: string | null; cardId?: string | null }, toKey: AutoStageKey, tz = "America/Denver", dealId?: string | null): Promise<number> {
   const email = (who.email || "").trim().toLowerCase();
-  if (!who.contactId && !email) return 0;
+  if (!who.contactId && !email && !who.cardId) return 0;
   const { data: targets } = await db.from("dm_stages").select(STAGE_SEL).eq("master_plan_id", planId).eq("key", toKey);
   let moved = 0;
   for (const stage of (targets ?? []).map(shapeStage)) {
     const sel = "id, stage_id, deal_id";
-    const [byContact, byEmail] = await Promise.all([
+    const [byCard, byContact, byEmail] = await Promise.all([
+      who.cardId ? db.from("dm_cards").select(sel).eq("master_plan_id", planId).eq("board_id", stage.boardId).eq("id", who.cardId) : Promise.resolve({ data: [] }),
       who.contactId ? db.from("dm_cards").select(sel).eq("master_plan_id", planId).eq("board_id", stage.boardId).eq("contact_id", who.contactId) : Promise.resolve({ data: [] }),
       email ? db.from("dm_cards").select(sel).eq("master_plan_id", planId).eq("board_id", stage.boardId).eq("email", email) : Promise.resolve({ data: [] }),
     ]);
     const cards = new Map<string, { id: string; stage_id: string; deal_id: string | null }>();
-    for (const c of [...((byContact.data ?? []) as never[]), ...((byEmail.data ?? []) as never[])] as { id: string; stage_id: string; deal_id: string | null }[]) cards.set(c.id, c);
+    for (const c of [...((byCard.data ?? []) as never[]), ...((byContact.data ?? []) as never[]), ...((byEmail.data ?? []) as never[])] as { id: string; stage_id: string; deal_id: string | null }[]) cards.set(c.id, c);
     if (!cards.size) continue;
     const { data: board } = await db.from("pipeline_boards").select("name").eq("id", stage.boardId).maybeSingle();
     for (const card of Array.from(cards.values())) {

@@ -17,7 +17,7 @@ export default function SignupForm() {
     const r = await fetch("/api/masterclass-signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...f, _ref: new URLSearchParams(window.location.search).get("ref") || undefined }),
+      body: JSON.stringify({ ...f, _ref: new URLSearchParams(window.location.search).get("ref") || undefined, _card: new URLSearchParams(window.location.search).get("c") || undefined }),
     }).catch(() => null);
     const d = r ? await r.json().catch(() => ({})) : {};
     if (!r?.ok) {
