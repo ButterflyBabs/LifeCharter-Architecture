@@ -287,6 +287,8 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
   const [listName, setListName] = useState("");
   const [pending, setPending] = useState<ListRow[]>([]);
   const [limit, setLimit] = useState("");
+  const [pasting, setPasting] = useState(false);
+  const [pasted, setPasted] = useState("");
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const stop = useRef(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -303,14 +305,28 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
     setShow("ALL");
   }, []);
 
-  async function readFile(f: File) {
-    const table = parseDelimited(await f.text());
+  const NEEDS = "It needs a header row with a name column (or first name and last name) and at least one more column such as headline, title or company.";
+  function take(table: string[][], name?: string) {
     const list = rowsFromTable(table);
-    if (!list.length) { setMsg("Couldn't find people in that file. It needs a header row with a name column (or first name and last name) and at least one more column such as headline or title."); return; }
+    if (!list.length) { setMsg(`Couldn't find people in that. ${NEEDS}`); return; }
     setPending(list);
     setLimit("");
-    if (!listName) setListName(f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
+    if (name && !listName) setListName(name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
     setMsg("");
+  }
+  async function readFile(f: File) {
+    try {
+      if (/\.xlsx$/i.test(f.name)) {
+        // Excel workbook: the first sheet, every cell as text.
+        const { default: readXlsx } = await import("read-excel-file");
+        const sheet = await readXlsx(f);
+        take(sheet.map((r) => r.map((c) => (c == null ? "" : c instanceof Date ? c.toISOString().slice(0, 10) : String(c)))).filter((r) => r.some((c) => c.trim())), f.name);
+      } else if (/\.(xls|numbers|ods)$/i.test(f.name)) {
+        setMsg("That file type can't be read directly. Save it as Excel (.xlsx) or CSV and upload that, or copy the cells and paste them below.");
+      } else take(parseDelimited(await f.text()), f.name);
+    } catch {
+      setMsg("Couldn't read that file. Try saving it as CSV, or copy the cells and paste them below.");
+    }
   }
 
   async function run() {
@@ -342,7 +358,7 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
     <div className="space-y-5">
       <div className={`${panel} space-y-3`}>
         <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Score a whole list</h2>
-        <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Upload a spreadsheet of prospects (a .csv export). Each person gets a first-pass fit and priority from what the list holds: title, headline, company, industry, location. It can&rsquo;t see their posts, so it tells you who to look at first. Do the full qualification on a person&rsquo;s pipeline card when you work it.</p>
+        <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Upload a spreadsheet of contacts or prospects: Excel (.xlsx) or CSV, or paste the cells straight from Excel, Numbers or Google Sheets. The first row must be the column headings. Each person gets a first-pass fit and priority from what the list holds: title, headline, company, industry, location. It can&rsquo;t see their posts, so it tells you who to look at first. Do the full qualification on a person&rsquo;s pipeline card when you work it.</p>
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <IcpPick icps={icps} value={icpId} onChange={setIcpId} />
           <label className={label}>List name<Input value={listName} onChange={(e) => setListName(e.target.value)} placeholder="e.g. Prospect Bank, Wave 2" /></label>
@@ -352,9 +368,16 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
           </div>
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border-2 border-dashed border-[#2E7C83]/50 px-4 py-2 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
-          <Upload className="h-4 w-4" /> Choose a .csv file
-          <input type="file" accept=".csv,.tsv,.txt,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void readFile(f); e.target.value = ""; }} />
+          <Upload className="h-4 w-4" /> Upload a spreadsheet (.xlsx or .csv)
+          <input type="file" accept=".xlsx,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void readFile(f); e.target.value = ""; }} />
         </label>
+        <button onClick={() => setPasting(!pasting)} className="ml-3 text-sm font-medium text-[#2E7C83] hover:underline">{pasting ? "Hide paste box" : "or paste cells"}</button>
+        {pasting && (
+          <div className="space-y-2">
+            <textarea rows={6} value={pasted} onChange={(e) => setPasted(e.target.value)} className={box} placeholder="Select the cells in your spreadsheet (headings included), copy, and paste here." aria-label="Pasted spreadsheet cells" />
+            <Button variant="outline" disabled={!pasted.trim()} onClick={() => { take(parseDelimited(pasted)); setPasted(""); setPasting(false); }}>Use these rows</Button>
+          </div>
+        )}
         {pending.length > 0 && !progress && (
           <div className="rounded-xl bg-[#1a2b4a]/[0.04] p-3 dark:bg-white/5">
             <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"><strong>{pending.length}</strong> people found. First one: {pending[0].name}. {pending.length > 1000 ? "Up to 1,000 are scored per list." : ""}</p>
