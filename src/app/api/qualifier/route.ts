@@ -27,7 +27,10 @@ export const maxDuration = 60;
 //   audience-score { audienceId, rows: [{ name, url?, code?, facts }] }             (up to 10 rows per request)
 //   audience-delete { id } · delete { id }
 
+// A full qualification is a judgement call and writes a DM, so it gets the stronger model (about 1 to 2 cents each);
+// drafting a profile and the first pass over a list use the small one.
 const MODEL = "gpt-4o-mini";
+const PROFILE_MODEL = "gpt-4o";
 const PLATFORM_IDS = CARD_PLATFORMS.map((p) => p.id) as string[];
 const QUAL_COLUMNS = "id, icp_id, icp_name, kind, audience_id, card_id, name, platform, profile_url, fit, level, priority, dm_angle, result, created_at";
 const RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2, SKIP: 3 };
@@ -49,10 +52,10 @@ async function loadIcp(db: Db, planId: string, id: string): Promise<Icp | null> 
   return data ? shapeIcp(data) : null;
 }
 
-async function askJson(key: string, system: string, user: string, maxTokens: number): Promise<Record<string, unknown> | null> {
+async function askJson(key: string, system: string, user: string, maxTokens: number, model = MODEL): Promise<Record<string, unknown> | null> {
   const openai = new OpenAI({ apiKey: key });
   const completion = await openai.chat.completions.create({
-    model: MODEL,
+    model,
     messages: [{ role: "system", content: system }, { role: "user", content: user }],
     max_tokens: maxTokens,
     temperature: 0.3,
@@ -242,7 +245,7 @@ export async function POST(request: Request) {
     }
     let out: Record<string, unknown> | null;
     try {
-      out = await askJson(key, profilePrompt(icp, platform ?? card?.platform ?? null, { warm: str(b.warm, 400), voice: instructions.slice(0, 600) }), `${card?.name || str(b.name, 120) ? `Name on my list: ${card?.name || str(b.name, 120)}\n` : ""}PROFILE TEXT:\n${text}`, 1500);
+      out = await askJson(key, profilePrompt(icp, platform ?? card?.platform ?? null, { warm: str(b.warm, 400), voice: instructions.slice(0, 600) }), `${card?.name || str(b.name, 120) ? `Name on my list: ${card?.name || str(b.name, 120)}\n` : ""}PROFILE TEXT:\n${text}`, 1500, PROFILE_MODEL);
     } catch (e) {
       console.error("qualifier qualify:", e);
       return NextResponse.json({ error: "Couldn't reach the AI just now. Try again." }, { status: 502 });
