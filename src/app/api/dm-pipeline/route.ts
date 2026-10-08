@@ -233,6 +233,12 @@ export async function POST(request: Request) {
       if (patch.platform !== card.platform) await retagContact(db, a.planId, card.contact_id as string | null, [platformTag(patch.platform as string | null)], [platformTag(card.platform as string | null)]);
     }
     if (b.notes !== undefined) patch.notes = str(b.notes, 2000) || null;
+    if (b.scriptId !== undefined) {
+      // Which DM was sent: a script's id and title (or cleared).
+      const sid = str(b.scriptId, 60);
+      patch.script_id = sid || null;
+      patch.script_title = sid ? str(b.scriptTitle, 200) || null : null;
+    }
     if (b.followUpOn !== undefined) {
       // A new follow-up date moves its task too (or clears both).
       const day = str(b.followUpOn, 10);

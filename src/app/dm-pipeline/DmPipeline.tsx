@@ -126,6 +126,13 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     return d;
   };
 
+  async function pickScript(cardId: string, scriptId: string) {
+    const sc = scripts.find((x) => x.id === scriptId);
+    setCards((cs) => (cs ?? []).map((c) => (c.id === cardId ? { ...c, script_id: scriptId || null, script_title: sc?.title ?? null } : c)));
+    const d = (await post({ action: "update", cardId, scriptId, scriptTitle: sc?.title ?? "" })) as { card?: Card } | null;
+    if (!d?.card) void load(board?.id);
+  }
+
   async function move(cardId: string, stageId: string) {
     const card = cards?.find((c) => c.id === cardId);
     if (!card || card.stage_id === stageId) return;
@@ -248,7 +255,6 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                             <span className={`mb-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${p ? p.solid : "bg-[#b8a898]/25 text-[#5a6472] dark:text-[#b8c2cf]"}`}>{p ? p.label : "No platform set"}</span>
                             <p className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</p>
                             {c.handle && <p className="text-xs text-[#7b6b8d] truncate">{c.handle}</p>}
-                            {c.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">Script: {c.script_title}</p>}
                             <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
                               {c.follow_up_on && (
                                 <span className={`inline-flex items-center gap-1 ${overdue ? "text-[#A4523C] font-semibold" : due ? "text-[#8a6a15] font-semibold" : "text-[#7b6b8d]"}`}>
@@ -259,6 +265,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                               {!c.contact_id && <span className="text-[#7b6b8d]" title="Add an email to put them in Contacts and tag them">Not in Contacts</span>}
                             </div>
                           </button>
+                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => void pickScript(c.id, sid)} />
                         </article>
                       );
                     })}
@@ -281,7 +288,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           post={post}
         />
       )}
-      {open && <CardDetail card={open} stages={stages} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => void pickScript(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
       {settings && board && (
         <BoardSettings
           board={board}
@@ -394,7 +401,24 @@ function AddCard({ board, stages, scripts, onClose, onSaved, post, initial }: { 
   );
 }
 
-function CardDetail({ card, stages, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
+// "DM sent": which script went to this person. Shows that platform's scripts first.
+function DmSentPick({ card, scripts, onPick }: { card: Card; scripts: ScriptLite[]; onPick: (scriptId: string) => void }) {
+  const mine = card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : [];
+  const rest = scripts.filter((s) => !mine.includes(s));
+  const known = !card.script_id || scripts.some((s) => s.id === card.script_id);
+  return (
+    <label className="mt-2 block text-[11px] font-medium text-[#5a6472] dark:text-[#b8c2cf]">DM sent
+      <select value={card.script_id ?? ""} onChange={(e) => onPick(e.target.value)} className="mt-0.5 block h-8 w-full rounded-md border border-[#1a2b4a]/15 bg-white px-1.5 text-xs text-[#1a2b4a] dark:bg-[#1a2b4a]/40 dark:text-[#F8F5F0]">
+        <option value="">Not sent yet</option>
+        {!known && <option value={card.script_id ?? ""}>{card.script_title}</option>}
+        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</optgroup>}
+        {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</optgroup>}
+      </select>
+    </label>
+  );
+}
+
+function CardDetail({ card, stages, scripts, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
   const [d, setD] = useState({ name: card.name, handle: card.handle ?? "", profileUrl: card.profile_url ?? "", email: card.email ?? "", platform: card.platform ?? "", notes: card.notes ?? "", followUpOn: card.follow_up_on ?? "" });
   const [busy, setBusy] = useState(false);
   return (
@@ -406,6 +430,7 @@ function CardDetail({ card, stages, onClose, onMove, onSaved, onDeleted, post }:
           </select>
         </label>
         <PlatformPick value={d.platform} onChange={(v) => setD({ ...d, platform: v })} />
+        <DmSentPick card={card} scripts={scripts} onPick={onPick} />
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="block text-xs font-medium text-[#5a6472]">Name<Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></label>
           <label className="block text-xs font-medium text-[#5a6472]">Handle<Input value={d.handle} onChange={(e) => setD({ ...d, handle: e.target.value })} /></label>
@@ -418,7 +443,6 @@ function CardDetail({ card, stages, onClose, onMove, onSaved, onDeleted, post }:
           {card.profile_url && <a href={card.profile_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline">Open their profile <ExternalLink className="w-3.5 h-3.5" /></a>}
           {card.contact_id && <Link href="/contacts" className="text-[#2E7C83] hover:underline">In Contacts</Link>}
           {card.deal_id && <Link href="/sales/pipeline" className="text-[#2E7C83] hover:underline">In Sales Pipeline</Link>}
-          {card.script_title && <span className="text-[#7a8a99]">Script: {card.script_title}</span>}
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button
