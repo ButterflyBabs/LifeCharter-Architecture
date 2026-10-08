@@ -502,6 +502,13 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const content = (
       <div className="space-y-3">
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">For <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</strong>. Copy it, paste it into their profile, then press <em>I sent it</em> to log it and move them on.</p>
+        {card.platform === "LI" && (
+          <p className="rounded-lg bg-[#c9a227]/10 px-3 py-2 text-xs text-[#6b5410] dark:text-[#e6d28a]">
+            {/new connection opener/i.test(script.title)
+              ? "This is a connection request note, not a message. On their profile click Connect (it may be under More), choose Add a note, and paste. LinkedIn caps the note at 200 characters, and free accounts get only a few notes a month. Out of notes? Send the request with no note and use the Invite message once they accept."
+              : "LinkedIn only lets you message someone once they have accepted your connection request. On a profile that isn't connected yet, the Message button opens a Sales Navigator upgrade, so send the Connect request first."}
+          </p>
+        )}
         {sessionIso && (
           <label className="block text-xs font-medium text-[#5a6472]">Session date used in the message
             <Input value={sessionDate} onChange={(e) => {
