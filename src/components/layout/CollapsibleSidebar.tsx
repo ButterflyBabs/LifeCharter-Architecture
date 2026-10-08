@@ -85,7 +85,9 @@ import {
   GripVertical,
   FolderKanban,
   Link2,
+  UserCheck,
 } from "lucide-react";
+import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 
 // Navigation grouped into labeled sections, matching the Executive
 // Dashboard's sidebar pattern (colored section dot + uppercase label) —
@@ -119,6 +121,7 @@ const navigationSections = [
       { id: "tags", label: "Tag Library", icon: Tags, href: "/tags" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
       { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
+      { id: "qualifier", label: "Prospect Qualifier", icon: UserCheck, href: "/qualifier" },
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
@@ -166,6 +169,9 @@ const navigationSections = [
     ],
   },
 ];
+
+// Pages in the everyday sections that only Babs sees while they are being shaped.
+const ARCHITECT_ONLY_IDS: string[] = QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
 // so; the pages and their APIs enforce the same check on the server.
@@ -635,7 +641,7 @@ export function CollapsibleSidebar() {
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
   const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }] : demoOrderedSections), ...mySection]
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id))) }))
     .filter((s) => s.items.length > 0);
 
   // Pages can be dragged into whatever order you use most, within each

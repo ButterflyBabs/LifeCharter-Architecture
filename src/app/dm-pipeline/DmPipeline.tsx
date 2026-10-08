@@ -6,6 +6,8 @@ import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock,
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
+import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
+import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
 export type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
@@ -22,6 +24,9 @@ export type Card = {
   script_id: string | null;
   script_title: string | null;
   link_code?: string | null;
+  qual_priority?: string | null;
+  qual_fit?: string | null;
+  qual_level?: string | null;
   notes: string | null;
   last_contacted_at: string | null;
   follow_up_on: string | null;
@@ -65,7 +70,13 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [today, setToday] = useState("");
   const [nextSession, setNextSession] = useState<string | null>(null);
   const [dmUsage, setDmUsage] = useState<Record<string, DmUse>>({});
-  const [sending, setSending] = useState<{ cardId: string; scriptId: string } | null>(null);
+  const [sending, setSending] = useState<{ cardId: string; scriptId: string; angle?: string } | null>(null);
+  // Prospect Qualifier on the cards: Babs only until it is opened to every account.
+  const [qualOn, setQualOn] = useState(QUALIFIER_OPEN_TO_ALL);
+  useEffect(() => {
+    if (QUALIFIER_OPEN_TO_ALL || purpose !== "outreach") return;
+    fetch("/api/me", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => setQualOn(d?.architect === true)).catch(() => {});
+  }, [purpose]);
   const [filter, setFilter] = useState<string>("All");
   const [dragId, setDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
@@ -135,11 +146,12 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
 
   // The message opens in its own small window, so it can sit beside LinkedIn while you paste. If the browser blocks
   // pop-ups it opens over the page instead.
-  function openSend(cardId: string, scriptId: string) {
+  // scriptId "angle" is the personal DM angle from the card's qualification rather than a saved script.
+  function openSend(cardId: string, scriptId: string, angle?: string) {
     const q = new URLSearchParams({ card: cardId, script: scriptId, board: board?.id ?? "", purpose });
     const w = window.open(`/dm-send?${q}`, "dm-send", "popup=yes,width=560,height=760,left=80,top=60");
     if (w) w.focus();
-    else setSending({ cardId, scriptId });
+    else setSending({ cardId, scriptId, angle });
   }
 
   useEffect(() => {
@@ -294,6 +306,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                         >
                           <button onClick={() => setOpenId(c.id)} className="block w-full text-left">
                             <span className={`mb-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${p ? p.solid : "bg-[#b8a898]/25 text-[#5a6472] dark:text-[#b8c2cf]"}`}>{p ? p.label : "No platform set"}</span>
+                            {c.qual_priority && <span className="mb-1.5 ml-1.5 inline-block align-top" title={`Qualified: fit ${c.qual_fit ?? ""}${c.qual_level ? ` · ${c.qual_level}` : ""}`}><PriorityBadge priority={c.qual_priority} small /></span>}
                             <p className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</p>
                             {c.handle && <p className="text-xs text-[#7b6b8d] truncate">{c.handle}</p>}
                             <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
@@ -320,7 +333,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
 
       {sending && (() => {
         const c = cards?.find((x) => x.id === sending.cardId);
-        const sc = scripts.find((x) => x.id === sending.scriptId);
+        const sc = sending.scriptId === "angle" && sending.angle ? angleScript(sending.angle) : scripts.find((x) => x.id === sending.scriptId);
         return c && sc ? (
           <SendDm
             key={`${c.id}-${sc.id}`}
@@ -347,7 +360,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           post={post}
         />
       )}
-      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => openSend(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {open && <CardDetail card={open} stages={stages} scripts={scripts} qualOn={qualOn} onAngle={(text) => openSend(open.id, "angle", text)} onPick={(sid) => openSend(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
       {settings && board && (
         <BoardSettings
           board={board}
@@ -369,6 +382,9 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     </div>
   );
 }
+
+// The personal DM angle from a card's qualification, shaped like a saved script so the DM window can show it.
+export const angleScript = (text: string): ScriptLite => ({ id: "", title: "Personal DM angle", platforms: [], channel: "dm", content: text });
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
@@ -557,7 +573,7 @@ function fillScript(card: Card, script: ScriptLite, sessionDate: string): string
 function nextStageKey(title: string, stages: Stage[]): string | null {
   // A LinkedIn connection note is a request, not a DM: it waits for them to accept.
   if (/connection opener/i.test(title) && stages.some((s) => s.key === "connect_sent")) return "connect_sent";
-  if (/\b1 · /.test(title)) return "sent";
+  if (/\b1 · /.test(title) || /^Personal DM angle$/.test(title)) return "sent";
   if (/\b2 · Invite/i.test(title)) return "invited";
   return null;
 }
@@ -647,11 +663,11 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
     : <Modal title={short} onClose={onClose} wide>{content}</Modal>;
 }
 
-function CardDetail({ card, stages, scripts, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
+function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; qualOn: boolean; onAngle: (text: string) => void; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
   const [d, setD] = useState({ name: card.name, handle: card.handle ?? "", profileUrl: card.profile_url ?? "", email: card.email ?? "", platform: card.platform ?? "", notes: card.notes ?? "", followUpOn: card.follow_up_on ?? "" });
   const [busy, setBusy] = useState(false);
   return (
-    <Modal title={card.name} onClose={onClose}>
+    <Modal title={card.name} onClose={onClose} wide={qualOn}>
       <div className="space-y-3">
         <label className="block text-xs font-medium text-[#5a6472]">Stage
           <select value={card.stage_id} onChange={(e) => onMove(e.target.value)} className={`${box} h-10`}>
@@ -693,8 +709,91 @@ function CardDetail({ card, stages, scripts, onPick, onClose, onMove, onSaved, o
             <Trash2 className="w-4 h-4" /> Remove
           </button>
         </div>
+        {qualOn && <CardQualify card={card} onAngle={onAngle} onScored={onSaved} />}
       </div>
     </Modal>
+  );
+}
+
+// Qualify the person on this card against one of your Ideal Client Profiles: paste their profile, get fit, level,
+// the gap, a DM angle and a priority. The latest result stays with the card.
+function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: string) => void; onScored: (c: Card) => void }) {
+  const tz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
+  const [icps, setIcps] = useState<{ id: string; name: string }[] | null>(null);
+  const [q, setQ] = useState<Qual | null>(null);
+  const [icpId, setIcpId] = useState("");
+  const [text, setText] = useState("");
+  const [warm, setWarm] = useState("");
+  const [form, setForm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    fetch(`/api/qualifier?card=${card.id}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = (d?.icps ?? []) as { id: string; name: string }[];
+        setIcps(list);
+        setQ(d?.qualification ?? null);
+        let last = "";
+        try { last = localStorage.getItem("qualifier-icp") || ""; } catch { /* none */ }
+        setIcpId(d?.qualification?.icp_id && list.some((i) => i.id === d.qualification.icp_id) ? d.qualification.icp_id : list.some((i) => i.id === last) ? last : list[0]?.id ?? "");
+        setForm(!d?.qualification);
+      })
+      .catch(() => setIcps([]));
+  }, [card.id]);
+  if (!icps) return null;
+  return (
+    <div className="mt-2 border-t border-[#1a2b4a]/10 pt-4">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Prospect Qualifier</h4>
+        {q && !form && <button onClick={() => setForm(true)} className="text-sm font-medium text-[#2E7C83] hover:underline">Score again</button>}
+      </div>
+      {!icps.length ? (
+        <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Describe who you serve first: <Link href="/qualifier" className="text-[#2E7C83] hover:underline">create an Ideal Client Profile</Link>.</p>
+      ) : form ? (
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-[#5a6472]">Score against
+            <select value={icpId} onChange={(e) => { setIcpId(e.target.value); try { localStorage.setItem("qualifier-icp", e.target.value); } catch { /* not remembered */ } }} className={`${box} h-10`}>
+              {icps.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+            </select>
+          </label>
+          <label className="block text-xs font-medium text-[#5a6472]">Their profile text
+            <textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} className={box} placeholder="Open their profile, select everything on the page (Cmd+A), copy and paste here. Add their recent posts for the best read." />
+          </label>
+          <label className="block text-xs font-medium text-[#5a6472]">Have they engaged with you before? (optional)
+            <Input value={warm} onChange={(e) => setWarm(e.target.value)} placeholder="e.g. accepted my connection, commented last week" />
+          </label>
+          {err && <p className="text-sm text-[#A4523C]">{err}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              disabled={busy || text.trim().length < 80 || !icpId}
+              onClick={async () => {
+                setBusy(true);
+                setErr("");
+                const r = await fetch("/api/qualifier", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "qualify", cardId: card.id, icpId, profileText: text, warm, platform: card.platform, tz }) });
+                const d = await r.json().catch(() => ({}));
+                setBusy(false);
+                if (!r.ok || !d.qualification) { setErr(d.error || "Couldn't score that. Try again."); return; }
+                setQ(d.qualification);
+                setText("");
+                setForm(false);
+                if (d.card) onScored(d.card as Card);
+              }}
+            >
+              {busy ? "Scoring…" : "Score this prospect"}
+            </Button>
+            {card.profile_url && <a href={card.profile_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline">Open their profile <ExternalLink className="w-3.5 h-3.5" /></a>}
+            {q && <button onClick={() => setForm(false)} className="text-sm text-[#5a6472] hover:underline">Cancel</button>}
+          </div>
+        </div>
+      ) : q ? (
+        <QualResult
+          q={q}
+          compact
+          angleAction={q.dm_angle ? <button onClick={() => onAngle(q.dm_angle as string)} className="rounded-full bg-[#1a2b4a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a2b4a]/90">Open in the DM window</button> : null}
+        />
+      ) : null}
+    </div>
   );
 }
 

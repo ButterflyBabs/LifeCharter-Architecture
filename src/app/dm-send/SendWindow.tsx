@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SendDm, type Card, type Stage, type ScriptLite, type Post, type DmUse } from "../dm-pipeline/DmPipeline";
+import { SendDm, angleScript, type Card, type Stage, type ScriptLite, type Post, type DmUse } from "../dm-pipeline/DmPipeline";
 
 // Loads the card, the script and the board's stages, shows the message to copy, and tells the pipeline window
 // (if it is still open) what was logged.
@@ -21,7 +21,12 @@ export default function SendWindow() {
         fetch("/api/scripts", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
       ]);
       const card = ((d.cards ?? []) as Card[]).find((c) => c.id === params.get("card"));
-      const script = ((sc.items ?? []) as ScriptLite[]).find((s) => s.id === params.get("script"));
+      let script = ((sc.items ?? []) as ScriptLite[]).find((s) => s.id === params.get("script"));
+      // "angle": the personal DM angle from this card's qualification.
+      if (params.get("script") === "angle" && card) {
+        const q = await fetch(`/api/qualifier?card=${card.id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+        if (q.qualification?.dm_angle) script = angleScript(q.qualification.dm_angle as string);
+      }
       if (!card || !script) { setErr("Couldn't find that card or message. Close this window and try again from the pipeline."); return; }
       setData({ card, script, stages: d.stages ?? [], nextSession: d.nextSession ?? null, usage: d.dmUsage ?? {} });
     })();

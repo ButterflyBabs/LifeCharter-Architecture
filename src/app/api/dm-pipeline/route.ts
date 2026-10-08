@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     boardStages(db, a.planId, board.id),
     db
       .from("dm_cards")
-      .select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, link_code, notes, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at")
+      .select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, link_code, notes, qual_priority, qual_fit, qual_level, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at")
       .eq("master_plan_id", a.planId)
       .eq("board_id", board.id)
       .order("sort_order")
