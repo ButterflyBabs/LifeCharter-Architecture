@@ -4,6 +4,7 @@ import { isAlignmentArchitect } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { ownerMasterPlanId } from "@/lib/housePlan";
 import CopyField from "./CopyField";
+import UploadLeads from "./UploadLeads";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ export default async function MetaLeadsPage() {
       </p>
       <h2 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Address for Make or Zapier</h2>
       <CopyField value={url} />
+      <h2 className="mt-8 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Upload leads from a file</h2>
+      <UploadLeads address={url} />
       <h2 className="mt-8 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Latest leads</h2>
       {!leads?.length ? (
         <p className="mt-2 text-sm text-[#7a8a99]">None yet. They appear here as soon as a lead form is submitted.</p>
