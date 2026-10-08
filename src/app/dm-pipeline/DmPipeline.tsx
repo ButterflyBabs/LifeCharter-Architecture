@@ -554,7 +554,9 @@ function fillScript(card: Card, script: ScriptLite, sessionDate: string): string
 }
 
 // Which stage the card usually moves to once this script has gone out.
-function nextStageKey(title: string): string | null {
+function nextStageKey(title: string, stages: Stage[]): string | null {
+  // A LinkedIn connection note is a request, not a DM: it waits for them to accept.
+  if (/connection opener/i.test(title) && stages.some((s) => s.key === "connect_sent")) return "connect_sent";
   if (/\b1 · /.test(title)) return "sent";
   if (/\b2 · Invite/i.test(title)) return "invited";
   return null;
@@ -564,7 +566,7 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const [sessionDate, setSessionDate] = useState(sessionIso ? niceDate(sessionIso) : "");
   const [text, setText] = useState(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""));
   const cur = stages.find((s) => s.id === card.stage_id);
-  const suggestKey = nextStageKey(script.title);
+  const suggestKey = nextStageKey(script.title, stages);
   const suggested = stages.find((s) => s.key === suggestKey);
   const [moveTo, setMoveTo] = useState(suggested && cur && suggested.sortOrder > cur.sortOrder ? suggested.id : "");
   const [copied, setCopied] = useState(false);

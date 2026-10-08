@@ -30,6 +30,7 @@ export const platformTag = (id: string | null | undefined) => {
 // Stage templates for a new board.
 const DM_TEMPLATE: { key: string; name: string; slug: string; followUpDays: number | null; kind: "open" | "booked" | "closed" }[] = [
   { key: "to_reach", name: "To reach out", slug: "reach-out", followUpDays: null, kind: "open" },
+  { key: "connect_sent", name: "Connect request sent: waiting", slug: "connect-sent", followUpDays: 7, kind: "open" },
   { key: "sent", name: "DM sent", slug: "sent", followUpDays: 3, kind: "open" },
   { key: "followed_up", name: "Followed up (no reply yet)", slug: "followed-up", followUpDays: 5, kind: "open" },
   { key: "conversation", name: "In conversation", slug: "conversation", followUpDays: 1, kind: "open" },
@@ -223,7 +224,7 @@ export async function moveCard(db: Db, planId: string, cardId: string, stage: Dm
 // attended, did not show, booked a consultation), every card of theirs on a board that has a stage
 // with that key moves there, exactly as if it had been dragged: follow-up, tags and timeline included.
 // A card only ever moves forward, and never out of a closed stage (Client, Not now, ...).
-const AUTO_RANK: Record<string, number> = { to_reach: 0, sent: 1, followed_up: 1, conversation: 2, invited: 3, nurture: 3, registered: 4, no_show: 5, attended: 6, booked: 7, lci_registered: 4, lci_no_show: 5, lci_attended: 6 };
+const AUTO_RANK: Record<string, number> = { to_reach: 0, connect_sent: 1, sent: 1, followed_up: 1, conversation: 2, invited: 3, nurture: 3, registered: 4, no_show: 5, attended: 6, booked: 7, lci_registered: 4, lci_no_show: 5, lci_attended: 6 };
 // The lci_ keys are the Incubator Pipeline's own stages, so a MasterClass registration never moves an Incubator card (or the reverse).
 export type AutoStageKey = "registered" | "attended" | "no_show" | "booked" | "lci_registered" | "lci_attended" | "lci_no_show";
 
