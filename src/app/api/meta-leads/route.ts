@@ -39,7 +39,11 @@ export async function POST(request: Request) {
   const plan = set.master_plan_id as string;
   const dry = u.searchParams.get("dry") === "1";
 
-  const raw = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  // JSON, or a plain form (Make's "x-www-form-urlencoded" body).
+  const ct = request.headers.get("content-type") || "";
+  const raw = (ct.includes("json")
+    ? await request.json().catch(() => ({}))
+    : await request.formData().then((f) => Object.fromEntries(Array.from(f.entries()).map(([k, v]) => [k, typeof v === "string" ? v : ""]))).catch(() => ({}))) as Record<string, unknown>;
   const f = flatten(raw);
   const email = (f.email || f.email_address || f.work_email || "").toLowerCase();
   const full = f.full_name || f.name || "";
