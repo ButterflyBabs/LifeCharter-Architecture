@@ -21,6 +21,7 @@ type Card = {
   platform: string | null;
   script_id: string | null;
   script_title: string | null;
+  link_code?: string | null;
   notes: string | null;
   last_contacted_at: string | null;
   follow_up_on: string | null;
@@ -28,7 +29,7 @@ type Card = {
   sort_order: number;
   stage_changed_at: string;
 };
-type ScriptLite = { id: string; title: string; platforms: string[]; channel: string };
+type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
 type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
 const PLATFORMS = [
@@ -61,6 +62,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [stages, setStages] = useState<Stage[]>([]);
   const [cards, setCards] = useState<Card[] | null>(null);
   const [today, setToday] = useState("");
+  const [nextSession, setNextSession] = useState<string | null>(null);
+  const [sending, setSending] = useState<{ cardId: string; scriptId: string } | null>(null);
   const [filter, setFilter] = useState<string>("All");
   const [dragId, setDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
@@ -94,6 +97,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setStages(d.stages ?? []);
       setCards(d.cards ?? []);
       setToday(d.today ?? "");
+      setNextSession(d.nextSession ?? null);
       try {
         if (d.board?.id) localStorage.setItem(`pipelines-board-${purpose}`, d.board.id);
       } catch {
@@ -125,13 +129,6 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     }
     return d;
   };
-
-  async function pickScript(cardId: string, scriptId: string) {
-    const sc = scripts.find((x) => x.id === scriptId);
-    setCards((cs) => (cs ?? []).map((c) => (c.id === cardId ? { ...c, script_id: scriptId || null, script_title: sc?.title ?? null } : c)));
-    const d = (await post({ action: "update", cardId, scriptId, scriptTitle: sc?.title ?? "" })) as { card?: Card } | null;
-    if (!d?.card) void load(board?.id);
-  }
 
   async function move(cardId: string, stageId: string) {
     const card = cards?.find((c) => c.id === cardId);
@@ -268,7 +265,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                               {!c.contact_id && <span className="text-[#7b6b8d]" title="Add an email to put them in Contacts and tag them">Not in Contacts</span>}
                             </div>
                           </button>
-                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => void pickScript(c.id, sid)} />
+                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => setSending({ cardId: c.id, scriptId: sid })} />
                         </article>
                       );
                     })}
@@ -279,6 +276,23 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           </div>
         </div>
       )}
+
+      {sending && (() => {
+        const c = cards?.find((x) => x.id === sending.cardId);
+        const sc = scripts.find((x) => x.id === sending.scriptId);
+        return c && sc ? (
+          <SendDm
+            key={`${c.id}-${sc.id}`}
+            card={c}
+            script={sc}
+            stages={stages}
+            sessionIso={nextSession}
+            onClose={() => setSending(null)}
+            onDone={(saved, note) => { setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x))); setSending(null); setOpenId(null); setMsg(note); }}
+            post={post}
+          />
+        ) : null;
+      })()}
 
       {adding && board && stages.length > 0 && (
         <AddCard
@@ -291,7 +305,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           post={post}
         />
       )}
-      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => void pickScript(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => setSending({ cardId: open.id, scriptId: sid })} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
       {settings && board && (
         <BoardSettings
           board={board}
@@ -404,20 +418,119 @@ function AddCard({ board, stages, scripts, onClose, onSaved, post, initial }: { 
   );
 }
 
-// "DM sent": which script went to this person. Shows that platform's scripts first.
+// "Send a DM": pick a script to see its message, copy it, and log it as sent. Shows the last one sent.
 function DmSentPick({ card, scripts, onPick }: { card: Card; scripts: ScriptLite[]; onPick: (scriptId: string) => void }) {
   const mine = card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : [];
   const rest = scripts.filter((s) => !mine.includes(s));
-  const known = !card.script_id || scripts.some((s) => s.id === card.script_id);
   return (
-    <label className="mt-2 block text-[11px] font-medium text-[#5a6472] dark:text-[#b8c2cf]">DM sent
-      <select value={card.script_id ?? ""} onChange={(e) => onPick(e.target.value)} className="mt-0.5 block h-8 w-full rounded-md border border-[#1a2b4a]/15 bg-white px-1.5 text-xs text-[#1a2b4a] dark:bg-[#1a2b4a]/40 dark:text-[#F8F5F0]">
-        <option value="">Not sent yet</option>
-        {!known && <option value={card.script_id ?? ""}>{card.script_title}</option>}
-        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</optgroup>}
-        {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</optgroup>}
+    <div className="mt-2">
+      <select value="" onChange={(e) => e.target.value && onPick(e.target.value)} aria-label="Choose a DM to send" className="block h-8 w-full rounded-md border border-[#2E7C83]/40 bg-white px-1.5 text-xs font-medium text-[#2E7C83] dark:bg-[#1a2b4a]/40">
+        <option value="">Choose a DM to send…</option>
+        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{s.title.replace(/^MasterClass DM · /, "")}</option>)}</optgroup>}
+        {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{s.title.replace(/^MasterClass DM · /, "")}</option>)}</optgroup>}
       </select>
-    </label>
+      {card.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">DM sent: {card.script_title.replace(/^MasterClass DM · /, "")}</p>}
+    </div>
+  );
+}
+
+const TITLE_WORDS = /^(dr|mr|mrs|ms|prof|rev|col|colonel)\.?$/i;
+const firstNameOf = (name: string) => name.split(",")[0].split(/\s+/).find((w) => w && !TITLE_WORDS.test(w)) ?? name;
+const niceDate = (iso: string) => new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Denver" }).format(new Date(iso));
+
+// The message for one card: the script with their name, the session date and their personal link filled in.
+function fillScript(card: Card, script: ScriptLite, sessionDate: string): string {
+  let t = script.content ?? "";
+  if (/new connection opener/i.test(script.title)) {
+    const m = (card.notes ?? "").match(/Connection note:\s*([^\n]+)/);
+    if (m) return m[1].trim();
+  }
+  t = t.replace(/\[Name\]/g, firstNameOf(card.name));
+  if (sessionDate) t = t.replace(/\[Thursday, date\]/g, sessionDate);
+  if (card.link_code) t = t.replace(/\[their personal link[^\]]*\]/gi, `https://lccommandsuite.com/m/${card.link_code}`);
+  return t;
+}
+
+// Which stage the card usually moves to once this script has gone out.
+function nextStageKey(title: string): string | null {
+  if (/\b1 · /.test(title)) return "sent";
+  if (/\b2 · Invite/i.test(title)) return "invited";
+  return null;
+}
+
+function SendDm({ card, script, stages, sessionIso, onClose, onDone, post }: { card: Card; script: ScriptLite; stages: Stage[]; sessionIso: string | null; onClose: () => void; onDone: (c: Card, note: string) => void; post: Post }) {
+  const [sessionDate, setSessionDate] = useState(sessionIso ? niceDate(sessionIso) : "");
+  const [text, setText] = useState(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""));
+  const cur = stages.find((s) => s.id === card.stage_id);
+  const suggestKey = nextStageKey(script.title);
+  const suggested = stages.find((s) => s.key === suggestKey);
+  const [moveTo, setMoveTo] = useState(suggested && cur && suggested.sortOrder > cur.sortOrder ? suggested.id : "");
+  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const left = Array.from(new Set(text.match(/\[[^\]]+\]/g) ?? []));
+  const short = script.title.replace(/^MasterClass DM · /, "");
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      /* select the text instead */
+    }
+  }
+  return (
+    <Modal title={short} onClose={onClose} wide>
+      <div className="space-y-3">
+        <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">For <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</strong>. Copy it, paste it into their profile, then press <em>I sent it</em> to log it and move them on.</p>
+        {sessionIso && (
+          <label className="block text-xs font-medium text-[#5a6472]">Session date used in the message
+            <Input value={sessionDate} onChange={(e) => {
+              const old = sessionDate;
+              setSessionDate(e.target.value);
+              if (old) setText((t) => t.split(old).join(e.target.value));
+            }} />
+          </label>
+        )}
+        <textarea rows={12} value={text} onChange={(e) => setText(e.target.value)} className={`${box} text-[15px] leading-relaxed`} aria-label="Message" />
+        <div className="flex items-center justify-between text-xs text-[#7a8a99]">
+          <span>{text.length} characters</span>
+          {left.length > 0 && <span className="text-[#A4523C] font-medium">Still to fill in: {left.join("  ")}</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void copy()}>{copied ? "Copied" : "Copy message"}</Button>
+          {card.profile_url && (
+            <a href={card.profile_url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[#2E7C83]/40 px-4 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
+              Open their profile <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+        <div className="rounded-xl border border-[#1a2b4a]/10 p-3 space-y-2">
+          <label className="block text-xs font-medium text-[#5a6472]">After you send it, move them to
+            <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} className={`${box} h-10`}>
+              <option value="">Stay in {cur?.name ?? "this stage"}</option>
+              {stages.filter((s) => s.id !== card.stage_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const r = (await post({ action: "dm-sent", cardId: card.id, scriptId: script.id, scriptTitle: script.title, stageId: moveTo || undefined })) as { card?: Card } | null;
+                setBusy(false);
+                if (r?.card) {
+                  const dest = stages.find((s) => s.id === r.card!.stage_id);
+                  onDone(r.card, `Logged "${short}" for ${card.name}${moveTo ? `, moved to ${dest?.name}` : ""}.`);
+                }
+              }}
+            >
+              I sent it
+            </Button>
+            <Button variant="outline" onClick={onClose}>Not yet</Button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

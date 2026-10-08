@@ -3,9 +3,10 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
-import { upsertContact, EMAIL_RE } from "@/lib/crm";
+import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, type Board } from "@/lib/dmPipeline";
 import { zonedToUtcISO } from "@/lib/tz";
+import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export const dynamic = "force-dynamic";
 //   move   { cardId, stageId, sortOrder? }
 //   update { cardId, name?, handle?, profileUrl?, email?, platform?, notes?, followUpOn? }
 //   delete { cardId }
+//   dm-sent { cardId, scriptId, scriptTitle, stageId? }   (logs the DM on the card and timeline, stamps last contacted, moves the card)
 const PLATFORM_IDS = CARD_PLATFORMS.map((p) => p.id) as string[];
 const SOCIAL_COL: Record<string, string> = { IG: "instagram", FB: "facebook", LI: "linkedin" };
 const KINDS = ["open", "booked", "closed"];
@@ -41,14 +43,20 @@ export async function GET(request: Request) {
     boardStages(db, a.planId, board.id),
     db
       .from("dm_cards")
-      .select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, notes, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at")
+      .select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, link_code, notes, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at")
       .eq("master_plan_id", a.planId)
       .eq("board_id", board.id)
       .order("sort_order")
       .order("created_at")
       .limit(2000),
   ]);
-  return NextResponse.json({ boards, board, stages, cards: cards ?? [], today: dateIn(tz, 0) });
+  // The MasterClass boards offer the next session that is still more than a day away, for the dates in their DM scripts.
+  let nextSession: string | null = null;
+  if (/masterclass/i.test(`${board.name} ${board.tag ?? ""}`) && isZoomConfigured()) {
+    const sch = await meetingSchedule(masterclassMeetingId()).catch(() => null);
+    nextSession = sch?.occurrences.find((o) => new Date(o.start).getTime() > Date.now() + 24 * 3600_000)?.start ?? null;
+  }
+  return NextResponse.json({ boards, board, stages, cards: cards ?? [], today: dateIn(tz, 0), nextSession });
 }
 
 export async function POST(request: Request) {
@@ -215,6 +223,28 @@ export async function POST(request: Request) {
     if (!stage) return NextResponse.json({ error: "Unknown stage." }, { status: 400 });
     const saved = await moveCard(db, a.planId, card.id as string, stage, board.name, tz, typeof b.sortOrder === "number" ? b.sortOrder : undefined);
     return saved ? NextResponse.json({ card: saved }) : NextResponse.json({ error: "Couldn't move it." }, { status: 500 });
+  }
+
+  if (b.action === "dm-sent") {
+    const sid = str(b.scriptId, 60);
+    const title = str(b.scriptTitle, 200);
+    const stages = await boardStages(db, a.planId, board.id);
+    const target = b.stageId ? stages.find((s) => s.id === b.stageId) : null;
+    if (target && target.id !== card.stage_id) await moveCard(db, a.planId, card.id as string, target, board.name, tz);
+    const { data: cur } = await db.from("dm_cards").select("notes, contact_id").eq("id", card.id).eq("master_plan_id", a.planId).maybeSingle();
+    const line = `[${dateIn(tz, 0)}] Sent${card.platform ? ` on ${card.platform}` : ""}: ${title || "a DM"}`;
+    const notes = `${(cur?.notes as string | null) ?? ""}\n\n${line}`.trim().slice(-2000);
+    const now = new Date().toISOString();
+    const { data: saved, error } = await db
+      .from("dm_cards")
+      .update({ script_id: sid || null, script_title: title || null, last_contacted_at: now, notes, updated_at: now })
+      .eq("id", card.id)
+      .eq("master_plan_id", a.planId)
+      .select("*")
+      .single();
+    if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+    if (card.contact_id) await logEvent(a.planId, card.contact_id as string, "manual", `${board.name}: ${line.replace(/^\[[^\]]*\] /, "")}`, { dm_card: card.id }, db as never).catch(() => {});
+    return NextResponse.json({ card: saved });
   }
 
   if (b.action === "update") {
