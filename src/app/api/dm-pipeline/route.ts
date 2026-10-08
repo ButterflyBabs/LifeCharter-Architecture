@@ -243,6 +243,14 @@ export async function POST(request: Request) {
       .select("*")
       .single();
     if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+    // Every DM sent counts on Sales Activities (this week's tally and goal) and, through it, toward the business health score.
+    const day = dateIn(tz, 0);
+    const act = `Outreach Pipelines · ${board.name} · card ${card.id}`;
+    const actTitle = (title || "DM").replace(/^MasterClass DM · /, "").slice(0, 200);
+    const { data: dupe } = await db.from("sales_activities").select("id").eq("master_plan_id", a.planId).eq("type", "dm").eq("occurred_on", day).eq("title", actTitle).eq("notes", act).limit(1);
+    if (!dupe?.length) {
+      await db.from("sales_activities").insert({ master_plan_id: a.planId, type: "dm", contact_name: (saved.name as string) ?? "", contact_company: "", title: actTitle, priority: "warm", status: "completed", outcome: "", estimated_value: 0, occurred_on: day, notes: act }).then(({ error: e }) => { if (e) console.error("dm-sent activity:", e.message); });
+    }
     if (card.contact_id) await logEvent(a.planId, card.contact_id as string, "manual", `${board.name}: ${line.replace(/^\[[^\]]*\] /, "")}`, { dm_card: card.id }, db as never).catch(() => {});
     return NextResponse.json({ card: saved });
   }
