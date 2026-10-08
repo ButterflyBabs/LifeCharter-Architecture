@@ -180,6 +180,6 @@ export function stageKeyFor(priority: string | null | undefined): string {
   return priority === "HIGH" ? "to_reach" : "nurture";
 }
 
-// Babs only while the feature is being shaped. Set to true to open it to every account
+// Released to every account on 2026-10-08. Set to false to make it Babs-only again
 // (the menu item, the page, the API and the Qualify section on pipeline cards all follow this).
-export const QUALIFIER_OPEN_TO_ALL = false;
+export const QUALIFIER_OPEN_TO_ALL = true;
