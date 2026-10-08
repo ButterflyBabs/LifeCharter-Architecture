@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Tag, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
@@ -213,6 +213,9 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
             <AlertCircle className="w-3.5 h-3.5" /> {dueCount} follow-up{dueCount === 1 ? "" : "s"} due
           </span>
         )}
+        <Link href="/daily-compass/scripts" className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#2E7C83]/40 px-3 py-1.5 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
+          <FileText className="w-3.5 h-3.5" /> DM scripts &amp; templates
+        </Link>
       </div>
 
       {!cards ? (
