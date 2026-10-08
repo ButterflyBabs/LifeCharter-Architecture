@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
-type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
-type Card = {
+export type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
+export type Card = {
   id: string;
   board_id: string;
   stage_id: string;
@@ -29,8 +29,8 @@ type Card = {
   sort_order: number;
   stage_changed_at: string;
 };
-type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
-type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
+export type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
+export type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
 const PLATFORMS = [
   // solid = the badge on each card; bar = the stripe down the card's left edge. Facebook and LinkedIn are
@@ -129,6 +129,27 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     }
     return d;
   };
+
+  // The message opens in its own small window, so it can sit beside LinkedIn while you paste. If the browser blocks
+  // pop-ups it opens over the page instead.
+  function openSend(cardId: string, scriptId: string) {
+    const q = new URLSearchParams({ card: cardId, script: scriptId, board: board?.id ?? "", purpose });
+    const w = window.open(`/dm-send?${q}`, "dm-send", "popup=yes,width=560,height=760,left=80,top=60");
+    if (w) w.focus();
+    else setSending({ cardId, scriptId });
+  }
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.data?.type !== "dm-sent") return;
+      const saved = e.data.card as Card;
+      setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x)));
+      setOpenId(null);
+      if (e.data.note) setMsg(String(e.data.note));
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
 
   async function move(cardId: string, stageId: string) {
     const card = cards?.find((c) => c.id === cardId);
@@ -265,7 +286,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                               {!c.contact_id && <span className="text-[#7b6b8d]" title="Add an email to put them in Contacts and tag them">Not in Contacts</span>}
                             </div>
                           </button>
-                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => setSending({ cardId: c.id, scriptId: sid })} />
+                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => openSend(c.id, sid)} />
                         </article>
                       );
                     })}
@@ -305,7 +326,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           post={post}
         />
       )}
-      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => setSending({ cardId: open.id, scriptId: sid })} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {open && <CardDetail card={open} stages={stages} scripts={scripts} onPick={(sid) => openSend(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
       {settings && board && (
         <BoardSettings
           board={board}
@@ -458,7 +479,7 @@ function nextStageKey(title: string): string | null {
   return null;
 }
 
-function SendDm({ card, script, stages, sessionIso, onClose, onDone, post }: { card: Card; script: ScriptLite; stages: Stage[]; sessionIso: string | null; onClose: () => void; onDone: (c: Card, note: string) => void; post: Post }) {
+export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post, standalone }: { standalone?: boolean; card: Card; script: ScriptLite; stages: Stage[]; sessionIso: string | null; onClose: () => void; onDone: (c: Card, note: string) => void; post: Post }) {
   const [sessionDate, setSessionDate] = useState(sessionIso ? niceDate(sessionIso) : "");
   const [text, setText] = useState(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""));
   const cur = stages.find((s) => s.id === card.stage_id);
@@ -478,8 +499,7 @@ function SendDm({ card, script, stages, sessionIso, onClose, onDone, post }: { c
       /* select the text instead */
     }
   }
-  return (
-    <Modal title={short} onClose={onClose} wide>
+  const content = (
       <div className="space-y-3">
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">For <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</strong>. Copy it, paste it into their profile, then press <em>I sent it</em> to log it and move them on.</p>
         {sessionIso && (
@@ -530,8 +550,10 @@ function SendDm({ card, script, stages, sessionIso, onClose, onDone, post }: { c
           </div>
         </div>
       </div>
-    </Modal>
   );
+  return standalone
+    ? <div className="mx-auto max-w-2xl p-4"><h1 className="mb-3 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{short}</h1>{content}</div>
+    : <Modal title={short} onClose={onClose} wide>{content}</Modal>;
 }
 
 function CardDetail({ card, stages, scripts, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
