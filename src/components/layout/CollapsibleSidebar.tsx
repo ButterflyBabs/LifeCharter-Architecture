@@ -196,6 +196,7 @@ const ownerSection = {
     { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
     { id: "pre-founder-call", label: "Pre-Founder Call", icon: PhoneCall, href: "/pre-founder-call" },
     { id: "new-clients", label: "New Client Accounts", icon: UserPlus, href: "/new-clients" },
+    { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
     { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
   ],
