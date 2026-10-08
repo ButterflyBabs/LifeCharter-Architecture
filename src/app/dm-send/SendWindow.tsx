@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SendDm, type Card, type Stage, type ScriptLite, type Post } from "../dm-pipeline/DmPipeline";
+import { SendDm, type Card, type Stage, type ScriptLite, type Post, type DmUse } from "../dm-pipeline/DmPipeline";
 
 // Loads the card, the script and the board's stages, shows the message to copy, and tells the pipeline window
 // (if it is still open) what was logged.
 export default function SendWindow() {
-  const [data, setData] = useState<{ card: Card; script: ScriptLite; stages: Stage[]; nextSession: string | null } | null>(null);
+  const [data, setData] = useState<{ card: Card; script: ScriptLite; stages: Stage[]; nextSession: string | null; usage: Record<string, DmUse> } | null>(null);
   const [err, setErr] = useState("");
   const [params] = useState(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)));
   const tz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
@@ -23,7 +23,7 @@ export default function SendWindow() {
       const card = ((d.cards ?? []) as Card[]).find((c) => c.id === params.get("card"));
       const script = ((sc.items ?? []) as ScriptLite[]).find((s) => s.id === params.get("script"));
       if (!card || !script) { setErr("Couldn't find that card or message. Close this window and try again from the pipeline."); return; }
-      setData({ card, script, stages: d.stages ?? [], nextSession: d.nextSession ?? null });
+      setData({ card, script, stages: d.stages ?? [], nextSession: d.nextSession ?? null, usage: d.dmUsage ?? {} });
     })();
   }, [params, tz, purpose]);
 
@@ -46,9 +46,10 @@ export default function SendWindow() {
         stages={data.stages}
         sessionIso={data.nextSession}
         post={post}
+        usage={data.usage[data.card.platform ?? ""]}
         onClose={() => window.close()}
-        onDone={(saved, note) => {
-          try { window.opener?.postMessage({ type: "dm-sent", card: saved, note }, window.location.origin); } catch { /* the pipeline window was closed */ }
+        onDone={(saved, note, use) => {
+          try { window.opener?.postMessage({ type: "dm-sent", card: saved, note, dmUsage: use }, window.location.origin); } catch { /* the pipeline window was closed */ }
           window.close();
         }}
       />

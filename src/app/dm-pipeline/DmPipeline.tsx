@@ -30,6 +30,7 @@ export type Card = {
   stage_changed_at: string;
 };
 export type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
+export type DmUse = { sent: number; limit: number; opensAt: string | null };
 export type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
 const PLATFORMS = [
@@ -63,6 +64,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [today, setToday] = useState("");
   const [nextSession, setNextSession] = useState<string | null>(null);
+  const [dmUsage, setDmUsage] = useState<Record<string, DmUse>>({});
   const [sending, setSending] = useState<{ cardId: string; scriptId: string } | null>(null);
   const [filter, setFilter] = useState<string>("All");
   const [dragId, setDragId] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setCards(d.cards ?? []);
       setToday(d.today ?? "");
       setNextSession(d.nextSession ?? null);
+      setDmUsage(d.dmUsage ?? {});
       try {
         if (d.board?.id) localStorage.setItem(`pipelines-board-${purpose}`, d.board.id);
       } catch {
@@ -146,6 +149,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x)));
       setOpenId(null);
       if (e.data.note) setMsg(String(e.data.note));
+      if (e.data.dmUsage) setDmUsage(e.data.dmUsage as Record<string, DmUse>);
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -210,6 +214,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           {msg}
         </button>
       )}
+
+      {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
@@ -309,7 +315,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
             stages={stages}
             sessionIso={nextSession}
             onClose={() => setSending(null)}
-            onDone={(saved, note) => { setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x))); setSending(null); setOpenId(null); setMsg(note); }}
+            onDone={(saved, note, use) => { setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x))); setSending(null); setOpenId(null); setMsg(note); if (use) setDmUsage(use); }}
+            usage={dmUsage[c.platform ?? ""]}
             post={post}
           />
         ) : null;
@@ -439,6 +446,66 @@ function AddCard({ board, stages, scripts, onClose, onSaved, post, initial }: { 
   );
 }
 
+const clock = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+
+// "LinkedIn 3 / 25": DMs sent on each platform in the last 24 hours against the daily limit you set.
+function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSetLimit: (platform: string, limit: number) => void }) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [val, setVal] = useState("");
+  const shown = PLATFORMS.filter((p) => ["IG", "FB", "LI"].includes(p.id) || (usage[p.id]?.sent ?? 0) > 0);
+  if (!Object.keys(usage).length) return null;
+  return (
+    <div className="mb-4 flex flex-wrap gap-2" aria-label="DMs sent in the last 24 hours">
+      {shown.map((p) => {
+        const u = usage[p.id] ?? { sent: 0, limit: 25, opensAt: null };
+        const pct = u.limit > 0 ? Math.min(100, Math.round((u.sent / u.limit) * 100)) : 100;
+        const full = u.limit > 0 ? u.sent >= u.limit : true;
+        const near = !full && pct >= 80;
+        return (
+          <div key={p.id} className={`min-w-[170px] flex-1 rounded-xl border p-2.5 sm:flex-none ${full ? "border-[#C76F56]/60 bg-[#C76F56]/5" : near ? "border-[#c9a227]/60 bg-[#c9a227]/5" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40"}`}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.label}</span>
+              <span className="tabular-nums text-sm font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
+                {u.sent} / {editing === p.id ? (
+                  <input
+                    autoFocus
+                    inputMode="numeric"
+                    value={val}
+                    onChange={(e) => setVal(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    onBlur={() => { setEditing(null); if (val !== "" && Number(val) !== u.limit) onSetLimit(p.id, Number(val)); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setVal(""); setEditing(null); } }}
+                    className="w-12 rounded border border-[#1a2b4a]/30 bg-white px-1 text-sm dark:bg-[#1a2b4a]/40"
+                    aria-label={`${p.label} daily limit`}
+                  />
+                ) : (
+                  <button onClick={() => { setVal(String(u.limit)); setEditing(p.id); }} title="Change the daily limit" className="underline decoration-dotted underline-offset-2">{u.limit}</button>
+                )}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className={`h-full rounded-full ${full ? "bg-[#C76F56]" : near ? "bg-[#c9a227]" : "bg-[#2E7C83]"}`} style={{ width: `${pct}%` }} /></div>
+            <p className={`mt-1 text-[11px] ${full ? "font-semibold text-[#A4523C]" : "text-[#7a8a99]"}`}>
+              {full ? (u.opensAt ? `Daily limit reached. Next one opens at ${clock(u.opensAt)}` : "Daily limit reached") : `${u.limit - u.sent} left in the last 24 hours`}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DmLimitNote({ use, platform }: { use: DmUse; platform: string | null }) {
+  if (use.limit <= 0 || use.sent < use.limit - 2) return null;
+  const label = PLATFORMS.find((p) => p.id === platform)?.label ?? "this platform";
+  const over = use.sent >= use.limit;
+  return (
+    <p className={`rounded-lg px-3 py-2 text-xs font-medium ${over ? "bg-[#C76F56]/10 text-[#A4523C]" : "bg-[#c9a227]/10 text-[#6b5410] dark:text-[#e6d28a]"}`}>
+      {over
+        ? `You've already sent ${use.sent} on ${label} in the last 24 hours, your limit of ${use.limit}.${use.opensAt ? ` The next slot opens at ${clock(use.opensAt)}.` : ""} Sending more risks a restriction on your account.`
+        : `${use.sent} of ${use.limit} sent on ${label} in the last 24 hours. ${use.limit - use.sent} left.`}
+    </p>
+  );
+}
+
 // "Send a DM": pick a script to see its message, copy it, and log it as sent. Shows the last one sent.
 function DmSentPick({ card, scripts, onPick }: { card: Card; scripts: ScriptLite[]; onPick: (scriptId: string) => void }) {
   const mine = card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : [];
@@ -479,7 +546,7 @@ function nextStageKey(title: string): string | null {
   return null;
 }
 
-export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post, standalone }: { standalone?: boolean; card: Card; script: ScriptLite; stages: Stage[]; sessionIso: string | null; onClose: () => void; onDone: (c: Card, note: string) => void; post: Post }) {
+export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post, standalone, usage }: { standalone?: boolean; card: Card; script: ScriptLite; stages: Stage[]; sessionIso: string | null; onClose: () => void; onDone: (c: Card, note: string, usage?: Record<string, DmUse>) => void; post: Post; usage?: DmUse }) {
   const [sessionDate, setSessionDate] = useState(sessionIso ? niceDate(sessionIso) : "");
   const [text, setText] = useState(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""));
   const cur = stages.find((s) => s.id === card.stage_id);
@@ -502,6 +569,7 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const content = (
       <div className="space-y-3">
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">For <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</strong>. Copy it, paste it into their profile, then press <em>I sent it</em> to log it and move them on.</p>
+        {usage && <DmLimitNote use={usage} platform={card.platform} />}
         {card.platform === "LI" && (
           <p className="rounded-lg bg-[#c9a227]/10 px-3 py-2 text-xs text-[#6b5410] dark:text-[#e6d28a]">
             {/new connection opener/i.test(script.title)
@@ -543,11 +611,11 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
               disabled={busy}
               onClick={async () => {
                 setBusy(true);
-                const r = (await post({ action: "dm-sent", cardId: card.id, scriptId: script.id, scriptTitle: script.title, stageId: moveTo || undefined })) as { card?: Card } | null;
+                const r = (await post({ action: "dm-sent", cardId: card.id, scriptId: script.id, scriptTitle: script.title, stageId: moveTo || undefined })) as { card?: Card; dmUsage?: Record<string, DmUse> } | null;
                 setBusy(false);
                 if (r?.card) {
                   const dest = stages.find((s) => s.id === r.card!.stage_id);
-                  onDone(r.card, `Logged "${short}" for ${card.name}${moveTo ? `, moved to ${dest?.name}` : ""}.`);
+                  onDone(r.card, `Logged "${short}" for ${card.name}${moveTo ? `, moved to ${dest?.name}` : ""}.`, r.dmUsage);
                 }
               }}
             >

@@ -25,7 +25,28 @@ export const dynamic = "force-dynamic";
 //   move   { cardId, stageId, sortOrder? }
 //   update { cardId, name?, handle?, profileUrl?, email?, platform?, notes?, followUpOn? }
 //   delete { cardId }
+//   dm-limit { platform, limit }                          (the daily DM limit shown on the pipeline page; default 25 per platform)
 //   dm-sent { cardId, scriptId, scriptTitle, stageId? }   (logs the DM on the card and timeline, stamps last contacted, moves the card)
+
+const DEFAULT_DM_LIMIT = 25;
+// How many DMs went out on each platform in the last 24 hours, against the client's daily limit for it.
+async function dmUsage(db: ReturnType<typeof createServerClient>, planId: string) {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const [{ data: sends }, { data: lims }] = await Promise.all([
+    db.from("dm_sends").select("platform, sent_at").eq("master_plan_id", planId).gte("sent_at", since).order("sent_at").limit(5000),
+    db.from("dm_platform_limits").select("platform, daily_limit").eq("master_plan_id", planId),
+  ]);
+  const out: Record<string, { sent: number; limit: number; opensAt: string | null }> = {};
+  for (const p of CARD_PLATFORMS) {
+    const mine = ((sends ?? []) as { platform: string | null; sent_at: string }[]).filter((x) => x.platform === p.id);
+    const lim = (lims ?? []).find((l) => l.platform === p.id)?.daily_limit as number | undefined;
+    const limit = typeof lim === "number" ? lim : DEFAULT_DM_LIMIT;
+    // When the count is at the limit, the slot that frees up first is the oldest send still inside the 24 hours.
+    const opensAt = mine.length >= limit && limit > 0 ? new Date(new Date(mine[mine.length - limit].sent_at).getTime() + 24 * 3600_000).toISOString() : null;
+    out[p.id] = { sent: mine.length, limit, opensAt };
+  }
+  return out;
+}
 const PLATFORM_IDS = CARD_PLATFORMS.map((p) => p.id) as string[];
 const SOCIAL_COL: Record<string, string> = { IG: "instagram", FB: "facebook", LI: "linkedin" };
 const KINDS = ["open", "booked", "closed"];
@@ -56,7 +77,7 @@ export async function GET(request: Request) {
     const sch = await meetingSchedule(masterclassMeetingId()).catch(() => null);
     nextSession = sch?.occurrences.find((o) => new Date(o.start).getTime() > Date.now() + 24 * 3600_000)?.start ?? null;
   }
-  return NextResponse.json({ boards, board, stages, cards: cards ?? [], today: dateIn(tz, 0), nextSession });
+  return NextResponse.json({ boards, board, stages, cards: cards ?? [], today: dateIn(tz, 0), nextSession, dmUsage: await dmUsage(db, a.planId) });
 }
 
 export async function POST(request: Request) {
@@ -212,6 +233,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ card: r.card });
   }
 
+  if (b.action === "dm-limit") {
+    const pl = str(b.platform, 8);
+    if (!PLATFORM_IDS.includes(pl)) return NextResponse.json({ error: "Unknown platform." }, { status: 400 });
+    const limit = Math.max(0, Math.min(1000, Math.round(Number(b.limit) || 0)));
+    await db.from("dm_platform_limits").upsert({ master_plan_id: a.planId, platform: pl, daily_limit: limit }, { onConflict: "master_plan_id,platform" });
+    return NextResponse.json({ dmUsage: await dmUsage(db, a.planId) });
+  }
+
   const { data: card } = await db.from("dm_cards").select("id, board_id, stage_id, contact_id, follow_up_task_id, platform").eq("id", str(b.cardId, 40)).eq("master_plan_id", a.planId).maybeSingle();
   if (!card) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const board = boardOf(card.board_id);
@@ -243,6 +272,7 @@ export async function POST(request: Request) {
       .select("*")
       .single();
     if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+    await db.from("dm_sends").insert({ master_plan_id: a.planId, card_id: card.id, board_id: board.id, platform: (card.platform as string | null) ?? null, script_title: title || null }).then(({ error: e }) => { if (e) console.error("dm-sent log:", e.message); });
     // Every DM sent counts on Sales Activities (this week's tally and goal) and, through it, toward the business health score.
     const day = dateIn(tz, 0);
     const act = `Outreach Pipelines · ${board.name} · card ${card.id}`;
@@ -252,7 +282,7 @@ export async function POST(request: Request) {
       await db.from("sales_activities").insert({ master_plan_id: a.planId, type: "dm", contact_name: (saved.name as string) ?? "", contact_company: "", title: actTitle, priority: "warm", status: "completed", outcome: "", estimated_value: 0, occurred_on: day, notes: act }).then(({ error: e }) => { if (e) console.error("dm-sent activity:", e.message); });
     }
     if (card.contact_id) await logEvent(a.planId, card.contact_id as string, "manual", `${board.name}: ${line.replace(/^\[[^\]]*\] /, "")}`, { dm_card: card.id }, db as never).catch(() => {});
-    return NextResponse.json({ card: saved });
+    return NextResponse.json({ card: saved, dmUsage: await dmUsage(db, a.planId) });
   }
 
   if (b.action === "update") {
