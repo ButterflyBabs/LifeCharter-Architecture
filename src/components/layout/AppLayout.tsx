@@ -7,6 +7,7 @@ import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, us
 import { Header } from "./Header";
 import { cn } from "@/lib/utils";
 import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget";
+import UpdateNotice from "@/components/layout/UpdateNotice";
 import DemoBanner from "./DemoBanner";
 
 interface AppLayoutProps {
@@ -70,6 +71,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
 
       {/* Travel Partner: the one floating button (Ask the assistant, or Help & setup) */}
       <TravelPartnerWidget />
+      <UpdateNotice />
 
       {/* The AI assistant, when popped out: floats over any page */}
       <AssistantPopout />
