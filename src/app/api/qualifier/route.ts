@@ -261,19 +261,21 @@ export async function POST(request: Request) {
       /* draft from the offer alone */
     }
     let offer = "";
+    let offerName = "";
     if (str(b.offerId, 40)) {
       const { data: o } = await db.from("sales_offers").select("name, transformation, ideal_client, not_for, deliverables").eq("id", str(b.offerId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+      if (o) offerName = (o.name as string) || "";
       if (o) offer = `THE OFFER THIS PROFILE IS FOR\nName: ${o.name}\nTransformation: ${o.transformation ?? ""}\nIdeal client: ${o.ideal_client ?? ""}\nNot for: ${o.not_for ?? ""}\nIncludes: ${((o.deliverables as string[] | null) ?? []).join("; ")}`;
     }
     if (!about && !offer) return NextResponse.json({ error: "There isn't enough in your plans or offers yet to draft from. Fill it in by hand." }, { status: 400 });
     const sys =
-      `You help one small-business owner write their Ideal Client Profile for prospect qualification. Use ONLY what is below about their business; where it doesn't say, leave that field empty rather than inventing. Write in first person, plain and specific.\n` +
+      `You help one small-business owner write their Ideal Client Profile for prospect qualification. Use ONLY what is below about their business; where it doesn't say, leave that field empty rather than inventing. Write in first person, plain and specific. When a specific offer is given, the signature offer is exactly that offer and the profile describes who that offer is for, not the owner's other offers.\n` +
       `Return STRICT JSON: {"whoServe":"","helpDo":"","signatureOffer":"","coreProblem":"","alreadyHas":"one per line, up to 5","missing":"one per line, up to 5","redFlags":"one per line, up to 5"}.`;
     try {
       const out = await askJson(key, sys, `${offer}\n\nWHAT IS KNOWN ABOUT THIS BUSINESS\n${about.slice(0, 14000)}`, 900);
       if (!out) return NextResponse.json({ error: "Couldn't draft that. Try again." }, { status: 502 });
       const f = (k: string) => str(out[k], 2000);
-      return NextResponse.json({ draft: { whoServe: f("whoServe"), helpDo: f("helpDo"), signatureOffer: f("signatureOffer"), coreProblem: f("coreProblem"), alreadyHas: f("alreadyHas"), missing: f("missing"), redFlags: f("redFlags") } });
+      return NextResponse.json({ draft: { whoServe: f("whoServe"), helpDo: f("helpDo"), signatureOffer: offerName || f("signatureOffer"), coreProblem: f("coreProblem"), alreadyHas: f("alreadyHas"), missing: f("missing"), redFlags: f("redFlags") } });
     } catch (e) {
       console.error("qualifier icp-draft:", e);
       return NextResponse.json({ error: "Couldn't reach the AI just now. Try again." }, { status: 502 });

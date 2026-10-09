@@ -4709,7 +4709,7 @@ export default function BrainAssessmentPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold">Brain Assessment</h1>
-              <p className="text-sm text-[#e8e4f0]">Systems & Operations</p>
+              <p className="text-sm text-[#e8e4f0]">Systems & Operations · about 90 minutes, saves as you go</p>
             </div>
           </div>
           <div className="space-y-2">

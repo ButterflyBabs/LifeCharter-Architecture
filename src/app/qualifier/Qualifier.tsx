@@ -543,7 +543,7 @@ function IcpTab({ icps, offers, post, setMsg, onChanged }: { icps: Icp[]; offers
               if (r?.draft) { set(r.draft); setMsg("Drafted from your plans and offers. Read it over, make it yours, then Save."); }
             }}
           >
-            <Sparkles className="mr-1 h-4 w-4" /> {busy === "draft" ? "Drafting…" : "Draft it for me"}
+            <Sparkles className="mr-1 h-4 w-4" /> {busy === "draft" ? "Drafting… this takes about 20 seconds" : "Draft it for me"}
           </Button>
         </div>
 

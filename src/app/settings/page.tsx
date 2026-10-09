@@ -2004,6 +2004,11 @@ export default function SettingsPage() {
               Your key is stored securely and used only to power your assistant. Paste a new key to
               replace an existing one.
             </p>
+            <p className="mt-3 max-w-lg rounded-lg border border-[#c9a227]/40 bg-[#c9a227]/10 px-3 py-2 text-xs leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
+              <strong>Good to know:</strong> this is an OpenAI API key, which is different from a ChatGPT account, so a ChatGPT login will not work here.
+              When you use the AI Assistant, OpenAI charges your own account a small amount for what you use. The cost depends on how much you use it.
+              LifeCharter does not receive any of that charge and has no control over OpenAI&apos;s prices.
+            </p>
           </div>
 
           {aiMsg && (

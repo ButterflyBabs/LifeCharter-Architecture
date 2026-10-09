@@ -56,7 +56,7 @@ export default function SetupPage() {
       n: 1,
       icon: <Sparkles className="w-5 h-5" />,
       title: "Connect your AI",
-      desc: "Add your OpenAI key so your guide can draft plans, insights, reviews, captions, and proposals.",
+      desc: "Add your OpenAI key (not a ChatGPT login) so your guide can draft plans, insights, reviews, captions, and proposals. OpenAI charges your own account a small amount for what you use; LifeCharter does not receive it or control it.",
       href: "/settings?tab=ai",
       required: true,
       done: Boolean(s?.ai.connected),
@@ -66,6 +66,7 @@ export default function SetupPage() {
       n: 2,
       icon: <Brain className="w-5 h-5" />,
       title: "Brain Assessment",
+      time: "About 90 minutes",
       desc: "Map your business systems — marketing, sales, operations, finance, and more — in your own words.",
       href: "/assessments/brain",
       required: true,
@@ -76,6 +77,7 @@ export default function SetupPage() {
       n: 3,
       icon: <Heart className="w-5 h-5" />,
       title: "Soul Assessment",
+      time: "About 60 minutes",
       desc: "Capture your identity, values, calling, and story — the heart the AI writes from.",
       href: "/assessments/soul",
       required: true,
@@ -86,6 +88,7 @@ export default function SetupPage() {
       n: 4,
       icon: <BarChart3 className="w-5 h-5" />,
       title: "Profit Assessment",
+      time: "About 45 minutes",
       desc: "Score your 12 business dimensions to establish your baseline and business-health starting point.",
       href: "/assessments/profit",
       required: true,
@@ -191,6 +194,7 @@ export default function SetupPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-[#2E7C83]">{step.icon}</span>
                       <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{step.title}</h3>
+                      {"time" in step && step.time && <span className="rounded-full bg-[#c9a227]/15 px-2 py-0.5 text-xs font-medium text-[#8a6d12] dark:text-[#e0c35a]">{step.time}</span>}
                     </div>
                     <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">{step.desc}</p>
                   </div>
@@ -207,6 +211,10 @@ export default function SetupPage() {
                 </div>
               ))}
             </div>
+
+            <p className="mt-3 rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 px-4 py-3 text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
+              <strong>A faster way through the assessments:</strong> open ChatGPT or Claude (the one you have already trained on your business) on one half of your screen and the assessment on the other. Let that AI help you think through and draft each answer, then paste in what you agree with. The three assessments save as you go, so you can stop and come back.
+            </p>
 
             {/* Integrations (optional) */}
             <div
