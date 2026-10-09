@@ -17,10 +17,10 @@ export async function POST(request: Request) {
   const db = createServerClient();
   const { data, error } = await db.rpc("vault_item_reveal", { p_user: u.id, p_id: id });
   if (error) return NextResponse.json({ error: "Couldn't open that." }, { status: 500 });
-  let out: { password?: string; notes?: string } = {};
+  let out: { password?: string; secret?: string; notes?: string; recoveryCodes?: string } = {};
   try { out = data ? JSON.parse(data as string) : {}; } catch { out = {}; }
   const { data: row } = await db.from("vault_items").select("label").eq("id", id).eq("owner_user_id", u.id).maybeSingle();
   await db.from("vault_items").update({ last_revealed_at: new Date().toISOString() }).eq("id", id).eq("owner_user_id", u.id);
   await db.from("vault_audit").insert({ owner_user_id: u.id, item_id: id, item_label: (row?.label as string) ?? null, action: "password shown or copied" });
-  return NextResponse.json({ password: out.password ?? "", notes: out.notes ?? "" }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ password: out.password ?? "", secret: out.secret ?? "", notes: out.notes ?? "", recoveryCodes: out.recoveryCodes ?? "" }, { headers: { "Cache-Control": "no-store" } });
 }

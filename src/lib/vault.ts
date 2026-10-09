@@ -62,5 +62,6 @@ export function tooManyTries(userId: string): boolean {
   return list.length > 6;
 }
 
-export const CATEGORIES = ["Website", "Email", "Banking", "Social media", "Software", "Other"] as const;
+export const CATEGORIES = ["Website", "Email", "Banking", "Social media", "Software", "Hosting & domains", "Other"] as const;
+export const TWOFA_METHODS = ["Authenticator app", "Text message", "Email code", "Security key", "Other"] as const;
 export const clean = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
