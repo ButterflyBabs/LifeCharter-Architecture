@@ -913,7 +913,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "What goes in Offers & Packages?",
     answer:
-      "Offers & Packages (Daily Operations → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
+      "Offers & Packages (Daily Operations → Offers & Packages) lists everything you sell: your signature program, packages, retainers and products, each with its price, what's included and who it's for. Deals in your Pipeline point to these offers, and Executive Home shows which offer is bringing in the most. Use the search box above the cards to find an offer by name, price or what's included, and drag the grip on a card to put your offers in the order you want. To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
     keywords: ["offers", "packages", "pricing", "products", "services", "what I sell", "retired"],
   },
   {
