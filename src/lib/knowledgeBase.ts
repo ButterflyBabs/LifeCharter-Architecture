@@ -451,7 +451,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "AI & Automation",
     question: "Why do I need to connect an AI key?",
     answer:
-      "AI features (health analysis, insights, Quick Win suggestions, tech-stack optimization, Ask answers) run on your own AI key, connected in Settings / AI Guide. If a feature says it needs a key, that's what it's asking for. Your key stays yours and powers all the AI in the app.",
+      "AI features (health analysis, insights, Quick Win suggestions, tech-stack optimization, Ask answers) run on your own AI key, connected in Settings / AI Guide. If a feature says it needs a key, that's what it's asking for. Your key stays yours and powers all the AI in the app. It has to be an OpenAI API key (platform.openai.com/api-keys), which is different from a ChatGPT account, so a ChatGPT login won't work. OpenAI charges your own account a small amount for what you use, depending on how much you use it. LifeCharter does not receive any of that charge and has no control over OpenAI's prices.",
     keywords: ["ai key", "api key", "connect key", "openai", "settings", "needs key"],
   },
   {
@@ -833,7 +833,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What is Set up Suite?",
     answer:
-      "Set up Suite (Getting Started → Set up Suite) is the short setup that makes everything else work: connect your AI, then take the Brain, Soul and Profit assessments that give your assistant its context and set your business-health baseline, and add your website address for your Website Alignment Review. Each step shows whether it's done.",
+      "Set up Suite (Getting Started → Set up Suite) is the short setup that makes everything else work: connect your AI, then take the Brain (about 90 minutes), Soul (about 60 minutes) and Profit (about 45 minutes) assessments that give your assistant its context and set your business-health baseline. A faster way through: keep ChatGPT or Claude, the one you have already trained on your business, open on one half of your screen and the assessment on the other, and let it help you draft each answer. Then add your website address for your Website Alignment Review. Each step shows whether it's done.",
     keywords: ["set up", "setup", "set up suite", "onboarding", "first steps", "assessments", "connect ai", "website address"],
   },
   {
