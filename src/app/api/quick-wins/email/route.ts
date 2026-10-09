@@ -18,10 +18,16 @@ export const dynamic = "force-dynamic";
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
-async function myName(db: ReturnType<typeof createServerClient>, planId: string): Promise<string> {
+// Who the email signs as: the signed-in person's own first name (their profile), else the account's name.
+async function myName(db: ReturnType<typeof createServerClient>, planId: string, userEmail: string | null): Promise<string> {
+  if (userEmail) {
+    const { data: p } = await db.from("profiles").select("full_name").ilike("email", userEmail).maybeSingle();
+    const n = str(p?.full_name, 80);
+    if (n) return n.split(/\s+/)[0];
+  }
   const { data } = await db.from("client_master_plans").select("client_name").eq("id", planId).maybeSingle();
   const full = str(data?.client_name, 80);
-  return full ? full.split(/\s+/)[0] : "";
+  return full && full.toLowerCase() !== "primary" ? full.split(/\s+/)[0] : "";
 }
 
 export async function GET() {
@@ -29,7 +35,7 @@ export async function GET() {
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const who = await accountSender(a.planId, { marketing: false }, db);
-  return NextResponse.json({ myName: await myName(db, a.planId), canSend: who.ok, reason: who.ok ? null : who.reason });
+  return NextResponse.json({ myName: await myName(db, a.planId, a.userEmail), canSend: who.ok, reason: who.ok ? null : who.reason });
 }
 
 export async function POST(request: Request) {
@@ -56,7 +62,7 @@ export async function POST(request: Request) {
     const key = who.house ? process.env.RESEND_API_KEY : who.resendKey;
     if (!key) return NextResponse.json({ error: "Email sending isn't set up for your account yet." }, { status: 400 });
     const fromEmail = who.house ? "hello@lccommandsuite.com" : who.fromEmail;
-    const fromName = (await myName(db, a.planId)) || (who.house ? "LifeCharter" : who.fromName);
+    const fromName = (await myName(db, a.planId, a.userEmail)) || (who.house ? "LifeCharter" : who.fromName);
     const replyTo = who.house ? a.userEmail || "support@lccommandsuite.com" : who.replyTo;
     const html = body.split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#2E3A46">${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
     const r = await fetch("https://api.resend.com/emails", {
