@@ -7,47 +7,19 @@
 // Convention: [Brackets] are fields to fill in. (Parentheses) are stage
 // directions — a pause, a question to listen to — and are never fields.
 
-export type LibraryChannel = "sales" | "email" | "dm" | "objection" | "social";
+import { item } from "@/lib/scriptLibraryItem";
+import { SALES_MORE } from "@/lib/scriptLibraryMore/sales";
+import { PROSPECTING_MORE } from "@/lib/scriptLibraryMore/prospecting";
+import { OBJECTIONS_MORE } from "@/lib/scriptLibraryMore/objections";
+import { ONBOARDING_MORE } from "@/lib/scriptLibraryMore/onboarding";
+import { FOLLOWUP_MORE } from "@/lib/scriptLibraryMore/followup";
+import { CONTENT_MORE } from "@/lib/scriptLibraryMore/content";
+import { NURTURE_MORE } from "@/lib/scriptLibraryMore/nurture";
+import { CLOSING_MORE } from "@/lib/scriptLibraryMore/closing";
+export type { LibraryChannel, LibraryItem } from "@/lib/scriptLibraryItem";
+import type { LibraryItem } from "@/lib/scriptLibraryItem";
 
-export interface LibraryItem {
-  id: string;
-  title: string;
-  description: string;
-  itemType: "script" | "template";
-  category: string;
-  channel: LibraryChannel;
-  tags: string[];
-  content: string;
-}
-
-const slug = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
-function item(
-  category: string,
-  channel: LibraryChannel,
-  itemType: "script" | "template",
-  title: string,
-  description: string,
-  tags: string,
-  content: string
-): LibraryItem {
-  return {
-    id: `lib-${slug(category)}-${slug(title)}`,
-    title,
-    description,
-    itemType,
-    category,
-    channel,
-    tags: tags.split(",").map((t) => t.trim()),
-    content: content.trim(),
-  };
-}
-
-export const SCRIPT_LIBRARY: LibraryItem[] = [
+const BASE_LIBRARY: LibraryItem[] = [
   /* ───────────── SALES ───────────── */
   item("Sales", "sales", "script", "Discovery Call Script", "A 30-minute call that finds the real problem before you pitch.", "discovery, call, qualify", `
 OPEN (2 min):
@@ -761,6 +733,18 @@ Wishing you every success,
 (Answer clearly.)
 
 "If you're comfortable, I'll send the agreement now. You can sign electronically here: [link]. Once it's signed and [payment] is received, we're officially on. When would you like to start?"`),
+];
+
+export const SCRIPT_LIBRARY: LibraryItem[] = [
+  ...BASE_LIBRARY,
+  ...SALES_MORE,
+  ...PROSPECTING_MORE,
+  ...OBJECTIONS_MORE,
+  ...ONBOARDING_MORE,
+  ...FOLLOWUP_MORE,
+  ...CONTENT_MORE,
+  ...NURTURE_MORE,
+  ...CLOSING_MORE,
 ];
 
 export const LIBRARY_BY_ID: Record<string, LibraryItem> = Object.fromEntries(SCRIPT_LIBRARY.map((l) => [l.id, l]));
