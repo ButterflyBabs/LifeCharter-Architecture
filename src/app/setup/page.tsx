@@ -57,7 +57,7 @@ export default function SetupPage() {
       n: 1,
       icon: <Sparkles className="w-5 h-5" />,
       title: "Connect your AI",
-      desc: "Add your OpenAI key (not a ChatGPT login) so your guide can draft plans, insights, reviews, captions, and proposals. OpenAI charges your own account a small amount for what you use; LifeCharter does not receive it or control it.",
+      desc: "Add your OpenAI key (not a ChatGPT login) so your guide can draft plans, insights, reviews, captions, and proposals. OpenAI charges your own account for what you use: setup should cost less than $5 one time, and day-to-day use is minimal, an estimated $0.20 a day (an estimate, not a guarantee). LifeCharter does not receive it or control it.",
       href: "/settings?tab=ai",
       required: true,
       done: Boolean(s?.ai.connected),
