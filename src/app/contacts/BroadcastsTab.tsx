@@ -111,8 +111,8 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
         {sender.reason} <a href={sender.setupPath} className="font-semibold text-[#2E7C83] underline">Set up email sending</a>
       </p>
     )}
-    <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-      <div className="space-y-2 min-w-0">
+    <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+      <div className="space-y-2 min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
         {templates.map((t) => (
           <button key={t.key} onClick={() => create({ templateKey: t.key })} className="w-full text-left rounded-xl border border-dashed border-[#c9a227] p-3 hover:bg-[#c9a227]/10">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -133,10 +133,10 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
             <button
               key={b.id}
               onClick={() => pick(b.id)}
-              className={`w-full text-left rounded-xl border p-3 transition ${b.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
+              className={`w-full text-left rounded-xl border border-l-4 p-3 transition ${b.status === "sent" ? "border-l-[#2c6b3f]" : b.status === "scheduled" ? "border-l-[#2E7C83]" : "border-l-[#c9a227]"} ${b.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
             >
-              <p className="truncate font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{b.name}</p>
-              <p className="text-xs text-[#7a8a99]">
+              <p className="break-words font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{b.name}</p>
+              <p className="mt-0.5 text-xs text-[#5a6472] dark:text-[#b8c2cf]">
                 {STATUS[b.status]}
                 {b.status === "scheduled" ? ` · ${mt(b.scheduled_at, tz)}` : ""}
                 {b.recipient_count ? ` · ${b.recipient_count} people` : ""}

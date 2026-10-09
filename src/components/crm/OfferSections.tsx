@@ -23,11 +23,11 @@ function Section({ name, count, open, first, last, onToggle, onStep, children }:
   const { attributes, listeners: drag, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: name });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 10 : undefined }} className={`space-y-2 ${isDragging ? "opacity-80" : ""}`}>
-      <div className="mt-3 flex items-center gap-1 border-b border-[#c9a227]/50 pb-1 first:mt-0">
-        <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-1 text-left text-[11px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a] dark:text-[#F8F5F0]">
-          {open ? <ChevronDown className="h-3.5 w-3.5 flex-none" /> : <ChevronRight className="h-3.5 w-3.5 flex-none" />}
-          <span className="truncate">{name}</span>
-          <span className="flex-none font-normal text-[#7a8a99]">{count}</span>
+      <div className="mt-4 flex items-start gap-1 rounded-lg bg-[#1a2b4a]/[0.05] px-2 py-1.5 first:mt-0 dark:bg-white/[0.06]">
+        <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 items-start gap-1.5 text-left text-[13px] font-bold leading-snug tracking-wide text-[#1a2b4a] dark:text-[#F8F5F0]">
+          {open ? <ChevronDown className="mt-0.5 h-4 w-4 flex-none" /> : <ChevronRight className="mt-0.5 h-4 w-4 flex-none" />}
+          <span className="min-w-0 break-words">{name}</span>
+          <span className="ml-auto flex-none rounded-full bg-[#c9a227]/25 px-2 py-0.5 text-[11px] font-semibold text-[#7a5a0e] dark:text-[#e0c35a]">{count}</span>
         </button>
         <button type="button" onClick={() => onStep(-1)} disabled={first} aria-label={`Move ${name} up`} title="Move up" className={CTRL}><ChevronUp className="h-3.5 w-3.5" /></button>
         <button type="button" onClick={() => onStep(1)} disabled={last} aria-label={`Move ${name} down`} title="Move down" className={CTRL}><ChevronDown className="h-3.5 w-3.5" /></button>
@@ -89,7 +89,24 @@ export default function OfferSections<T extends { offer?: string | null }>({ ite
     if (e.over) move(names.indexOf(String(e.active.id)), names.indexOf(String(e.over.id)));
   };
 
+  const setAll = (openAll: boolean) => {
+    const next = openAll ? [] : names;
+    setClosed(next);
+    try {
+      localStorage.setItem(`offer-closed:${storageKey}`, JSON.stringify(next));
+    } catch {
+      /* private mode */
+    }
+  };
+
   return (
+    <>
+    {names.length > 1 && (
+      <div className="mb-1 flex justify-end gap-3 text-xs font-semibold text-[#2E7C83]">
+        <button type="button" onClick={() => setAll(true)} className="hover:underline">Open all</button>
+        <button type="button" onClick={() => setAll(false)} className="hover:underline">Fold all</button>
+      </div>
+    )}
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
       <SortableContext items={names} strategy={verticalListSortingStrategy}>
         {sections.map(([name, group], i) => (
@@ -99,5 +116,6 @@ export default function OfferSections<T extends { offer?: string | null }>({ ite
         ))}
       </SortableContext>
     </DndContext>
+    </>
   );
 }

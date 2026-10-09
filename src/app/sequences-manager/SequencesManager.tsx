@@ -154,7 +154,7 @@ export default function SequencesManager() {
   };
 
   return (
-    <div className="py-8 px-4 max-w-6xl mx-auto">
+    <div className="py-8 px-4 sm:px-6 max-w-[1700px] mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c9a227] to-[#1a2b4a] flex items-center justify-center">
           <Mail className="w-6 h-6 text-white" />
@@ -192,18 +192,20 @@ export default function SequencesManager() {
       </div>
 
       {pageTab === "events" ? <EventEmailsTab /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
-      <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-        <div className="space-y-2">
+      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+        <div className="space-y-2 min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
           <OfferSections items={list ?? []} storageKey="campaigns">
           {(s) => (
             <button
               key={s.id}
               onClick={() => { setOpenId(s.id); setForm(null); setPreview(null); setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
-              className={`w-full text-left rounded-xl border p-3 transition ${s.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
+              className={`w-full text-left rounded-xl border border-l-4 p-3 transition ${s.active ? "border-l-[#2c6b3f]" : "border-l-[#c9a227]"} ${s.id === openId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#1a2b4a]/10 hover:bg-[#1a2b4a]/5"}`}
             >
-              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.name}</p>
-              <p className="text-xs text-[#7a8a99]">
-                {s.active ? "Live" : "Paused"} · {s.step_count ?? 0} emails · {s.people?.active ?? 0} active
+              <p className="break-words font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{s.name}</p>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#5a6472] dark:text-[#b8c2cf]">
+                <span className={`rounded-full px-2 py-0.5 font-semibold ${s.active ? "bg-[#2c6b3f]/15 text-[#1f5a33] dark:text-[#8fd3a0]" : "bg-[#c9a227]/25 text-[#7a5a0e] dark:text-[#e0c35a]"}`}>{s.active ? "Live" : "Off"}</span>
+                <span>{s.step_count ?? 0} emails</span>
+                <span>{s.people?.active ?? 0} people in it</span>
               </p>
             </button>
           )}
@@ -220,7 +222,7 @@ export default function SequencesManager() {
               <CardContent className="p-5 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{seq.name}</p>
+                    <p className="break-words text-2xl font-bold leading-tight text-[#1a2b4a] dark:text-[#F8F5F0]">{seq.name}</p>
                     <p className="text-sm text-[#7a8a99]">
                       {!sender || sender.house
                         ? <>From {seq.from_name} &lt;{seq.from_email}&gt; · replies to support@lccommandsuite.com</>
@@ -336,11 +338,11 @@ export default function SequencesManager() {
                 )}
                 <div className="space-y-2">
                   {steps.map((s) => (
-                    <div key={s.id} className="flex items-center gap-3 rounded-xl border border-[#1a2b4a]/10 p-3">
-                      <span className="w-16 shrink-0 text-xs font-semibold text-[#c9a227]">{s.day_offset === 0 ? "Right away" : `Day ${s.day_offset}`}</span>
-                      <button onClick={() => editStep(s)} className="flex-1 min-w-0 text-left">
-                        <p className="truncate font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{s.subject}</p>
-                        {s.preview && <p className="truncate text-xs text-[#7a8a99]">{s.preview}</p>}
+                    <div key={s.id} className="flex items-start gap-3 rounded-xl border border-[#1a2b4a]/10 bg-white p-3 dark:bg-[#1a2b4a]/20">
+                      <span className="mt-0.5 w-24 shrink-0 rounded-lg bg-[#c9a227]/15 px-2 py-1 text-center text-xs font-semibold text-[#7a5a0e] dark:text-[#e0c35a]">{s.day_offset === 0 ? "Right away" : `Day ${s.day_offset}`}<span className="block font-normal text-[#7a8a99]">{hourLabel(seq.send_hour)}</span></span>
+                      <button onClick={() => editStep(s)} className="min-w-0 flex-1 text-left" title="Open this email">
+                        <p className="break-words text-[15px] font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{s.subject}</p>
+                        {s.preview && <p className="mt-0.5 line-clamp-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{s.preview}</p>}
                       </button>
                       <button title="Send a test to you" onClick={() => act({ action: "test", stepId: s.id }, "Test sent to your inbox.")} className="p-2 text-[#2E7C83] hover:bg-[#2E7C83]/10 rounded-lg">
                         <Send className="w-4 h-4" />
