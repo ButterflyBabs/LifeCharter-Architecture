@@ -443,11 +443,11 @@ function NavItem({
           isCollapsed ? "justify-center px-2 py-3" : "px-4 py-2.5",
           isActive
             ? "bg-white/10 text-[#c9a227] border-[#c9a227]"
-            : "text-white/50 hover:bg-white/5 hover:text-white border-transparent"
+            : "text-white/90 hover:bg-white/10 hover:text-white border-transparent"
         )}
       >
         <Icon className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
-        {!isCollapsed && <span className="tracking-wide">{item.label}</span>}
+        {!isCollapsed && <span className="nav-label tracking-wide">{item.label}</span>}
       </Link>
 
       {/* Tooltip rendered via portal-like fixed positioning */}
@@ -1065,7 +1065,7 @@ export function CollapsibleSidebar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            "hidden lg:block p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors",
+            "hidden lg:block p-1.5 rounded-lg text-white/90 hover:bg-white/10 hover:text-white transition-colors",
             isCollapsed && "mx-auto"
           )}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -1076,7 +1076,7 @@ export function CollapsibleSidebar() {
         {/* Close Button — mobile drawer only */}
         <button
           onClick={closeMobileSidebar}
-          className="lg:hidden p-1.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+          className="lg:hidden p-1.5 rounded-lg text-white/90 hover:bg-white/10 hover:text-white transition-colors"
           title="Close menu"
           aria-label="Close menu"
         >
@@ -1105,14 +1105,14 @@ export function CollapsibleSidebar() {
                 <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
                 <h3
                   className={cn(
-                    "text-[10px] font-semibold tracking-[0.12em] uppercase whitespace-nowrap opacity-80",
+                    "nav-head font-semibold tracking-[0.12em] uppercase whitespace-nowrap",
                     section.color
                   )}
                 >
                   {section.title}
                 </h3>
                 <ChevronDown
-                  className={cn("ml-auto w-3.5 h-3.5 text-white/40 transition-transform duration-200", foldedSections[section.title] && "-rotate-90")}
+                  className={cn("ml-auto w-3.5 h-3.5 text-white/70 transition-transform duration-200", foldedSections[section.title] && "-rotate-90")}
                 />
               </button>
               {!isDemo && section.items.length > 2 && !foldedSections[section.title] && (
@@ -1171,7 +1171,7 @@ export function CollapsibleSidebar() {
                 "w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 helpExpanded || isHelpActive
                   ? "bg-white/10 text-[#c9a227]"
-                  : "text-white/50 hover:bg-white/5 hover:text-white"
+                  : "text-white/90 hover:bg-white/10 hover:text-white"
               )}
             >
               <span className="flex items-center gap-3">
@@ -1193,7 +1193,7 @@ export function CollapsibleSidebar() {
                         href={item.href}
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
-                          isActive ? "bg-white/10 text-[#c9a227]" : "text-white/50 hover:bg-white/5 hover:text-white"
+                          isActive ? "bg-white/10 text-[#c9a227]" : "text-white/90 hover:bg-white/10 hover:text-white"
                         )}
                       >
                         <Icon className="w-4 h-4" />
@@ -1214,7 +1214,7 @@ export function CollapsibleSidebar() {
               href="/help/12-domain-alignment"
               className={cn(
                 "flex items-center justify-center p-2 rounded-lg transition-all duration-200",
-                isHelpActive ? "bg-white/10 text-[#c9a227]" : "text-white/50 hover:bg-white/5 hover:text-white"
+                isHelpActive ? "bg-white/10 text-[#c9a227]" : "text-white/90 hover:bg-white/10 hover:text-white"
               )}
               title="Help"
             >
@@ -1250,7 +1250,7 @@ export function CollapsibleSidebar() {
               <>
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-medium text-white truncate">{displayName}</span>
-                  <span className="block text-xs text-white/40 truncate">Founder &amp; CEO</span>
+                  <span className="block text-xs text-white/70 truncate">Founder &amp; CEO</span>
                 </span>
                 <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform duration-200", accountOpen && "rotate-180")} aria-hidden />
               </>
@@ -1266,7 +1266,7 @@ export function CollapsibleSidebar() {
               type="button"
               onClick={toggleTheme}
               className={cn(
-                "flex items-center rounded-lg text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors",
+                "flex items-center rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors",
                 isCollapsed ? "justify-center w-full p-2" : "justify-between w-full px-4 py-2.5"
               )}
               title={isCollapsed ? (theme === "light" ? "Light Mode" : "Dark Mode") : undefined}

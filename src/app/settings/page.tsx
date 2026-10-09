@@ -214,7 +214,7 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
-        setAiName(d.assistantName === DEFAULT_ASSISTANT_NAME ? "" : d.assistantName || "");
+        setAiName(d.assistantName === DEFAULT_ASSISTANT_NAME || /@/.test(d.assistantName || "") ? "" : d.assistantName || "");
         setAiInstructions(d.assistantInstructions || "");
         setAiNotes(d.assistantNotes || "");
         setAiHasKey(Boolean(d.hasOpenAiKey));
@@ -227,7 +227,7 @@ export default function SettingsPage() {
     setAiSaving(true);
     try {
       const payload: { assistantName: string; assistantInstructions: string; assistantNotes: string; openaiApiKey?: string } = {
-        assistantName: aiName.trim(),
+        assistantName: /@/.test(aiName) ? "" : aiName.trim(),
         assistantInstructions: aiInstructions.trim(),
         assistantNotes: aiNotes.trim(),
       };
@@ -1897,11 +1897,16 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
               Assistant name
             </label>
+            {/* The browser must not fill this with the sign-in email (a password manager does that when a password box follows). */}
             <Input
               value={aiName}
               onChange={(e) => setAiName(e.target.value)}
               placeholder={DEFAULT_ASSISTANT_NAME}
               className="max-w-sm"
+              name="assistant-display-name"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
             />
             <p className="text-xs text-[#b8a898] mt-1.5">
               What your assistant is called across the app (e.g. on your Morning Brief). Leave blank to
@@ -1912,7 +1917,7 @@ export default function SettingsPage() {
           {/* How the assistant replies */}
           <div>
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-              How should {aiName.trim() || DEFAULT_ASSISTANT_NAME} reply?
+              How should {/@/.test(aiName) ? DEFAULT_ASSISTANT_NAME : aiName.trim() || DEFAULT_ASSISTANT_NAME} reply?
             </label>
             <textarea
               value={aiInstructions}
@@ -1951,7 +1956,7 @@ export default function SettingsPage() {
           {/* What the assistant should know about them */}
           <div>
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-              What should {aiName.trim() || DEFAULT_ASSISTANT_NAME} know about you and how you work?
+              What should {/@/.test(aiName) ? DEFAULT_ASSISTANT_NAME : aiName.trim() || DEFAULT_ASSISTANT_NAME} know about you and how you work?
             </label>
             <textarea
               value={aiNotes}
@@ -1977,6 +1982,8 @@ export default function SettingsPage() {
             <div className="flex flex-col sm:flex-row gap-2 max-w-lg">
               <Input
                 type="password"
+                autoComplete="new-password"
+                name="openai-api-key"
                 value={aiKey}
                 onChange={(e) => setAiKey(e.target.value)}
                 placeholder={aiHasKey ? "•••••••••• (a key is saved)" : "sk-…"}
