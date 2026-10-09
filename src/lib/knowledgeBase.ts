@@ -271,6 +271,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["voice", "talk", "speak", "microphone", "mic", "read aloud", "spoken", "dictate", "listen", "audio", "speech"],
   },
   {
+    id: "st-vault",
+    category: "Getting Started",
+    question: "Where can I keep my logins and passwords, and is it private?",
+    answer:
+      "Settings → Logins & Passwords is a private place for your own logins and passwords. Open it with your Suite password (it stays open for 15 minutes, or until you press Lock now). Press Add a login, then give it a name, the website address, your username, a type, and the password (the Make one button creates a strong random password). Each login has Show (the password appears for 20 seconds, then hides), Copy password, Edit and Delete. Passwords and notes are stored encrypted. They are never shown in the list, and are never given to your AI Assistant or shown in emails or support tools. Each person has their own vault: your team members cannot open yours. Recent activity shows when things were opened, shown or changed. Please do not store bank card numbers or government ID numbers here. If you forget your Suite password, choose Forgot or set your password on the sign-in page; your vault is still there after you choose a new one.",
+    keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
+  },
+  {
     id: "gr-affiliates",
     category: "Growth",
     question: "How do affiliates work in the Suite?",
