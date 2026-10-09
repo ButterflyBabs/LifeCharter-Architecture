@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { UserCheck, Plus, Trash2, Upload, Sparkles } from "lucide-react";
@@ -74,7 +75,7 @@ export default function Qualifier() {
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#c9a227] to-[#1a2b4a]"><UserCheck className="h-6 w-6 text-white" /></div>
         <div>
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Prospect Qualifier</h1>
-          <p className="text-[#7a8a99]">Score a profile, or a whole list, against your Ideal Client Profile. Then send the right people to an <Link href="/dm-pipeline" className="text-[#2E7C83] hover:underline">Outreach Pipeline</Link>.</p>
+          <p className="text-[#7a8a99]">Score a profile, or a whole list, against your <Term id="icp">Ideal Client Profile</Term>. Then send the right people to an <Link href="/dm-pipeline" className="text-[#2E7C83] hover:underline">Outreach Pipeline</Link>.</p>
         </div>
       </div>
 

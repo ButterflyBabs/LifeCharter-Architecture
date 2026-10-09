@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -55,7 +56,7 @@ export function DomainScores(props: DomainScoresProps) {
   return (
     <Card className="h-full border-[#c9a227]/30">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Domain Scores</CardTitle>
+        <CardTitle><Term id="domain-scores">Domain Scores</Term></CardTitle>
         <Link href="/progress" className="text-xs text-[#7b6b8d] dark:text-[#e8e4f0] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0] transition-colors">
           See your progress →
         </Link>

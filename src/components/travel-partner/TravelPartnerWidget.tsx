@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Card, CardContent, CardTitle } from "@/components/ui/Card";
@@ -381,7 +382,7 @@ export default function TravelPartnerWidget() {
       >
         <GripVertical data-drag className="w-5 h-5 text-[#e8e4f0] opacity-60 cursor-grab active:cursor-grabbing" />
         <Compass className="w-5 h-5 text-[#c9a227]" />
-        <span className="font-medium">Travel Partner</span>
+        <span className="font-medium"><Term id="travel-partner">Travel Partner</Term></span>
         {progress > 0 && (
           <span className="ml-2 text-xs bg-[#c9a227] text-[#1a2b4a] px-2 py-0.5 rounded-full">{progress}%</span>
         )}

@@ -157,6 +157,7 @@ const navigationSections = [
     items: [
       { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
+      { id: "glossary", label: "Glossary", icon: BookOpen, href: "/glossary" },
     ],
   },
   {

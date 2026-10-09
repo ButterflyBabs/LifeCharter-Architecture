@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -60,7 +61,7 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p>You can reach your assistant in three places:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li><strong>Travel Partner widget:</strong> Look for the Travel Partner button, with the compass icon, in the bottom-right corner of the page (you can drag it elsewhere). Open it and choose the &quot;Ask&quot; tab with your assistant&apos;s name. The other tab, Help &amp; setup, guides you through setting up and answers how-to questions.</li>
+            <li><strong><Term id="travel-partner">Travel Partner</Term> widget:</strong> Look for the Travel Partner button, with the compass icon, in the bottom-right corner of the page (you can drag it elsewhere). Open it and choose the &quot;Ask&quot; tab with your assistant&apos;s name. The other tab, Help &amp; setup, guides you through setting up and answers how-to questions.</li>
             <li><strong>Executive Home:</strong> The AI Assistant card has an ask box, your conversation (newest first), and links for New conversation, Past conversations and Teach.</li>
             <li><strong>Business Alignment:</strong> The AI Business Guide card shows a greeting built from your score and your next moves, with an Ask button to chat.</li>
           </ol>
@@ -264,7 +265,7 @@ export default function AIGuideHelpPage() {
         <CardContent className="space-y-4">
           <p className="text-[#1a2b4a] dark:text-[#F8F5F0] leading-relaxed">
             The <strong>AI Business Guide</strong> is your own AI assistant, embedded throughout the LifeCharter Command Suite platform. 
-            You name it yourself (it is called Sidekick until you do). Unlike generic AI chatbots, it understands your business context, references your assessments and plans, 
+            You name it yourself (it is called <Term id="sidekick">Sidekick</Term> until you do). Unlike generic AI chatbots, it understands your business context, references your assessments and plans, 
             answers how-to questions about the Suite, and provides personalized guidance tailored to your specific situation.
           </p>
           

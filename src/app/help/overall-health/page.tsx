@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { HeartPulse, ChevronDown, ChevronUp, Activity, AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
@@ -128,7 +129,7 @@ export default function OverallBusinessHealthPage() {
               <li>• A domain score blends your Brain, Soul and Profit assessment answers, your monthly Quick Pulse check-in, and live data from the Suite (your finances, sales activity, operational pillars, Legal &amp; Compliance checklist and plan completeness)</li>
               <li>• If one of those inputs hasn&apos;t been answered yet, the others carry its weight until it is</li>
               <li>• Your Overall Business Health is the average of your domain scores, a 0-100 number</li>
-              <li>• Once all three assessments are done, your Business Health Score, three next moves, a 90-day Growth Roadmap and your Alignment Profile are built from your own answers</li>
+              <li>• Once all three assessments are done, your <Term id="business-health-score">Business Health Score</Term>, three next moves, a 90-day Growth Roadmap and your Alignment Profile are built from your own answers</li>
             </ul>
           </div>
           <p className="text-[#c9a227] font-medium">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Term } from "@/components/Term";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Users, CalendarDays, Bell } from "lucide-react";
@@ -22,7 +23,7 @@ export default function CollectiveCard() {
   return (
     <div className="h-full overflow-hidden rounded-2xl border border-gray-200/60 bg-[#FFFFFF] shadow-sm">
       <div className="flex items-center justify-between gap-2 px-6 pb-3 pt-5">
-        <h3 className="font-serif text-base text-indigo-900">The Collective</h3>
+        <h3 className="font-serif text-base text-indigo-900"><Term id="collective">The Collective</Term></h3>
         <Link href="/community" className="inline-flex items-center gap-0.5 text-xs font-medium text-[#2E7C83] hover:underline">
           Open <ChevronRight className="h-3.5 w-3.5" />
         </Link>

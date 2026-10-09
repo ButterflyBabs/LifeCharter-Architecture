@@ -1,5 +1,6 @@
 "use client";
 
+import { GlossaryText } from "@/components/Term";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -196,7 +197,7 @@ export default function SetupPage() {
                       <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{step.title}</h3>
                       {"time" in step && step.time && <span className="rounded-full bg-[#c9a227]/15 px-2 py-0.5 text-xs font-medium text-[#8a6d12] dark:text-[#e0c35a]">{step.time}</span>}
                     </div>
-                    <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">{step.desc}</p>
+                    <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5"><GlossaryText text={step.desc} /></p>
                   </div>
                   <Link
                     href={step.href}
