@@ -215,7 +215,13 @@ export default function Vault() {
       </p>
 
       {state === "loading" && <p className="mt-6 text-sm text-[#7a8a99]">Loading…</p>}
-      {state === "signedout" && <p className="mt-6 text-sm text-[#7a8a99]">Please sign in to use your vault.</p>}
+      {state === "signedout" && (
+        <div className="mt-6 max-w-md rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 text-sm text-[#4a5568] shadow-sm dark:bg-[#1a2b4a]/30 dark:text-[#c9d1dc]">
+          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">We couldn&apos;t tell who is signed in.</p>
+          <p className="mt-1">Your sign-in may have run out, or this browser is showing the demo. Sign in again to open your vault.</p>
+          <a href="/login" className="mt-3 inline-block rounded-lg bg-[#1a2b4a] px-4 py-2 font-semibold text-white">Sign in again</a>
+        </div>
+      )}
 
       {state === "locked" && (
         <div className="mt-6 grid gap-6 md:grid-cols-2">

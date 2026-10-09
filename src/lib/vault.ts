@@ -30,14 +30,10 @@ export function isUnlocked(userId: string): boolean {
   }
 }
 
-// The signed-in person, never the public demo.
+// The signed-in person. Demo visitors are never signed in, so they have no vault; a leftover demo cookie on a browser that is
+// also signed in as a real person must not lock that person out.
 export async function vaultUser(): Promise<{ id: string; email: string } | null> {
   if (!authEnabled()) return null;
-  try {
-    if (cookies().get("lc_demo")?.value === "1") return null;
-  } catch {
-    /* no request scope */
-  }
   const u = await sessionUser();
   return u && u.email ? { id: u.id, email: u.email } : null;
 }
