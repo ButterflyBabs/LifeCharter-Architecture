@@ -1,14 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowRight, PictureInPicture2, Sparkles } from "lucide-react";
+import { ArrowRight, Mic, PictureInPicture2, Sparkles, Square, Volume2, VolumeX } from "lucide-react";
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
 import PastConversations from "@/components/assistant/PastConversations";
 import { titleForPath } from "@/components/layout/Header";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
+
+// The browser's own speech tools: speaking a question in, and hearing the reply read aloud. Nothing is sent anywhere
+// for this except what the browser itself does, so it costs nothing and needs no key. (Chrome, Edge and Safari.)
+type SpeechResultEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> };
+type Recognizer = { lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: SpeechResultEvent) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null; start: () => void; stop: () => void };
+const getRecognizer = (): (new () => Recognizer) | null => {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer };
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+};
+const plainForSpeech = (t: string) => t.replace(/\*\*/g, "").replace(/[^\x20-\x7E\u00A0-\u024F\u2018-\u201D\u2026\n]/g, "").replace(/\s+/g, " ").trim();
 
 const SUGGESTIONS = ["What's my focus today?", "Schedule focus time", "Draft email to team", "Review weekly goals"];
 
@@ -31,6 +42,92 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
   const [actions, setActions] = useState<ActionCardData[]>([]);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastNote, setPastNote] = useState(false);
+  // Voice: speak a question in (microphone), and hear the reply read aloud (speaker).
+  const [canListen, setCanListen] = useState(false);
+  const [canSpeak, setCanSpeak] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [speakOn, setSpeakOn] = useState(false);
+  const [voiceNote, setVoiceNote] = useState("");
+  const rec = useRef<Recognizer | null>(null);
+  const heard = useRef("");
+  const speakOnRef = useRef(false);
+  speakOnRef.current = speakOn;
+  useEffect(() => {
+    setCanListen(Boolean(getRecognizer()));
+    setCanSpeak(typeof window !== "undefined" && "speechSynthesis" in window);
+    try {
+      setSpeakOn(localStorage.getItem("assistantSpeak") === "1");
+    } catch {
+      /* off by default */
+    }
+    return () => {
+      try { rec.current?.stop(); } catch { /* already stopped */ }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    };
+  }, []);
+  const speak = (text: string) => {
+    if (!canSpeak || !speakOnRef.current) return;
+    const t = plainForSpeech(text);
+    if (!t) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = "en-US";
+    u.rate = 1;
+    u.onstart = () => setSpeaking(true);
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(u);
+  };
+  const stopSpeaking = () => {
+    if (canSpeak) window.speechSynthesis.cancel();
+    setSpeaking(false);
+  };
+  const toggleSpeak = () => {
+    const next = !speakOn;
+    setSpeakOn(next);
+    try { localStorage.setItem("assistantSpeak", next ? "1" : "0"); } catch { /* not remembered */ }
+    if (!next) stopSpeaking();
+    setVoiceNote(next ? "Replies will be read aloud." : "");
+  };
+  const toggleListen = () => {
+    if (listening) {
+      try { rec.current?.stop(); } catch { /* already stopped */ }
+      return;
+    }
+    const R = getRecognizer();
+    if (!R) return;
+    stopSpeaking();
+    setVoiceNote("");
+    heard.current = "";
+    const r = new R();
+    r.lang = "en-US";
+    r.interimResults = true;
+    r.continuous = false;
+    r.onresult = (e) => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      heard.current = text.trim();
+      setInput(heard.current);
+    };
+    r.onerror = (e) => {
+      setListening(false);
+      setVoiceNote(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone is blocked. Allow it for this site in your browser, then try again." : e.error === "no-speech" ? "I didn't hear anything. Tap the microphone and try again." : "Voice didn't work just now. You can still type.");
+    };
+    r.onend = () => {
+      setListening(false);
+      // When replies are read aloud, a spoken question is sent when you stop talking, so it works like a conversation.
+      if (speakOnRef.current && heard.current) ask(heard.current);
+    };
+    rec.current = r;
+    try {
+      r.start();
+      setListening(true);
+    } catch {
+      setVoiceNote("Voice didn't start. You can still type.");
+    }
+  };
+
 
   useEffect(() => {
     fetch("/api/ai-settings", { cache: "no-store" })
@@ -65,6 +162,7 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
       const data = await res.json();
       setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: data.reply ?? "Sorry, I couldn't respond right now." }]);
       setActions(Array.isArray(data.actions) ? data.actions : []);
+      if (data.reply) speak(String(data.reply));
     } catch {
       setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: "Sorry, I couldn't respond right now." }]);
     }
@@ -124,10 +222,24 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
             aria-label={`Ask ${name}`}
             className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
           />
+          {canListen && (
+            <button type="button" onClick={toggleListen} aria-pressed={listening} aria-label={listening ? "Stop listening" : `Speak to ${name}`} title={listening ? "Listening… tap to stop" : `Tap and speak your question to ${name}`} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${listening ? "border-[#c0632f] bg-[#c0632f] text-white animate-pulse" : "border-gray-200 bg-white text-[#1a2b4a] hover:border-[#2E7C83]"}`}>
+              <Mic className="w-5 h-5" />
+            </button>
+          )}
+          {canSpeak && (
+            <button type="button" onClick={speaking ? stopSpeaking : toggleSpeak} aria-pressed={speakOn} aria-label={speaking ? "Stop reading aloud" : speakOn ? "Turn off reading replies aloud" : "Read replies aloud"} title={speaking ? "Stop reading aloud" : speakOn ? "Replies are read aloud. Tap to turn off." : "Tap to have replies read aloud"} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${speakOn ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#1f6a70]" : "border-gray-200 bg-white text-[#5a6472] hover:border-[#2E7C83]"}`}>
+              {speaking ? <Square className="w-4 h-4" /> : speakOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+          )}
           <button onClick={() => ask()} disabled={loading || !input.trim()} aria-label="Send" className="w-11 h-11 shrink-0 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50">
             <ArrowRight className="w-5 h-5 text-white" />
           </button>
         </div>
+
+        {(voiceNote || (canListen && speakOn)) && (
+          <p className="-mt-2 mb-3 text-xs text-[#7a8a99]" role="status">{voiceNote || `Speak your question and pause: ${name} answers and reads it aloud.`}</p>
+        )}
 
         <PastConversations open={pastOpen} onClose={() => setPastOpen(false)} onContinued={loadThread} />
         {pastNote && thread.length === 0 && (
