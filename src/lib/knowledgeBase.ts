@@ -263,6 +263,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["glossary", "definition", "what does this mean", "term", "dotted underline", "hope seat", "travel partner", "true north", "buried", "domain scores", "icp"],
   },
   {
+    id: "ai-voice",
+    category: "AI & Automation",
+    question: "Can I talk to my AI Assistant, and have it talk back?",
+    answer:
+      "Yes. In the AI Assistant box (on Executive Home, or the floating assistant on any page) there are two buttons beside the ask box. Tap the microphone, speak your question, and it appears in the box; tap the microphone again to stop. Tap the speaker button to have replies read aloud: with the speaker on, a spoken question is sent when you pause and the answer is read back to you, so it works like a conversation. Tap the square while it is speaking to stop. This uses your browser's own voice tools (Chrome, Edge and Safari), so it costs nothing extra and uses no AI key. The first time, your browser asks to use your microphone: choose Allow. If you do not see the buttons, your browser does not support voice, and typing still works.",
+    keywords: ["voice", "talk", "speak", "microphone", "mic", "read aloud", "spoken", "dictate", "listen", "audio", "speech"],
+  },
+  {
     id: "gr-affiliates",
     category: "Growth",
     question: "How do affiliates work in the Suite?",
@@ -857,7 +865,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Is there a step-by-step guide to setting up?",
     answer:
-      "Yes. The Starter Guide is a checklist that takes you from your first sign-in to a Suite that knows you, one small step at a time. It runs for all 30 days, and every day shows how long it should take. Day 1 has five steps (connect your AI, take the Brain, Soul and Profit assessments, and connect one tool; about 3½ hours, in as many sittings as you like), each with where to click and how you will know it worked. Days 6 to 30 take you through your money and weekly rhythm, your SOPs and legal checklist, your Business Plan and Marketing Plan, your Ideal Client Profile and first outreach, your goals and projects, setting up email, content, testimonials, and a second review. It also covers a look around Executive Home, your first week of coaching calls, your First 30 Days, and next steps for when you are ready (like bringing your contacts in and connecting your own Resend account so you can email them). Tick each box as you go; your ticks are saved on your device. Open it from Getting Started → Starter Guide in the menu, or from the Set up Suite page.",
+      "Yes. The Starter Guide is a checklist that takes you from your first sign-in to a Suite that knows you, one small step at a time. It runs for all 30 days, and every day shows how long it should take. Day 1 has five steps (connect your AI, take the Brain, Soul and Profit assessments, and connect one tool; about 3½ hours, in as many sittings as you like), each with where to click and how you will know it worked. Days 6 to 30 take you through your money and weekly rhythm, your SOPs and legal checklist, your Business Plan and Marketing Plan, your Ideal Client Profile and first outreach, your goals and projects, setting up email, content, testimonials, and a second review. It also covers a look around Executive Home, your first week of coaching calls, your First 30 Days, and next steps for when you are ready (like bringing your contacts in and connecting your own Resend account so you can email them). Tick each box as you go; your ticks are saved to your account, so they follow you to your phone, iPad and any computer you sign in on. Day 2 includes submitting your website for review, and Day 1 includes bookmarking the guide and the Suite together. Open it from Getting Started → Starter Guide in the menu, or from the Set up Suite page.",
     keywords: ["starter guide", "setup guide", "checklist", "step by step", "getting started", "onboarding", "first steps", "set up"],
   },
   {
