@@ -32,6 +32,7 @@ const blank = (): Draft => ({ label: "", category: "Website", url: "", username:
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "");
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
+const pick = "rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
 const lab = "block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
 
 // A strong random password from the browser's own secure random numbers.
@@ -247,11 +248,11 @@ export default function Vault() {
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#7a8a99]" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your logins" aria-label="Search your logins" className={`${field} pl-9`} />
             </div>
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Show type" className={`${field} w-auto`}><option>All</option>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
-            <select value={twofaFilter} onChange={(e) => setTwofaFilter(e.target.value as "all" | "yes" | "no")} aria-label="Two-step sign-in" className={`${field} w-auto`}>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Show type" className={pick}><option>All</option>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+            <select value={twofaFilter} onChange={(e) => setTwofaFilter(e.target.value as "all" | "yes" | "no")} aria-label="Two-step sign-in" className={pick}>
               <option value="all">2FA: any</option><option value="yes">2FA on</option><option value="no">2FA off</option>
             </select>
-            <select value={sort.key} onChange={(e) => setSort({ key: e.target.value as SortKey, dir: 1 })} aria-label="Sort by" className={`${field} w-auto md:hidden`}>
+            <select value={sort.key} onChange={(e) => setSort({ key: e.target.value as SortKey, dir: 1 })} aria-label="Sort by" className={`${pick} md:hidden`}>
               {COLUMNS.map((c) => <option key={c.key} value={c.key}>Sort: {c.label}</option>)}
             </select>
             <button onClick={() => { setShowDraftPw(false); setConfirmPw(""); setErr(""); setDraft(blank()); }} className="inline-flex items-center gap-1.5 rounded-lg bg-[#2E7C83] px-4 py-2 text-sm font-semibold text-white hover:bg-[#256b71]"><Plus className="h-4 w-4" /> Add a login</button>
@@ -358,7 +359,7 @@ export default function Vault() {
               <div className="sm:col-span-2 flex flex-wrap items-center gap-3 rounded-lg border border-[#1a2b4a]/10 bg-white px-3 py-2 dark:bg-[#1a2b4a]/30">
                 <label className="flex items-center gap-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]"><input type="checkbox" checked={draft.twofa} onChange={(e) => setDraft({ ...draft, twofa: e.target.checked, twofaMethod: e.target.checked ? draft.twofaMethod : "" })} className="h-4 w-4" /> Two-step sign-in (2FA) is turned on</label>
                 {draft.twofa && (
-                  <select value={draft.twofaMethod} onChange={(e) => setDraft({ ...draft, twofaMethod: e.target.value })} aria-label="2FA method" className={`${field} w-auto`}>
+                  <select value={draft.twofaMethod} onChange={(e) => setDraft({ ...draft, twofaMethod: e.target.value })} aria-label="2FA method" className={pick}>
                     <option value="">Which kind? (optional)</option>{TWOFA.map((m) => <option key={m}>{m}</option>)}
                   </select>
                 )}
