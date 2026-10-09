@@ -9,7 +9,10 @@ import { quickWinEmailFor, unfilledParts } from "@/lib/quickWinEmails";
 export const dynamic = "force-dynamic";
 
 // Quick Wins that send a ready-made email.
-// GET  → { myName, canSend, reason? }   (who the email signs as, and whether this account can send right now)
+// GET  → { myName, canSend, reason?, templates }   (who the email signs as, whether this account can send right now, and the
+//         account's own saved wording for any of the ready-made emails)
+// POST { title, subject, body, mode: "save-template" }  saves the account's own wording (kept with {{first_name}} and {{my_name}})
+// POST { title, mode: "reset-template" }                goes back to the starting wording
 // POST { title, contactId, subject, body, mode: "send" | "done" }
 //   send: emails the person from the account's own sender, then logs it
 //   done: the client sent it themselves (copied it): only logs it
@@ -41,7 +44,9 @@ export async function GET() {
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const who = await accountSender(a.planId, { marketing: false }, db);
-  return NextResponse.json({ myName: await myName(db, a.planId), canSend: who.ok, reason: who.ok ? null : who.reason });
+  const { data: rows } = await db.from("quick_win_email_templates").select("kind, subject, body").eq("master_plan_id", a.planId);
+  const templates = Object.fromEntries(((rows ?? []) as { kind: string; subject: string; body: string }[]).map((r) => [r.kind, { subject: r.subject, body: r.body }]));
+  return NextResponse.json({ myName: await myName(db, a.planId), canSend: who.ok, reason: who.ok ? null : who.reason, templates });
 }
 
 export async function POST(request: Request) {
@@ -53,6 +58,17 @@ export async function POST(request: Request) {
   const body = str(b.body, 8000);
   const mode = b.mode === "done" ? "done" : "send";
   if (!tpl) return NextResponse.json({ error: "That Quick Win doesn't send an email." }, { status: 400 });
+  if (b.mode === "reset-template" || b.mode === "save-template") {
+    const dbt = createServerClient();
+    if (b.mode === "reset-template") {
+      await dbt.from("quick_win_email_templates").delete().eq("master_plan_id", a.planId).eq("kind", tpl.kind);
+      return NextResponse.json({ ok: true, template: { subject: tpl.subject, body: tpl.body } });
+    }
+    if (!subject || !body) return NextResponse.json({ error: "Add a subject and a message." }, { status: 400 });
+    const { error } = await dbt.from("quick_win_email_templates").upsert({ master_plan_id: a.planId, kind: tpl.kind, subject, body, updated_at: new Date().toISOString() }, { onConflict: "master_plan_id,kind" });
+    if (error) return NextResponse.json({ error: "Couldn't save your wording." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
   if (!subject || !body) return NextResponse.json({ error: "Add a subject and a message." }, { status: 400 });
   if (unfilledParts(subject + "\n" + body).length) return NextResponse.json({ error: "Fill in the [bracketed] parts first." }, { status: 400 });
 

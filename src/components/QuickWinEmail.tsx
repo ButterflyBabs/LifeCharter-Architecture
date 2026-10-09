@@ -10,7 +10,11 @@ const nameOf = (p: Person) => [p.first_name, p.last_name].filter(Boolean).join("
 // A Quick Win that sends a ready-made email: pick the person, read it over, change anything, send. Sending (or marking it
 // done when you sent it yourself) adds today's task as complete and counts toward the day's activity.
 export default function QuickWinEmail({ tpl, emoji, onClose, onDone }: { tpl: Template; emoji: string; onClose: () => void; onDone: (msg: string) => void }) {
-  const [info, setInfo] = useState<{ myName: string; canSend: boolean; reason: string | null } | null>(null);
+  const [info, setInfo] = useState<{ myName: string; canSend: boolean; reason: string | null; templates?: Record<string, { subject: string; body: string }> } | null>(null);
+  // The wording this email starts from: the account's own saved wording if it has one, else ours.
+  const [base, setBase] = useState<{ subject: string; body: string }>({ subject: tpl.subject, body: tpl.body });
+  const [savedOwn, setSavedOwn] = useState(false);
+  const [note, setNote] = useState("");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Person[]>([]);
   const [searching, setSearching] = useState(false);
@@ -23,7 +27,7 @@ export default function QuickWinEmail({ tpl, emoji, onClose, onDone }: { tpl: Te
   const edited = useRef(false);
 
   useEffect(() => {
-    fetch("/api/quick-wins/email").then((r) => r.json()).then((d) => setInfo(d)).catch(() => setInfo({ myName: "", canSend: false, reason: "Couldn't check your email setup." }));
+    fetch("/api/quick-wins/email").then((r) => r.json()).then((d) => { setInfo(d); const own = d?.templates?.[tpl.kind]; if (own) { setBase(own); setSavedOwn(true); } }).catch(() => setInfo({ myName: "", canSend: false, reason: "Couldn't check your email setup." }));
   }, []);
 
   // Search the account's own contacts as they type.
@@ -45,10 +49,10 @@ export default function QuickWinEmail({ tpl, emoji, onClose, onDone }: { tpl: Te
   // Until the person edits the words, the name and signature follow the person they pick.
   useEffect(() => {
     if (edited.current) return;
-    setSubject(fillQuickWinText(tpl.subject, vars));
-    setBody(fillQuickWinText(tpl.body, vars));
+    setSubject(fillQuickWinText(base.subject, vars));
+    setBody(fillQuickWinText(base.body, vars));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [person, info, tpl]);
+  }, [person, info, base]);
 
   const missing = unfilledParts(subject + "\n" + body);
   const ready = Boolean(person) && missing.length === 0 && subject.trim() && body.trim();
@@ -66,6 +70,27 @@ export default function QuickWinEmail({ tpl, emoji, onClose, onDone }: { tpl: Te
       setError("That didn't work. Try again.");
     } finally {
       setBusy("");
+    }
+  }
+
+  // Keep the wording as the account's own: the person's name and the owner's name go back to placeholders.
+  const unfill = (t: string) => {
+    let out = t;
+    if (vars.my_name) out = out.replace(new RegExp(`(\\n)${vars.my_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`), "$1{{my_name}}");
+    if (vars.first_name) out = out.replace(new RegExp(`\\b${vars.first_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g"), "{{first_name}}");
+    return out;
+  };
+  async function saveWording(reset: boolean) {
+    setError("");
+    setNote("");
+    try {
+      const r = await fetch("/api/quick-wins/email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reset ? { title: tpl.title, mode: "reset-template" } : { title: tpl.title, mode: "save-template", subject: unfill(subject), body: unfill(body) }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error || "Couldn't save that."); return; }
+      if (reset) { edited.current = false; setBase({ subject: tpl.subject, body: tpl.body }); setSavedOwn(false); setNote("Back to the starting wording."); }
+      else { const nb = { subject: unfill(subject), body: unfill(body) }; setBase(nb); setSavedOwn(true); setNote("Saved. This email will start from your wording every time."); }
+    } catch {
+      setError("Couldn't save that.");
     }
   }
 
@@ -143,6 +168,11 @@ export default function QuickWinEmail({ tpl, emoji, onClose, onDone }: { tpl: Te
             {busy === "done" ? "Saving…" : "I sent it myself"}
           </button>
           <button onClick={onClose} className="ml-auto text-sm text-[#5a6472] underline">Not now</button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[#1a2b4a]/10 pt-3 text-sm">
+          <button onClick={() => void saveWording(false)} className="font-semibold text-[#1f6a70] underline dark:text-[#7fd0d6]">Save this as my wording</button>
+          {savedOwn && <button onClick={() => void saveWording(true)} className="text-[#5a6472] underline">Go back to the starting wording</button>}
+          <span className="text-xs text-[#7a8a99]">{note || (savedOwn ? "This email starts from your own wording." : "Change the words so they sound like you, then save them to use every time.")}</span>
         </div>
       </div>
     </div>
