@@ -86,6 +86,7 @@ import {
   FolderKanban,
   Link2,
   UserCheck,
+  KeyRound,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 
@@ -158,6 +159,7 @@ const navigationSections = [
       { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
       { id: "glossary", label: "Glossary", icon: BookOpen, href: "/glossary" },
+      { id: "vault", label: "Logins & Passwords", icon: KeyRound, href: "/vault" },
     ],
   },
   {
