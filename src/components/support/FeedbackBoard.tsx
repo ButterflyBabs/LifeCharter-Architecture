@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ThumbsUp, AlertTriangle, Ticket, Megaphone, CheckCircle2 } from "lucide-react";
+import { ThumbsUp, AlertTriangle, Ticket, Megaphone, CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
 
 type Status = "open" | "under_review" | "planned" | "shipped" | "closed";
 const STATUS_LABEL: Record<Status, { label: string; color: string }> = {
@@ -196,36 +196,68 @@ interface UpdateItem { id: string; title: string; description: string; created_a
 export function WhatsNew() {
   const [items, setItems] = useState<UpdateItem[] | null>(null);
   const [all, setAll] = useState(false);
+  // The whole list folds away, and each update opens and closes on its own (the newest starts open). They add up quickly.
+  const [folded, setFolded] = useState(false);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   useEffect(() => {
+    try {
+      setFolded(localStorage.getItem("whatsNewFolded") === "1");
+    } catch {
+      /* open by default */
+    }
     fetch("/api/feedback?kind=update", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setItems(d.items ?? []))
+      .then((d) => {
+        const list: UpdateItem[] = d.items ?? [];
+        setItems(list);
+        if (list[0]) setOpen({ [list[0].id]: true });
+      })
       .catch(() => setItems([]));
   }, []);
   if (!items?.length) return null;
   const shown = all ? items : items.slice(0, 8);
+  const toggleFold = () =>
+    setFolded((f) => {
+      try { localStorage.setItem("whatsNewFolded", f ? "0" : "1"); } catch { /* not remembered */ }
+      return !f;
+    });
+  const allOpen = shown.every((it) => open[it.id]);
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
-          <Megaphone className="w-5 h-5 text-[#c9a227]" /> What&apos;s new
-        </CardTitle>
-        <p className="text-sm text-[#7a8a99]">Updates and fixes to the Command Suite, newest first. When you report something with the light bulb, you&apos;ll see the fix here.</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <button type="button" onClick={toggleFold} aria-expanded={!folded} className="flex items-center gap-2 text-left">
+            {folded ? <ChevronRight className="w-5 h-5 text-[#7a8a99]" /> : <ChevronDown className="w-5 h-5 text-[#7a8a99]" />}
+            <CardTitle className="flex items-center gap-2 text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">
+              <Megaphone className="w-5 h-5 text-[#c9a227]" /> What&apos;s new
+              <span className="text-sm font-normal text-[#7a8a99]">({items.length})</span>
+            </CardTitle>
+          </button>
+          {!folded && (
+            <button type="button" onClick={() => setOpen(Object.fromEntries(shown.map((it) => [it.id, !allOpen])))} className="text-xs font-semibold text-[#2E7C83] hover:underline">
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
+          )}
+        </div>
+        {!folded && <p className="text-sm text-[#7a8a99]">Updates and fixes to the Command Suite, newest first. Tap one to open it. When you report something with the light bulb, you&apos;ll see the fix here.</p>}
       </CardHeader>
-      <CardContent className="divide-y divide-[#1a2b4a]/10">
-        {shown.map((it) => (
-          <div key={it.id} className="py-3 first:pt-0 last:pb-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.title}</p>
-              <span className="text-xs text-[#b8a898]">{when(it.created_at)}</span>
+      {!folded && (
+        <CardContent className="divide-y divide-[#1a2b4a]/10">
+          {shown.map((it) => (
+            <div key={it.id} className="py-3 first:pt-0 last:pb-0">
+              <button type="button" onClick={() => setOpen((o) => ({ ...o, [it.id]: !o[it.id] }))} aria-expanded={Boolean(open[it.id])} className="flex w-full items-center gap-2 text-left">
+                {open[it.id] ? <ChevronDown className="w-4 h-4 shrink-0 text-[#7a8a99]" /> : <ChevronRight className="w-4 h-4 shrink-0 text-[#7a8a99]" />}
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.title}</span>
+                <span className="ml-auto shrink-0 text-xs text-[#b8a898]">{when(it.created_at)}</span>
+              </button>
+              {open[it.id] && <p className="mt-1 pl-6 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{it.description}</p>}
             </div>
-            <p className="mt-0.5 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{it.description}</p>
-          </div>
-        ))}
-        {items.length > shown.length && (
-          <button onClick={() => setAll(true)} className="pt-3 text-sm font-semibold text-[#2E7C83] hover:underline">Show earlier updates</button>
-        )}
-      </CardContent>
+          ))}
+          {items.length > shown.length && (
+            <button onClick={() => setAll(true)} className="pt-3 text-sm font-semibold text-[#2E7C83] hover:underline">Show earlier updates</button>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
