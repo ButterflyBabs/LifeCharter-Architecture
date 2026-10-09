@@ -45,7 +45,8 @@ export async function passwordIsRight(email: string, password: string): Promise<
   if (!url || !key || !password) return false;
   const c = createSsrClient(url, key, { cookies: { get: () => undefined, set() {}, remove() {} } });
   const { data, error } = await c.auth.signInWithPassword({ email, password });
-  if (data?.session) await c.auth.signOut().catch(() => {});
+  // Only forget this throwaway client's own session. (A plain signOut() signs the person out everywhere, including their real session.)
+  if (data?.session) await c.auth.signOut({ scope: "local" }).catch(() => {});
   return !error && Boolean(data?.user);
 }
 
