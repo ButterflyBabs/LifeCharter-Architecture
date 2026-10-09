@@ -22,7 +22,7 @@ Your LifeCharter Command Suite account is ready, and I'm so glad you're here.
 
 {{password_link}}
 
-The link works once and expires after an hour, so if you open this later, it may have expired, and that is fine. Go to lccommandsuite.com/forgot-password, enter this email address, and a fresh link comes straight to you. After that, you always sign in at lccommandsuite.com/login with this email and your new password.`;
+The link works once and lasts 24 hours. If it has expired by the time you open this, that is fine: go to lccommandsuite.com/forgot-password, enter this email address, and a fresh link comes straight to you. After that, you always sign in at lccommandsuite.com/login with this email and your new password.`;
 
 const CLOSE = `Questions? Just reply to this email.
 

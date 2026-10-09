@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
     return (
       <AuthShell
         title="Check your email"
-        subtitle="If an account exists for that address, we've sent a link to choose your password. It works once and expires in an hour."
+        subtitle="If an account exists for that address, we've sent a link to choose your password. It works once and lasts 24 hours."
       >
         <p className="rounded-lg border border-brand-teal/40 bg-brand-teal/10 px-4 py-3 text-center text-[12.5px] text-brand-lavender">
           Didn&apos;t get it? It comes from community@lccommandsuite.com — check Other, Promotions and Spam, or wait a moment and try again.

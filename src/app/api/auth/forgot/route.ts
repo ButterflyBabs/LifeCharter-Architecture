@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     <tr><td style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A8873F;font-family:Arial,sans-serif">LifeCharter Command Suite</td></tr>
     <tr><td style="font-size:24px;color:#1F315B;padding:8px 0 10px">Choose your password</td></tr>
     <tr><td style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#3A4462">
-      ${name ? `Hi ${esc(name)},<br><br>` : ""}We received a request to set or reset the password for your LifeCharter Command Suite account. Click below to choose one. This link works once and expires in an hour.
+      ${name ? `Hi ${esc(name)},<br><br>` : ""}We received a request to set or reset the password for your LifeCharter Command Suite account. Click below to choose one. This link works once and lasts 24 hours.
     </td></tr>
     <tr><td style="padding:22px 0"><a href="${link}" style="display:inline-block;background:#D4AF63;color:#0F1A38;font-family:Arial,sans-serif;font-weight:700;padding:13px 24px;border-radius:10px;text-decoration:none">Choose my password</a></td></tr>
     <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#8A8FA0">If you didn't ask for this, you can ignore this email — your password won't change. Questions? Reply, or write to support@lccommandsuite.com.</td></tr>
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       reply_to: "support@lccommandsuite.com",
       subject: "Set or reset your Command Suite password",
       html,
-      text: `Set or reset your LifeCharter Command Suite password: ${link}\n\nThis link works once and expires in an hour. If you didn't ask for this, you can ignore this email.`,
+      text: `Set or reset your LifeCharter Command Suite password: ${link}\n\nThis link works once and lasts 24 hours. If you didn't ask for this, you can ignore this email.`,
     }),
   });
   if (!res.ok) {

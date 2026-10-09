@@ -157,7 +157,7 @@ export function NewClientForm() {
           <div className="mt-4">
             <p className="text-xs text-[#b8a898] mb-2">
               {result.emailed
-                ? "A backup copy of their password link, in case it is needed. It works once and expires after an hour."
+                ? "A backup copy of their password link, in case it is needed. It works once and lasts 24 hours."
                 : "Send this link to the client — it lets them set their own password and sign in. The automatic email isn't switched on yet, so copy and send it yourself."}
             </p>
             <div className="flex gap-2 flex-wrap">
