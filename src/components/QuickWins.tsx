@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import QuickWinEmail from "@/components/QuickWinEmail";
+import { quickWinEmailFor, type QuickWinEmail as EmailTpl } from "@/lib/quickWinEmails";
 import { Zap, Sparkles, Pencil, Trash2, Plus, Check, X, Loader2, Wand2, ChevronDown, ChevronRight } from "lucide-react";
 
 export interface QuickWin {
@@ -38,6 +40,8 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
   const [needsKey, setNeedsKey] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [error, setError] = useState("");
+  const [emailing, setEmailing] = useState<{ win: QuickWin; tpl: EmailTpl } | null>(null);
+  const [doneMsg, setDoneMsg] = useState("");
 
   // Collapsible: fold the whole list down to its title. Remembered per device.
   const [collapsed, setCollapsed] = useState(false);
@@ -75,6 +79,9 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
 
   // Clicking a win spins up a real task for today.
   const doWin = async (w: QuickWin) => {
+    // Six of the starting Quick Wins send a ready-made email: pick the person, send, and it is logged as done.
+    const tpl = quickWinEmailFor(w.title);
+    if (tpl) { setEmailing({ win: w, tpl }); return; }
     setBusyId(w.id);
     setError("");
     try {
@@ -254,11 +261,11 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
       <p className="text-sm text-[#4a5568] dark:text-[#d5dbe5] mb-4 leading-relaxed">
         {mode === "full" ? (
           <>
-            A rotating menu of small, high-impact moves. <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap one to add it to today&apos;s tasks</strong> — the win stays so you can use it again. Use <strong className="font-semibold">Manage</strong> to edit or delete, and <strong className="font-semibold">AI suggest</strong> for a new one tailored to your weakest area.
+            A rotating menu of small, high-impact moves. <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap one to add it to today&apos;s tasks</strong> — the ones marked <strong className="font-semibold">Send</strong> open a ready-made email: pick the person, change anything you like, send, and it is logged as done. The win stays so you can use it again. Use <strong className="font-semibold">Manage</strong> to edit or delete, and <strong className="font-semibold">AI suggest</strong> for a new one tailored to your weakest area.
           </>
         ) : (
           <>
-            <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap a win to add it to today&apos;s tasks</strong> — small, high-impact moves you can knock out fast.
+            <strong className="font-semibold text-[#1f6a70] dark:text-[#7fd0d6]">Tap a win to add it to today&apos;s tasks, or to send its ready-made email</strong> — small, high-impact moves you can knock out fast.
           </>
         )}
       </p>
@@ -290,7 +297,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                 <button
                   onClick={() => doWin(w)}
                   disabled={busyId === w.id}
-                  title="Add this to today's tasks"
+                  title={quickWinEmailFor(w.title) ? "Pick the person and send this email" : "Add this to today's tasks"}
                   className={`flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl border px-4 py-3 transition disabled:opacity-60 ${
                     addedId === w.id
                       ? "border-[#2c6b3f]/40 bg-[#d8efdd]"
@@ -317,7 +324,7 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
                       <Loader2 className="w-4 h-4 animate-spin text-[#b8a898]" />
                     ) : (
                       <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#1f6a70] dark:text-[#7fd0d6] whitespace-nowrap bg-[#2E7C83]/12 px-2.5 py-1 rounded-full">
-                        <Plus className="w-3.5 h-3.5" /> Add
+                        <Plus className="w-3.5 h-3.5" /> {quickWinEmailFor(w.title) ? "Send" : "Add"}
                       </span>
                     )}
                   </span>
@@ -377,6 +384,20 @@ export default function QuickWins({ mode = "full", compactLimit = 4, layout = "l
         </div>
       )}
       </>
+      )}
+      {doneMsg && <p className="mt-2 text-sm font-semibold text-[#1f5a33]" role="status">{doneMsg}</p>}
+      {emailing && (
+        <QuickWinEmail
+          tpl={emailing.tpl}
+          emoji={emailing.win.emoji}
+          onClose={() => setEmailing(null)}
+          onDone={(msg) => {
+            setEmailing(null);
+            setDoneMsg(msg);
+            if (typeof window !== "undefined") window.dispatchEvent(new Event("tasks-changed"));
+            setTimeout(() => setDoneMsg(""), 6000);
+          }}
+        />
       )}
     </div>
   );
