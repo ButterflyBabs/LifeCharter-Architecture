@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AuthShell, authInputClass, authLabelClass, authButtonClass } from "@/components/login/auth-shell";
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // A link in a welcome email can open this page with the address already filled in (?email=).
+  const [prefill, setPrefill] = useState("");
+  useEffect(() => {
+    try {
+      const e = new URLSearchParams(window.location.search).get("email") || "";
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) setPrefill(e);
+    } catch {
+      /* leave it blank */
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +66,8 @@ export default function ForgotPasswordPage() {
             name="email"
             type="email"
             autoComplete="email"
+            defaultValue={prefill}
+            key={prefill}
             required
             placeholder="you@lifecharter.com"
             className={authInputClass}

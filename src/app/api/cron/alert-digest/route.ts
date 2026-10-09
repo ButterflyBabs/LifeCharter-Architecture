@@ -16,6 +16,18 @@ const FROM = process.env.ALERT_EMAIL_FROM || "LifeCharter Command Suite <reminde
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+type Db = ReturnType<typeof createServerClient>;
+async function setupDone(db: Db, planId: string, createdAt: string | null): Promise<boolean> {
+  if (createdAt && Date.now() - new Date(createdAt).getTime() > 14 * 86_400_000) return true;
+  const answered = async (type: "brain" | "soul") =>
+    ((await db.from("unified_client_responses").select("id", { count: "exact", head: true }).eq("master_plan_id", planId).eq("assessment_type", type)).count ?? 0) > 0;
+  const [brain, soul] = await Promise.all([answered("brain"), answered("soul")]);
+  if (!brain || !soul) return false;
+  const { data: mp } = await db.from("client_master_plans").select("domain_scores, profit_score").eq("id", planId).maybeSingle();
+  const ds = (mp?.domain_scores as Record<string, unknown> | null) || null;
+  return Boolean((ds && Object.keys(ds).length > 0) || (mp?.profit_score as number | null));
+}
+
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -25,10 +37,13 @@ async function run(request: Request) {
   if (!resendKey) return NextResponse.json({ skipped: "RESEND_API_KEY not set" });
 
   const supabase = createServerClient();
-  const { data: plans } = await supabase.from("client_master_plans").select("id, user_id").not("user_id", "is", null).limit(1000);
+  const { data: plans } = await supabase.from("client_master_plans").select("id, user_id, created_at").not("user_id", "is", null).limit(1000);
 
   let emailed = 0;
-  for (const plan of (plans ?? []) as { id: string; user_id: string }[]) {
+  for (const plan of (plans ?? []) as { id: string; user_id: string; created_at: string | null }[]) {
+    // A new client hears nothing from the Suite's "worth your attention" emails until their three assessments are done
+    // (or their account is two weeks old), so the very first emails are a welcome and not a to-do list.
+    if (!(await setupDone(supabase, plan.id, plan.created_at))) continue;
     const { data: prof } = await supabase.from("profiles").select("email, full_name, alert_email").eq("id", plan.user_id).maybeSingle();
     if (!prof?.email || prof.alert_email === false) continue;
 
