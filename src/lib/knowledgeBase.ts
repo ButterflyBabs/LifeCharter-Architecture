@@ -77,7 +77,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Daily Rhythm",
     question: "How do Quick Wins work?",
     answer:
-      "Quick Wins are small, high-leverage actions you can do today. You get 10 to choose from, and clicking any one instantly creates a real task for today. You can edit each win's wording manually or with AI ('Polish with AI'), delete ones that don't fit, and generate brand-new AI suggestions tailored to your weakest business areas. They appear on both the Daily Compass (full manage mode) and the Morning Brief (quick tap-to-add).",
+      "Quick Wins are small, high-leverage actions you can do today. You get 10 to choose from. Six of them send a ready-made email (testimonial request, share a client's win, reconnect with a past client, follow up an open proposal, ask for a referral, thank a referral partner): tap Send, pick the person from your contacts, read the email, change anything you like, fill in any [bracketed] parts, and send. It goes out from your own email setup (Contacts → Email sending), and the Quick Win is added to today as done, logged on Sales Activities and on that person's timeline, so it counts toward your day's activity and your health score. If you have not set up sending yet, press Copy, send it from your own email, then press I sent it myself to log it. The other four simply create a real task for today when you click them. You can edit each win's wording manually or with AI ('Polish with AI'), delete ones that don't fit, and generate brand-new AI suggestions tailored to your weakest business areas. They appear on both the Daily Compass (full manage mode) and the Morning Brief (quick tap-to-add).",
     keywords: ["quick wins", "quick win", "quickwins", "actions", "tasks", "ai suggest", "10"],
   },
   {
@@ -253,6 +253,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Open Clients & Sales → Prospect Qualifier. Start with your profiles: describe who you serve, what you help them do, your signature offer, their core problem, what they already have, what is missing and your red flags, and reword the four levels (such as Beginner or 2 Levels Behind) so they describe people in your business, marking which level is your ideal client. Keep one Ideal Client Profile for each offer. To score one person, pick a profile, paste their profile page text (the Suite cannot open LinkedIn, Instagram or Facebook links, because those platforms block it) and press Qualify: you get a fit (yes, borderline or no), their level, the gap, a warm DM angle and a priority (High, Medium, Low or Skip) with what to do next. You can do the same from any pipeline card: open the card and use its Qualify section. To score a whole list, use Score a whole list: upload a spreadsheet (CSV or Excel) or paste cells, check the rows, and the Suite ranks everyone from the data in your list, then adds the people you select to a pipeline (High to To reach out, Medium and Low to Nurture). It warns you when someone is already on a pipeline. Scoring uses your own AI key from AI Assistant, about a penny per 100 people for a list.",
     keywords: ["qualifier", "prospect qualifier", "ideal client", "ideal client profile", "icp", "qualify a prospect", "score a list", "audience qualifier", "fit", "priority", "warm dm"],
+  },
+  {
+    id: "st-glossary",
+    category: "Getting Started",
+    question: "What do the dotted underlines mean, and where is the Glossary?",
+    answer:
+      "A word with a dotted underline is one of our own terms, such as Travel Partner, Hope Seat, True North, BURIED or Domain Scores. Hover over it (or tap it on a phone or iPad) and a one-line meaning pops up; move away and it disappears. The full Glossary is in the left menu under Settings → Glossary. It holds the Command Suite's own words plus the business, sales and marketing terms the app uses, grouped by type, with a search box.",
+    keywords: ["glossary", "definition", "what does this mean", "term", "dotted underline", "hope seat", "travel partner", "true north", "buried", "domain scores", "icp"],
   },
   {
     id: "gr-affiliates",
