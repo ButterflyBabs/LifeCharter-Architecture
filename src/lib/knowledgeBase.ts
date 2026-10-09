@@ -259,7 +259,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What do the dotted underlines mean, and where is the Glossary?",
     answer:
-      "A word with a dotted underline is one of our own terms, such as Travel Partner, Hope Seat, True North, BURIED or Domain Scores. Hover over it (or tap it on a phone or iPad) and a one-line meaning pops up; move away and it disappears. The full Glossary is in the left menu under Settings → Glossary. It holds the Command Suite's own words plus the business, sales and marketing terms the app uses, grouped by type, with a search box.",
+      "A word with a dotted underline is one of our own terms, such as Travel Partner, Hope Seat, True North, BURIED or Domain Scores. Hover over it (or tap it on a phone or iPad) and a one-line meaning pops up; move away and it disappears. The full Glossary is in the left menu under Settings → Glossary. It lists the Command Suite's own words plus the business, sales and marketing terms the app uses, alphabetically from A to Z with a letter bar to jump to any letter and a search box. Each term has a coloured button for its type (Command Suite, Business, Sales or Marketing; press it to show only that type) and, where it helps, buttons showing which pages of the app you will see the word on.",
     keywords: ["glossary", "definition", "what does this mean", "term", "dotted underline", "hope seat", "travel partner", "true north", "buried", "domain scores", "icp"],
   },
   {
