@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Package, Pencil, Trash2, X, ExternalLink, Users } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, X, ExternalLink, Users, Search, GripVertical } from "lucide-react";
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { OFFER_BILLING, OFFER_FORMATS, OFFER_STATUSES, offerPriceLabel, type Offer } from "@/lib/sales/offers";
 import SalesNav from "@/components/sales/SalesNav";
 
@@ -42,6 +45,28 @@ const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b
 const input = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
 const formatLabel = (id: string) => OFFER_FORMATS.find((f) => f.id === id)?.label ?? id;
 
+// One draggable card. The grip is the only drag handle, so Edit and the sales-page link stay plain clicks.
+function SortableCard({ id, children }: { id: string; children: (handle: React.ReactNode) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const handle = (
+    <button
+      ref={setActivatorNodeRef}
+      {...attributes}
+      {...listeners}
+      aria-label="Drag to reorder"
+      title="Drag to reorder"
+      className="-ml-1 shrink-0 cursor-grab touch-none rounded p-1 text-[#7b6b8d] hover:bg-black/5 active:cursor-grabbing dark:hover:bg-white/10"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  );
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 20 : undefined, opacity: isDragging ? 0.85 : 1 }} className="flex">
+      {children(handle)}
+    </div>
+  );
+}
+
 // Offers & Packages: every offer the client sells, with price, what's included and who it's for.
 // Deals on the Pipeline point to these, and Executive Home shows which offer is bringing in the most.
 export default function OffersPage() {
@@ -49,6 +74,7 @@ export default function OffersPage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [currentBiz, setCurrentBiz] = useState<number | null>(null);
   const [filter, setFilter] = useState<"active" | "draft" | "retired" | "all">("active");
+  const [q, setQ] = useState("");
   const [form, setForm] = useState<Form | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -65,7 +91,41 @@ export default function OffersPage() {
     load();
   }, [load]);
 
-  const shown = useMemo(() => (offers ?? []).filter((o) => filter === "all" || o.status === filter), [offers, filter]);
+  const shown = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return (offers ?? []).filter((o) => {
+      if (filter !== "all" && o.status !== filter) return false;
+      if (!term) return true;
+      const hay = [o.name, formatLabel(o.format), offerPriceLabel(o), o.duration, o.transformation, o.idealClient, o.notFor, o.guarantee, o.link, ...o.deliverables].join(" ").toLowerCase();
+      return term.split(/\s+/).every((w) => hay.includes(w));
+    });
+  }, [offers, filter, q]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+
+  // The cards on screen (a filter or search may hide some) take the places the visible offers held in the
+  // full list, so hidden offers never move.
+  async function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!offers || !over || active.id === over.id) return;
+    const from = shown.findIndex((o) => o.id === active.id);
+    const to = shown.findIndex((o) => o.id === over.id);
+    if (from < 0 || to < 0) return;
+    const moved = arrayMove(shown, from, to);
+    const visible = new Set(shown.map((o) => o.id));
+    let next = 0;
+    const full = offers.map((o) => (visible.has(o.id) ? moved[next++] : o)).map((o, i) => ({ ...o, sortOrder: i }));
+    setOffers(full);
+    const res = await fetch("/api/offers/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: full.map((o) => o.id) }),
+    }).catch(() => null);
+    if (!res || !res.ok) {
+      setError("Couldn't save the new order. It has been put back.");
+      load();
+    }
+  }
   const counts = useMemo(() => {
     const c: Record<string, number> = { active: 0, draft: 0, retired: 0, all: 0 };
     for (const o of offers ?? []) {
@@ -148,20 +208,44 @@ export default function OffersPage() {
         ))}
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7b6b8d]" />
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search your offers by name, price, what's included…"
+          aria-label="Search offers"
+          className={`${input} pl-9 pr-9`}
+        />
+        {q && (
+          <button onClick={() => setQ("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#7b6b8d] hover:bg-black/5">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {error && !form && <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-[#b03a2e]">{error}</p>}
+      {offers && offers.length > 1 && <p className="text-xs text-[#7b6b8d]">{q ? `${shown.length} of ${offers.length} offers match. ` : ""}Drag the grip on a card to put your offers in the order you want.</p>}
+
       {!offers ? (
         <p className="text-sm text-[#7b6b8d]">Loading…</p>
       ) : shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#c9a227]/60 bg-white p-8 text-center dark:bg-[#1a2b4a]/30">
           <Package className="mx-auto h-8 w-8 text-[#c9a227]" />
-          <p className="mt-3 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{offers.length ? "Nothing here with this filter." : "No offers yet."}</p>
+          <p className="mt-3 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{offers.length ? (q ? "No offers match your search." : "Nothing here with this filter.") : "No offers yet."}</p>
           <p className="mt-1 text-sm text-[#5b5f73] dark:text-[#b8a898]">Add your first offer: your signature program, a package, a retainer, a product.</p>
         </div>
       ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={shown.map((o) => o.id)} strategy={rectSortingStrategy}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((o) => (
-            <article key={o.id} className="flex flex-col rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
+            <SortableCard key={o.id} id={o.id}>
+            {(handle) => (
+            <article className="flex w-full flex-col rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-lg font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{o.name}</h2>
+                {handle}
+                <h2 className="min-w-0 flex-1 text-lg font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{o.name}</h2>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.status === "active" ? "bg-green-500/10 text-[#2f7d55]" : o.status === "draft" ? "bg-[#c9a227]/15 text-[#8a6a15]" : "bg-[#7b6b8d]/10 text-[#7b6b8d]"}`}>
                   {OFFER_STATUSES.find((s) => s.id === o.status)?.label}
                 </span>
@@ -187,8 +271,12 @@ export default function OffersPage() {
                 </button>
               </div>
             </article>
+            )}
+            </SortableCard>
           ))}
         </div>
+        </SortableContext>
+        </DndContext>
       )}
 
       {form && (
