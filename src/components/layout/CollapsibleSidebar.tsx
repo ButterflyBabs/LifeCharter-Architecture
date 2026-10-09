@@ -596,6 +596,24 @@ export function CollapsibleSidebar() {
   });
 
   const [superAdmin, setSuperAdmin] = useState(false);
+  // New clients: Getting Started sits at the TOP of the menu until every First 30 Days step is complete, then goes back to
+  // wherever the account keeps it (the bottom by default). The server decides (never Babs's own account).
+  const [pinGettingStarted, setPinGettingStarted] = useState(false);
+  useEffect(() => {
+    if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) return;
+    const load = () =>
+      fetch("/api/first30", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setPinGettingStarted(d?.pin === true))
+        .catch(() => {});
+    load();
+    window.addEventListener("focus", load);
+    window.addEventListener("tasks-changed", load);
+    return () => {
+      window.removeEventListener("focus", load);
+      window.removeEventListener("tasks-changed", load);
+    };
+  }, [pathname]);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
@@ -725,7 +743,7 @@ export function CollapsibleSidebar() {
         const ib = savedOrder.indexOf(b.title);
         return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       });
-  const orderedSections = arranged.map((s) => {
+  const baseSections = arranged.map((s) => {
     const saved = navOrder[s.title];
     if (!saved) return s;
     const byId = new Map(s.items.map((i) => [i.id, i]));
@@ -733,6 +751,17 @@ export function CollapsibleSidebar() {
     const rest = s.items.filter((i) => !known.includes(i.id)).map((i) => i.id);
     return { ...s, items: [...known, ...rest].map((id) => byId.get(id)!).filter(Boolean) };
   });
+  const GS_TITLE = "GETTING STARTED";
+  const gsBaseIdx = baseSections.findIndex((x) => x.title === GS_TITLE);
+  const gsPinned = !isDemo && pinGettingStarted && gsBaseIdx > 0;
+  const orderedSections = gsPinned ? [baseSections[gsBaseIdx], ...baseSections.filter((_, i) => i !== gsBaseIdx)] : baseSections;
+  // What gets saved is the account's own order: Getting Started goes back to where it was, not to the top.
+  const savableTitles = (next: string[]) => {
+    if (!gsPinned) return next;
+    const rest = next.filter((t) => t !== GS_TITLE);
+    rest.splice(gsBaseIdx, 0, GS_TITLE);
+    return rest;
+  };
   const navSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
@@ -824,7 +853,7 @@ export function CollapsibleSidebar() {
     const i = titles.indexOf(title);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= titles.length) return;
-    saveSectionOrder(arrayMove(titles, i, j));
+    saveSectionOrder(savableTitles(arrayMove(titles, i, j)));
   };
   // Where the rows of the dragged page's section were when the drag began, so the drop can be decided from where the
   // pointer is (up and down alike) rather than from a guess about what is "over" what.
@@ -886,7 +915,7 @@ export function CollapsibleSidebar() {
       const from = titles.indexOf(String(active.id).slice(8));
       const to = titles.indexOf(String(over.id).slice(8));
       if (from < 0 || to < 0) return;
-      saveSectionOrder(arrayMove(titles, from, to));
+      saveSectionOrder(savableTitles(arrayMove(titles, from, to)));
       return;
     }
     // Reordering only ever happens within one section; ignore any attempt to
