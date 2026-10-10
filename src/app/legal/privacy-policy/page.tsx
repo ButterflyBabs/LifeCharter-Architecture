@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
           LifeCharter Command Suite
         </p>
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-[#F8F5F0]">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
+        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 10, 2026</p>
 
         <p className={`${P} mt-8`}>
           This Privacy Policy explains how Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command
@@ -50,6 +50,32 @@ export default function PrivacyPolicyPage() {
           <li className={LI}><span className={DOT}>&#9679;</span><span>Communicate with you about your account or our offerings</span></li>
           <li className={LI}><span className={DOT}>&#9679;</span><span>Measure and improve our marketing, including ad performance</span></li>
         </ul>
+
+        <h2 className={H2}>Google user data (Gmail, Google Calendar, Google Drive)</h2>
+        <p className={P}>
+          If you choose to connect your Google account, the Suite accesses Google user data only with your permission
+          and only to provide the features you use:
+        </p>
+        <ul className="space-y-3 text-[#b8a898] leading-relaxed mb-4">
+          <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Send email:</strong> to send an email from your own Gmail address when you write or approve it. We do not read your mailbox with this permission.</span></li>
+          <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Calendar:</strong> to check when you are free so your booking pages never double-book you, and to add, update or cancel booked events on your own calendar.</span></li>
+          <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Drive:</strong> to save a file you choose to upload into a folder the Suite creates in your own Drive. The Suite can only see files it created.</span></li>
+        </ul>
+        <p className={P}>
+          We use Google user data only to provide and improve these features. We do not sell it, do not use it for
+          advertising, and do not use it to train generalized AI or machine learning models. People at our company do
+          not read it unless you ask us for support and give permission, it is needed for security, or the law requires
+          it. If you use the Suite&apos;s AI Assistant, calendar events may be included when you ask it a question, and
+          are sent to the AI service you connected with your own key to answer you.
+        </p>
+        <p className={P}>
+          Our use and transfer of information received from Google APIs adheres to the{" "}
+          <a href="https://developers.google.com/terms/api-services-user-data-policy" className="font-semibold text-[#E3C27C] hover:underline">
+            Google API Services User Data Policy
+          </a>
+          , including the Limited Use requirements. You can disconnect your Google account at any time in Settings,
+          and revoke access at myaccount.google.com/permissions. When you disconnect, we delete the stored connection.
+        </p>
 
         <h2 className={H2}>3. How We Share Information</h2>
         <p className={P}>We do not sell your personal information. We share information with:</p>
