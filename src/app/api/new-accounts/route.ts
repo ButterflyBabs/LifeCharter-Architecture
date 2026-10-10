@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { logEvent } from "@/lib/crm";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
+import { PRE_FOUNDER_TAG, trialEndTag } from "@/lib/preFounderTrial";
 import { DEFAULT_SUBJECT, bodyFor, type EmailKind, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
 import { ensureClientTemplate, STANDARD_CLIENT } from "@/lib/email/clientTemplate";
 import { crmAccount } from "../crm/guard";
@@ -146,7 +147,9 @@ export async function POST(request: Request) {
       await db.from("new_client_emails").update({ status: emailed ? "sent" : "approved", sent_at: emailed ? new Date().toISOString() : null, sent_result: emailed ? "sent" : "account created; email did NOT send" }).eq("id", r.id);
       if (r.contact_id) {
         const { data: c } = await db.from("seq_contacts").select("tags").eq("id", r.contact_id).maybeSingle();
-        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), "lccs-account", "vip-account"])), tag_source: "new-accounts" }).eq("id", r.contact_id);
+        const isPreFounder = (r as { kind?: string }).kind === "pre-founder";
+        const trialTags = isPreFounder && emailed ? [PRE_FOUNDER_TAG, trialEndTag(new Date())] : [];
+        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), "lccs-account", "vip-account", ...trialTags])), tag_source: "new-accounts" }).eq("id", r.contact_id);
         await logEvent(a.planId, r.contact_id, "manual", `Command Suite VIP account created${emailed ? "; password email sent (copy to AmiLynne)" : "; the password email did NOT send"}`, { holdAssessments: true }, db).catch(() => {});
       }
       return NextResponse.json({ ok: true, emailed, loginUrl: emailed ? undefined : loginUrl });
