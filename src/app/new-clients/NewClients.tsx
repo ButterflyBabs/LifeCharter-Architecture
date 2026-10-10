@@ -37,6 +37,8 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [resendConfirm, setResendConfirm] = useState(false);
+  // Once an email has gone out, the entry folds to one line; 'Show' opens it again.
+  const [open, setOpen] = useState(false);
   const locked = p.status === "sent";
   const tpl = Boolean(p.template);
 
@@ -61,6 +63,22 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
   const first = (p.name || p.email).split(/\s+/)[0];
   const pill = { draft: "bg-[#c9a227]/20 text-[#6b5410]", approved: "bg-[#2c6b3f]/15 text-[#2c6b3f]", sent: "bg-[#2E7C83]/15 text-[#1d5a60]" }[p.status];
 
+  const sentAt = p.sent_at ? new Date(p.sent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "";
+  if (p.status === "sent" && !tpl && !open) {
+    return (
+      <section className="rounded-xl border border-[#1a2b4a]/10 bg-white px-4 py-3 dark:bg-[#1a2b4a]/40">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name || p.email}</p>
+            <p className="truncate text-xs text-[#7a8a99]">{p.email} · Sent{sentAt ? ` ${sentAt}` : ""}{p.last_resent_at ? ` · sent again ${new Date(p.last_resent_at).toLocaleDateString("en-US", { dateStyle: "medium" })}` : ""}</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pill}`}>Sent</span>
+          <button className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => setOpen(true)}>Show</button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 dark:bg-[#1a2b4a]/40">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -68,7 +86,10 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
           <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{tpl ? "Standard email · every new paying client" : p.name || p.email}</h2>
           <p className="text-sm text-[#7a8a99]">{tpl ? "Goes out by itself when the New Client button on Sales Reference is pressed (to the client, with copies to you and to whoever pressed it). Nothing is sent until you approve it." : <>{p.email} · stand-alone VIP account{p.masterclassLink ? <> · MasterClass link <span className="select-all">{p.masterclassLink}</span></> : ""}</>}</p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pill}`}>{p.status === "draft" ? "Draft: needs your approval" : p.status === "approved" ? "Approved" : "Sent"}</span>
+        <span className="flex items-center gap-2">
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pill}`}>{p.status === "draft" ? "Draft: needs your approval" : p.status === "approved" ? "Approved" : "Sent"}</span>
+          {p.status === "sent" && !tpl && <button className="text-sm underline text-[#1a2b4a] dark:text-[#F8F5F0]" onClick={() => setOpen(false)}>Hide</button>}
+        </span>
       </div>
 
       {editing ? (
@@ -168,7 +189,7 @@ export default function NewClients() {
       </form>
       <div className="space-y-5">
         {people === null && <p className="text-sm text-[#7a8a99]">Loading…</p>}
-        {people?.map((p) => <Card key={p.id + p.subject + p.body + p.status} p={p} copyTo={copyTo} onChange={load} />)}
+        {people && [...people].sort((x, y) => (x.template ? 0 : x.status === "sent" ? 2 : 1) - (y.template ? 0 : y.status === "sent" ? 2 : 1)).map((p) => <Card key={p.id + p.subject + p.body + p.status} p={p} copyTo={copyTo} onChange={load} />)}
         {people && !people.length && <p className="text-sm text-[#7a8a99]">No one yet. Add someone from your Contacts above.</p>}
       </div>
     </div>
