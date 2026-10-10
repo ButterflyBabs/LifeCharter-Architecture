@@ -13,12 +13,12 @@ export const maxDuration = 300;
 // tag attended-<call>, a line on their timeline, once per session. People already in Contacts are tagged; for
 // the public calls listed in app_settings zoom_attendance_create_contacts (comma separated words of the topic,
 // default "Founder's Half Hour") unknown attendees are added as new contacts. Others are skipped.
-// ?dry=1 (owner only, signed in) shows what would happen and writes nothing.
+// ?dry=1 (owner only, signed in) shows what would happen and writes nothing; add &days=14 to look further back.
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 const MIN_MINUTES = 5;
 
-async function run(dry: boolean) {
+async function run(dry: boolean, days = 3) {
   if (!isZoomConfigured()) return { error: "Zoom is not configured." };
   const db = createServerClient();
   const house = await ownerMasterPlanId().catch(() => null);
@@ -37,7 +37,7 @@ async function run(dry: boolean) {
   for (const id of (cfg.zoom_attendance_meeting_ids || "").split(",").map((s) => s.trim()).filter(Boolean)) ids.add(id);
   const createFor = ((cfg.zoom_attendance_create_contacts || "Founder's Half Hour").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
 
-  const since = Date.now() - 3 * 86_400_000;
+  const since = Date.now() - days * 86_400_000;
   const report: { meeting: string; topic: string; start: string; attendees: number; tagged: number; created: number; skipped: number }[] = [];
 
   for (const id of Array.from(ids)) {
@@ -93,5 +93,7 @@ export async function GET(request: Request) {
     const secret = process.env.CRON_SECRET;
     if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  return NextResponse.json(await run(dry));
+  const days = Math.min(60, Math.max(1, Number(new URL(request.url).searchParams.get("days")) || 3));
+  // A wider window is only for the owner's dry run; the daily job always looks back 3 days.
+  return NextResponse.json(await run(dry, dry ? days : 3));
 }
