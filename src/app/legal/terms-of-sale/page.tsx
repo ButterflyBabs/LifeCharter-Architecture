@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LEGAL_PAGES } from "@/lib/legalDates";
 import { createServerClient } from "@/lib/supabase/server";
 
 // The tier table reads the live plan settings, so it never goes stale when pricing changes (Babs,
@@ -47,7 +48,7 @@ export default async function TermsOfSalePage() {
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-[#F8F5F0]">
           Terms of Sale &amp; Service Agreement
         </h1>
-        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
+        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: {LEGAL_PAGES["terms-of-sale"].effective} &middot; Last updated: {LEGAL_PAGES["terms-of-sale"].updated}</p>
 
         <p className={`${P} mt-8`}>
           This Agreement is between Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command Suite
@@ -124,8 +125,10 @@ export default async function TermsOfSalePage() {
           3.6 Annual Pay-in-Full Option. In place of the Implementation Fee and the Monthly Fees for the first twelve
           (12) months, Client may pay a single discounted amount at the time of purchase: Starter $5,000, Growth
           $7,000, VIP $13,500. This payment covers the Implementation Fee and the Monthly Fees for the Year-1 Term, is
-          non-refundable on the same terms as Section 5, and any credit under Section 3.5 reduces it. Monthly Fees begin
-          after the Year-1 Term as described in Sections 3.2 and 4.3.
+          non-refundable on the same terms as Section 5, and any credit under Section 3.5 reduces it. If Client chooses
+          this option, the Year-1 Term runs for twelve (12) months from the date of purchase and no Monthly Fee is
+          charged during it. Monthly Fees begin on the day after the Year-1 Term ends and continue month to month as
+          described in Section 4.3. Sections 3.2 and 4.1 apply only when this option is not chosen.
         </p>
 
         <h2 className={H2}>4. Year-1 Commitment</h2>

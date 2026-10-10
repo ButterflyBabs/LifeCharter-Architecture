@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LEGAL_PAGES } from "@/lib/legalDates";
 
 export const metadata: Metadata = {
   title: "Community Guidelines & Terms of Use — The LifeCharter Collective",
   description: "How we show up for each other in The LifeCharter Collective.",
 };
 
-const EFFECTIVE = "September 23, 2026";
+const EFFECTIVE = LEGAL_PAGES["community-guidelines"].effective;
+const UPDATED = LEGAL_PAGES["community-guidelines"].updated;
 
 const H2 = "font-editorial text-[28px] font-semibold leading-tight text-[#1F2B3A] mt-12 mb-3 scroll-mt-8";
 const P = "text-[16px] text-[#2E3A46] leading-relaxed mb-4";
@@ -48,7 +50,7 @@ export default function CommunityGuidelinesPage() {
 
         <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#A8873F]">The LifeCharter Collective</p>
         <h1 className="mt-2 font-editorial text-[40px] font-semibold leading-[1.1] sm:text-[48px]">How we show up for each other.</h1>
-        <p className="mt-2 text-[14px] text-[#7F8894]">Community Guidelines &amp; Terms of Use · Effective {EFFECTIVE}</p>
+        <p className="mt-2 text-[14px] text-[#7F8894]">Community Guidelines &amp; Terms of Use · Effective {EFFECTIVE} · Last updated {UPDATED}</p>
 
         <p className={`${P} mt-8 text-[17px]`}>
           The LifeCharter Collective is a private community for people creating lives and businesses of Purpose, Clarity and

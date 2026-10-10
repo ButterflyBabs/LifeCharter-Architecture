@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LEGAL_PAGES } from "@/lib/legalDates";
 
 export const metadata: Metadata = {
   title: "Year-1 Commitment Acknowledgment — LifeCharter Command Suite",
@@ -19,7 +20,7 @@ export default function Year1AgreementPage() {
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-[#F8F5F0]">
           Year-1 Commitment Acknowledgment
         </h1>
-        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
+        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: {LEGAL_PAGES["year-1-agreement"].effective} &middot; Last updated: {LEGAL_PAGES["year-1-agreement"].updated}</p>
 
         <p className="mt-8 text-[#b8a898] leading-relaxed">
           Before you get started with LifeCharter Command Suite, please read and acknowledge the following. This is
@@ -34,20 +35,24 @@ export default function Year1AgreementPage() {
         <ul className="mt-8 space-y-4 text-[#b8a898] leading-relaxed">
           <li className="flex gap-3">
             <span className="mt-1 text-[#c9a227]">&#9679;</span>
-            <span>Your Implementation Fee is charged today and covers your onboarding and setup.</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="mt-1 text-[#c9a227]">&#9679;</span>
             <span>
-              Your Monthly Fee begins about 30 days after your Implementation Fee, once your implementation is
-              complete.
+              Your Implementation Fee is charged today (or half today and half about 30 days later, if you chose the
+              two-payment option) and covers your onboarding and setup.
             </span>
           </li>
           <li className="flex gap-3">
             <span className="mt-1 text-[#c9a227]">&#9679;</span>
             <span>
-              Once your Monthly Fee begins, you&apos;re committing to 12 consecutive months of billing at your
-              tier&apos;s rate &mdash; your &ldquo;Year-1 Term.&rdquo;
+              Your Monthly Fee begins about 30 days after your Implementation Fee, once your implementation is
+              complete. If you chose annual pay-in-full, your first 12 months are prepaid and your Monthly Fee begins
+              after them.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="mt-1 text-[#c9a227]">&#9679;</span>
+            <span>
+              Your first 12 months of billing at your tier&apos;s rate are your &ldquo;Year-1 Term&rdquo; (prepaid, if
+              you chose annual pay-in-full).
             </span>
           </li>
           <li className="flex gap-3">
