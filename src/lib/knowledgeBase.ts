@@ -993,7 +993,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "What is Founder's Half Hour, and can I invite someone?",
     answer:
-      "Founder's Half Hour is a free 30-minute coaching and mentoring call with Babs every Tuesday at 1pm Mountain, open to everyone. Bring a question about your business and leave with a next step. Yes, invite a friend or a fellow founder: they register at https://us02web.zoom.us/meeting/register/Yv6WtkGmRaGGDLhoPrMMfw",
+      "Founder's Half Hour is a free 30-minute coaching and mentoring call with Babs every Tuesday at 1pm Mountain, open to everyone. Bring a question about your business and leave with a next step. Yes, invite a friend or a fellow founder: they register at https://us02web.zoom.us/meeting/register/Yv6WtkGmRaGGDLhoPrMMfw. After registering, they get a confirmation with their own link, a reminder the day before and a reminder an hour before; if one lands in Junk, tap Not Junk and add hello@lccommandsuite.com to your contacts.",
     keywords: ["founder's half hour", "founders half hour", "free call", "public call", "invite", "friend", "tuesday noon"],
   },
 
