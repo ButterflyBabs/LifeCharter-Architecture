@@ -69,7 +69,7 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("finance_bills").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "email-sending", week: 2, dims: ["marketing","sales"], title: "Connect your own email sending (Resend)", why: "So campaigns, broadcasts and booking emails go from your own domain and count on your own account.", href: "/contacts?tab=email-sending",
+    key: "email-sending", week: 2, dims: ["marketing","sales"], title: "Connect your own email sending (Resend)", why: "So campaigns, broadcasts and booking emails go from your own domain and count on your own account.", href: "/contacts?tab=sending",
     // Babs's own account sends on the Suite's key, so it counts as done.
     check: async (id, db) => (await isHousePlan(id, db)) || Boolean(await getAccountResendKey(id, db)),
   },
