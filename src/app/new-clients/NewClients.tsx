@@ -133,13 +133,8 @@ export default function NewClients() {
         <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">New Client Accounts</h1>
         <p className="mt-1 max-w-4xl text-[#7a8a99]">Each person&apos;s &ldquo;your account is ready&rdquo; email, to read, edit and approve. Nothing is created or sent until you approve it and press the send button. Creating the account starts Day 1 of their First 30 Days, so press it when they should begin.</p>
       </div>
-      <div className="space-y-5">
-        {people === null && <p className="text-sm text-[#7a8a99]">Loading…</p>}
-        {people?.map((p) => <Card key={p.id + p.subject + p.body + p.status} p={p} copyTo={copyTo} onChange={load} />)}
-        {people && !people.length && <p className="text-sm text-[#7a8a99]">No one yet. Add someone from your Contacts below.</p>}
-      </div>
       <form
-        className="mt-6 flex max-w-xl flex-wrap gap-2"
+        className="mb-6 flex max-w-xl flex-wrap gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
           if (!email.trim()) return;
@@ -155,6 +150,11 @@ export default function NewClients() {
         <button className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`}><UserPlus className="mr-1 inline h-4 w-4" />Add</button>
         {msg && <p className="w-full text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{msg}</p>}
       </form>
+      <div className="space-y-5">
+        {people === null && <p className="text-sm text-[#7a8a99]">Loading…</p>}
+        {people?.map((p) => <Card key={p.id + p.subject + p.body + p.status} p={p} copyTo={copyTo} onChange={load} />)}
+        {people && !people.length && <p className="text-sm text-[#7a8a99]">No one yet. Add someone from your Contacts above.</p>}
+      </div>
     </div>
   );
 }
