@@ -1,6 +1,8 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 import { getBlueprint } from "@/lib/plans/blueprints";
+import { getAccountResendKey } from "@/lib/email/resendKey";
+import { isHousePlan } from "@/lib/housePlan";
 
 // The first 30 days: the three assessments first (everything else is informed by
 // their answers), then small steps over four weeks that turn
@@ -65,6 +67,11 @@ const STEPS: Def[] = [
   {
     key: "bills", week: 2, dims: ["finance","sustainability"], title: "Add your regular bills", why: "So nothing due sneaks up on you.", href: "/finance/bills",
     check: async (id, db) => (await count(db.from("finance_bills").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
+  },
+  {
+    key: "email-sending", week: 2, dims: ["marketing","sales"], title: "Connect your own email sending (Resend)", why: "So campaigns, broadcasts and booking emails go from your own domain and count on your own account.", href: "/contacts?tab=email-sending",
+    // Babs's own account sends on the Suite's key, so it counts as done.
+    check: async (id, db) => (await isHousePlan(id, db)) || Boolean(await getAccountResendKey(id, db)),
   },
   {
     key: "weekly-review", week: 2, dims: ["leadership","sustainability"], title: "Do your first weekly review", why: "Ten minutes that set up next week.", href: "/planning/review",
