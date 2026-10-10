@@ -75,7 +75,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
           onChange={(e) => setSplit(e.target.checked)}
           className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
         />
-        Split the implementation fee: 50% today, 50% in 30 days
+        Exception only: split the implementation fee, 50% today and 50% in 30 days (offer when you are comfortable)
       </label>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">

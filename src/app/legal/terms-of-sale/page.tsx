@@ -94,9 +94,12 @@ export default async function TermsOfSalePage() {
 
         <h2 className={H2}>3. Fees and Payment</h2>
         <p className={P}>
-          3.1 Implementation Fee. Client pays the one-time Implementation Fee for the selected tier at the time of
-          purchase. The Implementation Fee covers onboarding, initial setup of Client&apos;s workspace, and the start
-          of the implementation period.
+          3.1 Implementation Fee. Client pays the one-time Implementation Fee for the selected tier either (a) in full
+          at the time of purchase, or (b) in two equal payments: 50% at the time of purchase and the remaining 50%
+          approximately thirty (30) days later, charged automatically to the payment method on file. The
+          Implementation Fee covers onboarding, initial setup of Client&apos;s workspace, and the start of the
+          implementation period. If Client selects the two-payment option, the second payment is non-refundable on the
+          same terms as the first, and Client remains responsible for it if this Agreement ends before it is charged.
         </p>
         <p className={P}>
           3.2 Monthly Fee. Client&apos;s Monthly Fee begins approximately 30 days after the Implementation Fee is
