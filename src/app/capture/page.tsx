@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ListPlus, Smartphone, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { MoneyInput } from "@/components/finance/MoneyInput";
+import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { ExpenseDetails, IncomeFrom, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
+import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
 
 // Quick capture: a phone-friendly page for the two things owners jot down on
 // the move, a task or money in/out. Also a home-screen shortcut in the Suite app.
+// Money in/out asks for everything the Finance pages do (date, category, who, one-time or
+// recurring, how often, renewal, business segment) so an entry never has to be reopened later.
 const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+const selectCls = "w-full h-12 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]";
 
 export default function CapturePage() {
   const [mode, setMode] = useState<"task" | "money">("task");
@@ -22,9 +29,20 @@ export default function CapturePage() {
   const [kind, setKind] = useState<"expense" | "income">("expense");
   const [desc, setDesc] = useState("");
   const [category, setCategory] = useState("");
+  const [occurredOn, setOccurredOn] = useState(today());
+  const [vendor, setVendor] = useState("");
+  const [paymentType, setPaymentType] = useState<PaymentType>("one_time");
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [renewal, setRenewal] = useState<Renewal>("auto");
+  const [segmentId, setSegmentId] = useState("");
+  const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState("");
   const [err, setErr] = useState("");
+
+  useEffect(() => {
+    fetchSegmentOptions().then(setSegments).catch(() => {});
+  }, []);
 
   async function save() {
     setBusy(true);
@@ -41,7 +59,16 @@ export default function CapturePage() {
         : await fetch("/api/finance/entries", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: kind, amount: Number(amount), description: desc.trim(), category: category.trim(), occurredOn: today() }),
+            body: JSON.stringify({
+              type: kind,
+              amount: Number(amount),
+              description: desc.trim(),
+              category: category.trim(),
+              occurredOn: occurredOn || today(),
+              vendor: vendor.trim() || undefined,
+              segmentId: segmentId || undefined,
+              ...(kind === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
+            }),
           });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
@@ -52,6 +79,11 @@ export default function CapturePage() {
     setAmount("");
     setDesc("");
     setCategory("");
+    setVendor("");
+    setSegmentId("");
+    setPaymentType("one_time");
+    setOccurredOn(today());
+    forgetCategories();
   }
 
   const canSave = mode === "task" ? title.trim().length > 0 : Number(amount) > 0;
@@ -86,9 +118,36 @@ export default function CapturePage() {
                   </button>
                 ))}
               </div>
-              <Input autoFocus type="number" inputMode="decimal" min="0" step="0.01" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-12 text-base" />
-              <Input placeholder="What for?" value={desc} onChange={(e) => setDesc(e.target.value)} className="h-12" />
-              <Input placeholder="Category (optional)" value={category} onChange={(e) => setCategory(e.target.value)} className="h-12" />
+              <MoneyInput placeholder="Amount" value={amount} onChange={setAmount} className="[&_input]:h-12 [&_input]:text-base" aria-label="Amount" />
+              <label className="block text-sm text-[#7a8a99]">
+                Date
+                <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} className="mt-1 h-12" />
+              </label>
+              <CategoryInput value={category} onChange={setCategory} type={kind} placeholder="Category (e.g. Software, Coaching)" />
+              <Input placeholder="Note: what was this for? (optional)" value={desc} onChange={(e) => setDesc(e.target.value)} className="h-12" />
+              {kind === "income" ? <IncomeFrom value={vendor} onChange={setVendor} /> : (
+                <ExpenseDetails
+                  vendor={vendor}
+                  setVendor={setVendor}
+                  paymentType={paymentType}
+                  setPaymentType={setPaymentType}
+                  frequency={frequency}
+                  setFrequency={setFrequency}
+                  renewal={renewal}
+                  setRenewal={setRenewal}
+                />
+              )}
+              {segments.length > 0 && (
+                <label className="block text-sm text-[#7a8a99]">
+                  Business segment (optional)
+                  <select value={segmentId} onChange={(e) => setSegmentId(e.target.value)} className={`${selectCls} mt-1`}>
+                    <option value="">— none —</option>
+                    {segments.map((sg) => (
+                      <option key={sg.id} value={sg.id}>{sg.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </>
           )}
           <Button onClick={save} disabled={busy || !canSave} className="w-full h-12 text-base">{busy ? "Saving…" : "Save"}</Button>
