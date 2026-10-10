@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { creditSale } from "@/lib/affiliates";
 
 // A client's OWN Stripe account (not the Suite's billing): with a read-only
 // restricted key, their payments, Stripe fees and refunds flow into their
@@ -101,10 +102,32 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
     }
     added = (data ?? []).length;
   }
+  // Affiliate credit for this account's OWN sales: a paid charge whose customer email matches a contact that one of
+  // the account's affiliates referred is credited to that affiliate (once per charge; a rate that isn't set yet
+  // waits in "review"). Needs the key to be able to read charges; if it can't, this is skipped quietly.
+  let credited = 0;
+  let creditNote: string | null = null;
+  try {
+    const out = await stripeGet(key, "/charges", { limit: "100", "created[gte]": String(since) });
+    for (const c of ((out.data ?? []) as { id: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; billing_details?: { email?: string | null } }[]).slice(0, 100)) {
+      if (!c.paid || c.refunded) continue;
+      const email = (c.billing_details?.email || c.receipt_email || "").trim().toLowerCase();
+      if (!email) continue;
+      const { data: contact } = await db.from("seq_contacts").select("id").eq("master_plan_id", masterPlanId).eq("email", email).maybeSingle();
+      if (!contact) continue;
+      const net = (c.amount - (c.amount_refunded ?? 0)) / 100;
+      if (net <= 0) continue;
+      const sale = await creditSale(db, masterPlanId, { contactId: contact.id as string, description: c.description || "Stripe payment", amount: net, saleDate: day(c.created), stripeRef: c.id, source: "stripe" });
+      if (sale) credited++;
+    }
+  } catch (e) {
+    creditNote = (e as Error).message.slice(0, 160);
+  }
+
   const newest = txns.reduce((m, t) => Math.max(m, t.created), since);
   await db
     .from("client_integrations")
-    .update({ metadata: { ...meta, last_sync_at: new Date().toISOString(), last_sync_created: newest, last_added: added, last_error: null }, updated_at: new Date().toISOString() })
+    .update({ metadata: { ...meta, last_sync_at: new Date().toISOString(), last_sync_created: newest, last_added: added, last_error: null, last_affiliate_credits: credited, last_affiliate_note: creditNote }, updated_at: new Date().toISOString() })
     .eq("id", integ.id);
   return { added, checked: txns.length };
 }
