@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Sparkles, ArrowRight, Send, Loader2, X } from "lucide-react";
+import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
 
 interface Message {
   id: string;
@@ -17,6 +18,8 @@ export function AIBusinessGuide() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Things the assistant prepared for approval in this chat (the same preview + Approve cards as Executive Home).
+  const [cards, setCards] = useState<ActionCardData[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // The client's own assistant: its name, and a greeting and starting points built
@@ -85,10 +88,10 @@ export function AIBusinessGuide() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/ai-guide", {
+      const response = await fetch("/api/mariposa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ message: userMessage.content, page: "AI Business Guide" }),
       });
 
       if (!response.ok) {
@@ -96,6 +99,7 @@ export function AIBusinessGuide() {
       }
 
       const data = await response.json();
+      if (Array.isArray(data.actions) && data.actions.length) setCards((cur) => [...(data.actions as ActionCardData[]), ...cur]);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -139,13 +143,14 @@ export function AIBusinessGuide() {
       setInput("");
       setLoading(true);
 
-      fetch("/api/ai-guide", {
+      fetch("/api/mariposa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: question }),
+        body: JSON.stringify({ message: question, page: "AI Business Guide" }),
       })
         .then((res) => res.json())
         .then((data) => {
+          if (Array.isArray(data.actions) && data.actions.length) setCards((cur) => [...(data.actions as ActionCardData[]), ...cur]);
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
@@ -328,6 +333,7 @@ export function AIBusinessGuide() {
             </div>
           </div>
         )}
+        <AssistantActionCards fresh={cards} onFinished={(line) => setMessages((prev) => [...prev, { id: `d${Date.now()}`, role: "assistant", content: line }])} />
         <div ref={messagesEndRef} />
       </CardContent>
 
