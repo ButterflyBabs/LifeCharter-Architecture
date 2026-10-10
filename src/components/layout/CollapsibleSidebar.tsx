@@ -210,12 +210,12 @@ const ownerSection = {
 // down". Everything not on the tour keeps its usual section underneath. No real
 // account ever gets this order.
 const DEMO_TOUR_ORDER = [
-  "setup", "first30", "alignment-profile", // Act 2: where every client starts
+  "setup", "first30", "starter-guide", "website-review", "alignment-profile", // Act 2: where every client starts
   "executive-home", "demo-morning-brief", "daily-compass", "tasks", "accountability", // Act 3: running your day
   "business-alignment", "progress", // Act 4: the whole business
   "goals", "review", "finance", "forecasting", // Act 5: plans and numbers
   "pipeline", "offers", "dm-pipeline", "contacts", "calendars", "sequences-manager", // Act 6: growing
-  "sops", "compliance", // Act 7: systems
+  "sops", "compliance", "glossary", // Act 7: systems
   "demo-coaching-calls", "demo-collective-events", // Act 8: Executive Coaching
 ];
 const demoOnlyItems = [
