@@ -16,7 +16,7 @@ import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
 import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
 import { sendMetaEvent } from "@/lib/metaCapi";
-import { isUpgrade, notifyPlanUpgrade, planUpgradeEmailsOn } from "@/lib/planUpgrade";
+import { isUpgrade, notifyPlanUpgrade, planOfSubscription, planUpgradeEmailsOn } from "@/lib/planUpgrade";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -296,14 +296,14 @@ export async function POST(req: NextRequest) {
         const subscriptionId = subscription.id;
         const subData = subscription as unknown as { status: string; cancel_at_period_end: boolean; current_period_start: number; current_period_end: number };
 
-        // Plan change (behind the plan_upgrade_emails_on flag): the plan id on the Stripe subscription's
-        // metadata moved up a tier. Record it, then send the upgrade email, the alert to Babs and Operations
+        // Plan change (behind the plan_upgrade_emails_on flag): the Stripe subscription's plan (metadata planId,
+        // or the plan matching its recurring price) moved up a tier. Record it, then send the upgrade email, the alert to Babs and Operations
         // and enrol the next-morning check-in. With the flag off none of this runs.
         let upgrade: { userId: string; fromPlan: string; toPlan: string } | null = null;
-        const newPlan = (subscription.metadata?.planId || "").trim();
-        if (newPlan && (await planUpgradeEmailsOn(supabase))) {
+        if (await planUpgradeEmailsOn(supabase)) {
+          const newPlan = await planOfSubscription(supabase, subscription);
           const { data: cur } = await supabase.from("subscriptions").select("user_id, plan_id").eq("stripe_subscription_id", subscriptionId).maybeSingle();
-          if (cur?.user_id && isUpgrade(cur.plan_id, newPlan)) upgrade = { userId: cur.user_id, fromPlan: cur.plan_id, toPlan: newPlan };
+          if (newPlan && cur?.user_id && isUpgrade(cur.plan_id, newPlan)) upgrade = { userId: cur.user_id, fromPlan: cur.plan_id, toPlan: newPlan };
         }
 
         await supabase

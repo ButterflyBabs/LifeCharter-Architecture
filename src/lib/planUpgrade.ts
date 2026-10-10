@@ -16,6 +16,26 @@ const PLAN_NAME: Record<string, string> = { starter: "Starter", growth: "Growth"
 export const isUpgrade = (from: string | null | undefined, to: string | null | undefined) =>
   !!from && !!to && (PLAN_RANK[to] ?? 0) > (PLAN_RANK[from] ?? 99);
 
+// Which plan a Stripe subscription is on: the planId in its metadata when that is a real plan, otherwise
+// the plan whose monthly (or yearly) price matches a recurring item on the subscription. Portal plan
+// switches change the price but not the metadata, so the price match is what catches those.
+export async function planOfSubscription(
+  db: Db,
+  sub: { metadata?: Record<string, string> | null; items?: { data?: { price?: { unit_amount?: number | null; recurring?: { interval?: string } | null } }[] } },
+): Promise<string | null> {
+  const meta = (sub.metadata?.planId || "").trim();
+  if (meta && PLAN_RANK[meta]) return meta;
+  const { data: plans } = await db.from("plans").select("id, price_monthly, price_yearly");
+  for (const it of sub.items?.data ?? []) {
+    const amt = it.price?.unit_amount;
+    if (!amt) continue;
+    const yearly = it.price?.recurring?.interval === "year";
+    const hit = (plans ?? []).find((p) => (yearly ? p.price_yearly : p.price_monthly) === amt);
+    if (hit) return hit.id as string;
+  }
+  return null;
+}
+
 export async function planUpgradeEmailsOn(db: Db): Promise<boolean> {
   const { data } = await db.from("app_settings").select("value").eq("key", "plan_upgrade_emails_on").maybeSingle();
   return String(data?.value ?? "").toLowerCase() === "true";
