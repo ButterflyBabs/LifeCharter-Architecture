@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
       customer_email: email,
       line_items: isAlumni
         ? [{ price: STARTER_IMPLEMENTATION_PRICE_ID, quantity: 1 }]
