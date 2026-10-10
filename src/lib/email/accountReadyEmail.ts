@@ -48,8 +48,8 @@ export function defaultTeamBody(): string {
 
 **Step 2: Explore.** This is your own account to look around in, test and play with. You don't need to complete Getting Started or the assessments to use it, so that first-page reminder is switched off for you.
 
-**Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
-Share it with the people in your world. Anyone who registers through it is tracked back to you.
+**Your MasterClass Affiliate link.** This is your personal affiliate link for the free Command Shift MasterClass: {{masterclass_link}}
+Share it with the people in your world. Anyone who registers through it is tracked back to you, earning 10% should they sign up.
 
 ${CLOSE}`;
 }
@@ -60,8 +60,8 @@ export function defaultBody(): string {
 
 **Step 2: Watch for your walkthrough.** In a few minutes you'll get a second email from me with your first hour in Command Suite, step by step: how to sign in and bookmark it, connect your AI, name your assistant, and take your assessments in order.
 
-**Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
-Share it with the people in your world. Anyone who registers through it is tracked back to you, and I'll walk you through how it works at our 1:1.
+**Your MasterClass Affiliate link.** This is your personal affiliate link for the free Command Shift MasterClass: {{masterclass_link}}
+Share it with the people in your world. Anyone who registers through it is tracked back to you, earning 10% should they sign up.
 
 ${CLOSE}`;
 }
