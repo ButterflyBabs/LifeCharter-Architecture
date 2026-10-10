@@ -6,7 +6,7 @@ import { slugCode, uniqueCode } from "@/lib/affiliates";
 type Db = ReturnType<typeof createServerClient>;
 
 // Every new client gets a ready affiliate page: one tracked link per LifeCharter product, so they can share any
-// of them from day one. Their commission rate is left blank (the account default applies once Babs sets it).
+// of them from day one. They earn 10% (Babs, 2026-10-10); the account-ready email tells them so.
 // Idempotent: a client who already has an affiliate record is left alone.
 export const STARTER_PRODUCTS: { product: string; short: string; landing: string }[] = [
   { product: "MasterClass + Command Suite", short: "masterclass", landing: "https://lccommandsuite.com/masterclass-signup" },
@@ -32,7 +32,7 @@ export async function ensureClientAffiliate(input: { email: string; name?: strin
     const code = await uniqueCode(db, slugCode(first || name) || "client");
     const { data: aff, error } = await db
       .from("affiliates")
-      .insert({ master_plan_id: house, contact_id: contact?.id ?? null, name, email, code, payout_delay_days: 30, notes: "Created automatically with the client's account." })
+      .insert({ master_plan_id: house, contact_id: contact?.id ?? null, name, email, code, default_rate: 10, payout_delay_days: 30, notes: "Created automatically with the client's account." })
       .select("id, code")
       .single();
     if (error || !aff) return null;
@@ -47,4 +47,22 @@ export async function ensureClientAffiliate(input: { email: string; name?: strin
     console.error("ensureClientAffiliate:", e);
     return null;
   }
+}
+
+// The client's own link for the free MasterClass (the first active "MasterClass" product link on their affiliate
+// record), for the {{masterclass_link}} merge field. Null when they have no affiliate record yet.
+export async function masterclassLinkForEmail(db: Db, housePlanId: string, email: string): Promise<string | null> {
+  const { data: aff } = await db.from("affiliates").select("id").eq("master_plan_id", housePlanId).eq("email", email.trim().toLowerCase()).maybeSingle();
+  if (!aff) return null;
+  const { data: link } = await db
+    .from("affiliate_links")
+    .select("code")
+    .eq("affiliate_id", aff.id as string)
+    .eq("status", "active")
+    .ilike("product", "MasterClass%")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+  return link ? `${base}/r/${link.code}` : null;
 }

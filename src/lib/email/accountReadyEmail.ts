@@ -39,6 +39,9 @@ export function defaultClientBody(): string {
 
 **Step 2: Watch for your walkthrough.** In a few minutes you'll get a second email from me with your first hour in Command Suite, step by step: how to sign in and bookmark it, connect your AI, name your assistant, and take your assessments in order.
 
+**Your MasterClass Affiliate link.** This is your personal affiliate link for the free Command Shift MasterClass: {{masterclass_link}}
+Share it with the people in your world. Anyone who registers through it is tracked back to you, earning 10% should they sign up.
+
 ${CLOSE}`;
 }
 

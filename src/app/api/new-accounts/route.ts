@@ -112,7 +112,10 @@ export async function POST(request: Request) {
     case "test": {
       const r = await row();
       if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      const m = { firstName: r.email === STANDARD_CLIENT ? "Sample" : firstOf(r.name, r.email), loginUrl: `${APP_URL}/login`, masterclassLink: await mcLink(db, a.planId, r.contact_id) };
+      // Before the account exists their own link isn't made yet, so the preview shows what it will look like.
+      const who = r.email === STANDARD_CLIENT ? "Sample" : firstOf(r.name, r.email);
+      const sampleLink = `${APP_URL}/r/${who.toLowerCase().replace(/[^a-z0-9]+/g, "")}-masterclass`;
+      const m = { firstName: who, loginUrl: `${APP_URL}/login`, masterclassLink: (await mcLink(db, a.planId, r.contact_id)) ?? sampleLink };
       const out = renderAccountEmail(r.subject, r.body, m);
       if (b.action === "preview") return NextResponse.json({ ...out, to: r.email, copyTo: ACCOUNT_EMAIL_COPY_TO });
       const ok = await sendRendered(a.userEmail || ACCOUNT_EMAIL_COPY_TO, { ...out, subject: `TEST (not sent to ${r.name || r.email}) · ${out.subject}`, html: `<p style="font-family:Arial;color:#8a2f2f"><b>This is a test for you only. The password button below is a stand-in and does nothing.</b></p>${out.html}` }, { bcc: false });

@@ -5,6 +5,7 @@ import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/housePlan";
 import { sessionUser } from "@/lib/authz";
 import { approvedClientTemplate } from "@/lib/email/clientTemplate";
+import { masterclassLinkForEmail } from "@/lib/affiliateStarter";
 import { renderAccountEmail, sendRendered } from "@/lib/email/accountReadyEmail";
 
 /**
@@ -214,7 +215,7 @@ export async function POST(req: NextRequest) {
     let emailed = false;
     if (tpl && isNewAccount) {
       const to = (body.loginEmail || body.email).toLowerCase();
-      const rendered = renderAccountEmail(tpl.subject, tpl.body, { firstName: body.fullName.trim().split(/\s+/)[0] || "", loginUrl: linkData.properties.action_link, masterclassLink: null });
+      const rendered = renderAccountEmail(tpl.subject, tpl.body, { firstName: body.fullName.trim().split(/\s+/)[0] || "", loginUrl: linkData.properties.action_link, masterclassLink: houseId ? await masterclassLinkForEmail(supabase as never, houseId, to).catch(() => null) : null });
       emailed = await sendRendered(to, rendered, { extraBcc: presser ? [presser] : [] });
       if (houseId && contactSaved) {
         const { data: cc } = await supabase.from("seq_contacts").select("id").eq("master_plan_id", houseId).eq("email", body.email.toLowerCase()).maybeSingle();
