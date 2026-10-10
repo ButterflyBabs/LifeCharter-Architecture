@@ -308,3 +308,43 @@ export async function addMeetingRegistrant(meetingId: string, r: { email: string
   const d = (await res.json()) as { registrant_id?: string; id?: string; join_url?: string };
   return { id: d.registrant_id || d.id || "", joinUrl: d.join_url || "" };
 }
+
+// ---------- Diagnostics (owner-only /api/zoom-check) ----------
+
+type Probe = { call: string; status: number | "error"; detail: string };
+
+/** What the Suite's Zoom app can actually see: users, upcoming meetings and the participant reports. Read-only. */
+export async function zoomDiagnostics(): Promise<{ configured: boolean; probes: Probe[]; meetings: { id: number | string; topic: string; start: string; user: string }[] }> {
+  const probes: Probe[] = [];
+  const meetings: { id: number | string; topic: string; start: string; user: string }[] = [];
+  if (!isZoomConfigured()) return { configured: false, probes, meetings };
+  let token: string;
+  try {
+    token = await getAccessToken();
+    probes.push({ call: "token", status: 200, detail: "ok" });
+  } catch (e) {
+    probes.push({ call: "token", status: "error", detail: String(e).slice(0, 200) });
+    return { configured: true, probes, meetings };
+  }
+  const get = async (call: string, url: string) => {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const body = await res.json().catch(() => ({}));
+      probes.push({ call, status: res.status, detail: res.ok ? "ok" : String((body as { message?: string }).message || "").slice(0, 200) });
+      return res.ok ? (body as Record<string, unknown>) : null;
+    } catch (e) {
+      probes.push({ call, status: "error", detail: String(e).slice(0, 200) });
+      return null;
+    }
+  };
+  const users = await get("GET /users", "https://api.zoom.us/v2/users?status=active&page_size=30");
+  const list = ((users?.users as { id: string; email: string }[]) || []).slice(0, 10);
+  const from = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  const to = new Date().toISOString().slice(0, 10);
+  for (const u of list) {
+    const up = await get(`GET /users/${u.email}/meetings (upcoming)`, `https://api.zoom.us/v2/users/${encodeURIComponent(u.id)}/meetings?type=upcoming&page_size=50`);
+    for (const m of ((up?.meetings as { id: number; topic: string; start_time?: string }[]) || [])) meetings.push({ id: m.id, topic: m.topic, start: m.start_time || "", user: u.email });
+    await get(`GET /report/users/${u.email}/meetings (last 30 days)`, `https://api.zoom.us/v2/report/users/${encodeURIComponent(u.id)}/meetings?from=${from}&to=${to}&page_size=30`);
+  }
+  return { configured: true, probes, meetings };
+}
