@@ -203,7 +203,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Sales",
     question: "Why can I see my emails with a contact on their record?",
     answer:
-      "Open a contact in Contacts and the Emails section lists every email with them, newest first: mail you've sent and received in your connected Gmail or Microsoft 365 (including Sent), plus the campaign and broadcast emails the Suite sent them. It checks your mailboxes each time you open someone, or click Refresh emails; click an email to read it in full. Only the account owner sees emails from their own mailboxes. Team members see just the Suite's emails. To start, connect a mailbox in Settings → Integrations.",
+      "Open a contact in Contacts and the Emails section lists every email with them, newest first: mail you've sent and received in your connected Microsoft 365 mailbox (including Sent). Google accounts connect for sending and calendar only, so Gmail messages are not listed here, plus the campaign and broadcast emails the Suite sent them. It checks your mailboxes each time you open someone, or click Refresh emails; click an email to read it in full. Only the account owner sees emails from their own mailboxes. Team members see just the Suite's emails. To start, connect a mailbox in Settings → Integrations.",
     keywords: ["contact emails", "email history", "gmail", "outlook", "microsoft 365", "sent mail", "contact record", "inbox"],
   },
   {
