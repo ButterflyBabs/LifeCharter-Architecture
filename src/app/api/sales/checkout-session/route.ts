@@ -33,6 +33,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 // Implementation fee by tier, in cents (matches the live Implementation Fee prices and the plans table).
 const IMPLEMENTATION_CENTS: Record<string, number> = { starter: 249700, growth: 299700, vip: 499700 };
 const TIER_NAME: Record<string, string> = { starter: "Starter", growth: "Growth", vip: "VIP" };
+// Annual pay-in-full: the Implementation Fee plus the first 12 monthly fees in one payment (about 20% off).
+const ANNUAL_CENTS: Record<string, number> = { starter: 500000, growth: 700000, vip: 1350000 };
 const ALUMNI_CREDIT_CENTS = 50000;
 
 export async function POST(req: NextRequest) {
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { tier, email, fullName, sessionSource, alumni, split } = await req.json();
+    const { tier, email, fullName, sessionSource, alumni, split, annual } = await req.json();
     const prices = TIER_PRICES[tier as string];
     if (!prices) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -59,6 +61,43 @@ export async function POST(req: NextRequest) {
     const firstHalf = Math.ceil(totalImpl / 2);
     const secondHalf = totalImpl - firstHalf;
     const tierName = TIER_NAME[tier as string] ?? String(tier);
+
+    // Annual pay-in-full: one payment covers the Implementation Fee and the first 12 monthly fees. The monthly
+    // subscription is set up with a 365-day trial, so monthly billing begins by itself in month 13 (Terms 4.3).
+    const isAnnual = annual === true && !isSplit;
+    if (isAnnual) {
+      const annualTotal = (ANNUAL_CENTS[tier as string] ?? 0) - (isAlumni ? ALUMNI_CREDIT_CENTS : 0);
+      const annualSession = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer_email: email || undefined,
+        line_items: [
+          { price: prices.monthlyPriceId, quantity: 1 },
+          {
+            quantity: 1,
+            price_data: {
+              currency: "usd",
+              unit_amount: annualTotal,
+              product_data: { name: `LifeCharter Command Suite ${tierName} Annual (setup and first 12 months, paid in full)` },
+            },
+          },
+        ],
+        subscription_data: { trial_period_days: 365 },
+        success_url: `${APP_URL}/sales-reference?checkout=success`,
+        cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
+        metadata: {
+          flow: "sales_combined_checkout",
+          tier,
+          fullName: fullName || "",
+          sessionSource: sessionSource || "",
+          alumni: isAlumni ? "true" : "false",
+          affiliate: cookies().get(AFF_COOKIE)?.value || "",
+          implPlan: "annual",
+          // What counts as the implementation part for implementation-only affiliate links.
+          implCents: String(Math.max(0, (IMPLEMENTATION_CENTS[tier as string] ?? 0) - (isAlumni ? ALUMNI_CREDIT_CENTS : 0))),
+        },
+      });
+      return NextResponse.json({ url: annualSession.url });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

@@ -9,12 +9,16 @@ interface Props {
   monthlyDisplay: string;
 }
 
+// Annual pay-in-full: Implementation Fee + first 12 monthly fees, about 20% off.
+const ANNUAL_DISPLAY: Record<string, string> = { starter: "$5,000", growth: "$7,000", vip: "$13,500" };
+
 export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDisplay }: Props) {
   const { prefill, version } = useProspect();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [alumni, setAlumni] = useState(false);
   const [split, setSplit] = useState(false);
+  const [annual, setAnnual] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -36,7 +40,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
       const res = await fetch("/api/sales/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni, split }),
+        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni, split, annual }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
@@ -62,20 +66,37 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         One link, both charges
       </p>
       <p className="text-xs text-[#b8a898] mt-1">
-        {split ? `Half of the ${implementationDisplay} implementation fee today` : `${implementationDisplay} today`} + {monthlyDisplay} starting in one billing cycle
-        {split ? ", the other half 30 days later, on the same invoice as the first monthly charge" : ""} —{" "}
-        {alumni ? "$500 alumni implementation credit" : "FIRSTMONTHFREE"} applied automatically, nothing for the
-        client to type.
+        {annual
+          ? `${ANNUAL_DISPLAY[tier]} today covers the implementation fee and the first 12 months; ${monthlyDisplay} begins in month 13`
+          : split
+            ? `Half of the ${implementationDisplay} implementation fee today + ${monthlyDisplay} starting in one billing cycle, the other half 30 days later, on the same invoice as the first monthly charge`
+            : `${implementationDisplay} today + ${monthlyDisplay} starting in one billing cycle`}
+        {annual ? (alumni ? " (the $500 alumni credit is taken off)" : "") : <> — {alumni ? "$500 alumni implementation credit" : "FIRSTMONTHFREE"} applied automatically</>}, nothing for the client to type.
       </p>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
         <input
           type="checkbox"
           checked={split}
-          onChange={(e) => setSplit(e.target.checked)}
+          onChange={(e) => {
+            setSplit(e.target.checked);
+            if (e.target.checked) setAnnual(false);
+          }}
           className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
         />
-        Split the implementation fee: 50% today, 50% in 30 days
+        Exception only: split the implementation fee, 50% today and 50% in 30 days (offer when you are comfortable)
+      </label>
+      <label className="mt-2 flex items-center gap-2 text-xs text-[#b8a898]">
+        <input
+          type="checkbox"
+          checked={annual}
+          onChange={(e) => {
+            setAnnual(e.target.checked);
+            if (e.target.checked) setSplit(false);
+          }}
+          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
+        />
+        Annual pay-in-full: {ANNUAL_DISPLAY[tier]} for the implementation fee and the first 12 months (about 20% off)
       </label>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
@@ -111,7 +132,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         disabled={state === "busy"}
         className="mt-3 w-full rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] text-[#1a2b4a] font-semibold px-4 py-2.5 text-sm disabled:opacity-60"
       >
-        {state === "busy" ? "Creating checkout…" : split ? "Send 50/50 checkout" : "Send combined checkout"}
+        {state === "busy" ? "Creating checkout…" : annual ? "Send annual checkout" : split ? "Send 50/50 checkout" : "Send combined checkout"}
       </button>
       {state === "error" && <p className="text-xs text-red-300 mt-2">{errorMsg}</p>}
 
