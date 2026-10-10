@@ -5,6 +5,7 @@ import { Inbox, Send } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import FeedbackAdminTab from "@/components/support/FeedbackAdminTab";
+import AssistantFeedbackTab from "@/components/support/AssistantFeedbackTab";
 
 interface Reply {
   author: "client" | "support";
@@ -41,6 +42,7 @@ const TOP_TABS: [string, string][] = [
   ["glitch", "Glitches"],
   ["suggestion", "Suggestions"],
   ["feedback", "Feedback"],
+  ["assistant", "Assistant"],
 ];
 
 export default function SupportDesk() {
@@ -108,7 +110,9 @@ export default function SupportDesk() {
         ))}
       </div>
 
-      {topTab !== "tickets" ? (
+      {topTab === "assistant" ? (
+        <AssistantFeedbackTab />
+      ) : topTab !== "tickets" ? (
         <FeedbackAdminTab kind={topTab as "glitch" | "suggestion" | "feedback"} />
       ) : (
         <>

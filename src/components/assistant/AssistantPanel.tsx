@@ -39,6 +39,22 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [thread, setThread] = useState<Msg[]>([]);
+  // Thumbs up / down on an answer (down asks for an optional note). One rating per answer.
+  const [rated, setRated] = useState<Record<string, "up" | "down">>({});
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const rate = (m: Msg, rating: "up" | "down", withNote?: string) => {
+    const i = thread.findIndex((x) => x.id === m.id);
+    const q = [...thread.slice(0, i)].reverse().find((x) => x.role === "user")?.content ?? "";
+    setRated((r) => ({ ...r, [m.id]: rating }));
+    setNoteFor(null);
+    setNote("");
+    void fetch("/api/assistant/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, note: withNote ?? "", question: q, answer: m.content }),
+    }).catch(() => {});
+  };
   const [actions, setActions] = useState<ActionCardData[]>([]);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastNote, setPastNote] = useState(false);
@@ -269,6 +285,24 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
               <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
                   {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
+                  {m.role === "assistant" && m.content.length > 40 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#7a8a99]">
+                      {rated[m.id] ? (
+                        <span>{rated[m.id] === "up" ? "Thanks, glad that helped." : "Thanks, we'll use that to improve it."}</span>
+                      ) : noteFor === m.id ? (
+                        <span className="flex w-full flex-wrap items-center gap-2">
+                          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was wrong or missing? (optional)" aria-label="What was wrong or missing" className="min-w-0 flex-1 rounded-lg border border-gray-300 px-2 py-1 text-xs" />
+                          <button onClick={() => rate(m, "down", note)} className="rounded-lg bg-[#1a2b4a] px-2 py-1 text-white">Send</button>
+                          <button onClick={() => rate(m, "down")} className="underline">Skip note</button>
+                        </span>
+                      ) : (
+                        <>
+                          <button onClick={() => rate(m, "up")} aria-label="This answer helped" title="This helped" className="rounded px-1.5 py-0.5 hover:bg-gray-100">👍</button>
+                          <button onClick={() => setNoteFor(m.id)} aria-label="This answer did not help" title="This did not help" className="rounded px-1.5 py-0.5 hover:bg-gray-100">👎</button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
