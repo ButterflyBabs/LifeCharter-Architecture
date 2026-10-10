@@ -23,8 +23,19 @@ function ResetPasswordInner() {
       return;
     }
     const supabase = createClient();
-    supabase.auth
-      .getSession()
+    // This browser client uses the code (PKCE) flow, which ignores a session that arrives after the "#". So when the
+    // address carries one, hand the tokens to the client ourselves, then remove them from the address bar.
+    const fromHash = async () => {
+      const h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const access_token = h.get("access_token");
+      const refresh_token = h.get("refresh_token");
+      if (!access_token || !refresh_token) return false;
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (!error) window.history.replaceState(null, "", window.location.pathname);
+      return !error;
+    };
+    (hasSessionInUrl ? fromHash() : Promise.resolve(false))
+      .then(() => supabase.auth.getSession())
       .then((res: { data: { session: unknown } }) => setReady(Boolean(res.data.session)))
       .catch(() => setReady(false));
     const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
