@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CADENCE_LABEL, occurrences, type Bill, type BillCadence } from "@/lib/finance/billDates";
 import { CategoryInput } from "@/components/finance/CategoryInput";
+import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
@@ -234,7 +235,7 @@ export default function BillsPage() {
             <Input placeholder="Name (e.g. Rent, Zoom, Loan payment)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <Input placeholder="Paid to (vendor or person, optional)" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={120} />
             <div className="grid grid-cols-2 gap-2">
-              <Input type="number" min="0" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+              <MoneyInput placeholder="Amount" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} aria-label="Amount" />
               <Input type="date" value={form.nextDue} onChange={(e) => setForm({ ...form, nextDue: e.target.value })} aria-label="Next due date" />
             </div>
             <div className="grid grid-cols-2 gap-2">

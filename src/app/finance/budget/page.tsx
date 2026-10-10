@@ -2,12 +2,12 @@
 
 import { BudgetSuggest } from "@/components/planning/AssistantPanels";
 import { CategoryInput } from "@/components/finance/CategoryInput";
+import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { ArrowLeft, PieChart, X } from "lucide-react";
 import Link from "next/link";
 
@@ -185,7 +185,7 @@ export default function BudgetPlannerPage() {
             <div>
               <label className="block text-xs font-medium text-[#b8a898] mb-1">Weekly</label>
               <div className="flex gap-2">
-                <Input type="number" min="0" value={weekInput} onChange={(e) => setWeekInput(e.target.value)} placeholder="From monthly" />
+                <MoneyInput value={weekInput} onChange={setWeekInput} placeholder="From monthly" aria-label="Weekly income goal" />
                 <Button variant="outline" size="sm" disabled={saving} onClick={() => saveGoal("week", Number(weekInput) || 0)}>
                   Set
                 </Button>
@@ -194,7 +194,7 @@ export default function BudgetPlannerPage() {
             <div>
               <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly</label>
               <div className="flex gap-2">
-                <Input type="number" min="0" value={incInput} onChange={(e) => setIncInput(e.target.value)} placeholder="Revenue goal" />
+                <MoneyInput value={incInput} onChange={setIncInput} placeholder="Revenue goal" aria-label="Monthly income goal" />
                 <Button variant="outline" size="sm" disabled={saving} onClick={() => save("income", "", Number(incInput) || 0)}>
                   Set
                 </Button>
@@ -211,7 +211,7 @@ export default function BudgetPlannerPage() {
             <div>
               <label className="block text-xs font-medium text-[#b8a898] mb-1">Yearly</label>
               <div className="flex gap-2">
-                <Input type="number" min="0" value={yearInput} onChange={(e) => setYearInput(e.target.value)} placeholder="From monthly" />
+                <MoneyInput value={yearInput} onChange={setYearInput} placeholder="From monthly" aria-label="Yearly income goal" />
                 <Button variant="outline" size="sm" disabled={saving} onClick={() => saveGoal("year", Number(yearInput) || 0)}>
                   Set
                 </Button>
@@ -236,7 +236,7 @@ export default function BudgetPlannerPage() {
             {nextMonths.map((m, i) => (
               <label key={m.key} className="block text-xs font-medium text-[#b8a898]">
                 {m.label}{i === 0 ? " (this month)" : ""}
-                <Input type="number" min="0" className="mt-1" value={monthGoals[m.key] ?? ""} onChange={(e) => setMonthGoals((g) => ({ ...g, [m.key]: e.target.value }))} placeholder={income?.generalMonthly ? String(income.generalMonthly) : "Goal"} />
+                <MoneyInput className="mt-1" value={monthGoals[m.key] ?? ""} onChange={(v) => setMonthGoals((g) => ({ ...g, [m.key]: v }))} placeholder={income?.generalMonthly ? usd(income.generalMonthly) : "Goal"} aria-label={`Income goal for ${m.label}`} />
               </label>
             ))}
           </div>
@@ -257,7 +257,7 @@ export default function BudgetPlannerPage() {
             <div>
               <label className="block text-xs font-medium text-[#b8a898] mb-1">Expense budget (monthly)</label>
               <div className="flex gap-2">
-                <Input type="number" min="0" value={expInput} onChange={(e) => setExpInput(e.target.value)} placeholder="Overall cap" />
+                <MoneyInput value={expInput} onChange={setExpInput} placeholder="Overall cap" aria-label="Monthly expense budget" />
                 <Button variant="outline" size="sm" disabled={saving} onClick={() => save("expense", "", Number(expInput) || 0)}>
                   Set
                 </Button>
@@ -318,7 +318,7 @@ export default function BudgetPlannerPage() {
               </div>
               <div className="w-32">
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly $</label>
-                <Input type="number" min="0" value={newCatAmt} onChange={(e) => setNewCatAmt(e.target.value)} />
+                <MoneyInput value={newCatAmt} onChange={setNewCatAmt} aria-label="Monthly amount for the new category" />
               </div>
               <Button
                 variant="outline"

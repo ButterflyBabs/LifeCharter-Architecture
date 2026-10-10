@@ -9,6 +9,7 @@ import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
 import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
@@ -172,7 +173,7 @@ export default function ExpensesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <Input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>

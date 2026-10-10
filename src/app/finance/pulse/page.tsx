@@ -21,6 +21,7 @@ import { FinanceAI } from "../FinanceAI";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { ExpenseDetails, IncomeFrom, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
@@ -338,14 +339,7 @@ export default function FinancialPulsePage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                />
+                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
@@ -421,13 +415,7 @@ export default function FinancialPulsePage() {
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly expense budget</label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={expBudgetInput}
-                    onChange={(e) => setExpBudgetInput(e.target.value)}
-                    placeholder="Overall cap"
-                  />
+                  <MoneyInput value={expBudgetInput} onChange={setExpBudgetInput} placeholder="Overall cap" aria-label="Monthly expense budget" />
                   <Button
                     variant="outline"
                     size="sm"
@@ -441,13 +429,7 @@ export default function FinancialPulsePage() {
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly income target</label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={incTargetInput}
-                    onChange={(e) => setIncTargetInput(e.target.value)}
-                    placeholder="Revenue goal"
-                  />
+                  <MoneyInput value={incTargetInput} onChange={setIncTargetInput} placeholder="Revenue goal" aria-label="Monthly income target" />
                   <Button
                     variant="outline"
                     size="sm"
@@ -506,7 +488,7 @@ export default function FinancialPulsePage() {
                 </div>
                 <div className="w-32">
                   <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly $</label>
-                  <Input type="number" min="0" value={newCatAmt} onChange={(e) => setNewCatAmt(e.target.value)} />
+                  <MoneyInput value={newCatAmt} onChange={setNewCatAmt} aria-label="Monthly amount for the new category" />
                 </div>
                 <Button
                   variant="outline"
