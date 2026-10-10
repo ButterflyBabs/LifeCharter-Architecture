@@ -26,13 +26,14 @@ type Affiliate = {
   owed: number;
   paid: number;
   review: number;
+  refundReview?: number;
   links?: { id: string; product: string; code: string; status: string }[];
 };
 type Offer = { id: string; name: string; price: number | null; affiliate_rate: number | null; status: string | null };
 type Earning = { id: string; amount: number; earned_on: string; status: "expected" | "paid"; note: string | null };
 type Program = { id: string; name: string; website: string | null; my_link: string | null; my_code: string | null; commission_terms: string | null; login_url: string | null; status: string; notes: string | null; earnings: Earning[]; expected: number; paid: number };
 type ProductLink = { id: string; product: string; code: string; landing_url: string | null; rate: number | null; status: "active" | "paused"; expires_at?: string | null; commission_on?: "all" | "implementation" };
-type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null };
+type Sale = { id: string; description: string; amount: number; rate: number | null; commission: number; sale_date: string; payable_on?: string | null; status: "review" | "owed" | "paid" | "void"; source: string; offer_id: string | null; void_reason?: string | null; refund_flag?: boolean; refund_note?: string | null };
 type Referral = { id: string; kind: string; source: string | null; created_at: string; seq_contacts: { id: string; first_name: string | null; last_name: string | null; email: string } | null };
 
 const TABS = [
@@ -241,6 +242,7 @@ export default function Affiliates() {
                         <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] hover:underline">{a.name}</span>
                         {a.status === "paused" && <span className="ml-2 rounded-full bg-[#7a8a99]/15 px-2 py-0.5 text-[10px] text-[#5a6472]">Paused</span>}
                         {a.review > 0 && <span className="ml-2 rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[10px] text-[#6b5410]">{a.review} to review</span>}
+                        {(a.refundReview ?? 0) > 0 && <span className="ml-2 rounded-full bg-[#C76F56]/15 px-2 py-0.5 text-[10px] text-[#8a3f2c]">{a.refundReview} refund{a.refundReview === 1 ? "" : "s"} to review</span>}
                         {a.email && <span className="block text-xs text-[#7a8a99]">{a.email}</span>}
                       </button>
                     </td>
@@ -517,7 +519,16 @@ function AffiliateDetail({ id, offers, onClose, post, setMsg }: { id: string; of
                   {sales.map((s) => (
                     <tr key={s.id} className={`border-t border-[#1a2b4a]/10 ${s.status === "void" ? "opacity-50" : ""}`}>
                       <td className="p-2 whitespace-nowrap text-[#5a6472]">{day(s.sale_date)}</td>
-                      <td className="p-2">{s.description}{s.source === "stripe" && <span className="ml-1 text-[10px] text-[#7a8a99]">(auto)</span>}</td>
+                      <td className="p-2">
+                        {s.description}{s.source === "stripe" && <span className="ml-1 text-[10px] text-[#7a8a99]">(auto)</span>}
+                        {s.status === "void" && s.void_reason && <span className="mt-0.5 block text-[11px] text-[#5a6472]">Void: {s.void_reason}</span>}
+                        {s.refund_flag && (
+                          <span className="mt-0.5 block text-[11px] text-[#8a3f2c]">
+                            Refund to review: {s.refund_note}{" "}
+                            <button onClick={async () => { if (await post({ action: "sale-update", saleId: s.id, clearRefundFlag: true })) void load(); }} className="underline">Done</button>
+                          </span>
+                        )}
+                      </td>
                       <td className="p-2 text-right">{money(s.amount)}</td>
                       <td className="p-2 text-right">
                         {s.status === "review" ? (

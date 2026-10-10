@@ -11,6 +11,7 @@ import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
 import { creditSale, implementationAmount } from "@/lib/affiliates";
+import { applyRefundEvent, creditInvoiceForAffiliate } from "@/lib/affiliateStripe";
 import { createServerClient as affDb } from "@/lib/supabase/server";
 import { winBookingDeals } from "@/lib/booking/deals";
 import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/community/plus";
@@ -207,6 +208,10 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = (invoice as unknown as { subscription?: string }).subscription;
 
+        // Affiliate credit for this payment (recurring ones included, under each link's own setting).
+        // Never throws and runs on its own, so it cannot affect the subscription handling below.
+        await creditInvoiceForAffiliate(invoice);
+
         // First invoice of a new subscription: Collective channel access (no-op if Checkout already granted it).
         await grantAccessForFirstInvoice(stripe, invoice);
 
@@ -234,6 +239,15 @@ export async function POST(req: NextRequest) {
             .eq("id", userId);
         }
 
+        break;
+      }
+
+      // A refund on a payment that was credited to an affiliate: void it inside the payout hold, flag it otherwise.
+      // Never throws; touches only affiliate_sales.
+      case "charge.refunded":
+      case "refund.created":
+      case "refund.updated": {
+        await applyRefundEvent(event);
         break;
       }
 

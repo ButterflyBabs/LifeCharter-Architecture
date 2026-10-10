@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     db.from("affiliate_programs").select("*").eq("master_plan_id", a.planId).order("created_at"),
     db.from("affiliate_clicks").select("affiliate_id").eq("master_plan_id", a.planId).limit(20000),
     db.from("affiliate_referrals").select("affiliate_id").eq("master_plan_id", a.planId).limit(20000),
-    db.from("affiliate_sales").select("affiliate_id, commission, amount, status").eq("master_plan_id", a.planId).limit(20000),
+    db.from("affiliate_sales").select("affiliate_id, commission, amount, status, refund_flag").eq("master_plan_id", a.planId).limit(20000),
     db.from("affiliate_program_earnings").select("*").eq("master_plan_id", a.planId).order("earned_on", { ascending: false }),
   ]);
   const { data: allLinks } = await db.from("affiliate_links").select("id, affiliate_id, product, code, status").eq("master_plan_id", a.planId).order("created_at");
@@ -65,6 +65,7 @@ export async function GET(request: Request) {
       owed: money(mine.filter((s) => s.status === "owed").reduce((t, s) => t + Number(s.commission), 0)),
       paid: money(mine.filter((s) => s.status === "paid").reduce((t, s) => t + Number(s.commission), 0)),
       review: mine.filter((s) => s.status === "review").length,
+      refundReview: (sales ?? []).filter((s) => s.affiliate_id === f.id && s.refund_flag).length,
     };
   });
   const progs = (programs ?? []).map((p) => {
@@ -252,6 +253,8 @@ export async function POST(request: Request) {
         patch.paid_at = b.status === "paid" ? new Date().toISOString() : null;
       }
       if (b.payoutNote !== undefined) patch.payout_note = str(b.payoutNote, 300) || null;
+      // A sale flagged after a refund stays flagged until the owner has dealt with it: changing its status or pressing Done clears it.
+      if (b.clearRefundFlag === true || patch.status !== undefined) patch.refund_flag = false;
       const { data } = await db.from("affiliate_sales").update(patch).eq("id", s.id).select("*").single();
       if (data) {
         const { data: f } = await db.from("affiliates").select("name").eq("id", data.affiliate_id).maybeSingle();

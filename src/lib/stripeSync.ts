@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { creditSale } from "@/lib/affiliates";
+import { anySaleCredited, creditSale } from "@/lib/affiliates";
+import { applyRefundForCharge, fallbackRefundId, implementationForPayment, latestRefund, paymentContext, stripeReader } from "@/lib/affiliateStripe";
 
 // A client's OWN Stripe account (not the Suite's billing): with a read-only
 // restricted key, their payments, Stripe fees and refunds flow into their
@@ -43,6 +44,7 @@ interface Txn {
   currency: string;
   created: number;
   description: string | null;
+  source?: string | null; // for a refund: the Stripe refund id (re_...)
 }
 
 const day = (unix: number) => new Date(unix * 1000).toISOString().slice(0, 10);
@@ -102,32 +104,80 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
     }
     added = (data ?? []).length;
   }
-  // Affiliate credit for this account's OWN sales: a paid charge whose customer email matches a contact that one of
-  // the account's affiliates referred is credited to that affiliate (once per charge; a rate that isn't set yet
-  // waits in "review"). Needs the key to be able to read charges; if it can't, this is skipped quietly.
+  // Affiliate credit for this account's OWN sales: every paid charge (a subscription's later payments included) whose
+  // customer email matches a contact that one of the account's affiliates referred is credited to that affiliate
+  // (once per payment; a rate that isn't set yet waits in "review"; a link that earns on the implementation fee only
+  // credits just that fee). A refund on a credited sale voids it inside the payout hold, or flags it for review.
+  // Needs the key to be able to read charges; if it can't, this is skipped quietly.
   let credited = 0;
   let creditNote: string | null = null;
+  let refunded = 0;
+  const read = stripeReader(key);
   try {
     const out = await stripeGet(key, "/charges", { limit: "100", "created[gte]": String(since) });
-    for (const c of ((out.data ?? []) as { id: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; billing_details?: { email?: string | null } }[]).slice(0, 100)) {
-      if (!c.paid || c.refunded) continue;
+    type Charge = { id: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; payment_intent?: string | null; billing_details?: { email?: string | null } };
+    for (const c of ((out.data ?? []) as Charge[]).slice(0, 100)) {
+      if (!c.paid) continue;
+      // A refunded charge: void or flag its credited sale (safe to repeat).
+      if ((c.amount_refunded ?? 0) > 0) {
+        try {
+          const r = await applyRefundForCharge(db, masterPlanId, read, c);
+          refunded += r.voided + r.flagged;
+        } catch {
+          /* try again next sync */
+        }
+      }
+      if (c.refunded) continue;
       const email = (c.billing_details?.email || c.receipt_email || "").trim().toLowerCase();
       if (!email) continue;
-      const { data: contact } = await db.from("seq_contacts").select("id").eq("master_plan_id", masterPlanId).eq("email", email).maybeSingle();
-      if (!contact) continue;
+      const { data: contact } = await db.from("seq_contacts").select("id, referred_by_affiliate_id").eq("master_plan_id", masterPlanId).eq("email", email).maybeSingle();
+      if (!contact?.referred_by_affiliate_id) continue;
       const net = (c.amount - (c.amount_refunded ?? 0)) / 100;
       if (net <= 0) continue;
-      const sale = await creditSale(db, masterPlanId, { contactId: contact.id as string, description: c.description || "Stripe payment", amount: net, saleDate: day(c.created), stripeRef: c.id, source: "stripe" });
+      // The same payment may already be credited under its Checkout session or invoice id (by the Stripe webhook).
+      const ctx = await paymentContext(read, c);
+      if (await anySaleCredited(db, masterPlanId, ctx.refs)) continue;
+      const sale = await creditSale(db, masterPlanId, {
+        contactId: contact.id as string,
+        description: c.description || "Stripe payment",
+        amount: net,
+        implementationAmount: () => implementationForPayment(read, ctx, c, net),
+        saleDate: day(c.created),
+        stripeRef: c.id,
+        source: "stripe",
+      });
       if (sale) credited++;
+      // Credited already net of a refund: record that refund on the sale so a later sync doesn't flag it as a new one.
+      if (sale && (c.amount_refunded ?? 0) > 0) {
+        const r = await latestRefund(read, c.id);
+        await db.from("affiliate_sales").update({ refund_ref: (r?.id as string) || fallbackRefundId(c.id, c.amount_refunded ?? 0), refunded_at: new Date().toISOString() }).eq("id", sale.id);
+      }
     }
   } catch (e) {
     creditNote = (e as Error).message.slice(0, 160);
+  }
+  // Refunds of older charges (the charge is outside this sync's window): each refund is a balance transaction whose
+  // source is the Stripe refund id.
+  try {
+    let seen = 0;
+    for (const t of txns) {
+      if ((t.type !== "refund" && t.type !== "payment_refund") || !t.source || !t.source.startsWith("re_") || seen >= 25) continue;
+      seen++;
+      const refund = await read(`/refunds/${t.source}`);
+      const chargeId = typeof refund.charge === "string" ? refund.charge : refund.charge?.id;
+      if (!chargeId || refund.status === "failed" || refund.status === "canceled") continue;
+      const charge = await read(`/charges/${chargeId}`);
+      const r = await applyRefundForCharge(db, masterPlanId, read, charge, refund);
+      refunded += r.voided + r.flagged;
+    }
+  } catch (e) {
+    creditNote = creditNote || (e as Error).message.slice(0, 160);
   }
 
   const newest = txns.reduce((m, t) => Math.max(m, t.created), since);
   await db
     .from("client_integrations")
-    .update({ metadata: { ...meta, last_sync_at: new Date().toISOString(), last_sync_created: newest, last_added: added, last_error: null, last_affiliate_credits: credited, last_affiliate_note: creditNote }, updated_at: new Date().toISOString() })
+    .update({ metadata: { ...meta, last_sync_at: new Date().toISOString(), last_sync_created: newest, last_added: added, last_error: null, last_affiliate_credits: credited, last_affiliate_refunds: refunded, last_affiliate_note: creditNote }, updated_at: new Date().toISOString() })
     .eq("id", integ.id);
   return { added, checked: txns.length };
 }

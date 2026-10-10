@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { logEvent } from "@/lib/crm";
+import { IMPLEMENTATION_PRICE_IDS, creditBasis, mergeNote, refundDecision, uniqueRefs, type RefundInfo } from "@/lib/affiliateRules";
 
 // Affiliates: people promoting an account's offers. Each has a tracked link
 // (lccommandsuite.com/r/<code>) that counts clicks and remembers the visitor for
@@ -43,10 +44,6 @@ export async function rateFor(db: Db, affiliateId: string, offerId: string | nul
 }
 
 const money = (n: number) => Math.round(n * 100) / 100;
-
-// The Command Suite implementation fee prices (Starter, Growth, VIP). Lines are also recognised by name,
-// so a Payment Link made from another price still counts.
-const IMPLEMENTATION_PRICE_IDS = ["price_1UFx60LtotgP5J18Vih3WrJs", "price_1UFx7VLtotgP5J18pOPwa8yO", "price_1UFx9vLtotgP5J18LDbeFXIE"];
 
 // What the customer actually paid toward the implementation fee on a Checkout Session (after any discount),
 // in dollars, or null when the session has no implementation line.
@@ -113,7 +110,8 @@ export async function recordReferral(db: Db, planId: string, affiliate: Affiliat
 export async function creditSale(
   db: Db,
   planId: string,
-  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; implementationAmount?: number | null; offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
+  // implementationAmount may be a function: it is only called when the link earns on the implementation fee only.
+  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; implementationAmount?: number | null | (() => Promise<number | null>); offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
 ) {
   let affiliateId: string | null = null;
   let linkId: string | null = null;
@@ -128,14 +126,16 @@ export async function creditSale(
     linkId = (c?.referred_by_link_id as string) ?? null;
   }
   if (!affiliateId) return null;
-  // A link that earns on the implementation fee only credits that part of a payment, and nothing else.
+  // A link that earns on the implementation fee only credits that part of a payment, and nothing else: a later
+  // subscription payment (no implementation fee on it) is not credited. A link that earns on "all" credits every payment.
   let amount = input.amount;
   if (linkId) {
     const { data: lk } = await db.from("affiliate_links").select("commission_on").eq("id", linkId).maybeSingle();
-    if (lk?.commission_on === "implementation") {
-      if (!input.implementationAmount || input.implementationAmount <= 0) return null;
-      amount = input.implementationAmount;
-    }
+    let impl: number | null = null;
+    if (lk?.commission_on === "implementation") impl = typeof input.implementationAmount === "function" ? await input.implementationAmount().catch(() => null) : input.implementationAmount ?? null;
+    const basis = creditBasis(lk?.commission_on as string | undefined, input.amount, impl);
+    if (!basis.credit) return null;
+    amount = basis.amount;
   }
   if (input.stripeRef) {
     const { data: dup } = await db.from("affiliate_sales").select("id").eq("stripe_ref", input.stripeRef).maybeSingle();
@@ -171,6 +171,38 @@ export async function creditSale(
     .select("id")
     .single();
   return data;
+}
+
+// True when a sale in this account is already credited under any of these Stripe ids (Checkout session, invoice,
+// charge or payment intent of the same payment), so the same payment is never credited twice.
+export async function anySaleCredited(db: Db, planId: string, refs: string[]): Promise<boolean> {
+  const ids = uniqueRefs(refs);
+  if (!ids.length) return false;
+  const { data } = await db.from("affiliate_sales").select("id").eq("master_plan_id", planId).in("stripe_ref", ids).limit(1);
+  return (data ?? []).length > 0;
+}
+
+// A refund hit a payment. Credited sales found under any of its Stripe ids are handled by refundDecision:
+// still inside the payout hold and unpaid → void (row kept, reason and refund id recorded); paid, or past the hold →
+// left as it is and flagged for review with a note. Safe to run again for the same refund (nothing changes twice).
+export async function applyRefundToSales(db: Db, planId: string, refs: string[], refund: RefundInfo): Promise<{ voided: number; flagged: number }> {
+  const out = { voided: 0, flagged: 0 };
+  const ids = uniqueRefs(refs);
+  if (!ids.length) return out;
+  const { data } = await db.from("affiliate_sales").select("id, status, payable_on, refund_ref, refund_note").eq("master_plan_id", planId).in("stripe_ref", ids);
+  for (const sale of (data ?? []) as { id: string; status: string; payable_on: string | null; refund_ref: string | null; refund_note: string | null }[]) {
+    const d = refundDecision(sale, refund);
+    if (d.action === "none") continue;
+    const now = new Date().toISOString();
+    // The status guard keeps this from overwriting a sale the owner marked paid in the meantime.
+    const patch =
+      d.action === "void"
+        ? { status: "void", void_reason: d.reason, refund_ref: refund.id, refunded_at: now, refund_flag: false }
+        : { refund_flag: true, refund_note: mergeNote(sale.refund_note, d.note), refund_ref: refund.id, refunded_at: now };
+    const { data: done } = await db.from("affiliate_sales").update(patch).eq("id", sale.id).eq("status", sale.status).select("id");
+    if ((done ?? []).length) out[d.action === "void" ? "voided" : "flagged"]++;
+  }
+  return out;
 }
 
 // One affiliate's month (YYYY-MM, in UTC calendar days): clicks, who they referred,
