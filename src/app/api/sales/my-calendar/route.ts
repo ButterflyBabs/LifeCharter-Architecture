@@ -12,8 +12,11 @@ export const dynamic = "force-dynamic";
 // zone. A person only ever sees and changes THEIR OWN host record (matched by their sign-in email), never
 // anyone else's, and nothing here can reach the account's other data. /api/sales is already limited to the
 // owner and the owner's own team by the middleware.
-//   GET  → { host, connections, connectUrl, bookings }
+//   GET  → { host, connections, connectUrl, bookings, calendars }
 //   POST { action: "hours", timezone, weekly }
+//   POST { action: "calendar", id, bufferBefore, bufferAfter, minNoticeHours, maxDaysAhead, dailyCap, active }
+//        → the availability settings of a booking calendar THEY host (e.g. Executive Consultation). Name, address,
+//          questions, where it meets, tags, follow-up and deals stay with the account owner.
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -63,6 +66,12 @@ export async function GET(request: Request) {
       .order("start_at")
       .limit(60),
   ]);
+  const { data: cals } = await db
+    .from("booking_calendars")
+    .select("id, name, slug, duration_min, buffer_before_min, buffer_after_min, min_notice_hours, max_days_ahead, daily_cap, active")
+    .eq("master_plan_id", plan)
+    .contains("host_ids", [host.id])
+    .order("created_at");
   const origin = new URL(request.url).origin;
   const bookings = ((rows ?? []) as unknown as { id: string; start_at: string; end_at: string; invitee_name: string | null; invitee_email: string | null; status: string; meeting_url: string | null; booking_calendars: { name: string } | null }[]).map((b) => ({
     id: b.id,
@@ -80,6 +89,18 @@ export async function GET(request: Request) {
       connections: conns ?? [],
       connectUrl: `${origin}/book/connect/${host.id}?k=${host.connect_key}`,
       bookings,
+      calendars: (cals ?? []).map((c) => ({
+        id: c.id as string,
+        name: c.name as string,
+        url: `${origin}/book/${c.slug}`,
+        durationMin: c.duration_min as number,
+        bufferBefore: (c.buffer_before_min as number) ?? 0,
+        bufferAfter: (c.buffer_after_min as number) ?? 0,
+        minNoticeHours: (c.min_notice_hours as number) ?? 0,
+        maxDaysAhead: (c.max_days_ahead as number) ?? 30,
+        dailyCap: (c.daily_cap as number | null) ?? null,
+        active: Boolean(c.active),
+      })),
     },
     { headers: { "Cache-Control": "no-store" } }
   );
@@ -90,7 +111,34 @@ export async function POST(request: Request) {
   const r = await myHost();
   if ("error" in r) return r.error;
   const { db, plan, host } = r;
-  const b = (await request.json().catch(() => ({}))) as { action?: string; timezone?: unknown; weekly?: unknown };
+  const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  if (b.action === "calendar") {
+    const id = typeof b.id === "string" ? b.id : "";
+    const { data: cal } = /^[0-9a-f-]{36}$/i.test(id)
+      ? await db.from("booking_calendars").select("id").eq("id", id).eq("master_plan_id", plan).contains("host_ids", [host.id]).maybeSingle()
+      : { data: null };
+    if (!cal) return NextResponse.json({ error: "That isn't one of your calendars." }, { status: 404 });
+    const int = (v: unknown, lo: number, hi: number) => (typeof v === "number" && Number.isInteger(v) && v >= lo && v <= hi ? v : undefined);
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const bb = int(b.bufferBefore, 0, 240);
+    const ba = int(b.bufferAfter, 0, 240);
+    const mn = int(b.minNoticeHours, 0, 720);
+    const md = int(b.maxDaysAhead, 1, 365);
+    if (bb !== undefined) patch.buffer_before_min = bb;
+    if (ba !== undefined) patch.buffer_after_min = ba;
+    if (mn !== undefined) patch.min_notice_hours = mn;
+    if (md !== undefined) patch.max_days_ahead = md;
+    if (b.dailyCap === null) patch.daily_cap = null;
+    else {
+      const dc = int(b.dailyCap, 1, 50);
+      if (dc !== undefined) patch.daily_cap = dc;
+    }
+    if (typeof b.active === "boolean") patch.active = b.active;
+    if (Object.keys(patch).length === 1) return NextResponse.json({ error: "Nothing to save." }, { status: 400 });
+    const { error } = await db.from("booking_calendars").update(patch).eq("id", cal.id).eq("master_plan_id", plan);
+    if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
   if (b.action !== "hours") return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof b.timezone === "string" && isValidTz(b.timezone)) patch.timezone = b.timezone;

@@ -8,7 +8,9 @@ import { useCallback, useEffect, useState } from "react";
 
 interface Booking { id: string; startAt: string; endAt: string; name: string | null; email: string | null; status: string; meetingUrl: string | null; calendar: string | null }
 interface Conn { id: string; provider: string; email: string | null; check_busy: boolean; add_events: boolean }
+interface Cal { id: string; name: string; url: string; durationMin: number; bufferBefore: number; bufferAfter: number; minNoticeHours: number; maxDaysAhead: number; dailyCap: number | null; active: boolean }
 interface Data {
+  calendars: Cal[];
   host: { name: string; timezone: string; weekly: Record<string, [string, string][]>; active: boolean } | null;
   connections: Conn[];
   connectUrl: string;
@@ -27,6 +29,8 @@ export default function MyCalendar() {
   const [rows, setRows] = useState<Record<string, { on: boolean; from: string; to: string; rest: [string, string][] }>>({});
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cals, setCals] = useState<Cal[]>([]);
+  const [calMsg, setCalMsg] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -34,6 +38,7 @@ export default function MyCalendar() {
       const j = (await r.json()) as Data;
       if (!r.ok || !j.host) return setD(null);
       setD(j);
+      setCals(j.calendars ?? []);
       setTz(j.host.timezone);
       const next: typeof rows = {};
       for (const [k] of DAYS) {
@@ -67,6 +72,18 @@ export default function MyCalendar() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const setCal = (id: string, patch: Partial<Cal>) => setCals((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const saveCal = async (c: Cal) => {
+    setCalMsg((m) => ({ ...m, [c.id]: "Saving…" }));
+    const res = await fetch("/api/sales/my-calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "calendar", id: c.id, bufferBefore: c.bufferBefore, bufferAfter: c.bufferAfter, minNoticeHours: c.minNoticeHours, maxDaysAhead: c.maxDaysAhead, dailyCap: c.dailyCap, active: c.active }),
+    }).catch(() => null);
+    const j = res ? await res.json().catch(() => ({})) : {};
+    setCalMsg((m) => ({ ...m, [c.id]: res?.ok ? "Saved." : j.error || "Couldn't save." }));
   };
 
   const connected = d.connections.length > 0;
@@ -142,6 +159,41 @@ export default function MyCalendar() {
           {msg && <p className="mt-2 text-sm text-[#E3C27C]" role="status">{msg}</p>}
         </div>
       </div>
+
+      {cals.length > 0 && (
+        <div className="mt-8 border-t border-white/10 pt-5">
+          <h3 className="text-sm font-semibold text-[#F3EEE4]">Your booking calendars</h3>
+          <p className="mt-1 text-xs text-[#b8a898]">These control when people can book you. Changes apply to new bookings straight away.</p>
+          <div className="mt-3 space-y-4">
+            {cals.map((c) => {
+              const num = (v: string, fallback: number) => (v === "" ? fallback : Math.max(0, Math.floor(Number(v) || 0)));
+              return (
+                <div key={c.id} className="rounded-xl border border-white/10 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-[#F8F5F0]">{c.name} <span className="font-normal text-[#b8a898]">· {c.durationMin} minutes</span></p>
+                    <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#E3C27C] underline">Open the booking page</a>
+                  </div>
+                  <label className="mt-3 flex items-center gap-2 text-sm text-[#F3EEE4]">
+                    <input type="checkbox" checked={c.active} onChange={(e) => setCal(c.id, { active: e.target.checked })} />
+                    Accepting new bookings
+                  </label>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm text-[#b8a898]">
+                    <label>Gap before (minutes)<input type="number" min={0} className={`${input} mt-1 w-full`} value={c.bufferBefore} onChange={(e) => setCal(c.id, { bufferBefore: num(e.target.value, 0) })} /></label>
+                    <label>Gap after (minutes)<input type="number" min={0} className={`${input} mt-1 w-full`} value={c.bufferAfter} onChange={(e) => setCal(c.id, { bufferAfter: num(e.target.value, 0) })} /></label>
+                    <label>Notice needed (hours)<input type="number" min={0} className={`${input} mt-1 w-full`} value={c.minNoticeHours} onChange={(e) => setCal(c.id, { minNoticeHours: num(e.target.value, 0) })} /></label>
+                    <label>Book up to (days ahead)<input type="number" min={1} className={`${input} mt-1 w-full`} value={c.maxDaysAhead} onChange={(e) => setCal(c.id, { maxDaysAhead: Math.max(1, num(e.target.value, 30)) })} /></label>
+                    <label>Most calls per day<input type="number" min={1} placeholder="No limit" className={`${input} mt-1 w-full`} value={c.dailyCap ?? ""} onChange={(e) => setCal(c.id, { dailyCap: e.target.value === "" ? null : Math.max(1, num(e.target.value, 1)) })} /></label>
+                  </div>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button onClick={() => void saveCal(c)} className="rounded-full bg-[#c9a227] px-4 py-2 text-sm font-semibold text-[#1a2b4a]">Save these</button>
+                    {calMsg[c.id] && <span className="text-sm text-[#E3C27C]" role="status">{calMsg[c.id]}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
