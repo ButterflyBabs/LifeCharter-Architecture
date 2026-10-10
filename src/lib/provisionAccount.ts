@@ -1,6 +1,7 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
 import { sendWelcomeEmail } from "@/lib/email/welcomeSequence";
+import { ensureClientAffiliate } from "@/lib/affiliateStarter";
 
 // Service-role client — bypasses RLS. Only ever used server-side (webhook,
 // checkout-confirm route), never exposed to the browser.
@@ -111,6 +112,8 @@ export async function provisionAccountForEmail(
   }
 
   await joinCommandSuiteCommunity(supabase, userId, displayName);
+  // A ready affiliate page with a link for every LifeCharter product.
+  await ensureClientAffiliate({ email: normalizedEmail, name: displayName });
   // Email 1 of the welcome sequence (no-op until WELCOME_EMAILS_ENABLED=true; sends once).
   if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
 

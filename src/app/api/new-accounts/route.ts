@@ -5,6 +5,7 @@ import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { logEvent } from "@/lib/crm";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
 import { PRE_FOUNDER_TAG, trialEndTag } from "@/lib/preFounderTrial";
+import { ensureClientAffiliate } from "@/lib/affiliateStarter";
 import { DEFAULT_SUBJECT, bodyFor, type EmailKind, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
 import { ensureClientTemplate, STANDARD_CLIENT } from "@/lib/email/clientTemplate";
 import { crmAccount } from "../crm/guard";
@@ -134,6 +135,8 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "The account couldn't be created. Nothing was emailed." }, { status: 500 });
         }
         await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+        // A ready affiliate page with a link per LifeCharter product (clients; team members already have theirs).
+        if ((r as { kind?: string }).kind !== "team") await ensureClientAffiliate({ email: r.email, name: r.name });
       }
       const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
       // Team members who only explore their own account: switch the Getting Started gate off for this account.
