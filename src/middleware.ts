@@ -39,6 +39,12 @@ const PUBLIC_APIS = [
   "/api/partner", // an outside accountability partner's private link; the unguessable token is the key, writes are origin-checked
   "/api/cron/broadcasts", // secured by its own CRON_SECRET check, not a session
   "/api/cron/spark", // secured by its own CRON_SECRET check, not a session (refreshes LC Spark Instagram tokens)
+  "/api/cron/client-walkthrough", // the 3-minute New Client Setup Walkthrough; secured by its own CRON_SECRET check, not a session
+  "/api/cron/followups", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/owner-daily-tasks", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/affiliate-link-expiry", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/pre-founder-trials", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/call-attendance", // secured by its own CRON_SECRET check (the owner's signed-in dry run is checked in the route)
   "/api/unsubscribe", // signed token only; mail apps one-click POST here
   "/api/forms", // public Suite forms (CRM); origin-checked, form id is the key
   "/api/planner-giveaway", // free planner giveaway on amilynnecarroll.com; origin-checked
