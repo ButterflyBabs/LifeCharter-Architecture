@@ -13,7 +13,12 @@ function ResetPasswordInner() {
   const [ready, setReady] = useState<boolean | null>(null); // is there a recovery session?
 
   useEffect(() => {
-    if (params.get("error") === "link") {
+    // Account-ready, upgrade and several other emails carry Supabase's own sign-in link, which sends the person back
+    // here with the session in the address after a "#" (access_token=...). The server callback can't see that part and
+    // adds ?error=link, but the session is perfectly good: the browser client reads it from the "#". So only treat
+    // ?error=link as an expired link when there is no session in the address.
+    const hasSessionInUrl = typeof window !== "undefined" && /[#&]access_token=/.test(window.location.hash);
+    if (params.get("error") === "link" && !hasSessionInUrl) {
       setReady(false);
       return;
     }
@@ -22,6 +27,10 @@ function ResetPasswordInner() {
       .getSession()
       .then((res: { data: { session: unknown } }) => setReady(Boolean(res.data.session)))
       .catch(() => setReady(false));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
+      if (session) setReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
   }, [params]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
