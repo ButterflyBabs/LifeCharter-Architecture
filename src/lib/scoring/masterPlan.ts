@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 import { authEnabled, sessionUser, isOwnerEmail, prefersTeamAccount, ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { readViewAs } from "@/lib/viewAs";
+import { switcherAllowed } from "@/lib/accountSwitcher";
 
 // The seeded demo workspace. When the lc_demo cookie is set, every data route
 // resolves to this plan so the whole app shows sample data for sales/training.
@@ -124,7 +125,7 @@ export async function resolveMasterPlanId(): Promise<string | null> {
 
   // 0. Someone who is both an owner and a team member, and has switched into the team account
   // (lc_acct cookie): the team account's plan comes first. The membership is re-checked here.
-  if (prefersTeamAccount()) {
+  if (prefersTeamAccount() && switcherAllowed(user.email)) {
     const teamPlan = await memberTeamPlanId(supabase, user.email);
     if (teamPlan) return teamPlan;
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ACCOUNT_COOKIE, hasOwnAccount, isOwnerEmail, prefersTeamAccount, sessionUser } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
+import { switcherAllowed } from "@/lib/accountSwitcher";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ const ROLE_LABEL: Record<string, string> = { sales: "Sales", admin: "Admin", edi
 export async function GET() {
   const user = await sessionUser();
   const none = NextResponse.json({ canSwitch: false });
-  if (!user?.email) return none;
+  if (!user?.email || !switcherAllowed(user.email)) return none;
   const [own, team] = await Promise.all([hasOwnAccount(user.id), teamAccountFor(user.email)]);
   if (!own || !team) return none;
   return NextResponse.json(
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   const user = await sessionUser();
   if (!user?.email) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!switcherAllowed(user.email)) return NextResponse.json({ error: "The account switcher isn't available for your login yet." }, { status: 403 });
 
   let to = "";
   try {

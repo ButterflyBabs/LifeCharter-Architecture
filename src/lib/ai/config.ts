@@ -1,6 +1,7 @@
 import { authEnabled, isOwnerEmail, prefersTeamAccount, sessionUser, superAdminEmails } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
+import { switcherAllowed } from "@/lib/accountSwitcher";
 
 // Every Command Suite account connects its own AI. This resolves whose account
 // a request belongs to and returns that account's assistant name + OpenAI key
@@ -26,7 +27,7 @@ export async function resolveAiAccount(): Promise<AiAccount> {
   if (user) {
     const isOwner = isOwnerEmail(user.email);
     // Someone who switched into a team account (lc_acct) runs AI on that account's owner, not their own.
-    const inTeam = !isOwner && prefersTeamAccount();
+    const inTeam = !isOwner && prefersTeamAccount() && switcherAllowed(user.email);
     const { data: own } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
     if (own?.id && !inTeam) return { profileId: own.id as string, canEdit: true, isOwner };
 

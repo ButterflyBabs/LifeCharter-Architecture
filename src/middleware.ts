@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { switcherAllowed } from "@/lib/accountSwitcher";
 import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, type FeatureMap } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
@@ -296,7 +297,7 @@ export async function middleware(request: NextRequest) {
   // team account (lc_acct=team, set by the account switcher) is treated as that team's member instead,
   // with the role limits below; if the membership is gone they fall back to their own account.
   const ownsAccount = Boolean(user) && !authed && (await isClientAccount(user!.id));
-  const wantsTeam = request.cookies.get("lc_acct")?.value === "team";
+  const wantsTeam = request.cookies.get("lc_acct")?.value === "team" && switcherAllowed(email);
   if (user && !authed && ownsAccount && !wantsTeam) authed = true;
   if (user && !authed && email) {
     const info = await getMemberInfo(email);

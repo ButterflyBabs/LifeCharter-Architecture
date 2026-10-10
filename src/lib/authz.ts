@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createServerClient as createServiceClient } from "@/lib/supabase/server";
+import { switcherAllowed } from "@/lib/accountSwitcher";
 
 // Super-admin gate for privileged actions (e.g. coach overrides).
 //
@@ -144,7 +145,7 @@ export async function resolveActor(): Promise<Actor> {
 
   // Someone with their own account who has not switched into the team account is working as the
   // owner of their own account, exactly like any other client: the team role does not apply.
-  if (!prefersTeamAccount() && (await hasOwnAccount(user.id))) return none;
+  if (!(prefersTeamAccount() && switcherAllowed(email)) && (await hasOwnAccount(user.id))) return none;
 
   try {
     const supabase = createServiceClient();
