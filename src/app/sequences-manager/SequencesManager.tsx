@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square, RotateCcw } from "lucide-react";
+import { Mail, Plus, Trash2, Send, Eye, Pause, Play, Square, RotateCcw, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -78,6 +78,8 @@ export default function SequencesManager() {
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
   const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
+  // "Send to someone": one email of the campaign to any address, right now, without enrolling them.
+  const [sendOne, setSendOne] = useState<{ stepId: string; email: string } | null>(null);
   const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events" | "clients">("campaigns");
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
@@ -342,7 +344,7 @@ export default function SequencesManager() {
                 )}
                 <div className="space-y-2">
                   {steps.map((s) => (
-                    <div key={s.id} className="flex items-start gap-3 rounded-xl border border-[#1a2b4a]/10 bg-white p-3 dark:bg-[#1a2b4a]/20">
+                    <div key={s.id} className="flex flex-wrap items-start gap-3 rounded-xl border border-[#1a2b4a]/10 bg-white p-3 dark:bg-[#1a2b4a]/20">
                       <span className="mt-0.5 w-24 shrink-0 rounded-lg bg-[#c9a227]/15 px-2 py-1 text-center text-xs font-semibold text-[#7a5a0e] dark:text-[#e0c35a]">{s.day_offset === 0 ? "Right away" : `Day ${s.day_offset}`}<span className="block font-normal text-[#7a8a99]">{hourLabel(seq.send_hour)}</span></span>
                       <button onClick={() => editStep(s)} className="min-w-0 flex-1 text-left" title="Open this email">
                         <p className="break-words text-[15px] font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{s.subject}</p>
@@ -352,12 +354,43 @@ export default function SequencesManager() {
                         <Send className="w-4 h-4" />
                       </button>
                       <button
+                        title="Send this email to someone now (they are not added to the campaign)"
+                        aria-label="Send this email to someone"
+                        onClick={() => setSendOne(sendOne?.stepId === s.id ? null : { stepId: s.id, email: "" })}
+                        className="p-2 text-[#2E7C83] hover:bg-[#2E7C83]/10 rounded-lg"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                      <button
                         title="Delete"
                         onClick={async () => { if (confirm(`Delete "${s.subject}"?`)) { await act({ action: "delete-step", stepId: s.id }); void loadOne(openId); void loadList(); } }}
                         className="p-2 text-[#C76F56] hover:bg-[#C76F56]/10 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      {sendOne?.stepId === s.id && (
+                        <div className="basis-full flex flex-col gap-2 border-t border-[#1a2b4a]/10 pt-3 sm:flex-row sm:items-center">
+                          <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Send &ldquo;{s.subject}&rdquo; to</span>
+                          <Input
+                            aria-label="Email address"
+                            placeholder="someone@theirbusiness.com"
+                            value={sendOne.email}
+                            onChange={(e) => setSendOne({ ...sendOne, email: e.target.value })}
+                            className="sm:max-w-xs"
+                          />
+                          <Button
+                            size="sm"
+                            disabled={!sendOne.email.trim()}
+                            onClick={async () => {
+                              const d = await act({ action: "send-one", stepId: s.id, email: sendOne.email }, `Sent to ${sendOne.email.trim()}.`);
+                              if (d) setSendOne(null);
+                            }}
+                          >
+                            Send now
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setSendOne(null)}>Cancel</Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {!steps.length && !form && <p className="text-sm text-[#7a8a99]">No emails yet.</p>}

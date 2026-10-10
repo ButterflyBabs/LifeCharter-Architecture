@@ -4,7 +4,7 @@ import { enrolContact, clientFrom, sendRendered, isValidTz } from "@/lib/sequenc
 import { renderStep } from "@/lib/sequences/render";
 import { footerOf, senderProfile, senderVerdict } from "@/lib/email/accountSender";
 import { crmAccount, testRecipient } from "../../crm/guard";
-import { logEvent } from "@/lib/crm";
+import { logEvent, upsertContact } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,6 +20,7 @@ export const maxDuration = 60;
 //     enrol { email, firstName, lastName, timezone }
 //     person { enrollmentId, status: active|paused|stopped }
 //     resend { enrollmentId, stepId }   → sends that one email to that one person now
+//     send-one { stepId, email }       → sends that one email to anyone now (in the campaign or not), schedule untouched
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const link = (v: unknown) => (typeof v === "string" && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 600) : null);
@@ -205,6 +206,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await db.from("sequence_sends").upsert({ enrollment_id: enr.id, step_id: step.id, status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString(), error: null }, { onConflict: "enrollment_id,step_id" });
     await logEvent(planId, c.id, "email", `Resent “${step.subject}” (${seq.name})`, { sequence: seq.key, step: step.id, resend: true }, db).catch(() => {});
     return NextResponse.json({ ok: true, to: c.email });
+  }
+
+  if (b.action === "send-one") {
+    // One email of this campaign, to anyone, right now: someone who finished it, was never in it, or asked for it
+    // again. Nobody is enrolled and no schedule changes. An unsubscribed address is refused.
+    const email = str(b.email, 200).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Type a full email address." }, { status: 400 });
+    const { data: step } = await db.from("sequence_steps").select("*").eq("id", str(b.stepId, 60)).eq("sequence_id", seq.id).maybeSingle();
+    if (!step) return NextResponse.json({ error: "Pick which email to send." }, { status: 400 });
+    const who = senderVerdict(await senderProfile(planId, db), true);
+    if (!who.ok) return NextResponse.json({ error: who.reason, setup: true }, { status: 400 });
+    const c = await upsertContact({ masterPlanId: planId, email, source: "one-off send" }, db);
+    if (!c) return NextResponse.json({ error: "Couldn't find or add that contact." }, { status: 500 });
+    if (c.unsubscribed) return NextResponse.json({ error: "They've unsubscribed, so they can't be emailed." }, { status: 400 });
+    const { data: full } = await db.from("seq_contacts").select("id, first_name").eq("id", c.id).maybeSingle();
+    const mail = renderStep({ brand: seq.brand, subject: step.subject, preview: step.preview, body: step.body, buttonLabel: step.button_label, buttonUrl: step.button_url, contact: { id: c.id, first_name: (full?.first_name as string | null) ?? null }, footer: who.house ? undefined : who.footer });
+    const r = await sendRendered(who.house ? seq : clientFrom(who), email, c.id, mail, who.house ? undefined : who.resendKey);
+    if (!r.ok) return NextResponse.json({ error: r.error || "Couldn't send." }, { status: 500 });
+    await logEvent(planId, c.id, "email", `Sent “${step.subject}” (${seq.name}) as a one-off`, { sequence: seq.key, step: step.id, oneOff: true }, db).catch(() => {});
+    return NextResponse.json({ ok: true, to: email });
   }
 
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });
