@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { screenMessage, CRISIS_REPLY } from "@/lib/ai/redFlags";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -81,6 +82,14 @@ export async function POST(request: Request) {
   const shown = typeof body?.shown === "string" && body.shown.trim() ? body.shown.trim().slice(0, 300) : message;
 
   const { name, key, instructions, notes } = await resolveAiConfig();
+  // Red flags first (see lib/ai/redFlags.ts): a client in distress gets the fixed caring reply with crisis
+  // resources whatever the AI key or monthly cap says, and a person on the team is told. Not in the public demo.
+  const flagPlan = isDemoRequest() ? null : await resolveMasterPlanId();
+  const flag = await screenMessage(flagPlan, message, { demo: isDemoRequest() });
+  if (flag.crisis) {
+    if (flagPlan) await saveTurn(flagPlan, "mariposa", shown, CRISIS_REPLY).catch((e) => console.error("saveTurn:", e));
+    return NextResponse.json({ reply: CRISIS_REPLY });
+  }
   const overCap = await memberAiGate(key);
   if (overCap) return overCap;
 
@@ -101,7 +110,7 @@ export async function POST(request: Request) {
     const openai = new OpenAI({ apiKey: key });
     // The assistant can also DO things (tools). Not in the public demo, which is view-only.
     const canAct = !!planId && !isDemoRequest();
-    const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), instructions, { notes, message, canAct, approvedHelp: await approvedHelpFor(message) });
+    const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), [instructions, flag.hint].filter(Boolean).join("\n\n"), { notes, message, canAct, approvedHelp: await approvedHelpFor(message) });
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...history, { role: "user", content: message }];
     const cards: ActionCard[] = [];
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;

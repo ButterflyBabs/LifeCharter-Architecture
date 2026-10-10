@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -19,9 +19,11 @@ interface Question {
   section: string;
   placeholder?: string;
   tip?: string;
+  /** Shown only when this returns true for the answers given so far (extra revenue streams). */
+  showIf?: (answers: Record<string, string>) => boolean;
 }
 
-const questions: Question[] = [
+const BASE_QUESTIONS: Question[] = [
   // ============================================
   // SECTION 1: BUSINESS IDENTITY (37 questions)
   // ============================================
@@ -204,6 +206,14 @@ const questions: Question[] = [
       { value: "exit_preparation", label: "Exit Preparation (preparing for sale/transition)" },
     ],
     tip: "Pick the stage that matches your revenue and systems today. If you're between two, choose the earlier one; it leads to more useful recommendations.",
+  },
+  {
+    id: "bi_1_19b",
+    text: "If you run more than one business, what is the stage of each one?",
+    type: "text",
+    section: "1. Business Identity",
+    placeholder: "e.g. Business A: relaunching (Reinvention). Business B: pre-launch (Startup). Business C: growing with an audience (Growth)...",
+    tip: "Skip this if you have one business. Otherwise name each business and pick its stage from the list above. Your answer to the stage question above should be the business you are working on in this Suite.",
   },
   {
     id: "bi_1_20",
@@ -4521,6 +4531,47 @@ const questions: Question[] = [
   },
 ];
 
+// Revenue streams: the eight questions in section 2.2 describe one stream. A client with more streams answers
+// "how many?" and then gets the same eight questions again for each further stream (up to five). The
+// extra sets only appear once the count says so, and every answer is saved like any other.
+const STREAM_BASE_IDS = ["bm_2_1", "bm_2_2", "bm_2_3", "bm_2_4", "bm_2_5", "bm_2_6", "bm_2_7", "bm_2_8"];
+const MAX_STREAMS = 5;
+const streamCount = (a: Record<string, string>) => {
+  const v = a["bm_2_9"];
+  return v === "5plus" ? 5 : Math.max(1, Math.min(MAX_STREAMS, parseInt(v || "1", 10) || 1));
+};
+const STREAM_GATE: Question = {
+  id: "bm_2_9",
+  text: "How many separate revenue streams does the business have?",
+  type: "radio",
+  section: "2. Business Model",
+  options: [
+    { value: "1", label: "One" },
+    { value: "2", label: "Two" },
+    { value: "3", label: "Three" },
+    { value: "4", label: "Four" },
+    { value: "5plus", label: "Five or more (describe your five biggest)" },
+  ],
+  tip: "The eight questions above are for your first stream. Choose a number higher than one and the Suite adds the same questions for each further stream, right after this one.",
+};
+function withExtraStreams(base: Question[]): Question[] {
+  const out: Question[] = [];
+  for (const q of base) {
+    out.push(q);
+    if (q.id === "bm_2_8") {
+      out.push(STREAM_GATE);
+      for (let n = 2; n <= MAX_STREAMS; n++) {
+        for (const id of STREAM_BASE_IDS) {
+          const b = base.find((x) => x.id === id);
+          if (b) out.push({ ...b, id: `${id}_s${n}`, text: `Revenue stream ${n}: ${b.text}`, showIf: (a) => streamCount(a) >= n });
+        }
+      }
+    }
+  }
+  return out;
+}
+const questions: Question[] = withExtraStreams(BASE_QUESTIONS);
+
 const sections = [
   "1. Business Identity",
   "2. Business Model",
@@ -4540,10 +4591,16 @@ export default function BrainAssessmentPage() {
   const nextStep = useNextAssessment("brain");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // The questions this client actually sees: the extra revenue-stream sets appear only when asked for.
+  // `answers` is declared above, so this recomputes as the stream count changes.
+
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+  const visible = useMemo(() => questions.filter((q) => !q.showIf || q.showIf(answers)), [answers]);
+  // A saved position can point past the end if fewer streams are chosen than before.
+  const safeIndex = Math.min(currentQuestion, visible.length - 1);
 
   // Load saved progress
   useEffect(() => {
@@ -4589,7 +4646,7 @@ export default function BrainAssessmentPage() {
   }, [answers, currentQuestion, saveProgress]);
 
   const handleAnswer = (value: string) => {
-    setAnswers((prev) => ({ ...prev, [questions[currentQuestion].id]: value }));
+    setAnswers((prev) => ({ ...prev, [visible[safeIndex].id]: value }));
   };
 
   // Multi-select answers are stored as a comma-separated list of option values
@@ -4598,7 +4655,7 @@ export default function BrainAssessmentPage() {
     (answers[id] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 
   const toggleMulti = (value: string) => {
-    const q = questions[currentQuestion];
+    const q = visible[safeIndex];
     const current = selectedValues(q.id);
     const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
     // Keep the options' own order so saved answers read consistently.
@@ -4617,7 +4674,7 @@ export default function BrainAssessmentPage() {
   };
 
   const persistResponses = async () => {
-    const payload = questions
+    const payload = visible
       .filter((q) => (answers[q.id] ?? "").toString().trim() !== "")
       .map((q) => ({
         questionId: q.id,
@@ -4640,7 +4697,7 @@ export default function BrainAssessmentPage() {
   };
 
   const handleNext = async () => {
-    if (currentQuestion < questions.length - 1) {
+    if (safeIndex < visible.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -4658,10 +4715,10 @@ export default function BrainAssessmentPage() {
     }
   };
 
-  const currentQ = questions[currentQuestion];
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const currentQ = visible[safeIndex];
+  const progress = ((safeIndex + 1) / visible.length) * 100;
   const currentSection = currentQ.section;
-  const sectionQuestions = questions.filter((q) => q.section === currentSection);
+  const sectionQuestions = visible.filter((q) => q.section === currentSection);
   const sectionProgress =
     ((sectionQuestions.findIndex((q) => q.id === currentQ.id) + 1) /
       sectionQuestions.length) *
@@ -4718,7 +4775,7 @@ export default function BrainAssessmentPage() {
             <div className="flex justify-between text-sm">
               <span>Overall Progress</span>
               <span>
-                {currentQuestion + 1} of {questions.length}
+                {safeIndex + 1} of {visible.length}
               </span>
             </div>
             <Progress value={progress} variant="teal" />
@@ -4752,7 +4809,7 @@ export default function BrainAssessmentPage() {
                 accent="#4a9b9b"
                 onApply={(updates) => {
                   setAnswers((prev) => ({ ...prev, ...updates }));
-                  setCurrentQuestion(questions.findIndex((q) => q.section === currentSection));
+                  setCurrentQuestion(visible.findIndex((q) => q.section === currentSection));
                   setAiNotice(
                     `${Object.keys(updates).length} answers from your AI were saved to this section. Step through with Next to read each one and make any final edits.`
                   );
@@ -4880,7 +4937,7 @@ export default function BrainAssessmentPage() {
                 onClick={handleNext}
                 disabled={!answers[currentQ.id]}
               >
-                {currentQuestion === questions.length - 1 ? "Complete" : "Next"}
+                {safeIndex === visible.length - 1 ? "Complete" : "Next"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -4890,7 +4947,7 @@ export default function BrainAssessmentPage() {
         {/* Section Summary */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
           {sections.map((section) => {
-            const sectionQs = questions.filter((q) => q.section === section);
+            const sectionQs = visible.filter((q) => q.section === section);
             const answeredQs = sectionQs.filter((q) => answers[q.id]).length;
             const isCurrent = section === currentSection;
             return (

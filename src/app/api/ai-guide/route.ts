@@ -7,6 +7,7 @@ import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { buildAssistantKnowledge, loadHistory, saveTurn, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { approvedHelpFor } from "@/lib/ai/helpSuggestions";
+import { screenMessage, CRISIS_REPLY } from "@/lib/ai/redFlags";
 
 // System prompt for the AI Business Guide ({name} = the account's assistant).
 const systemPrompt = (name: string) => `You are ${name}, the AI business guide in the LifeCharter Command Suite, a business assessment and optimization platform.
@@ -36,6 +37,15 @@ Provide guidance that is:
 export async function POST(request: NextRequest) {
   try {
     const { name, key, instructions, notes } = await resolveAiConfig();
+    // Red flags first, before anything else can answer: a client in distress gets the fixed caring reply with
+    // crisis resources (whatever the AI key or cap says), and a person on the team is told. See lib/ai/redFlags.ts.
+    const early = await request.clone().json().catch(() => ({}));
+    const earlyPlan = typeof early?.message === "string" && early.message ? await resolveMasterPlanId() : null;
+    const flag = earlyPlan ? await screenMessage(earlyPlan, early.message) : { crisis: false, hint: "" };
+    if (flag.crisis && earlyPlan) {
+      await saveTurn(earlyPlan, "guide", String(early.message), CRISIS_REPLY).catch((e) => console.error("saveTurn:", e));
+      return NextResponse.json({ reply: CRISIS_REPLY });
+    }
     const overCap = await memberAiGate(key);
     if (overCap) return overCap;
     // Check if an OpenAI API key is configured (per-account or env)
@@ -94,7 +104,7 @@ export async function POST(request: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions, { notes, message, approvedHelp: await approvedHelpFor(message) }) },
+        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, [instructions, flag.hint].filter(Boolean).join("\n\n"), { notes, message, approvedHelp: await approvedHelpFor(message) }) },
         ...history,
         { role: "user", content: message },
       ],

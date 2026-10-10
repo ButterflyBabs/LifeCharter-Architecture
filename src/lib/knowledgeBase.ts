@@ -279,6 +279,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
   },
   {
+    id: "st-brain-more-businesses-streams",
+    category: "Getting Started",
+    question: "I run more than one business or have several revenue streams. How do I answer the Brain assessment?",
+    answer:
+      "Answer the stage question for the business you are working on in this Suite, then use the question right after it to give the stage of each of your other businesses. In section 2 (Business Model) the eight revenue stream questions describe your first stream. At the end of them, 'How many separate revenue streams does the business have?' lets you choose up to five; the Suite then adds the same eight questions for each further stream, right after that question. If you have more than five, describe your five biggest. Your answers save as you go and you can come back and add streams later.",
+    keywords: ["multiple businesses", "more than one business", "several businesses", "revenue streams", "more than one revenue stream", "brain assessment", "stage", "business stage", "add another stream", "multiple offers"],
+  },
+  {
     id: "st-assessment-answers-matter",
     category: "Getting Started",
     question: "Why should I answer the assessment questions so thoroughly?",
