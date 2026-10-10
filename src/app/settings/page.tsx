@@ -18,6 +18,7 @@ import StripeConnectCard from "./components/StripeConnectCard";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import { useTheme } from "@/components/theme-provider";
+import AssistantActivity from "@/components/assistant/AssistantActivity";
 import { createClient } from "@/lib/supabase/client";
 import { hiddenSettingsTabs } from "@/lib/teamRoles";
 import { timezoneOptions } from "@/lib/timezones";
@@ -2017,6 +2018,8 @@ export default function SettingsPage() {
               Setting up should cost you less than $5, one time, and day-to-day use is minimal, an estimated $0.20 a day (an estimate, not a guarantee, since your own use sets the real cost). We suggest creating a separate key just for the Command Suite so you can see exactly what it costs. The Travel Partner in the corner does not use your key, and you do not need to upgrade ChatGPT. LifeCharter does not receive any of that charge and has no control over OpenAI&apos;s prices.
             </p>
           </div>
+
+          <AssistantActivity />
 
           {aiMsg && (
             <div
