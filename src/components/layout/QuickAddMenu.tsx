@@ -105,7 +105,7 @@ export function QuickAddMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#111d33] shadow-xl z-50 overflow-hidden">
+        <div className="fixed left-3 right-3 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-64 rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#111d33] shadow-xl z-50 overflow-hidden">
           <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#b8a898]">Quick add</p>
           {items.map((it) => (
             <button

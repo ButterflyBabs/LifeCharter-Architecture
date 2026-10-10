@@ -113,14 +113,14 @@ export function NotificationsBell() {
       >
         <Bell className="w-5 h-5 text-[#1a2b4a] dark:text-[#e8e4f0]" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#c9a227] text-[#1a2b4a] text-xs font-bold flex items-center justify-center">
+          <span className="absolute -top-1 right-0 sm:-right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#c9a227] text-[#1a2b4a] text-xs font-bold flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-h-[70vh] overflow-hidden rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#111d33] shadow-xl z-50 flex flex-col">
+        <div className="fixed left-3 right-3 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 max-h-[70vh] overflow-hidden rounded-2xl border border-[#1a2b4a]/12 bg-white dark:bg-[#111d33] shadow-xl z-50 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a2b4a]/10">
             <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Notifications</p>
             {unread > 0 && (

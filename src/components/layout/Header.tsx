@@ -94,22 +94,25 @@ export function Header({
   }
 
   return (
-    <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center justify-between pl-14 pr-6 lg:px-6 sticky top-0 z-40">
+    <header className="min-h-16 flex-wrap sm:flex-nowrap bg-card border-b border-[#c9a227]/20 flex items-center justify-between pl-14 pr-3 sm:pr-6 lg:px-6 sticky top-0 z-40">
       {/* Left: Title */}
-      <div className="flex items-center gap-2">
-        <h1 className="font-serif text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
+      <div className="flex min-w-0 items-center gap-2">
+        <h1 className="truncate font-serif text-lg sm:text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
           {resolvedTitle}
         </h1>
-        <Sparkles className="w-4 h-4 text-[#c9a227]" />
+        <Sparkles className="hidden sm:block w-4 h-4 text-[#c9a227]" />
       </div>
 
       {/* Center: business switcher (or the account name when there's only one business) */}
       <BusinessSwitcher workspace={workspace} />
 
-      {/* Right: Search & Actions */}
-      <div className="flex items-center gap-3">
-        {/* Own account vs a team account: only for someone who has both */}
+      {/* Own account vs a team account: only for someone who has both. On a phone it sits on its own row. */}
+      <div className="order-last basis-full flex justify-end pb-2 empty:hidden sm:order-none sm:basis-auto sm:ml-auto sm:mr-3 sm:pb-0">
         <AccountSwitcher />
+      </div>
+
+      {/* Right: Search & Actions */}
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
 
         {/* Search */}
         <div
@@ -159,7 +162,7 @@ export function Header({
           href="/help/contact"
           aria-label="Contact Support"
           title="Contact Support"
-          className="w-9 h-9 rounded-full bg-[#c9a227]/15 dark:bg-[#c9a227]/20 flex items-center justify-center hover:bg-[#c9a227]/25 dark:hover:bg-[#c9a227]/30 transition-colors"
+          className="hidden sm:flex w-9 h-9 rounded-full bg-[#c9a227]/15 dark:bg-[#c9a227]/20 items-center justify-center hover:bg-[#c9a227]/25 dark:hover:bg-[#c9a227]/30 transition-colors"
         >
           <LifeBuoy className="w-5 h-5 text-[#c9a227]" />
         </Link>
