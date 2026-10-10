@@ -4,6 +4,8 @@
 // sign-off, added by the sender (unless the body already closes with it).
 // 2026-10-10: the "assessments" email goes about 1 hour after the account is created (queued: the once-a-minute job sends it,
 // never the 9 am run). Its switch is app_settings welcome_assessments_on; it stays "false" until Babs approves the copy.
+// 2026-10-10: the "next_call" email invites the client to book their Next Chapter Call once all three assessments are done
+// (sent by the hourly /api/cron/new-client-review job, only while app_settings welcome_next_call_on = "true"; Babs approves the copy first).
 // 2026-10-10: Email 1 is the New Client Setup Walkthrough, sent about 3 minutes after the account is created
 // (src/lib/clientWalkthrough.ts). It replaces the old Email 1 and the old Day 1 ("Two things to do today").
 
@@ -24,6 +26,14 @@ export const WELCOME_EMAILS: WelcomeEmail[] = [
     "subject": "Why your assessment answers matter so much",
     "preview": "The more fully you answer, the better your Command Suite can guide you.",
     "body": "{{GREETING}}\n\nWhen you take your three assessments, you are not filling out a form. You are building the base and the foundation we will start from, so that we can properly support you and build your business with you.\n\nEverything your Command Suite does begins with what you tell it: your scores, your plans, the guidance your assistant gives you, the priorities on your Daily Compass. The more thoroughly you answer, the more clearly it can see your business, and the better help it can be in guiding you toward fulfillment, success and, in time, legacy.\n\nA few things make a real difference:\n- Take your time. There is no clock, and your answers save as you go, so you can stop and come back whenever you need to.\n- Answer for the business you have today, not the one you hope to have. That is what gives you an honest starting point.\n- Use your own words wherever there is room. The detail is what makes the guidance specific to you.\n- Do not skip the hard ones. They are usually where the biggest opportunities are hiding.\n\n[Open your assessments](https://lccommandsuite.com/assessments)\n\nThorough answers now mean better help every day after. I am glad you are here."
+  },
+  {
+    "key": "next_call",
+    "day": 0,
+    "queued": true,
+    "subject": "Your assessments are in. Let's talk about what they show",
+    "preview": "Book your Next Chapter Call with me.",
+    "body": "{{GREETING}}\n\nYou finished all three assessments. That took real thought, and it gives me something real to work from.\n\nHere is what happens next. I read your results, and then you and I get on a call together, just the two of us: your Next Chapter Call. We will go through what the assessments show, where your business has the most room to move, and what to do first.\n\nIt is 30 minutes, one on one, with me.\n\nBook your Next Chapter Call here: https://lccommandsuite.com/book/next-chapter-call\n\nPick a time that suits you. If nothing fits, reply to this email and we will find one."
   },
   {
     "key": "day3",

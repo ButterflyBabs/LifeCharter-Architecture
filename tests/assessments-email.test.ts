@@ -21,3 +21,11 @@ test("assessments email is queued, so the 9 am run never sends it", () => {
   assert.equal(e.day, 0);
   assert.match(e.body, /\{\{GREETING\}\}/);
 });
+
+test("next_call invitation is queued and points at the Next Chapter Call booking page", () => {
+  const e = WELCOME_EMAILS.find((x) => x.key === "next_call");
+  assert.ok(e);
+  assert.equal(e.queued, true);
+  assert.match(e.body, /\{\{GREETING\}\}/);
+  assert.match(e.body, /https:\/\/lccommandsuite\.com\/book\/next-chapter-call/);
+});

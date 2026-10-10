@@ -110,7 +110,7 @@
     },
     {
       "path": "/api/cron/new-client-review",
-      "schedule": "0 17 * * *"
+      "schedule": "10 * * * *"
     }
   ],
   "rewrites": [
