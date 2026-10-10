@@ -43,7 +43,7 @@ const TABS = [
   { id: "programs", label: "Programs I promote" },
   { id: "partner", label: "My partnerships" },
 ] as const;
-type Partnership = { id: string; business: string; code: string; status: string; link: string };
+type Partnership = { id: string; business: string; code: string; status: string; link: string; links?: { id: string; product: string; status: string; expiresAt: string | null; link: string }[] };
 const APP = "https://lccommandsuite.com";
 const money = (n: number) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
@@ -323,6 +323,50 @@ export default function Affiliates() {
                   <p className="text-xs font-semibold text-[#7a8a99]">Your {p.business} link</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2"><span className="text-sm break-all">{p.link}</span><CopyButton text={p.link} label="Copy link" /></div>
                   {p.status !== "active" && <p className="mt-1 text-xs text-[#6b5410]">Paused right now.</p>}
+                </div>
+                {(p.links?.length ?? 0) > 0 && (
+                  <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
+                    <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Your {p.business} product links</p>
+                    <p className="mb-3 text-xs text-[#7a8a99]">Share any of these. A sale through your link is credited to you.</p>
+                    <ul className="divide-y divide-[#1a2b4a]/10">
+                      {p.links!.map((l) => (
+                        <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{l.product}{l.status === "paused" ? " (paused)" : ""}</span>
+                            <span className="block text-xs text-[#7a8a99] break-all">{l.link}{l.expiresAt ? ` · until ${day(l.expiresAt)}` : ""}</span>
+                          </span>
+                          <CopyButton text={l.link} label="Copy link" />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Your own additional links</p>
+                      <p className="text-xs text-[#7a8a99]">Other programs you promote, with your own link or code. These are yours alone.</p>
+                    </div>
+                    <Button onClick={() => setProgramEdit({ status: "active" })}><Plus className="w-4 h-4 mr-1" /> Add one</Button>
+                  </div>
+                  {programs.length > 0 ? (
+                    <ul className="mt-3 divide-y divide-[#1a2b4a]/10">
+                      {programs.map((g) => (
+                        <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{g.name}</span>
+                            {g.my_link && <span className="block text-xs text-[#7a8a99] break-all">{g.my_link}</span>}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            {g.my_link && <CopyButton text={g.my_link} label="Copy link" />}
+                            <button type="button" onClick={() => setProgramEdit(g)} className="text-xs underline text-[#1a2b4a] dark:text-[#F8F5F0]">Edit</button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-[#7a8a99]">None yet. Add a program with your own link or code.</p>
+                  )}
                 </div>
                 <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
                   <MonthlyReport endpoint="/api/affiliates/mine" params={{ affiliateId: p.id }} />

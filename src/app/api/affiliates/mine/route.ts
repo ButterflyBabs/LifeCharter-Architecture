@@ -19,7 +19,10 @@ export async function GET(request: Request) {
     (affs ?? []).map(async (f) => {
       const house = await isHousePlan(f.master_plan_id as string);
       const { data: ws } = house ? { data: null } : await db.from("workspaces").select("name").eq("master_plan_id", f.master_plan_id).order("is_default", { ascending: false }).limit(1).maybeSingle();
-      return { id: f.id, business: house ? "LifeCharter" : (ws?.name as string) || "Partner", code: f.code, status: f.status, link: `https://lccommandsuite.com/r/${f.code}` };
+      // The tracked link for each product this affiliate can share.
+      const { data: ls } = await db.from("affiliate_links").select("id, product, code, status, expires_at").eq("affiliate_id", f.id).order("created_at");
+      const links = (ls ?? []).map((l) => ({ id: l.id as string, product: l.product as string, status: l.status as string, expiresAt: (l.expires_at as string | null) ?? null, link: `https://lccommandsuite.com/r/${l.code}` }));
+      return { id: f.id, business: house ? "LifeCharter" : (ws?.name as string) || "Partner", code: f.code, status: f.status, link: `https://lccommandsuite.com/r/${f.code}`, links };
     })
   );
   const u = new URL(request.url);
