@@ -6,7 +6,7 @@ import { Repeat } from "lucide-react";
 interface SwitchInfo {
   canSwitch: boolean;
   active?: "own" | "team";
-  team?: { label: string; role: string };
+  team?: { label: string; role: string; display: string };
 }
 
 // Only shows for someone who owns their own account AND is a team member of another (Marcello).
@@ -57,7 +57,7 @@ export default function AccountSwitcher({ tone = "light" }: { tone?: "light" | "
         aria-pressed={info.active === "own"}
         className={`rounded-full px-3 py-1 ${info.active === "own" ? on : ""}`}
       >
-        My account
+        My Account
       </button>
       <button
         type="button"
@@ -67,7 +67,7 @@ export default function AccountSwitcher({ tone = "light" }: { tone?: "light" | "
         className={`rounded-full px-3 py-1 ${info.active === "team" ? on : ""}`}
         title={`${info.team.label} (${info.team.role})`}
       >
-        {info.team.label} · {info.team.role}
+        {info.team.display}
       </button>
     </div>
   );

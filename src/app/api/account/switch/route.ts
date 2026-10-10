@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ACCOUNT_COOKIE, hasOwnAccount, prefersTeamAccount, sessionUser } from "@/lib/authz";
+import { ACCOUNT_COOKIE, hasOwnAccount, isOwnerEmail, prefersTeamAccount, sessionUser } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 interface TeamAccount {
   label: string;
   role: string;
+  house: boolean; // the house account (AmiLynne's own LCCS), shown as "LCCS <role>"
 }
 
 async function teamAccountFor(email: string): Promise<TeamAccount | null> {
@@ -26,12 +27,18 @@ async function teamAccountFor(email: string): Promise<TeamAccount | null> {
   if (!m?.workspace_id) return null;
   const { data: ws } = await supabase.from("workspaces").select("name, master_plan_id").eq("id", m.workspace_id).maybeSingle();
   let name = (ws?.name as string) || "Team account";
+  let house = false;
   if (ws?.master_plan_id) {
-    const { data: plan } = await supabase.from("client_master_plans").select("client_name").eq("id", ws.master_plan_id).maybeSingle();
+    const { data: plan } = await supabase
+      .from("client_master_plans")
+      .select("client_name, client_email")
+      .eq("id", ws.master_plan_id)
+      .maybeSingle();
     if (plan?.client_name) name = plan.client_name as string;
+    house = Boolean(plan?.client_email && isOwnerEmail(plan.client_email as string));
   }
   const role = ((m.role as string) || "member").toLowerCase();
-  return { label: name, role };
+  return { label: name, role, house };
 }
 
 const ROLE_LABEL: Record<string, string> = { sales: "Sales", admin: "Admin", editor: "Editor", viewer: "Viewer", member: "Team" };
@@ -46,7 +53,12 @@ export async function GET() {
     {
       canSwitch: true,
       active: prefersTeamAccount() ? "team" : "own",
-      team: { label: team.label, role: ROLE_LABEL[team.role] || "Team" },
+      team: {
+        label: team.label,
+        role: ROLE_LABEL[team.role] || "Team",
+        // What the toggle button says: "LCCS Sales" for the house account, else "<account> · <role>".
+        display: team.house ? `LCCS ${ROLE_LABEL[team.role] || "Team"}` : `${team.label} · ${ROLE_LABEL[team.role] || "Team"}`,
+      },
     },
     { headers: { "Cache-Control": "no-store" } }
   );
