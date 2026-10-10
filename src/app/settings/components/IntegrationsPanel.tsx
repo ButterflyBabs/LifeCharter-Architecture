@@ -99,6 +99,11 @@ function CalendarConnections() {
         Connect Google or Microsoft to read your inbox &amp; calendar and let the app add events (like planning sessions).
         Each connected email account counts toward your plan&apos;s limit.
       </p>
+      <p className="text-xs text-[#b8a898] mb-3">
+        <strong className="text-[#F8F5F0]">Emailing your contacts is separate.</strong> Campaigns, broadcasts and booking emails go out through
+        your own free Resend account and your own verified domain, not through the accounts above. Set it up in{" "}
+        <a href="/contacts?tab=sending" className="font-semibold text-[#E3C27C] underline">Contacts &gt; Email sending</a>.
+      </p>
       {limitHit && (
         <p className="text-xs text-[#8a6a15] mb-3">
           You&apos;ve reached your plan&apos;s email account limit. Disconnect one below, or upgrade your plan to add more.

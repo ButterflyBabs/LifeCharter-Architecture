@@ -252,6 +252,10 @@ export default function SetupPage() {
                 <IntegrationChip icon={<Calendar className="w-4 h-4" />} label="Calendar & Email" done={toolStates[0]} />
                 <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[1]} />
               </div>
+              <p className="text-xs text-[#7a8a99] dark:text-[#b8c2cf] mb-3">
+                Emailing your contacts is a separate step: it uses your own free Resend account and your own verified domain, and you set it up
+                later in <Link href="/contacts?tab=sending" className="underline">Contacts &gt; Email sending</Link> (it is Day 26 of your Starter Guide).
+              </p>
               <Link
                 href="/settings"
                 className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
