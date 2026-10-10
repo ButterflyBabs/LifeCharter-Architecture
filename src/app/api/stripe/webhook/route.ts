@@ -303,7 +303,14 @@ export async function POST(req: NextRequest) {
         if (await planUpgradeEmailsOn(supabase)) {
           const newPlan = await planOfSubscription(supabase, subscription);
           const { data: cur } = await supabase.from("subscriptions").select("user_id, plan_id").eq("stripe_subscription_id", subscriptionId).maybeSingle();
-          if (newPlan && cur?.user_id && isUpgrade(cur.plan_id, newPlan)) upgrade = { userId: cur.user_id, fromPlan: cur.plan_id, toPlan: newPlan };
+          if (newPlan && cur?.user_id && newPlan !== cur.plan_id) {
+            if (isUpgrade(cur.plan_id, newPlan)) upgrade = { userId: cur.user_id, fromPlan: cur.plan_id, toPlan: newPlan };
+            else {
+              // A move down (portal plan switch): the account follows Stripe, no upgrade emails.
+              await supabase.from("subscriptions").update({ plan_id: newPlan, updated_at: new Date() }).eq("stripe_subscription_id", subscriptionId);
+              await supabase.from("profiles").update({ current_plan_id: newPlan }).eq("id", cur.user_id);
+            }
+          }
         }
 
         await supabase
