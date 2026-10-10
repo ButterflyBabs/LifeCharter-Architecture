@@ -29,7 +29,7 @@ const REC: Record<string, { title: string; body: string; label: string; url: str
     title: "Your best next step: the free 21-Day Executive Challenge",
     body: "A daily, guided on-ramp that turns these openings into momentum, and shows you what it feels like to run your business with structure, one day at a time.",
     label: "Join the 21-Day Challenge",
-    url: "https://command-shift-landing.vercel.app/",
+    url: "https://shift.lccommandsuite.com/",
   },
 };
 

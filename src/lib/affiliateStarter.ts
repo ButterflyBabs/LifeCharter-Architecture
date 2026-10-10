@@ -15,7 +15,7 @@ export const STARTER_PRODUCTS: { product: string; short: string; landing: string
   { product: "SOUL Sessions", short: "soul", landing: "https://www.amilynnecarroll.com/soul-sessions" },
   { product: "LifeCharter Program", short: "program", landing: "https://www.amilynnecarroll.com/life-charter" },
   { product: "Digital Planners", short: "planners", landing: "https://www.amilynnecarroll.com/planners" },
-  { product: "Coaching Certification", short: "certification", landing: "https://coaching-certification-portal.vercel.app/" },
+  { product: "Coaching Certification", short: "certification", landing: "https://lccommandsuite.com/certificationportal/" },
 ];
 
 export async function ensureClientAffiliate(input: { email: string; name?: string | null }, db: Db = createServerClient()): Promise<{ created: boolean; links: number } | null> {

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Free live MasterClass with AmiLynne 'Babs' Carroll: From Hustle to Command. 90 minutes, online.",
 };
 
-const LANDING = "https://commandsuite-landing-page.vercel.app/masterclass";
+const LANDING = "https://start.lccommandsuite.com/masterclass";
 
 // Public page a MasterClass affiliate link sends people to. Shows the next session and registers them on Zoom.
 export default async function MasterclassSignupPage() {
