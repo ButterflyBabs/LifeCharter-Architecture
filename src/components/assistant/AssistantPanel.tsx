@@ -288,7 +288,7 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
                   {m.role === "assistant" && m.content.length > 40 && (
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#7a8a99]">
                       {rated[m.id] ? (
-                        <span>{rated[m.id] === "up" ? "Thanks, glad that helped." : "Thanks, we'll use that to improve it."}</span>
+                        <span role="status">{rated[m.id] === "up" ? "Thanks, glad that helped." : "Thanks, we'll use that to improve it."}</span>
                       ) : noteFor === m.id ? (
                         <span className="flex w-full flex-wrap items-center gap-2">
                           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was wrong or missing? (optional)" aria-label="What was wrong or missing" className="min-w-0 flex-1 rounded-lg border border-gray-300 px-2 py-1 text-xs" />
@@ -296,10 +296,10 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
                           <button onClick={() => rate(m, "down")} className="underline">Skip note</button>
                         </span>
                       ) : (
-                        <>
+                        <span role="group" aria-label="Rate this answer" className="inline-flex items-center gap-2">
                           <button onClick={() => rate(m, "up")} aria-label="This answer helped" title="This helped" className="rounded px-1.5 py-0.5 hover:bg-gray-100">👍</button>
                           <button onClick={() => setNoteFor(m.id)} aria-label="This answer did not help" title="This did not help" className="rounded px-1.5 py-0.5 hover:bg-gray-100">👎</button>
-                        </>
+                        </span>
                       )}
                     </div>
                   )}

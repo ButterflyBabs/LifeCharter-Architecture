@@ -62,10 +62,10 @@ export default function HelpIdeasTab() {
         return (
           <article key={r.id} className="rounded-xl border border-[#c9a227]/40 bg-white p-4 dark:bg-[#1a2b4a]/30">
             {r.category && <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{r.category}</p>}
-            <label className="mt-2 block text-xs font-semibold text-[#7a8a99]">Question</label>
-            <input className={field} value={e.question} onChange={(ev) => setEdits({ ...edits, [r.id]: { ...e, question: ev.target.value } })} />
-            <label className="mt-2 block text-xs font-semibold text-[#7a8a99]">Answer</label>
-            <textarea rows={4} className={field} value={e.answer} onChange={(ev) => setEdits({ ...edits, [r.id]: { ...e, answer: ev.target.value } })} />
+            <label htmlFor={`q-${r.id}`} className="mt-2 block text-xs font-semibold text-[#7a8a99]">Question</label>
+            <input id={`q-${r.id}`} className={field} value={e.question} onChange={(ev) => setEdits({ ...edits, [r.id]: { ...e, question: ev.target.value } })} />
+            <label htmlFor={`a-${r.id}`} className="mt-2 block text-xs font-semibold text-[#7a8a99]">Answer</label>
+            <textarea id={`a-${r.id}`} rows={4} className={field} value={e.answer} onChange={(ev) => setEdits({ ...edits, [r.id]: { ...e, answer: ev.target.value } })} />
             <div className="mt-3 flex gap-3">
               <button onClick={() => decide(r, "approve")} className="rounded-lg bg-[#2c6b3f] px-3 py-1.5 text-sm font-semibold text-white">Approve</button>
               <button onClick={() => decide(r, "dismiss")} className="rounded-lg border border-[#1a2b4a]/20 px-3 py-1.5 text-sm">Dismiss</button>

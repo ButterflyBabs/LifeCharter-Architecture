@@ -53,9 +53,9 @@ function SortableCard({ id, children }: { id: string; children: (handle: React.R
       ref={setActivatorNodeRef}
       {...attributes}
       {...listeners}
-      aria-label="Drag to reorder"
+      aria-label="Drag to reorder (or focus and press space, then the arrow keys)"
       title="Drag to reorder"
-      className="-ml-1 shrink-0 cursor-grab touch-none rounded p-1 text-[#7b6b8d] hover:bg-black/5 active:cursor-grabbing dark:hover:bg-white/10"
+      className="-ml-1 shrink-0 cursor-grab touch-none rounded p-1 text-[#7b6b8d] hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a227] active:cursor-grabbing dark:hover:bg-white/10"
     >
       <GripVertical className="h-4 w-4" />
     </button>
@@ -225,7 +225,7 @@ export default function OffersPage() {
         )}
       </div>
       {error && !form && <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-[#b03a2e]">{error}</p>}
-      {offers && offers.length > 1 && <p className="text-xs text-[#7b6b8d]">{q ? `${shown.length} of ${offers.length} offers match. ` : ""}Drag the grip on a card to put your offers in the order you want.</p>}
+      {offers && offers.length > 1 && <p className="text-xs text-[#7b6b8d]" role="status" aria-live="polite">{q ? `${shown.length} of ${offers.length} offers match. ` : ""}Drag the grip on a card to put your offers in the order you want.</p>}
 
       {!offers ? (
         <p className="text-sm text-[#7b6b8d]">Loading…</p>
