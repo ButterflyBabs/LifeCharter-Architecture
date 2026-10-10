@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/Input";
 import { ArrowLeft, Receipt, Download, PiggyBank, AlertTriangle, CheckCircle, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { FinanceTaxRead } from "@/components/planning/AssistantPanels";
+import { isTaxPayment } from "@/lib/finance/taxRules";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 interface Line {
   category: string;
@@ -44,6 +47,7 @@ function nextDeadline(): { iso: string; label: string } {
 }
 
 export default function TaxPrepPage() {
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const [data, setData] = useState<YearPnL | null>(null);
   const [uncategorized, setUncategorized] = useState(0);
   const [rate, setRate] = useState(25);
@@ -52,6 +56,22 @@ export default function TaxPrepPage() {
   const [confirmUncat, setConfirmUncat] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const [taskMsg, setTaskMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/finance/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => typeof d?.taxRate === "number" && setRate(d.taxRate))
+      .catch(() => {});
+  }, []);
+
+  const saveRate = async (r: number) => {
+    try {
+      await fetch("/api/finance/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taxRate: r }) });
+      void reloadOverview();
+    } catch {
+      /* the rate still applies on this page */
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -65,7 +85,12 @@ export default function TaxPrepPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const net = data?.net ?? 0;
+  // Taxes you have already paid are not deductions, so they are kept out of the expense side.
+  const taxLines = (data?.expense.lines ?? []).filter((l) => isTaxPayment(l.category));
+  const taxesPaid = taxLines.reduce((s, l) => s + l.amount, 0);
+  const deductibleLines = (data?.expense.lines ?? []).filter((l) => !isTaxPayment(l.category));
+  const deductible = deductibleLines.reduce((s, l) => s + l.amount, 0);
+  const net = (data?.income.total ?? 0) - deductible;
   const taxable = Math.max(0, net);
   const setAside = Math.round((taxable * rate) / 100);
   const perQuarter = Math.round(setAside / 4);
@@ -92,7 +117,19 @@ export default function TaxPrepPage() {
         }),
       });
       if (!res.ok) throw new Error();
-      setTaskMsg(`Added to your task list — pay ${usd(perQuarter)} by ${deadline.label}.`);
+      // Also put the payment on the Bills & cash calendar (once), so budgets and cash checks see it coming.
+      const due = deadline.iso.slice(0, 10);
+      const existing = await fetch("/api/finance/bills", { cache: "no-store" }).then((r) => r.json()).catch(() => ({ bills: [] }));
+      const already = (existing.bills || []).some((b: { name: string; nextDue: string }) => /estimated tax/i.test(b.name) && b.nextDue === due);
+      if (!already) {
+        await fetch("/api/finance/bills", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Estimated tax payment", category: "Taxes", amount: perQuarter, cadence: "once", nextDue: due, notes: `${rate}% set-aside, from Tax Preparation` }),
+        }).catch(() => {});
+        void reloadOverview();
+      }
+      setTaskMsg(`Added to your tasks and your Bills calendar — pay ${usd(perQuarter)} by ${deadline.label}.`);
       setConfirmUncat(false);
     } catch {
       setTaskMsg("Couldn't add the task — please try again.");
@@ -122,6 +159,8 @@ export default function TaxPrepPage() {
           </Button>
         </a>
       </div>
+
+      <FinanceRelated variant="tax" overview={overview} />
 
       {loading ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>
@@ -162,7 +201,7 @@ export default function TaxPrepPage() {
                 </div>
                 <div>
                   <p className="text-xs text-[#b8a898]">Deductible expenses</p>
-                  <p className="text-lg font-bold text-[#b06a5a]">{usd(data?.expense.total ?? 0)}</p>
+                  <p className="text-lg font-bold text-[#b06a5a]">{usd(deductible)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[#b8a898]">Taxable net</p>
@@ -181,6 +220,7 @@ export default function TaxPrepPage() {
                   max="60"
                   value={rate}
                   onChange={(e) => setRate(Math.max(0, Math.min(60, Number(e.target.value) || 0)))}
+                  onBlur={() => void saveRate(rate)}
                   className="w-20"
                 />
                 <span className="text-sm text-[#b8a898]">
@@ -232,16 +272,22 @@ export default function TaxPrepPage() {
                 <p className="text-sm text-[#b8a898]">No expenses recorded yet this year.</p>
               ) : (
                 <div className="space-y-1.5">
-                  {data.expense.lines.map((l) => (
+                  {deductibleLines.map((l) => (
                     <div key={l.category} className="flex items-center justify-between text-sm">
                       <span className="text-[#3F4654] dark:text-[#e8e4f0]">{l.category}</span>
                       <span className="tabular-nums text-[#b06a5a]">{usd(l.amount)}</span>
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm font-semibold border-t border-[#1a2b4a]/10 pt-1.5 mt-1.5">
-                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Total</span>
-                    <span className="tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(data.expense.total)}</span>
+                    <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">Total deductible</span>
+                    <span className="tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(deductible)}</span>
                   </div>
+                  {taxesPaid > 0 && (
+                    <div className="flex items-center justify-between text-xs text-[#7b6b8d] pt-1">
+                      <span>Taxes you&apos;ve already paid (not counted as deductions)</span>
+                      <span className="tabular-nums">{usd(taxesPaid)}</span>
+                    </div>
+                  )}
                 </div>
               )}
               <p className="text-xs text-[#b8a898] mt-3">

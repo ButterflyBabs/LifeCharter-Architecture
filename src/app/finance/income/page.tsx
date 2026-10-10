@@ -8,6 +8,10 @@ import { ArrowLeft, TrendingUp, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
+import { IncomeFrom } from "@/components/finance/ExpenseDetails";
+import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 interface Entry {
   id: string;
@@ -16,6 +20,7 @@ interface Entry {
   category: string;
   description: string;
   occurredOn: string;
+  vendor?: string;
 }
 
 const usd = (n: number) =>
@@ -32,6 +37,8 @@ export default function IncomePage() {
   const [target, setTarget] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
+  const { overview, reload: reloadOverview } = useFinanceOverview();
+  const [vendor, setVendor] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -85,6 +92,7 @@ export default function IncomePage() {
           description: description.trim(),
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
+          vendor: vendor.trim() || undefined,
         }),
       });
       if (!res.ok) {
@@ -96,7 +104,10 @@ export default function IncomePage() {
         setDescription("");
         setOccurredOn("");
         setSegmentId("");
+        setVendor("");
+        forgetCategories();
         await load();
+        void reloadOverview();
       }
     } finally {
       setSaving(false);
@@ -108,6 +119,7 @@ export default function IncomePage() {
     try {
       await fetch(`/api/finance/entries/${id}`, { method: "DELETE" });
       load();
+      void reloadOverview();
     } catch {
       /* optimistic */
     }
@@ -117,6 +129,15 @@ export default function IncomePage() {
     entries.reduce<Record<string, number>>((m, e) => {
       const c = e.category || "Uncategorized";
       m[c] = (m[c] || 0) + e.amount;
+      return m;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]);
+
+  const byFrom = Object.entries(
+    entries.reduce<Record<string, number>>((m, e) => {
+      const f = (e.vendor || "").trim();
+      if (!f) return m;
+      m[f] = (m[f] || 0) + e.amount;
       return m;
     }, {})
   ).sort((a, b) => b[1] - a[1]);
@@ -152,7 +173,7 @@ export default function IncomePage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Source / category</label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Coaching, Course" />
+                <CategoryInput value={category} onChange={setCategory} type="income" placeholder="e.g. Coaching, Course" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Date</label>
@@ -187,10 +208,13 @@ export default function IncomePage() {
                 </div>
               )}
             </div>
+            <IncomeFrom value={vendor} onChange={setVendor} />
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
         </Card>
       )}
+
+      <FinanceRelated variant="income" overview={overview} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
@@ -226,6 +250,19 @@ export default function IncomePage() {
                 ))}
               </div>
             )}
+            {byFrom.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-[#1a2b4a]/10">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#7b6b8d] mb-2">By who paid you</p>
+                <div className="space-y-1.5">
+                  {byFrom.slice(0, 12).map(([f, amt]) => (
+                    <div key={f} className="flex items-center justify-between text-sm">
+                      <span className="text-[#3F4654] dark:text-[#e8e4f0] truncate">{f}</span>
+                      <span className="tabular-nums text-[#2E7C83] font-medium">{usd(amt)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -244,6 +281,7 @@ export default function IncomePage() {
                   <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                        {e.vendor ? `${e.vendor} · ` : ""}
                         {e.category || "Income"}
                         {e.description ? ` — ${e.description}` : ""}
                       </p>

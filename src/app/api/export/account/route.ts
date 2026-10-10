@@ -22,6 +22,7 @@ const BY_PLAN = [
   "finance_budgets",
   "finance_goals",
   "finance_bills",
+  "finance_settings",
   "forecast_assumptions",
   "sales_offers",
   "pipeline_stages",

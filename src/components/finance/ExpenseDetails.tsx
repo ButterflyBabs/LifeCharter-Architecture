@@ -88,3 +88,15 @@ export function ExpenseDetails(props: {
     </div>
   );
 }
+
+/** Income: who the money came from (a client, a platform, a program). */
+export function IncomeFrom({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs font-medium text-[#b8a898] mb-1">From (client or source)</label>
+        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="e.g. Jane Smith, Stripe, Payhip" maxLength={120} />
+      </div>
+    </div>
+  );
+}

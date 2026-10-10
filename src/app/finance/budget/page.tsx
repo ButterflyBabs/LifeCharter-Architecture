@@ -1,6 +1,9 @@
 "use client";
 
 import { BudgetSuggest } from "@/components/planning/AssistantPanels";
+import { CategoryInput } from "@/components/finance/CategoryInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +36,7 @@ const tz = () =>
   "UTC";
 
 export default function BudgetPlannerPage() {
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const [expense, setExpense] = useState<Side | null>(null);
   const [income, setIncome] = useState<Side | null>(null);
   const [cats, setCats] = useState<CatRow[]>([]);
@@ -66,7 +70,8 @@ export default function BudgetPlannerPage() {
     const g = await fetch("/api/finance/goals", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setWeekInput(g.week ? String(g.week) : "");
     setYearInput(g.year ? String(g.year) : "");
-  }, []);
+    void reloadOverview();
+  }, [reloadOverview]);
 
   // Weekly and yearly income goals (the monthly one is the income budget).
   const saveGoal = async (period: "week" | "year", amount: number) => {
@@ -164,6 +169,8 @@ export default function BudgetPlannerPage() {
       </div>
 
       <BudgetSuggest onApplied={load} />
+
+      <FinanceRelated variant="budget" overview={overview} />
 
       {/* Income goals: the one place they're set. The dashboard's Financial
           Pulse and Forecasting read them and link back here. */}
@@ -278,7 +285,10 @@ export default function BudgetPlannerPage() {
             {cats.length === 0 && (
               <p className="text-sm text-[#b8a898]">No category budgets yet — add one below for more detail.</p>
             )}
-            {cats.map((c) => (
+            {cats.map((c) => {
+              const line = overview?.budget.categories.find((x) => x.category.toLowerCase() === c.category.toLowerCase());
+              const committed = line?.committed ?? 0;
+              return (
               <div key={c.category} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between text-sm">
@@ -288,16 +298,23 @@ export default function BudgetPlannerPage() {
                     </span>
                   </div>
                   <div className="mt-1">{bar(c.mtdActual, c.monthly)}</div>
+                  {committed > 0 && (
+                    <p className="text-[11px] mt-1" style={{ color: line && line.left < 0 ? "#b06a5a" : "#7b6b8d" }}>
+                      {usd(committed)} still due from bills this month
+                      {line ? ` · ${line.left >= 0 ? `${usd(line.left)} left` : `${usd(-line.left)} over`}` : ""}
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => save("expense", c.category, 0)} className="text-[#b8a898] hover:text-red-500" title="Clear">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-            ))}
+              );
+            })}
             <div className="flex items-end gap-2 pt-2 border-t border-[#1a2b4a]/10">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
-                <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g. Software" />
+                <CategoryInput value={newCat} onChange={setNewCat} type="expense" placeholder="e.g. Software" />
               </div>
               <div className="w-32">
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly $</label>

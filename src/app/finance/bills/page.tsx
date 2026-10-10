@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CADENCE_LABEL, occurrences, type Bill, type BillCadence } from "@/lib/finance/billDates";
+import { CategoryInput } from "@/components/finance/CategoryInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -38,11 +41,13 @@ export default function BillsPage() {
     return { y: d.getFullYear(), m: d.getMonth() + 1 };
   });
 
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const load = useCallback(async () => {
     const r = await fetch("/api/finance/bills", { cache: "no-store" });
     const d = await r.json().catch(() => ({}));
     setBills(Array.isArray(d.bills) ? d.bills : []);
-  }, []);
+    void reloadOverview();
+  }, [reloadOverview]);
   useEffect(() => {
     void load();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -184,6 +189,8 @@ export default function BillsPage() {
         ))}
       </div>
 
+      <FinanceRelated variant="bills" overview={overview} />
+
       {msg && <p className="mb-4 rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{msg}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
@@ -239,7 +246,7 @@ export default function BillsPage() {
               >
                 {(Object.keys(CADENCE_LABEL) as BillCadence[]).map((c) => <option key={c} value={c}>{CADENCE_LABEL[c]}</option>)}
               </select>
-              <Input placeholder="Category (optional)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <CategoryInput placeholder="Category (optional)" value={form.category} onChange={(v) => setForm({ ...form, category: v })} type="expense" />
             </div>
             <label className="flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
               <input type="checkbox" checked={form.autopay} onChange={(e) => setForm({ ...form, autopay: e.target.checked })} className="h-4 w-4" />

@@ -1,68 +1,12 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { techTools } from "@/lib/finance/techTools";
 
 export const dynamic = "force-dynamic";
-
-// Expenses that look like software / subscriptions / SaaS.
-const TECH_WORDS = [
-  "software",
-  "subscription",
-  "saas",
-  "app",
-  "tool",
-  "hosting",
-  "domain",
-  "license",
-  "licence",
-  "api",
-  "platform",
-  "membership",
-  "seat",
-  "cloud",
-  "plan",
-  "crm",
-  "email",
-  "automation",
-  "analytics",
-  "website",
-];
-
-function isTech(category: string, description: string): boolean {
-  const hay = `${category} ${description}`.toLowerCase();
-  return TECH_WORDS.some((w) => hay.includes(w));
-}
-
-async function techTools(masterPlanId: string | null) {
-  const supabase = createServerClient();
-  const year = new Date().getFullYear();
-  const monthsElapsed = new Date().getMonth() + 1;
-  const { data } = await supabase
-    .from("finance_entries")
-    .select("amount, category, description")
-    .eq("master_plan_id", masterPlanId)
-    .eq("type", "expense")
-    .gte("occurred_on", `${year}-01-01`);
-
-  const rows = (data || []) as { amount: number | string | null; category: string | null; description: string | null }[];
-  const agg: Record<string, number> = {};
-  for (const r of rows) {
-    const cat = (r.category || "").trim();
-    const desc = (r.description || "").trim();
-    if (!isTech(cat, desc)) continue;
-    const name = desc || cat || "Software";
-    agg[name] = (agg[name] || 0) + Number(r.amount ?? 0);
-  }
-  const tools = Object.entries(agg)
-    .map(([name, ytd]) => ({ name, ytd, monthly: Math.round(ytd / monthsElapsed) }))
-    .sort((a, b) => b.ytd - a.ytd);
-  const totalYtd = tools.reduce((s, t) => s + t.ytd, 0);
-  return { tools, totalYtd, totalMonthly: Math.round(totalYtd / monthsElapsed), monthsElapsed };
-}
 
 // GET — the client's tech-stack spend from the ledger.
 export async function GET() {

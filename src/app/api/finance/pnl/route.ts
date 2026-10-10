@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("finance_entries")
-    .select("type, amount, category")
+    .select("type, amount, category, vendor")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", range.startStr)
     .lt("occurred_on", range.endStr);
@@ -36,11 +36,18 @@ export async function GET(request: Request) {
 
   const incomeMap: Record<string, number> = {};
   const expenseMap: Record<string, number> = {};
-  for (const r of (data || []) as { type: string; amount: number | string | null; category: string | null }[]) {
+  const incomeFrom: Record<string, number> = {};
+  const expenseTo: Record<string, number> = {};
+  for (const r of (data || []) as { type: string; amount: number | string | null; category: string | null; vendor: string | null }[]) {
     const amt = Number(r.amount ?? 0);
     const cat = (r.category || "Uncategorized").trim() || "Uncategorized";
     const map = r.type === "income" ? incomeMap : expenseMap;
     map[cat] = (map[cat] || 0) + amt;
+    const who = (r.vendor || "").trim();
+    if (who) {
+      const byWho = r.type === "income" ? incomeFrom : expenseTo;
+      byWho[who] = (byWho[who] || 0) + amt;
+    }
   }
   const lines = (m: Record<string, number>) =>
     Object.entries(m)
@@ -60,5 +67,7 @@ export async function GET(request: Request) {
     income: { total: incomeTotal, lines: lines(incomeMap) },
     expense: { total: expenseTotal, lines: lines(expenseMap) },
     net: incomeTotal - expenseTotal,
+    // Who paid you / who you paid (only entries that have a name).
+    parties: { income: lines(incomeFrom), expense: lines(expenseTo) },
   });
 }

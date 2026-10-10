@@ -19,7 +19,10 @@ import {
 import Link from "next/link";
 import { FinanceAI } from "../FinanceAI";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
-import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
+import { ExpenseDetails, IncomeFrom, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
+import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 interface Entry {
   id: string;
@@ -82,6 +85,7 @@ export default function FinancialPulsePage() {
   const [label, setLabel] = useState("");
   const [loaded, setLoaded] = useState(false);
 
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const [showAdd, setShowAdd] = useState(false);
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
@@ -170,7 +174,7 @@ export default function FinancialPulsePage() {
           description: description.trim(),
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
-          vendor: type === "expense" ? vendor.trim() || undefined : undefined,
+          vendor: vendor.trim() || undefined,
           paymentType: type === "expense" ? paymentType : undefined,
           frequency: type === "expense" && paymentType === "recurring" ? frequency : undefined,
           renewal: type === "expense" && paymentType === "recurring" ? renewal : undefined,
@@ -187,7 +191,9 @@ export default function FinancialPulsePage() {
         setSegmentId("");
         setVendor("");
         setPaymentType("one_time");
+        forgetCategories();
         await load();
+        void reloadOverview();
       }
     } catch {
       setMsg("Couldn't save the entry.");
@@ -201,6 +207,7 @@ export default function FinancialPulsePage() {
     try {
       await fetch(`/api/finance/entries/${id}`, { method: "DELETE" });
       load();
+      void reloadOverview();
     } catch {
       /* optimistic */
     }
@@ -342,7 +349,7 @@ export default function FinancialPulsePage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Coaching, Software" />
+                <CategoryInput value={category} onChange={setCategory} type={type} placeholder="e.g. Coaching, Software" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Date</label>
@@ -377,6 +384,7 @@ export default function FinancialPulsePage() {
                 </div>
               )}
             </div>
+            {type === "income" && <IncomeFrom value={vendor} onChange={setVendor} />}
             {type === "expense" && (
               <ExpenseDetails
                 vendor={vendor}
@@ -393,6 +401,8 @@ export default function FinancialPulsePage() {
           </CardContent>
         </Card>
       )}
+
+      <FinanceRelated variant="pulse" overview={overview} />
 
       {/* AI health assessment */}
       <FinanceAI />

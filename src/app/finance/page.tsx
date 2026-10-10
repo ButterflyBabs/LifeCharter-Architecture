@@ -17,6 +17,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 import Link from "next/link";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import type { FinanceOverview } from "@/lib/finance/overview";
 
 const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -88,7 +90,40 @@ const SECTIONS: Section[] = [
   },
 ];
 
+// One live line per card, drawn from the same ledger, budgets and bills the pages themselves use.
+function liveLine(href: string, o: FinanceOverview | null): { text: string; warn?: boolean } | null {
+  if (!o) return null;
+  switch (href) {
+    case "/finance/income":
+      return { text: `${usd(o.month.income)} this month · ${usd(o.ytd.income)} year to date` };
+    case "/finance/expenses":
+      return o.budget.monthlyExpense
+        ? { text: `${usd(o.month.expense)} of ${usd(o.budget.monthlyExpense)} budget${o.uncategorizedExpenses ? ` · ${o.uncategorizedExpenses} uncategorized` : ""}`, warn: o.month.expense > o.budget.monthlyExpense }
+        : { text: `${usd(o.month.expense)} this month${o.uncategorizedExpenses ? ` · ${o.uncategorizedExpenses} uncategorized` : ""}` };
+    case "/finance/pulse":
+      return { text: `${o.month.net >= 0 ? "+" : "−"}${usd(Math.abs(o.month.net))} net this month`, warn: o.month.net < 0 };
+    case "/finance/bills":
+      if (o.bills.overdueCount) return { text: `${o.bills.overdueCount} overdue · ${usd(o.bills.overdueTotal)}`, warn: true };
+      if (o.bills.next7Count) return { text: `${usd(o.bills.next7Total)} due in the next 7 days (${o.bills.next7Count})` };
+      return { text: o.bills.count ? `${o.bills.count} bills tracked · none due this week` : "No bills tracked yet" };
+    case "/finance/budget":
+      if (o.budget.left === null) return { text: "No expense budget set yet" };
+      return o.budget.left >= 0
+        ? { text: `${usd(o.budget.left)} left after bills this month` }
+        : { text: `${usd(-o.budget.left)} over once bills are paid`, warn: true };
+    case "/finance/pnl":
+      return { text: `${o.ytd.net >= 0 ? "+" : "−"}${usd(Math.abs(o.ytd.net))} net so far this year` };
+    case "/finance/tax":
+      return { text: `About ${usd(o.tax.setAside)} to set aside · ${usd(o.tax.perQuarter)} per quarter` };
+    case "/finance/techstack":
+      return { text: o.tech.count ? `${usd(o.tech.monthly)}/mo across ${o.tech.count} tool${o.tech.count === 1 ? "" : "s"}` : "No software spend spotted yet" };
+    default:
+      return null;
+  }
+}
+
 export default function FinancePage() {
+  const { overview } = useFinanceOverview();
   const [health, setHealth] = useState<number | null>(null);
   const [mtd, setMtd] = useState<{ income: number; expense: number; net: number } | null>(null);
 
@@ -180,6 +215,14 @@ export default function FinancePage() {
                 </div>
                 <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</h3>
                 <p className="text-sm text-[#b8a898] mt-1">{s.description}</p>
+                {(() => {
+                  const live = liveLine(s.href, overview);
+                  return live ? (
+                    <p className="text-sm font-medium mt-2" style={{ color: live.warn ? "#b06a5a" : s.tint }}>
+                      {live.text}
+                    </p>
+                  ) : null;
+                })()}
               </CardContent>
             </Card>
           </Link>

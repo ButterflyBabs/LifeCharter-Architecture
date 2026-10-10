@@ -8,6 +8,9 @@ import { ArrowLeft, TrendingDown, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
+import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 
 interface Entry {
@@ -44,6 +47,7 @@ export default function ExpensesPage() {
   const [catBudgets, setCatBudgets] = useState<CatBudget[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const [showAdd, setShowAdd] = useState(false);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -119,7 +123,9 @@ export default function ExpensesPage() {
         setSegmentId("");
         setVendor("");
         setPaymentType("one_time");
+        forgetCategories();
         await load();
+        void reloadOverview();
       }
     } finally {
       setSaving(false);
@@ -131,6 +137,7 @@ export default function ExpensesPage() {
     try {
       await fetch(`/api/finance/entries/${id}`, { method: "DELETE" });
       load();
+      void reloadOverview();
     } catch {
       /* optimistic */
     }
@@ -169,7 +176,7 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Software, Ads" />
+                <CategoryInput value={category} onChange={setCategory} type="expense" placeholder="e.g. Software, Ads" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Date</label>
@@ -218,6 +225,8 @@ export default function ExpensesPage() {
           </CardContent>
         </Card>
       )}
+
+      <FinanceRelated variant="expenses" overview={overview} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">

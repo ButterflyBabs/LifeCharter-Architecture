@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Printer, ChevronLeft, ChevronRight, FileText, Download, FileDown } from "lucide-react";
 import Link from "next/link";
 import { FinancePnlRead } from "@/components/planning/AssistantPanels";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 type Period = "week" | "month" | "quarter" | "year" | "custom";
 interface Line {
@@ -21,6 +23,7 @@ interface PnL {
   income: { total: number; lines: Line[] };
   expense: { total: number; lines: Line[] };
   net: number;
+  parties?: { income: Line[]; expense: Line[] };
 }
 
 const usd = (n: number) =>
@@ -39,6 +42,7 @@ function shiftDays(dateStr: string, n: number): string {
 }
 
 export default function PnLPage() {
+  const { overview } = useFinanceOverview();
   const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<PnL | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,6 +291,35 @@ export default function PnLPage() {
           )}
         </CardContent>
       </Card>
+      {data?.parties && (data.parties.income.length > 0 || data.parties.expense.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 print:hidden">
+          {[
+            { title: "Who paid you", rows: data.parties.income, color: "#2E7C83" },
+            { title: "Who you paid", rows: data.parties.expense, color: "#b06a5a" },
+          ].map((b) => (
+            <Card key={b.title}>
+              <CardContent className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#7b6b8d] mb-2">{b.title}</p>
+                {b.rows.length === 0 ? (
+                  <p className="text-sm text-[#b8a898]">No names recorded for this period.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {b.rows.slice(0, 15).map((r) => (
+                      <div key={r.category} className="flex items-center justify-between text-sm">
+                        <span className="text-[#3F4654] dark:text-[#e8e4f0] truncate">{r.category}</span>
+                        <span className="tabular-nums font-medium" style={{ color: b.color }}>{usd(r.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      <div className="mt-6 print:hidden">
+        <FinanceRelated variant="reports" overview={overview} />
+      </div>
       <div className="mt-6 print:hidden">
         <FinancePnlRead />
       </div>
