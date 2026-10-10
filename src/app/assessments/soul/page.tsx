@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
 import { Heart, ArrowLeft, ArrowRight, Save, CheckCircle, Shield } from "lucide-react";
 import Link from "next/link";
+import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
@@ -348,6 +349,7 @@ export default function SoulAssessmentPage() {
 
   // Send each answer to the server as it's given (sensitive answers stay flagged
   // and are never shown to the AI), so the assistant learns as you go.
+  useAssessmentRestore("soul", setAnswers);
   useAssessmentSync("soul", answers, (id, value) => {
     const q = allQuestions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.section, answerText: value, value, sensitive: Boolean(q.sensitive) } : null;

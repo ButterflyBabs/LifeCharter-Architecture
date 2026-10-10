@@ -15,6 +15,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -283,6 +284,7 @@ function ProfitAssessmentContent() {
   }, [crossContext?.profitResponses, draftKey]);
 
   // Send each answer to the account as it's given (same as the Brain and Soul profiles).
+  useAssessmentRestore("profit_architecture", setAnswers);
   useAssessmentSync("profit_architecture", answers, (id, value) => {
     const q = questions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.domain, answerText: value, value } : null;

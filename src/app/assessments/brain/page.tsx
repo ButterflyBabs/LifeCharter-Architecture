@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
 import { Brain, ArrowLeft, ArrowRight, Save, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
@@ -4561,6 +4562,7 @@ export default function BrainAssessmentPage() {
 
   // Send each answer to the server as it's given, so the AI assistant learns from
   // it right away — not only once the whole assessment is finished.
+  useAssessmentRestore("brain", setAnswers);
   useAssessmentSync("brain", answers, (id, value) => {
     const q = questions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.section, answerText: value, value } : null;
