@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       if (!retry) {
         let userId: string;
         try {
-          ({ userId } = await provisionAccountForEmail(r.email, "vip", r.name, { skipWelcome: true }));
+          ({ userId } = await provisionAccountForEmail(r.email, "vip", r.name, { skipWelcome: true, skipWalkthrough: (r as { kind?: string }).kind === "team" }));
         } catch (e) {
           console.error("[new-accounts] provision failed:", e);
           return NextResponse.json({ error: "The account couldn't be created. Nothing was emailed." }, { status: 500 });

@@ -2,6 +2,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
 import { sendWelcomeEmail } from "@/lib/email/welcomeSequence";
 import { ensureClientAffiliate } from "@/lib/affiliateStarter";
+import { queueClientWalkthrough } from "@/lib/clientWalkthrough";
 
 // Service-role client — bypasses RLS. Only ever used server-side (webhook,
 // checkout-confirm route), never exposed to the browser.
@@ -26,7 +27,7 @@ export async function provisionAccountForEmail(
   email: string,
   planId: string,
   fullName?: string | null,
-  opts: { skipWelcome?: boolean } = {}
+  opts: { skipWelcome?: boolean; skipWalkthrough?: boolean } = {}
 ): Promise<{ userId: string; workspaceId: string | null; isNewAccount: boolean }> {
   const supabase = serviceClient();
   const normalizedEmail = email.trim().toLowerCase();
@@ -116,6 +117,10 @@ export async function provisionAccountForEmail(
   await ensureClientAffiliate({ email: normalizedEmail, name: displayName });
   // Email 1 of the welcome sequence (no-op until WELCOME_EMAILS_ENABLED=true; sends once).
   if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
+
+  // The New Client Setup Walkthrough email follows about 3 minutes later (sent by a once-a-minute job, and only
+  // while app_settings client_walkthrough_on is true). Team members exploring their own account don't get it.
+  if (!opts.skipWalkthrough) await queueClientWalkthrough(supabase as never, { email: normalizedEmail, userId, name: displayName });
 
   return { userId, workspaceId: workspace.id, isNewAccount: true };
 }
