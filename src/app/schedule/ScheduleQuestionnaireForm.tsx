@@ -16,7 +16,7 @@ interface Props {
   bookingUrl: string;
   defaultFullName?: string;
   defaultEmail?: string;
-  /** Which MasterClass/channel sent them here, e.g. "mc-2026-09-24" — carried through to the GC contact and our own audit trail. */
+  /** Which MasterClass/channel sent them here, e.g. "mc-2026-09-24" — carried through to the contact and our own audit trail. */
   sessionSource?: string;
 }
 

@@ -86,7 +86,7 @@ const settingsSections: SettingsSection[] = [
     id: "integrations",
     title: "Integrations",
     icon: <ExternalLink className="w-5 h-5" />,
-    description: "Connect GoHighLevel, Stripe, email, and other tools"
+    description: "Connect Stripe, email, and other tools"
   },
   {
     id: "billing",
@@ -478,7 +478,6 @@ export default function SettingsPage() {
     openPhone: { connected: false, apiKey: "" },
     
     // CRM & Sales
-    ghl: { connected: false, apiKey: "" },
     hubspot: { connected: false, apiKey: "" },
     salesforce: { connected: false, apiKey: "" },
     pipedrive: { connected: false, apiKey: "" },
@@ -1439,7 +1438,6 @@ export default function SettingsPage() {
       {
         title: "CRM & Sales",
         items: [
-          { id: "ghl", name: "GoHighLevel", description: "CRM, funnels, and automation", icon: "📊", color: "#3B82F6" },
           { id: "hubspot", name: "HubSpot", description: "CRM, marketing, sales, service", icon: "🟠", color: "#FF7A59" },
           { id: "salesforce", name: "Salesforce", description: "Enterprise CRM", icon: "☁️", color: "#00A1E0" },
           { id: "pipedrive", name: "Pipedrive", description: "Sales pipeline management", icon: "🎯", color: "#0087CC" },

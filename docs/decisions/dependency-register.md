@@ -29,7 +29,7 @@
 
 | System | Integration Type | Status |
 |--------|-----------------|--------|
-| Global Control (CRM) | API | Live — tagging, custom fields, contact lookup |
+| Global Control (CRM) | — | Retired 2026-09-28: the Suite CRM replaced it; nothing in the Suite calls it |
 | Stripe | API | Live — Payment Links + Checkout, webhooks |
 | Zoom | API (Server-to-Server OAuth) | Live — MasterClass registrant sync |
 | Resend / system transactional email | API (future) | Still planned — see punch list |
