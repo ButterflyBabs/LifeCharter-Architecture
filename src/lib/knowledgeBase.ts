@@ -819,6 +819,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["plans", "tiers", "starter", "growth", "vip", "difference", "upgrade", "limits", "pricing", "billing", "what's included"],
   },
   {
+    id: "plan-upgrade-what-happens",
+    category: "Account & Settings",
+    question: "What happens when I upgrade my plan?",
+    keywords: ["upgrade", "plan", "change plan", "prorated", "billing", "growth", "vip", "starter", "check-in"],
+    answer:
+      "When you move up a plan, your new plan opens straight away and your card on file is charged the prorated difference for the rest of the billing period. You get an email right away confirming the new plan and the amount, and someone from our team reaches out within 3 business days to help you use what is now open to you. The morning after, you get one short check-in email asking how it is going, with a link to support. After that, your plan renews at the new rate.",
+  },
+  {
     id: "as-collective",
     category: "Account & Settings",
     question: "What is The Collective and how do I get to it?",
