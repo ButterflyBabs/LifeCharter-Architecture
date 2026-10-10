@@ -824,7 +824,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     question: "What happens when I upgrade my plan?",
     keywords: ["upgrade", "plan", "change plan", "prorated", "billing", "growth", "vip", "starter", "check-in"],
     answer:
-      "When you move up a plan, your new plan opens straight away and your card on file is charged the prorated difference for the rest of the billing period. You get an email right away confirming the new plan and the amount, and someone from our team reaches out within 3 business days to help you use what is now open to you. The morning after, you get one short check-in email asking how it is going, with a link to support. After that, your plan renews at the new rate.",
+      "You can change your plan yourself: open Settings, then Billing, then Manage billing, and choose a different plan. When you move up, your new plan opens straight away and your card on file is charged the prorated difference for the rest of the billing period. You get an email right away confirming the new plan and the amount, and someone from our team reaches out within 3 business days to help you use what is now open to you. The morning after, you get one short check-in email asking how it is going, with a link to support. If you move down to a cheaper plan, the change happens immediately and the unused part of your current period is credited. Cancelling is not available in the billing portal: please contact support.",
   },
   {
     id: "as-collective",
