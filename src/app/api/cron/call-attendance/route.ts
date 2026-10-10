@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect } from "@/lib/authz";
-import { isZoomConfigured, listMasterclassRegistrants, listPastAttendees, listPastInstances, meetingTopic } from "@/lib/zoom";
+import { foundersHalfHourMeetingId, isZoomConfigured, listMasterclassRegistrants, listPastAttendees, listPastInstances, meetingTopic } from "@/lib/zoom";
+import { recapOn, sendFoundersRecaps } from "@/lib/foundersRecap";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
 
@@ -38,6 +39,7 @@ async function run(dry: boolean, days = 3) {
   const createFor = ((cfg.zoom_attendance_create_contacts || "Founder's Half Hour").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
 
   const since = Date.now() - days * 86_400_000;
+  const recaps: { session: string; sent: number; skipped: number }[] = [];
   const report: { meeting: string; topic: string; start: string; attendees: number; tagged: number; created: number; skipped: number }[] = [];
 
   for (const id of Array.from(ids)) {
@@ -80,6 +82,17 @@ async function run(dry: boolean, days = 3) {
         else created++;
       }
       report.push({ meeting: id, topic, start: inst.start, attendees: people.length, tagged, created, skipped });
+      // Founder's Half Hour: thank-you and "we missed you" recaps once the session has been over for an hour.
+      if (!dry && id === foundersHalfHourMeetingId() && Date.now() - new Date(inst.start).getTime() > 90 * 60_000 && (await recapOn(db))) {
+        try {
+          const regs = await listMasterclassRegistrants(id);
+          const came = new Set(people.filter((p) => p.minutes >= MIN_MINUTES).map((p) => p.email));
+          const r = await sendFoundersRecaps(db, house, { uuid: inst.uuid, start: inst.start, came, registrants: regs });
+          recaps.push({ session: inst.start, ...r });
+        } catch (e) {
+          console.error("founders recap:", e);
+        }
+      }
     }
   }
   // Registrants of the public calls listed in zoom_registrant_sync_ids (comma separated meeting ids) go into
@@ -103,7 +116,7 @@ async function run(dry: boolean, days = 3) {
       registrants.push({ meeting: id, topic: `error: ${String(e).slice(0, 80)}`, registrants: 0, created: 0 });
     }
   }
-  return { dry, meetings: ids.size, report, registrants };
+  return { dry, meetings: ids.size, report, registrants, recaps };
 }
 
 export async function GET(request: Request) {
