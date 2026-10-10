@@ -1,6 +1,7 @@
 // Team-member invitation email for Command Suite, sent through Resend (the same sender setup the
-// Collective and LifeCharter Program use). From support@lccommandsuite.com; replies go to
-// support@lccommandsuite.com (the Command Suite support address is support@lccommandsuite.com).
+// Collective and LifeCharter Program use). From support@lccommandsuite.com. Replies go to the person who
+// added the team member (the account owner's reply-to address) when we have one, otherwise to
+// support@lccommandsuite.com.
 // Never throws: returns false if email isn't configured or the send fails, so the invite link
 // still works and can be copied by hand.
 
@@ -25,6 +26,8 @@ export async function sendTeamInvite(opts: {
   link: string;
   hasLogin: boolean;
   base: string;
+  /** Where replies should go: the person who added them. Falls back to support. */
+  replyTo?: string | null;
 }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -38,6 +41,11 @@ export async function sendTeamInvite(opts: {
     ? "You already have a LifeCharter login with this email, so just sign in with your usual password."
     : "Choose a password to create your login. This link works once and expires in 7 days.";
 
+  const replyTo = opts.replyTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(opts.replyTo) ? opts.replyTo : "support@lccommandsuite.com";
+  const direct = replyTo !== "support@lccommandsuite.com";
+  const questions = direct
+    ? `Questions about your role or the team? Reply to this email to reach ${opts.inviterName}. For help with Command Suite itself, write to support@lccommandsuite.com.`
+    : "Questions? Reply to this email or write to support@lccommandsuite.com.";
   const html = `<!doctype html><html><body style="margin:0;background:#FAF8F3;font-family:Georgia,serif">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3;padding:28px 12px"><tr><td align="center">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#fff;border-radius:18px;padding:30px;border:1px solid #E6DDCB">
@@ -47,9 +55,9 @@ export async function sendTeamInvite(opts: {
       ${first ? `Hi ${esc(first)},<br><br>` : ""}${esc(opts.inviterName)} has added you to their team in LifeCharter Command Suite. ${esc(roleLine)}<br><br>${esc(how)}
     </td></tr>
     <tr><td style="padding:24px 0 8px"><a href="${opts.link}" style="display:inline-block;background:#1a2b4a;color:#F8F5F0;font-family:Arial,sans-serif;font-weight:700;padding:14px 26px;border-radius:10px;text-decoration:none">${button}</a></td></tr>
-    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#7F8894;padding-top:14px">If you weren't expecting this, you can ignore it. Questions? Reply to this email or write to support@lccommandsuite.com.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#7F8894;padding-top:14px">If you weren't expecting this, you can ignore it. ${esc(questions)}</td></tr>
   </table></td></tr></table></body></html>`;
-  const text = `${first ? `Hi ${first},\n\n` : ""}${opts.inviterName} has added you to their team (${opts.workspaceName}) in LifeCharter Command Suite. ${roleLine}\n\n${how}\n\n${button}: ${opts.link}\n\nQuestions? support@lccommandsuite.com`;
+  const text = `${first ? `Hi ${first},\n\n` : ""}${opts.inviterName} has added you to their team (${opts.workspaceName}) in LifeCharter Command Suite. ${roleLine}\n\n${how}\n\n${button}: ${opts.link}\n\n${questions}`;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -58,7 +66,7 @@ export async function sendTeamInvite(opts: {
       body: JSON.stringify({
         from: "LifeCharter Command Suite <support@lccommandsuite.com>",
         to: opts.to,
-        reply_to: "support@lccommandsuite.com",
+        reply_to: replyTo,
         subject: `You're invited to join ${opts.workspaceName} on LifeCharter Command Suite`,
         html,
         text,

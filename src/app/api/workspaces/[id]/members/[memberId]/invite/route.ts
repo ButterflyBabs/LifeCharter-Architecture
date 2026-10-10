@@ -6,6 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { sendTeamInvite } from "@/lib/email/teamInvite";
+import { senderProfile } from "@/lib/email/accountSender";
 
 export const dynamic = "force-dynamic";
 
@@ -114,8 +115,12 @@ export async function POST(
   // Someone who has signed in before already has a password; don't make them replace it.
   const { data: authUser } = await admin.auth.admin.getUserById(userId);
   const hasLogin = Boolean(authUser?.user?.last_sign_in_at);
-  const { data: plan } = await supabase.from("client_master_plans").select("client_name").eq("id", masterPlanId).maybeSingle();
+  const { data: plan } = await supabase.from("client_master_plans").select("client_name, client_email").eq("id", masterPlanId).maybeSingle();
   const inviterName = (plan?.client_name as string) && plan?.client_name !== "Primary" ? (plan!.client_name as string) : "AmiLynne Carroll";
+  // Replies go to whoever added them: the client's own reply-to (or their account email); on the house
+  // account, the owner's own address.
+  const profile = await senderProfile(masterPlanId, supabase).catch(() => null);
+  const ownerReply = profile && !profile.house ? profile.replyTo : (plan?.client_email as string) || "";
   const emailed = await sendTeamInvite({
     to: email,
     name: member.name,
@@ -125,6 +130,7 @@ export async function POST(
     link: hasLogin ? `${origin}/login` : url,
     hasLogin,
     base: origin,
+    replyTo: ownerReply || null,
   });
 
   return NextResponse.json({ url, email, expiresAt, emailed, hasLogin });
