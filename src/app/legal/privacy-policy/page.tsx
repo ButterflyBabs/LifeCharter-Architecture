@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LEGAL_PAGES } from "@/lib/legalDates";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — LifeCharter Command Suite",
@@ -22,7 +23,7 @@ export default function PrivacyPolicyPage() {
           LifeCharter Command Suite
         </p>
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-[#F8F5F0]">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 10, 2026</p>
+        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: {LEGAL_PAGES["privacy-policy"].effective} &middot; Last updated: {LEGAL_PAGES["privacy-policy"].updated}</p>
 
         <p className={`${P} mt-8`}>
           This Privacy Policy explains how Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command

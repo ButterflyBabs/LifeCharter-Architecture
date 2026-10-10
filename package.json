@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "legal:stamp": "node scripts/legal-stamp.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",

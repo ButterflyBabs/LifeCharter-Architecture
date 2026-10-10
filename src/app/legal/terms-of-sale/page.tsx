@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LEGAL_PAGES } from "@/lib/legalDates";
 import { createServerClient } from "@/lib/supabase/server";
 
 // The tier table reads the live plan settings, so it never goes stale when pricing changes (Babs,
@@ -47,7 +48,7 @@ export default async function TermsOfSalePage() {
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-[#F8F5F0]">
           Terms of Sale &amp; Service Agreement
         </h1>
-        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: October 1, 2026</p>
+        <p className="mt-3 text-sm text-[#b8a898]/70">Effective Date: {LEGAL_PAGES["terms-of-sale"].effective} &middot; Last updated: {LEGAL_PAGES["terms-of-sale"].updated}</p>
 
         <p className={`${P} mt-8`}>
           This Agreement is between Sacred Kaleidoscope Community LLC, doing business as LifeCharter Command Suite
