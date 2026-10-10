@@ -39,6 +39,7 @@ type Referral = { id: string; kind: string; source: string | null; created_at: s
 const TABS = [
   { id: "recruit", label: "Recruiting" },
   { id: "mine", label: "My affiliates" },
+  { id: "rates", label: "Commission rates" },
   { id: "programs", label: "Programs I promote" },
   { id: "partner", label: "My partnerships" },
 ] as const;
@@ -83,6 +84,8 @@ export default function Affiliates() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [msg, setMsg] = useState("");
   const [adding, setAdding] = useState(false);
+  const [newProd, setNewProd] = useState({ name: "", price: "", rate: "" });
+  const [addingProd, setAddingProd] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [programEdit, setProgramEdit] = useState<Partial<Program> | null>(null);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
@@ -91,7 +94,7 @@ export default function Affiliates() {
   useEffect(() => {
     try {
       const t = localStorage.getItem("affiliates-tab");
-      if (t === "recruit" || t === "mine" || t === "programs" || t === "partner") setTab(t);
+      if (t === "recruit" || t === "mine" || t === "rates" || t === "programs" || t === "partner") setTab(t);
     } catch {
       /* none */
     }
@@ -181,41 +184,7 @@ export default function Affiliates() {
             ))}
           </div>
 
-          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
-            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Commission by product</p>
-            <p className="mb-3 text-xs text-[#7a8a99]">The % an affiliate earns on each offer. You can set a different % for any one affiliate on their page.</p>
-            {offers.length ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {offers.map((o) => (
-                  <label key={o.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#1a2b4a]/10 px-3 py-2 text-sm">
-                    <span className="min-w-0">
-                      <span className="block font-medium text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{o.name}</span>
-                      {o.price != null && <span className="text-xs text-[#7a8a99]">{money(Number(o.price))}</span>}
-                    </span>
-                    <span className="flex items-center gap-1 shrink-0">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        defaultValue={o.affiliate_rate ?? ""}
-                        placeholder="—"
-                        aria-label={`${o.name} commission %`}
-                        onBlur={async (e) => {
-                          const v = e.target.value;
-                          if (String(o.affiliate_rate ?? "") === v) return;
-                          if (await post({ action: "offer-rate", offerId: o.id, rate: v === "" ? null : Number(v) })) setOffers((os) => os.map((x) => (x.id === o.id ? { ...x, affiliate_rate: v === "" ? null : Number(v) } : x)));
-                        }}
-                        className="w-16 rounded-lg border border-[#1a2b4a]/20 px-2 py-1 text-right text-sm"
-                      />
-                      <span className="text-xs text-[#7a8a99]">%</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-[#7a8a99]">Add your offers in Growth → Offers &amp; Packages first.</p>
-            )}
-          </div>
+          <p className="text-xs text-[#7a8a99]">What each affiliate earns, per product, is on the <button type="button" onClick={() => { setTab("rates"); try { localStorage.setItem("affiliates-tab", "rates"); } catch { /* none */ } }} className="underline">Commission rates</button> tab.</p>
 
           <div className="flex items-center justify-between">
             <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Your affiliates</p>
@@ -264,6 +233,74 @@ export default function Affiliates() {
                 {!affiliates && <tr><td colSpan={7} className="p-4 text-[#7a8a99]">Loading…</td></tr>}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {tab === "rates" && (
+        <div className="space-y-5">
+          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Commission by product</p>
+            <p className="mb-3 text-xs text-[#7a8a99]">The % an affiliate earns on each offer. You can set a different % for any one affiliate on their page.</p>
+            {offers.length ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {offers.map((o) => (
+                  <label key={o.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#1a2b4a]/10 px-3 py-2 text-sm">
+                    <span className="min-w-0">
+                      <span className="block font-medium text-[#1a2b4a] dark:text-[#F8F5F0] truncate">{o.name}</span>
+                      {o.price != null && <span className="text-xs text-[#7a8a99]">{money(Number(o.price))}</span>}
+                    </span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        defaultValue={o.affiliate_rate ?? ""}
+                        placeholder="—"
+                        aria-label={`${o.name} commission %`}
+                        onBlur={async (e) => {
+                          const v = e.target.value;
+                          if (String(o.affiliate_rate ?? "") === v) return;
+                          if (await post({ action: "offer-rate", offerId: o.id, rate: v === "" ? null : Number(v) })) setOffers((os) => os.map((x) => (x.id === o.id ? { ...x, affiliate_rate: v === "" ? null : Number(v) } : x)));
+                        }}
+                        className="w-16 rounded-lg border border-[#1a2b4a]/20 px-2 py-1 text-right text-sm"
+                      />
+                      <span className="text-xs text-[#7a8a99]">%</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#7a8a99]">Add your first program or offering below.</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/30 p-4">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add one of your own programs or offerings</p>
+            <p className="mb-3 text-xs text-[#7a8a99]">These are yours only: nobody else&rsquo;s programs appear in your account. It also shows up in Growth &rarr; Offers &amp; Packages, where you can add the full details.</p>
+            <form
+              className="grid gap-2 sm:grid-cols-[1fr_8rem_8rem_auto]"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newProd.name.trim() || addingProd) return;
+                setAddingProd(true);
+                const r = await fetch("/api/offers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newProd.name.trim(), price: newProd.price === "" ? null : Number(newProd.price) }) });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.offer?.id) {
+                  setMsg(d.error || "Couldn't add that. Please try again.");
+                } else {
+                  if (newProd.rate !== "") await post({ action: "offer-rate", offerId: d.offer.id, rate: Number(newProd.rate) });
+                  setNewProd({ name: "", price: "", rate: "" });
+                  await load();
+                }
+                setAddingProd(false);
+              }}
+            >
+              <input value={newProd.name} onChange={(e) => setNewProd({ ...newProd, name: e.target.value })} placeholder="Program or offering name" aria-label="Program or offering name" maxLength={160} className={box} />
+              <input value={newProd.price} onChange={(e) => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ($)" aria-label="Price" type="number" min={0} className={box} />
+              <input value={newProd.rate} onChange={(e) => setNewProd({ ...newProd, rate: e.target.value })} placeholder="Commission %" aria-label="Commission percent" type="number" min={0} max={100} className={box} />
+              <Button type="submit" disabled={!newProd.name.trim() || addingProd}><Plus className="w-4 h-4 mr-1" /> {addingProd ? "Adding…" : "Add"}</Button>
+            </form>
           </div>
         </div>
       )}
