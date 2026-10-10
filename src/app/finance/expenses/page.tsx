@@ -8,6 +8,7 @@ import { ArrowLeft, TrendingDown, Plus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
+import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 
 interface Entry {
   id: string;
@@ -16,6 +17,10 @@ interface Entry {
   category: string;
   description: string;
   occurredOn: string;
+  vendor?: string;
+  paymentType?: string;
+  frequency?: string | null;
+  renewal?: string | null;
 }
 interface CatBudget {
   category: string;
@@ -45,6 +50,10 @@ export default function ExpensesPage() {
   const [description, setDescription] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
   const [segmentId, setSegmentId] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [paymentType, setPaymentType] = useState<PaymentType>("one_time");
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [renewal, setRenewal] = useState<Renewal>("auto");
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -93,6 +102,10 @@ export default function ExpensesPage() {
           description: description.trim(),
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
+          vendor: vendor.trim() || undefined,
+          paymentType,
+          frequency: paymentType === "recurring" ? frequency : undefined,
+          renewal: paymentType === "recurring" ? renewal : undefined,
         }),
       });
       if (!res.ok) {
@@ -104,6 +117,8 @@ export default function ExpensesPage() {
         setDescription("");
         setOccurredOn("");
         setSegmentId("");
+        setVendor("");
+        setPaymentType("one_time");
         await load();
       }
     } finally {
@@ -189,6 +204,16 @@ export default function ExpensesPage() {
                 </div>
               )}
             </div>
+            <ExpenseDetails
+              vendor={vendor}
+              setVendor={setVendor}
+              paymentType={paymentType}
+              setPaymentType={setPaymentType}
+              frequency={frequency}
+              setFrequency={setFrequency}
+              renewal={renewal}
+              setRenewal={setRenewal}
+            />
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
         </Card>
@@ -268,10 +293,14 @@ export default function ExpensesPage() {
                   <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                        {e.vendor ? `${e.vendor} · ` : ""}
                         {e.category || "Expense"}
                         {e.description ? ` — ${e.description}` : ""}
                       </p>
-                      <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
+                      <p className="text-xs text-[#b8a898]">
+                        {e.occurredOn}
+                        {recurringBadge(e) ? ` · ${recurringBadge(e)}` : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm font-semibold text-[#b06a5a]">−{usd(e.amount)}</span>

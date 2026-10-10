@@ -24,7 +24,7 @@ const niceDate = (isoDate: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 };
 
-const EMPTY = { name: "", amount: "", nextDue: "", cadence: "monthly" as BillCadence, category: "", autopay: false, notes: "" };
+const EMPTY = { name: "", vendor: "", amount: "", nextDue: "", cadence: "monthly" as BillCadence, category: "", autopay: false, notes: "" };
 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[] | null>(null);
@@ -225,6 +225,7 @@ export default function BillsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Input placeholder="Name (e.g. Rent, Zoom, Loan payment)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input placeholder="Paid to (vendor or person, optional)" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={120} />
             <div className="grid grid-cols-2 gap-2">
               <Input type="number" min="0" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               <Input type="date" value={form.nextDue} onChange={(e) => setForm({ ...form, nextDue: e.target.value })} aria-label="Next due date" />
@@ -242,7 +243,7 @@ export default function BillsPage() {
             </div>
             <label className="flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
               <input type="checkbox" checked={form.autopay} onChange={(e) => setForm({ ...form, autopay: e.target.checked })} className="h-4 w-4" />
-              Paid automatically (autopay)
+              Renews automatically (autopay). Leave unticked if you renew it by hand.
             </label>
             <div className="flex gap-2">
               <Button onClick={save} disabled={busy}><Plus className="w-4 h-4 mr-1" />{editing ? "Save changes" : "Add bill"}</Button>
@@ -282,8 +283,9 @@ export default function BillsPage() {
                       <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{o.bill.name}</p>
                       <p className="text-xs text-[#7a8a99]">
                         {CADENCE_LABEL[o.bill.cadence]}
+                        {o.bill.vendor ? ` · ${o.bill.vendor}` : ""}
                         {o.bill.category ? ` · ${o.bill.category}` : ""}
-                        {o.bill.autopay ? " · autopay" : ""}
+                        {o.bill.cadence !== "once" ? (o.bill.autopay ? " · auto-renews" : " · renew manually") : ""}
                       </p>
                     </div>
                     <div className="w-24 text-right font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{o.bill.amount ? usd(o.bill.amount) : "—"}</div>
@@ -295,7 +297,7 @@ export default function BillsPage() {
                           variant="ghost"
                           onClick={() => {
                             setEditing(o.bill.id);
-                            setForm({ name: o.bill.name, amount: o.bill.amount === null ? "" : String(o.bill.amount), nextDue: o.bill.nextDue, cadence: o.bill.cadence, category: o.bill.category, autopay: o.bill.autopay, notes: o.bill.notes });
+                            setForm({ name: o.bill.name, vendor: o.bill.vendor, amount: o.bill.amount === null ? "" : String(o.bill.amount), nextDue: o.bill.nextDue, cadence: o.bill.cadence, category: o.bill.category, autopay: o.bill.autopay, notes: o.bill.notes });
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
                         >

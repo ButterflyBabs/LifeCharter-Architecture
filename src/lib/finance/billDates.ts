@@ -2,12 +2,14 @@
 // Bills & cash calendar: what's due to go out. A bill has a next due date and a
 // cadence; "Mark paid" records the expense and moves it to the following date.
 
-export type BillCadence = "weekly" | "monthly" | "quarterly" | "annual" | "once";
-export const BILL_CADENCES: BillCadence[] = ["weekly", "monthly", "quarterly", "annual", "once"];
+export type BillCadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannual" | "annual" | "once";
+export const BILL_CADENCES: BillCadence[] = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual", "once"];
 export const CADENCE_LABEL: Record<BillCadence, string> = {
   weekly: "Weekly",
+  biweekly: "Every 2 weeks",
   monthly: "Monthly",
   quarterly: "Quarterly",
+  semiannual: "Every 6 months",
   annual: "Yearly",
   once: "One time",
 };
@@ -16,6 +18,7 @@ export interface Bill {
   id: string;
   name: string;
   amount: number | null;
+  vendor: string;
   category: string;
   cadence: BillCadence;
   nextDue: string; // YYYY-MM-DD
@@ -28,6 +31,7 @@ export interface BillRow {
   id: string;
   name: string;
   amount: number | string | null;
+  vendor?: string | null;
   category: string | null;
   cadence: string;
   next_due: string;
@@ -41,6 +45,7 @@ export function toBill(r: BillRow): Bill {
     id: r.id,
     name: r.name,
     amount: r.amount === null || r.amount === "" ? null : Number(r.amount),
+    vendor: r.vendor || "",
     category: r.category || "",
     cadence: (BILL_CADENCES as string[]).includes(r.cadence) ? (r.cadence as BillCadence) : "monthly",
     nextDue: r.next_due,
@@ -57,11 +62,11 @@ const iso = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
 export function nextAfter(date: string, cadence: BillCadence): string | null {
   const [y, m, d] = date.split("-").map(Number);
   if (cadence === "once") return null;
-  if (cadence === "weekly") {
-    const t = new Date(Date.UTC(y, m - 1, d + 7));
+  if (cadence === "weekly" || cadence === "biweekly") {
+    const t = new Date(Date.UTC(y, m - 1, d + (cadence === "weekly" ? 7 : 14)));
     return t.toISOString().slice(0, 10);
   }
-  const add = cadence === "monthly" ? 1 : cadence === "quarterly" ? 3 : 12;
+  const add = cadence === "monthly" ? 1 : cadence === "quarterly" ? 3 : cadence === "semiannual" ? 6 : 12;
   const total = m - 1 + add;
   const ny = y + Math.floor(total / 12);
   const nm = (total % 12) + 1;

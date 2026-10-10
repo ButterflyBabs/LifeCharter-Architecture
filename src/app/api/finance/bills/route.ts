@@ -16,6 +16,7 @@ function clean(body: Record<string, unknown>) {
     const n = body.amount === null || body.amount === "" ? null : Number(body.amount);
     out.amount = n !== null && isFinite(n) && n >= 0 ? n : null;
   }
+  if (typeof body.vendor === "string") out.vendor = body.vendor.trim().slice(0, 120) || null;
   if (typeof body.category === "string") out.category = body.category.trim().slice(0, 80) || null;
   if (typeof body.cadence === "string" && (BILL_CADENCES as string[]).includes(body.cadence)) out.cadence = body.cadence;
   if (typeof body.nextDue === "string" && DATE.test(body.nextDue)) out.next_due = body.nextDue;
@@ -63,7 +64,7 @@ export async function PATCH(request: Request) {
   const supabase = createServerClient();
   const { data: bill } = await supabase
     .from("finance_bills")
-    .select("id, name, amount, category, cadence, next_due")
+    .select("id, name, vendor, amount, category, cadence, next_due, autopay")
     .eq("id", id)
     .eq("master_plan_id", masterPlanId)
     .maybeSingle();
@@ -79,6 +80,11 @@ export async function PATCH(request: Request) {
         amount,
         category: bill.category || "Bills",
         description: bill.name,
+        vendor: bill.vendor || null,
+        payment_type: bill.cadence === "once" ? "one_time" : "recurring",
+        frequency: bill.cadence === "once" ? null : bill.cadence,
+        renewal: bill.cadence === "once" ? null : bill.autopay ? "auto" : "manual",
+        bill_id: bill.id,
         occurred_on: paidOn,
         source: "bill",
       });

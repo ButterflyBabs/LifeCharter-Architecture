@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { FinanceAI } from "../FinanceAI";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
+import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 
 interface Entry {
   id: string;
@@ -28,6 +29,10 @@ interface Entry {
   description: string;
   occurredOn: string;
   source: string;
+  vendor?: string;
+  paymentType?: string;
+  frequency?: string | null;
+  renewal?: string | null;
 }
 interface Totals {
   income: number;
@@ -84,6 +89,10 @@ export default function FinancialPulsePage() {
   const [description, setDescription] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
   const [segmentId, setSegmentId] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [paymentType, setPaymentType] = useState<PaymentType>("one_time");
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [renewal, setRenewal] = useState<Renewal>("auto");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -161,6 +170,10 @@ export default function FinancialPulsePage() {
           description: description.trim(),
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
+          vendor: type === "expense" ? vendor.trim() || undefined : undefined,
+          paymentType: type === "expense" ? paymentType : undefined,
+          frequency: type === "expense" && paymentType === "recurring" ? frequency : undefined,
+          renewal: type === "expense" && paymentType === "recurring" ? renewal : undefined,
         }),
       });
       if (!res.ok) {
@@ -172,6 +185,8 @@ export default function FinancialPulsePage() {
         setDescription("");
         setOccurredOn("");
         setSegmentId("");
+        setVendor("");
+        setPaymentType("one_time");
         await load();
       }
     } catch {
@@ -362,6 +377,18 @@ export default function FinancialPulsePage() {
                 </div>
               )}
             </div>
+            {type === "expense" && (
+              <ExpenseDetails
+                vendor={vendor}
+                setVendor={setVendor}
+                paymentType={paymentType}
+                setPaymentType={setPaymentType}
+                frequency={frequency}
+                setFrequency={setFrequency}
+                renewal={renewal}
+                setRenewal={setRenewal}
+              />
+            )}
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
         </Card>
@@ -621,10 +648,14 @@ export default function FinancialPulsePage() {
                   <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                        {e.vendor ? `${e.vendor} · ` : ""}
                         {e.category || (e.type === "income" ? "Income" : "Expense")}
                         {e.description ? ` — ${e.description}` : ""}
                       </p>
-                      <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
+                      <p className="text-xs text-[#b8a898]">
+                        {e.occurredOn}
+                        {recurringBadge(e) ? ` · ${recurringBadge(e)}` : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span

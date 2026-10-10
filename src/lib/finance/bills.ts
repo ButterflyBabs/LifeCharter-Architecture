@@ -6,7 +6,7 @@ export * from "@/lib/finance/billDates";
 export async function loadBills(masterPlanId: string): Promise<Bill[]> {
   const { data } = await createServerClient()
     .from("finance_bills")
-    .select("id, name, amount, category, cadence, next_due, autopay, notes, last_paid_on")
+    .select("id, name, vendor, amount, category, cadence, next_due, autopay, notes, last_paid_on")
     .eq("master_plan_id", masterPlanId)
     .eq("active", true)
     .order("next_due");
