@@ -279,6 +279,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
   },
   {
+    id: "st-forgot-password",
+    category: "Getting Started",
+    question: "How do I set or reset my password, and what if it says there is no account for my email?",
+    answer:
+      "On the sign-in page choose 'Forgot or set your password', enter your email and press Send my link. The email arrives within a minute or two from community@lccommandsuite.com (check Other, Promotions and Spam), and the link works once and lasts 24 hours. If the page says it couldn't find an account with that email address, check the spelling first, and try the address you used when you signed up or the one your account email was sent to. If it still isn't found, write to support@lccommandsuite.com and we will check which address your account is under. To limit abuse, the page allows a few tries every 15 minutes, so if it asks you to wait, wait a few minutes and try again.",
+    keywords: ["forgot password", "reset password", "set password", "no account", "couldn't find an account", "email not found", "not registered", "sign in", "log in", "login help", "password link", "password email"],
+  },
+  {
     id: "gr-affiliates",
     category: "Growth",
     question: "How do affiliates work in the Suite?",
