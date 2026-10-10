@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
-import { clientSetupState, sendWelcomeEmail, welcomeEmailsEnabled } from "@/lib/email/welcomeSequence";
+import { clientSetupState, sendWelcomeEmail, welcomeEmailsEnabled, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
 import { superAdminEmails } from "@/lib/authz";
 import { DEMO_PLAN_NAME } from "@/lib/scoring/masterPlan";
 
@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  if (await welcomeSeriesPaused(supabase)) return NextResponse.json({ ok: true, enabled: true, paused: true, sent: 0 });
   const since = new Date(Date.now() - 18 * 86400_000).toISOString();
   const { data: plans } = await supabase
     .from("client_master_plans")

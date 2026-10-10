@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { sendWelcomeEmail, welcomeEmailsEnabled } from "@/lib/email/welcomeSequence";
+import { sendWelcomeEmail, welcomeEmailsEnabled, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
 
 type Db = ReturnType<typeof createServerClient>;
 
@@ -31,7 +31,7 @@ async function setting(db: Db, key: string): Promise<string> {
 }
 
 export async function sendDueWalkthroughs(db: Db): Promise<{ on: boolean; sent: number; skipped: number; failed: number }> {
-  const on = (await setting(db, "client_walkthrough_on")).toLowerCase() === "true" && welcomeEmailsEnabled();
+  const on = (await setting(db, "client_walkthrough_on")).toLowerCase() === "true" && welcomeEmailsEnabled() && !(await welcomeSeriesPaused(db as never));
   if (!on) return { on, sent: 0, skipped: 0, failed: 0 };
   const { data: due } = await db
     .from("client_walkthrough_queue")

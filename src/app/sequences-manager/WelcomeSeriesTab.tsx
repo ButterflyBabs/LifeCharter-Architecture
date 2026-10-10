@@ -6,8 +6,9 @@ import { CheckCircle2, CircleAlert, Clock, MinusCircle, Pencil } from "lucide-re
 type Cell = { state: "sent" | "due" | "skipped" | "waiting" | "missed"; at?: string; note?: string };
 interface Data {
   enabled: boolean;
+  paused?: boolean;
   emails: { key: string; day: number; subject: string; sent: number; rule: string }[];
-  clients: { id: string; name: string; email: string; joined: string; day: number; setup: { ai: boolean; assessments: boolean; tools: boolean; website: boolean } | null; cells: Record<string, Cell> }[];
+  clients: { id: string; userId?: string; stopped?: boolean; name: string; email: string; joined: string; day: number; setup: { ai: boolean; assessments: boolean; tools: boolean; website: boolean } | null; cells: Record<string, Cell> }[];
   recent: { userId: string; key: string; at: string; name: string | null; email: string | null }[];
 }
 
@@ -38,6 +39,8 @@ export default function WelcomeSeriesTab() {
   const [html, setHtml] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
+  const [oneOff, setOneOff] = useState({ key: "welcome", email: "" });
+  const [sendNote, setSendNote] = useState("");
 
   const loadCopy = () =>
     fetch("/api/crm/welcome-series/emails", { cache: "no-store" })
@@ -77,6 +80,37 @@ export default function WelcomeSeriesTab() {
     if (c) setDraft({ subject: c.subject, preview: c.preview, body: c.body });
     setNote("Back to the original copy.");
   };
+  // A one-off resend: this email, to this person, right now. It doesn't change anyone's schedule.
+  const resend = async (key: string, who: { userId?: string; email?: string; label: string }) => {
+    const subject = d?.emails.find((e) => e.key === key)?.subject || key;
+    if (!window.confirm(`Send "${subject}" to ${who.label} right now?\n\nIt goes out as a one-off. Their other welcome emails stay on schedule.`)) return;
+    setBusy(`resend:${key}:${who.userId || who.email}`);
+    setSendNote("");
+    const { ok, j } = await call("POST", { action: "resend", key, userId: who.userId, email: who.email }, "/api/crm/welcome-series");
+    setBusy("");
+    setSendNote(ok ? `Sent "${subject}" to ${j.to}.` : j.error || "That didn't send.");
+  };
+  const loadStatus = async () => {
+    const r = await fetch("/api/crm/welcome-series", { cache: "no-store" });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) setD(j as Data);
+  };
+  const setPaused = async (paused: boolean) => {
+    if (paused && !window.confirm("Pause the whole series?\n\nNothing automatic goes out to anyone until you resume it, including the 3-minute walkthrough for new accounts. One-off sends still work.")) return;
+    setBusy("pause");
+    const { ok, j } = await call("POST", { action: "pause", paused }, "/api/crm/welcome-series");
+    setBusy("");
+    setSendNote(ok ? (paused ? "The series is paused. Nothing automatic will be sent." : "The series is running again.") : j.error || "Couldn't change that.");
+    await loadStatus();
+  };
+  const stopClient = async (userId: string, name: string, stopped: boolean) => {
+    if (!stopped && !window.confirm(`Stop the rest of the welcome series for ${name}?\n\nEmails they have already received stay as they are. You can resume it later.`)) return;
+    setBusy(`stop:${userId}`);
+    const { ok, j } = await call("POST", { action: stopped ? "resume-client" : "stop-client", userId }, "/api/crm/welcome-series");
+    setBusy("");
+    setSendNote(ok ? (stopped ? `${name}'s series will continue.` : `${name}'s remaining welcome emails are stopped.`) : j.error || "Couldn't change that.");
+    await loadStatus();
+  };
   const render = async (action: "preview" | "test") => {
     setBusy(action);
     const { ok, j } = await call("POST", { key: openKey, action, ...draft });
@@ -105,9 +139,12 @@ export default function WelcomeSeriesTab() {
       <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           <p className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">LCCS New Client Welcome</p>
-          <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Six emails to every new Command Suite client: the day they join, then Day 1, 3, 5, 10 and 14. It goes out from the 9 am Mountain run each morning, and no email ever goes out twice.</p>
+          <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Five emails to every new Command Suite client: the walkthrough about 3 minutes after their account is created, then Day 3, 5, 10 and 14 from the 9 am Mountain run. No email goes out twice by itself. You can pause the whole series, stop one client&rsquo;s, or send any email again as a one-off.</p>
         </div>
-        <span className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${d.enabled ? "bg-[#2c6b3f]/15 text-[#2c6b3f]" : "bg-[#c9a227]/20 text-[#6b5410]"}`}>{d.enabled ? "Sending is on" : "Sending is off"}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${d.paused ? "bg-[#b06a5a]/20 text-[#8a2f2f]" : d.enabled ? "bg-[#2c6b3f]/15 text-[#2c6b3f]" : "bg-[#c9a227]/20 text-[#6b5410]"}`}>{d.paused ? "Paused" : d.enabled ? "Sending is on" : "Sending is off"}</span>
+          <button className={btn} disabled={busy !== ""} onClick={() => setPaused(!d.paused)}>{busy === "pause" ? "Working…" : d.paused ? "Resume the series" : "Pause the series"}</button>
+        </span>
       </div>
       {!d.enabled && <p className="rounded-xl bg-[#c9a227]/15 px-4 py-3 text-sm text-[#6b5410]">Nothing is being sent yet. The series stays off until you approve the copy and it is switched on, so the &ldquo;Due&rdquo; marks below are what would go out.</p>}
 
@@ -122,7 +159,7 @@ export default function WelcomeSeriesTab() {
                 return (
                   <Fragment key={e.key}>
                     <tr className="border-t border-[#1a2b4a]/10 align-top">
-                      <td className="py-2 pr-3 whitespace-nowrap font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{e.day === 0 ? "Day of joining" : `Day ${e.day}`}</td>
+                      <td className="py-2 pr-3 whitespace-nowrap font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{e.day === 0 ? "About 3 minutes after joining" : `Day ${e.day}`}</td>
                       <td className="py-2 pr-3">{c?.subject || e.subject}{c?.edited && <span className="ml-2 rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#6b5410]">Edited</span>}</td>
                       <td className="py-2 pr-3 text-[#5a6472] dark:text-[#b8c2cf]">{e.rule}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{e.sent}</td>
@@ -182,7 +219,7 @@ export default function WelcomeSeriesTab() {
               <tbody>
                 {d.clients.map((c) => (
                   <tr key={c.id} className="border-t border-[#1a2b4a]/10 align-top">
-                    <td className="py-2 pr-3"><span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</span><br /><span className="text-xs text-[#7a8a99]">{c.email}</span></td>
+                    <td className="py-2 pr-3"><span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</span>{c.stopped && <span className="ml-2 rounded-full bg-[#b06a5a]/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#8a2f2f]">Stopped</span>}<br /><span className="text-xs text-[#7a8a99]">{c.email}</span>{c.userId && <><br /><button className="text-[11px] font-semibold text-[#2E7C83] underline disabled:opacity-50" disabled={busy !== ""} onClick={() => stopClient(c.userId!, c.name, Boolean(c.stopped))}>{c.stopped ? "Resume their series" : "Stop their series"}</button></>}</td>
                     <td className="py-2 pr-3 whitespace-nowrap">{day(c.joined)}<br /><span className="text-xs text-[#7a8a99]">day {c.day}</span></td>
                     <td className="py-2 pr-3 text-xs">
                       {c.setup ? (
@@ -194,13 +231,35 @@ export default function WelcomeSeriesTab() {
                         </>
                       ) : "n/a"}
                     </td>
-                    {d.emails.map((e) => <td key={e.key} className="py-2 pr-3 whitespace-nowrap"><CellView c={c.cells[e.key]} /></td>)}
+                    {d.emails.map((e) => (
+                      <td key={e.key} className="py-2 pr-3 whitespace-nowrap">
+                        <CellView c={c.cells[e.key]} />
+                        {c.userId && (
+                          <button className="mt-1 block text-[11px] font-semibold text-[#2E7C83] underline disabled:opacity-50" disabled={busy !== ""} onClick={() => resend(e.key, { userId: c.userId, label: c.name })}>
+                            {busy === `resend:${e.key}:${c.userId}` ? "Sending…" : c.cells[e.key]?.state === "sent" ? "Resend" : "Send now"}
+                          </button>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+      </div>
+
+      <div className={card}>
+        <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#7a8a99]">Send one email as a one-off</p>
+        <p className="mb-3 text-xs text-[#7a8a99]">Pick an email and type a client&rsquo;s sign-in email address. It goes out right now, even if they have had it before, and nothing else in their series changes. You can also use <b>Resend</b> or <b>Send now</b> under any mark in the table above.</p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <select aria-label="Which email" className={`${field} sm:max-w-xs`} value={oneOff.key} onChange={(ev) => setOneOff({ ...oneOff, key: ev.target.value })}>
+            {d.emails.map((e) => <option key={e.key} value={e.key}>{e.day === 0 ? "Welcome (Email 1)" : `Day ${e.day}`}: {e.subject}</option>)}
+          </select>
+          <input aria-label="Client email address" className={`${field} flex-1`} placeholder="client@theirbusiness.com" value={oneOff.email} onChange={(ev) => setOneOff({ ...oneOff, email: ev.target.value })} />
+          <button className={btnPrimary} disabled={busy !== "" || !oneOff.email.trim()} onClick={() => resend(oneOff.key, { email: oneOff.email, label: oneOff.email.trim() })}>Send now</button>
+        </div>
+        {sendNote && <p className="mt-2 text-sm text-[#1F5E63]" role="status">{sendNote}</p>}
       </div>
 
       <div className={card}>

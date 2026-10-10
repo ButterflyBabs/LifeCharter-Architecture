@@ -11,6 +11,13 @@ export function welcomeEmailsEnabled() {
   return process.env.WELCOME_EMAILS_ENABLED === "true";
 }
 
+// Babs can pause every automatic welcome email from the LCCS New Client Welcome tab (app_settings
+// welcome_series_paused = "true"). Paused means nothing automatic goes out; one-off sends still work.
+export async function welcomeSeriesPaused(supabase: SupabaseClient): Promise<boolean> {
+  const { data } = await supabase.from("app_settings").select("value").eq("key", "welcome_series_paused").maybeSingle();
+  return String(data?.value ?? "").trim().toLowerCase() === "true";
+}
+
 // The email as it will go out: the built-in copy, with any saved edit (subject, preview, body) on top.
 // The schedule (day) always comes from the built-in definition.
 export async function effectiveWelcomeEmail(supabase: SupabaseClient, key: string): Promise<(WelcomeEmail & { edited: boolean }) | null> {
@@ -85,6 +92,7 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
 // Claim, then send. Returns true only if this call sent the email.
 export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClient, key: string): Promise<boolean> {
   if (!welcomeEmailsEnabled()) return false;
+  if (await welcomeSeriesPaused(supabase)) return false;
   const e = await effectiveWelcomeEmail(supabase, key);
   const apiKey = process.env.RESEND_API_KEY;
   if (!e || !apiKey || !c.email) return false;
@@ -115,6 +123,45 @@ export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClien
   // Release the claim so the next run can retry.
   await supabase.from("lccs_welcome_log").delete().eq("user_id", c.userId).eq("email_key", key);
   return false;
+}
+
+// A one-off resend from the LCCS New Client Welcome tab: sends this email to this client right now,
+// whether or not it went out before, and without touching the daily schedule. If it had never been sent, it is
+// recorded as sent so the daily run doesn't send it again later. Works even while the series' automatic
+// sending is off, because someone chose to press it.
+export async function sendWelcomeOneOff(supabase: SupabaseClient, c: WelcomeClient, key: string): Promise<boolean> {
+  const e = await effectiveWelcomeEmail(supabase, key);
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!e || !apiKey || !c.email) return false;
+  const { subject, text, html } = renderWelcomeEmail(e, c);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Babs at LifeCharter Command Suite <support@lccommandsuite.com>",
+        to: c.email,
+        reply_to: "support@lccommandsuite.com",
+        subject,
+        html,
+        text,
+      }),
+    });
+    if (!res.ok) {
+      console.error("welcome one-off:", key, res.status, await res.text().catch(() => ""));
+      return false;
+    }
+  } catch (err) {
+    console.error("welcome one-off:", key, (err as Error).message);
+    return false;
+  }
+  const { data: row } = await supabase.from("lccs_welcome_log").select("resend_count").eq("user_id", c.userId).eq("email_key", key).maybeSingle();
+  if (row) {
+    await supabase.from("lccs_welcome_log").update({ resend_count: Number(row.resend_count ?? 0) + 1, last_resent_at: new Date().toISOString() }).eq("user_id", c.userId).eq("email_key", key);
+  } else {
+    await supabase.from("lccs_welcome_log").upsert({ user_id: c.userId, email_key: key, resend_count: 0, last_resent_at: new Date().toISOString() }, { onConflict: "user_id,email_key", ignoreDuplicates: true });
+  }
+  return true;
 }
 
 // What the client has already done, for skipping emails that no longer apply. Read without a
