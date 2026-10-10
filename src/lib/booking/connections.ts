@@ -134,6 +134,33 @@ async function tokenFor(c: Connection): Promise<string | null> {
   }
 }
 
+// Busy blocks from the events on a Google primary calendar (needs only the "events" permission).
+// Cancelled events, ones marked "free" and ones the person declined are ignored; all-day events block their days.
+async function googleEventsBusy(token: string, fromISO: string, toISO: string): Promise<Busy[] | null> {
+  const out: Busy[] = [];
+  let pageToken = "";
+  for (let i = 0; i < 6; i++) {
+    const q = new URLSearchParams({ timeMin: fromISO, timeMax: toISO, singleEvents: "true", orderBy: "startTime", maxResults: "250", showDeleted: "false" });
+    if (pageToken) q.set("pageToken", pageToken);
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${q.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const d = (await res.json()) as {
+      items?: { status?: string; transparency?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string }; attendees?: { self?: boolean; responseStatus?: string }[] }[];
+      nextPageToken?: string;
+    };
+    for (const e of d.items ?? []) {
+      if (e.status === "cancelled" || e.transparency === "transparent") continue;
+      if (e.attendees?.some((a) => a.self && a.responseStatus === "declined")) continue;
+      const a = e.start?.dateTime ?? (e.start?.date ? `${e.start.date}T00:00:00Z` : null);
+      const b = e.end?.dateTime ?? (e.end?.date ? `${e.end.date}T00:00:00Z` : null);
+      if (a && b) out.push({ start: Date.parse(a), end: Date.parse(b) });
+    }
+    if (!d.nextPageToken) return out;
+    pageToken = d.nextPageToken;
+  }
+  return out;
+}
+
 // ── Busy time ────────────────────────────────────────────────────────────────
 // Google: every calendar the account shows (not just primary) via freeBusy.
 // Microsoft: the default calendar's events not marked "free".
@@ -150,7 +177,13 @@ export async function busyFor(c: Connection, fromISO: string, toISO: string): Pr
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ timeMin: fromISO, timeMax: toISO, items: (ids.length ? ids : ["primary"]).map((id) => ({ id })) }),
       });
-      if (!res.ok) return "error";
+      if (!res.ok) {
+        // Google lets a person untick "see your calendars" on the consent screen, leaving only "add events".
+        // freeBusy is then refused, but the events list on their main calendar still works, so use it rather
+        // than treating the whole calendar as busy and offering nobody any times.
+        const viaEvents = await googleEventsBusy(token, fromISO, toISO);
+        return viaEvents ?? "error";
+      }
       const cals = (await res.json()).calendars ?? {};
       return Object.values(cals).flatMap((v) => ((v as { busy?: { start: string; end: string }[] }).busy ?? []).map((b) => ({ start: Date.parse(b.start), end: Date.parse(b.end) })));
     }
