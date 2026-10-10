@@ -32,13 +32,12 @@ AmiLynne "Babs" Carroll
 Executive, Alignment Architect, and Chief Travel Partner
 LifeCharter by AmiLynne Carroll`;
 
-// A paying client: they wait for their New Client Implementation Call (it may be a group call) before the assessments.
-// callWhen reads like "Thursday, October 15 at 5:00 PM Mountain" (blank when not set yet).
-export function defaultClientBody(callWhen?: string | null): string {
-  const when = callWhen ? `on your New Client Implementation Call, ${callWhen}` : "on your New Client Implementation Call";
+// A paying client. There is no "wait" request any more (Babs, 2026-10-10): the New Client Setup Walkthrough email
+// follows a few minutes later and walks them through setup in order. callWhen is kept for older callers and is not used.
+export function defaultClientBody(): string {
   return `${OPEN}
 
-**Step 2: Then pause and wait for your New Client Implementation Call.** The first page you'll see is Set up Suite, and it will ask you to begin your assessments (Brain, Soul and Profit). Please don't start them yet. We'll go through them together ${when}, so they're set up right from the start. If you'd like to look around first, choose "skip for now" on that page.
+**Step 2: Watch for your walkthrough.** In a few minutes you'll get a second email from me with your first hour in Command Suite, step by step: how to sign in and bookmark it, connect your AI, name your assistant, and take your assessments in order.
 
 ${CLOSE}`;
 }
@@ -55,12 +54,11 @@ Share it with the people in your world. Anyone who registers through it is track
 ${CLOSE}`;
 }
 
-// A Pre-Founder: oneToOne reads like "Thursday, October 8 at 9:00 AM Mountain" (blank when not booked yet).
-export function defaultBody(oneToOne?: string | null): string {
-  const when = oneToOne ? `at our 1:1, ${oneToOne}` : "at our 1:1";
+// A Pre-Founder. No "wait for the 1:1" request any more (Babs, 2026-10-10); oneToOne is kept for older callers and is not used.
+export function defaultBody(): string {
   return `${OPEN}
 
-**Step 2: Then pause and wait for me.** The first page you'll see is Set up Suite, and it will ask you to begin your assessments (Brain, Soul and Profit). Please don't start them yet. I want us to go through them together ${when}, so they're set up right from the start. If you'd like to look around first, choose "skip for now" on that page.
+**Step 2: Watch for your walkthrough.** In a few minutes you'll get a second email from me with your first hour in Command Suite, step by step: how to sign in and bookmark it, connect your AI, name your assistant, and take your assessments in order.
 
 **Your MasterClass link.** This is your personal link for the free Command Shift MasterClass: {{masterclass_link}}
 Share it with the people in your world. Anyone who registers through it is tracked back to you, and I'll walk you through how it works at our 1:1.
@@ -68,8 +66,8 @@ Share it with the people in your world. Anyone who registers through it is track
 ${CLOSE}`;
 }
 
-export function bodyFor(kind: EmailKind, when?: string | null): string {
-  return kind === "client" ? defaultClientBody(when) : kind === "team" ? defaultTeamBody() : defaultBody(when);
+export function bodyFor(kind: EmailKind): string {
+  return kind === "client" ? defaultClientBody() : kind === "team" ? defaultTeamBody() : defaultBody();
 }
 
 export type Merge = { firstName: string; loginUrl: string; masterclassLink: string | null };

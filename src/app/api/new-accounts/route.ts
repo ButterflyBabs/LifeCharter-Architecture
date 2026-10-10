@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
       const kind: EmailKind = b.kind === "client" || b.kind === "team" ? b.kind : "pre-founder";
       const oneToOne = str(b.when ?? b.oneToOne, 120) || null;
-      const { data, error } = await db.from("new_client_emails").upsert({ master_plan_id: a.planId, contact_id: c.id, email, name, subject: DEFAULT_SUBJECT, body: bodyFor(kind, oneToOne), one_to_one: oneToOne, kind, skip_setup_gate: kind === "team" }, { onConflict: "master_plan_id,email", ignoreDuplicates: true }).select("id").maybeSingle();
+      const { data, error } = await db.from("new_client_emails").upsert({ master_plan_id: a.planId, contact_id: c.id, email, name, subject: DEFAULT_SUBJECT, body: bodyFor(kind), one_to_one: oneToOne, kind, skip_setup_gate: kind === "team" }, { onConflict: "master_plan_id,email", ignoreDuplicates: true }).select("id").maybeSingle();
       if (error) return NextResponse.json({ error: "Couldn't add them." }, { status: 500 });
       return NextResponse.json({ ok: true, id: data?.id ?? null });
     }

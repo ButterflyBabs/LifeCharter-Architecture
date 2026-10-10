@@ -9,7 +9,7 @@ export const STANDARD_CLIENT = "standard:client";
 export async function ensureClientTemplate(db: SupabaseClient, planId: string) {
   await db
     .from("new_client_emails")
-    .upsert({ master_plan_id: planId, email: STANDARD_CLIENT, name: "Standard email · new paying clients", subject: DEFAULT_SUBJECT, body: defaultClientBody(null), kind: "client" }, { onConflict: "master_plan_id,email", ignoreDuplicates: true });
+    .upsert({ master_plan_id: planId, email: STANDARD_CLIENT, name: "Standard email · new paying clients", subject: DEFAULT_SUBJECT, body: defaultClientBody(), kind: "client" }, { onConflict: "master_plan_id,email", ignoreDuplicates: true });
 }
 
 export async function approvedClientTemplate(db: SupabaseClient, planId: string): Promise<{ subject: string; body: string } | null> {
