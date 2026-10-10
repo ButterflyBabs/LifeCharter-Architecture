@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
+import { CADENCE_LABEL } from "@/lib/finance/billDates";
+
+const FREQS = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
 
 const INCOME_CATS = ["Coaching", "Program", "Digital Product", "Speaking", "Affiliate Income", "Services"];
 const EXPENSE_CATS = ["Software", "Contractors", "Advertising", "Education", "Office & Admin", "Travel", "Fees"];
@@ -29,12 +32,22 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayIn());
   const [segmentId, setSegmentId] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [paymentType, setPaymentType] = useState<"one_time" | "recurring">("one_time");
+  const [frequency, setFrequency] = useState<(typeof FREQS)[number]>("monthly");
+  const [renewal, setRenewal] = useState<"auto" | "manual">("auto");
+  const [mine, setMine] = useState<{ income: string[]; expense: string[] }>({ income: [], expense: [] });
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
+    // The categories this account already uses, so the same one is always spelled the same way.
+    fetch("/api/finance/categories")
+      .then((r) => r.json())
+      .then((d) => setMine({ income: Array.isArray(d.income) ? d.income : [], expense: Array.isArray(d.expense) ? d.expense : [] }))
+      .catch(() => {});
   }, []);
 
   async function save() {
@@ -46,7 +59,16 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
       const res = await fetch("/api/finance/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, amount: amt, category: category.trim(), description: description.trim(), occurredOn: date || undefined, segmentId: segmentId || undefined }),
+        body: JSON.stringify({
+          type,
+          amount: amt,
+          category: category.trim(),
+          description: description.trim(),
+          occurredOn: date || undefined,
+          segmentId: segmentId || undefined,
+          vendor: vendor.trim() || undefined,
+          ...(type === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -61,7 +83,8 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
     }
   }
 
-  const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
+  const baseCats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
+  const cats = Array.from(new Set([...(type === "income" ? mine.income : mine.expense), ...baseCats]));
   const input = "w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white text-[#1a2b4a] outline-none focus:border-[#c9a227]";
 
   return (
@@ -92,6 +115,36 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
           <label className="col-span-2 block text-xs font-medium text-gray-500">Note (optional)
             <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this?" className={`${input} mt-1`} />
           </label>
+          <label className="col-span-2 block text-xs font-medium text-gray-500">{type === "income" ? "From (client or source)" : "Paid to (vendor or person)"}
+            <input value={vendor} onChange={(e) => setVendor(e.target.value)} maxLength={120} placeholder={type === "income" ? "e.g. Jane Smith, Stripe" : "e.g. Zoom, Canva"} className={`${input} mt-1`} />
+          </label>
+          {type === "expense" && (
+            <>
+              <label className="block text-xs font-medium text-gray-500">Type of payment
+                <select value={paymentType} onChange={(e) => setPaymentType(e.target.value as "one_time" | "recurring")} className={`${input} mt-1`}>
+                  <option value="one_time">One-time</option>
+                  <option value="recurring">Recurring</option>
+                </select>
+              </label>
+              {paymentType === "recurring" ? (
+                <label className="block text-xs font-medium text-gray-500">Renewal
+                  <select value={renewal} onChange={(e) => setRenewal(e.target.value as "auto" | "manual")} className={`${input} mt-1`}>
+                    <option value="auto">Auto-renews</option>
+                    <option value="manual">I renew it manually</option>
+                  </select>
+                </label>
+              ) : (
+                <div />
+              )}
+              {paymentType === "recurring" && (
+                <label className="col-span-2 block text-xs font-medium text-gray-500">How often
+                  <select value={frequency} onChange={(e) => setFrequency(e.target.value as (typeof FREQS)[number])} className={`${input} mt-1`}>
+                    {FREQS.map((f) => <option key={f} value={f}>{CADENCE_LABEL[f]}</option>)}
+                  </select>
+                </label>
+              )}
+            </>
+          )}
           {segments.length > 0 && (
             <label className="col-span-2 block text-xs font-medium text-gray-500">Business segment (optional)
               <select value={segmentId} onChange={(e) => setSegmentId(e.target.value)} className={`${input} mt-1`}>

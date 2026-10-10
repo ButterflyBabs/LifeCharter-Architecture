@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activity";
 import { planSegmentIds } from "@/lib/planScope";
 import { periodRange } from "@/lib/finance/period";
 import { loadIncomeGoals } from "@/lib/finance/goals";
+import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,10 @@ type Row = {
   occurred_on: string;
   source: string | null;
   segment_id: string | number | null;
+  vendor?: string | null;
+  payment_type?: string | null;
+  frequency?: string | null;
+  renewal?: string | null;
 };
 
 function serialize(r: Row) {
@@ -30,6 +35,10 @@ function serialize(r: Row) {
     occurredOn: r.occurred_on,
     source: r.source || "manual",
     segmentId: r.segment_id || null,
+    vendor: r.vendor || "",
+    paymentType: r.payment_type === "recurring" ? "recurring" : "one_time",
+    frequency: r.frequency || null,
+    renewal: r.renewal || null,
   };
 }
 
@@ -62,7 +71,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("finance_entries")
-    .select("id, type, amount, category, description, occurred_on, source, segment_id")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart)
     .order("occurred_on", { ascending: false })
@@ -238,26 +247,68 @@ export async function POST(request: Request) {
       ? body.occurredOn
       : new Date().toISOString().slice(0, 10);
 
+  // Who was paid, and (for expenses) whether it repeats and how it renews.
+  const vendor = typeof body.vendor === "string" ? body.vendor.trim().slice(0, 120) || null : null;
+  const FREQS: BillCadence[] = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"];
+  const recurring = type === "expense" && body.paymentType === "recurring" && FREQS.includes(body.frequency);
+  const frequency = recurring ? (body.frequency as BillCadence) : null;
+  const renewal = recurring ? (body.renewal === "manual" ? "manual" : "auto") : null;
+  const category = typeof body.category === "string" ? body.category.trim() : null;
+  const description = typeof body.description === "string" ? body.description.trim() : null;
+
+  // A recurring expense also becomes a bill, so its next renewal shows on the Bills & cash calendar
+  // (auto-renew shows as autopay; manual renew is something you mark paid yourself).
+  let billId: string | null = null;
+  if (recurring && frequency) {
+    const next = nextAfter(occurredOn, frequency);
+    if (next) {
+      const { data: bill, error: billErr } = await supabase
+        .from("finance_bills")
+        .insert({
+          master_plan_id: masterPlanId,
+          name: (vendor || category || description || "Recurring expense").slice(0, 120),
+          vendor,
+          amount,
+          category: category || null,
+          cadence: frequency,
+          next_due: next,
+          autopay: renewal === "auto",
+          notes: description || null,
+          last_paid_on: occurredOn,
+        })
+        .select("id")
+        .single();
+      if (billErr) console.error("POST /api/finance/entries (bill):", billErr.message);
+      else billId = bill?.id as string;
+    }
+  }
+
   const { data, error } = await supabase
     .from("finance_entries")
     .insert({
       master_plan_id: masterPlanId,
       type,
       amount,
-      category: typeof body.category === "string" ? body.category.trim() : null,
-      description: typeof body.description === "string" ? body.description.trim() : null,
+      category,
+      description,
       occurred_on: occurredOn,
       source: "manual",
       segment_id: (await validSegment(masterPlanId, body.segmentId)) ?? null,
+      vendor,
+      payment_type: recurring ? "recurring" : "one_time",
+      frequency,
+      renewal,
+      bill_id: billId,
     })
-    .select("id, type, amount, category, description, occurred_on, source, segment_id")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal")
     .single();
 
   if (error) {
     console.error("POST /api/finance/entries:", error.message);
+    if (billId) await supabase.from("finance_bills").delete().eq("id", billId);
     return NextResponse.json({ error: "Couldn't save the entry." }, { status: 500 });
   }
-  const what = [typeof body.category === "string" && body.category.trim(), typeof body.description === "string" && body.description.trim()].filter(Boolean).join(": ");
+  const what = [vendor, category, description].filter(Boolean).join(": ");
   await logActivity({
     masterPlanId,
     action: "created",

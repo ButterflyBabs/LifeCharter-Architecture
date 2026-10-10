@@ -73,6 +73,30 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const meta = session.metadata || {};
 
+        // 50/50 implementation plan: the first half was charged at checkout; queue the second half on the
+        // subscription's next invoice (day 30, with the first monthly charge). Idempotent per session.
+        if (meta.flow === "sales_combined_checkout" && meta.implPlan === "split" && session.subscription && session.customer) {
+          const cents = Number(meta.implSecondHalfCents);
+          if (Number.isFinite(cents) && cents > 0) {
+            const tierName = ({ starter: "Starter", growth: "Growth", vip: "VIP" } as Record<string, string>)[meta.tier || ""] || "";
+            try {
+              await stripe.invoiceItems.create(
+                {
+                  customer: typeof session.customer === "string" ? session.customer : session.customer.id,
+                  subscription: typeof session.subscription === "string" ? session.subscription : session.subscription.id,
+                  currency: "usd",
+                  amount: cents,
+                  description: `LifeCharter Command Suite ${tierName ? `${tierName} - ` : ""}Implementation Fee (payment 2 of 2)`,
+                  metadata: { flow: "sales_combined_checkout", implPlan: "split", session: session.id },
+                },
+                { idempotencyKey: `impl-second-half-${session.id}` }
+              );
+            } catch (e) {
+              console.error("50/50 second half invoice item:", (e as Error).message);
+            }
+          }
+        }
+
         // Whatever was bought, unlock any Collective channels mapped to it
         // (Admin → Purchase access). Never throws; idempotent on retries.
         await grantAccessForCheckout(stripe, session);

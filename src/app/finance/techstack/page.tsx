@@ -5,11 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Zap, Sparkles, RefreshCw, TrendingDown } from "lucide-react";
 import Link from "next/link";
+import { CADENCE_LABEL, type BillCadence } from "@/lib/finance/billDates";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 interface Tool {
   name: string;
   ytd: number;
   monthly: number;
+  vendor?: string;
+  frequency?: string | null;
+  renewal?: string | null;
+}
+interface BillLite {
+  name: string;
+  vendor: string;
 }
 interface Suggestion {
   title: string;
@@ -22,6 +32,9 @@ const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 export default function TechStackPage() {
+  const { overview, reload: reloadOverview } = useFinanceOverview();
+  const [bills, setBills] = useState<BillLite[]>([]);
+  const [adding, setAdding] = useState<string | null>(null);
   const [tools, setTools] = useState<Tool[]>([]);
   const [totalMonthly, setTotalMonthly] = useState(0);
   const [totalYtd, setTotalYtd] = useState(0);
@@ -31,6 +44,47 @@ export default function TechStackPage() {
   const [needsKey, setNeedsKey] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+
+  const loadBills = () =>
+    fetch("/api/finance/bills", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBills(Array.isArray(d.bills) ? d.bills : []))
+      .catch(() => {});
+  useEffect(() => {
+    void loadBills();
+  }, []);
+
+  const onBills = (t: Tool) =>
+    bills.some((b) => {
+      const n = (t.vendor || t.name).toLowerCase();
+      return b.name.toLowerCase() === n || (b.vendor || "").toLowerCase() === n || b.name.toLowerCase().includes(n);
+    });
+
+  // Put a tool's next renewal on the Bills & cash calendar (monthly unless it was recorded as repeating differently).
+  const addToBills = async (t: Tool) => {
+    setAdding(t.name);
+    const cadence = (t.frequency && t.frequency in CADENCE_LABEL ? t.frequency : "monthly") as BillCadence;
+    const d = new Date();
+    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const nextDue = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
+    await fetch("/api/finance/bills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: t.name,
+        vendor: t.vendor || undefined,
+        amount: t.monthly,
+        category: "Software",
+        cadence,
+        nextDue,
+        autopay: t.renewal === "auto",
+        notes: "From Tech Stack Optimizer",
+      }),
+    }).catch(() => {});
+    await loadBills();
+    void reloadOverview();
+    setAdding(null);
+  };
 
   useEffect(() => {
     fetch("/api/finance/techstack")
@@ -79,6 +133,8 @@ export default function TechStackPage() {
         </div>
       </div>
 
+      <FinanceRelated variant="tech" overview={overview} />
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Est. monthly</p>
@@ -110,11 +166,30 @@ export default function TechStackPage() {
             ) : (
               <div className="space-y-1.5">
                 {tools.map((t) => (
-                  <div key={t.name} className="flex items-center justify-between text-sm">
-                    <span className="text-[#3F4654] dark:text-[#e8e4f0] truncate">{t.name}</span>
-                    <span className="tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">
-                      {usd(t.monthly)}<span className="text-[#b8a898]">/mo</span>
-                    </span>
+                  <div key={t.name} className="flex items-center justify-between gap-2 text-sm">
+                    <div className="min-w-0">
+                      <span className="text-[#3F4654] dark:text-[#e8e4f0] truncate block">{t.name}</span>
+                      <span className="text-[11px] text-[#b8a898]">
+                        {t.frequency && t.frequency in CADENCE_LABEL ? `${CADENCE_LABEL[t.frequency as BillCadence]} · ` : ""}
+                        {t.renewal === "auto" ? "Auto-renews" : t.renewal === "manual" ? "Renew manually" : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">
+                        {usd(t.monthly)}<span className="text-[#b8a898]">/mo</span>
+                      </span>
+                      {onBills(t) ? (
+                        <Link href="/finance/bills" className="text-[11px] text-[#2E7C83] hover:underline whitespace-nowrap">On Bills</Link>
+                      ) : (
+                        <button
+                          onClick={() => addToBills(t)}
+                          disabled={adding === t.name}
+                          className="text-[11px] text-[#2E7C83] hover:underline whitespace-nowrap disabled:opacity-50"
+                        >
+                          {adding === t.name ? "Adding…" : "Add to Bills"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("finance_entries")
-    .select("occurred_on, type, category, description, amount")
+    .select("occurred_on, type, category, description, amount, vendor, payment_type, frequency, renewal")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", range.startStr)
     .lt("occurred_on", range.endStr)
@@ -42,11 +42,15 @@ export async function GET(request: Request) {
     category: string | null;
     description: string | null;
     amount: number | string | null;
+    vendor: string | null;
+    payment_type: string | null;
+    frequency: string | null;
+    renewal: string | null;
   }[];
 
   let income = 0;
   let expense = 0;
-  const lines = [["Date", "Type", "Category", "Description", "Amount"].join(",")];
+  const lines = [["Date", "Type", "Category", "Description", "Amount", "Paid to", "Payment type", "How often", "Renewal"].join(",")];
   for (const r of rows) {
     const amt = Number(r.amount ?? 0);
     if (r.type === "income") income += amt;
@@ -58,6 +62,10 @@ export async function GET(request: Request) {
         esc(r.category || ""),
         esc(r.description || ""),
         amt.toFixed(2),
+        esc(r.vendor || ""),
+        r.payment_type === "recurring" ? "Recurring" : "One-time",
+        r.frequency || "",
+        r.renewal === "auto" ? "Auto-renews" : r.renewal === "manual" ? "Renew manually" : "",
       ].join(",")
     );
   }

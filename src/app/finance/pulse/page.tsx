@@ -19,6 +19,11 @@ import {
 import Link from "next/link";
 import { FinanceAI } from "../FinanceAI";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
+import { ExpenseDetails, IncomeFrom, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
+import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
+import { MoneyInput } from "@/components/finance/MoneyInput";
+import { FinanceRelated } from "@/components/finance/FinanceRelated";
+import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
 interface Entry {
   id: string;
@@ -28,6 +33,10 @@ interface Entry {
   description: string;
   occurredOn: string;
   source: string;
+  vendor?: string;
+  paymentType?: string;
+  frequency?: string | null;
+  renewal?: string | null;
 }
 interface Totals {
   income: number;
@@ -77,6 +86,7 @@ export default function FinancialPulsePage() {
   const [label, setLabel] = useState("");
   const [loaded, setLoaded] = useState(false);
 
+  const { overview, reload: reloadOverview } = useFinanceOverview();
   const [showAdd, setShowAdd] = useState(false);
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
@@ -84,6 +94,10 @@ export default function FinancialPulsePage() {
   const [description, setDescription] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
   const [segmentId, setSegmentId] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [paymentType, setPaymentType] = useState<PaymentType>("one_time");
+  const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [renewal, setRenewal] = useState<Renewal>("auto");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -161,6 +175,10 @@ export default function FinancialPulsePage() {
           description: description.trim(),
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
+          vendor: vendor.trim() || undefined,
+          paymentType: type === "expense" ? paymentType : undefined,
+          frequency: type === "expense" && paymentType === "recurring" ? frequency : undefined,
+          renewal: type === "expense" && paymentType === "recurring" ? renewal : undefined,
         }),
       });
       if (!res.ok) {
@@ -172,7 +190,11 @@ export default function FinancialPulsePage() {
         setDescription("");
         setOccurredOn("");
         setSegmentId("");
+        setVendor("");
+        setPaymentType("one_time");
+        forgetCategories();
         await load();
+        void reloadOverview();
       }
     } catch {
       setMsg("Couldn't save the entry.");
@@ -186,6 +208,7 @@ export default function FinancialPulsePage() {
     try {
       await fetch(`/api/finance/entries/${id}`, { method: "DELETE" });
       load();
+      void reloadOverview();
     } catch {
       /* optimistic */
     }
@@ -316,18 +339,11 @@ export default function FinancialPulsePage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                />
+                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Coaching, Software" />
+                <CategoryInput value={category} onChange={setCategory} type={type} placeholder="e.g. Coaching, Software" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Date</label>
@@ -362,10 +378,25 @@ export default function FinancialPulsePage() {
                 </div>
               )}
             </div>
+            {type === "income" && <IncomeFrom value={vendor} onChange={setVendor} />}
+            {type === "expense" && (
+              <ExpenseDetails
+                vendor={vendor}
+                setVendor={setVendor}
+                paymentType={paymentType}
+                setPaymentType={setPaymentType}
+                frequency={frequency}
+                setFrequency={setFrequency}
+                renewal={renewal}
+                setRenewal={setRenewal}
+              />
+            )}
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
         </Card>
       )}
+
+      <FinanceRelated variant="pulse" overview={overview} />
 
       {/* AI health assessment */}
       <FinanceAI />
@@ -384,13 +415,7 @@ export default function FinancialPulsePage() {
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly expense budget</label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={expBudgetInput}
-                    onChange={(e) => setExpBudgetInput(e.target.value)}
-                    placeholder="Overall cap"
-                  />
+                  <MoneyInput value={expBudgetInput} onChange={setExpBudgetInput} placeholder="Overall cap" aria-label="Monthly expense budget" />
                   <Button
                     variant="outline"
                     size="sm"
@@ -404,13 +429,7 @@ export default function FinancialPulsePage() {
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly income target</label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={incTargetInput}
-                    onChange={(e) => setIncTargetInput(e.target.value)}
-                    placeholder="Revenue goal"
-                  />
+                  <MoneyInput value={incTargetInput} onChange={setIncTargetInput} placeholder="Revenue goal" aria-label="Monthly income target" />
                   <Button
                     variant="outline"
                     size="sm"
@@ -469,7 +488,7 @@ export default function FinancialPulsePage() {
                 </div>
                 <div className="w-32">
                   <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly $</label>
-                  <Input type="number" min="0" value={newCatAmt} onChange={(e) => setNewCatAmt(e.target.value)} />
+                  <MoneyInput value={newCatAmt} onChange={setNewCatAmt} aria-label="Monthly amount for the new category" />
                 </div>
                 <Button
                   variant="outline"
@@ -621,10 +640,14 @@ export default function FinancialPulsePage() {
                   <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
+                        {e.vendor ? `${e.vendor} · ` : ""}
                         {e.category || (e.type === "income" ? "Income" : "Expense")}
                         {e.description ? ` — ${e.description}` : ""}
                       </p>
-                      <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
+                      <p className="text-xs text-[#b8a898]">
+                        {e.occurredOn}
+                        {recurringBadge(e) ? ` · ${recurringBadge(e)}` : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span
