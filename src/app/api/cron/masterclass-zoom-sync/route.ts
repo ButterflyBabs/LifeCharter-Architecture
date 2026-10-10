@@ -63,7 +63,9 @@ async function run(request: Request) {
     }
     const [setting, templates] = await Promise.all([eventSetting(supabase, ev.key), eventTemplates(supabase, ev.key)]);
     const suiteOn = suiteEmailsLive(setting, templates);
-    if (!suiteOn) {
+    // Founder's Half Hour is synced into Contacts even before its Suite emails are switched on (Zoom sends its own
+    // confirmation); the MasterClass and Incubator wait for their emails to be live.
+    if (!suiteOn && ev.key !== "founders-half-hour") {
       if (registrants.length) console.error(`[zoom-sync] ${ev.key}: ${registrants.length} registrants waiting; Suite emails are not live for this event`);
       results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, synced: 0, suiteEmails: false });
       continue;
@@ -84,7 +86,7 @@ async function run(request: Request) {
 
     for (const r of toSync) {
       // First seen now: they go into Contacts and the Suite emails them.
-      const status = "suite";
+      const status = suiteOn ? "suite" : "contacts";
       if (housePlan) {
         // Registrants also get their session's own tag, e.g. lcmc-oct-8-registered or lci-nov-12-registered.
         const followsUp = ev.key === "masterclass" || ev.key === "incubator"; // the MasterClass and the Incubator have session tags and a pipeline
@@ -118,7 +120,7 @@ async function run(request: Request) {
       console.error(`[zoom-sync] ${ev.key}: Suite emails failed:`, err);
       emails = { error: String(err) };
     }
-    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount, suiteEmails: true, emails });
+    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount, suiteEmails: suiteOn, emails });
   }
 
   return NextResponse.json({ results });
