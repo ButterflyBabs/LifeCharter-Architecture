@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import FeedbackAdminTab from "@/components/support/FeedbackAdminTab";
 import AssistantFeedbackTab from "@/components/support/AssistantFeedbackTab";
+import HelpIdeasTab from "@/components/support/HelpIdeasTab";
 
 interface Reply {
   author: "client" | "support";
@@ -43,6 +44,7 @@ const TOP_TABS: [string, string][] = [
   ["suggestion", "Suggestions"],
   ["feedback", "Feedback"],
   ["assistant", "Assistant"],
+  ["ideas", "Help ideas"],
 ];
 
 export default function SupportDesk() {
@@ -110,7 +112,9 @@ export default function SupportDesk() {
         ))}
       </div>
 
-      {topTab === "assistant" ? (
+      {topTab === "ideas" ? (
+        <HelpIdeasTab />
+      ) : topTab === "assistant" ? (
         <AssistantFeedbackTab />
       ) : topTab !== "tickets" ? (
         <FeedbackAdminTab kind={topTab as "glitch" | "suggestion" | "feedback"} />

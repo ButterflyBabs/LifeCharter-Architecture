@@ -6,6 +6,7 @@ import { currentMailOwner } from "@/lib/mailOwner";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { buildAssistantKnowledge, loadHistory, saveTurn, assistantSystemPrompt } from "@/lib/ai/assistantContext";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { approvedHelpFor } from "@/lib/ai/helpSuggestions";
 
 // System prompt for the AI Business Guide ({name} = the account's assistant).
 const systemPrompt = (name: string) => `You are ${name}, the AI business guide in the LifeCharter Command Suite, a business assessment and optimization platform.
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions, { notes, message }) },
+        { role: "system", content: assistantSystemPrompt(name, systemPrompt(name), knowledge, contextPrompt, instructions, { notes, message, approvedHelp: await approvedHelpFor(message) }) },
         ...history,
         { role: "user", content: message },
       ],

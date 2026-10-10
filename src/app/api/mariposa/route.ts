@@ -9,6 +9,7 @@ import { buildAssistantKnowledge, loadHistory, saveTurn, clearHistory, assistant
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { createServerClient } from "@/lib/supabase/server";
 import { openAiToolDefs } from "@/lib/ai/actions/registry";
+import { approvedHelpFor } from "@/lib/ai/helpSuggestions";
 import { handleToolCall, type ActionCard } from "@/lib/ai/actions/engine";
 import { isDemoRequest } from "@/lib/scoring/masterPlan";
 import { sessionUser } from "@/lib/authz";
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
     const openai = new OpenAI({ apiKey: key });
     // The assistant can also DO things (tools). Not in the public demo, which is view-only.
     const canAct = !!planId && !isDemoRequest();
-    const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), instructions, { notes, message, canAct });
+    const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), instructions, { notes, message, canAct, approvedHelp: await approvedHelpFor(message) });
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...history, { role: "user", content: message }];
     const cards: ActionCard[] = [];
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
