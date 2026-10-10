@@ -251,7 +251,20 @@ async function afterBooking(
   let zoomId: string | null = null;
   // The Suite's Zoom app belongs to Babs's Zoom account, so only her calendars create Zoom meetings.
   if (cal.location === "zoom" && who.house) {
-    const z = await createZoomMeeting({ hostEmail: host.zoom_email || host.email, topic: `${cal.name}: ${b.name}`, startISO, durationMin: cal.duration_min, timezone: host.timezone, agenda: cal.description || "" }).catch(() => null);
+    const mk = (hostEmail: string, joinBeforeHost: boolean) =>
+      createZoomMeeting({ hostEmail, topic: `${cal.name}: ${b.name}`, startISO, durationMin: cal.duration_min, timezone: host.timezone, agenda: cal.description || "", joinBeforeHost }).catch(() => null);
+    // The host's own Zoom login when they have one; otherwise (a team member with no Zoom seat, such as Marcello)
+    // the meeting is created under the account's own Zoom user, and people may join before the host so the
+    // team member can simply open the join link and start the call.
+    let z = host.zoom_email ? await mk(host.zoom_email, false) : null;
+    if (!z) {
+      if (!host.zoom_email) z = await mk(host.email, false); // they may already be a Zoom user under their sign-in email
+      if (!z) {
+        const { data: owner } = await db.from("booking_hosts").select("zoom_email").eq("master_plan_id", cal.master_plan_id).not("zoom_email", "is", null).neq("id", hostId).limit(1).maybeSingle();
+        const fallback = (owner?.zoom_email as string | null) || "";
+        if (fallback) z = await mk(fallback, true);
+      }
+    }
     if (z) {
       meetingUrl = z.joinUrl;
       zoomId = z.id;

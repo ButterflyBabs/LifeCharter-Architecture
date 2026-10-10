@@ -222,7 +222,7 @@ export async function canCreateZoomMeetings(): Promise<boolean> {
 
 // Creates a scheduled meeting hosted by `hostEmail` (a user on the Zoom
 // account). Returns the join link and meeting id, or null if Zoom said no.
-export async function createZoomMeeting(o: { hostEmail: string; topic: string; startISO: string; durationMin: number; timezone: string; agenda?: string }): Promise<{ id: string; joinUrl: string } | null> {
+export async function createZoomMeeting(o: { hostEmail: string; topic: string; startISO: string; durationMin: number; timezone: string; agenda?: string; joinBeforeHost?: boolean }): Promise<{ id: string; joinUrl: string } | null> {
   if (!isZoomConfigured()) return null;
   const token = await getAccessToken();
   const res = await fetch(`https://api.zoom.us/v2/users/${encodeURIComponent(o.hostEmail)}/meetings`, {
@@ -235,7 +235,7 @@ export async function createZoomMeeting(o: { hostEmail: string; topic: string; s
       duration: o.durationMin,
       timezone: o.timezone,
       agenda: (o.agenda || "").slice(0, 1900),
-      settings: { join_before_host: false, waiting_room: true, meeting_authentication: false },
+      settings: { join_before_host: Boolean(o.joinBeforeHost), waiting_room: !o.joinBeforeHost, meeting_authentication: false },
     }),
   });
   if (!res.ok) {
