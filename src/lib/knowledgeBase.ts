@@ -303,6 +303,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["assessment", "assessments", "answers", "thorough", "why answer", "how detailed", "brain assessment", "soul assessment", "profit assessment", "foundation", "complete", "skip", "better guidance", "accuracy"],
   },
   {
+    id: "st-next-chapter-call",
+    category: "Getting Started",
+    question: "What is the Next Chapter Call, and how do I book it?",
+    answer:
+      "Once you have finished all three assessments (Brain, Soul and Profit), you get an email inviting you to your Next Chapter Call: a 30-minute one-on-one with Babs. She reads your results first, and the call goes through what they show, where your business has the most room to move, and what to do first. Book it from the button in that email, or go to https://lccommandsuite.com/book/next-chapter-call and pick a time that suits you. If no time fits, reply to the email and we will find one.",
+    keywords: ["next chapter call", "book a call", "call with babs", "one on one", "1:1", "kickoff", "after assessments", "results call", "book", "schedule call"],
+  },
+  {
     id: "st-who-opened-account",
     category: "Getting Started",
     question: "Can LifeCharter support see my account, and how do I know when they have?",
