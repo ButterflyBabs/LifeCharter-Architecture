@@ -1,7 +1,7 @@
 "use client";
 
 import { GlossaryText } from "@/components/Term";
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { STARTER_GUIDE_URL } from "@/lib/starterGuide";
@@ -176,8 +176,8 @@ export default function SetupPage() {
             {/* Required steps */}
             <div className="space-y-3">
               {steps.map((step) => (
+                <Fragment key={step.key}>
                 <div
-                  key={step.key}
                   className={`rounded-2xl border p-4 flex items-center gap-4 ${
                     step.done ? "border-green-500/30 bg-green-500/5" : "border-[#1a2b4a]/12 bg-white dark:bg-[#1a2b4a]/20"
                   }`}
@@ -210,12 +210,15 @@ export default function SetupPage() {
                     {step.done ? "Review" : "Start"}
                   </Link>
                 </div>
-              ))}
-            </div>
-
-            <p className="mt-3 rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 px-4 py-3 text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
+                {/* The tip comes right after Connect your AI, so it is read before any assessment work begins. */}
+                {step.key === "ai" && (
+                <p className="rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 px-4 py-3 text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
               <strong>A faster way through the assessments:</strong> open ChatGPT or Claude (the one you have already trained on your business) on one half of your screen and the assessment on the other. Let that AI help you think through and draft each answer, then paste in what you agree with. The three assessments save as you go, so you can stop and come back.
             </p>
+                )}
+                </Fragment>
+              ))}
+            </div>
 
             {/* Integrations (optional) */}
             <div
