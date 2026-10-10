@@ -479,9 +479,9 @@ export default function DailyCompassPage() {
     <div className="py-6 px-4 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c9a227] to-[#4a9b9b] flex items-center justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-[#c9a227] to-[#4a9b9b] flex items-center justify-center">
               <Compass className="w-6 h-6 text-white" />
             </div>
             <div>

@@ -54,12 +54,12 @@ export default function PlanWorkspace({ planType, extra }: { planType: PlanType;
       {extra}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1a2b4a]/5 rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-[#1a2b4a]/5 rounded-xl p-1 mb-6 w-fit max-w-full overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+            className={`inline-flex shrink-0 items-center gap-1.5 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors ${
               tab === t.id
                 ? "bg-white dark:bg-[#1a2b4a] text-[#1a2b4a] dark:text-[#F8F5F0] shadow-sm"
                 : "text-[#7a8a99] hover:text-[#1a2b4a] dark:hover:text-[#F8F5F0]"
