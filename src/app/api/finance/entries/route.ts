@@ -316,7 +316,42 @@ export async function POST(request: Request) {
     entityId: data?.id as string | number | undefined,
     summary: `Added ${type} $${amount.toFixed(2)}${what ? ` (${what.slice(0, 80)})` : ""}`,
   });
-  return NextResponse.json({ entry: serialize(data as Row) });
+  // A one-time expense that looks like an upcoming bill (same name, close to its due date and amount): offer to
+  // link them so the bill is rolled forward and the same money isn't counted twice.
+  let billMatch: { id: string; name: string; nextDue: string; amount: number | null } | null = null;
+  if (type === "expense" && !recurring && masterPlanId) {
+    billMatch = await findMatchingBill(supabase, masterPlanId, { vendor, category, description, amount, occurredOn }).catch(() => null);
+  }
+  return NextResponse.json({ entry: serialize(data as Row), billMatch });
+}
+
+async function findMatchingBill(
+  supabase: ReturnType<typeof createServerClient>,
+  masterPlanId: string,
+  e: { vendor: string | null; category: string | null; description: string | null; amount: number; occurredOn: string }
+) {
+  const names = [e.vendor, e.description, e.category].map((v) => (v || "").trim().toLowerCase()).filter(Boolean);
+  if (!names.length) return null;
+  const day = (iso: string, n: number) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+  };
+  const { data } = await supabase
+    .from("finance_bills")
+    .select("id, name, vendor, amount, next_due")
+    .eq("master_plan_id", masterPlanId)
+    .eq("active", true)
+    .gte("next_due", day(e.occurredOn, -10))
+    .lte("next_due", day(e.occurredOn, 21));
+  const rows = (data || []) as { id: string; name: string; vendor: string | null; amount: number | string | null; next_due: string }[];
+  const hit = rows.find((b) => {
+    const label = [b.vendor, b.name].map((v) => (v || "").trim().toLowerCase()).filter(Boolean);
+    const sameName = label.some((l) => names.some((n) => n === l || n.includes(l) || l.includes(n)));
+    if (!sameName) return false;
+    const amt = b.amount === null || b.amount === "" ? null : Number(b.amount);
+    return amt === null || amt <= 0 || Math.abs(amt - e.amount) / amt <= 0.25;
+  });
+  return hit ? { id: hit.id, name: hit.vendor || hit.name, nextDue: hit.next_due, amount: hit.amount === null ? null : Number(hit.amount) } : null;
 }
 
 // A segment id is only accepted if it belongs to THIS client's own account.

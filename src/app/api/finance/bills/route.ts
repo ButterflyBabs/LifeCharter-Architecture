@@ -70,6 +70,29 @@ export async function PATCH(request: Request) {
     .maybeSingle();
   if (!bill) return NextResponse.json({ error: "Bill not found." }, { status: 404 });
 
+  if (body.action === "settle") {
+    // An expense was already recorded for this bill (entered by hand): link it, roll the bill to its next due
+    // date, and record nothing new, so the same money is not counted twice.
+    const entryId = typeof body.entryId === "string" ? body.entryId : "";
+    const { data: entry } = await supabase
+      .from("finance_entries")
+      .select("id, bill_id, occurred_on, type")
+      .eq("id", entryId)
+      .eq("master_plan_id", masterPlanId)
+      .maybeSingle();
+    if (!entry || entry.type !== "expense") return NextResponse.json({ error: "Expense not found." }, { status: 404 });
+    if (entry.bill_id === id) return NextResponse.json({ ok: true, nextDue: bill.next_due, already: true });
+    const paidOn = String(entry.occurred_on).slice(0, 10);
+    await supabase.from("finance_entries").update({ bill_id: id }).eq("id", entryId).eq("master_plan_id", masterPlanId);
+    const next = nextAfter(bill.next_due as string, bill.cadence as BillCadence);
+    await supabase
+      .from("finance_bills")
+      .update(next ? { next_due: next, last_paid_on: paidOn, updated_at: new Date().toISOString() } : { active: false, last_paid_on: paidOn, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    await logActivity({ masterPlanId, action: "paid", entityType: "bill", entityId: id, summary: `Linked a recorded expense to bill ${q(bill.name)}` });
+    return NextResponse.json({ ok: true, nextDue: next });
+  }
+
   if (body.action === "pay") {
     const paidOn = typeof body.paidOn === "string" && DATE.test(body.paidOn) ? body.paidOn : new Date().toISOString().slice(0, 10);
     const amount = body.amount !== undefined && body.amount !== "" ? Number(body.amount) : Number(bill.amount ?? 0);

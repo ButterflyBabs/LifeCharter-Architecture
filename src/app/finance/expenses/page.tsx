@@ -10,6 +10,7 @@ import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
 import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
 import { MoneyInput } from "@/components/finance/MoneyInput";
+import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
@@ -61,6 +62,7 @@ export default function ExpensesPage() {
   const [renewal, setRenewal] = useState<Renewal>("auto");
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -125,6 +127,8 @@ export default function ExpensesPage() {
         setVendor("");
         setPaymentType("one_time");
         forgetCategories();
+        const saved = await res.json().catch(() => ({}));
+        setBillMatch(saved?.billMatch && saved?.entry?.id ? { match: saved.billMatch, entryId: saved.entry.id } : null);
         await load();
         void reloadOverview();
       }
@@ -227,6 +231,7 @@ export default function ExpensesPage() {
         </Card>
       )}
 
+      {billMatch && <BillMatchPrompt match={billMatch.match} entryId={billMatch.entryId} onClose={() => { setBillMatch(null); void reloadOverview(); }} />}
       <FinanceRelated variant="expenses" overview={overview} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

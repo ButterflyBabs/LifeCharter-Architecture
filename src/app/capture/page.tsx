@@ -10,6 +10,7 @@ import { MoneyInput } from "@/components/finance/MoneyInput";
 import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
 import { ExpenseDetails, IncomeFrom, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
+import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
 
 // Quick capture: a phone-friendly page for the two things owners jot down on
 // the move, a task or money in/out. Also a home-screen shortcut in the Suite app.
@@ -37,6 +38,7 @@ export default function CapturePage() {
   const [segmentId, setSegmentId] = useState("");
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [busy, setBusy] = useState(false);
+  const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
   const [done, setDone] = useState("");
   const [err, setErr] = useState("");
 
@@ -73,6 +75,7 @@ export default function CapturePage() {
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setErr(d.error || "Couldn't save that. Try again.");
+    setBillMatch(mode === "money" && d?.billMatch && d?.entry?.id ? { match: d.billMatch, entryId: d.entry.id } : null);
     setDone(mode === "task" ? `Added "${title.trim()}" to your tasks.` : `Recorded ${kind === "income" ? "income" : "an expense"} of $${Number(amount).toLocaleString("en-US")}.`);
     setTitle("");
     setDue("");
@@ -152,6 +155,7 @@ export default function CapturePage() {
           )}
           <Button onClick={save} disabled={busy || !canSave} className="w-full h-12 text-base">{busy ? "Saving…" : "Save"}</Button>
           {done && <p className="flex items-center gap-2 text-sm text-[#2c6b3f]"><CheckCircle2 className="w-4 h-4" />{done}</p>}
+          {billMatch && <BillMatchPrompt match={billMatch.match} entryId={billMatch.entryId} onClose={() => setBillMatch(null)} />}
           {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
         </CardContent>
       </Card>

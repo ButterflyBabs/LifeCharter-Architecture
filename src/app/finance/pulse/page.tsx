@@ -22,6 +22,7 @@ import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { ExpenseDetails, IncomeFrom, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 import { CategoryInput, forgetCategories } from "@/components/finance/CategoryInput";
 import { MoneyInput } from "@/components/finance/MoneyInput";
+import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
@@ -100,6 +101,7 @@ export default function FinancialPulsePage() {
   const [renewal, setRenewal] = useState<Renewal>("auto");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
 
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [bySegment, setBySegment] = useState<
@@ -193,6 +195,8 @@ export default function FinancialPulsePage() {
         setVendor("");
         setPaymentType("one_time");
         forgetCategories();
+        const saved = await res.json().catch(() => ({}));
+        setBillMatch(saved?.billMatch && saved?.entry?.id ? { match: saved.billMatch, entryId: saved.entry.id } : null);
         await load();
         void reloadOverview();
       }
@@ -396,6 +400,7 @@ export default function FinancialPulsePage() {
         </Card>
       )}
 
+      {billMatch && <BillMatchPrompt match={billMatch.match} entryId={billMatch.entryId} onClose={() => { setBillMatch(null); void reloadOverview(); }} />}
       <FinanceRelated variant="pulse" overview={overview} />
 
       {/* AI health assessment */}
