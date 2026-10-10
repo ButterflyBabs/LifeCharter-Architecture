@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 
 type Tpl = { event_key: string; kind: string; subject: string; active: boolean };
 type Ev = { event_key: string; templates: Tpl[]; live?: boolean };
@@ -17,6 +18,10 @@ export default function EventEmailsTab() {
   const [events, setEvents] = useState<Ev[] | null>(null);
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  // Resend one email to one registrant: which email, and the person lookup, per event.
+  const [rsKind, setRsKind] = useState<Record<string, string>>({});
+  const [rsQ, setRsQ] = useState<Record<string, string>>({});
+  const [rsMsg, setRsMsg] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/event-emails", { cache: "no-store" })
@@ -32,6 +37,20 @@ export default function EventEmailsTab() {
       const r = await fetch("/api/event-emails/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event_key: event, kind }) });
       const d = await r.json().catch(() => ({}));
       setMsg((m) => ({ ...m, [key]: r.ok ? `Sent to ${d.to}` : d.error || "Couldn't send." }));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function resend(event: string, email: string, label: string) {
+    const kind = rsKind[event] || "confirm";
+    setBusy(`rs:${event}`);
+    setRsMsg((m) => ({ ...m, [event]: "" }));
+    try {
+      const r = await fetch("/api/event-emails/resend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event_key: event, kind, email }) });
+      const d = await r.json().catch(() => ({}));
+      setRsMsg((m) => ({ ...m, [event]: r.ok ? `Sent "${d.subject}" to ${label}.` : d.error || "Couldn't send." }));
+      if (r.ok) setRsQ((q) => ({ ...q, [event]: "" }));
     } finally {
       setBusy(null);
     }
@@ -73,6 +92,31 @@ export default function EventEmailsTab() {
                 })}
               </ul>
               <Button className="mt-4" disabled={busy !== null} onClick={() => testAll(ev)}>Send me all three</Button>
+              <div className="mt-6 border-t border-[#1a2b4a]/10 pt-4 space-y-2">
+                <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Resend one of these to one person</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                  <select
+                    aria-label="Which email"
+                    value={rsKind[ev] || "confirm"}
+                    onChange={(x) => setRsKind((k) => ({ ...k, [ev]: x.target.value }))}
+                    className="rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm dark:bg-[#1a2b4a]/20 sm:max-w-xs"
+                  >
+                    {KINDS.map((k) => <option key={k} value={k}>{KIND_NAME[k]}</option>)}
+                  </select>
+                  <div className="min-w-0 flex-1">
+                    <ContactLookupInput
+                      value={rsQ[ev] || ""}
+                      onChange={(v) => setRsQ((q) => ({ ...q, [ev]: v }))}
+                      onPick={(c) => void resend(ev, c.email, `${lookupName(c)} (${c.email})`)}
+                      placeholder="Type a name or email…"
+                      pickLabel="Send"
+                      className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm dark:bg-[#1a2b4a]/20"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-[#7a8a99]">It goes now, with their own Zoom join link and their session&apos;s date and time. The automatic schedule is not changed. They must have registered for this event.</p>
+                {rsMsg[ev] && <p className="text-sm text-[#1F5E63]" role="status" aria-live="polite">{rsMsg[ev]}</p>}
+              </div>
             </section>
           );
         })

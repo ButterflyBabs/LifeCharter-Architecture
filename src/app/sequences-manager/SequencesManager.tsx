@@ -368,6 +368,39 @@ export default function SequencesManager() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      {(() => {
+                        const got = people.filter((p) => p.sentSteps?.includes(s.id));
+                        if (!got.length) return null;
+                        return (
+                          <details className="basis-full border-t border-[#1a2b4a]/10 pt-2">
+                            <summary className="cursor-pointer text-sm font-medium text-[#2E7C83]">Who got this email ({got.length})</summary>
+                            <ul className="mt-2 max-h-72 divide-y divide-[#1a2b4a]/10 overflow-y-auto text-sm">
+                              {got.map((p) => {
+                                const c = p.seq_contacts;
+                                return (
+                                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                                    <span className="min-w-0">
+                                      <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{[c?.first_name, c?.last_name].filter(Boolean).join(" ") || c?.email || "—"}</span>
+                                      {c?.first_name || c?.last_name ? <span className="text-xs text-[#7a8a99]"> · {c?.email}</span> : null}
+                                    </span>
+                                    <button
+                                      className="text-xs font-semibold text-[#2E7C83] underline disabled:opacity-50"
+                                      disabled={Boolean(c?.unsubscribed_at)}
+                                      title={c?.unsubscribed_at ? "They've unsubscribed" : "Send this email to them again now"}
+                                      onClick={async () => {
+                                        const d = await act({ action: "resend", enrollmentId: p.id, stepId: s.id }, `Sent again to ${c?.email}.`);
+                                        if (d) void loadOne(openId);
+                                      }}
+                                    >
+                                      Resend
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </details>
+                        );
+                      })()}
                       {sendOne?.stepId === s.id && (
                         <div className="basis-full flex flex-col gap-2 border-t border-[#1a2b4a]/10 pt-3 sm:flex-row sm:items-center">
                           <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Send &ldquo;{s.subject}&rdquo; to</span>
