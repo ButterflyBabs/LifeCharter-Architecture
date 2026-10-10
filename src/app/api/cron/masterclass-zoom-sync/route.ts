@@ -11,58 +11,15 @@ import { registrantOccurrence } from "@/lib/eventEmails";
 export const dynamic = "force-dynamic";
 
 /**
- * Replaces the old "register twice" flow (Global Control's own landing-page
- * capture form, separate from Zoom's registration). Zoom registration is now
- * the single front door — this cron polls its registrant list every 15
- * minutes and, for anyone new, fires the same lccs-masterclass tag Global
- * Control's confirmation/reminder workflow already runs on. Dedup ledger in
- * zoom_registrant_syncs keeps a repeat poll from re-tagging (and
- * re-triggering the workflow's emails for) someone already synced.
+ * Zoom registration is the single front door for the MasterClass and the Incubator. Every 15 minutes this
+ * polls Zoom's registrant list and, for anyone new, adds them to Contacts (tagged), moves their pipeline
+ * card to Registered and sends the Suite's own confirmation, day-before and hour-before emails
+ * (src/lib/eventEmails.ts). A ledger in zoom_registrant_syncs keeps a repeat poll from doing it twice.
  *
- * This is step one — sync-in, so nobody falls through the gate. Matching
- * Zoom's post-session attendance report back to these registrants (the
- * actual "who showed up" tracking) is a separate follow-up job.
- *
- * Suite emails (src/lib/eventEmails.ts): once an event's app_settings switch
- * `event_emails:<event>` is on (and its confirmation template is live), new
- * registrants skip the Global Control tag and get the Suite's own
- * confirmation + reminders instead. Registrants synced before the switch stay
- * with Global Control. With the switch off, everything below runs as before.
+ * Global Control is no longer involved (Babs, 2026-09-28): nothing is tagged or pushed there. If an
+ * event's `event_emails:<event>` switch is off or its confirmation template is not live, new registrants
+ * simply wait and are picked up as soon as it is.
  */
-
-const GC_FORM_BASE =
-  process.env.GC_FORM_BASE || "https://api.globalcontrol.io/api/tag-form-submission";
-
-// The live lccs-masterclass tag, confirmed 2026-09-16 by a real test
-// registration (a second, identically-named tag exists in Global Control but
-// carries no workflow tied to the actual confirmation/reminder sequence).
-const MASTERCLASS_TAG_ID = process.env.GC_MASTERCLASS_TAG_ID || "6a73c0f94c33c83e76795cdc";
-
-// The Incubator's Global Control tag (the one its confirmation/reminder workflow runs on).
-// "LC-incubator-registration" (Babs, 2026-09-28).
-const INCUBATOR_TAG_ID = process.env.GC_INCUBATOR_TAG_ID || "69fa1666f047865f2e391269";
-
-async function fireMasterclassTag(email: string, firstName: string, lastName: string, tagId: string = MASTERCLASS_TAG_ID): Promise<string> {
-  const apiKey = process.env.GLOBAL_CONTROL_API_KEY;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (apiKey) headers["X-API-KEY"] = apiKey;
-
-  try {
-    const res = await fetch(`${GC_FORM_BASE}/${encodeURIComponent(tagId)}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ email, firstName, lastName }),
-    });
-    const payload = await res.json().catch(() => null);
-    // Global Control returns HTTP 200 even on failure — success must be
-    // checked explicitly (see /api/sales/onboard-client for the same note).
-    const succeeded = res.ok && payload?.data?.success === true;
-    return succeeded ? "tagged" : "failed";
-  } catch (err) {
-    console.error("[masterclass-zoom-sync] tag fire error:", err);
-    return "error";
-  }
-}
 
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -83,10 +40,10 @@ async function run(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  // Every Zoom meeting whose registrants feed a Global Control tag.
-  const events: { key: EventKey; meetingId: string; tagId: string }[] = [
-    { key: "masterclass", meetingId: masterclassMeetingId(), tagId: MASTERCLASS_TAG_ID },
-    { key: "incubator", meetingId: incubatorMeetingId(), tagId: INCUBATOR_TAG_ID },
+  // Every Zoom meeting whose registrants are synced.
+  const events: { key: EventKey; meetingId: string }[] = [
+    { key: "masterclass", meetingId: masterclassMeetingId() },
+    { key: "incubator", meetingId: incubatorMeetingId() },
   ];
   const scheduleCache = new Map<string, Promise<ZoomSchedule>>(); // one Zoom meeting lookup per event per run
   const results: Record<string, unknown>[] = [];
@@ -105,9 +62,9 @@ async function run(request: Request) {
     }
     const [setting, templates] = await Promise.all([eventSetting(supabase, ev.key), eventTemplates(supabase, ev.key)]);
     const suiteOn = suiteEmailsLive(setting, templates);
-    if (!ev.tagId && !suiteOn) {
-      if (registrants.length) console.error(`[zoom-sync] ${ev.key}: ${registrants.length} registrants waiting — set GC_${ev.key.toUpperCase()}_TAG_ID`);
-      results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, synced: 0, tag: "not_configured" });
+    if (!suiteOn) {
+      if (registrants.length) console.error(`[zoom-sync] ${ev.key}: ${registrants.length} registrants waiting; Suite emails are not live for this event`);
+      results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, synced: 0, suiteEmails: false });
       continue;
     }
     if (!registrants.length) {
@@ -125,8 +82,8 @@ async function run(request: Request) {
     let syncedCount = 0;
 
     for (const r of toSync) {
-      // Switch on: first seen now → the Suite emails them, Global Control is never tagged.
-      const status = suiteOn ? "suite" : await fireMasterclassTag(r.email, r.firstName, r.lastName, ev.tagId);
+      // First seen now: they go into Contacts and the Suite emails them.
+      const status = "suite";
       if (housePlan) {
         // Registrants also get their session's own tag, e.g. lcmc-oct-8-registered or lci-nov-12-registered.
         const tags = [`${ev.key}-registered`];
@@ -150,7 +107,7 @@ async function run(request: Request) {
         },
         { onConflict: "zoom_registrant_id" }
       );
-      if (status === "tagged") syncedCount++;
+      syncedCount++;
     }
     let emails: unknown;
     try {
@@ -159,7 +116,7 @@ async function run(request: Request) {
       console.error(`[zoom-sync] ${ev.key}: Suite emails failed:`, err);
       emails = { error: String(err) };
     }
-    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount, suiteEmails: suiteOn, emails });
+    results.push({ event: ev.key, meetingId: ev.meetingId, checked: registrants.length, newRegistrants: toSync.length, synced: syncedCount, suiteEmails: true, emails });
   }
 
   return NextResponse.json({ results });
