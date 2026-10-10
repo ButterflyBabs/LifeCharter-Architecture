@@ -90,8 +90,10 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
 }
 
 // Claim, then send. Returns true only if this call sent the email.
-export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClient, key: string): Promise<boolean> {
-  if (!welcomeEmailsEnabled()) return false;
+export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClient, key: string, opts: { ignoreEnvSwitch?: boolean } = {}): Promise<boolean> {
+  // The environment switch is the old "off until approved" guard for the daily series. The 3-minute walkthrough
+  // has its own switch (app_settings client_walkthrough_on) and passes ignoreEnvSwitch.
+  if (!opts.ignoreEnvSwitch && !welcomeEmailsEnabled()) return false;
   if (await welcomeSeriesPaused(supabase)) return false;
   const e = await effectiveWelcomeEmail(supabase, key);
   const apiKey = process.env.RESEND_API_KEY;

@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { sendWelcomeEmail, welcomeEmailsEnabled, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
+import { sendWelcomeEmail, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
 
 type Db = ReturnType<typeof createServerClient>;
 
@@ -31,7 +31,7 @@ async function setting(db: Db, key: string): Promise<string> {
 }
 
 export async function sendDueWalkthroughs(db: Db): Promise<{ on: boolean; sent: number; skipped: number; failed: number }> {
-  const on = (await setting(db, "client_walkthrough_on")).toLowerCase() === "true" && welcomeEmailsEnabled() && !(await welcomeSeriesPaused(db as never));
+  const on = (await setting(db, "client_walkthrough_on")).toLowerCase() === "true" && !(await welcomeSeriesPaused(db as never));
   if (!on) return { on, sent: 0, skipped: 0, failed: 0 };
   const { data: due } = await db
     .from("client_walkthrough_queue")
@@ -65,7 +65,7 @@ export async function sendDueWalkthroughs(db: Db): Promise<{ on: boolean; sent: 
     // Claim the queue row first so two overlapping runs can't both send.
     const { data: claim } = await db.from("client_walkthrough_queue").update({ sent_at: new Date().toISOString(), result: "sending" }).eq("id", row.id).is("sent_at", null).select("id");
     if (!claim?.length) continue;
-    const ok = await sendWelcomeEmail(db as never, { userId: prof.id as string, email: row.email, name: row.name || (prof.full_name as string | null), planId: (prof.current_plan_id as string | null) ?? null, enrolledAt: new Date().toISOString() }, "welcome");
+    const ok = await sendWelcomeEmail(db as never, { userId: prof.id as string, email: row.email, name: row.name || (prof.full_name as string | null), planId: (prof.current_plan_id as string | null) ?? null, enrolledAt: new Date().toISOString() }, "welcome", { ignoreEnvSwitch: true });
     if (ok) {
       sent++;
       await db.from("client_walkthrough_queue").update({ result: "sent" }).eq("id", row.id);
