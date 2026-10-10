@@ -138,7 +138,9 @@ export async function POST(request: Request) {
           console.error("[new-accounts] provision failed:", e);
           return NextResponse.json({ error: "The account couldn't be created. Nothing was emailed." }, { status: 500 });
         }
-        await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.filter((w) => w.key !== "welcome" || (r as { kind?: string }).kind === "team").map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+        // Clients created here skip the 9 am series (their account-ready email is Email 1) but still get the emails that
+        // go out on their own clock (the 3-minute walkthrough and the 1-hour "why your answers matter" email).
+        await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.filter((w) => (w.key !== "welcome" && !w.queued) || (r as { kind?: string }).kind === "team").map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
         // A ready affiliate page with a link per LifeCharter product (clients; team members already have theirs).
         if ((r as { kind?: string }).kind !== "team") await ensureClientAffiliate({ email: r.email, name: r.name });
       }
