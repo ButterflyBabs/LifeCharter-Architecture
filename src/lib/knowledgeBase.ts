@@ -279,6 +279,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
   },
   {
+    id: "st-assessment-answers-matter",
+    category: "Getting Started",
+    question: "Why should I answer the assessment questions so thoroughly?",
+    answer:
+      "Your three assessments (Brain, Soul and Profit) are the base and foundation your Command Suite supports you from. Your scores, your plans, the guidance your assistant gives and the priorities on your Daily Compass all begin with what you tell it, so the more completely and honestly you answer, the better help it can be in guiding you toward fulfillment, success and, in time, legacy. A few things help: take your time (there is no clock and your answers save as you go), answer for the business you have today rather than the one you hope to have, use your own words wherever there is room, and do not skip the hard questions, because they are often where the biggest opportunities are. You can come back and add detail at any time.",
+    keywords: ["assessment", "assessments", "answers", "thorough", "why answer", "how detailed", "brain assessment", "soul assessment", "profit assessment", "foundation", "complete", "skip", "better guidance", "accuracy"],
+  },
+  {
     id: "st-who-opened-account",
     category: "Getting Started",
     question: "Can LifeCharter support see my account, and how do I know when they have?",
