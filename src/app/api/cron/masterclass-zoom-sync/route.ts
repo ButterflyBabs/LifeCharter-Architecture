@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { cachedSchedule, incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId, type ZoomSchedule } from "@/lib/zoom";
+import { cachedSchedule, foundersHalfHourMeetingId, incubatorMeetingId, isZoomConfigured, listMasterclassRegistrants, masterclassMeetingId, type ZoomSchedule } from "@/lib/zoom";
 import { eventSetting, eventTemplates, sendDueEventEmails, suiteEmailsLive, type EventKey } from "@/lib/eventEmails";
 import { upsertContact, logEvent } from "@/lib/crm";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
@@ -44,6 +44,7 @@ async function run(request: Request) {
   const events: { key: EventKey; meetingId: string }[] = [
     { key: "masterclass", meetingId: masterclassMeetingId() },
     { key: "incubator", meetingId: incubatorMeetingId() },
+    { key: "founders-half-hour", meetingId: foundersHalfHourMeetingId() },
   ];
   const scheduleCache = new Map<string, Promise<ZoomSchedule>>(); // one Zoom meeting lookup per event per run
   const results: Record<string, unknown>[] = [];
@@ -86,13 +87,14 @@ async function run(request: Request) {
       const status = "suite";
       if (housePlan) {
         // Registrants also get their session's own tag, e.g. lcmc-oct-8-registered or lci-nov-12-registered.
-        const tags = [`${ev.key}-registered`];
+        const followsUp = ev.key === "masterclass" || ev.key === "incubator"; // the MasterClass and the Incubator have session tags and a pipeline
+        const tags = [followsUp ? `${ev.key}-registered` : `registered-${ev.key}`];
         const occ = await cachedSchedule(ev.meetingId, scheduleCache).then((s) => registrantOccurrence(s, r.createTime || null)).catch(() => null);
-        if (occ) tags.push(sessionTag(occ.start, "registered", ev.key));
+        if (occ && (ev.key === "masterclass" || ev.key === "incubator")) tags.push(sessionTag(occ.start, "registered", ev.key));
         const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags }).catch(() => null);
-        if (c) await logEvent(housePlan, c.id, "form", `Registered for the ${ev.key === "incubator" ? "LifeCharter Incubator" : "Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
+        if (c) await logEvent(housePlan, c.id, "form", `Registered for ${ev.key === "incubator" ? "the LifeCharter Incubator" : ev.key === "founders-half-hour" ? "Founder's Half Hour" : "the Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
         // Their card on that event's pipeline moves to Registered by itself.
-        if (c) await advanceCards(supabase, housePlan, { contactId: c.id, email: r.email }, eventStage(ev.key, "registered")).catch((e) => console.error("[zoom-sync] card move:", e));
+        if (c && (ev.key === "masterclass" || ev.key === "incubator")) await advanceCards(supabase, housePlan, { contactId: c.id, email: r.email }, eventStage(ev.key, "registered")).catch((e) => console.error("[zoom-sync] card move:", e));
       }
       await supabase.from("zoom_registrant_syncs").upsert(
         {

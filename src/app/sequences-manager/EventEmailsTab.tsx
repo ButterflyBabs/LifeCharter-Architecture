@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 type Tpl = { event_key: string; kind: string; subject: string; active: boolean };
 type Ev = { event_key: string; templates: Tpl[]; live?: boolean };
 
-const EVENT_NAME: Record<string, string> = { masterclass: "Command Shift MasterClass", incubator: "LifeCharter Incubator" };
+const EVENT_NAME: Record<string, string> = { masterclass: "Command Shift MasterClass", incubator: "LifeCharter Incubator", "founders-half-hour": "Founder's Half Hour" };
 const KIND_NAME: Record<string, string> = { confirm: "Confirmation (right after they register)", day_before: "Reminder (the day before)", hour_before: "Reminder (one hour before)" };
 const KINDS = ["confirm", "day_before", "hour_before"];
 
@@ -47,7 +47,7 @@ export default function EventEmailsTab() {
       {!events ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : (
-        ["masterclass", "incubator"].map((ev) => {
+        ["masterclass", "incubator", "founders-half-hour"].map((ev) => {
           const e = events.find((x) => x.event_key === ev);
           const live = Boolean(e?.live);
           return (

@@ -5,7 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
 import { sendRendered } from "@/lib/sequences/engine";
 import { EVENT_SENDERS, eventTemplates, isEmailKind, isEventKey, renderEventEmail } from "@/lib/eventEmails";
-import { incubatorMeetingId, isZoomConfigured, masterclassMeetingId, nextOccurrence } from "@/lib/zoom";
+import { incubatorMeetingId, foundersHalfHourMeetingId, isZoomConfigured, masterclassMeetingId, nextOccurrence } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +18,14 @@ export async function POST(request: Request) {
   const b = (await request.json().catch(() => ({}))) as { event_key?: unknown; kind?: unknown };
   const ev = b.event_key;
   const kind = b.kind;
-  if (!isEventKey(ev) || !isEmailKind(kind)) return NextResponse.json({ error: "Pick an event (masterclass / incubator) and a kind (confirm / day_before / hour_before)." }, { status: 400 });
+  if (!isEventKey(ev) || !isEmailKind(kind)) return NextResponse.json({ error: "Pick an event (masterclass / incubator / founders-half-hour) and a kind (confirm / day_before / hour_before)." }, { status: 400 });
   const db = createServerClient();
   const tpl = (await eventTemplates(db, ev)).find((t) => t.kind === kind);
   if (!tpl) return NextResponse.json({ error: "That template doesn't exist yet." }, { status: 404 });
 
   let start: string | null = null;
   if (isZoomConfigured()) {
-    const meetingId = ev === "incubator" ? incubatorMeetingId() : masterclassMeetingId();
+    const meetingId = ev === "incubator" ? incubatorMeetingId() : ev === "founders-half-hour" ? foundersHalfHourMeetingId() : masterclassMeetingId();
     start = (await nextOccurrence(meetingId).catch(() => null))?.start ?? null;
   }
   if (!start) {

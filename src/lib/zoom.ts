@@ -7,6 +7,11 @@
 export const DEFAULT_MASTERCLASS_MEETING_ID = "89905406248";
 // The Nov 12, 2026 LifeCharter Incubator (registration on Zoom; created 2026-09-28).
 export const DEFAULT_INCUBATOR_MEETING_ID = "86873557607";
+// Founder's Half Hour with Babs: the free weekly public call (Tuesdays, registration on Zoom).
+export const DEFAULT_FOUNDERS_HALF_HOUR_MEETING_ID = "85690260050";
+export function foundersHalfHourMeetingId(): string {
+  return process.env.ZOOM_FOUNDERS_HALF_HOUR_MEETING_ID || DEFAULT_FOUNDERS_HALF_HOUR_MEETING_ID;
+}
 export function incubatorMeetingId(): string {
   return process.env.ZOOM_INCUBATOR_MEETING_ID || DEFAULT_INCUBATOR_MEETING_ID;
 }
