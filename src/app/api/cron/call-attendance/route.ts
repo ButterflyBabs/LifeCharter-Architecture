@@ -1,0 +1,97 @@
+import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
+import { isAlignmentArchitect } from "@/lib/authz";
+import { isZoomConfigured, listPastAttendees, listPastInstances, meetingTopic } from "@/lib/zoom";
+import { ownerMasterPlanId } from "@/lib/sequences/engine";
+import { logEvent, upsertContact } from "@/lib/crm";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+// Daily: for every Zoom meeting on the Collective calendar (plus any ids in app_settings zoom_attendance_meeting_ids,
+// comma separated, e.g. Founder's Half Hour), credits each person who attended a session held in the last 3 days:
+// tag attended-<call>, a line on their timeline, once per session. People already in Contacts are tagged; for
+// the public calls listed in app_settings zoom_attendance_create_contacts (comma separated words of the topic,
+// default "Founder's Half Hour") unknown attendees are added as new contacts. Others are skipped.
+// ?dry=1 (owner only, signed in) shows what would happen and writes nothing.
+
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+const MIN_MINUTES = 5;
+
+async function run(dry: boolean) {
+  if (!isZoomConfigured()) return { error: "Zoom is not configured." };
+  const db = createServerClient();
+  const house = await ownerMasterPlanId().catch(() => null);
+  if (!house) return { error: "No house account." };
+
+  const [{ data: ev }, { data: set }] = await Promise.all([
+    db.from("cm_events").select("join_url, title").not("join_url", "is", null).limit(400),
+    db.from("app_settings").select("key, value").in("key", ["zoom_attendance_meeting_ids", "zoom_attendance_create_contacts"]),
+  ]);
+  const cfg = Object.fromEntries(((set ?? []) as { key: string; value: string }[]).map((r) => [r.key, String(r.value ?? "")]));
+  const ids = new Set<string>();
+  for (const r of (ev ?? []) as { join_url: string }[]) {
+    const m = r.join_url.match(/zoom\.us\/j\/(\d{9,11})/);
+    if (m) ids.add(m[1]);
+  }
+  for (const id of (cfg.zoom_attendance_meeting_ids || "").split(",").map((s) => s.trim()).filter(Boolean)) ids.add(id);
+  const createFor = ((cfg.zoom_attendance_create_contacts || "Founder's Half Hour").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
+
+  const since = Date.now() - 3 * 86_400_000;
+  const report: { meeting: string; topic: string; start: string; attendees: number; tagged: number; created: number; skipped: number }[] = [];
+
+  for (const id of Array.from(ids)) {
+    let topic = "";
+    let instances: Awaited<ReturnType<typeof listPastInstances>>;
+    try {
+      instances = await listPastInstances(id);
+    } catch (e) {
+      report.push({ meeting: id, topic: `error: ${String(e).slice(0, 80)}`, start: "", attendees: 0, tagged: 0, created: 0, skipped: 0 });
+      continue;
+    }
+    if (instances.length) topic = (await meetingTopic(id).catch(() => "")) || `meeting ${id}`;
+    for (const inst of instances.filter((i) => new Date(i.start).getTime() >= since)) {
+      let people;
+      try {
+        people = await listPastAttendees(inst.uuid);
+      } catch {
+        continue;
+      }
+      const emails = people.filter((p) => p.minutes >= MIN_MINUTES).map((p) => p.email);
+      const { data: done } = emails.length ? await db.from("call_attendance_syncs").select("email").eq("meeting_uuid", inst.uuid).in("email", emails) : { data: [] };
+      const already = new Set(((done ?? []) as { email: string }[]).map((d) => d.email));
+      let tagged = 0, created = 0, skipped = 0;
+      for (const p of people) {
+        if (p.minutes < MIN_MINUTES || already.has(p.email)) continue;
+        const { data: existing } = await db.from("seq_contacts").select("id").eq("master_plan_id", house).eq("email", p.email).maybeSingle();
+        const isPublic = createFor.some((w) => topic.toLowerCase().includes(w));
+        if (!existing && !isPublic) { skipped++; continue; }
+        if (dry) {
+          if (existing) tagged++;
+          else created++;
+          continue;
+        }
+        const [first, ...rest] = p.name.split(/\s+/);
+        const c = await upsertContact({ masterPlanId: house, email: p.email, firstName: first || null, lastName: rest.join(" ") || null, source: "zoom:call-attendance", tags: [`attended-${slug(topic)}`, "attended-a-call"] }, db).catch(() => null);
+        if (!c) continue;
+        await db.from("call_attendance_syncs").upsert({ meeting_uuid: inst.uuid, email: p.email, meeting_id: id, topic, started_at: inst.start, minutes: p.minutes });
+        await logEvent(house, c.id, "tag", `Attended ${topic} (${new Date(inst.start).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })})`, { meeting: id, minutes: p.minutes }, db).catch(() => {});
+        if (existing) tagged++;
+        else created++;
+      }
+      report.push({ meeting: id, topic, start: inst.start, attendees: people.length, tagged, created, skipped });
+    }
+  }
+  return { dry, meetings: ids.size, report };
+}
+
+export async function GET(request: Request) {
+  const dry = new URL(request.url).searchParams.get("dry") === "1";
+  if (dry) {
+    if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "not found" }, { status: 404 });
+  } else {
+    const secret = process.env.CRON_SECRET;
+    if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(await run(dry));
+}

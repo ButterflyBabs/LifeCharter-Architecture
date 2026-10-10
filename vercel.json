@@ -91,6 +91,10 @@
     {
       "path": "/api/cron/pre-founder-trials",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/call-attendance",
+      "schedule": "0 13 * * *"
     }
   ],
   "rewrites": [

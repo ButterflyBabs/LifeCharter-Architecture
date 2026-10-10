@@ -355,3 +355,58 @@ export async function zoomDiagnostics(ids: string[]): Promise<{ configured: bool
   }
   return { configured: true, probes, meetings };
 }
+
+// ---------- Past sessions and who attended (coaching calls, Founder's Half Hour) ----------
+
+export interface PastInstance {
+  uuid: string;
+  start: string; // ISO
+}
+export interface Attendee {
+  email: string;
+  name: string;
+  minutes: number; // total across every time they joined
+}
+
+/** The sessions a meeting (or recurring meeting) has already held. */
+export async function listPastInstances(meetingId: string): Promise<PastInstance[]> {
+  const token = await getAccessToken();
+  const res = await fetch(`https://api.zoom.us/v2/past_meetings/${encodeURIComponent(meetingId)}/instances`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`Zoom instances request failed: ${res.status}`);
+  const data = (await res.json()) as { meetings?: { uuid: string; start_time: string }[] };
+  return (data.meetings ?? []).map((m) => ({ uuid: m.uuid, start: m.start_time }));
+}
+
+/** Everyone who joined one past session, merged by email, with the total minutes they were there. Anyone without an email is skipped. */
+export async function listPastAttendees(uuid: string): Promise<Attendee[]> {
+  const token = await getAccessToken();
+  const byEmail = new Map<string, Attendee>();
+  let next = "";
+  do {
+    const url = new URL(`https://api.zoom.us/v2/past_meetings/${encodeURIComponent(encodeURIComponent(uuid))}/participants`);
+    url.searchParams.set("page_size", "300");
+    if (next) url.searchParams.set("next_page_token", next);
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Zoom participants request failed: ${res.status}`);
+    const data = (await res.json()) as { next_page_token?: string; participants?: { name?: string; user_email?: string; duration?: number }[] };
+    for (const p of data.participants ?? []) {
+      const email = (p.user_email || "").trim().toLowerCase();
+      if (!email) continue;
+      const cur = byEmail.get(email);
+      const mins = Math.round((p.duration ?? 0) / 60);
+      if (cur) cur.minutes += mins;
+      else byEmail.set(email, { email, name: (p.name || "").trim(), minutes: mins });
+    }
+    next = data.next_page_token || "";
+  } while (next);
+  return Array.from(byEmail.values());
+}
+
+/** A meeting's name as set in Zoom, without the "· LifeCharter Command Suite" brand suffix. */
+export async function meetingTopic(meetingId: string): Promise<string> {
+  const token = await getAccessToken();
+  const res = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return "";
+  const m = (await res.json()) as { topic?: string };
+  return (m.topic || "").split("·")[0].trim();
+}
