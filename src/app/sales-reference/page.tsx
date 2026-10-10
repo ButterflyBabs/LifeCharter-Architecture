@@ -8,6 +8,7 @@ import { WebsiteAlignment } from "./WebsiteAlignment";
 import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
+import MyCalendar from "./MyCalendar";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -85,6 +86,8 @@ export default function SalesReferencePage() {
             for you — nothing for the client to type.
           </p>
         </div>
+
+        <MyCalendar />
 
         <ProspectProvider>
         <Suspense fallback={null}>

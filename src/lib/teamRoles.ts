@@ -21,6 +21,7 @@ export const SALES_APIS = [
   "/api/sales/checkout-session",
   "/api/sales/contacts",
   "/api/sales/save-call",
+  "/api/sales/my-calendar", // a booking host sees their own calls and sets their own hours
   "/api/account/switch", // the account switcher: a Sales member who also has their own account can go back to it
 ];
 
