@@ -139,7 +139,7 @@ export default function WelcomeSeriesTab() {
       <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           <p className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">LCCS New Client Welcome</p>
-          <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Five emails to every new Command Suite client: the walkthrough about 3 minutes after their account is created, then Day 3, 5, 10 and 14 from the 9 am Mountain run. No email goes out twice by itself. You can pause the whole series, stop one client&rsquo;s, or send any email again as a one-off.</p>
+          <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Six emails to every new Command Suite client: the walkthrough about 3 minutes after their account is created, the assessments email about 1 hour after, then Day 3, 5, 10 and 14 from the 9 am Mountain run. No email goes out twice by itself. You can pause the whole series, stop one client&rsquo;s, or send any email again as a one-off.</p>
         </div>
         <span className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${d.paused ? "bg-[#b06a5a]/20 text-[#8a2f2f]" : d.enabled ? "bg-[#2c6b3f]/15 text-[#2c6b3f]" : "bg-[#c9a227]/20 text-[#6b5410]"}`}>{d.paused ? "Paused" : d.enabled ? "Sending is on" : "Sending is off"}</span>
@@ -159,7 +159,7 @@ export default function WelcomeSeriesTab() {
                 return (
                   <Fragment key={e.key}>
                     <tr className="border-t border-[#1a2b4a]/10 align-top">
-                      <td className="py-2 pr-3 whitespace-nowrap font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{e.day === 0 ? "About 3 minutes after joining" : `Day ${e.day}`}</td>
+                      <td className="py-2 pr-3 whitespace-nowrap font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{e.key === "assessments" ? "About 1 hour after joining" : e.day === 0 ? "About 3 minutes after joining" : `Day ${e.day}`}</td>
                       <td className="py-2 pr-3">{c?.subject || e.subject}{c?.edited && <span className="ml-2 rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#6b5410]">Edited</span>}</td>
                       <td className="py-2 pr-3 text-[#5a6472] dark:text-[#b8c2cf]">{e.rule}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{e.sent}</td>
@@ -213,7 +213,7 @@ export default function WelcomeSeriesTab() {
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-[#7a8a99]">
                   <th className="py-2 pr-3 font-medium">Client</th><th className="py-2 pr-3 font-medium">Joined</th><th className="py-2 pr-3 font-medium">Setup</th>
-                  {d.emails.map((e) => <th key={e.key} className="py-2 pr-3 font-medium whitespace-nowrap">{e.day === 0 ? "Welcome" : `Day ${e.day}`}</th>)}
+                  {d.emails.map((e) => <th key={e.key} className="py-2 pr-3 font-medium whitespace-nowrap">{e.key === "assessments" ? "1 hour" : e.day === 0 ? "Welcome" : `Day ${e.day}`}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -254,7 +254,7 @@ export default function WelcomeSeriesTab() {
         <p className="mb-3 text-xs text-[#7a8a99]">Pick an email and type a client&rsquo;s sign-in email address. It goes out right now, even if they have had it before, and nothing else in their series changes. You can also use <b>Resend</b> or <b>Send now</b> under any mark in the table above.</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <select aria-label="Which email" className={`${field} sm:max-w-xs`} value={oneOff.key} onChange={(ev) => setOneOff({ ...oneOff, key: ev.target.value })}>
-            {d.emails.map((e) => <option key={e.key} value={e.key}>{e.day === 0 ? "Welcome (Email 1)" : `Day ${e.day}`}: {e.subject}</option>)}
+            {d.emails.map((e) => <option key={e.key} value={e.key}>{e.key === "assessments" ? "About 1 hour after joining" : e.day === 0 ? "Welcome (Email 1)" : `Day ${e.day}`}: {e.subject}</option>)}
           </select>
           <input aria-label="Client email address" className={`${field} flex-1`} placeholder="client@theirbusiness.com" value={oneOff.email} onChange={(ev) => setOneOff({ ...oneOff, email: ev.target.value })} />
           <button className={btnPrimary} disabled={busy !== "" || !oneOff.email.trim()} onClick={() => resend(oneOff.key, { email: oneOff.email, label: oneOff.email.trim() })}>Send now</button>

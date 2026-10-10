@@ -51,7 +51,7 @@ export async function GET(request: Request) {
   const results: { client: string; email: string; sent: boolean }[] = [];
   for (const c of clients) {
     const offset = today - dayNumber(denverDay(new Date(c.created_at)));
-    const due = WELCOME_EMAILS.filter((e) => e.day <= offset && offset <= e.day + 2 && !sentKeys.has(`${c.user_id}:${e.key}`));
+    const due = WELCOME_EMAILS.filter((e) => !e.queued && e.day <= offset && offset <= e.day + 2 && !sentKeys.has(`${c.user_id}:${e.key}`));
     if (!due.length) continue;
     let state: Awaited<ReturnType<typeof clientSetupState>> | null = null;
     for (const e of due) {
