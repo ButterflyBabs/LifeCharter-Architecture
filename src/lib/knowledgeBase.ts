@@ -337,6 +337,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["financial pulse", "pulse", "cash flow", "dashboard", "mtd", "ytd", "health", "week", "month", "year", "goal"],
   },
   {
+    id: "fi-recurring-expense",
+    category: "Finance",
+    question: "Can I record who an expense was paid to, and whether it repeats?",
+    answer:
+      "Yes. When you add an expense on the Financial Pulse page (or Finance > Expenses > Add expense), fill in Paid to with the vendor or person, then choose One-time or Recurring. For a recurring expense, pick how often (Weekly, Every 2 weeks, Monthly, Quarterly, Every 6 months or Yearly) and whether it Auto-renews or you renew it manually. Today's payment is recorded as an expense, and the next renewal is added to your Bills & cash calendar (Finance > Bills) so you can see what's coming. Auto-renewing items show as auto-renewing; manual ones show 'renew manually' and you press Paid when you renew them. Your recent entries show the vendor and a Recurring badge, and the CSV export includes Paid to, Payment type, How often and Renewal.",
+    keywords: ["vendor", "paid to", "payee", "recurring", "one-time", "one time", "frequency", "auto-renew", "auto renew", "manual renew", "renewal", "subscription", "expense", "bills"],
+  },
+  {
     id: "fi-segments",
     category: "Finance",
     question: "Can I track income by business segment?",
