@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import BroadcastsTab from "../contacts/BroadcastsTab";
 import WelcomeSeriesTab from "./WelcomeSeriesTab";
+import NewClients from "../new-clients/NewClients";
 import EventEmailsTab from "./EventEmailsTab";
 import { offersOf } from "@/lib/offerSections";
 import OfferSections from "@/components/crm/OfferSections";
@@ -77,12 +78,13 @@ export default function SequencesManager() {
   const [msg, setMsg] = useState("");
   // Campaigns (timed email series) and Broadcasts (one-time sends) share this page.
   const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
-  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events">("campaigns");
+  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events" | "clients">("campaigns");
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "broadcasts") setPageTab("broadcasts");
     if (t === "welcome") setPageTab("welcome");
     if (t === "events") setPageTab("events");
+    if (t === "clients") setPageTab("clients");
   }, []);
 
   const loadList = useCallback(async () => {
@@ -166,6 +168,8 @@ export default function SequencesManager() {
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
               : pageTab === "welcome"
               ? <>The LCCS New Client Welcome emails: read and edit them, and see who has been sent what and what is waiting.</>
+              : pageTab === "clients"
+              ? <>New Client Accounts: each new client&rsquo;s &ldquo;your account is ready&rdquo; email, written, approved and sent from here. Their walkthrough follows automatically.</>
               : pageTab === "events"
               ? <>Event emails are the confirmation and reminders for your Zoom events (MasterClass and Incubator): sent right after someone registers, the day before, and one hour before, each with their own join link.</>
               : <>Broadcasts are one-time emails to everyone with a tag, sent now or at a time you schedule.</>}
@@ -184,14 +188,14 @@ export default function SequencesManager() {
       )}
 
       <div className="flex gap-2 mb-5">
-        {((sender?.house ? ["campaigns", "broadcasts", "events", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome" | "events")[]).map((t) => (
+        {((sender?.house ? ["campaigns", "broadcasts", "events", "clients", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome" | "events" | "clients")[]).map((t) => (
           <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : t === "events" ? "Event emails" : "LCCS New Client Welcome"}
+            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : t === "events" ? "Event emails" : t === "clients" ? "New Client Accounts" : "LCCS New Client Welcome"}
           </button>
         ))}
       </div>
 
-      {pageTab === "events" ? <EventEmailsTab /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
+      {pageTab === "events" ? <EventEmailsTab /> : pageTab === "clients" ? <NewClients embedded /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="space-y-2 min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
           <OfferSections items={list ?? []} storageKey="campaigns">

@@ -13,7 +13,7 @@ import { crmAccount } from "../crm/guard";
 export const dynamic = "force-dynamic";
 
 // New Client Accounts (Babs only): the "your account is ready" email for each person is written, edited and
-// approved on /new-clients, and only then is their stand-alone VIP account created and the email sent (hidden
+// approved on Campaigns & Broadcasts > New Client Accounts (/sequences-manager?tab=clients), and only then is their stand-alone VIP account created and the email sent (hidden
 // copy to AmiLynne). Day 1 of First 30 Days is the day the account is created, so send when they should start.
 // The automatic welcome series is held for these people (its Day 1 email says to start the Brain assessment
 // today); its six keys are recorded as claimed so none go out.

@@ -3,7 +3,7 @@ import { DEFAULT_SUBJECT, defaultClientBody } from "@/lib/email/accountReadyEmai
 
 // The ONE standard "your account is ready" email for every new paying client (unless Babs says otherwise for
 // someone). It is a row of new_client_emails with this placeholder address; she edits and approves it on
-// /new-clients. Until it is approved the Sales Reference New Client button behaves as it always did.
+// Campaigns & Broadcasts > New Client Accounts. Until it is approved the Sales Reference New Client button behaves as it always did.
 export const STANDARD_CLIENT = "standard:client";
 
 export async function ensureClientTemplate(db: SupabaseClient, planId: string) {

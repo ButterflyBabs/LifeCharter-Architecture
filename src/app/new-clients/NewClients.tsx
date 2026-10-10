@@ -150,7 +150,8 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
   );
 }
 
-export default function NewClients() {
+// `embedded`: shown as a tab inside Campaigns & Broadcasts, so it doesn't repeat that page's own title and padding.
+export default function NewClients({ embedded = false }: { embedded?: boolean }) {
   const [people, setPeople] = useState<Person[] | null>(null);
   const [copyTo, setCopyTo] = useState("");
   const [email, setEmail] = useState("");
@@ -165,9 +166,9 @@ export default function NewClients() {
   }, [load]);
 
   return (
-    <div className="w-full px-4 py-8 sm:px-8">
+    <div className={embedded ? "w-full" : "w-full px-4 py-8 sm:px-8"}>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">New Client Accounts</h1>
+        {!embedded && <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">New Client Accounts</h1>}
         <p className="mt-1 max-w-4xl text-[#7a8a99]">Each person&apos;s &ldquo;your account is ready&rdquo; email, to read, edit and approve. Nothing is created or sent until you approve it and press the send button. Creating the account starts Day 1 of their First 30 Days, so press it when they should begin.</p>
       </div>
       <form
