@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect } from "@/lib/authz";
-import { isZoomConfigured, listPastAttendees, listPastInstances, meetingTopic } from "@/lib/zoom";
+import { isZoomConfigured, listMasterclassRegistrants, listPastAttendees, listPastInstances, meetingTopic } from "@/lib/zoom";
 import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
 
@@ -26,7 +26,7 @@ async function run(dry: boolean, days = 3) {
 
   const [{ data: ev }, { data: set }] = await Promise.all([
     db.from("cm_events").select("join_url, title").not("join_url", "is", null).limit(400),
-    db.from("app_settings").select("key, value").in("key", ["zoom_attendance_meeting_ids", "zoom_attendance_create_contacts"]),
+    db.from("app_settings").select("key, value").in("key", ["zoom_attendance_meeting_ids", "zoom_attendance_create_contacts", "zoom_registrant_sync_ids"]),
   ]);
   const cfg = Object.fromEntries(((set ?? []) as { key: string; value: string }[]).map((r) => [r.key, String(r.value ?? "")]));
   const ids = new Set<string>();
@@ -82,7 +82,28 @@ async function run(dry: boolean, days = 3) {
       report.push({ meeting: id, topic, start: inst.start, attendees: people.length, tagged, created, skipped });
     }
   }
-  return { dry, meetings: ids.size, report };
+  // Registrants of the public calls listed in zoom_registrant_sync_ids (comma separated meeting ids) go into
+  // Contacts tagged registered-<call>; Zoom sends their confirmation itself. A timeline line only for new people.
+  const registrants: { meeting: string; topic: string; registrants: number; created: number }[] = [];
+  for (const id of (cfg.zoom_registrant_sync_ids || "").split(",").map((s) => s.trim()).filter(Boolean)) {
+    try {
+      const [list, topic] = await Promise.all([listMasterclassRegistrants(id), meetingTopic(id).catch(() => "")]);
+      const name = topic || `meeting ${id}`;
+      let created = 0;
+      for (const r of list) {
+        if (dry) continue;
+        const c = await upsertContact({ masterPlanId: house, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: "zoom:registration", tags: [`registered-${slug(name)}`] }, db).catch(() => null);
+        if (c?.created) {
+          created++;
+          await logEvent(house, c.id, "form", `Registered for ${name}`, { meeting: id }, db).catch(() => {});
+        }
+      }
+      registrants.push({ meeting: id, topic: name, registrants: list.length, created });
+    } catch (e) {
+      registrants.push({ meeting: id, topic: `error: ${String(e).slice(0, 80)}`, registrants: 0, created: 0 });
+    }
+  }
+  return { dry, meetings: ids.size, report, registrants };
 }
 
 export async function GET(request: Request) {
