@@ -22,6 +22,8 @@ export const SEQ_FOLLOW_UP = "masterclass-follow-up";
 // No-shows get their own series once it exists and is switched on; until then they share the one above.
 export const SEQ_FOLLOW_UP_MISSED = "masterclass-follow-up-missed";
 export const TAG_ATTENDED = "masterclass-attended";
+// Everyone who attends a MasterClass also joins the audience for the Incubator invites.
+export const INCUBATOR_INVITE_TAG = "lci-invite";
 export const TAG_NO_SHOW = "masterclass-no-show";
 // Sessions before this one are never tagged or emailed after the fact.
 const FOLLOW_UP_FROM = "2026-10-08";
@@ -122,7 +124,7 @@ export async function tagSession(db: Db, housePlan: string, occ: ZoomOccurrence,
     const upgrade = prior && prior.outcome === "no_show" && outcome === "attended" && !prior.enrolled_at;
     if (prior && !upgrade) continue;
     const [first, ...rest] = (came.get(email) || "").trim().split(/\s+/);
-    const contact = await upsertContact({ masterPlanId: housePlan, email, firstName: first || null, lastName: rest.join(" ") || null, source: `zoom:${event}`, tags: [outcome === "attended" ? cfg.tagAttended : cfg.tagNoShow, sessionTag(occ.start, outcome === "attended" ? "attended" : "no-show", event)] }, db).catch(() => null);
+    const contact = await upsertContact({ masterPlanId: housePlan, email, firstName: first || null, lastName: rest.join(" ") || null, source: `zoom:${event}`, tags: [outcome === "attended" ? cfg.tagAttended : cfg.tagNoShow, ...(event === "masterclass" && outcome === "attended" ? [INCUBATOR_INVITE_TAG] : []), sessionTag(occ.start, outcome === "attended" ? "attended" : "no-show", event)] }, db).catch(() => null);
     if (!contact) continue;
     const row = { session_date: session, email, outcome, contact_id: contact.id, tagged_at: now.toISOString(), event_key: event };
     const { error } = upgrade
