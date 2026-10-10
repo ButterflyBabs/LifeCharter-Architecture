@@ -7,6 +7,10 @@ import { ContactsTab } from "./ContactsTab";
 import { WebsiteAlignment } from "./WebsiteAlignment";
 import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
+import { createServerClient } from "@/lib/supabase/server";
+
+// Read on every request so a test copy can show its own (test-mode) Payment Links.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -62,7 +66,29 @@ const TIERS: Tier[] = [
   },
 ];
 
-export default function SalesReferencePage() {
+// A test copy of the Suite points its own database at Stripe's test mode. It stores its test Payment Links in
+// app_settings "stripe_payment_links" as {"starter":{"implementationUrl":"…","monthlyUrl":"…"},"growth":{…},"vip":{…}}.
+// The live database has no such row, so the live links above are used there.
+type LinkOverrides = Record<string, { implementationUrl?: string; monthlyUrl?: string }>;
+async function paymentLinkOverrides(): Promise<LinkOverrides | null> {
+  try {
+    const db = createServerClient();
+    const { data } = await db.from("app_settings").select("value").eq("key", "stripe_payment_links").maybeSingle();
+    if (!data?.value) return null;
+    const parsed = JSON.parse(String(data.value));
+    return parsed && typeof parsed === "object" ? (parsed as LinkOverrides) : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function SalesReferencePage() {
+  const overrides = await paymentLinkOverrides();
+  const tiers: Tier[] = TIERS.map((t) => {
+    const o = overrides?.[t.id];
+    const ok = (u?: string) => (typeof u === "string" && /^https:\/\/buy\.stripe\.com\//.test(u) ? u : null);
+    return { ...t, implementationUrl: ok(o?.implementationUrl) ?? t.implementationUrl, monthlyUrl: ok(o?.monthlyUrl) ?? t.monthlyUrl };
+  });
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
       <div className="mx-auto max-w-5xl px-6 py-16">
@@ -97,7 +123,7 @@ export default function SalesReferencePage() {
           VIP removes every limit and puts a dedicated, white-glove team behind you.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TIERS.map((tier) => (
+          {tiers.map((tier) => (
             <div key={tier.id} className="rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6 flex flex-col">
               <h3 className="text-lg font-semibold text-[#F8F5F0]">{tier.name}</h3>
               <p className="text-sm text-[#b8a898] mt-1 min-h-[40px]">{tier.tagline}</p>
