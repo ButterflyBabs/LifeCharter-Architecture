@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget";
 import UpdateNotice from "@/components/layout/UpdateNotice";
 import DemoBanner from "./DemoBanner";
+import ViewAsBanner from "./ViewAsBanner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -65,6 +66,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
         isCollapsed ? "lg:ml-16" : "lg:ml-56"
       )}>
         <DemoBanner />
+        <ViewAsBanner />
         <Header />
         <div className="flex-1">{children}</div>
       </main>

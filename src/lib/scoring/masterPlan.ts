@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
-import { authEnabled, sessionUser, isOwnerEmail } from "@/lib/authz";
+import { authEnabled, sessionUser, isOwnerEmail, ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
+import { readViewAs } from "@/lib/viewAs";
 
 // The seeded demo workspace. When the lc_demo cookie is set, every data route
 // resolves to this plan so the whole app shows sample data for sales/training.
@@ -85,6 +86,14 @@ export async function resolveMasterPlanId(): Promise<string | null> {
 
   const user = await sessionUser();
   if (!user) return null;
+
+  // "View as client": the Alignment Architect looking at a client's account, read-only (the
+  // middleware refuses every write while this is on). Honoured only for a validly signed,
+  // unexpired claim that names this same signed-in user, and only for the Architect's own email.
+  const viewAs = readViewAs();
+  if (viewAs && viewAs.userId === user.id && (user.email || "").toLowerCase() === ALIGNMENT_ARCHITECT_EMAIL) {
+    return viewAs.planId;
+  }
 
   const supabase = createServerClient();
 

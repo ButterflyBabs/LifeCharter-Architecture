@@ -73,6 +73,22 @@ const SALES_ROLE = "sales";
 const HOUSE_ONLY_PAGES = ["/sales-reference"];
 const HOUSE_ONLY_APIS = ["/api/sales"];
 
+// "View as client" (Alignment Architect, read-only). While it is on, only these calls may write
+// (opening/closing a view and signing out), and these client-private areas stay closed entirely.
+const VIEW_AS_WRITE_OK = ["/api/admin/view-as", "/api/auth"];
+const VIEW_AS_CLOSED = [
+  "/api/inbox",
+  "/api/mail",
+  "/api/google",
+  "/api/microsoft",
+  "/api/schedule",
+  "/api/calendar",
+  "/api/integrations",
+  "/api/vault",
+  "/api/billing",
+  "/api/export",
+];
+
 // A LifeCharter Collective member (community-only login) may reach the
 // community and nothing else in the app.
 const COMMUNITY_PAGES = ["/community", "/join", "/logout", "/reset-password", "/legal"];
@@ -346,6 +362,22 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith("/api/")) {
     if (!authed && !isDemo) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    // "View as client": while the signed lc_view_as cookie is present (only the Alignment Architect can
+    // get one; masterPlan.ts verifies it), the account is read-only and the client's private connections
+    // stay closed. A forged cookie only turns this read-only mode on for whoever sent it.
+    if (isSuperOwner && request.cookies.get("lc_view_as")?.value) {
+      const writeOk = VIEW_AS_WRITE_OK.some((p) => path === p || path.startsWith(p + "/"));
+      if (!["GET", "HEAD", "OPTIONS"].includes(request.method) && !writeOk) {
+        return NextResponse.json({ error: "Read-only: you are viewing a client's account, so nothing can be changed." }, { status: 403 });
+      }
+      if (VIEW_AS_CLOSED.some((p) => path === p || path.startsWith(p + "/"))) {
+        if (request.method === "GET" && path === "/api/inbox") {
+          return NextResponse.json({ connected: false, providers: { google: false, microsoft: false }, accounts: [], emails: [] });
+        }
+        if (request.method === "GET" && path === "/api/schedule") return NextResponse.json({ connected: false, events: [] });
+        return NextResponse.json({ error: "Not available while viewing a client's account." }, { status: 403 });
+      }
+    }
     if (housePath(HOUSE_ONLY_APIS) && !mayUseHouseSales) return NextResponse.json({ error: "forbidden" }, { status: 403 });
     if (needsMfa) return NextResponse.json({ error: "2fa required" }, { status: 401 });
     if (isSalesOnly && !SALES_APIS.some((p) => path === p || path.startsWith(p + "/"))) {

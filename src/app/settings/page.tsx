@@ -17,6 +17,7 @@ import { IntegrationsPanel, IntegrationUsage } from "./components/IntegrationsPa
 import StripeConnectCard from "./components/StripeConnectCard";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
+import AccountAccessLog from "./components/AccountAccessLog";
 import { useTheme } from "@/components/theme-provider";
 import AssistantActivity from "@/components/assistant/AssistantActivity";
 import { createClient } from "@/lib/supabase/client";
@@ -1769,6 +1770,7 @@ export default function SettingsPage() {
       </div>
 
       <SecurityPanel />
+      <AccountAccessLog />
     </div>
   );
 

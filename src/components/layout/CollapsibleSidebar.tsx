@@ -86,6 +86,7 @@ import {
   Link2,
   UserCheck,
   KeyRound,
+  Eye,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 
@@ -191,6 +192,7 @@ const ownerSection = {
     { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
+    { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },
