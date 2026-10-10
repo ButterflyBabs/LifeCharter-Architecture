@@ -26,6 +26,7 @@ export const dynamic = "force-dynamic";
 //   POST { action: "preview", id }                 → the email as it will look (nothing created or sent)
 //   POST { action: "test", id }                    → a preview emailed to AmiLynne only, link not real
 //   POST { action: "send", id }                    → approved only: create the account, email them
+//   POST { action: "resend", id }                  → an already-sent email goes out again with a fresh password link
 //   POST { action: "remove", id }                  → drops a draft
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
@@ -156,6 +157,32 @@ export async function POST(request: Request) {
         await logEvent(a.planId, r.contact_id, "manual", `Command Suite VIP account created${emailed ? "; password email sent (copy to AmiLynne)" : "; the password email did NOT send"}`, { holdAssessments: true }, db).catch(() => {});
       }
       return NextResponse.json({ ok: true, emailed, loginUrl: emailed ? undefined : loginUrl });
+    }
+    case "resend": {
+      const r = await row();
+      if (!r) return NextResponse.json({ error: "Not found." }, { status: 404 });
+      if (r.email === STANDARD_CLIENT) return NextResponse.json({ error: "This is the standard email. It goes out by itself from the Sales Reference button." }, { status: 400 });
+      if (r.status !== "sent") return NextResponse.json({ error: "Only an email that has already been sent can be resent." }, { status: 409 });
+      // Their address today (it may have changed since the first email went out).
+      let to = r.email;
+      if (r.contact_id) {
+        const { data: c } = await db.from("seq_contacts").select("email").eq("id", r.contact_id).maybeSingle();
+        if (c?.email) to = String(c.email).trim().toLowerCase();
+      }
+      const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+      // The first password link is single-use and expires, so a resend carries a fresh one.
+      const { data: gen, error: genErr } = await admin.auth.admin.generateLink({ type: "recovery", email: to, options: { redirectTo: `${APP_URL}/auth/callback?next=/reset-password` } });
+      const loginUrl = gen?.properties?.action_link ?? null;
+      if (!loginUrl) {
+        console.error("[new-accounts] resend link:", genErr?.message);
+        return NextResponse.json({ error: `There's no sign-in for ${to}, so a fresh link couldn't be made. Nothing was sent.` }, { status: 409 });
+      }
+      const emailed = await sendRendered(to, renderAccountEmail(r.subject, r.body, { firstName: firstOf(r.name, to), loginUrl, masterclassLink: await mcLink(db, a.planId, r.contact_id) }));
+      if (!emailed) return NextResponse.json({ error: "The email didn't send. Please try again." }, { status: 502 });
+      const { data: cur } = await db.from("new_client_emails").select("resend_count").eq("id", r.id).maybeSingle();
+      await db.from("new_client_emails").update({ resend_count: Number(cur?.resend_count ?? 0) + 1, last_resent_at: new Date().toISOString() }).eq("id", r.id);
+      if (r.contact_id) await logEvent(a.planId, r.contact_id, "manual", "Account-ready email sent again (fresh password link; copy to AmiLynne)", {}, db).catch(() => {});
+      return NextResponse.json({ ok: true, to });
     }
     case "remove": {
       const r = await row();

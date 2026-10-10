@@ -12,6 +12,8 @@ interface Person {
   status: "draft" | "approved" | "sent";
   sent_result: string | null;
   sent_at: string | null;
+  resend_count?: number | null;
+  last_resent_at?: string | null;
   masterclassLink: string | null;
   hasAccount: boolean;
   template?: boolean;
@@ -34,6 +36,7 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [resendConfirm, setResendConfirm] = useState(false);
   const locked = p.status === "sent";
   const tpl = Boolean(p.template);
 
@@ -106,7 +109,20 @@ function Card({ p, copyTo, onChange }: { p: Person; copyTo: string; onChange: ()
           {p.status === "draft" && !tpl && <button disabled={busy} className="ml-auto text-sm text-[#8a2f2f] underline" onClick={() => { if (window.confirm(`Remove ${p.name || p.email} from this page?`)) void run(() => api({ action: "remove", id: p.id }), "Removed."); }}>Remove</button>}
         </div>
       )}
-      {p.status === "sent" && <p className="mt-3 text-sm text-[#2c6b3f]">Sent{p.sent_at ? ` ${new Date(p.sent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : ""}. Their account exists, and Day 1 of First 30 Days started when it was created.</p>}
+      {p.status === "sent" && <p className="mt-3 text-sm text-[#2c6b3f]">Sent{p.sent_at ? ` ${new Date(p.sent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : ""}. Their account exists, and Day 1 of First 30 Days started when it was created.{p.last_resent_at ? ` Sent again ${p.resend_count && p.resend_count > 1 ? `${p.resend_count} times, last ` : ""}${new Date(p.last_resent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}.` : ""}</p>}
+      {p.status === "sent" && !tpl && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {!resendConfirm ? (
+            <button disabled={busy} className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => setResendConfirm(true)}><Mail className="mr-1 inline h-4 w-4" />Resend this email to {first}</button>
+          ) : (
+            <>
+              <button disabled={busy} className={`${btn} bg-[#8a2f2f] text-white`} onClick={async () => { await run(() => api({ action: "resend", id: p.id }), `Sent again to ${p.name || p.email}, with a fresh password link (copy to you).`); setResendConfirm(false); }}>{busy ? "Sending…" : `Yes: send ${first} the email again now`}</button>
+              <button className={`${btn} border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]`} onClick={() => setResendConfirm(false)}>Not yet</button>
+            </>
+          )}
+          <span className="text-xs text-[#7a8a99]">Their account stays as it is. It carries a new password link, because the first one is single-use.</span>
+        </div>
+      )}
       {p.status === "approved" && p.sent_result?.includes("did NOT") && <p className="mt-3 text-sm text-[#8a2f2f]">The account was created but the email did not send. Press the button again to resend it.</p>}
       {msg && <p role="status" className="mt-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{msg}</p>}
     </section>
