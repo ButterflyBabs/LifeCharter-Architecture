@@ -11,6 +11,7 @@ export interface MailAccountRef {
   accountKey: string;
   email: string | null;
   canWriteCalendar?: boolean; // Google only; Microsoft always can
+  canReadMail?: boolean; // false for a send-only Gmail connection; Microsoft always can
 }
 
 // Every mailbox the account has connected, across both providers, oldest first.

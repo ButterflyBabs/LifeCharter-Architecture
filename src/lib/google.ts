@@ -12,8 +12,9 @@ const SCOPES = [
   "openid",
   "email",
   "profile",
-  // modify covers reading + label changes (mark-read); send is needed for replies
-  "https://www.googleapis.com/auth/gmail.modify",
+  // Sending only (2026-10-10, Babs): reading the inbox is a Google "restricted" scope that needs an annual
+  // security assessment, so new Gmail connections ask only to send. Reading is a later project (cs391).
+  // Connections made before this change still hold gmail.modify and keep reading until they reconnect.
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/calendar.readonly",
   // calendar.events adds write access (create/update events on the primary calendar)
@@ -144,7 +145,7 @@ async function loadRow(scope: MailScope | undefined, columns: string): Promise<R
 
 export async function listConnections(
   scope?: MailScope
-): Promise<{ accountKey: string; email: string | null; canWriteCalendar: boolean }[]> {
+): Promise<{ accountKey: string; email: string | null; canWriteCalendar: boolean; canReadMail: boolean }[]> {
   const owner = await scopeOwner(scope);
   if (!owner) return [];
   const { data } = await createServerClient()
@@ -159,6 +160,8 @@ export async function listConnections(
       email: (r.email as string) ?? null,
       // Older connections only granted calendar.readonly.
       canWriteCalendar: granted.includes("calendar.events") || granted.includes("auth/calendar"),
+      // Reading mail needs one of Gmail's read scopes; a send-only connection can still send and use the calendar.
+      canReadMail: /gmail\.(modify|readonly|metadata)|mail\.google\.com/.test(granted),
     };
   });
 }

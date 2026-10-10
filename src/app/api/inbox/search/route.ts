@@ -19,6 +19,7 @@ export async function GET(request: Request) {
 
   await Promise.all(
     boxes.map(async (box) => {
+      if (box.provider === "google" && box.canReadMail === false) return; // send-only Gmail connection
       try {
         const rows =
           box.provider === "google"

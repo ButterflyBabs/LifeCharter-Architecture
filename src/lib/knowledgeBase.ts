@@ -657,7 +657,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Calendar & Connections",
     question: "How do I connect my calendar and email?",
     answer:
-      "In Settings → Integrations, the Calendar & Email card lists every email account you've connected and how many your plan allows (for example '1 of 3 used'). Use 'Add Google account' or 'Add Microsoft 365 account' to sign in with real Google or Microsoft credentials, and Disconnect to remove one. Connected accounts power your dashboard inbox and Today's Schedule, and let the app add events for you. Your connections are private to your account.",
+      "Google accounts connect for sending email and your calendar: the Suite sends your replies from your own Gmail address and uses your calendar for booking, but it does not read your Gmail inbox, so read your messages in Gmail itself. Microsoft 365 accounts also show your inbox in the Suite. In Settings → Integrations, the Calendar & Email card lists every email account you've connected and how many your plan allows (for example '1 of 3 used'). Use 'Add Google account' or 'Add Microsoft 365 account' to sign in with real Google or Microsoft credentials, and Disconnect to remove one. Connected accounts power your dashboard inbox and Today's Schedule, and let the app add events for you. Your connections are private to your account.",
     keywords: ["connect calendar", "google", "microsoft", "email", "outlook", "calendar email", "add account", "disconnect", "gmail"],
   },
   {

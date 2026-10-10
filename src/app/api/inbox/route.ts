@@ -25,6 +25,11 @@ export async function GET(request: Request) {
       providers[box.provider] = true;
       const account: (typeof accounts)[number] = { provider: box.provider, email: box.email ?? "", label: box.label, accountKey: box.accountKey };
       accounts.push(account);
+      // A send-only Gmail connection can't be read: say so, don't try.
+      if (box.provider === "google" && box.canReadMail === false) {
+        account.error = "send_only";
+        return;
+      }
       try {
         const rows =
           box.provider === "google"

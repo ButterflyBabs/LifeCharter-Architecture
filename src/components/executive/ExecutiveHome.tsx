@@ -1910,10 +1910,15 @@ export default function ExecutiveHome() {
           )}
 
           {/* A connected mailbox that can't be read (expired or revoked sign-in) */}
-          {accounts.some((a) => a.error) && (
+          {accounts.some((a) => a.error === "send_only") && (
+            <div className="mx-6 mt-3 rounded-lg border border-[#c9a227]/40 bg-[#c9a227]/10 px-3 py-2 text-xs text-[#1a2b4a]" role="status">
+              {accounts.filter((a) => a.error === "send_only").map((a) => `Gmail (${a.label})`).join(" and ")} is connected for sending email and your calendar. To read your messages, open Gmail itself; the Suite sends your replies from it.
+            </div>
+          )}
+          {accounts.some((a) => a.error && a.error !== "send_only") && (
             <div className="mx-6 mt-3 rounded-lg border border-[#c9a227]/40 bg-[#c9a227]/10 px-3 py-2 text-xs text-[#1a2b4a]" role="status">
               {accounts
-                .filter((a) => a.error)
+                .filter((a) => a.error && a.error !== "send_only")
                 .map((a) => `${a.provider === "microsoft" ? "Microsoft" : "Gmail"} (${a.label})`)
                 .join(" and ")}{" "}
               isn&apos;t connecting right now, so its emails can&apos;t load.{" "}

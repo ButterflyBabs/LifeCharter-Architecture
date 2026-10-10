@@ -174,6 +174,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const own = new Set(boxes.map((m) => (m.email || "").toLowerCase()).filter(Boolean));
     await Promise.all(
       boxes.map(async (box) => {
+        if (box.provider === "google" && box.canReadMail === false) return; // send-only Gmail connection: nothing to read
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
         try {
