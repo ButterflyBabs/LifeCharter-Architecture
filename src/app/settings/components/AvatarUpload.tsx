@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { User, Upload, X, Loader2 } from "lucide-react";
 
@@ -20,6 +20,12 @@ export function AvatarUpload({ currentAvatar, onAvatarChange }: AvatarUploadProp
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatar || null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // The profile loads after this box first appears, so the saved picture arrives as a changed prop.
+  // Without this the box kept the empty value it started with and never showed the saved picture.
+  useEffect(() => {
+    setPreviewUrl(currentAvatar || null);
+  }, [currentAvatar]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

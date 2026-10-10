@@ -52,7 +52,22 @@ export async function POST(request: Request) {
 
   const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
   const url = pub.publicUrl;
+  // The picture this one replaces (best effort), so old uploads don't pile up in storage.
+  const { data: before } = await supabase.from("profiles").select("avatar_url").eq("id", prof.id).maybeSingle();
   await supabase.from("profiles").update({ avatar_url: url }).eq("id", prof.id);
+  const oldUrl = ((before?.avatar_url as string) || "").trim();
+  const marker = "/avatars/";
+  const idx = oldUrl.lastIndexOf(marker);
+  if (idx >= 0) {
+    const oldPath = oldUrl.slice(idx + marker.length);
+    if (oldPath.startsWith(`${prof.id}-`) && oldPath !== path) {
+      try {
+        await supabase.storage.from("avatars").remove([oldPath]);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
   return NextResponse.json({ url });
 }
 
