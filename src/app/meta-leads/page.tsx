@@ -35,6 +35,27 @@ export default async function MetaLeadsPage() {
       <p className="mt-2 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
         Each person who fills in one of your Facebook or Instagram lead forms is sent to the private address below. The Suite saves them as a contact tagged lead-meta-ad and the ad&apos;s own tag{house ? ", registers them on the MasterClass Zoom meeting and puts a card in Registered on the MasterClass Pipeline" : ", and adds a card to the pipeline you choose"}. Keep the address private: anyone who has it can add contacts to your account.
       </p>
+      <h2 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Latest leads</h2>
+      {!leads?.length ? (
+        <p className="mt-2 text-sm text-[#7a8a99]">None yet. They appear here as soon as a lead form is submitted.</p>
+      ) : (
+        <div className="mt-2 overflow-x-auto rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-xs text-[#7a8a99]"><th className="p-3">When (Mountain)</th><th className="p-3">Name</th><th className="p-3">Email</th><th className="p-3">Ad</th><th className="p-3">Status</th></tr></thead>
+            <tbody>
+              {leads.map((l) => (
+                <tr key={l.id as string} className="border-t border-[#1a2b4a]/10">
+                  <td className="p-3 whitespace-nowrap">{day(l.created_at as string)}</td>
+                  <td className="p-3">{(l.name as string) || ""}</td>
+                  <td className="p-3">{(l.email as string) || ""}</td>
+                  <td className="p-3">{(l.ad_name as string) || ""}</td>
+                  <td className={`p-3 ${l.status === "failed" ? "text-[#A4523C] font-medium" : ""}`}>{l.status as string}{l.detail ? `: ${l.detail as string}` : ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <h2 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Your address</h2>
       <CopyField value={url} />
       {!house && (
@@ -61,27 +82,6 @@ export default async function MetaLeadsPage() {
       </p>
       <h2 className="mt-8 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Upload leads from a file</h2>
       <UploadLeads address={url} />
-      <h2 className="mt-8 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Latest leads</h2>
-      {!leads?.length ? (
-        <p className="mt-2 text-sm text-[#7a8a99]">None yet. They appear here as soon as a lead form is submitted.</p>
-      ) : (
-        <div className="mt-2 overflow-x-auto rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-xs text-[#7a8a99]"><th className="p-3">When (Mountain)</th><th className="p-3">Name</th><th className="p-3">Email</th><th className="p-3">Ad</th><th className="p-3">Status</th></tr></thead>
-            <tbody>
-              {leads.map((l) => (
-                <tr key={l.id as string} className="border-t border-[#1a2b4a]/10">
-                  <td className="p-3 whitespace-nowrap">{day(l.created_at as string)}</td>
-                  <td className="p-3">{(l.name as string) || ""}</td>
-                  <td className="p-3">{(l.email as string) || ""}</td>
-                  <td className="p-3">{(l.ad_name as string) || ""}</td>
-                  <td className={`p-3 ${l.status === "failed" ? "text-[#A4523C] font-medium" : ""}`}>{l.status as string}{l.detail ? `: ${l.detail as string}` : ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
