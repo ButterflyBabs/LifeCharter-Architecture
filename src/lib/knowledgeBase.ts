@@ -279,6 +279,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
   },
   {
+    id: "st-assessment-other-device",
+    category: "Getting Started",
+    question: "Can I start an assessment on one device and finish it on another?",
+    answer:
+      "Yes. Your Brain, Soul and Profit answers are saved to your account as you go, so when you open an assessment on another computer, phone or browser, the answers you already gave come back. Answers on the device you are using are kept as they are, and the saved ones fill in any questions that are still empty there. If a save ever fails, the answers you gave earlier are not erased.",
+    keywords: ["another device", "different device", "switch devices", "phone", "computer", "browser", "save progress", "lost answers", "assessment saved", "continue later", "come back"],
+  },
+  {
     id: "st-brain-more-businesses-streams",
     category: "Getting Started",
     question: "I run more than one business or have several revenue streams. How do I answer the Brain assessment?",
