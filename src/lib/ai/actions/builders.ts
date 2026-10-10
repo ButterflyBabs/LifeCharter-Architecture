@@ -278,4 +278,179 @@ export const listSegments: ActionTool = {
   },
 };
 
-export const BUILDER_TOOLS: ActionTool[] = [listForms, createForm, listBookingLinks, createBookingLink, listCustomFields, createCustomField, listSops, createSop, listSegments];
+// ---------------------------------------------------------------- change what already exists
+// Each of these picks ONE item by part of its name (asking which when several match), shows the change, and Undo
+// puts the old values back.
+type Ctx = Parameters<NonNullable<ActionTool["plan"]>>[1];
+const pick = async (table: string, nameCol: string, name: string, ctx: Ctx, cols: string) => {
+  const clean = name.replace(/[%,()]/g, "");
+  const { data } = await ctx.db.from(table).select(cols).eq("master_plan_id", ctx.planId).ilike(nameCol, `%${clean}%`).limit(5);
+  return (data ?? []) as unknown as Record<string, unknown>[];
+};
+const one = (rows: Record<string, unknown>[], nameCol: string): { row?: Record<string, unknown>; error?: string } =>
+  rows.length === 0 ? { error: "I couldn't find one with that name." } : rows.length > 1 ? { error: `More than one matches: ${rows.map((r) => `"${r[nameCol]}"`).join(", ")}. Which one?` } : { row: rows[0] };
+
+export const updateForm: ActionTool = {
+  name: "update_form",
+  kind: "write",
+  apiPath: "/api/crm/forms",
+  description: "Change one existing contact form: rename it or replace its fields. Pick it by part of its name. When you pass fields, they REPLACE the old list (an Email field is always kept). The client approves first.",
+  parameters: { type: "object", properties: { find_name: { type: "string" }, new_name: { type: "string" }, fields: createForm.parameters && (createForm.parameters as { properties: Record<string, unknown> }).properties.fields }, required: ["find_name"] },
+  plan: async (a, ctx) => {
+    const r = one(await pick("crm_forms", "name", str(a.find_name, 120), ctx, "id, name, fields"), "name");
+    if (!r.row) return { error: r.error! };
+    const lines: string[] = [];
+    if (str(a.new_name, 120)) lines.push(`New name: ${str(a.new_name, 120)}`);
+    const f = cleanFields(a.fields);
+    if (Array.isArray(a.fields) && f) lines.push(`Fields become: ${f.map((x) => x.label).join(", ")}`);
+    if (!lines.length) return { error: "What should change on that form?" };
+    return { preview: { title: `Change the form "${r.row.name}"`, lines } };
+  },
+  run: async (a, ctx) => {
+    const r = one(await pick("crm_forms", "name", str(a.find_name, 120), ctx, "id, name, fields"), "name");
+    if (!r.row) throw new Error(r.error);
+    const patch: Record<string, unknown> = {};
+    if (str(a.new_name, 120)) patch.name = str(a.new_name, 120);
+    if (Array.isArray(a.fields)) {
+      const f = cleanFields(a.fields);
+      if (f) patch.fields = f;
+    }
+    const { error } = await ctx.db.from("crm_forms").update(patch).eq("id", r.row.id as string).eq("master_plan_id", ctx.planId);
+    if (error) throw new Error("The change didn't save.");
+    return { summary: `Updated the form "${patch.name ?? r.row.name}".`, undo: { id: r.row.id, before: { name: r.row.name, fields: r.row.fields } } };
+  },
+  undo: async (u, ctx) => {
+    await ctx.db.from("crm_forms").update(u.before as Record<string, unknown>).eq("id", u.id as string).eq("master_plan_id", ctx.planId);
+    return "Put the form back as it was.";
+  },
+};
+
+export const updateBookingLink: ActionTool = {
+  name: "update_booking_link",
+  kind: "write",
+  apiPath: "/api/calendars",
+  description: "Change one existing booking link: its name, description, length in minutes, or turn it off or on. Pick it by part of its name. The client approves first.",
+  parameters: {
+    type: "object",
+    properties: { find_name: { type: "string" }, new_name: { type: "string" }, description: { type: "string" }, duration_minutes: { type: "number" }, active: { type: "boolean" } },
+    required: ["find_name"],
+  },
+  plan: async (a, ctx) => {
+    const r = one(await pick("booking_calendars", "name", str(a.find_name, 120), ctx, "id, name, description, duration_min, active"), "name");
+    if (!r.row) return { error: r.error! };
+    const lines: string[] = [];
+    if (str(a.new_name, 120)) lines.push(`New name: ${str(a.new_name, 120)}`);
+    if (str(a.description, 2000)) lines.push("New description");
+    const d = Number(a.duration_minutes);
+    if (Number.isFinite(d) && d >= 5 && d <= 480) lines.push(`Length: ${r.row.duration_min ?? "?"} → ${Math.round(d)} minutes`);
+    if (typeof a.active === "boolean") lines.push(a.active ? "Turn it ON" : "Turn it OFF (people can no longer book)");
+    if (!lines.length) return { error: "What should change on that booking link?" };
+    return { preview: { title: `Change the booking link "${r.row.name}"`, lines } };
+  },
+  run: async (a, ctx) => {
+    const r = one(await pick("booking_calendars", "name", str(a.find_name, 120), ctx, "id, name, description, duration_min, active"), "name");
+    if (!r.row) throw new Error(r.error);
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (str(a.new_name, 120)) patch.name = str(a.new_name, 120);
+    if (str(a.description, 2000)) patch.description = str(a.description, 2000);
+    const d = Number(a.duration_minutes);
+    if (Number.isFinite(d) && d >= 5 && d <= 480) patch.duration_min = Math.round(d);
+    if (typeof a.active === "boolean") patch.active = a.active;
+    const { error } = await ctx.db.from("booking_calendars").update(patch).eq("id", r.row.id as string).eq("master_plan_id", ctx.planId);
+    if (error) throw new Error("The change didn't save.");
+    return { summary: `Updated the booking link "${patch.name ?? r.row.name}".`, undo: { id: r.row.id, before: { name: r.row.name, description: r.row.description, duration_min: r.row.duration_min, active: r.row.active } } };
+  },
+  undo: async (u, ctx) => {
+    await ctx.db.from("booking_calendars").update(u.before as Record<string, unknown>).eq("id", u.id as string).eq("master_plan_id", ctx.planId);
+    return "Put the booking link back as it was.";
+  },
+};
+
+export const updateSop: ActionTool = {
+  name: "update_sop",
+  kind: "write",
+  apiPath: "/api/sops",
+  description: "Change one existing SOP: its title, purpose, steps (replaces the list), owner, tools, or mark it active or draft. Pick it by part of its title. The client approves first.",
+  parameters: {
+    type: "object",
+    properties: {
+      find_title: { type: "string" },
+      new_title: { type: "string" },
+      purpose: { type: "string" },
+      steps: { type: "array", items: { type: "string" } },
+      owner: { type: "string" },
+      tools: { type: "string" },
+      status: { type: "string", enum: ["draft", "active"] },
+    },
+    required: ["find_title"],
+  },
+  plan: async (a, ctx) => {
+    const r = one(await pick("sops", "title", str(a.find_title, 160), ctx, "id, title, purpose, steps, owner, tools, status"), "title");
+    if (!r.row) return { error: r.error! };
+    const lines: string[] = [];
+    if (str(a.new_title, 160)) lines.push(`New title: ${str(a.new_title, 160)}`);
+    if (str(a.purpose, 1000)) lines.push("New purpose");
+    if (Array.isArray(a.steps) && a.steps.length) lines.push(`Steps replaced (${a.steps.length})`);
+    if (str(a.owner, 120)) lines.push(`Owner: ${str(a.owner, 120)}`);
+    if (str(a.tools, 300)) lines.push(`Tools: ${str(a.tools, 300)}`);
+    if (a.status === "draft" || a.status === "active") lines.push(`Status: ${r.row.status ?? "draft"} → ${a.status}`);
+    if (!lines.length) return { error: "What should change on that SOP?" };
+    return { preview: { title: `Change the SOP "${r.row.title}"`, lines } };
+  },
+  run: async (a, ctx) => {
+    const r = one(await pick("sops", "title", str(a.find_title, 160), ctx, "id, title, purpose, steps, owner, tools, status"), "title");
+    if (!r.row) throw new Error(r.error);
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (str(a.new_title, 160)) patch.title = str(a.new_title, 160);
+    if (str(a.purpose, 1000)) patch.purpose = str(a.purpose, 1000);
+    if (Array.isArray(a.steps) && a.steps.length) patch.steps = a.steps.map((x) => str(x, 600)).filter(Boolean).slice(0, 40);
+    if (str(a.owner, 120)) patch.owner = str(a.owner, 120);
+    if (str(a.tools, 300)) patch.tools = str(a.tools, 300);
+    if (a.status === "draft" || a.status === "active") patch.status = a.status;
+    const { error } = await ctx.db.from("sops").update(patch).eq("id", r.row.id as string).eq("master_plan_id", ctx.planId);
+    if (error) throw new Error("The change didn't save.");
+    const { id: _id, ...before } = r.row;
+    void _id;
+    return { summary: `Updated the SOP "${patch.title ?? r.row.title}".`, undo: { id: r.row.id, before } };
+  },
+  undo: async (u, ctx) => {
+    await ctx.db.from("sops").update(u.before as Record<string, unknown>).eq("id", u.id as string).eq("master_plan_id", ctx.planId);
+    return "Put the SOP back as it was.";
+  },
+};
+
+export const updateCustomField: ActionTool = {
+  name: "update_custom_field",
+  kind: "write",
+  apiPath: "/api/crm/custom-fields",
+  description: "Rename an extra contact field or change the choices of a choice field. Pick it by part of its name. The client approves first.",
+  parameters: { type: "object", properties: { find_label: { type: "string" }, new_label: { type: "string" }, options: { type: "array", items: { type: "string" } } }, required: ["find_label"] },
+  plan: async (a, ctx) => {
+    const r = one(await pick("crm_custom_fields", "label", str(a.find_label, 60), ctx, "id, label, type, options"), "label");
+    if (!r.row) return { error: r.error! };
+    const lines: string[] = [];
+    if (str(a.new_label, 60)) lines.push(`New name: ${str(a.new_label, 60)}`);
+    if (Array.isArray(a.options) && a.options.length) {
+      if (r.row.type !== "select") return { error: "Only choice fields have choices." };
+      lines.push(`Choices become: ${a.options.map((o) => str(o, 60)).filter(Boolean).join(", ")}`);
+    }
+    if (!lines.length) return { error: "What should change on that field?" };
+    return { preview: { title: `Change the contact field "${r.row.label}"`, lines } };
+  },
+  run: async (a, ctx) => {
+    const r = one(await pick("crm_custom_fields", "label", str(a.find_label, 60), ctx, "id, label, type, options"), "label");
+    if (!r.row) throw new Error(r.error);
+    const patch: Record<string, unknown> = {};
+    if (str(a.new_label, 60)) patch.label = str(a.new_label, 60);
+    if (Array.isArray(a.options) && a.options.length && r.row.type === "select") patch.options = a.options.map((o) => str(o, 60)).filter(Boolean).slice(0, 30);
+    const { error } = await ctx.db.from("crm_custom_fields").update(patch).eq("id", r.row.id as string).eq("master_plan_id", ctx.planId);
+    if (error) throw new Error("The change didn't save.");
+    return { summary: `Updated the contact field "${patch.label ?? r.row.label}".`, undo: { id: r.row.id, before: { label: r.row.label, options: r.row.options } } };
+  },
+  undo: async (u, ctx) => {
+    await ctx.db.from("crm_custom_fields").update(u.before as Record<string, unknown>).eq("id", u.id as string).eq("master_plan_id", ctx.planId);
+    return "Put the field back as it was.";
+  },
+};
+
+export const BUILDER_TOOLS: ActionTool[] = [listForms, createForm, updateForm, listBookingLinks, createBookingLink, updateBookingLink, listCustomFields, createCustomField, updateCustomField, listSops, createSop, updateSop, listSegments];
