@@ -1118,6 +1118,70 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "In the left menu under Daily Operations, there is a Content Calendar link, right below the Daily Compass. It opens the same calendar you reach from the Daily Compass, where you plan and schedule your posts.",
     keywords: ["content calendar", "menu", "navigation", "left menu", "daily operations", "social", "posts", "calendar"],
   },
+  {
+    id: "as-appearance",
+    category: "Account & Settings",
+    question: "How do I change the theme, text size or menu readability?",
+    answer:
+      "Open Settings, then Appearance. Choose Light, Dark or System for the theme, pick a colour scheme, set the font size (small, medium or large) and turn on compact mode if you want more on screen. The left menu text follows the font size you choose, so a larger size makes the menu easier to read too. You can also switch Light and Dark from the account panel at the bottom of the left menu.",
+    keywords: ["theme", "dark mode", "light mode", "text size", "font size", "appearance", "compact", "menu readability", "colour scheme", "color scheme"],
+  },
+  {
+    id: "as-new-version",
+    category: "Account & Settings",
+    question: "Why does a bar say a newer version is ready?",
+    answer:
+      "The Suite is updated often. If an update goes live while a page is open, a small bar appears at the bottom saying a newer version is ready. Click Refresh now to load it. Nothing you typed is lost if you refresh after saving. The Suite checks every 10 minutes and whenever you come back to the tab.",
+    keywords: ["newer version", "refresh", "update", "bar at the bottom", "refresh now", "new version", "reload"],
+  },
+  {
+    id: "as-install-phone",
+    category: "Account & Settings",
+    question: "Can I put the Suite on my phone's home screen?",
+    answer:
+      "Yes. The Suite works as a home-screen web app. Open it in your phone's browser, then use the browser's Share or menu button and choose Add to Home Screen. Quick Capture shows the steps for your phone. It then opens full screen like an app, with shortcuts to the pages you use most.",
+    keywords: ["phone", "home screen", "install", "app", "iphone", "android", "add to home screen", "mobile", "quick capture"],
+  },
+  {
+    id: "as-business-switcher",
+    category: "Account & Settings",
+    question: "How do I look at just one of my businesses?",
+    answer:
+      "If you run more than one business in the Suite, a Business picker sits in the header at the top of each page. Choose a business and key pages (Contacts, Pipeline, Offers, Tasks and others) show only that business; choose All businesses to see everything together. Your plan decides how many businesses you can have.",
+    keywords: ["business picker", "switch business", "multiple businesses", "one business", "all businesses", "business switcher", "header"],
+  },
+  {
+    id: "fin-stripe-sync",
+    category: "Finance",
+    question: "What does connecting Stripe do for my finances?",
+    answer:
+      "When you connect your own Stripe account (Settings, then Integrations, then Stripe), the Suite pulls your Stripe payments, refunds and fees into your finance ledger every morning, so your income and expenses stay current without typing them in. You can still add or change entries yourself, and the Financial Pulse on Executive Home updates as the entries arrive.",
+    keywords: ["stripe", "payments", "refunds", "fees", "finance ledger", "income", "sync", "financial pulse", "connect stripe"],
+  },
+  {
+    id: "ba-go-deeper",
+    category: "Business Alignment",
+    question: "What are the Go deeper questions on each pillar?",
+    answer:
+      "Each of the eight operations pillars has a Go deeper link. It opens a short set of questions (47 across all eight pillars) that go further than your assessments. Your choice and rating answers are scored into that pillar, so its score gets more accurate, and your written answers feed your AI insights. You can answer a few at a time and come back.",
+    keywords: ["go deeper", "pillar", "questions", "score", "accuracy", "operations pillars", "business alignment", "ai insights"],
+  },
+  {
+    id: "ba-health-cards",
+    category: "Business Alignment",
+    question: "What do the Business Alignment cards show?",
+    answer:
+      "The cards on Business Alignment show your overall score, a radar chart across your 12 business dimensions, each dimension's own score, how your score has trended over time, and a revenue snapshot. Each card has a help page in the Help menu that explains it in plain words. Scores update when you finish an assessment or answer Go deeper questions.",
+    keywords: ["business alignment", "cards", "score", "radar chart", "dimensions", "trend", "revenue snapshot", "health"],
+  },
+  {
+    id: "as-whats-new",
+    category: "Account & Settings",
+    question: "Where can I see what's new in the Suite?",
+    answer:
+      "Open Help, then Contact Support, and scroll to What's new. Every update is listed newest first. The whole list can be folded away, and each update opens and closes on its own (the newest starts open). Use Expand all or Collapse all. The page remembers whether you folded it on this device.",
+    keywords: ["what's new", "whats new", "updates", "release notes", "new features", "changelog", "contact support"],
+  },
 ];
 
 // Lightweight keyword-overlap retrieval: score each entry against the query and
