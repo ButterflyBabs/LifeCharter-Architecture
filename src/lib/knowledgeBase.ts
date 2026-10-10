@@ -279,6 +279,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["password", "passwords", "logins", "login vault", "password manager", "store passwords", "credentials", "vault", "save my passwords", "private", "encrypted"],
   },
   {
+    id: "st-who-opened-account",
+    category: "Getting Started",
+    question: "Can LifeCharter support see my account, and how do I know when they have?",
+    answer:
+      "To help with a support request, LifeCharter support may open your account in a read-only view. In that view nothing can be changed, sent or deleted, and your inbox, calendar, connected accounts, logins vault and billing details stay closed. Each time this happens is recorded and shown to you: open Settings and scroll to 'Who has opened my account' to see the dates.",
+    keywords: ["who has opened my account", "support access", "support can see", "read-only", "view as client", "privacy", "access log", "who can see my account", "opened my account"],
+  },
+  {
     id: "st-forgot-password",
     category: "Getting Started",
     question: "How do I set or reset my password, and what if it says there is no account for my email?",

@@ -110,6 +110,11 @@ export default function PrivacyPolicyPage() {
           We use reasonable administrative, technical, and physical safeguards to protect your information. No
           method of transmission or storage is completely secure, and we cannot guarantee absolute security.
         </p>
+        <p className={P}>
+          To help with a support request, LifeCharter support may open your account in a read-only view. In that view
+          nothing can be changed, sent or deleted, and your inbox, calendar, connected accounts, logins vault and
+          billing details stay closed. Each time this happens is recorded and shown to you in Settings.
+        </p>
 
         <h2 className={H2}>8. Children&apos;s Privacy</h2>
         <p className={P}>
