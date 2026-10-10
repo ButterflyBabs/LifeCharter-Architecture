@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
-import { authEnabled, sessionUser, isOwnerEmail, ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
+import { authEnabled, sessionUser, isOwnerEmail, prefersTeamAccount, ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { readViewAs } from "@/lib/viewAs";
 
 // The seeded demo workspace. When the lc_demo cookie is set, every data route
@@ -64,6 +64,24 @@ export async function getOrCreatePrimaryMasterPlan(): Promise<string | null> {
   return created.id as string;
 }
 
+// The master plan of the workspace an active/pending team member belongs to, or null.
+async function memberTeamPlanId(
+  supabase: ReturnType<typeof createServerClient>,
+  rawEmail: string | null | undefined
+): Promise<string | null> {
+  const email = (rawEmail ?? "").toLowerCase();
+  if (!email) return null;
+  const { data: member } = await supabase
+    .from("workspace_members")
+    .select("workspace_id, status")
+    .ilike("email", email)
+    .in("status", ["active", "pending"])
+    .maybeSingle();
+  if (!member?.workspace_id) return null;
+  const { data: ws } = await supabase.from("workspaces").select("master_plan_id").eq("id", member.workspace_id).maybeSingle();
+  return (ws?.master_plan_id as string) ?? null;
+}
+
 /**
  * The seam for per-client data. This is what every data route should call.
  *
@@ -104,6 +122,13 @@ export async function resolveMasterPlanId(): Promise<string | null> {
     .from("profiles")
     .upsert({ id: user.id, email: user.email ?? "" }, { onConflict: "id" });
 
+  // 0. Someone who is both an owner and a team member, and has switched into the team account
+  // (lc_acct cookie): the team account's plan comes first. The membership is re-checked here.
+  if (prefersTeamAccount()) {
+    const teamPlan = await memberTeamPlanId(supabase, user.email);
+    if (teamPlan) return teamPlan;
+  }
+
   // 1. Their own plan.
   const { data: mine } = await supabase
     .from("client_master_plans")
@@ -136,23 +161,8 @@ export async function resolveMasterPlanId(): Promise<string | null> {
   // 2.5 Team member: scope them to the OWNER's master plan (they work inside the
   // owner's data, limited later by their role). A member has no plan of their own.
   {
-    const email = (user.email ?? "").toLowerCase();
-    if (email) {
-      const { data: member } = await supabase
-        .from("workspace_members")
-        .select("workspace_id, status")
-        .ilike("email", email)
-        .in("status", ["active", "pending"])
-        .maybeSingle();
-      if (member?.workspace_id) {
-        const { data: ws } = await supabase
-          .from("workspaces")
-          .select("master_plan_id")
-          .eq("id", member.workspace_id)
-          .maybeSingle();
-        if (ws?.master_plan_id) return ws.master_plan_id as string;
-      }
-    }
+    const teamPlan = await memberTeamPlanId(supabase, user.email);
+    if (teamPlan) return teamPlan;
   }
 
   // 3. A fresh plan for this client.

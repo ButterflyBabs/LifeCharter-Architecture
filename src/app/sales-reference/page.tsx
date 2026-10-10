@@ -7,6 +7,7 @@ import { ContactsTab } from "./ContactsTab";
 import { WebsiteAlignment } from "./WebsiteAlignment";
 import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
+import AccountSwitcher from "@/components/layout/AccountSwitcher";
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -66,6 +67,9 @@ export default function SalesReferencePage() {
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
       <div className="mx-auto max-w-5xl px-6 py-16">
+        <div className="mb-6 flex justify-end">
+          <AccountSwitcher tone="dark" />
+        </div>
         <div className="mb-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
             Internal — Sales Call Reference

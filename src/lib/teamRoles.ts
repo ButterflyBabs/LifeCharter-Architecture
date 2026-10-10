@@ -21,6 +21,7 @@ export const SALES_APIS = [
   "/api/sales/checkout-session",
   "/api/sales/contacts",
   "/api/sales/save-call",
+  "/api/account/switch", // the account switcher: a Sales member who also has their own account can go back to it
 ];
 
 const under = (path: string, prefixes: string[]) => prefixes.some((p) => path === p || path.startsWith(p + "/"));

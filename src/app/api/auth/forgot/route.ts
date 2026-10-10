@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 //     Outlook/Gmail link scanners can't use the link up first.
 //   • The Supabase project's own reset email and Site URL stay untouched for
 //     the other app that shares this project.
-// Always answers "ok" so it never reveals whether an email has an account.
+// An address with no account gets a plain "no account" answer (404). Requests are rate-limited per IP and per address.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const recent = new Map<string, number[]>();
@@ -54,9 +54,21 @@ export async function POST(req: Request) {
   const supabase = createServerClient();
   const { data, error } = await supabase.auth.admin.generateLink({ type: "recovery", email });
   if (error || !data?.properties?.hashed_token) {
-    // No such account (or a transient failure): say nothing different.
-    if (error && !/not found|no user/i.test(error.message)) console.error("forgot-password generateLink:", error.message);
-    return ok;
+    // No such account: say so plainly (Babs's decision 2026-10-10: people typing a wrong or unregistered
+    // address should be told, not left waiting for an email that will never come). The per-IP and
+    // per-address limits above are what keep this from being used to probe for accounts in bulk.
+    const noAccount =
+      error?.status === 404 ||
+      (error as { code?: string } | null)?.code === "user_not_found" ||
+      /not found|no user/i.test(error?.message ?? "");
+    if (noAccount || (!error && !data?.properties?.hashed_token)) {
+      return NextResponse.json(
+        { error: "We couldn't find an account with that email address. Check the spelling, or write to support@lccommandsuite.com and we'll help.", code: "no_account" },
+        { status: 404 }
+      );
+    }
+    console.error("forgot-password generateLink:", error?.message);
+    return NextResponse.json({ error: "We couldn't send the email just now. Please try again in a minute." }, { status: 502 });
   }
 
   const base = new URL(req.url).origin;

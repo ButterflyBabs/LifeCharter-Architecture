@@ -292,8 +292,12 @@ export async function middleware(request: NextRequest) {
   let isTeamMember = false;
   let isHouseMember = false;
   let memberFeatures: FeatureMap | null = null;
-  // A paying client owns their own account: full access, no role limits.
-  if (user && !authed && (await isClientAccount(user.id))) authed = true;
+  // A paying client owns their own account: full access, no role limits. Someone who ALSO belongs to a
+  // team account (lc_acct=team, set by the account switcher) is treated as that team's member instead,
+  // with the role limits below; if the membership is gone they fall back to their own account.
+  const ownsAccount = Boolean(user) && !authed && (await isClientAccount(user!.id));
+  const wantsTeam = request.cookies.get("lc_acct")?.value === "team";
+  if (user && !authed && ownsAccount && !wantsTeam) authed = true;
   if (user && !authed && email) {
     const info = await getMemberInfo(email);
     authed = info.isMember;
@@ -304,6 +308,7 @@ export async function middleware(request: NextRequest) {
     // Sales outside the owner's own workspace falls back to view-only.
     if (memberRole === SALES_ROLE && !isHouseMember) memberRole = "viewer";
   }
+  if (user && !authed && ownsAccount) authed = true; // asked for the team account but not a member: their own
   const isSalesOnly = authed && isTeamMember && memberRole === SALES_ROLE;
   let isCommunityOnly = false;
   if (user && !authed && (await isCommunityMember(user.id))) {

@@ -51,6 +51,35 @@ export function isOwnerEmail(email: string | null | undefined): boolean {
   return Boolean(email && admins.includes(email.toLowerCase()));
 }
 
+// ── Account switcher ─────────────────────────────────────────────────────────
+// One login can be BOTH the owner of its own account AND an invited team member of someone
+// else's (Marcello: his own account + AmiLynne's Sales role). Their last choice is kept in the
+// lc_acct cookie ("team" = work inside the team account; anything else = their own account).
+// The cookie is only a preference: every use below re-checks that the membership really exists.
+export const ACCOUNT_COOKIE = "lc_acct";
+
+export function prefersTeamAccount(): boolean {
+  try {
+    return cookies().get(ACCOUNT_COOKIE)?.value === "team";
+  } catch {
+    return false; // outside a request scope
+  }
+}
+
+// Does this login own an account of its own (a client plan or a workspace)?
+export async function hasOwnAccount(userId: string): Promise<boolean> {
+  try {
+    const supabase = createServiceClient();
+    const [plan, space] = await Promise.all([
+      supabase.from("client_master_plans").select("id").eq("user_id", userId).limit(1),
+      supabase.from("workspaces").select("id").eq("owner_id", userId).limit(1),
+    ]);
+    return Boolean(plan.data?.length || space.data?.length);
+  } catch {
+    return false;
+  }
+}
+
 export async function isSuperAdmin(): Promise<boolean> {
   if (!authEnabled()) return true; // single-user owner context
   const user = await sessionUser();
@@ -112,6 +141,10 @@ export async function resolveActor(): Promise<Actor> {
 
   const email = (user.email || "").toLowerCase();
   if (!email) return none;
+
+  // Someone with their own account who has not switched into the team account is working as the
+  // owner of their own account, exactly like any other client: the team role does not apply.
+  if (!prefersTeamAccount() && (await hasOwnAccount(user.id))) return none;
 
   try {
     const supabase = createServiceClient();

@@ -14,6 +14,7 @@ import { NotificationsBell } from "./NotificationsBell";
 import { FeedbackButton } from "./FeedbackButton";
 import { QuickAddMenu } from "./QuickAddMenu";
 import { BusinessSwitcher } from "./BusinessSwitcher";
+import AccountSwitcher from "./AccountSwitcher";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -107,6 +108,9 @@ export function Header({
 
       {/* Right: Search & Actions */}
       <div className="flex items-center gap-3">
+        {/* Own account vs a team account: only for someone who has both */}
+        <AccountSwitcher />
+
         {/* Search */}
         <div
           className={cn(

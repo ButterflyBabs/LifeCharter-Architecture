@@ -1,4 +1,4 @@
-import { authEnabled, isOwnerEmail, sessionUser, superAdminEmails } from "@/lib/authz";
+import { authEnabled, isOwnerEmail, prefersTeamAccount, sessionUser, superAdminEmails } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 
@@ -25,8 +25,10 @@ export async function resolveAiAccount(): Promise<AiAccount> {
 
   if (user) {
     const isOwner = isOwnerEmail(user.email);
+    // Someone who switched into a team account (lc_acct) runs AI on that account's owner, not their own.
+    const inTeam = !isOwner && prefersTeamAccount();
     const { data: own } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
-    if (own?.id) return { profileId: own.id as string, canEdit: true, isOwner };
+    if (own?.id && !inTeam) return { profileId: own.id as string, canEdit: true, isOwner };
 
     // An invited team member works inside someone else's account.
     if (user.email) {
@@ -41,6 +43,8 @@ export async function resolveAiAccount(): Promise<AiAccount> {
         if (ws?.owner_id) return { profileId: ws.owner_id as string, canEdit: false, isOwner: false };
       }
     }
+    // Asked for the team account but not (any longer) a member: fall back to their own account.
+    if (own?.id) return { profileId: own.id as string, canEdit: true, isOwner };
     // Signed in without a Command Suite account (e.g. Collective-only).
     return { profileId: null, canEdit: false, isOwner };
   }
