@@ -47,13 +47,18 @@ const TIER_PRICES: Record<string, { monthlyPriceId: string; implementationPriceI
   },
 };
 
+// Implementation fee by tier, in cents (matches the live Implementation Fee prices and the plans table).
+const IMPLEMENTATION_CENTS: Record<string, number> = { starter: 249700, growth: 299700, vip: 499700 };
+const TIER_NAME: Record<string, string> = { starter: "Starter", growth: "Growth", vip: "VIP" };
+const ALUMNI_CREDIT_CENTS = 50000;
+
 export async function POST(req: NextRequest) {
   try {
     if (!stripe) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { tier, email, fullName, sessionSource, alumni } = await req.json();
+    const { tier, email, fullName, sessionSource, alumni, split } = await req.json();
     const prices = TIER_PRICES[tier as string];
     if (!prices) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -63,17 +68,38 @@ export async function POST(req: NextRequest) {
     }
     const isAlumni = alumni === true;
 
+    // 50/50 plan: half of the implementation fee today, the other half 30 days later (added by the webhook once the
+    // checkout completes, so it lands on the invoice that also carries the first monthly charge). The alumni credit
+    // simply comes off the total before it is halved.
+    const isSplit = split === true;
+    const totalImpl = (IMPLEMENTATION_CENTS[tier as string] ?? 0) - (isAlumni && isSplit ? ALUMNI_CREDIT_CENTS : 0);
+    const firstHalf = Math.ceil(totalImpl / 2);
+    const secondHalf = totalImpl - firstHalf;
+    const tierName = TIER_NAME[tier as string] ?? String(tier);
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: email || undefined,
-      line_items: [
-        { price: prices.monthlyPriceId, quantity: 1 },
-        { price: prices.implementationPriceId, quantity: 1 },
-      ],
-      // Alumni get the $500 implementation credit instead of the free month —
-      // never both (Terms of Sale 3.5). Stripe checkout only accepts one
-      // `discounts` entry, so the two paths are mutually exclusive here too.
-      discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }],
+      line_items: isSplit
+        ? [
+            { price: prices.monthlyPriceId, quantity: 1 },
+            {
+              quantity: 1,
+              price_data: {
+                currency: "usd",
+                unit_amount: firstHalf,
+                product_data: { name: `LifeCharter Command Suite ${tierName} - Implementation Fee (payment 1 of 2)` },
+              },
+            },
+          ]
+        : [
+            { price: prices.monthlyPriceId, quantity: 1 },
+            { price: prices.implementationPriceId, quantity: 1 },
+          ],
+      // Alumni get the $500 implementation credit instead of the free month, never both (Terms of Sale 3.5).
+      // Stripe checkout only accepts one `discounts` entry, so the paths are mutually exclusive here too. On the
+      // 50/50 plan the credit is already taken off the total above, so only the standard path adds a discount.
+      ...(isAlumni && isSplit ? {} : { discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }] }),
       success_url: `${APP_URL}/sales-reference?checkout=success`,
       cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
       metadata: {
@@ -83,6 +109,7 @@ export async function POST(req: NextRequest) {
         sessionSource: sessionSource || "",
         alumni: isAlumni ? "true" : "false",
         affiliate: cookies().get(AFF_COOKIE)?.value || "",
+        ...(isSplit ? { implPlan: "split", implSecondHalfCents: String(secondHalf) } : {}),
       },
     });
 

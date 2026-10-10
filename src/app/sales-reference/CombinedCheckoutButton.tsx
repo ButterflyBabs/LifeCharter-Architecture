@@ -14,6 +14,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [alumni, setAlumni] = useState(false);
+  const [split, setSplit] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
       const res = await fetch("/api/sales/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni }),
+        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni, split }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
@@ -61,10 +62,21 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         One link, both charges
       </p>
       <p className="text-xs text-[#b8a898] mt-1">
-        {implementationDisplay} today + {monthlyDisplay} starting in one billing cycle —{" "}
+        {split ? `Half of the ${implementationDisplay} implementation fee today` : `${implementationDisplay} today`} + {monthlyDisplay} starting in one billing cycle
+        {split ? ", the other half 30 days later, on the same invoice as the first monthly charge" : ""} —{" "}
         {alumni ? "$500 alumni implementation credit" : "FIRSTMONTHFREE"} applied automatically, nothing for the
         client to type.
       </p>
+
+      <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
+        <input
+          type="checkbox"
+          checked={split}
+          onChange={(e) => setSplit(e.target.checked)}
+          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
+        />
+        Split the implementation fee: 50% today, 50% in 30 days
+      </label>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
         <input
@@ -99,7 +111,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         disabled={state === "busy"}
         className="mt-3 w-full rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] text-[#1a2b4a] font-semibold px-4 py-2.5 text-sm disabled:opacity-60"
       >
-        {state === "busy" ? "Creating checkout…" : "Send combined checkout"}
+        {state === "busy" ? "Creating checkout…" : split ? "Send 50/50 checkout" : "Send combined checkout"}
       </button>
       {state === "error" && <p className="text-xs text-red-300 mt-2">{errorMsg}</p>}
 
