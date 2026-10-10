@@ -57,17 +57,31 @@ export async function POST(request: Request) {
   const user = await sessionUser();
   if (!user?.email) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
-  let body: { planId?: string; reason?: string } = {};
+  let body: { planId?: string; email?: string; reason?: string } = {};
   try {
     body = await request.json();
   } catch {
     /* empty body */
   }
-  const planId = (body.planId || "").trim();
+  const supabase = createServerClient();
+  let planId = (body.planId || "").trim();
+  // From a Support Desk ticket: find the client's account by the email on the ticket.
+  if (!planId && body.email) {
+    const email = String(body.email).trim().toLowerCase();
+    const { data: byEmail } = await supabase
+      .from("client_master_plans")
+      .select("id")
+      .ilike("client_email", email)
+      .not("user_id", "is", null)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    planId = (byEmail?.id as string) || "";
+    if (!planId) return NextResponse.json({ error: "That person doesn't have a Command Suite account yet." }, { status: 404 });
+  }
   if (!planId) return NextResponse.json({ error: "Choose a client." }, { status: 400 });
   const reason = (body.reason || "").trim().slice(0, 300) || null;
 
-  const supabase = createServerClient();
   const { data: plan } = await supabase
     .from("client_master_plans")
     .select("id, client_name, client_email, user_id")

@@ -115,6 +115,10 @@ export default function PrivacyPolicyPage() {
           nothing can be changed, sent or deleted, and your inbox, calendar, connected accounts, logins vault and
           billing details stay closed. Each time this happens is recorded and shown to you in Settings.
         </p>
+        <p className={P}>
+          If a message to the assistant suggests you may be in distress or in danger, we may notify a member of the
+          LifeCharter team so that a person can check in with you.
+        </p>
 
         <h2 className={H2}>8. Children&apos;s Privacy</h2>
         <p className={P}>

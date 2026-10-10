@@ -168,6 +168,22 @@ export default function SupportDesk() {
                       {cur.name} · <a href={`mailto:${cur.email}`} className="underline">{cur.email}</a> · {cur.category} · {cur.priority}
                       {cur.source === "travel_partner" ? " · from Travel Partner" : ""} · opened {when(cur.created_at)}
                     </p>
+                    <button
+                      type="button"
+                      className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#2E7C83] px-3 py-1 text-xs font-semibold text-[#2E7C83] hover:bg-[#2E7C83]/10"
+                      onClick={async () => {
+                        const r = await fetch("/api/admin/view-as", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email: cur.email, reason: `Support request: ${cur.subject}`.slice(0, 280) }),
+                        });
+                        const j = await r.json().catch(() => ({}));
+                        if (r.ok) window.location.assign("/");
+                        else setMsg(String(j.error || "Couldn't open that account."));
+                      }}
+                    >
+                      View this client&apos;s account (read-only)
+                    </button>
                   </div>
                   <select
                     value={cur.status}
