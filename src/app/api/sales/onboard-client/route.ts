@@ -6,7 +6,6 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
 import { sessionUser } from "@/lib/authz";
 import { approvedClientTemplate } from "@/lib/email/clientTemplate";
 import { renderAccountEmail, sendRendered } from "@/lib/email/accountReadyEmail";
-import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
 
 /**
  * Called from the New Client form on /sales-reference after Marcello closes
@@ -86,9 +85,7 @@ export async function POST(req: NextRequest) {
       body.fullName,
       { skipWelcome: Boolean(tpl) }
     );
-    if (tpl && isNewAccount) {
-      await supabase.from("lccs_welcome_log").upsert(["welcome", "day1"].filter((k) => WELCOME_EMAILS.some((w) => w.key === k)).map((k) => ({ user_id: userId, email_key: k })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
-    }
+    // The New Client Setup Walkthrough (Email 1 of LCCS New Client Welcome) follows about 3 minutes after the account-ready email.
 
     // 2. Store the full intake record.
     const { error: insertError } = await supabase.from("client_intake_submissions").insert({

@@ -46,6 +46,7 @@ export async function GET() {
     for (const e of WELCOME_EMAILS) {
       const at = sentAt.get(`${c.user_id}:${e.key}`);
       if (at) cells[e.key] = { state: "sent", at };
+      else if (e.key === "welcome") cells[e.key] = { state: offset > 1 ? "missed" : "due", note: "About 3 minutes after the account is created" };
       else if (offset < e.day) cells[e.key] = { state: "waiting", note: `Day ${e.day}` };
       else if (offset > e.day + 2) cells[e.key] = { state: "missed", note: "Window passed" };
       else if (state && (e.key === "day1" ? state.setupComplete : e.key === "day3" ? state.setupComplete && state.website : false)) cells[e.key] = { state: "skipped", note: e.key === "day1" ? "Setup already complete" : "Setup and website already done" };
@@ -64,7 +65,7 @@ export async function GET() {
 
   return NextResponse.json({
     enabled: welcomeEmailsEnabled(),
-    emails: WELCOME_EMAILS.map((e) => ({ key: e.key, day: e.day, subject: e.subject, sent: counts.get(e.key) ?? 0, rule: e.key === "day1" ? "Skipped once setup is complete" : e.key === "day3" ? "Skipped once setup is complete and the website is in" : "Always sent" })),
+    emails: WELCOME_EMAILS.map((e) => ({ key: e.key, day: e.day, subject: e.subject, sent: counts.get(e.key) ?? 0, rule: e.key === "welcome" ? "About 3 minutes after the account is created" : e.key === "day1" ? "Skipped once setup is complete" : e.key === "day3" ? "Skipped once setup is complete and the website is in" : "Always sent" })),
     clients: rows,
     recent: logs.slice(0, 25).map((l) => ({ userId: l.user_id, key: l.email_key, at: l.sent_at, name: clients.find((c) => c.user_id === l.user_id)?.client_name ?? null, email: clients.find((c) => c.user_id === l.user_id)?.client_email ?? null })),
   });

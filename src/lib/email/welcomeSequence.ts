@@ -28,8 +28,15 @@ const SIGN_OFF = "Head up - Wings out\nBabs 🦋";
 function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
+// [label](https://...) becomes a named link, **bold** becomes bold, and bare https:// links are linked as they are.
+const MD_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 function inline(s: string) {
-  return esc(s).replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" style="color:#2E7C83">$1</a>');
+  const links: [string, string][] = [];
+  const marked = s.replace(MD_LINK, (_m, label: string, url: string) => `\u0000${links.push([label, url]) - 1}\u0000`);
+  return esc(marked)
+    .replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" style="color:#2E7C83">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `<a href="${esc(links[+i][1])}" style="color:#2E7C83;font-weight:bold">${esc(links[+i][0])}</a>`);
 }
 
 // Plain text with "- " bullets and "1. " steps -> simple, email-safe HTML.
@@ -60,14 +67,16 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
     .replace("{{GREETING}}", first ? `Hi ${first},` : "Hi there,")
     .replace("{{INCLUDED}}", INCLUDED_BY_PLAN[(c.planId || "").toLowerCase()] || INCLUDED_BY_PLAN.starter)
     .replace("{{REVIEW_DUE}}", due);
-  const text = `${body}\n\n${SIGN_OFF}`;
+  // An email that already closes with Babs's own sign-off block is not given a second one.
+  const closed = /Head up - Wings out/i.test(body);
+  const text = closed ? body : `${body}\n\n${SIGN_OFF}`;
   const html = `<!doctype html><html><body style="margin:0;background:#FAF8F3">
   <span style="display:none;max-height:0;overflow:hidden">${esc(e.preview)}</span>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3;padding:28px 12px"><tr><td align="center">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:30px;border:1px solid #E6DDCB">
     <tr><td style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B8923F;font-weight:bold;padding-bottom:14px">LifeCharter Command Suite</td></tr>
     <tr><td>${toHtml(body)}</td></tr>
-    <tr><td style="font-family:Georgia,serif;font-size:17px;font-style:italic;color:#1a2b4a;padding-top:8px">Head up - Wings out<br>Babs 🦋</td></tr>
+    ${closed ? "" : `<tr><td style="font-family:Georgia,serif;font-size:17px;font-style:italic;color:#1a2b4a;padding-top:8px">Head up - Wings out<br>Babs 🦋</td></tr>`}
     <tr><td style="font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#7F8894;padding-top:22px">You're receiving this because you joined LifeCharter Command Suite. Questions? Reply, or write to support@lccommandsuite.com.</td></tr>
   </table></td></tr></table></body></html>`;
   return { subject: e.subject, text, html };

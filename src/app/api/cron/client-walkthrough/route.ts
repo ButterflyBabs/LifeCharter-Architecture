@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { ownerMasterPlanId } from "@/lib/sequences/engine";
 import { sendDueWalkthroughs } from "@/lib/clientWalkthrough";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +10,7 @@ export const maxDuration = 60;
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const house = await ownerMasterPlanId().catch(() => null);
-  if (!house) return NextResponse.json({ error: "No house account." }, { status: 500 });
-  return NextResponse.json(await sendDueWalkthroughs(createServerClient(), house));
+  return NextResponse.json(await sendDueWalkthroughs(createServerClient()));
 }
 export const GET = run;
 export const POST = run;

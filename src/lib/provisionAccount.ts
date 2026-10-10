@@ -1,6 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
-import { sendWelcomeEmail } from "@/lib/email/welcomeSequence";
 import { ensureClientAffiliate } from "@/lib/affiliateStarter";
 import { queueClientWalkthrough } from "@/lib/clientWalkthrough";
 
@@ -47,7 +46,8 @@ export async function provisionAccountForEmail(
     if (fullName?.trim()) update.full_name = fullName.trim();
     await supabase.from("profiles").update(update).eq("id", existingProfile.id);
     await joinCommandSuiteCommunity(supabase, existingProfile.id, fullName);
-    if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId: existingProfile.id, email: normalizedEmail, name: fullName ?? null, planId, enrolledAt: new Date().toISOString() }, "welcome");
+    // Email 1 (the New Client Setup Walkthrough) is queued; it sends once per person, about 3 minutes from now.
+    if (!opts.skipWelcome && !opts.skipWalkthrough) await queueClientWalkthrough(supabase as never, { email: normalizedEmail, userId: existingProfile.id, name: fullName ?? null });
     return { userId: existingProfile.id, workspaceId: existingProfile.workspace_id, isNewAccount: false };
   }
 
@@ -115,11 +115,10 @@ export async function provisionAccountForEmail(
   await joinCommandSuiteCommunity(supabase, userId, displayName);
   // A ready affiliate page with a link for every LifeCharter product.
   await ensureClientAffiliate({ email: normalizedEmail, name: displayName });
-  // Email 1 of the welcome sequence (no-op until WELCOME_EMAILS_ENABLED=true; sends once).
-  if (!opts.skipWelcome) await sendWelcomeEmail(supabase, { userId, email: normalizedEmail, name: fullName?.trim() || null, planId, enrolledAt: new Date().toISOString() }, "welcome");
 
-  // The New Client Setup Walkthrough email follows about 3 minutes later (sent by a once-a-minute job, and only
-  // while app_settings client_walkthrough_on is true). Team members exploring their own account don't get it.
+  // Email 1 of LCCS New Client Welcome, the New Client Setup Walkthrough, follows about 3 minutes later (sent by a
+  // once-a-minute job; no-op until WELCOME_EMAILS_ENABLED=true and app_settings client_walkthrough_on = true; once
+  // per person). Team members exploring their own account don't get it.
   if (!opts.skipWalkthrough) await queueClientWalkthrough(supabase as never, { email: normalizedEmail, userId, name: displayName });
 
   return { userId, workspaceId: workspace.id, isNewAccount: true };
