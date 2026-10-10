@@ -29,14 +29,14 @@ import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
-import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { ALUMNI_PROMOTION_CODE_ID, TIER_PRICES } from "@/lib/stripeCatalog";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 // The Starter Implementation Fee's real catalog price — same id as
 // checkout-session's TIER_PRICES.starter.implementationPriceId (confirmed
 // against the live Stripe dashboard, not generated dynamically). Used only
 // on the alumni path so LCALUMNI500's product restriction can match it.
-const STARTER_IMPLEMENTATION_PRICE_ID = "price_1UFx60LtotgP5J18Vih3WrJs";
+const STARTER_IMPLEMENTATION_PRICE_ID = TIER_PRICES.starter.implementationPriceId;
 
 export async function POST(req: NextRequest) {
   try {

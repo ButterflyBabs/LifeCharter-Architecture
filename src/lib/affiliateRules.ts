@@ -3,7 +3,8 @@
 
 // The Command Suite implementation fee prices (Starter, Growth, VIP). Lines are also recognised by name,
 // so a Payment Link made from another price still counts.
-export const IMPLEMENTATION_PRICE_IDS = ["price_1UFx60LtotgP5J18Vih3WrJs", "price_1UFx7VLtotgP5J18pOPwa8yO", "price_1UFx9vLtotgP5J18LDbeFXIE"];
+import { IMPLEMENTATION_PRICE_IDS } from "@/lib/stripeCatalog";
+export { IMPLEMENTATION_PRICE_IDS };
 
 const money = (n: number) => Math.round(n * 100) / 100;
 

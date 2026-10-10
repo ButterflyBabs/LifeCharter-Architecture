@@ -26,26 +26,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
-import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { ALUMNI_PROMOTION_CODE_ID, FIRST_MONTH_FREE_COUPON_ID, TIER_PRICES } from "@/lib/stripeCatalog";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
-
-const FIRST_MONTH_FREE_COUPON_ID = "CwLz0M07"; // FIRSTMONTHFREE
-
-const TIER_PRICES: Record<string, { monthlyPriceId: string; implementationPriceId: string }> = {
-  starter: {
-    monthlyPriceId: "price_1UFxEMLtotgP5J189ky7bu03",
-    implementationPriceId: "price_1UFx60LtotgP5J18Vih3WrJs",
-  },
-  growth: {
-    monthlyPriceId: "price_1UFxF1LtotgP5J18KeV9NI2y",
-    implementationPriceId: "price_1UFx7VLtotgP5J18pOPwa8yO",
-  },
-  vip: {
-    monthlyPriceId: "price_1UFxFuLtotgP5J188iWSSUg2",
-    implementationPriceId: "price_1UFx9vLtotgP5J18LDbeFXIE",
-  },
-};
 
 export async function POST(req: NextRequest) {
   try {
