@@ -15,7 +15,7 @@ export const maxDuration = 300;
 // default "Founder's Half Hour") unknown attendees are added as new contacts. Others are skipped.
 // ?dry=1 (owner only, signed in) shows what would happen and writes nothing; add &days=14 to look further back.
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+const slug = (s: string) => s.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 const MIN_MINUTES = 5;
 
 async function run(dry: boolean, days = 3) {
