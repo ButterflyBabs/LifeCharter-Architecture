@@ -533,7 +533,7 @@ export default function DailyCompassPage() {
         {/* Today's Focus — drag to reorder */}
         <div className={`lg:col-span-3 space-y-6 ${focusCollapsed ? "rounded-xl bg-white p-4 shadow-sm dark:bg-[#1a2b4a]" : ""}`} {...cardProps("focus")}>
           {/* Action Bar */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-2">
             <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0] flex items-center gap-2">
               {dragHandle("focus")}
               Today&apos;s Focus
@@ -547,7 +547,7 @@ export default function DailyCompassPage() {
                 {focusCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
               </button>
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <div className="relative">
                 <select
                   className="text-sm p-2 pr-8 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]"
