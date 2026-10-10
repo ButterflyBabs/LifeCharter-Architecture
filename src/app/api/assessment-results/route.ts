@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { ownerMasterPlanId } from "@/lib/sequences/engine";
+import { ownerMasterPlanId, enrolContact } from "@/lib/sequences/engine";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
@@ -62,6 +62,12 @@ export async function POST(request: Request) {
   const { data: recent } = await db.from("crm_events").select("id").eq("contact_id", contact.id).eq("kind", "form").eq("title", "Completed the Executive Business Assessment").gte("created_at", since).limit(1);
   await logEvent(planId, contact.id, "form", "Completed the Executive Business Assessment", { data: { overall: String(overall ?? ""), top_gaps: gaps.map((g: { label: string }) => g.label).join(", "), recommendation: rec, ...Object.fromEntries(scores.map((s: { label: string; score: number }) => [s.label, String(s.score)])) } }, db);
   if (recent?.length) return NextResponse.json({ ok: true, crm: "saved" });
+
+  // Start the follow-up series, but only once it has been switched on (a draft series never starts anyone).
+  const { data: followUp } = await db.from("sequences").select("active").eq("master_plan_id", planId).eq("key", "executive-assessment-follow-up").maybeSingle();
+  if (followUp?.active) {
+    await enrolContact({ masterPlanId: planId, sequenceKey: "executive-assessment-follow-up", email, firstName: firstName || null, lastName: lastName || null, source: "executive-assessment" }).catch((e) => console.error("assessment follow-up enrol:", e));
+  }
 
   // Lead → Meta Conversions API (a page that also fires the pixel can post the same eventId).
   const ctx = browserContext(request, str(b.pageUrl, 1000) || null);
