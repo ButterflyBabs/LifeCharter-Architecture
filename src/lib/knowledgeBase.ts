@@ -329,6 +329,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["finance", "finance center", "money", "financial", "sections"],
   },
   {
+    id: "fi-connected",
+    category: "Finance",
+    question: "How do the Finance cards work together?",
+    answer:
+      "Everything you record lands in one ledger, and every Finance card reads it, so you enter something once. On the Finance Center each card shows a live line (income this month, spend against budget, bills due, budget left after bills, the tax set-aside, software spend), and every Finance page has a 'Connected to' strip that links to the cards it affects. Your Budget Planner counts bills that are still due this month, so each category shows what is spent, what is still due and what is left. Add forms suggest the categories you already use, so 'Software' and 'software' never split your reports. If you record an expense that matches a bill you track, you are offered a one-tap link so the bill moves to its next date and the same money isn't counted twice. Quick Capture and the Add window on Executive Home ask for the same details as the Finance pages. All amounts are entered in dollar format.",
+    keywords: ["finance", "connected", "cards", "ledger", "budget", "bills", "categories", "quick capture", "double count", "match", "link bill", "dollar", "live"],
+  },
+  {
     id: "fi-pulse",
     category: "Finance",
     question: "What is the Financial Pulse?",
@@ -365,7 +373,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Finance",
     question: "How does Tax Preparation help with quarterly taxes?",
     answer:
-      "The Tax module watches for uncategorized expenses and alerts you to categorize them first, so your estimate is accurate. Once expenses are clean, it calculates your estimated quarterly tax payment and adds a task to your list to pay it — with the proper amount. You'll always be cautioned about uncategorized expenses before it calculates, so you get the best possible assessment.",
+      "The Tax module watches for uncategorized expenses and alerts you to categorize them first, so your estimate is accurate. Once expenses are clean, it calculates your estimated quarterly tax payment and adds a task to your list to pay it — with the proper amount. You'll always be cautioned about uncategorized expenses before it calculates, so you get the best possible assessment. Taxes you have already paid are kept out of your deductions, and your tax rate is saved to your account. 'Add quarterly payment' puts it on your task list and on your Bills calendar once, so your budget sees it coming.",
     keywords: ["tax", "taxes", "quarterly", "estimated", "uncategorized", "tax prep", "irs"],
   },
   {
@@ -381,7 +389,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Finance",
     question: "What is the Tech Stack Optimizer?",
     answer:
-      "The Tech Stack Optimizer tracks your software spend from your ledger and uses AI to spot overlap, unused tools, and savings opportunities — so you can trim what you don't need and keep your tooling lean.",
+      "The Tech Stack Optimizer tracks your software spend from your ledger and uses AI to spot overlap, unused tools, and savings opportunities — so you can trim what you don't need and keep your tooling lean. It groups your tools by who you paid, shows how often each renews and whether it auto-renews, and has an Add to Bills button so each renewal lands on your calendar.",
     keywords: ["tech stack", "software", "subscriptions", "optimizer", "saas", "tools", "spend"],
   },
   {
