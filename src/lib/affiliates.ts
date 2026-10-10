@@ -111,7 +111,7 @@ export async function creditSale(
   db: Db,
   planId: string,
   // implementationAmount may be a function: it is only called when the link earns on the implementation fee only.
-  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; implementationAmount?: number | null | (() => Promise<number | null>); offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
+  input: { contactId: string | null; affiliateCode?: string | null; description: string; amount: number; implementationAmount?: number | null | (() => Promise<number | null>); implementationOnly?: boolean; offerId?: string | null; saleDate?: string; stripeRef?: string | null; source?: string }
 ) {
   let affiliateId: string | null = null;
   let linkId: string | null = null;
@@ -129,7 +129,14 @@ export async function creditSale(
   // A link that earns on the implementation fee only credits that part of a payment, and nothing else: a later
   // subscription payment (no implementation fee on it) is not credited. A link that earns on "all" credits every payment.
   let amount = input.amount;
-  if (linkId) {
+  if (input.implementationOnly) {
+    // Command Suite sales: affiliates are paid on the implementation fee only, whatever the link says. Monthly
+    // fees (and the year of monthly fees inside an annual payment) never earn a commission.
+    const impl = typeof input.implementationAmount === "function" ? await input.implementationAmount().catch(() => null) : input.implementationAmount ?? null;
+    const basis = creditBasis("implementation", input.amount, impl);
+    if (!basis.credit) return null;
+    amount = basis.amount;
+  } else if (linkId) {
     const { data: lk } = await db.from("affiliate_links").select("commission_on").eq("id", linkId).maybeSingle();
     let impl: number | null = null;
     if (lk?.commission_on === "implementation") impl = typeof input.implementationAmount === "function" ? await input.implementationAmount().catch(() => null) : input.implementationAmount ?? null;

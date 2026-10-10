@@ -201,6 +201,9 @@ export async function creditInvoiceForAffiliate(invoice: Stripe.Invoice): Promis
       affiliateCode,
       description: inv.billing_reason === "subscription_create" ? first || "LifeCharter Command Suite" : `Subscription payment${first ? `: ${first}` : ""}`,
       amount: paid / 100,
+      // Affiliates earn on the implementation fee only: a monthly payment with no implementation line earns nothing,
+      // and the second half of a 50/50 implementation fee (an invoice line) does.
+      implementationOnly: true,
       implementationAmount: implementationFromLines(lines),
       saleDate: day(paidAt),
       stripeRef: invoiceCreditRef(inv.id, inv.billing_reason, sessionId),
