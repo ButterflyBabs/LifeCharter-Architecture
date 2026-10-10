@@ -67,9 +67,9 @@ export default async function TermsOfSalePage() {
           The Suite is a combined software platform and coaching program. Depending on Client&apos;s tier, it
           includes the LifeCharter Command Suite web application &mdash; a business command audit across 12 Business
           Dimensions and 8 Operational Pillars, planning tools, financial tracking, and AI-assisted daily operations
-          &mdash; together with Architect-led coaching and community access (weekly community coaching, a weekly
-          tech-support call, and a private community). Company offers three tiers, described below and at
-          lccommandsuite.com.
+          &mdash; together with Architect-led coaching and community access (group coaching and support calls held on
+          weekdays, as published on the coaching calls schedule inside the Suite and subject to change, and a private
+          community). Company offers three tiers, described below and at lccommandsuite.com.
         </p>
         <div className="my-6 overflow-x-auto rounded-2xl border border-[#F3EEE4]/12">
           <table className="w-full text-left text-sm">
@@ -119,6 +119,13 @@ export default async function TermsOfSalePage() {
           thirty (30) days of completing the LifeCharter Program receives a one-time credit of $500 toward the
           Implementation Fee. The credit has no cash value, cannot be combined with other discounts unless Company agrees,
           and does not change the non-refundable status of the Implementation Fee described in Section 5.
+        </p>
+        <p className={P}>
+          3.6 Annual Pay-in-Full Option. In place of the Implementation Fee and the Monthly Fees for the first twelve
+          (12) months, Client may pay a single discounted amount at the time of purchase: Starter $5,000, Growth
+          $7,000, VIP $13,500. This payment covers the Implementation Fee and the Monthly Fees for the Year-1 Term, is
+          non-refundable on the same terms as Section 5, and any credit under Section 3.5 reduces it. Monthly Fees begin
+          after the Year-1 Term as described in Sections 3.2 and 4.3.
         </p>
 
         <h2 className={H2}>4. Year-1 Commitment</h2>

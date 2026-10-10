@@ -67,12 +67,9 @@ A sale earns you a commission when all of these are true:
 3. The link they came through earns on that kind of payment (below).
 4. The payment has not been refunded (section 8).
 
-**Each link has one of two settings, and we tell you which one yours has:**
+**LifeCharter Command Suite: implementation fee only.** For every Command Suite sale you earn only on the one-time implementation fee, after any discount. You do **not** earn on monthly fees, on later payments, or on the monthly fees included in an annual pay-in-full payment. If a client pays the implementation fee in two parts, each part counts as implementation fee. If a client pays for the first year in one payment, you earn on the implementation fee part of it only (the tier's implementation fee less any alumni credit), not on the monthly fees it also covers. [Decided by AmiLynne 2026-10-10.]
 
-- **Every payment.** You earn on every payment the credited person makes for the products your link covers. This includes later payments on a subscription or payment plan. Each payment is credited once.
-- **Implementation fee only.** You earn only on the one-time implementation fee. You do **not** earn on monthly or other later payments, and you do not earn on other products the person buys.
-
-If a payment includes both an implementation fee and something else, a link set to "implementation fee only" earns only on the implementation fee part, after any discount.
+**Other products.** For anything else we sell through your link, each link is set to either "every payment" (you earn on each payment the credited person makes for the product, each payment credited once) or "implementation fee only"; we tell you which one yours has.
 
 ## 6. How the commission is worked out
 
@@ -161,7 +158,7 @@ For AmiLynne's reference only. Remove this part before the agreement goes to any
 | Agreement section | What the Command Suite does today |
 | --- | --- |
 | 3. 365-day memory | The `/r/<code>` link sets a cookie for 365 days. Product links last 365 days and can be renewed; a 30-day heads-up email goes to the owner and the affiliate. The first affiliate a person comes through is kept. |
-| 5. Link setting | Each product link is "Earns on every credited payment" or "Earns on the implementation fee only". Later subscription payments are credited only on "every payment" links, one sale per payment (recurring payments are credited from the Stripe invoice). |
+| 5. Link setting | LifeCharter Command Suite: always the implementation fee only (monthly fees and the monthly part of an annual payment never earn). Other products: each link is "every credited payment" or "implementation fee only". One sale per payment. |
 | 6. Percentage | Order: affiliate + product rate, product's own rate, link rate, affiliate default. No rate yet: the sale waits in Review. |
 | 7. Hold | "Pay this many days after the payment" on the affiliate. Each sale shows a payable date and "Ready to pay". New client accounts start at 30 days. |
 | 8. Refunds | A full refund on an unpaid sale before its payable date marks it void (row kept, reason and Stripe refund id recorded). A paid sale, a partial refund, a refund after the hold, or a sale with no hold is flagged "Refund to review" with a note and nothing else changes. Repeating the same refund changes nothing. Chargebacks are not detected. |

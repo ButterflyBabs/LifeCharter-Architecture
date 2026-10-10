@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
             if (c) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
             if (c && typeof session.amount_total === "number") {
-              await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, implementationAmount: meta.implPlan === "annual" && Number(meta.implCents) > 0 ? Number(meta.implCents) / 100 : await implementationAmount(stripe, session.id).catch(() => null), stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+              await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, implementationOnly: true, implementationAmount: meta.implPlan === "annual" && Number(meta.implCents) > 0 ? Number(meta.implCents) / 100 : await implementationAmount(stripe, session.id).catch(() => null), stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
             }
           }
         }
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
             const impl = await implementationAmount(stripe, session.id).catch(() => null);
             if (impl && impl > 0) {
               const { data: person } = await affDb().from("seq_contacts").select("id").eq("master_plan_id", plan).eq("email", buyer.toLowerCase()).maybeSingle();
-              if (person) await creditSale(affDb(), plan, { contactId: person.id as string, description: "LifeCharter Command Suite (implementation fee)", amount: session.amount_total != null ? session.amount_total / 100 : impl, implementationAmount: impl, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
+              if (person) await creditSale(affDb(), plan, { contactId: person.id as string, description: "LifeCharter Command Suite (implementation fee)", implementationOnly: true, amount: session.amount_total != null ? session.amount_total / 100 : impl, implementationAmount: impl, stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
             }
           }
         }
