@@ -183,7 +183,7 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
-    { id: "master-punch-list", label: "Master Punch List", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
+    { id: "master-punch-list", label: "Master Punch List (archive)", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "sneak-peek-run-of-show", label: "Sneak Peek Run of Show", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "masterclass-script-1008", label: "10/08 MasterClass Script", icon: BookOpen, href: "https://claude.ai/artifact/8BTWYQvfDSeFQNpWd7BF5j" },
     { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
