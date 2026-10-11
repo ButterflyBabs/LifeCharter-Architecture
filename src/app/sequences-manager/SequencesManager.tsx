@@ -9,6 +9,7 @@ import BroadcastsTab from "../contacts/BroadcastsTab";
 import WelcomeSeriesTab from "./WelcomeSeriesTab";
 import NewClients from "../new-clients/NewClients";
 import EventEmailsTab from "./EventEmailsTab";
+import LbdSummitTab from "./LbdSummitTab";
 import { offersOf } from "@/lib/offerSections";
 import OfferSections from "@/components/crm/OfferSections";
 import ContactPicker, { personName } from "../contacts/ContactPicker";
@@ -80,13 +81,14 @@ export default function SequencesManager() {
   const [resend, setResend] = useState<{ enrollmentId: string; stepId: string } | null>(null);
   // "Send to someone": one email of the campaign to any address, right now, without enrolling them.
   const [sendOne, setSendOne] = useState<{ stepId: string; email: string } | null>(null);
-  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events" | "clients">("campaigns");
+  const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events" | "clients" | "lbd">("campaigns");
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "broadcasts") setPageTab("broadcasts");
     if (t === "welcome") setPageTab("welcome");
     if (t === "events") setPageTab("events");
     if (t === "clients") setPageTab("clients");
+    if (t === "lbd") setPageTab("lbd");
   }, []);
 
   const loadList = useCallback(async () => {
@@ -170,6 +172,8 @@ export default function SequencesManager() {
               ? <>Campaigns are timed email series: each email goes out at the set hour in each person&rsquo;s own time zone. Only your account sees these.</>
               : pageTab === "welcome"
               ? <>The LCCS New Client Welcome emails: read and edit them, and see who has been sent what and what is waiting.</>
+              : pageTab === "lbd"
+              ? <>The Life by Design Summit (April 15 to 17, 2027): its pre-Summit emails and registration confirmations in one place, with who has registered.</>
               : pageTab === "clients"
               ? <>New Client Accounts: each new client&rsquo;s &ldquo;your account is ready&rdquo; email, written, approved and sent from here. Their walkthrough follows automatically.</>
               : pageTab === "events"
@@ -190,14 +194,14 @@ export default function SequencesManager() {
       )}
 
       <div className="flex gap-2 mb-5">
-        {((sender?.house ? ["campaigns", "broadcasts", "events", "clients", "welcome"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome" | "events" | "clients")[]).map((t) => (
+        {((sender?.house ? ["campaigns", "broadcasts", "events", "clients", "welcome", "lbd"] : ["campaigns", "broadcasts"]) as ("campaigns" | "broadcasts" | "welcome" | "events" | "clients" | "lbd")[]).map((t) => (
           <button key={t} onClick={() => setPageTab(t)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${pageTab === t ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : t === "events" ? "Event emails" : t === "clients" ? "New Client Accounts" : "LCCS New Client Welcome"}
+            {t === "campaigns" ? "Campaigns" : t === "broadcasts" ? "Broadcasts" : t === "events" ? "Event emails" : t === "clients" ? "New Client Accounts" : t === "lbd" ? "Life by Design Summit" : "LCCS New Client Welcome"}
           </button>
         ))}
       </div>
 
-      {pageTab === "events" ? <EventEmailsTab /> : pageTab === "clients" ? <NewClients embedded /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
+      {pageTab === "lbd" ? <LbdSummitTab /> : pageTab === "events" ? <EventEmailsTab /> : pageTab === "clients" ? <NewClients embedded /> : pageTab === "welcome" ? <WelcomeSeriesTab /> : pageTab === "broadcasts" ? <BroadcastsTab setMsg={setMsg} /> : (
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="space-y-2 min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
           <OfferSections items={list ?? []} storageKey="campaigns">
