@@ -41,6 +41,28 @@ export async function GET() {
   const counts = new Map<string, number>();
   for (const l of logs) counts.set(l.email_key, (counts.get(l.email_key) ?? 0) + 1);
 
+  // Who received each email, all time (not only the last 30 days): name, address and when.
+  const uids = Array.from(new Set(logs.map((l) => l.user_id)));
+  const who = new Map<string, { name: string; email: string }>();
+  if (uids.length) {
+    const [{ data: ps }, { data: pr }] = await Promise.all([
+      db.from("client_master_plans").select("user_id, client_name, client_email, created_at").in("user_id", uids).order("created_at"),
+      db.from("profiles").select("id, email, full_name").in("id", uids),
+    ]);
+    for (const p of (pr ?? []) as { id: string; email: string | null; full_name: string | null }[]) who.set(p.id, { name: p.full_name || "", email: p.email || "" });
+    for (const p of (ps ?? []) as { user_id: string; client_name: string | null; client_email: string | null }[]) {
+      const cur = who.get(p.user_id);
+      if (p.client_name && p.client_name !== "Primary" && p.client_name !== DEMO_PLAN_NAME) who.set(p.user_id, { name: p.client_name, email: p.client_email || cur?.email || "" });
+    }
+  }
+  const recipients = new Map<string, { name: string; email: string; at: string }[]>();
+  for (const l of logs) {
+    const w = who.get(l.user_id);
+    const list = recipients.get(l.email_key) ?? [];
+    list.push({ name: w?.name || w?.email || "Unknown account", email: w?.email || "", at: l.sent_at });
+    recipients.set(l.email_key, list);
+  }
+
   const today = dayNumber(denverDay(new Date()));
   const rows = [];
   for (const c of clients) {
@@ -74,7 +96,7 @@ export async function GET() {
   return NextResponse.json({
     enabled: welcomeEmailsEnabled(),
     paused: await welcomeSeriesPaused(db),
-    emails: WELCOME_EMAILS.map((e) => ({ key: e.key, day: e.day, subject: e.subject, sent: counts.get(e.key) ?? 0, rule: e.key === "welcome" ? "About 3 minutes after the account is created" : e.key === "assessments" ? "About 1 hour after the account is created; skipped once all three assessments are done" : e.key === "day1" ? "Skipped once setup is complete" : e.key === "day3" ? "Skipped once setup is complete and the website is in" : "Always sent" })),
+    emails: WELCOME_EMAILS.map((e) => ({ key: e.key, day: e.day, subject: e.subject, sent: counts.get(e.key) ?? 0, recipients: recipients.get(e.key) ?? [], rule: e.key === "welcome" ? "About 3 minutes after the account is created" : e.key === "assessments" ? "About 1 hour after the account is created; skipped once all three assessments are done" : e.key === "day1" ? "Skipped once setup is complete" : e.key === "day3" ? "Skipped once setup is complete and the website is in" : "Always sent" })),
     clients: rows,
     recent: logs.slice(0, 25).map((l) => ({ userId: l.user_id, key: l.email_key, at: l.sent_at, name: clients.find((c) => c.user_id === l.user_id)?.client_name ?? null, email: clients.find((c) => c.user_id === l.user_id)?.client_email ?? null })),
   });

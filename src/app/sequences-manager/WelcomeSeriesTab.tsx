@@ -7,7 +7,7 @@ type Cell = { state: "sent" | "due" | "skipped" | "waiting" | "missed"; at?: str
 interface Data {
   enabled: boolean;
   paused?: boolean;
-  emails: { key: string; day: number; subject: string; sent: number; rule: string }[];
+  emails: { key: string; day: number; subject: string; sent: number; rule: string; recipients?: { name: string; email: string; at: string }[] }[];
   clients: { id: string; userId?: string; stopped?: boolean; name: string; email: string; joined: string; day: number; setup: { ai: boolean; assessments: boolean; tools: boolean; website: boolean } | null; cells: Record<string, Cell> }[];
   recent: { userId: string; key: string; at: string; name: string | null; email: string | null }[];
 }
@@ -35,6 +35,7 @@ export default function WelcomeSeriesTab() {
   const [err, setErr] = useState("");
   const [copy, setCopy] = useState<EmailCopy[]>([]);
   const [openKey, setOpenKey] = useState("");
+  const [whoKey, setWhoKey] = useState("");
   const [draft, setDraft] = useState({ subject: "", preview: "", body: "" });
   const [html, setHtml] = useState("");
   const [note, setNote] = useState("");
@@ -162,9 +163,34 @@ export default function WelcomeSeriesTab() {
                       <td className="py-2 pr-3 whitespace-nowrap font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{e.key === "assessments" ? "About 1 hour after joining" : e.day === 0 ? "About 3 minutes after joining" : `Day ${e.day}`}</td>
                       <td className="py-2 pr-3">{c?.subject || e.subject}{c?.edited && <span className="ml-2 rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#6b5410]">Edited</span>}</td>
                       <td className="py-2 pr-3 text-[#5a6472] dark:text-[#b8c2cf]">{e.rule}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{e.sent}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">
+                        {e.sent > 0 ? (
+                          <button className="font-semibold text-[#2E7C83] underline" aria-expanded={whoKey === e.key} onClick={() => setWhoKey(whoKey === e.key ? "" : e.key)}>{e.sent}</button>
+                        ) : e.sent}
+                      </td>
                       <td className="py-2 text-right"><button className={btn} onClick={() => edit(e.key)}><Pencil className="h-3 w-3" /> {openKey === e.key ? "Close" : "View or edit"}</button></td>
                     </tr>
+                    {whoKey === e.key && (
+                      <tr className="border-t border-[#1a2b4a]/10">
+                        <td colSpan={5} className="pb-4 pt-3">
+                          <div className="rounded-xl bg-[#1a2b4a]/[0.03] p-4">
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">Who received &ldquo;{c?.subject || e.subject}&rdquo; ({(e.recipients || []).length})</p>
+                            {(e.recipients || []).length === 0 ? (
+                              <p className="text-sm text-[#7a8a99]">No one yet.</p>
+                            ) : (
+                              <ul className="divide-y divide-[#1a2b4a]/10 text-sm">
+                                {(e.recipients || []).map((r, i) => (
+                                  <li key={`${r.email}-${i}`} className="flex flex-wrap items-baseline justify-between gap-2 py-1.5">
+                                    <span><b className="text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</b>{r.email && r.email !== r.name ? <span className="ml-2 text-xs text-[#7a8a99]">{r.email}</span> : null}</span>
+                                    <span className="text-xs text-[#7a8a99]">{when(r.at)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                     {openKey === e.key && (
                       <tr className="border-t border-[#1a2b4a]/10">
                         <td colSpan={5} className="pb-4 pt-3">
