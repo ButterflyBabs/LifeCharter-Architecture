@@ -153,6 +153,7 @@ const navigationSections = [
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },
       { id: "compliance", label: "Legal & Compliance", icon: Scale, href: "/compliance" },
+      { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
     ],
   },
   {
@@ -197,7 +198,6 @@ const ownerSection = {
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
-    { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
     { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
     { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
@@ -225,7 +225,7 @@ const DEMO_TOUR_ORDER = [
   "business-alignment", "progress", // Act 4: the whole business
   "goals", "review", "finance", "forecasting", // Act 5: plans and numbers
   "pipeline", "offers", "dm-pipeline", "contacts", "calendars", "sequences-manager", // Act 6: growing
-  "sops", "compliance", "glossary", // Act 7: systems
+  "sops", "compliance", "links-directory", "glossary", // Act 7: systems
   "demo-coaching-calls", "demo-collective-events", // Act 8: Executive Coaching
 ];
 const demoOnlyItems = [

@@ -343,6 +343,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["short link", "short links", "link shortener", "shorten a link", "bitly", "short.io", "tracked link", "qr code", "bio link", "custom domain", "own domain", "branded link"],
   },
   {
+    id: "gr-links-forms",
+    category: "Growth",
+    question: "Where do I find all my links and forms in one place?",
+    answer:
+      "Alignment & Systems → Links & Forms. It lists every address in your own account, read live so it never goes stale: the checkout and sales link on each offer (from Offers & Packages), every booking page (from Calendars), every form (from Campaigns & Broadcasts → Forms) and every short link (from Short Links, shown on your own short-link domain once it is verified). Each row has a Copy button and an Open button, and the search box finds a name or an address. A form or booking page that is switched off shows an Off tag. A section with nothing in it yet tells you where to create the first one. It fills in by itself as you create things; there is nothing to set up.",
+    keywords: ["links", "forms", "links and forms", "all my links", "form link", "booking link", "checkout link", "where is my link", "copy link", "link directory"],
+  },
+  {
     id: "sa-invite-tracker",
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
@@ -921,7 +929,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "How is the menu on the left organized?",
     answer:
-      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Content Calendar, Tasks, Projects, Accountability Partner, Quick Capture, The Collective, Finance, Offers & Packages and Testimonials. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Progress, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Weekly Review, Business Segments, Operations, Playbook & SOPs and Legal & Compliance. Settings holds your AI Assistant and Settings. Getting Started holds Set up Suite, First 30 Days, the Starter Guide and Website Review. While you are new, it sits at the top of the menu so it is easy to find, and once every First 30 Days step is complete it moves back to the bottom (or wherever you keep it). Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
+      "The left menu follows how you run the business, with like things together. Daily Operations is today's rhythm: Executive Home, Daily Compass, Content Calendar, Tasks, Projects, Accountability Partner, Quick Capture, The Collective, Finance, Offers & Packages and Testimonials. Clients & Sales is your CRM: Contacts, Pipeline, Outreach Pipelines, Calendars, Campaigns & Broadcasts, Invite Tracker, Affiliates and Short Links. Alignment & Systems holds the big picture, your four plans and how the business runs, all in one place: Business Alignment, Alignment Profile, Progress, Business Plan, Marketing Plan, Sales Plan, Forecasting, Goal Ladder, Planning Hub, Weekly Review, Business Segments, Operations, Playbook & SOPs, Legal & Compliance and Links & Forms. Settings holds your AI Assistant and Settings. Getting Started holds Set up Suite, First 30 Days, the Starter Guide and Website Review. While you are new, it sits at the top of the menu so it is easy to find, and once every First 30 Days step is complete it moves back to the bottom (or wherever you keep it). Click any section heading to fold it away; the page you're on always stays visible. Your photo and name at the bottom open Light/Dark mode, Sign out and your workspace.",
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {

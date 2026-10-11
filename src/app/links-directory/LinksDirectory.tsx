@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, Search } from "lucide-react";
+import { shortUrlFor } from "@/lib/shortLinks";
 
 const APP = "https://lccommandsuite.com";
 const SITE = "https://www.amilynnecarroll.com";
@@ -93,8 +94,19 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-function Section({ title, hint, rows, q }: { title: string; hint?: string; rows: Row[]; q: string }) {
+function Section({ title, hint, rows, q, empty }: { title: string; hint?: string; rows: Row[]; q: string; empty?: { text: string; href: string; label: string } }) {
   const shown = rows.filter((r) => !q || `${r.name} ${r.url} ${r.note ?? ""}`.toLowerCase().includes(q));
+  if (!shown.length && empty && !q) {
+    return (
+      <section className="mt-8">
+        <h2 className="font-serif text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{title} <span className="text-sm font-normal text-[#7a8a99]">(0)</span></h2>
+        <p className="mt-2 rounded-2xl border border-dashed border-[#1a2b4a]/15 px-4 py-3 text-sm text-[#7a8a99] dark:text-[#b8c2cf]">
+          {empty.text}{" "}
+          <a href={empty.href} className="font-medium text-[#2E7C83] underline dark:text-[#7fd0d6]">{empty.label}</a>
+        </p>
+      </section>
+    );
+  }
   if (!shown.length) return null;
   return (
     <section className="mt-8">
@@ -127,7 +139,7 @@ function Section({ title, hint, rows, q }: { title: string; hint?: string; rows:
 }
 
 export default function LinksDirectory() {
-  const [data, setData] = useState<{ offers: Offer[]; forms: Form[]; calendars: Calendar[]; shortLinks: Short[] } | null>(null);
+  const [data, setData] = useState<{ offers: Offer[]; forms: Form[]; calendars: Calendar[]; shortLinks: Short[]; shortDomain?: string | null; house?: boolean } | null>(null);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
 
@@ -156,15 +168,18 @@ export default function LinksDirectory() {
     [data]
   );
   const shorts: Row[] = useMemo(
-    () => (data?.shortLinks ?? []).map((s) => ({ name: s.title || s.code, url: `${APP}/l/${s.code}`, note: `goes to ${s.destination_url} · ${s.click_count ?? 0} clicks`, status: s.active ? undefined : "off" })),
+    () => (data?.shortLinks ?? []).map((s) => ({ name: s.title || s.code, url: shortUrlFor(s.code, data?.shortDomain ? { status: "verified", domain: data.shortDomain } : null), note: `goes to ${s.destination_url} · ${s.click_count ?? 0} clicks`, status: s.active ? undefined : "off" })),
     [data]
   );
+  const house = Boolean(data?.house);
 
   return (
     <div className="px-4 py-6 sm:px-6">
       <h1 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Links &amp; Forms</h1>
       <p className="mt-1 max-w-3xl text-sm text-[#7a8a99] dark:text-[#b8c2cf]">
-        Every address for every offering and every form, in one place. Offers, forms, booking pages and short links are read live from your account; the rest are the fixed pages. Copy a link or open it.
+        {house
+          ? "Every address for every offering and every form, in one place. Offers, forms, booking pages and short links are read live from your account; the rest are the fixed pages. Copy a link or open it."
+          : "Every link and form in your account, in one place: what you sell, the pages people book on, your forms and your short links. It fills in as you create them. Copy a link or open it."}
       </p>
 
       <label className="relative mt-5 block max-w-md">
@@ -181,18 +196,49 @@ export default function LinksDirectory() {
       {error && <p className="mt-4 text-sm text-[#c0632f]">{error}</p>}
       {!data && !error && <p className="mt-6 text-sm text-[#7a8a99]">Loading…</p>}
 
-      <Section title="Offering pages" hint="Where to send someone for each offering." rows={OFFERING_PAGES} q={ql} />
-      {data && <Section title="Offers: checkout and sales links" hint="From Growth > Offers & Packages. These are the links people pay through." rows={offers} q={ql} />}
+      {house && <Section title="Offering pages" hint="Where to send someone for each offering." rows={OFFERING_PAGES} q={ql} />}
+      {data && (
+        <Section
+          title="Offers: checkout and sales links"
+          hint="From Offers & Packages. These are the links people pay through."
+          rows={offers}
+          q={ql}
+          empty={{ text: "No offer has a checkout link yet. Add one on an offer.", href: "/sales/offers", label: "Open Offers & Packages" }}
+        />
+      )}
       {data && offersWithoutLink.length > 0 && !ql && (
         <p className="mt-3 text-sm text-[#7a8a99] dark:text-[#b8c2cf]">
           No link saved yet for: {offersWithoutLink.map((o) => o.name).join("; ")}.
         </p>
       )}
-      {data && <Section title="Booking pages" rows={calendars} q={ql} />}
-      {data && <Section title="Forms" hint="Every form stored in your CRM (Campaigns & Broadcasts > Forms)." rows={forms} q={ql} />}
-      <Section title="Other forms and sign-ups" hint="Forms that live on their own pages." rows={OTHER_FORMS} q={ql} />
-      {data && <Section title="Short links" rows={shorts} q={ql} />}
-      <Section title="Legal pages" rows={LEGAL} q={ql} />
+      {data && (
+        <Section
+          title="Booking pages"
+          hint="Share these so people can book a time with you."
+          rows={calendars}
+          q={ql}
+          empty={{ text: "No booking page yet.", href: "/calendars", label: "Create one in Calendars" }}
+        />
+      )}
+      {data && (
+        <Section
+          title="Forms"
+          hint="Every form stored in your CRM (Campaigns & Broadcasts > Forms)."
+          rows={forms}
+          q={ql}
+          empty={{ text: "No form yet.", href: "/sequences-manager", label: "Create one in Campaigns & Broadcasts" }}
+        />
+      )}
+      {house && <Section title="Other forms and sign-ups" hint="Forms that live on their own pages." rows={OTHER_FORMS} q={ql} />}
+      {data && (
+        <Section
+          title="Short links"
+          rows={shorts}
+          q={ql}
+          empty={{ text: "No short link yet.", href: "/short-links", label: "Create one in Short Links" }}
+        />
+      )}
+      {house && <Section title="Legal pages" rows={LEGAL} q={ql} />}
     </div>
   );
 }

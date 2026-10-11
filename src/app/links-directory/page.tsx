@@ -1,11 +1,9 @@
-import { notFound } from "next/navigation";
-import { isAlignmentArchitect } from "@/lib/authz";
 import LinksDirectory from "./LinksDirectory";
 
 export const dynamic = "force-dynamic";
 
-// Alignment Architect only: every URL for every offering and every form, in one place.
-export default async function LinksDirectoryPage() {
-  if (!(await isAlignmentArchitect())) notFound();
+// Every account: its own offers, forms, booking pages and short links in one place (Alignment & Systems).
+// The data comes from /api/links-directory, which is scoped to the signed-in account.
+export default function LinksDirectoryPage() {
   return <LinksDirectory />;
 }
