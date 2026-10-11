@@ -23,6 +23,9 @@ async function demoMasterPlanId(): Promise<string | null> {
   } catch {
     return null; // cookies() unavailable outside a request scope
   }
+  // Defence in depth: the middleware already strips the cookie for everyone but the Alignment Architect.
+  const who = await sessionUser().catch(() => null);
+  if ((who?.email || "").toLowerCase() !== ALIGNMENT_ARCHITECT_EMAIL) return null;
   const supabase = createServerClient();
   const { data } = await supabase
     .from("client_master_plans")

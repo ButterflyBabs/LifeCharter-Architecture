@@ -219,6 +219,9 @@ async function isVerifiedShortLinkDomain(host: string): Promise<boolean> {
   }
 }
 
+// The one account that may use Demo mode (same address as ALIGNMENT_ARCHITECT_EMAIL in src/lib/authz.ts).
+const DEMO_OWNER_EMAIL = "amilynne@amilynnecarroll.com";
+
 export async function middleware(request: NextRequest) {
   // A client's own domain, e.g. go.theirbusiness.com/promo — rewritten to this
   // app's /l/promo (the regular short-link redirect) so visitors never see
@@ -283,6 +286,18 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // DEMO IS FOR THE ALIGNMENT ARCHITECT ONLY (Babs, 2026-10-10: "it should not even appear on ANY client account
+  // ever"). The lc_demo cookie is stripped from the request, and expired in the browser, for everyone who is not
+  // signed in as her, so a forged or stale cookie can never switch the demo on for a client or a visitor.
+  if (request.cookies.get("lc_demo")?.value && !(user && (user.email || "").toLowerCase() === DEMO_OWNER_EMAIL)) {
+    const carried = response.cookies.getAll();
+    request.cookies.delete("lc_demo");
+    response = NextResponse.next({ request: { headers: request.headers } });
+    for (const c of carried) response.cookies.set(c);
+    response.cookies.set({ name: "lc_demo", value: "", path: "/", maxAge: 0 });
+    if (request.nextUrl.pathname.startsWith("/api/")) response.headers.set("Cache-Control", "no-store, max-age=0");
+  }
+
   // The owner (ALLOWED_EMAIL / SUPER_ADMIN) always passes, with full access.
   // Invited team members aren't in that list, so admit any signed-in user who
   // is a known member — otherwise the single-email gate would bounce every
@@ -337,11 +352,8 @@ export async function middleware(request: NextRequest) {
   const isPublicApi = PUBLIC_APIS.some((p) => path.startsWith(p));
   const isPublicPage = PUBLIC_PAGES.some((p) => path === p || path.startsWith(p + "/"));
 
-  // /demo sets this cookie and redirects into the normal app shell (/, /daily-compass,
-  // etc.) so a marketing visitor can see the pre-seeded "Demo — Brand Alchemy Studio"
-  // plan without an account — src/lib/scoring/masterPlan.ts already trusts this same
-  // cookie to redirect every data read to that one fixed plan, so letting it pass the
-  // auth gate here isn't a new trust boundary, just honoring the one already coded in.
+  // /demo sets this cookie (for the Alignment Architect only) and redirects into the normal app shell so she can
+  // present the pre-seeded "Demo — Brand Alchemy Studio" plan. The cookie is stripped above for anyone else.
   const isDemo = request.cookies.get("lc_demo")?.value === "1";
 
   if (isPublicApi) return response;
