@@ -89,6 +89,11 @@ export default function Requests() {
               <div><dt className="inline text-[#7a8a99]">Telephone: </dt><dd className="inline">{r.phone}</dd></div>
               <div><dt className="inline text-[#7a8a99]">Location: </dt><dd className="inline">{[r.city, r.state, r.zip].filter(Boolean).join(", ")}</dd></div>
               <div><dt className="inline text-[#7a8a99]">Requested: </dt><dd className="inline">{when(r.requestedAt)}</dd></div>
+              {r.investorType && <div><dt className="inline text-[#7a8a99]">Who they are: </dt><dd className="inline">{r.investorType}</dd></div>}
+              {r.range && <div><dt className="inline text-[#7a8a99]">Range: </dt><dd className="inline">{r.range}</dd></div>}
+              {r.timeline && <div><dt className="inline text-[#7a8a99]">Deciding: </dt><dd className="inline">{r.timeline}</dd></div>}
+              {r.linkedin && <div className="sm:col-span-2"><dt className="inline text-[#7a8a99]">LinkedIn or website: </dt><dd className="inline break-all">{/^https?:\/\//i.test(r.linkedin) ? <a className="text-[#2E7C83] underline" href={r.linkedin} target="_blank" rel="noopener noreferrer">{r.linkedin}</a> : r.linkedin}</dd></div>}
+              {r.referral && <div className="sm:col-span-2"><dt className="inline text-[#7a8a99]">How they heard: </dt><dd className="inline">{r.referral}</dd></div>}
               {r.emailedAt && <div><dt className="inline text-[#7a8a99]">Code emailed: </dt><dd className="inline">{when(r.emailedAt)}</dd></div>}
               {r.callAt && <div><dt className="inline text-[#7a8a99]">Call booked: </dt><dd className="inline">{when(r.callAt)}</dd></div>}
               {r.lastLoginAt && <div><dt className="inline text-[#7a8a99]">Last opened: </dt><dd className="inline">{when(r.lastLoginAt)}</dd></div>}

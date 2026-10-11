@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export type IbRequestRow = {
   email: string; name: string; company: string; city: string; state: string; zip: string; phone: string;
+  linkedin: string; referral: string; investorType: string; range: string; timeline: string;
   requestedAt: string; status: "pending" | "approved" | "denied" | "revoked"; emailedAt: string | null; lastLoginAt: string | null; callAt: string | null;
 };
 
@@ -45,6 +46,11 @@ export async function GET() {
       state: d.state || "",
       zip: d.zip || "",
       phone: d.phone || "",
+      linkedin: d.linkedin || "",
+      referral: d.referral || "",
+      investorType: d.investor_type || "",
+      range: d.range || "",
+      timeline: d.timeline || "",
       requestedAt: s.created_at as string,
       status: ((a?.status as IbRequestRow["status"]) || "pending"),
       emailedAt: (a?.emailed_at as string | null) ?? null,
