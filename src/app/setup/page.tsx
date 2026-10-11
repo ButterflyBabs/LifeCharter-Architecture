@@ -154,18 +154,19 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Starter Guide */}
+        {/* Starter Guide: an action item, not an option */}
         <a
           href={STARTER_GUIDE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-[#c9a227]/40 bg-white dark:bg-[#1a2b4a]/40 px-5 py-4 hover:border-[#c9a227]"
+          className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#c9a227] bg-[#1a2b4a] px-5 py-4 shadow-lg hover:bg-[#223764]"
         >
           <span>
-            <span className="block font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Want a checklist to follow?</span>
-            <span className="block text-sm text-[#7a8a99] dark:text-[#b8c2cf]">Open the Starter Guide: one small step at a time, with a tick box for each.</span>
+            <span className="mb-1 inline-block rounded-full bg-[#c9a227] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest text-[#1a2b4a]">Action item</span>
+            <span className="block text-lg font-semibold text-[#F8F5F0]">Open your Starter Guide</span>
+            <span className="block text-sm text-[#d9dfe9]">Your Starter Guide takes you through setting up your Command Suite one small step at a time, with a tick box for each. Open it now and keep it beside you as you work through your setup.</span>
           </span>
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#2E7C83] whitespace-nowrap">Open <ArrowRight className="w-4 h-4" /></span>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[#c9a227] px-4 py-2 text-sm font-bold text-[#1a2b4a]">Open <ArrowRight className="w-4 h-4" /></span>
         </a>
 
         {/* Progress */}
