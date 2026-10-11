@@ -6,17 +6,18 @@ import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi"
 import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { logActivity, q } from "@/lib/activity";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { sessionUser } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
 // Playbook & SOP library.
 //   GET                          → this client's SOPs
 //   POST { action: "draft", title, notes?, pillarKey? } → the assistant drafts one (not saved)
-//   POST { ...sop }              → create    PATCH { id, ...sop } → edit (status draft | active | archived)    DELETE { id }
+//   POST { ...sop }              → create    PATCH { id, ...sop } → edit (status draft | active | archived); { id, approve: true | false } signs it off    DELETE { id }
 // SOPs in use (status active) feed the Systems score live; archived ones are kept but do not count.
 
 const PILLARS = new Set(OPERATIONS_PILLARS.map((p) => p.key));
-const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at";
+const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at, approved_at, approved_by";
 
 function clean(body: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
@@ -86,17 +87,32 @@ export async function PATCH(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
   const body = await request.json().catch(() => ({}));
   if (!masterPlanId || typeof body.id !== "string") return NextResponse.json({ error: "Missing SOP." }, { status: 400 });
-  const row = clean(body);
-  const { data, error } = await createServerClient()
+  const row = clean(body) as Record<string, unknown>;
+  // Approve on a card: the account holder signs the SOP off. It becomes In use and counts as reviewed today.
+  // Approve false withdraws the approval and sends it back to draft.
+  const now = new Date().toISOString();
+  if (body.approve === true) {
+    const who = await sessionUser().catch(() => null);
+    Object.assign(row, { status: "active", last_reviewed: now.slice(0, 10), approved_at: now, approved_by: who?.email ?? null });
+  } else if (body.approve === false) {
+    Object.assign(row, { status: "draft", approved_at: null, approved_by: null });
+  }
+  // Only a change to what the SOP says counts as an edit (so "Mark reviewed today", Archive and a save with
+  // nothing changed leave an approval standing).
+  const db = createServerClient();
+  const { data: cur } = await db.from("sops").select("title, pillar_key, purpose, steps, owner, tools").eq("id", body.id).eq("master_plan_id", masterPlanId).maybeSingle();
+  const CONTENT = ["title", "pillar_key", "purpose", "steps", "owner", "tools"] as const;
+  const edited = !cur || CONTENT.some((k) => k in row && JSON.stringify(row[k] ?? null) !== JSON.stringify((cur as Record<string, unknown>)[k] ?? null));
+  const { data, error } = await db
     .from("sops")
-    .update({ ...row, updated_at: new Date().toISOString() })
+    .update({ ...row, ...(edited || body.approve !== undefined ? { updated_at: now } : {}) })
     .eq("id", body.id)
     .eq("master_plan_id", masterPlanId)
     .select(SELECT)
     .maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save the SOP." }, { status: 500 });
   const saved = data as { id?: string; title?: string };
-  await logActivity({ masterPlanId, action: "updated", entityType: "sop", entityId: saved.id, summary: `Updated SOP ${q(saved.title)}` });
+  await logActivity({ masterPlanId, action: body.approve === true ? "approved" : "updated", entityType: "sop", entityId: saved.id, summary: `${body.approve === true ? "Approved" : "Updated"} SOP ${q(saved.title)}` });
   return NextResponse.json({ sop: data });
 }
 

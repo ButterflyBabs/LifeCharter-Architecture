@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowLeft, BookOpen, Loader2, Plus, Printer, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, BookOpen, Loader2, Plus, Printer, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -19,9 +19,15 @@ interface Sop {
   status: "draft" | "active" | "archived";
   last_reviewed: string | null;
   updated_at: string;
+  approved_at: string | null;
+  approved_by: string | null;
 }
 const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active" | "archived", notes: "" };
 const pillarName = (k: string | null) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? "General";
+// Approval state of a SOP: approved, edited after it was approved, or still waiting for sign-off.
+const approval = (s: Sop): "approved" | "edited" | "needed" =>
+  !s.approved_at ? "needed" : new Date(s.updated_at).getTime() - new Date(s.approved_at).getTime() > 60_000 ? "edited" : "approved";
+const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 export default function SopLibraryPage() {
   const [sops, setSops] = useState<Sop[] | null>(null);
@@ -98,6 +104,15 @@ export default function SopLibraryPage() {
     const today = new Date().toISOString().slice(0, 10);
     await fetch("/api/sops", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, lastReviewed: today }) });
     setView({ ...s, last_reviewed: today });
+    void load();
+  }
+
+  async function approve(s: Sop, on: boolean) {
+    const r = await fetch("/api/sops", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, approve: on }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return setMsg(d.error || "Couldn't save that.");
+    setMsg(on ? `Approved "${s.title}". It is in use.` : `Approval withdrawn for "${s.title}". It is back to a draft.`);
+    if (view?.id === s.id) setView(d.sop ?? null);
     void load();
   }
 
@@ -209,6 +224,7 @@ export default function SopLibraryPage() {
               <div className="flex gap-1 print:hidden">
                 <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="w-3.5 h-3.5 mr-1" />Print</Button>
                 <Button size="sm" variant="outline" onClick={() => markReviewed(view)}>Mark reviewed today</Button>
+                {view.status !== "archived" && approval(view) !== "approved" && <Button size="sm" onClick={() => approve(view, true)}><CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve</Button>}
                 <Button size="sm" variant="outline" onClick={() => edit(view)}>Edit</Button>
                 {view.status === "archived" ? (
                   <Button size="sm" variant="outline" onClick={() => setStatus(view, "draft")}><ArchiveRestore className="w-3.5 h-3.5 mr-1" />Restore</Button>
@@ -240,15 +256,36 @@ export default function SopLibraryPage() {
             <div key={group}>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{group}</p>
               <div className="grid gap-3 md:grid-cols-2">
-                {list.map((s) => (
-                  <button key={s.id} onClick={() => setView(s)} className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-4 text-left hover:border-[#c9a227]">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.status === "active" ? "bg-[#2c6b3f]/10 text-[#2c6b3f]" : "bg-[#8a7f74]/10 text-[#8a7f74]"}`}>{s.status === "archived" ? "Archived" : s.status === "active" ? "In use" : "Draft"}</span>
+                {list.map((s) => {
+                  const ap = approval(s);
+                  return (
+                    <div key={s.id} className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-4 hover:border-[#c9a227]">
+                      <button onClick={() => setView(s)} className="block w-full text-left">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</p>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.status === "active" ? "bg-[#2c6b3f]/10 text-[#2c6b3f]" : "bg-[#8a7f74]/10 text-[#8a7f74]"}`}>{s.status === "archived" ? "Archived" : s.status === "active" ? "In use" : "Draft"}</span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-[#7a8a99]">{s.purpose || `${s.steps.length} steps`}</p>
+                      </button>
+                      {s.status !== "archived" && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#1a2b4a]/10 pt-3">
+                          {ap === "approved" ? (
+                            <>
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2c6b3f]"><CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Approved {s.approved_at ? dayLabel(s.approved_at) : ""}</span>
+                              <Button size="sm" variant="ghost" onClick={() => approve(s, false)}>Withdraw approval</Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs font-semibold text-[#7a5a0e] dark:text-[#e0c35a]">{ap === "edited" ? "Edited since approved" : "Needs approval"}</span>
+                              <Button size="sm" onClick={() => approve(s, true)}><CheckCircle2 className="mr-1 h-3.5 w-3.5" aria-hidden />Approve</Button>
+                              <Button size="sm" variant="outline" onClick={() => edit(s)}>Edit</Button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-[#7a8a99]">{s.purpose || `${s.steps.length} steps`}</p>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))
