@@ -23,7 +23,7 @@ import WebsiteQuestion from "@/components/website/WebsiteQuestion";
 interface SetupStatus {
   assessments: { brain: boolean; soul: boolean; profit: boolean; complete: boolean };
   ai: { connected: boolean };
-  integrations: { calendar: boolean; google: boolean; microsoft: boolean; poststream: boolean };
+  integrations: { calendar: boolean; google: boolean; microsoft: boolean; poststream: boolean; poststreamAllowed?: boolean };
   requiredComplete: boolean;
 }
 
@@ -244,13 +244,13 @@ export default function SetupPage() {
                     <span className="text-[11px] text-[#7a8a99]">{toolsConnected} of 2 connected</span>
                   </div>
                   <p className="text-sm text-[#7a8a99] dark:text-[#b8c2cf] mt-0.5">
-                    Hook up your calendar &amp; email, or your social accounts, so the Suite can act for you. Connecting any one of them completes this step.
+                    Hook up your calendar &amp; email so the Suite can act for you. Connecting one completes this step.
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                 <IntegrationChip icon={<Calendar className="w-4 h-4" />} label="Calendar & Email" done={toolStates[0]} />
-                <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[1]} />
+                {s?.integrations.poststreamAllowed && <IntegrationChip icon={<Share2 className="w-4 h-4" />} label="PostStream" done={toolStates[1]} />}
               </div>
               <p className="text-xs text-[#7a8a99] dark:text-[#b8c2cf] mb-3">
                 Emailing your contacts is a separate step: it uses your own free Resend account and your own verified domain, and you set it up

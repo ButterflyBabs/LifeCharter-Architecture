@@ -147,6 +147,7 @@ export default function SettingsPage() {
 
   // PostStream (social post creation + scheduling) — per client, key server-side.
   const [psConnected, setPsConnected] = useState(false);
+  const [psRestricted, setPsRestricted] = useState(true); // PostStream is Alignment Architect only; hidden until the server says otherwise
   const [psAccountId, setPsAccountId] = useState("");
   const [psKeyInput, setPsKeyInput] = useState("");
   const [psAccountInput, setPsAccountInput] = useState("");
@@ -158,6 +159,7 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
+        setPsRestricted(Boolean(d.restricted));
         setPsConnected(Boolean(d.connected));
         setPsAccountId(d.accountId || "");
         setPsAccountInput(d.accountId || "");
@@ -1315,6 +1317,7 @@ export default function SettingsPage() {
         <IntegrationUsage refreshKey={Number(psConnected)} />
 
         {/* PostStream — per-client connection */}
+        {!psRestricted && (
         <Card className="border-[#7b6b8d]/30">
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
@@ -1405,6 +1408,7 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         <StripeConnectCard />
 

@@ -1,3 +1,4 @@
+import { postStreamAllowed } from "@/lib/postStream";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -63,7 +64,8 @@ export async function GET() {
     microsoft.isConnected().catch(() => false),
   ]);
   let poststream = false;
-  if (masterPlanId) {
+  const poststreamAllowed = await postStreamAllowed(); // Alignment Architect only
+  if (masterPlanId && poststreamAllowed) {
     try {
       const { data } = await supabase
         .from("client_integrations")
@@ -107,6 +109,7 @@ export async function GET() {
       google: gConnected,
       microsoft: mConnected,
       poststream,
+      poststreamAllowed,
     },
     tools: { connected: toolsConnected },
     requiredComplete,

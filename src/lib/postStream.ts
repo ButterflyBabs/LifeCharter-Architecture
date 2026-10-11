@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { isAlignmentArchitect } from "@/lib/authz";
 import { PLATFORMS, PLATFORM_LABELS, type Platform } from "@/lib/postStreamConstants";
 
 // Client for the PostStream / Post Bridge API.
@@ -82,7 +83,14 @@ async function ps<T = unknown>(key: string, path: string, init?: RequestInit): P
 }
 
 // The current client's stored PostStream key, or null if not connected.
+// PostStream is restricted to the Alignment Architect (Babs) alone: for every other account the key is never
+// returned, so nothing in the Suite can read, create, schedule or publish through PostStream for them.
+export async function postStreamAllowed(): Promise<boolean> {
+  return isAlignmentArchitect();
+}
+
 export async function getClientKey(): Promise<string | null> {
+  if (!(await postStreamAllowed())) return null;
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return null;

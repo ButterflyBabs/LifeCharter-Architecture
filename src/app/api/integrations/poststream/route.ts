@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { withinStandingLimit, integrationUsage, INTEGRATION_LIMIT_BODY } from "@/lib/capabilities";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { validateKey } from "@/lib/postStream";
+import { validateKey, postStreamAllowed } from "@/lib/postStream";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,9 @@ const PROVIDER = "poststream";
 
 // GET — connection status only (no secret ever leaves the server).
 export async function GET() {
+  if (!(await postStreamAllowed())) {
+    return NextResponse.json({ connected: false, hasKey: false, accountId: "", connectedAt: null, restricted: true });
+  }
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   const { data } = await supabase
@@ -37,6 +40,9 @@ export async function GET() {
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
+  if (!(await postStreamAllowed())) {
+    return NextResponse.json({ error: "PostStream is not available on this account." }, { status: 403 });
   }
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
@@ -99,6 +105,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   if (crossOriginBlocked(request)) {
     return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  }
+  if (!(await postStreamAllowed())) {
+    return NextResponse.json({ error: "PostStream is not available on this account." }, { status: 403 });
   }
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
