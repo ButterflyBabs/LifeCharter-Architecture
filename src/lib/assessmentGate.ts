@@ -1,5 +1,5 @@
 // The first-run lock (Babs, 2026-10-11): until a client has finished ALL THREE assessments (Brain, Soul and Profit)
-// they can open only Set up Suite, the three assessments, Settings and Contact Support. Nothing else, so they cannot
+// they can open only Set up Suite, the three assessments, Settings and Help. Nothing else, so they cannot
 // change their Command Suite before their results exist. Edge-safe (plain fetch), used by the middleware and /api/me.
 //
 // Not locked: the owner, invited team members, community-only accounts, accounts with profiles.preferences.setupBypass
@@ -7,7 +7,7 @@
 
 export const GATE_EXEMPT_EMAILS = ["amilynne@amilynnecarroll.com", "marcello@amilynnecarroll.com", "sumbalteepu786@gmail.com"];
 
-const PAGE_ALLOW = ["/setup", "/assessments", "/settings", "/help/contact", "/logout", "/starter-guide.html"];
+const PAGE_ALLOW = ["/setup", "/assessments", "/settings", "/help", "/logout", "/starter-guide.html"];
 // The assessments hub and the three assessments only (not Quick Pulse or Command Shift).
 const ASSESSMENT_SUBPAGES = ["/assessments/brain", "/assessments/soul", "/assessments/profit"];
 
@@ -23,7 +23,7 @@ const API_WRITE_ALLOW = [
   "/api/assessments", "/api/unified-memory", "/api/scoring", "/api/setup", "/api/assessment-results",
   "/api/ai-settings", "/api/integrations", "/api/google", "/api/microsoft",
   "/api/profile", "/api/me", "/api/account", "/api/account-access", "/api/auth", "/api/vault",
-  "/api/billing", "/api/stripe", "/api/support", "/api/feedback", "/api/notifications", "/api/nav-order",
+  "/api/billing", "/api/stripe", "/api/support", "/api/qa", "/api/feedback", "/api/notifications", "/api/nav-order",
   "/api/uploads", "/api/version", "/api/travel-partner", "/api/workspaces", "/api/export",
 ];
 
