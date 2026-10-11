@@ -91,7 +91,7 @@ export const PILLAR_MODEL: Record<string, PillarSource[]> = {
     P("Profit assessment: Team and Systems", 25, ["team", "systems"]),
     B(20, "team"),
     Q(10, ["Team Capacity"]),
-    L("SOPs written, reviews done, routines set", 15, cultureOps),
+    L("SOPs written, reviews done, routines set, tasks followed through", 15, cultureOps),
     D(30),
   ],
   referral: [

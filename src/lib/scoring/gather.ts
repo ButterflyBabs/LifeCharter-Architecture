@@ -13,6 +13,7 @@ import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
 import { baselineCompleteness } from "@/lib/plans/blueprints";
 import { PULSE_LABEL_BY_ID } from "./pulseLabels";
+import { taskFollowThrough } from "./operational";
 import { computePillarScores, averagePillarScore, type PillarResult } from "./pillarModel";
 import type { DeeperAnswers } from "@/lib/operationsDeeper";
 
@@ -266,6 +267,20 @@ async function liveOperationalMetrics(
     if (n > 0) m.reviews_90d = n;
     const r = await count(supabase.from("recurring_tasks").select("id", { count: "exact", head: true }).eq("master_plan_id", scopeId));
     if (r > 0) m.recurring_tasks = r;
+  } catch {
+    /* optional */
+  }
+  try {
+    // Follow-through on the task list: finished work lifts it, due dates that pass lower it (operational.ts).
+    const since60 = new Date(Date.now() - 60 * 86400000).toISOString();
+    const { data: tk } = await supabase
+      .from("tasks")
+      .select("status, due_at, due_date, completed_at")
+      .eq("master_plan_id", scopeId)
+      .or(`status.neq.done,completed_at.gte.${since60}`)
+      .limit(5000);
+    const f = taskFollowThrough((tk ?? []) as { status: string; due_at: string | null; due_date: string | null; completed_at: string | null }[]);
+    if (f !== null) m.task_follow_through = f;
   } catch {
     /* optional */
   }

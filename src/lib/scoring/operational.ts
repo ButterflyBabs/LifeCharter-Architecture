@@ -120,7 +120,33 @@ export function cultureOps(m: Metrics): number | null {
     has(m, "sops_created") ? cap((m.sops_created / 10) * 100) : null,
     has(m, "reviews_90d") ? cap((m.reviews_90d / 3) * 100) : null,
     has(m, "recurring_tasks") ? cap((m.recurring_tasks / 3) * 100) : null,
+    has(m, "task_follow_through") ? cap(m.task_follow_through) : null,
   ]);
+}
+
+/**
+ * Task follow-through, 0-100 (Babs, 2026-10-11: "as we complete tasks it counts toward the health of my business").
+ * Looks at the last 60 days: tasks finished, tasks that slipped past their due date, and open tasks due in the next
+ * 14 days. An undated backlog is not counted against anyone. Needs at least three tasks to speak at all, so one
+ * finished task never swings a score. Finishing work lifts it; letting due dates pass lowers it.
+ */
+export interface TaskLike { status: string; due_at?: string | null; due_date?: string | null; completed_at?: string | null }
+export function taskFollowThrough(tasks: TaskLike[], now = Date.now()): number | null {
+  const DAY = 86_400_000;
+  let done = 0, overdue = 0, soon = 0;
+  for (const t of tasks) {
+    if (t.status === "done") {
+      if (t.completed_at && now - new Date(t.completed_at).getTime() <= 60 * DAY) done += 1;
+      continue;
+    }
+    const due = t.due_at ? new Date(t.due_at).getTime() : t.due_date ? new Date(t.due_date).getTime() : null;
+    if (due === null || Number.isNaN(due)) continue;
+    if (due < now) overdue += 1;
+    else if (due - now <= 14 * DAY) soon += 1;
+  }
+  if (done + overdue + soon < 3) return null;
+  const denom = done + 1.5 * overdue + 0.2 * soon;
+  return Math.round(Math.max(0, Math.min(100, 25 + 75 * (done / denom))));
 }
 
 export function referralOps(m: Metrics): number | null {
