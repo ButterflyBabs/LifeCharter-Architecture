@@ -137,7 +137,11 @@ export async function computeSegmentScores(planId: string, opts: { units?: "busi
       : db.from("tasks").select("*").eq("master_plan_id", planId).in("segment_id", segIds).limit(4000)
     ).then((r) => (r.data ?? []) as TaskRow[]),
     planIds.length ? db.from("client_plan_goals").select("segment_id, dimension_key, title, status").in("plan_id", planIds).in("segment_id", segIds).then((r) => (r.data ?? []) as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]) : Promise.resolve([] as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]),
-    db.from("finance_entries").select("segment_id, type, amount, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", sinceDay).limit(5000).then((r) => (r.data ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string }[]),
+    (businessMode
+      ? db.from("finance_entries").select("segment_id, business_id, type, amount, occurred_on").eq("master_plan_id", planId).gte("occurred_on", sinceDay)
+          .or(`business_id.in.(${segs.map((x) => x.id).join(",")})${segIds.length ? `,segment_id.in.(${segIds.join(",")})` : ""}`).limit(5000)
+      : db.from("finance_entries").select("segment_id, type, amount, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", sinceDay).limit(5000)
+    ).then((r) => (r.data ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string }[]),
     db.from("sales_activities").select("segment_id, outcome, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", new Date(now - WINDOW_DAYS * DAY).toISOString().slice(0, 10)).limit(3000).then((r) => (r.data ?? []) as { segment_id: number; outcome: string | null; occurred_on: string }[]),
     businessMode ? Promise.resolve([] as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]) : db.from("segment_score_snapshots").select("segment_id, domains, overall, created_at").in("segment_id", segIds).order("created_at", { ascending: false }).limit(2000).then((r) => (r.data ?? []) as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]),
   ]);
@@ -148,7 +152,7 @@ export async function computeSegmentScores(planId: string, opts: { units?: "busi
   if (businessMode) {
     for (const t of tasks) t.segment_id = ((t.business_id as number | null) ?? unitOf(t.segment_id) ?? -1) as number;
     for (const g of goals) g.segment_id = unitOf(g.segment_id) ?? -1;
-    for (const e of ledger) e.segment_id = unitOf(e.segment_id) ?? -1;
+    for (const e of ledger) e.segment_id = ((e as { business_id?: number | null }).business_id ?? unitOf(e.segment_id) ?? -1) as number;
     for (const x of sales) x.segment_id = unitOf(x.segment_id) ?? -1;
     // Each business's own compliance checklist is its Legal evidence.
     const { data: legalRows } = await db

@@ -1,3 +1,4 @@
+import { currentBusiness } from "@/lib/businessScope";
 import type { ActionTool } from "./types";
 import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
 
@@ -43,6 +44,8 @@ export const addFinanceEntry: ActionTool = {
     const amount = Math.round(Number(args.amount) * 100) / 100;
     const recurring = recurringOf(args);
     const vendor = str(args.vendor, 120) || null;
+    // Added while a business is chosen in the header: it belongs to that business.
+    const assistantBusinessId = (await currentBusiness(ctx.planId).catch(() => null))?.businessId ?? null;
     // A recurring expense also becomes a bill so its next renewal shows on the Bills & cash calendar.
     let billId: string | null = null;
     if (recurring) {
@@ -61,6 +64,7 @@ export const addFinanceEntry: ActionTool = {
             autopay: args.renewal !== "manual",
             notes: str(args.description, 200) || null,
             last_paid_on: str(args.date, 10),
+            business_id: assistantBusinessId,
           })
           .select("id")
           .single();
@@ -82,6 +86,7 @@ export const addFinanceEntry: ActionTool = {
         frequency: recurring ? (args.frequency as string) : null,
         renewal: recurring ? (args.renewal === "manual" ? "manual" : "auto") : null,
         bill_id: billId,
+        business_id: assistantBusinessId,
       })
       .select("id")
       .single();

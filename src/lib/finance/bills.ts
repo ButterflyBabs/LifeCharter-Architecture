@@ -3,13 +3,14 @@ import { occurrences, toBill, type Bill, type BillRow } from "@/lib/finance/bill
 
 export * from "@/lib/finance/billDates";
 
-export async function loadBills(masterPlanId: string): Promise<Bill[]> {
-  const { data } = await createServerClient()
+export async function loadBills(masterPlanId: string, businessId?: number | null): Promise<Bill[]> {
+  let q = createServerClient()
     .from("finance_bills")
     .select("id, name, vendor, amount, category, cadence, next_due, autopay, notes, last_paid_on")
     .eq("master_plan_id", masterPlanId)
-    .eq("active", true)
-    .order("next_due");
+    .eq("active", true);
+  if (businessId) q = q.eq("business_id", businessId);
+  const { data } = await q.order("next_due");
   return ((data || []) as BillRow[]).map(toBill);
 }
 

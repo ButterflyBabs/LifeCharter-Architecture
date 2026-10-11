@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { currentBusiness } from "@/lib/businessScope";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -42,7 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No valid transactions to import." }, { status: 400 });
   }
 
-  const { error } = await supabase.from("finance_entries").insert(rows);
+  // Imported while a business is chosen in the header: the money belongs to that business.
+  const importBusiness = (await currentBusiness(masterPlanId))?.businessId ?? null;
+  const { error } = await supabase.from("finance_entries").insert(rows.map((r) => ({ ...(r as Record<string, unknown>), business_id: importBusiness })));
   if (error) {
     console.error("POST /api/finance/import/commit:", error.message);
     return NextResponse.json({ error: "Couldn't import — please try again." }, { status: 500 });

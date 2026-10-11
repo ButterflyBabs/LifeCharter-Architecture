@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { periodRange, type Period } from "@/lib/finance/period";
+import { currentBusiness, businessMoneyFilter } from "@/lib/businessScope";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +23,15 @@ export async function GET(request: Request) {
     end: url.searchParams.get("end") || undefined,
   });
 
-  const { data, error } = await supabase
+  const scope = masterPlanId ? await currentBusiness(masterPlanId) : null;
+  let pnlQ = supabase
     .from("finance_entries")
     .select("type, amount, category, vendor")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", range.startStr)
     .lt("occurred_on", range.endStr);
+  if (scope) pnlQ = pnlQ.or(businessMoneyFilter(scope));
+  const { data, error } = await pnlQ;
 
   if (error) {
     console.error("GET /api/finance/pnl:", error.message);
@@ -67,6 +71,7 @@ export async function GET(request: Request) {
     income: { total: incomeTotal, lines: lines(incomeMap) },
     expense: { total: expenseTotal, lines: lines(expenseMap) },
     net: incomeTotal - expenseTotal,
+    business: scope ? scope.name : null,
     // Who paid you / who you paid (only entries that have a name).
     parties: { income: lines(incomeFrom), expense: lines(expenseTo) },
   });

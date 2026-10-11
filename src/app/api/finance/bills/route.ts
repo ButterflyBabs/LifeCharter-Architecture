@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity, q } from "@/lib/activity";
 import { BILL_CADENCES, loadBills, nextAfter, type BillCadence } from "@/lib/finance/bills";
+import { currentBusiness } from "@/lib/businessScope";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,8 @@ function clean(body: Record<string, unknown>) {
 export async function GET() {
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ bills: [] });
-  return NextResponse.json({ bills: await loadBills(masterPlanId) });
+  const scope = await currentBusiness(masterPlanId);
+  return NextResponse.json({ bills: await loadBills(masterPlanId, scope?.businessId ?? null) });
 }
 
 // POST — add one bill { name, amount?, category?, cadence, nextDue, autopay?, notes? },
@@ -42,9 +44,10 @@ export async function POST(request: Request) {
   const list = (Array.isArray(body.bills) ? body.bills : [body]).slice(0, 50) as Record<string, unknown>[];
   const rows = list.map(clean).filter((r) => r.name && r.next_due);
   if (!rows.length) return NextResponse.json({ error: "Give the bill a name and a due date." }, { status: 400 });
+  const scope = await currentBusiness(masterPlanId);
   const { error } = await createServerClient()
     .from("finance_bills")
-    .insert(rows.map((r) => ({ cadence: "monthly", ...r, master_plan_id: masterPlanId })));
+    .insert(rows.map((r) => ({ cadence: "monthly", ...r, master_plan_id: masterPlanId, business_id: scope?.businessId ?? null })));
   if (error) {
     console.error("POST /api/finance/bills:", error.message);
     return NextResponse.json({ error: "Couldn't save that bill." }, { status: 500 });

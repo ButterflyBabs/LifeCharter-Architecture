@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { computePulse } from "@/lib/finance/pulse";
-import { currentBusiness } from "@/lib/businessScope";
+import { currentBusiness, businessMoneyFilter } from "@/lib/businessScope";
 
 // Always query live data per request (never prerender/cache the aggregate).
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   if (!masterPlanId) return NextResponse.json({ hasData: false });
   const tz = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
   const scope = await currentBusiness(masterPlanId);
-  const result = await computePulse(masterPlanId, tz, scope?.segmentIds);
+  const result = await computePulse(masterPlanId, tz, scope ? businessMoneyFilter(scope) : undefined);
   if ("error" in result) {
     console.error("GET /api/financial-pulse:", result.error);
     return NextResponse.json({ hasData: false, error: result.error }, { status: 200 });

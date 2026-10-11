@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+
+import UnassignedBanner from "@/components/finance/UnassignedBanner";import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -161,6 +162,7 @@ export default function BillsPage() {
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
+      <UnassignedBanner />
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-3">
         <ArrowLeft className="w-4 h-4" /> Finance Center
       </Link>

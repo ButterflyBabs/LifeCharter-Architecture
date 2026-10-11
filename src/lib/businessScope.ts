@@ -24,3 +24,10 @@ export async function currentBusiness(masterPlanId: string | null): Promise<Busi
   const { data: segs } = await supabase.from("segments").select("id").eq("business_id", id);
   return { businessId: id, segmentIds: ((segs ?? []) as { id: number }[]).map((s) => s.id), name: biz.name as string };
 }
+
+/** PostgREST or-filter for "this business's money": entries tagged to the business itself, or to one of its segments. */
+export function businessMoneyFilter(scope: { businessId: number; segmentIds: number[] }): string {
+  const parts = [`business_id.eq.${scope.businessId}`];
+  if (scope.segmentIds.length) parts.push(`segment_id.in.(${scope.segmentIds.join(",")})`);
+  return parts.join(",");
+}

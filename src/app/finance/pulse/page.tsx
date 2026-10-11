@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+
+import UnassignedBanner from "@/components/finance/UnassignedBanner";import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -278,6 +279,7 @@ export default function FinancialPulsePage() {
 
   return (
     <div className="py-6 px-4 max-w-6xl mx-auto">
+      <UnassignedBanner />
       {/* Header */}
       <div className="mb-6">
         <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-3">

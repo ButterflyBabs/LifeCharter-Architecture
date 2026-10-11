@@ -32,15 +32,15 @@ export interface PulseResult {
   periods: { week: PeriodOut; month: PeriodOut; year: PeriodOut };
 }
 
-// segmentIds: limit income to one business's segments (the header business switcher).
-export async function computePulse(masterPlanId: string, tz: string, segmentIds?: number[]): Promise<PulseResult | { error: string }> {
+// moneyFilter: limit income to one business (entries tagged to it or to its segments; see businessMoneyFilter).
+export async function computePulse(masterPlanId: string, tz: string, moneyFilter?: string): Promise<PulseResult | { error: string }> {
   const supabase = createServerClient();
   let q = supabase
     .from("finance_entries")
     .select("amount, occurred_on")
     .eq("type", "income")
     .eq("master_plan_id", masterPlanId);
-  if (segmentIds) q = q.in("segment_id", segmentIds.length ? segmentIds : [-1]);
+  if (moneyFilter) q = q.or(moneyFilter);
   const { data, error } = await q;
 
   if (error) return { error: error.message };

@@ -3,7 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity } from "@/lib/activity";
-import { planSegmentIds } from "@/lib/planScope";
+import { planSegmentIds, planBusinessIds } from "@/lib/planScope";
+import { currentBusiness, businessMoneyFilter } from "@/lib/businessScope";
 import { periodRange } from "@/lib/finance/period";
 import { loadIncomeGoals } from "@/lib/finance/goals";
 import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
@@ -69,13 +70,15 @@ export async function GET(request: Request) {
   const yearStart = `${year}-01-01`;
   const monthPrefix = `${year}-${String(month).padStart(2, "0")}`;
 
-  const { data, error } = await supabase
+  // Header business switcher: only that business's money (tagged to it, or to one of its segments).
+  const scope = masterPlanId ? await currentBusiness(masterPlanId) : null;
+  let entriesQ = supabase
     .from("finance_entries")
     .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal")
     .eq("master_plan_id", masterPlanId)
-    .gte("occurred_on", yearStart)
-    .order("occurred_on", { ascending: false })
-    .order("created_at", { ascending: false });
+    .gte("occurred_on", yearStart);
+  if (scope) entriesQ = entriesQ.or(businessMoneyFilter(scope));
+  const { data, error } = await entriesQ.order("occurred_on", { ascending: false }).order("created_at", { ascending: false });
 
   if (error) {
     console.error("GET /api/finance/entries:", error.message);
@@ -255,6 +258,14 @@ export async function POST(request: Request) {
   const renewal = recurring ? (body.renewal === "manual" ? "manual" : "auto") : null;
   const category = typeof body.category === "string" ? body.category.trim() : null;
   const description = typeof body.description === "string" ? body.description.trim() : null;
+  // The business it belongs to: one named in the request (must be this account's own), else the one chosen in the header.
+  const named = Number(body.businessId);
+  const businessId: number | null =
+    masterPlanId && Number.isFinite(named) && named > 0 && (await planBusinessIds(masterPlanId)).includes(named)
+      ? named
+      : masterPlanId
+        ? (await currentBusiness(masterPlanId))?.businessId ?? null
+        : null;
 
   // A recurring expense also becomes a bill, so its next renewal shows on the Bills & cash calendar
   // (auto-renew shows as autopay; manual renew is something you mark paid yourself).
@@ -275,6 +286,7 @@ export async function POST(request: Request) {
           autopay: renewal === "auto",
           notes: description || null,
           last_paid_on: occurredOn,
+          business_id: businessId,
         })
         .select("id")
         .single();
@@ -294,6 +306,7 @@ export async function POST(request: Request) {
       occurred_on: occurredOn,
       source: "manual",
       segment_id: (await validSegment(masterPlanId, body.segmentId)) ?? null,
+      business_id: businessId,
       vendor,
       payment_type: recurring ? "recurring" : "one_time",
       frequency,
