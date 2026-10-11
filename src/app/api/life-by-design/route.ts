@@ -9,8 +9,12 @@ export const dynamic = "force-dynamic";
 // tracker pages Babs adds. A tracker row can be added to the task list (LCCS Tasks, project "Life by Design
 // Summit"); its tick then follows the task so there is one place to look for completion.
 
-const BUSINESS_ID = 16; // AmiLynne Speaks
-const PROJECT_NAME = "Life by Design Summit (April 15-17, 2027)";
+// The same workspace serves several events; each has its own pages, speakers, topics and rows (event_key).
+const EVENTS: Record<string, { business: number; project: string; goal: string; due: string | null }> = {
+  "life-by-design": { business: 16, project: "Life by Design Summit (April 15-17, 2027)", goal: "Plan, promote and hold the Life by Design Summit.", due: "2027-04-17" }, // AmiLynne Speaks
+  "annual-retreat": { business: 15, project: "Annual In Person Retreat", goal: "Plan and hold the annual in-person Command Suite retreat.", due: null }, // LifeCharter Command Suite
+};
+const eventOf = (v: unknown) => (typeof v === "string" && v in EVENTS ? v : "life-by-design");
 const SPEAKER_FIELDS = ["name", "promo_name", "email", "phone", "status", "topic", "dimension", "session_date", "session_time", "length", "style", "promo_agreement", "freebie", "giveaway", "assets", "tech_check", "notes"] as const;
 const TOPIC_FIELDS = ["dimension", "title", "description", "day", "speaker_id", "status", "notes"] as const;
 const ITEM_FIELDS = ["title", "status", "owner", "due_date", "note"] as const;
@@ -30,15 +34,16 @@ async function guard() {
   return { db, plan };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const ev = eventOf(new URL(req.url).searchParams.get("event"));
   const g = await guard();
   if ("err" in g) return g.err;
   const { db, plan } = g;
   const [pages, speakers, topics, items] = await Promise.all([
-    db.from("lbd_pages").select("*").eq("master_plan_id", plan).order("position").order("created_at"),
-    db.from("lbd_speakers").select("*").eq("master_plan_id", plan).order("position").order("created_at"),
-    db.from("lbd_topics").select("*").eq("master_plan_id", plan).order("position").order("created_at"),
-    db.from("lbd_items").select("*").eq("master_plan_id", plan).order("position").order("created_at"),
+    db.from("lbd_pages").select("*").eq("master_plan_id", plan).eq("event_key", ev).order("position").order("created_at"),
+    db.from("lbd_speakers").select("*").eq("master_plan_id", plan).eq("event_key", ev).order("position").order("created_at"),
+    db.from("lbd_topics").select("*").eq("master_plan_id", plan).eq("event_key", ev).order("position").order("created_at"),
+    db.from("lbd_items").select("*").eq("master_plan_id", plan).eq("event_key", ev).order("position").order("created_at"),
   ]);
   const itemRows = (items.data ?? []) as (Row & { task_id: number | null; status: string })[];
   const taskIds = itemRows.map((i) => i.task_id).filter((x): x is number => typeof x === "number");
@@ -60,12 +65,13 @@ export async function GET() {
   );
 }
 
-async function ensureProject(db: ReturnType<typeof createServerClient>, plan: string): Promise<string | null> {
-  const { data: found } = await db.from("projects").select("id").eq("master_plan_id", plan).eq("name", PROJECT_NAME).maybeSingle();
+async function ensureProject(db: ReturnType<typeof createServerClient>, plan: string, ev: string): Promise<string | null> {
+  const cfg = EVENTS[ev];
+  const { data: found } = await db.from("projects").select("id").eq("master_plan_id", plan).eq("name", cfg.project).maybeSingle();
   if (found?.id) return found.id as string;
   const { data, error } = await db
     .from("projects")
-    .insert({ master_plan_id: plan, name: PROJECT_NAME, goal: "Plan, promote and hold the Life by Design Summit.", status: "active", due_date: "2027-04-17" })
+    .insert({ master_plan_id: plan, name: cfg.project, goal: cfg.goal, status: "active", ...(cfg.due ? { due_date: cfg.due } : {}) })
     .select("id")
     .single();
   return error || !data ? null : (data.id as string);
@@ -76,6 +82,7 @@ export async function POST(req: Request) {
   if ("err" in g) return g.err;
   const { db, plan } = g;
   const b = (await req.json().catch(() => ({}))) as Row & { action?: string };
+  const ev = eventOf(b.event);
   const id = typeof b.id === "string" ? b.id : null;
   const ok = () => NextResponse.json({ ok: true });
   const fail = (m: string) => NextResponse.json({ error: m }, { status: 400 });
@@ -85,8 +92,8 @@ export async function POST(req: Request) {
       const kind = b.kind === "tracker" ? "tracker" : b.kind === "notes" ? "notes" : null;
       const title = String(b.title ?? "").trim().slice(0, 80);
       if (!kind || !title) return fail("Give the page a name.");
-      const { data: last } = await db.from("lbd_pages").select("position").eq("master_plan_id", plan).order("position", { ascending: false }).limit(1).maybeSingle();
-      const { data, error } = await db.from("lbd_pages").insert({ master_plan_id: plan, kind, title, position: ((last?.position as number) ?? 0) + 1 }).select("id").single();
+      const { data: last } = await db.from("lbd_pages").select("position").eq("master_plan_id", plan).eq("event_key", ev).order("position", { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await db.from("lbd_pages").insert({ master_plan_id: plan, event_key: ev, kind, title, position: ((last?.position as number) ?? 0) + 1 }).select("id").single();
       return error ? fail("Couldn't add the page.") : NextResponse.json({ ok: true, id: data.id });
     }
     case "rename_page": {
@@ -113,8 +120,8 @@ export async function POST(req: Request) {
       if (!id && !String(f.name ?? "").trim()) return fail("A speaker needs a name.");
       if (id) await db.from("lbd_speakers").update(f).eq("id", id).eq("master_plan_id", plan);
       else {
-        const { data: last } = await db.from("lbd_speakers").select("position").eq("master_plan_id", plan).order("position", { ascending: false }).limit(1).maybeSingle();
-        await db.from("lbd_speakers").insert({ ...f, master_plan_id: plan, position: ((last?.position as number) ?? 0) + 1 });
+        const { data: last } = await db.from("lbd_speakers").select("position").eq("master_plan_id", plan).eq("event_key", ev).order("position", { ascending: false }).limit(1).maybeSingle();
+        await db.from("lbd_speakers").insert({ ...f, master_plan_id: plan, event_key: ev, position: ((last?.position as number) ?? 0) + 1 });
       }
       return ok();
     }
@@ -128,8 +135,8 @@ export async function POST(req: Request) {
       if (!id && !String(f.title ?? "").trim()) return fail("A topic needs a title.");
       if (id) await db.from("lbd_topics").update(f).eq("id", id).eq("master_plan_id", plan);
       else {
-        const { data: last } = await db.from("lbd_topics").select("position").eq("master_plan_id", plan).order("position", { ascending: false }).limit(1).maybeSingle();
-        await db.from("lbd_topics").insert({ ...f, master_plan_id: plan, position: ((last?.position as number) ?? 0) + 1 });
+        const { data: last } = await db.from("lbd_topics").select("position").eq("master_plan_id", plan).eq("event_key", ev).order("position", { ascending: false }).limit(1).maybeSingle();
+        await db.from("lbd_topics").insert({ ...f, master_plan_id: plan, event_key: ev, position: ((last?.position as number) ?? 0) + 1 });
       }
       return ok();
     }
@@ -150,7 +157,7 @@ export async function POST(req: Request) {
         const pageId = typeof b.page_id === "string" ? b.page_id : null;
         if (!pageId || !String(f.title ?? "").trim()) return fail("Write what needs doing.");
         const { data: last } = await db.from("lbd_items").select("position").eq("page_id", pageId).order("position", { ascending: false }).limit(1).maybeSingle();
-        await db.from("lbd_items").insert({ ...f, master_plan_id: plan, page_id: pageId, position: ((last?.position as number) ?? 0) + 1 });
+        await db.from("lbd_items").insert({ ...f, master_plan_id: plan, event_key: ev, page_id: pageId, position: ((last?.position as number) ?? 0) + 1 });
       }
       return ok();
     }
@@ -164,14 +171,14 @@ export async function POST(req: Request) {
       const { data: it } = await db.from("lbd_items").select("*").eq("id", id).eq("master_plan_id", plan).maybeSingle();
       if (!it) return fail("Item not found.");
       if (it.task_id) return ok();
-      const project = await ensureProject(db, plan);
+      const project = await ensureProject(db, plan, ev);
       if (!project) return fail("Couldn't set up the project.");
       const { data: t, error } = await db
         .from("tasks")
         .insert({
           master_plan_id: plan,
           project_id: project,
-          business_id: BUSINESS_ID,
+          business_id: EVENTS[ev].business,
           title: it.title as string,
           description: (it.note as string | null) ?? null,
           priority: "medium",

@@ -20,8 +20,8 @@ const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 t
 const btn = "inline-flex items-center gap-2 rounded-lg bg-[#1a2b4a] px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-[#c9a227] dark:text-[#1a2b4a]";
 const ghost = "inline-flex items-center gap-2 rounded-lg border border-[#1a2b4a]/20 px-3 py-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
 
-async function act(action: string, payload: Record<string, unknown> = {}): Promise<{ ok?: boolean; error?: string; id?: string }> {
-  const r = await fetch("/api/life-by-design", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...payload }) });
+async function act(event: string, action: string, payload: Record<string, unknown> = {}): Promise<{ ok?: boolean; error?: string; id?: string }> {
+  const r = await fetch("/api/life-by-design", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event, action, ...payload }) });
   return r.json().catch(() => ({ error: "Something went wrong." }));
 }
 
@@ -34,28 +34,40 @@ function Labeled({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export default function LifeByDesign() {
+const EVENT_COPY: Record<string, { title: string; intro: string }> = {
+  "life-by-design": {
+    title: "Life by Design Summit",
+    intro: "April 15, 16 and 17, 2027 · 9am to 2pm Mountain · free and online. Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.",
+  },
+  "annual-retreat": {
+    title: "Annual In Person Retreat",
+    intro: "The yearly in-person retreat for Command Suite clients (Wednesday to Saturday, with a mastermind day on the Sunday). Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.",
+  },
+};
+
+export default function LifeByDesign({ event = "life-by-design" }: { event?: string }) {
+  const copy = EVENT_COPY[event] ?? EVENT_COPY["life-by-design"];
   const [data, setData] = useState<{ pages: Page[]; speakers: Speaker[]; topics: Topic[]; items: Item[] } | null>(null);
   const [tab, setTab] = useState("");
   const [msg, setMsg] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(() => {
-    fetch("/api/life-by-design", { cache: "no-store" })
+    fetch(`/api/life-by-design?event=${event}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load"))))
       .then((d) => {
         setData(d);
         setTab((t) => (t && d.pages.some((p: Page) => p.id === t) ? t : d.pages[0]?.id ?? ""));
       })
       .catch(() => setMsg("Couldn't load. Refresh to try again."));
-  }, []);
+  }, [event]);
   useEffect(load, [load]);
 
   const page = useMemo(() => data?.pages.find((p) => p.id === tab), [data, tab]);
 
   async function run(action: string, payload: Record<string, unknown>, done?: string) {
     setMsg("");
-    const r = await act(action, payload);
+    const r = await act(event, action, payload);
     if (r.error) setMsg(r.error);
     else if (done) setMsg(done);
     load();
@@ -64,10 +76,8 @@ export default function LifeByDesign() {
 
   return (
     <div className="px-4 py-6 sm:px-6">
-      <h1 className={`font-serif text-2xl font-bold ${ink}`}>Life by Design Summit</h1>
-      <p className={`mt-1 max-w-3xl text-sm ${faint}`}>
-        April 15, 16 and 17, 2027 · 9am to 2pm Mountain · free and online. Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.
-      </p>
+      <h1 className={`font-serif text-2xl font-bold ${ink}`}>{copy.title}</h1>
+      <p className={`mt-1 max-w-3xl text-sm ${faint}`}>{copy.intro}</p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2" role="tablist" aria-label="Life by Design pages">
         {data?.pages.map((p) => (
@@ -89,7 +99,7 @@ export default function LifeByDesign() {
       {adding && (
         <AddPage
           onAdd={async (kind, title) => {
-            const r = await act("add_page", { kind, title });
+            const r = await act(event, "add_page", { kind, title });
             if (r.error) setMsg(r.error);
             else {
               setAdding(false);
