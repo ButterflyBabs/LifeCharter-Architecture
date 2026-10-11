@@ -49,6 +49,7 @@ import {
   Sparkles,
   Mic,
   MapPin,
+  CalendarRange,
   Settings2,
   Moon,
   Sun,
