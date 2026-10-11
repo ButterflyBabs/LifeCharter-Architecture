@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Loader2, Plus, Printer, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, BookOpen, Loader2, Plus, Printer, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -16,11 +16,11 @@ interface Sop {
   steps: string[];
   owner: string | null;
   tools: string | null;
-  status: "draft" | "active";
+  status: "draft" | "active" | "archived";
   last_reviewed: string | null;
   updated_at: string;
 }
-const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active", notes: "" };
+const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active" | "archived", notes: "" };
 const pillarName = (k: string | null) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? "General";
 
 export default function SopLibraryPage() {
@@ -29,6 +29,7 @@ export default function SopLibraryPage() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<Sop | null>(null);
   const [q, setQ] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
 
@@ -41,11 +42,11 @@ export default function SopLibraryPage() {
   }, [load]);
 
   const groups = useMemo(() => {
-    const list = (sops ?? []).filter((s) => !q || `${s.title} ${s.purpose ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+    const list = (sops ?? []).filter((s) => (showArchived || s.status !== "archived") && (!q || `${s.title} ${s.purpose ?? ""}`.toLowerCase().includes(q.toLowerCase())));
     const m = new Map<string, Sop[]>();
     for (const s of list) m.set(pillarName(s.pillar_key), [...(m.get(pillarName(s.pillar_key)) ?? []), s]);
     return Array.from(m.entries());
-  }, [sops, q]);
+  }, [sops, q, showArchived]);
 
   function edit(s?: Sop) {
     setForm(
@@ -100,7 +101,15 @@ export default function SopLibraryPage() {
     void load();
   }
 
+  async function setStatus(s: Sop, status: "draft" | "active" | "archived") {
+    await fetch("/api/sops", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, status }) });
+    setView(null);
+    setMsg(status === "archived" ? `Archived "${s.title}". It is kept, and you can restore it any time.` : `Restored "${s.title}" as a draft.`);
+    void load();
+  }
+
   const active = (sops ?? []).filter((s) => s.status === "active").length;
+  const archivedCount = (sops ?? []).filter((s) => s.status === "archived").length;
 
   return (
     <div className="py-8 px-4 max-w-5xl mx-auto print:p-0">
@@ -120,6 +129,9 @@ export default function SopLibraryPage() {
           </div>
           <div className="flex gap-2">
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="w-44" />
+            {archivedCount > 0 && (
+              <Button variant="outline" onClick={() => setShowArchived((v) => !v)}>{showArchived ? "Hide archived" : `Show archived (${archivedCount})`}</Button>
+            )}
             <Button onClick={() => edit()}><Plus className="w-4 h-4 mr-1" />New SOP</Button>
           </div>
         </div>
@@ -198,6 +210,11 @@ export default function SopLibraryPage() {
                 <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="w-3.5 h-3.5 mr-1" />Print</Button>
                 <Button size="sm" variant="outline" onClick={() => markReviewed(view)}>Mark reviewed today</Button>
                 <Button size="sm" variant="outline" onClick={() => edit(view)}>Edit</Button>
+                {view.status === "archived" ? (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(view, "draft")}><ArchiveRestore className="w-3.5 h-3.5 mr-1" />Restore</Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(view, "archived")}><Archive className="w-3.5 h-3.5 mr-1" />Archive</Button>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => remove(view)} aria-label="Delete"><Trash2 className="w-3.5 h-3.5" /></Button>
                 <Button size="sm" variant="ghost" onClick={() => setView(null)}>Close</Button>
               </div>
@@ -227,7 +244,7 @@ export default function SopLibraryPage() {
                   <button key={s.id} onClick={() => setView(s)} className="rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20 p-4 text-left hover:border-[#c9a227]">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.status === "active" ? "bg-[#2c6b3f]/10 text-[#2c6b3f]" : "bg-[#8a7f74]/10 text-[#8a7f74]"}`}>{s.status === "active" ? "In use" : "Draft"}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.status === "active" ? "bg-[#2c6b3f]/10 text-[#2c6b3f]" : "bg-[#8a7f74]/10 text-[#8a7f74]"}`}>{s.status === "archived" ? "Archived" : s.status === "active" ? "In use" : "Draft"}</span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-sm text-[#7a8a99]">{s.purpose || `${s.steps.length} steps`}</p>
                   </button>

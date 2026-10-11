@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 // Playbook & SOP library.
 //   GET                          → this client's SOPs
 //   POST { action: "draft", title, notes?, pillarKey? } → the assistant drafts one (not saved)
-//   POST { ...sop }              → create    PATCH { id, ...sop } → edit    DELETE { id }
-// SOPs in use feed the Systems score live (see liveOperationalMetrics).
+//   POST { ...sop }              → create    PATCH { id, ...sop } → edit (status draft | active | archived)    DELETE { id }
+// SOPs in use (status active) feed the Systems score live; archived ones are kept but do not count.
 
 const PILLARS = new Set(OPERATIONS_PILLARS.map((p) => p.key));
 const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at";
@@ -26,7 +26,7 @@ function clean(body: Record<string, unknown>) {
   if (Array.isArray(body.steps)) out.steps = body.steps.map((x) => String(x ?? "").trim().slice(0, 600)).filter(Boolean).slice(0, 40);
   if (typeof body.owner === "string") out.owner = body.owner.trim().slice(0, 120) || null;
   if (typeof body.tools === "string") out.tools = body.tools.trim().slice(0, 300) || null;
-  if (body.status === "draft" || body.status === "active") out.status = body.status;
+  if (body.status === "draft" || body.status === "active" || body.status === "archived") out.status = body.status;
   if (typeof body.lastReviewed === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.lastReviewed)) out.last_reviewed = body.lastReviewed;
   return out;
 }

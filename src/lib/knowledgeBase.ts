@@ -993,7 +993,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Operations",
     question: "How do Playbook & SOPs work?",
     answer:
-      "Playbook & SOPs (Alignment & Systems → Playbook & SOPs) is how your business runs, written down once. Name a process, jot how you do it today in your own words, and your assistant drafts clean, numbered steps you can edit. Your SOPs make it easier to hand work to a team member and keep things consistent.",
+      "Playbook & SOPs (Alignment & Systems → Playbook & SOPs) is how your business runs, written down once. Name a process, jot how you do it today in your own words, and your assistant drafts clean, numbered steps you can edit. Your SOPs make it easier to hand work to a team member and keep things consistent. Open any SOP to edit it, press Mark reviewed today to keep it current, or Archive it when you no longer use that process: an archived SOP is kept (Show archived brings it back into view, Restore makes it a draft again) but no longer counts toward your Operations score.",
     keywords: ["sop", "sops", "playbook", "process", "procedures", "standard operating procedure", "document", "delegate"],
   },
   {
