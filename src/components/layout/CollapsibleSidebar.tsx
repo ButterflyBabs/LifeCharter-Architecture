@@ -195,6 +195,7 @@ const ownerSection = {
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
     { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
+    { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },

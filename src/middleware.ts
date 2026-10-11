@@ -29,6 +29,7 @@ const PUBLIC_APIS = [
   "/api/cron/task-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/masterclass-attendance", // secured by its own CRON_SECRET check, not a session
   "/api/cron/demo-reset", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/session-checklists", // secured by its own CRON_SECRET check, not a session
   "/api/cron/community-notify", // secured by its own CRON_SECRET check, not a session
   "/api/cron/alert-digest", // secured by its own CRON_SECRET check, not a session
   "/api/cron/stripe-sync", // secured by its own CRON_SECRET check, not a session
