@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, Target, Sparkles } from "lucide-react";
 import ProgressTrend from "./ProgressTrend";
 import { ProgressRead } from "@/components/planning/AssistantPanels";
+import BusinessHealth from "./BusinessHealth";
 
 interface Dim {
   key: string;
@@ -112,6 +113,8 @@ export default function ProgressView() {
       </p>
 
       <ProgressRead />
+
+      <BusinessHealth />
 
       {noData ? (
         <div className="rounded-2xl border border-gray-200/70 dark:border-[#c9a227]/20 bg-white dark:bg-[#1A1A2E] p-8 text-center">

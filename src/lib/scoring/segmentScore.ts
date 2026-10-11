@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { gatherAndCompute } from "@/lib/scoring/gather";
 import { DIMENSION_KEYS, DIMENSION_LABEL, type DimensionKey } from "@/lib/scoring/dimensionModel";
 import { planBusinessIds } from "@/lib/planScope";
+import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
 
 // Segment scores from EVIDENCE, not opinion.
 //
@@ -97,15 +98,32 @@ function taskSignal(list: TaskRow[], now: number, label: string, w: number): Sig
   };
 }
 
-export async function computeSegmentScores(planId: string): Promise<SegmentResult[]> {
+/** Each BUSINESS as a scoring unit (Babs, 2026-10-11): its own tasks, its compliance checklist and anything tagged to its segments, on top of the account's assessment scores. */
+export function computeBusinessScores(planId: string): Promise<SegmentResult[]> {
+  return computeSegmentScores(planId, { units: "businesses" });
+}
+
+export async function computeSegmentScores(planId: string, opts: { units?: "businesses" } = {}): Promise<SegmentResult[]> {
   const db = createServerClient();
   const now = Date.now();
   const bizIds = await planBusinessIds(planId);
   if (!bizIds.length) return [];
-  const { data: segRows } = await db.from("segments").select("id, business_id, name, revenue_target").in("business_id", bizIds).eq("active", true).order("sort_order");
-  const segs = (segRows ?? []) as { id: number; business_id: number; name: string; revenue_target: number | string | null }[];
+  const businessMode = opts.units === "businesses";
+  let segs: { id: number; business_id: number; name: string; revenue_target: number | string | null }[];
+  // In business mode, every segment (and every task) rolls up into its business, and the unit id is the business id.
+  const segToUnit = new Map<number, number>();
+  if (businessMode) {
+    const { data: bRows } = await db.from("businesses").select("id, name").eq("master_plan_id", planId).order("id");
+    segs = ((bRows ?? []) as { id: number; name: string }[]).map((b) => ({ id: b.id, business_id: b.id, name: b.name, revenue_target: null }));
+    const { data: sRows } = await db.from("segments").select("id, business_id").in("business_id", bizIds);
+    for (const s of (sRows ?? []) as { id: number; business_id: number }[]) segToUnit.set(s.id, s.business_id);
+  } else {
+    const { data: segRows } = await db.from("segments").select("id, business_id, name, revenue_target").in("business_id", bizIds).eq("active", true).order("sort_order");
+    segs = (segRows ?? []) as { id: number; business_id: number; name: string; revenue_target: number | string | null }[];
+  }
   if (!segs.length) return [];
-  const segIds = segs.map((s) => s.id);
+  const segIds = businessMode ? Array.from(segToUnit.keys()) : segs.map((s) => s.id);
+  const unitOf = (segmentId: number | null | undefined): number | null => (segmentId == null ? null : businessMode ? segToUnit.get(segmentId) ?? null : segmentId);
   const sinceDay = new Date(now - 120 * DAY).toISOString().slice(0, 10);
 
   const { data: planRows } = await db.from("client_plans").select("id").eq("master_plan_id", planId);
@@ -113,14 +131,45 @@ export async function computeSegmentScores(planId: string): Promise<SegmentResul
 
   const [base, coachRows, tasks, goals, ledger, sales, snaps] = await Promise.all([
     gatherAndCompute(planId).then((o) => Object.fromEntries((o.domains ?? []).filter((d) => d.score !== null).map((d) => [d.key, Math.round(d.score as number)]))).catch(() => ({} as Record<string, number>)),
-    db.from("segment_dimensions").select("segment_id, dimension_key, score").in("segment_id", segIds).eq("updated_by", "coach").then((r) => (r.data ?? []) as { segment_id: number; dimension_key: string; score: number }[]),
-    db.from("tasks").select("*").eq("master_plan_id", planId).in("segment_id", segIds).limit(4000).then((r) => (r.data ?? []) as TaskRow[]),
+    businessMode ? Promise.resolve([] as { segment_id: number; dimension_key: string; score: number }[]) : db.from("segment_dimensions").select("segment_id, dimension_key, score").in("segment_id", segIds).eq("updated_by", "coach").then((r) => (r.data ?? []) as { segment_id: number; dimension_key: string; score: number }[]),
+    (businessMode
+      ? db.from("tasks").select("*").eq("master_plan_id", planId).or(`status.neq.done,completed_at.gte.${new Date(now - 90 * DAY).toISOString()}`).limit(4000)
+      : db.from("tasks").select("*").eq("master_plan_id", planId).in("segment_id", segIds).limit(4000)
+    ).then((r) => (r.data ?? []) as TaskRow[]),
     planIds.length ? db.from("client_plan_goals").select("segment_id, dimension_key, title, status").in("plan_id", planIds).in("segment_id", segIds).then((r) => (r.data ?? []) as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]) : Promise.resolve([] as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]),
     db.from("finance_entries").select("segment_id, type, amount, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", sinceDay).limit(5000).then((r) => (r.data ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string }[]),
     db.from("sales_activities").select("segment_id, outcome, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", new Date(now - WINDOW_DAYS * DAY).toISOString().slice(0, 10)).limit(3000).then((r) => (r.data ?? []) as { segment_id: number; outcome: string | null; occurred_on: string }[]),
-    db.from("segment_score_snapshots").select("segment_id, domains, overall, created_at").in("segment_id", segIds).order("created_at", { ascending: false }).limit(2000).then((r) => (r.data ?? []) as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]),
+    businessMode ? Promise.resolve([] as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]) : db.from("segment_score_snapshots").select("segment_id, domains, overall, created_at").in("segment_id", segIds).order("created_at", { ascending: false }).limit(2000).then((r) => (r.data ?? []) as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]),
   ]);
   const coach = new Map(coachRows.map((r) => [`${r.segment_id}:${r.dimension_key}`, r.score]));
+
+  // Business mode: everything is re-keyed onto its business (a task's own business wins over its segment's).
+  const extra = new Map<number, Partial<Record<string, Signal[]>>>();
+  if (businessMode) {
+    for (const t of tasks) t.segment_id = ((t.business_id as number | null) ?? unitOf(t.segment_id) ?? -1) as number;
+    for (const g of goals) g.segment_id = unitOf(g.segment_id) ?? -1;
+    for (const e of ledger) e.segment_id = unitOf(e.segment_id) ?? -1;
+    for (const x of sales) x.segment_id = unitOf(x.segment_id) ?? -1;
+    // Each business's own compliance checklist is its Legal evidence.
+    const { data: legalRows } = await db
+      .from("legal_checklist")
+      .select("item_key, status, due_date, notes, doc_link, custom_title, custom_group, business_id")
+      .eq("master_plan_id", planId)
+      .not("business_id", "is", null);
+    const byBiz = new Map<number, LegalState[]>();
+    for (const r of (legalRows ?? []) as (LegalState & { business_id: number })[]) byBiz.set(r.business_id, [...(byBiz.get(r.business_id) ?? []), r]);
+    byBiz.forEach((rows, bid) => {
+      const pct = legalCompletion(rows);
+      if (pct === null) return;
+      extra.set(bid, {
+        legal: [{
+          score: pct, n: Math.max(3, rows.length), w: 0.8,
+          needs: pct < 60 ? [`compliance checklist is ${pct}% done`] : [],
+          wins: pct >= 85 ? [`compliance checklist is ${pct}% done`] : [],
+        }],
+      });
+    });
+  }
 
   const day30 = new Date(now - 30 * DAY).toISOString().slice(0, 10);
   const day60 = new Date(now - 60 * DAY).toISOString().slice(0, 10);
@@ -199,6 +248,7 @@ export async function computeSegmentScores(planId: string): Promise<SegmentResul
 
       const dimTasks = taskSignal(tasksByDim.get(key) ?? [], now, label, 0.6);
       if (dimTasks) { signals.push(dimTasks); ev.tasks = dimTasks.n; }
+      for (const sig of extra.get(seg.id)?.[key] ?? []) signals.push(sig);
       const dimGoals = myGoals.filter((g) => g.dimension_key === key);
       if (dimGoals.length) {
         const s = dimGoals.reduce((a, g) => a + (GOAL_SCORE[g.status || "not_started"] ?? 45), 0) / dimGoals.length;
