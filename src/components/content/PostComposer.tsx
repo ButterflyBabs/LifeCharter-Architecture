@@ -191,7 +191,7 @@ export function PostComposer({
           <div className="flex items-start gap-3 rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 p-4">
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#8a6a15]" />
             <p className="text-sm text-[#8a6a15]">
-              PostStream isn&apos;t connected yet. Add your key in <Link href="/settings" className="font-medium underline">Settings → Integrations</Link> to schedule and publish.
+              Scheduling and publishing from here is not available on this account right now.
               {plannerOn ? " You can still save a draft on the calendar." : ""}
             </p>
           </div>

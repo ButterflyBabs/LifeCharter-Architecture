@@ -524,7 +524,7 @@ export default function ContentCalendarPage() {
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#c9a227]/40 bg-[#c9a227]/10 p-4">
           <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#8a6a15]" />
           <p className="text-sm text-[#8a6a15]">
-            Connect PostStream in <Link href="/settings" className="font-medium underline">Settings → Integrations</Link> to see and schedule your posts here.
+            Posting to social accounts from here is not available on this account right now.
           </p>
         </div>
       )}

@@ -581,7 +581,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Integrations",
     question: "What is PostStream?",
     answer:
-      "PostStream (Post Bridge) powers creating and scheduling social posts across Instagram, YouTube, TikTok, X, Bluesky, LinkedIn, Facebook, Threads, Reddit, and Pinterest — it's the engine behind Create Content and the Content Calendar. Connect it with your PostStream API key in Settings → Integrations; saving validates the key live, and your connected channels then populate the platform picker.",
+      "PostStream is not available on client accounts right now; it is restricted to LifeCharter's own account. PostStream (Post Bridge) powers creating and scheduling social posts across Instagram, YouTube, TikTok, X, Bluesky, LinkedIn, Facebook, Threads, Reddit, and Pinterest — it's the engine behind Create Content and the Content Calendar. Connect it with your PostStream API key in Settings → Integrations; saving validates the key live, and your connected channels then populate the platform picker.",
     keywords: ["poststream", "post bridge", "social", "scheduling", "posts", "content integration", "channels"],
   },
 
@@ -711,7 +711,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Content & Social",
     question: "How do I connect my social accounts?",
     answer:
-      "Add your PostStream API key in Settings → Integrations. Saving validates it live; once connected, your linked channels (Instagram, LinkedIn, X, Facebook, and more) appear as options when you compose in Create Content.",
+      "PostStream is not available on client accounts right now, so there is no key to add. (Earlier guidance, no longer applies:) Add your PostStream API key in Settings → Integrations. Saving validates it live; once connected, your linked channels (Instagram, LinkedIn, X, Facebook, and more) appear as options when you compose in Create Content.",
     keywords: ["connect social", "poststream key", "accounts", "channels", "integrations"],
   },
   {

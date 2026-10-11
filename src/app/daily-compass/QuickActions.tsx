@@ -116,7 +116,7 @@ export function QuickActions({ psConnected, socialOn }: Props) {
           </div>
           <p className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] text-sm">Content Calendar</p>
           <p className="text-xs text-[#b8a898]">
-            {psConnected === false && !socialOn ? "Connect PostStream" : "Plan, create & schedule posts"}
+            {psConnected === false && !socialOn ? "Plan your posts" : "Plan, create & schedule posts"}
           </p>
         </>
       ),
