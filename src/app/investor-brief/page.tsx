@@ -5,6 +5,7 @@ import { Cormorant_Garamond, EB_Garamond, Montserrat } from "next/font/google";
 import PdfCards, { type PdfDoc } from "./PdfCards";
 import pages from "@/content/investorPages.json";
 import meta from "@/content/investorBrief.meta.json";
+import thumbs from "@/content/investorThumbs.json";
 
 // Investor-facing page. The brief is LIVE on the page (rendered from src/content/investorBrief.html, the one source),
 // and the same source produces the printable PDF and the master document. Unlisted: not linked from anywhere, and
@@ -22,6 +23,7 @@ const serif = EB_Garamond({ subsets: ["latin"], weight: ["400", "500"], style: [
 const sans = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--ib-sans" });
 
 const P = pages as Record<string, number>;
+const T = thumbs as Record<string, string>;
 // The download options, in the order Babs set: each is a card with Read here and Download.
 const MASTER: PdfDoc = {
   file: "LCCS-Investor-Package.pdf",
@@ -152,7 +154,7 @@ export default function InvestorBriefPage() {
           <p className="mb-8 mt-3 max-w-2xl text-[18px] leading-relaxed text-[#3a4358]">
             Open any document on this page, or download the PDF. The master document holds everything in one file. The editable financial model (Excel) is provided separately.
           </p>
-          <PdfCards docs={[MASTER, ...ATTACHMENTS]} />
+          <PdfCards docs={[MASTER, ...ATTACHMENTS].map((d) => ({ ...d, thumb: T[d.file] }))} />
         </div>
       </section>
 

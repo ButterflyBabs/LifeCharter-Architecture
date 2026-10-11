@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, type FeatureMap } from "@/lib/teamRoles";
@@ -13,6 +14,7 @@ const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a",
 const PUBLIC_APIS = [
   "/api/meta-leads", // Meta lead ads, secured by the secret in its address (?k=), not a session
   "/api/masterclass-signup", // the public MasterClass signup page registers people on Zoom
+  "/api/investor-access/login", // the investor page's access-code check (rate limited, signed cookie)
   "/api/reviews/collect",
   "/auth/callback",
   "/api/invite",
@@ -249,6 +251,22 @@ export async function middleware(request: NextRequest) {
     if (p.startsWith("/certificationportal/")) return NextResponse.next();
     if (p.length > 1 && p.endsWith("/")) {
       return NextResponse.redirect(new URL(p.replace(/\/+$/, "") + request.nextUrl.search, request.url), 308);
+    }
+  }
+
+  // The investor page (and its documents) sit behind an access code. Only /investor-brief is affected: the gate
+  // page itself is open, everything else under it needs the signed cookie from /api/investor-access/login.
+  {
+    const p = request.nextUrl.pathname;
+    if ((p === "/investor-brief" || p.startsWith("/investor-brief/")) && !p.startsWith("/investor-brief/access")) {
+      const ok = await accessTokenValid(request.cookies.get(IB_COOKIE)?.value);
+      if (!ok) {
+        if (/\.[a-z0-9]{2,5}$/i.test(p)) return new NextResponse("Access code required.", { status: 401, headers: { "Cache-Control": "no-store" } });
+        const gate = new URL("/investor-brief/access", request.url);
+        const res = NextResponse.redirect(gate, 307);
+        res.headers.set("Cache-Control", "no-store");
+        return res;
+      }
     }
   }
 

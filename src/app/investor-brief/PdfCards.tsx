@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export type PdfDoc = { file: string; title: string; note: string; pages: number; featured?: boolean };
+export type PdfDoc = { file: string; title: string; note: string; pages: number; featured?: boolean; thumb?: string };
 
 // Each attachment is a card: a preview of its first page, what it is, and Read here / Download.
 // The viewer loads only when a card is opened, so the page stays light.
@@ -12,7 +12,7 @@ export default function PdfCards({ docs }: { docs: PdfDoc[] }) {
     <ul className="grid gap-5 sm:grid-cols-2">
       {docs.map((d) => {
         const src = `/investor-brief/${d.file}`;
-        const thumb = `/investor-brief/thumbs/${d.file.replace(/\.pdf$/, ".jpg")}`;
+        const thumb = d.thumb;
         const isOpen = open === d.file;
         return (
           <li
