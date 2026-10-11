@@ -7,7 +7,7 @@
 
 export const GATE_EXEMPT_EMAILS = ["amilynne@amilynnecarroll.com", "marcello@amilynnecarroll.com", "sumbalteepu786@gmail.com"];
 
-const PAGE_ALLOW = ["/setup", "/assessments", "/settings", "/help/contact", "/logout"];
+const PAGE_ALLOW = ["/setup", "/assessments", "/settings", "/help/contact", "/logout", "/starter-guide.html"];
 // The assessments hub and the three assessments only (not Quick Pulse or Command Shift).
 const ASSESSMENT_SUBPAGES = ["/assessments/brain", "/assessments/soul", "/assessments/profit"];
 

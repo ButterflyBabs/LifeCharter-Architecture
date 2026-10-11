@@ -142,6 +142,14 @@ export default function SetupPage() {
           </p>
         </div>
 
+        {s && !s.assessments.complete && (
+          <div className="mb-6 rounded-2xl border border-[#1a2b4a]/15 bg-white/70 px-5 py-4 text-center dark:border-white/10 dark:bg-[#1a2b4a]/40" role="note">
+            <p className="text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
+              Once you have completed your three Command Suite assessments, the rest of your Command Suite opens and you will have full access to every feature.
+            </p>
+          </div>
+        )}
+
         {/* Starter Guide */}
         <a
           href={STARTER_GUIDE_URL}

@@ -658,7 +658,7 @@ export function CollapsibleSidebar() {
   const visible = (href: string) => {
     if (assessmentsLocked) {
       const p = href.split("?")[0];
-      return p === "/setup" || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help/contact";
+      return p === "/setup" || p.endsWith("/starter-guide.html") || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help/contact";
     }
     if (!features) return true;
     const key = featureForPage(href.split("?")[0]);
