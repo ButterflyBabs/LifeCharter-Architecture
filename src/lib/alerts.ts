@@ -428,6 +428,27 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // Calendar connections that stopped working (Google or Microsoft): booking pages show no times until reconnected.
+  try {
+    const { data: hosts } = await supabase.from("booking_hosts").select("id, name").eq("master_plan_id", masterPlanId);
+    const ids = (hosts ?? []).map((h) => h.id as string);
+    if (ids.length) {
+      const { data: broken } = await supabase.from("booking_connections").select("id, host_id, provider, email, broken_reason").in("host_id", ids).not("broken_at", "is", null);
+      const name = new Map((hosts ?? []).map((h) => [h.id as string, h.name as string]));
+      for (const c of (broken ?? []) as { id: string; host_id: string; provider: string; email: string | null; broken_reason: string | null }[]) {
+        out.push({
+          nkey: `calendar-broken:${c.id}`,
+          type: "action",
+          title: `Reconnect the ${c.provider === "google" ? "Google" : "Microsoft"} calendar${c.email ? ` (${c.email})` : ""}`,
+          body: `${c.broken_reason || "It stopped connecting."} Until it is reconnected your booking pages may show no open times. Open Calendars > Hosts and use the reconnect link for ${name.get(c.host_id) || "the host"}.`,
+          href: "/calendars",
+        });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

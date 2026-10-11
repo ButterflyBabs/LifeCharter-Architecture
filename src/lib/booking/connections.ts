@@ -20,6 +20,9 @@ export interface Connection {
   expiry: string | null;
   check_busy: boolean;
   add_events: boolean;
+  broken_at?: string | null;
+  broken_reason?: string | null;
+  alerted_at?: string | null;
 }
 export interface Busy {
   start: number;
@@ -132,6 +135,16 @@ async function tokenFor(c: Connection): Promise<string | null> {
     console.error("booking token refresh:", c.id, e);
     return null;
   }
+}
+
+// Is this calendar connection still working? A refresh that fails (revoked, expired, password changed) or an account
+// that can no longer be read marks it broken, so the account holder is told; a working one clears the mark.
+export async function checkConnection(c: Connection): Promise<{ ok: boolean; reason: string | null }> {
+  const token = await tokenFor(c);
+  if (!token) return { ok: false, reason: "The sign-in for this calendar expired or was withdrawn." };
+  const who = await whoAmI(c.provider, token);
+  if (!who) return { ok: false, reason: "This calendar could not be read." };
+  return { ok: true, reason: null };
 }
 
 // Busy blocks from the events on a Google primary calendar (needs only the "events" permission).

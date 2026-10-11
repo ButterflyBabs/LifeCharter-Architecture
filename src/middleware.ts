@@ -46,6 +46,7 @@ const PUBLIC_APIS = [
   "/api/cron/client-walkthrough", // the 3-minute New Client Setup Walkthrough; secured by its own CRON_SECRET check, not a session
   "/api/cron/followups", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-daily-tasks", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/calendar-connections", // secured by its own CRON_SECRET check, not a session
   "/api/cron/client-check-in", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-weekly-bills", // secured by its own CRON_SECRET check, not a session
   "/api/cron/new-client-review", // secured by its own CRON_SECRET check, not a session
