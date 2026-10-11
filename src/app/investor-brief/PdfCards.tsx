@@ -2,47 +2,49 @@
 
 import { useState } from "react";
 
-export type PdfDoc = { file: string; title: string; note: string; pages: string };
+export type PdfDoc = { file: string; title: string; note: string; pages: number; featured?: boolean };
 
-// Each document opens inside the page (a viewer, loaded only when opened) and can be downloaded.
+// Each attachment is a card: a preview of its first page, what it is, and Read here / Download.
+// The viewer loads only when a card is opened, so the page stays light.
 export default function PdfCards({ docs }: { docs: PdfDoc[] }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <ul className="grid gap-4">
+    <ul className="grid gap-5 sm:grid-cols-2">
       {docs.map((d) => {
         const src = `/investor-brief/${d.file}`;
+        const thumb = `/investor-brief/thumbs/${d.file.replace(/\.pdf$/, ".jpg")}`;
         const isOpen = open === d.file;
         return (
-          <li key={d.file} className="rounded-2xl border border-[#D4AF63]/30 bg-white/60 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 basis-64">
-                <h3 className="font-serif text-lg font-bold text-[#0F1A38]">{d.title}</h3>
-                <p className="mt-1 text-sm text-[#3d4660]">{d.note}</p>
-                <p className="mt-1 text-xs text-[#6b7390]">{d.pages}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? null : d.file)}
-                  aria-expanded={isOpen}
-                  className="rounded-full bg-[#0F1A38] px-4 py-2 text-sm font-semibold text-[#FAF8F3] hover:bg-[#1B2A52]"
-                >
-                  {isOpen ? "Close" : "Read it here"}
-                </button>
-                <a href={src} download className="rounded-full border border-[#0F1A38]/25 px-4 py-2 text-sm font-semibold text-[#0F1A38] hover:bg-[#0F1A38]/5">
-                  Download PDF
-                </a>
+          <li
+            key={d.file}
+            className={`ib-card ${d.featured ? "sm:col-span-2 ib-card-feature" : ""}`}
+          >
+            <div className="flex gap-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={thumb}
+                alt={`First page of ${d.title}`}
+                loading="lazy"
+                className="h-36 w-28 shrink-0 rounded-md border border-[#C9B8A7] object-cover object-top shadow-sm sm:h-44 sm:w-36"
+              />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <h3 className="ib-card-title">{d.title}</h3>
+                <p className="ib-card-note">{d.note}</p>
+                <p className="ib-card-meta">PDF &middot; {d.pages} {d.pages === 1 ? "page" : "pages"}</p>
+                <div className="mt-auto flex flex-wrap gap-2 pt-3">
+                  <button type="button" onClick={() => setOpen(isOpen ? null : d.file)} aria-expanded={isOpen} className="ib-btn ib-btn-solid">
+                    {isOpen ? "Close" : "Read here"}
+                  </button>
+                  <a href={src} download className="ib-btn ib-btn-line">Download PDF</a>
+                </div>
               </div>
             </div>
             {isOpen && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-[#0F1A38]/15 bg-white">
-                <iframe title={d.title} src={`${src}#view=FitH`} className="h-[75vh] min-h-[480px] w-full" />
-                <p className="px-3 py-2 text-xs text-[#6b7390]">
-                  If the document does not show on your device,{" "}
-                  <a className="underline" href={src} target="_blank" rel="noopener noreferrer">
-                    open it in a new tab
-                  </a>
-                  .
+              <div className="mt-5 overflow-hidden rounded-xl border border-[#0F1A38]/15 bg-white">
+                <iframe title={d.title} src={`${src}#view=FitH`} className="h-[78vh] min-h-[480px] w-full" />
+                <p className="px-3 py-2 text-xs text-[#5b6580]">
+                  Not showing on your device?{" "}
+                  <a className="underline" href={src} target="_blank" rel="noopener noreferrer">Open it in a new tab</a>.
                 </p>
               </div>
             )}
