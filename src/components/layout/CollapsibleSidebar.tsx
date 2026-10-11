@@ -191,6 +191,7 @@ const ownerSection = {
     { id: "sneak-peek-run-of-show", label: "Command Suite Short Demo", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "short-demo-slides", label: "Short Demo Slides", icon: Presentation, href: "https://claude.ai/artifact/CsTuHezMWhXz1DpbugffRU" },
     { id: "masterclass-script-1008", label: "10/08 MasterClass Script", icon: BookOpen, href: "https://claude.ai/artifact/8BTWYQvfDSeFQNpWd7BF5j" },
+    { id: "masterclass-script-1022", label: "10/22 MasterClass Script (See It Clearly)", icon: BookOpen, href: "https://claude.ai/artifact/8beWZbbh6t3ko3cfZhqNsi" },
     { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
     { id: "demo-account", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
     { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
