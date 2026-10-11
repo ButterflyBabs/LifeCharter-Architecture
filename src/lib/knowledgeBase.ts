@@ -351,6 +351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["links", "forms", "links and forms", "all my links", "form link", "booking link", "checkout link", "where is my link", "copy link", "link directory"],
   },
   {
+    id: "cal-connection-alert",
+    category: "Calendar & Connections",
+    question: "How will I know if my calendar connection stops working?",
+    answer:
+      "The Suite checks every calendar connected to your booking pages (Google and Microsoft) every 30 minutes. If one stops working, for example because its sign-in expired or was withdrawn, a bell alert appears in the Suite and you are emailed the moment it is found, with a Reconnect this calendar button. Until it is reconnected your booking pages may show no open times, so reconnect it as soon as you can; it takes about a minute. You are reminded every 3 days while it stays broken, and the alert clears by itself once the calendar is reconnected. There is nothing to set up.",
+    keywords: ["calendar disconnected", "calendar broken", "calendar not working", "no times", "booking page empty", "no open times", "reconnect calendar", "google calendar", "microsoft calendar", "calendar alert"],
+  },
+  {
     id: "sa-invite-tracker",
     category: "Sales",
     question: "How do I track who I invited to an event and who registered?",
