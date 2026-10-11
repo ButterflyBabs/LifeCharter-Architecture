@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import type { IbRequestRow } from "@/app/api/investor-access/requests/route";
 
+// A booked call needs its time, shown in Mountain Time (the host's calendar), not just the day.
+const whenAt = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Denver", timeZoneName: "short" }) : "";
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "");
 
 export default function Requests() {
@@ -84,7 +87,7 @@ export default function Requests() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {r.callAt ? (
-                  <span className="rounded-full bg-[#1a2b4a] px-3 py-1 text-xs font-semibold text-white">Call {new Date(r.callAt) > new Date() ? "booked" : "held or past"}: {when(r.callAt)}</span>
+                  <span className="rounded-full bg-[#1a2b4a] px-3 py-1 text-xs font-semibold text-white">Call {new Date(r.callAt) > new Date() ? "booked" : "held or past"}: {whenAt(r.callAt)}</span>
                 ) : (
                   <span className="rounded-full border border-[#c9a227] px-3 py-1 text-xs font-semibold text-[#8a6d2c]">No call booked yet</span>
                 )}
@@ -102,7 +105,7 @@ export default function Requests() {
               {r.linkedin && <div className="sm:col-span-2"><dt className="inline text-[#7a8a99]">LinkedIn or website: </dt><dd className="inline break-all">{/^https?:\/\//i.test(r.linkedin) ? <a className="text-[#2E7C83] underline" href={r.linkedin} target="_blank" rel="noopener noreferrer">{r.linkedin}</a> : r.linkedin}</dd></div>}
               {r.referral && <div className="sm:col-span-2"><dt className="inline text-[#7a8a99]">How they heard: </dt><dd className="inline">{r.referral}</dd></div>}
               {r.emailedAt && <div><dt className="inline text-[#7a8a99]">Code emailed: </dt><dd className="inline">{when(r.emailedAt)}</dd></div>}
-              {r.callAt && <div><dt className="inline text-[#7a8a99]">Call booked: </dt><dd className="inline">{when(r.callAt)}</dd></div>}
+              {r.callAt && <div><dt className="inline text-[#7a8a99]">Call booked: </dt><dd className="inline">{whenAt(r.callAt)}</dd></div>}
               {r.lastLoginAt && <div><dt className="inline text-[#7a8a99]">Last opened: </dt><dd className="inline">{when(r.lastLoginAt)}</dd></div>}
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
