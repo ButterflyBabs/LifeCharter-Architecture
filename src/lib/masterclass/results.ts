@@ -40,7 +40,7 @@ export function fivePmMT(date: string) {
 
 export interface FunnelInput {
   now: Date;
-  registrants: { email: string; at: string }[]; // MasterClass Zoom registrations (time they registered)
+  registrants: { email: string; at: string; details?: Record<string, string> | null }[]; // MasterClass Zoom registrations (time they registered, what they typed)
   attendance: { session_date: string; email: string }[];
   clicks: string[]; // created_at of every MasterClass tracking-link click
   consultRequests: { email: string; created_at: string }[];
@@ -169,6 +169,7 @@ export interface RegistrationRow {
   source: string; // where they came from, when known
   status: "registered" | "attended" | "no-show";
   returning: boolean; // registered for an earlier session too
+  details: Record<string, string>; // what they typed on the registration form (phone, organization, answers)
 }
 export interface EventRegistrations {
   date: string;
@@ -212,6 +213,7 @@ export function registrationsByEvent(
           source: src,
           status: sess.state !== "held" ? ("registered" as const) : came.has(e) ? ("attended" as const) : ("no-show" as const),
           returning: seenBefore.has(e),
+          details: r.details || {},
         };
       })
       .sort((a, b) => b.at.localeCompare(a.at));
@@ -272,7 +274,7 @@ export function totalsOf(sessions: SessionRow[]): Totals {
 export async function masterclassResults(now = new Date()): Promise<{ sessions: SessionRow[]; totals: Totals; registrations: EventRegistrations[] }> {
   const supabase = createServerClient();
   const [regs, att, quals, subs, intakes, builds, cal, links, fin] = await Promise.all([
-    supabase.from("zoom_registrant_syncs").select("email, synced_at, registered_at, event_key"),
+    supabase.from("zoom_registrant_syncs").select("email, synced_at, registered_at, event_key, details"),
     supabase.from("masterclass_attendance").select("session_date, email, event_key"),
     supabase.from("exec_consult_qualifications").select("email, source, created_at").eq("source", "masterclass"),
     supabase.from("subscriptions").select("user_id, plan_id, created_at"),
@@ -283,9 +285,9 @@ export async function masterclassResults(now = new Date()): Promise<{ sessions: 
     supabase.from("finance_entries").select("category, amount, occurred_on, type").eq("type", "expense").gte("occurred_on", ADS_START),
   ]);
 
-  const registrants = ((regs.data ?? []) as { email: string; synced_at: string; registered_at: string | null; event_key: string | null }[])
+  const registrants = ((regs.data ?? []) as { email: string; synced_at: string; registered_at: string | null; event_key: string | null; details: Record<string, string> | null }[])
     .filter((r) => !r.event_key || r.event_key === "masterclass")
-    .map((r) => ({ email: r.email, at: r.registered_at || r.synced_at }));
+    .map((r) => ({ email: r.email, at: r.registered_at || r.synced_at, details: r.details }));
   const attendance = ((att.data ?? []) as { session_date: string; email: string; event_key: string | null }[])
     .filter((a) => !a.event_key || a.event_key === "masterclass")
     .map((a) => ({ session_date: a.session_date, email: a.email }));

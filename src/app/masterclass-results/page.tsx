@@ -252,14 +252,15 @@ function RegistrationsView({ events }: { events: EventRegistrations[] }) {
             <p className={`mt-3 text-sm ${faint}`}>Nobody has registered yet.</p>
           ) : (
             <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className={label}>
                   <tr>
                     <th className="py-2 pr-4">Name</th>
                     <th className="pr-4">Email</th>
                     <th className="pr-4">Registered (MT)</th>
                     <th className="pr-4">Came from</th>
-                    <th>Status</th>
+                    <th className="pr-4">Status</th>
+                    <th>What they entered</th>
                   </tr>
                 </thead>
                 <tbody className={ink}>
@@ -269,7 +270,21 @@ function RegistrationsView({ events }: { events: EventRegistrations[] }) {
                       <td className="pr-4 break-all">{r.email}</td>
                       <td className="pr-4 tabular-nums">{when(r.at)}</td>
                       <td className="pr-4">{r.source || "—"}</td>
-                      <td className="capitalize">{r.status}</td>
+                      <td className="pr-4 capitalize">{r.status}</td>
+                      <td className="text-xs">
+                        {Object.keys(r.details).length === 0 ? (
+                          <span className={faint}>Name and email only</span>
+                        ) : (
+                          <dl className="space-y-0.5">
+                            {Object.entries(r.details).map(([k, v]) => (
+                              <div key={k}>
+                                <dt className={`inline ${faint}`}>{k}: </dt>
+                                <dd className="inline break-words">{v}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

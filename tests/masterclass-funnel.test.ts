@@ -81,3 +81,18 @@ test("registrations by event: grouped by session, newest first, returning people
   assert.equal(oct22.rows.find((r) => r.email === "john@x.com")!.source, "LinkedIn");
   assert.equal(ev.find((e) => e.date === "2026-10-08")!.rows[0].status, "attended");
 });
+
+import { registrantDetails } from "../src/lib/zoom";
+
+test("registration form answers are kept by label and blanks are dropped", () => {
+  const d = registrantDetails({
+    id: "1",
+    email: "a@x.com",
+    phone: " 555 111 2222 ",
+    org: "Acme",
+    city: "",
+    country: "US",
+    custom_questions: [{ title: "What do you most want help with?", value: "Hiring" }, { title: "Empty", value: " " }],
+  });
+  assert.deepEqual(d, { Phone: "555 111 2222", Organization: "Acme", Country: "US", "What do you most want help with?": "Hiring" });
+});

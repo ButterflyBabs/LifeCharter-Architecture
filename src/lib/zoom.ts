@@ -54,6 +54,57 @@ export interface ZoomRegistrant {
   lastName: string;
   joinUrl: string; // this registrant's own join link
   createTime: string; // ISO, when they registered ("" if Zoom didn't say)
+  phone: string;
+  company: string;
+  details: Record<string, string>; // everything else they typed on the registration form, by field label
+}
+
+type ZoomRegistrantRaw = {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  join_url?: string;
+  create_time?: string;
+  phone?: string;
+  org?: string;
+  job_title?: string;
+  industry?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  no_of_employees?: string;
+  purchasing_time_frame?: string;
+  role_in_purchase_process?: string;
+  comments?: string;
+  language?: string;
+  custom_questions?: { title?: string; value?: string }[];
+};
+
+/** The labelled, non-empty answers from one Zoom registrant. Pure. */
+export function registrantDetails(r: ZoomRegistrantRaw): Record<string, string> {
+  const out: Record<string, string> = {};
+  const put = (k: string, v?: string) => {
+    const t = (v || "").trim();
+    if (t) out[k] = t.slice(0, 500);
+  };
+  put("Phone", r.phone);
+  put("Organization", r.org);
+  put("Job title", r.job_title);
+  put("Industry", r.industry);
+  put("Address", r.address);
+  put("City", r.city);
+  put("State", r.state);
+  put("Zip", r.zip);
+  put("Country", r.country);
+  put("Employees", r.no_of_employees);
+  put("Purchase timeframe", r.purchasing_time_frame);
+  put("Role in purchase", r.role_in_purchase_process);
+  put("Comments", r.comments);
+  for (const q of r.custom_questions || []) if (q.title) put(q.title.slice(0, 120), q.value);
+  return out;
 }
 
 // All approved registrants for the recurring MasterClass meeting (register
@@ -76,7 +127,7 @@ export async function listMasterclassRegistrants(meetingId: string = masterclass
     }
     const data = (await res.json()) as {
       next_page_token?: string;
-      registrants?: Array<{ id: string; email: string; first_name?: string; last_name?: string; join_url?: string; create_time?: string }>;
+      registrants?: ZoomRegistrantRaw[];
     };
     for (const r of data.registrants || []) {
       registrants.push({
@@ -86,6 +137,9 @@ export async function listMasterclassRegistrants(meetingId: string = masterclass
         lastName: r.last_name || "",
         joinUrl: r.join_url || "",
         createTime: r.create_time || "",
+        phone: (r.phone || "").trim(),
+        company: (r.org || "").trim(),
+        details: registrantDetails(r),
       });
     }
     nextPageToken = data.next_page_token || "";

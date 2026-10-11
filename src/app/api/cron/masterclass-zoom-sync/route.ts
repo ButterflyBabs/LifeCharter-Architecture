@@ -77,9 +77,14 @@ async function run(request: Request) {
 
     const { data: already } = await supabase
       .from("zoom_registrant_syncs")
-      .select("zoom_registrant_id")
+      .select("zoom_registrant_id, details")
       .in("zoom_registrant_id", registrants.map((r) => r.id));
     const alreadySynced = new Set((already || []).map((r) => r.zoom_registrant_id as string));
+    // Keep what each person typed on the registration form: filled in once for people synced before this was stored.
+    const noDetails = new Set((already || []).filter((r) => !r.details).map((r) => r.zoom_registrant_id as string));
+    for (const r of registrants) {
+      if (noDetails.has(r.id)) await supabase.from("zoom_registrant_syncs").update({ details: r.details }).eq("zoom_registrant_id", r.id);
+    }
 
     const toSync = registrants.filter((r) => !alreadySynced.has(r.id));
     let syncedCount = 0;
@@ -93,7 +98,7 @@ async function run(request: Request) {
         const tags = [followsUp ? `${ev.key}-registered` : `registered-${ev.key}`];
         const occ = await cachedSchedule(ev.meetingId, scheduleCache).then((s) => registrantOccurrence(s, r.createTime || null)).catch(() => null);
         if (occ && (ev.key === "masterclass" || ev.key === "incubator")) tags.push(sessionTag(occ.start, "registered", ev.key));
-        const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, source: `zoom:${ev.key}`, tags }).catch(() => null);
+        const c = await upsertContact({ masterPlanId: housePlan, email: r.email, firstName: r.firstName || null, lastName: r.lastName || null, phone: r.phone || null, company: r.company || null, source: `zoom:${ev.key}`, tags }).catch(() => null);
         if (c) await logEvent(housePlan, c.id, "form", `Registered for ${ev.key === "incubator" ? "the LifeCharter Incubator" : ev.key === "founders-half-hour" ? "Founder's Half Hour" : "the Command Shift MasterClass"}`, { zoomMeeting: ev.meetingId }).catch(() => {});
         // Their card on that event's pipeline moves to Registered by itself.
         if (c && (ev.key === "masterclass" || ev.key === "incubator")) await advanceCards(supabase, housePlan, { contactId: c.id, email: r.email }, eventStage(ev.key, "registered")).catch((e) => console.error("[zoom-sync] card move:", e));
@@ -108,6 +113,7 @@ async function run(request: Request) {
           join_url: r.joinUrl || null,
           registered_at: r.createTime || new Date().toISOString(),
           suite_emails: suiteOn,
+          details: r.details,
         },
         { onConflict: "zoom_registrant_id" }
       );
