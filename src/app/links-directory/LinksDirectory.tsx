@@ -26,6 +26,11 @@ const OFFERING_PAGES: Row[] = [
   { name: "LifeCharter Program (on the website)", url: `${SITE}/life-charter` },
   { name: "LifeCharter Program app", url: "https://lifecharter.life/app" },
   { name: "LifeCharter Incubator", url: `${SITE}/lifecharterincubator` },
+  { name: "Life by Design Summit (April 15 to 17, 2027)", url: `${SITE}/life-by-design-summit`, note: "free; the registration form saves to Contacts" },
+  { name: "Life by Design Summit: Integration Pass, early price (through April 14)", url: "https://buy.stripe.com/7sY5kEgAn8cHh0a02e4ow0e", note: "$197; not on the page or in emails until the Stripe logo is added" },
+  { name: "Life by Design Summit: Integration Pass, live event price (from April 15)", url: "https://buy.stripe.com/fZu5kEck778DbFQ8yK4ow0f", note: "$297" },
+  { name: "LifeCharter Circle: Early Adapter Special", url: "https://buy.stripe.com/28E7sM1Ft1Oj9xI8yK4ow0d", note: "$497; also listed under Offers" },
+  { name: "LC Fledge (social posting): sign in", url: "https://fledge.lccommandsuite.com", note: "the app formerly called LC Beacon" },
   { name: "The Life Shift 21-Day Challenge (on the website)", url: `${SITE}/21-day-challenge` },
   { name: "SOUL Sessions", url: `${SITE}/soul-sessions` },
   { name: "Digital Planners", url: `${SITE}/planners` },
@@ -53,6 +58,9 @@ const LEGAL: Row[] = [
   { name: "Terms of Sale & Service Agreement", url: `${APP}/legal/terms-of-sale` },
   { name: "Year-1 Commitment Acknowledgment", url: `${APP}/legal/year-1-agreement` },
   { name: "Community Guidelines", url: `${APP}/legal/community-guidelines` },
+  { name: "LC Fledge: Privacy Policy", url: "https://fledge.lccommandsuite.com/legal/privacy" },
+  { name: "LC Fledge: Terms", url: "https://fledge.lccommandsuite.com/legal/terms" },
+  { name: "LC Fledge: Data deletion", url: "https://fledge.lccommandsuite.com/legal/data-deletion" },
 ];
 
 const money = (p: string | number | null, b: string | null) => {
