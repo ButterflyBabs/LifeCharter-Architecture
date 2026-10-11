@@ -260,10 +260,13 @@ export async function buildAssistantKnowledge(
 
   // Legal & Compliance checklist: how far along, and renewals coming up.
   try {
-    const { LEGAL_ITEMS, legalCompletion } = await import("@/lib/legalChecklist");
-    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group").eq("master_plan_id", masterPlanId);
-    const rows = (data ?? []) as import("@/lib/legalChecklist").LegalState[];
-    const pct = legalCompletion(rows);
+    const { LEGAL_ITEMS, legalPlanCompletion } = await import("@/lib/legalChecklist");
+    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group, business_id").eq("master_plan_id", masterPlanId);
+    const all = (data ?? []) as import("@/lib/legalChecklist").LegalStateWithBusiness[];
+    const pct = legalPlanCompletion(all);
+    // The open list reads one checklist: the account-wide one, or the first business that has started its own.
+    const firstBiz = all.find((r) => r.business_id != null)?.business_id ?? null;
+    const rows = all.some((r) => r.business_id == null) ? all.filter((r) => r.business_id == null) : all.filter((r) => r.business_id === firstBiz);
     if (pct !== null) {
       const in60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
       const due = rows.filter((r) => r.due_date && r.due_date <= in60 && r.status !== "na");

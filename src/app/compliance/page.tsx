@@ -25,6 +25,7 @@ interface Row {
 
 export default function CompliancePage() {
   const [states, setStates] = useState<LegalState[] | null>(null);
+  const [bizName, setBizName] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [custom, setCustom] = useState("");
@@ -35,6 +36,7 @@ export default function CompliancePage() {
   const load = useCallback(async () => {
     const d = await fetch("/api/legal-checklist", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setStates(d.states ?? []);
+    setBizName(d.business?.name ?? null);
   }, []);
   useEffect(() => {
     void load();
@@ -111,6 +113,7 @@ export default function CompliancePage() {
           <div>
             <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Legal & Compliance</h1>
             <p className="text-[#7a8a99]">Contracts, insurance, licenses and filings, in one checklist. Feeds your Legal score.</p>
+            <p className="mt-1 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{bizName ? `For ${bizName}. Switch businesses from the top of the page.` : "For the whole account. Choose a business at the top of the page to keep its own checklist."}</p>
           </div>
         </div>
         <div className="text-right">

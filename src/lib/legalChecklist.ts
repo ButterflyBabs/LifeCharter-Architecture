@@ -84,3 +84,17 @@ export function legalCompletion(states: LegalState[]): number | null {
   }
   return applicable ? Math.round((done / applicable) * 100) : null;
 }
+
+// With a checklist per business (2026-10-11), the account's overall figure is the average of each checklist
+// that has been started: the account-wide one (no business) and one per business. An account with a single
+// checklist gets exactly the figure it always had.
+export type LegalStateWithBusiness = LegalState & { business_id?: number | null };
+export function legalPlanCompletion(rows: LegalStateWithBusiness[]): number | null {
+  const groups = new Map<string, LegalState[]>();
+  for (const r of rows) {
+    const k = String(r.business_id ?? "plan");
+    groups.set(k, [...(groups.get(k) ?? []), r]);
+  }
+  const pcts = Array.from(groups.values()).map((g) => legalCompletion(g)).filter((x): x is number => x !== null);
+  return pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+}

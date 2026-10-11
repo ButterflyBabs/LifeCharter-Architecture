@@ -9,7 +9,7 @@
  */
 
 import { createServerClient } from "@/lib/supabase/server";
-import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
+import { legalPlanCompletion, type LegalStateWithBusiness } from "@/lib/legalChecklist";
 import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeScores";
 import { baselineCompleteness } from "@/lib/plans/blueprints";
 import { PULSE_LABEL_BY_ID } from "./pulseLabels";
@@ -297,8 +297,8 @@ async function liveOperationalMetrics(
 
   // Legal — share of the Legal & Compliance checklist done.
   try {
-    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group").eq("master_plan_id", scopeId);
-    const pct = legalCompletion((data || []) as LegalState[]);
+    const { data } = await supabase.from("legal_checklist").select("item_key, status, due_date, notes, doc_link, custom_title, custom_group, business_id").eq("master_plan_id", scopeId);
+    const pct = legalPlanCompletion((data || []) as LegalStateWithBusiness[]);
     if (pct !== null) m.legal_checklist_pct = pct;
   } catch {
     /* optional */
