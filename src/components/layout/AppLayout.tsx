@@ -1,7 +1,7 @@
 "use client";
 
 import AssistantPopout from "@/components/assistant/AssistantPopout";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { CollapsibleSidebarProvider, CollapsibleSidebar, MobileSidebarToggle, useSidebar } from "./CollapsibleSidebar";
 import { Header } from "./Header";
@@ -53,6 +53,14 @@ const BARE_ROUTES = [
 
 function AppLayoutContent({ children }: AppLayoutProps) {
   const { isCollapsed } = useSidebar();
+  // Until all three assessments are finished the assistant stays closed (it could change the account).
+  const [locked, setLocked] = useState(false);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setLocked(d?.assessmentsLocked === true))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F5F0] dark:bg-[#1A1A2E]">
@@ -77,7 +85,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       <UpdateNotice />
 
       {/* The AI assistant, when popped out: floats over any page */}
-      <AssistantPopout />
+      {!locked && <AssistantPopout />}
     </div>
   );
 }

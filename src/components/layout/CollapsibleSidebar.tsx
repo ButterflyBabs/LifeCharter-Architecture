@@ -634,12 +634,15 @@ export function CollapsibleSidebar() {
     };
   }, [pathname]);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
+  // Until all three assessments are finished the menu shows only Set up Suite, the assessments, Settings and support.
+  const [assessmentsLocked, setAssessmentsLocked] = useState(false);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         setSuperAdmin(d?.architect === true);
         setFeatures(d?.features ?? null);
+        setAssessmentsLocked(d?.assessmentsLocked === true);
       })
       .catch(() => {});
   }, []);
@@ -653,6 +656,10 @@ export function CollapsibleSidebar() {
   }, []);
   // A team member with feature limits only sees the areas they can open.
   const visible = (href: string) => {
+    if (assessmentsLocked) {
+      const p = href.split("?")[0];
+      return p === "/setup" || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help/contact";
+    }
     if (!features) return true;
     const key = featureForPage(href.split("?")[0]);
     return !key || (features[key] ?? "none") !== "none";

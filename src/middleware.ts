@@ -1,3 +1,4 @@
+import { assessmentGateLocked, gateApiWriteAllowed, gatePageAllowed, GATE_MESSAGE } from "@/lib/assessmentGate";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
@@ -355,6 +356,16 @@ export async function middleware(request: NextRequest) {
     isCommunityOnly = true;
   }
 
+  // ASSESSMENT LOCK (2026-10-11): a client who has not finished Brain, Soul and Profit can open only Set up Suite, the
+  // three assessments, Settings and Contact Support. Computed lazily, only when a request would otherwise get through.
+  const lockCandidate = Boolean(user) && !isSuperOwner && ownsAccount && !wantsTeam && !isTeamMember && !isCommunityOnly;
+  let lockMemo: boolean | null = null;
+  const isLocked = async () => {
+    if (!lockCandidate || !user) return false;
+    if (lockMemo === null) lockMemo = await assessmentGateLocked(user.id, user.email ?? null);
+    return lockMemo;
+  };
+
   // 2FA enforcement: a user who has 2FA enrolled but has only completed the
   // password step is at assurance level aal1 with a pending aal2 — they must
   // finish the code step before reaching anything protected.
@@ -419,6 +430,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.json({ error: "Not available while viewing a client's account." }, { status: 403 });
       }
     }
+    if (lockCandidate && !["GET", "HEAD", "OPTIONS"].includes(request.method) && !gateApiWriteAllowed(path) && (await isLocked())) {
+      return NextResponse.json({ error: GATE_MESSAGE, locked: true }, { status: 403 });
+    }
     if (housePath(HOUSE_ONLY_APIS) && !mayUseHouseSales) return NextResponse.json({ error: "forbidden" }, { status: 403 });
     if (needsMfa) return NextResponse.json({ error: "2fa required" }, { status: 401 });
     if (isSalesOnly && !SALES_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
@@ -456,6 +470,10 @@ export async function middleware(request: NextRequest) {
     // Community visitors get the Collective's own sign-in, not the Command Suite login.
     const isCommunityPath = path === "/community" || path.startsWith("/community/");
     return NextResponse.redirect(new URL(isCommunityPath && !needsMfa ? "/community/sign-in" : "/login", request.url));
+  }
+
+  if (lockCandidate && !gatePageAllowed(path) && (await isLocked())) {
+    return NextResponse.redirect(new URL("/setup", request.url));
   }
 
   if (isCommunityOnly && !COMMUNITY_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
