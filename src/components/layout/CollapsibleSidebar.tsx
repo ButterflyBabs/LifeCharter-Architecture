@@ -198,6 +198,7 @@ const ownerSection = {
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
     { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
+    { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
     { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
     { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },
