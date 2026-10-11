@@ -1029,6 +1029,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["tasks", "task completion", "follow through", "operations score", "health", "overdue", "due date", "finish tasks", "score goes up"],
   },
   {
+    id: "fin-per-business",
+    category: "Finance",
+    question: "Can I keep the money for each of my businesses separate?",
+    answer:
+      "Yes. Money you add (income, expenses and bills) belongs to the business chosen in the switcher at the top of the page, and Income, Expenses, Bills, the Profit & Loss and the Financial Pulse show just that business. 'All businesses' adds them all together. If you already had money entered before you chose a business, a banner on those pages offers to assign it all to the business you have chosen in one click; nothing moves unless you press it. Your budget, income goals and tax set-aside stay for the whole account.",
+    keywords: ["finance", "per business", "each business", "separate money", "business switcher", "income", "expenses", "bills", "profit and loss", "assign", "unassigned"],
+  },
+  {
     id: "gr-website-review",
     category: "Growth & Reviews",
     question: "What is the Website Alignment Review?",
