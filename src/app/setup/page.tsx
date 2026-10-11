@@ -143,8 +143,12 @@ export default function SetupPage() {
         </div>
 
         {s && !s.assessments.complete && (
-          <div className="mb-6 rounded-2xl border border-[#1a2b4a]/15 bg-white/70 px-5 py-4 text-center dark:border-white/10 dark:bg-[#1a2b4a]/40" role="note">
-            <p className="text-sm leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <div
+            className="mb-6 flex items-start gap-3 rounded-2xl border-2 border-[#1a2b4a] bg-[#f2c94c] px-5 py-4 shadow-lg dark:border-[#f2c94c] dark:bg-[#f2c94c]"
+            role="note"
+          >
+            <Compass className="mt-0.5 h-6 w-6 flex-shrink-0 text-[#1a2b4a]" aria-hidden />
+            <p className="text-base font-semibold leading-snug text-[#1a2b4a]">
               Once you have completed your three Command Suite assessments, the rest of your Command Suite opens and you will have full access to every feature.
             </p>
           </div>
