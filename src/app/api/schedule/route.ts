@@ -4,6 +4,7 @@ import * as microsoft from "@/lib/microsoft";
 import type { ScheduleEvent } from "@/lib/google";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { openMailboxes } from "@/lib/mailboxes";
+import { demoScheduleEvents, inDemo } from "@/lib/demoSchedule";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,15 @@ export async function GET(request: Request) {
   const timeZone = await resolveUserTimeZone(url.searchParams.get("tz"));
   // ?day=N pages the schedule forward: 0 is today, 1 tomorrow, up to 60 days out.
   const day = Math.min(60, Math.max(0, Math.floor(Number(url.searchParams.get("day"))) || 0));
+
+  // The public demo shows sample events only, never the signed-in person's own calendar.
+  if (inDemo()) {
+    return NextResponse.json({
+      connected: true,
+      providers: { google: true, microsoft: false },
+      events: demoScheduleEvents(timeZone, day).map((e) => ({ ...e, account: "Demo calendar" })),
+    });
+  }
 
   const boxes = await openMailboxes();
   const events: MergedEvent[] = [];

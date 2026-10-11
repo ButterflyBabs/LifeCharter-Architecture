@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { houseMailOwner, type MailScope } from "@/lib/mailOwner";
+import { inDemo } from "@/lib/demoSchedule";
 
 export type Provider = "google" | "microsoft";
 
@@ -16,6 +17,7 @@ export interface MailAccountRef {
 
 // Every mailbox the account has connected, across both providers, oldest first.
 export async function listMailAccounts(scope?: MailScope): Promise<MailAccountRef[]> {
+  if (inDemo()) return []; // the public demo never lists a real connected mailbox
   const [g, m] = await Promise.all([google.listConnections(scope), microsoft.listConnections(scope)]);
   return [
     ...g.map((c) => ({ provider: "google" as const, ...c })),
@@ -60,6 +62,8 @@ export interface OpenMailbox extends MailAccountRef {
 // Every connected mailbox of the account with a working access token, ready to
 // query. Mailboxes whose token can't be refreshed are left out.
 export async function openMailboxes(scope?: MailScope): Promise<OpenMailbox[]> {
+  // The public demo never opens a real mailbox (inbox, calendar, a contact's emails): it is presented and recorded.
+  if (inDemo()) return [];
   const refs = await listMailAccounts(scope);
   const opened = await Promise.all(
     refs.map(async (ref): Promise<OpenMailbox | null> => {
