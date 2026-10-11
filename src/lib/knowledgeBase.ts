@@ -1005,6 +1005,30 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["legal", "compliance", "contracts", "insurance", "licenses", "filings", "checklist", "legal score"],
   },
   {
+    id: "op-compliance-per-business",
+    category: "Operations",
+    question: "Can each of my businesses have its own Legal & Compliance checklist?",
+    answer:
+      "Yes. If you run more than one business, choose a business from the switcher at the top of the page and Legal & Compliance shows that business's own checklist, which starts empty so you can tick off what applies to it. 'All businesses' is the account-wide checklist you may already have filled in; nothing there is lost. Your overall Legal figure averages the checklists you have started, and each business's own Legal score on the Progress page uses its own checklist.",
+    keywords: ["compliance", "legal", "each business", "per business", "separate checklist", "multiple businesses", "business switcher", "checklist"],
+  },
+  {
+    id: "ba-health-by-business",
+    category: "Business Alignment",
+    question: "Does each of my businesses get its own health score?",
+    answer:
+      "Yes. On Progress, 'Health by business' gives each business a score, and choosing one business at the top shows its dimensions. A business starts from your assessment scores (those are for you as a whole) and then moves with what is tied to that business: its tasks (finishing them lifts it, due dates that pass lower it) and its own compliance checklist. A business with nothing tied to it just shows your assessment score and says so. To give a task to a business, choose the business on the task.",
+    keywords: ["health score", "each business", "per business", "business health", "progress", "score by business", "multiple businesses", "tasks count"],
+  },
+  {
+    id: "ba-tasks-count-toward-health",
+    category: "Business Alignment",
+    question: "Do the tasks I finish count toward my business health?",
+    answer:
+      "Yes. Looking at the last 60 days, finished tasks lift your Operations score (the Internal Process & Culture part), and tasks that slip past their due date lower it. A backlog of tasks with no due date is never counted against you, and it takes at least three dated or finished tasks before it moves the score at all. So the way to raise it is simple: set a due date only when you mean it, and finish what you date.",
+    keywords: ["tasks", "task completion", "follow through", "operations score", "health", "overdue", "due date", "finish tasks", "score goes up"],
+  },
+  {
     id: "gr-website-review",
     category: "Growth & Reviews",
     question: "What is the Website Alignment Review?",
