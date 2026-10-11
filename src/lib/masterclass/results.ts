@@ -11,7 +11,7 @@ const EVERY_DAYS = 14;
 const SKIP: string[] = [];
 const CREDIT_DAYS = 14; // a booking or sale counts for the most recent session within this many days (the follow-up series runs two weeks)
 const UPCOMING_SHOWN = 2; // how many sessions ahead are tracked as they fill
-export const REGISTRATION_GOAL = 30; // her goal per session (2026-10-05)
+export const REGISTRATION_GOAL = 60; // her goal per session: 40 in the room, two sessions a month (2026-10-11; was 30)
 export const ADS_START = "2026-10-10"; // paid ads began here (Babs, 2026-10-11); earlier spend is not counted
 const AD_CATEGORY = /^(ads?|ad spend|advertising|paid (ads|social|media)|meta ads|facebook ads)\b/i;
 
