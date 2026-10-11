@@ -50,7 +50,7 @@ export default function Requests() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Investor access requests</h1>
       <p className="mt-2 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
-        People ask for the investor documents on amilynnecarroll.com/investors. You review each one. Approving creates that person&apos;s own access code; they sign in with their email and that code. Only the investor page is protected.
+        People ask for the investor documents on amilynnecarroll.com/investors, then choose a time for a Zoom call on the Investor Interest calendar. Access follows the call: after you have spoken, approve the request and they get their own access code. They sign in with their email and that code. Only the investor page is protected.
       </p>
 
       <div className="mt-5 rounded-xl border border-[#1a2b4a]/15 bg-white p-4 text-sm dark:bg-[#1a2b4a]/40">
@@ -82,7 +82,14 @@ export default function Requests() {
                 <p className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</p>
                 <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">{r.company}</p>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${chip(r.status)}`}>{r.status}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {r.callAt ? (
+                  <span className="rounded-full bg-[#1a2b4a] px-3 py-1 text-xs font-semibold text-white">Call {new Date(r.callAt) > new Date() ? "booked" : "held or past"}: {when(r.callAt)}</span>
+                ) : (
+                  <span className="rounded-full border border-[#c9a227] px-3 py-1 text-xs font-semibold text-[#8a6d2c]">No call booked yet</span>
+                )}
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${chip(r.status)}`}>{r.status}</span>
+              </div>
             </div>
             <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
               <div><dt className="inline text-[#7a8a99]">Email: </dt><dd className="inline">{r.email}</dd></div>
