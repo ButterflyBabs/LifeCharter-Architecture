@@ -12,7 +12,7 @@ export const maxDuration = 60;
 // One task per client, ever (marked inside the task text). Team members are skipped.
 // The same pass sends the client the Next Chapter Call invitation (welcome email key next_call) while
 // app_settings welcome_next_call_on = "true"; the welcome log makes a second send impossible.
-// Runs hourly; the path is listed in PUBLIC_APIS in the middleware and secured by CRON_SECRET like the other jobs.
+// Runs every 3 minutes, so the invitation goes out within about 3 minutes of the third assessment being finished; the path is listed in PUBLIC_APIS in the middleware and secured by CRON_SECRET like the other jobs.
 
 const WINDOW_DAYS = 60;
 // The Next Chapter Call invitation only goes to people who joined recently, so switching it on never emails old accounts.
@@ -43,11 +43,15 @@ async function run(request: Request) {
   const inviteOn = String(sw?.value ?? "").trim().toLowerCase() === "true" && !(await welcomeSeriesPaused(db as never));
   const inviteSince = Date.now() - INVITE_WINDOW_DAYS * 86_400_000;
 
+  // Everyone already invited: skipped before the (heavier) setup-state check, so this can run every 3 minutes.
+  const { data: sentLogs } = await db.from("lccs_welcome_log").select("user_id").eq("email_key", "next_call").in("user_id", candidates.map((c) => c.user_id).concat(["00000000-0000-0000-0000-000000000000"]));
+  const invitedAlready = new Set(((sentLogs ?? []) as { user_id: string }[]).map((r) => r.user_id));
+
   let created = 0;
   let invited = 0;
   for (const c of candidates) {
     const { data: already } = await db.from("tasks").select("id").eq("master_plan_id", house).ilike("description", `%${marker(c.id)}%`).limit(1).maybeSingle();
-    const wantInvite = inviteOn && new Date(c.created_at).getTime() >= inviteSince;
+    const wantInvite = inviteOn && new Date(c.created_at).getTime() >= inviteSince && !invitedAlready.has(c.user_id);
     if (already && !wantInvite) continue;
     const state = await clientSetupState(db as never, c.user_id, c.id).catch(() => null);
     if (!state?.assessments) continue;

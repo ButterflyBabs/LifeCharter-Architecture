@@ -110,7 +110,7 @@
     },
     {
       "path": "/api/cron/new-client-review",
-      "schedule": "10 * * * *"
+      "schedule": "*/3 * * * *"
     },
     {
       "path": "/api/cron/session-checklists",
