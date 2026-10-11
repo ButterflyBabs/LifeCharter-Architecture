@@ -221,14 +221,17 @@ const ownerSection = {
 // down". Everything not on the tour keeps its usual section underneath. No real
 // account ever gets this order.
 const DEMO_TOUR_ORDER = [
-  "setup", "first30", "starter-guide", "website-review", "alignment-profile", // Act 2: where every client starts
-  "executive-home", "demo-morning-brief", "daily-compass", "tasks", "accountability", // Act 3: running your day
-  "business-alignment", "progress", // Act 4: the whole business
-  "goals", "review", "finance", "forecasting", // Act 5: plans and numbers
-  "pipeline", "offers", "dm-pipeline", "contacts", "calendars", "sequences-manager", // Act 6: growing
-  "sops", "compliance", "links-directory", "glossary", // Act 7: systems
-  "demo-coaching-calls", "demo-collective-events", // Act 8: Executive Coaching
+  // The Command Suite Short Demo script, in the order it shows them (the "DEMO TOUR" list is the run of show).
+  "setup", "first30", "alignment-profile", // Beat 1: know you first
+  "executive-home", "demo-morning-brief", // Beat 2: start your day
+  "business-alignment", // Beat 3: see the whole business
+  "goals", "review", "finance", // Beat 4: turn it into this week (Finance if time allows)
+  "pipeline", "contacts", "links-directory", // Beat 5: grow
+  "demo-coaching-calls", "accountability", // Beat 6: be held
 ];
+// Bump this when the default tour order above changes: a browser that saved its own drag-and-drop order for the
+// tour starts from the new default once, then keeps whatever it arranges after that.
+const DEMO_TOUR_VERSION = "2026-10-11-short-demo";
 const demoOnlyItems = [
   { id: "demo-morning-brief", label: "Morning Brief", icon: Sparkles, href: "/morning-brief" },
   { id: "demo-coaching-calls", label: "Coaching Calls (Home)", icon: LayoutDashboard, href: "/" },
@@ -739,6 +742,11 @@ export function CollapsibleSidebar() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("nav-item-order") || "{}");
+      if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1") && localStorage.getItem("nav-demo-tour-v") !== DEMO_TOUR_VERSION) {
+        if (saved && typeof saved === "object") delete saved["DEMO TOUR"];
+        localStorage.setItem("nav-item-order", JSON.stringify(saved || {}));
+        localStorage.setItem("nav-demo-tour-v", DEMO_TOUR_VERSION);
+      }
       if (saved && typeof saved === "object") setNavOrder(saved);
     } catch {
       /* keep the default order */
