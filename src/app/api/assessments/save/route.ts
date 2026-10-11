@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { recordCompletion } from "@/lib/assessmentProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -185,6 +186,9 @@ export async function POST(request: Request) {
       .from("client_master_plans")
       .update({ last_assessment_at: now, updated_at: now })
       .eq("id", planId);
+    // The final save (not a per-answer progress save) is the moment this assessment is finished.
+    if (type === "brain" || type === "soul") await recordCompletion(supabase, planId, type, rows.length).catch(() => {});
+    if (type === "profit_architecture") await recordCompletion(supabase, planId, "profit", rows.length).catch(() => {});
 
     return NextResponse.json({ ok: true, masterPlanId: planId, saved: rows.length });
   } catch (e) {

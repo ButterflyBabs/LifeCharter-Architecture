@@ -8,7 +8,7 @@ interface Data {
   enabled: boolean;
   paused?: boolean;
   emails: { key: string; day: number; subject: string; sent: number; rule: string; recipients?: { name: string; email: string; at: string }[] }[];
-  clients: { id: string; userId?: string; stopped?: boolean; name: string; email: string; joined: string; day: number; setup: { ai: boolean; assessments: boolean; tools: boolean; website: boolean } | null; cells: Record<string, Cell> }[];
+  clients: { id: string; userId?: string; stopped?: boolean; name: string; email: string; joined: string; restartedOn?: string | null; day: number; setup: { ai: boolean; assessments: boolean; tools: boolean; website: boolean } | null; cells: Record<string, Cell> }[];
   recent: { userId: string; key: string; at: string; name: string | null; email: string | null }[];
 }
 
@@ -110,6 +110,14 @@ export default function WelcomeSeriesTab() {
     const { ok, j } = await call("POST", { action: stopped ? "resume-client" : "stop-client", userId }, "/api/crm/welcome-series");
     setBusy("");
     setSendNote(ok ? (stopped ? `${name}'s series will continue.` : `${name}'s remaining welcome emails are stopped.`) : j.error || "Couldn't change that.");
+    await loadStatus();
+  };
+  const restartClient = async (userId: string, name: string) => {
+    if (!window.confirm(`Put ${name} back in the series at step 2, as if they joined today?\n\nThe "why your answers matter" email goes out in about an hour, then Day 3, 5, 10 and 14 follow. Emails they already received are not sent again.`)) return;
+    setBusy(`restart:${userId}`);
+    const { ok, j } = await call("POST", { action: "restart-client", userId }, "/api/crm/welcome-series");
+    setBusy("");
+    setSendNote(ok ? `${name} is back in the series from step 2 (day count starts today).` : j.error || "Couldn't restart that.");
     await loadStatus();
   };
   const render = async (action: "preview" | "test") => {
@@ -245,7 +253,7 @@ export default function WelcomeSeriesTab() {
               <tbody>
                 {d.clients.map((c) => (
                   <tr key={c.id} className="border-t border-[#1a2b4a]/10 align-top">
-                    <td className="py-2 pr-3"><span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</span>{c.stopped && <span className="ml-2 rounded-full bg-[#b06a5a]/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#8a2f2f]">Stopped</span>}<br /><span className="text-xs text-[#7a8a99]">{c.email}</span>{c.userId && <><br /><button className="text-[11px] font-semibold text-[#2E7C83] underline disabled:opacity-50" disabled={busy !== ""} onClick={() => stopClient(c.userId!, c.name, Boolean(c.stopped))}>{c.stopped ? "Resume their series" : "Stop their series"}</button></>}</td>
+                    <td className="py-2 pr-3"><span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</span>{c.stopped && <span className="ml-2 rounded-full bg-[#b06a5a]/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#8a2f2f]">Stopped</span>}<br /><span className="text-xs text-[#7a8a99]">{c.email}</span>{c.userId && <><br /><button className="text-[11px] font-semibold text-[#2E7C83] underline disabled:opacity-50" disabled={busy !== ""} onClick={() => stopClient(c.userId!, c.name, Boolean(c.stopped))}>{c.stopped ? "Resume their series" : "Stop their series"}</button><br /><button className="text-[11px] font-semibold text-[#2E7C83] underline disabled:opacity-50" disabled={busy !== ""} onClick={() => restartClient(c.userId!, c.name)}>Restart at step 2 (as if joined today)</button>{c.restartedOn && <><br /><span className="text-[11px] text-[#7a8a99]">Series day count started {c.restartedOn}</span></>}</>}</td>
                     <td className="py-2 pr-3 whitespace-nowrap">{day(c.joined)}<br /><span className="text-xs text-[#7a8a99]">day {c.day}</span></td>
                     <td className="py-2 pr-3 text-xs">
                       {c.setup ? (

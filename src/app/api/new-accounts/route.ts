@@ -138,9 +138,14 @@ export async function POST(request: Request) {
           console.error("[new-accounts] provision failed:", e);
           return NextResponse.json({ error: "The account couldn't be created. Nothing was emailed." }, { status: 500 });
         }
-        // Clients created here skip the 9 am series (their account-ready email is Email 1) but still get the emails that
-        // go out on their own clock (the 3-minute walkthrough and the 1-hour "why your answers matter" email).
-        await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.filter((w) => (w.key !== "welcome" && !w.queued) || (r as { kind?: string }).kind === "team").map((w) => ({ user_id: userId, email_key: w.key })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+        // Clients created here follow the whole series on their own clock: the 3-minute walkthrough, the 1-hour
+        // "why your answers matter" email, the "assessments are in" invitation once all three are done, then Day 3, 5,
+        // 10 and 14 at the 9 am run. Nothing is pre-marked. (Pre-marking these as "sent" was the 2026-10-11 bug that
+        // made new clients look like they had already had Day 14.) Team members are held out of the series: every
+        // email is recorded as stopped, which blocks the sends and shows as Stopped rather than Sent.
+        if ((r as { kind?: string }).kind === "team") {
+          await db.from("lccs_welcome_log").upsert(WELCOME_EMAILS.map((w) => ({ user_id: userId, email_key: w.key, stopped: true })), { onConflict: "user_id,email_key", ignoreDuplicates: true });
+        }
         // A ready affiliate page with a link per LifeCharter product (clients; team members already have theirs).
         if ((r as { kind?: string }).kind !== "team") await ensureClientAffiliate({ email: r.email, name: r.name });
       }

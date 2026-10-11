@@ -36,7 +36,7 @@ async function run(request: Request) {
   const { data: team } = await db.from("workspace_members").select("email").in("status", ["active", "pending"]);
   const teamEmails = new Set(((team ?? []) as { email: string | null }[]).map((m) => (m.email || "").toLowerCase()));
   const candidates = ((plans ?? []) as { id: string; user_id: string; client_name: string | null; client_email: string | null; created_at: string }[]).filter(
-    (p) => p.id !== house && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && p.client_email && !teamEmails.has(p.client_email.toLowerCase())
+    (p) => p.id !== house && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && !/^eloise\b/i.test(p.client_name || "") && p.client_email && !teamEmails.has(p.client_email.toLowerCase())
   );
 
   const { data: sw } = await db.from("app_settings").select("value").eq("key", "welcome_next_call_on").maybeSingle();

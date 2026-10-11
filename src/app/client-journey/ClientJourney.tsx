@@ -14,6 +14,7 @@ interface Row {
   profit: boolean;
   allDone: boolean;
   lastAnswered: string | null;
+  progress?: { key: "brain" | "soul" | "profit"; status: "not_started" | "in_progress" | "complete"; answered: number; approxTotal: number; lastAnsweredAt: string | null; completedAt: string | null }[];
   inviteSentAt: string | null;
   booking: { startAt: string; status: string } | null;
   review: "open" | "done" | null;
@@ -142,9 +143,14 @@ export default function ClientJourney() {
                   <td className="px-4 py-3 tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{day(r.joinedAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-0.5">
-                      <Tick on={r.brain} label="Brain" />
-                      <Tick on={r.soul} label="Soul" />
-                      <Tick on={r.profit} label="Profit" />
+                      {(r.progress ?? []).map((p) => (
+                        <span key={p.key} className={`inline-flex items-center gap-1 text-xs ${p.status === "complete" ? "text-[#2c6b3f] dark:text-[#8fd6a5]" : p.status === "in_progress" ? "text-[#7a5a12] dark:text-[#e8c766]" : "text-[#b8a898]"}`}>
+                          {p.status === "complete" ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Circle className="h-4 w-4" aria-hidden />}
+                          {p.key === "brain" ? "Brain" : p.key === "soul" ? "Soul" : "Profit"}
+                          {p.status === "complete" ? `: finished${p.completedAt ? " " + day(p.completedAt) : ""}` : p.status === "in_progress" ? `: ${p.answered} answered (about ${Math.min(99, Math.round((p.answered / p.approxTotal) * 100))}%)${p.lastAnsweredAt ? ", last " + day(p.lastAnsweredAt) : ""}` : ": not started"}
+                        </span>
+                      ))}
+                      {!r.progress && (<><Tick on={r.brain} label="Brain" /><Tick on={r.soul} label="Soul" /><Tick on={r.profit} label="Profit" /></>)}
                     </div>
                     {r.lastAnswered && <p className="mt-1 text-xs text-[#7a8a99]">Last answered {day(r.lastAnswered)}</p>}
                   </td>

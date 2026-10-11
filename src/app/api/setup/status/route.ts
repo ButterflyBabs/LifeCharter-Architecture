@@ -1,6 +1,7 @@
 import { postStreamAllowed } from "@/lib/postStream";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { assessmentProgress } from "@/lib/assessmentProgress";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { sessionUser } from "@/lib/authz";
@@ -46,6 +47,18 @@ export async function GET() {
       profit = Boolean((ds && Object.keys(ds).length > 0) || (mp?.profit_score as number | null));
     } catch {
       /* optional */
+    }
+  }
+
+  // Finished = Complete pressed on Brain and Soul, Profit scores saved (a saved answer is only progress).
+  if (masterPlanId) {
+    try {
+      const ap = await assessmentProgress(supabase, masterPlanId);
+      brain = ap.brain.status === "complete";
+      soul = ap.soul.status === "complete";
+      profit = ap.profit.status === "complete";
+    } catch {
+      /* keep the answers-based values */
     }
   }
 

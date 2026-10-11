@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { WELCOME_EMAILS, INCLUDED_BY_PLAN, type WelcomeEmail } from "@/lib/email/welcomeContent";
 import { readAccountKey } from "@/lib/ai/config";
+import { assessmentProgress } from "@/lib/assessmentProgress";
 
 // Sends the Command Suite new-client welcome sequence (copy in welcomeContent.ts). Email 1 goes
 // out when the account is provisioned; the rest go from the daily cron /api/cron/welcome-sequence.
@@ -9,6 +10,14 @@ import { readAccountKey } from "@/lib/ai/config";
 
 export function welcomeEmailsEnabled() {
   return process.env.WELCOME_EMAILS_ENABLED === "true";
+}
+
+// The daily series is on when the environment switch is on OR app_settings welcome_series_on = "true" (so it can be
+// turned on without a redeploy). Pausing (welcome_series_paused) always wins.
+export async function welcomeSeriesOn(supabase: SupabaseClient): Promise<boolean> {
+  if (welcomeEmailsEnabled()) return true;
+  const { data } = await supabase.from("app_settings").select("value").eq("key", "welcome_series_on").maybeSingle();
+  return String(data?.value ?? "").trim().toLowerCase() === "true";
 }
 
 // Babs can pause every automatic welcome email from the LCCS New Client Welcome tab (app_settings
@@ -93,7 +102,7 @@ export function renderWelcomeEmail(e: WelcomeEmail, c: WelcomeClient) {
 export async function sendWelcomeEmail(supabase: SupabaseClient, c: WelcomeClient, key: string, opts: { ignoreEnvSwitch?: boolean } = {}): Promise<boolean> {
   // The environment switch is the old "off until approved" guard for the daily series. The 3-minute walkthrough
   // has its own switch (app_settings client_walkthrough_on) and passes ignoreEnvSwitch.
-  if (!opts.ignoreEnvSwitch && !welcomeEmailsEnabled()) return false;
+  if (!opts.ignoreEnvSwitch && !(await welcomeSeriesOn(supabase))) return false;
   if (await welcomeSeriesPaused(supabase)) return false;
   const e = await effectiveWelcomeEmail(supabase, key);
   const apiKey = process.env.RESEND_API_KEY;
@@ -181,12 +190,12 @@ export async function clientSetupState(supabase: SupabaseClient, userId: string,
     supabase.from("workspaces").select("website").eq("master_plan_id", masterPlanId).order("is_default", { ascending: false }).limit(1).maybeSingle(),
     readAccountKey(userId).catch(() => ""),
   ]);
-  const types = new Set<string>([...((brainRows ?? 0) > 0 ? ["brain"] : []), ...((soulRows ?? 0) > 0 ? ["soul"] : [])]);
-  const ds = (plan?.domain_scores as Record<string, unknown> | null) || null;
-  const profit = Boolean((ds && Object.keys(ds).length) || plan?.profit_score);
+  // Finished means the client pressed Complete on Brain and Soul and saved the Profit scores; a saved answer alone is progress.
+  const ap = await assessmentProgress(supabase, masterPlanId);
+  void brainRows; void soulRows; void plan;
   const tools = Boolean(g?.length || m?.length || ((integ ?? []) as { api_key: string | null }[]).some((r) => (r.api_key || "").trim()));
   const ai = Boolean(key);
-  const assessments = types.has("brain") && types.has("soul") && profit;
+  const assessments = ap.allComplete;
   return { ai, assessments, tools, website: Boolean(((ws?.website as string) || "").trim()), setupComplete: ai && assessments && tools };
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { WELCOME_EMAILS } from "@/lib/email/welcomeContent";
-import { clientSetupState, sendWelcomeEmail, welcomeEmailsEnabled, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
+import { clientSetupState, sendWelcomeEmail, welcomeSeriesOn, welcomeSeriesPaused } from "@/lib/email/welcomeSequence";
 import { superAdminEmails } from "@/lib/authz";
 import { DEMO_PLAN_NAME } from "@/lib/scoring/masterPlan";
 
@@ -22,11 +22,10 @@ export async function GET(request: Request) {
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!welcomeEmailsEnabled()) return NextResponse.json({ ok: true, enabled: false, sent: 0 });
-
   const supabase = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  if (!(await welcomeSeriesOn(supabase))) return NextResponse.json({ ok: true, enabled: false, sent: 0 });
   if (await welcomeSeriesPaused(supabase)) return NextResponse.json({ ok: true, enabled: true, paused: true, sent: 0 });
   const since = new Date(Date.now() - 18 * 86400_000).toISOString();
   const { data: plans } = await supabase
@@ -36,10 +35,12 @@ export async function GET(request: Request) {
     .gte("created_at", since);
   const admins = superAdminEmails();
   const clients = ((plans ?? []) as { id: string; user_id: string; client_name: string | null; client_email: string | null; created_at: string }[]).filter(
-    (p) => p.client_email && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && !admins.includes(p.client_email.toLowerCase())
+    (p) => p.client_email && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && !/^eloise\b/i.test(p.client_name || "") && !admins.includes(p.client_email.toLowerCase())
   );
   if (!clients.length) return NextResponse.json({ ok: true, enabled: true, sent: 0 });
 
+  const { data: starts } = await supabase.from("lccs_welcome_series_start").select("user_id, started_on").in("user_id", clients.map((c) => c.user_id));
+  const startOf = new Map(((starts ?? []) as { user_id: string; started_on: string }[]).map((r) => [r.user_id, r.started_on]));
   const [{ data: logs }, { data: profiles }] = await Promise.all([
     supabase.from("lccs_welcome_log").select("user_id, email_key").in("user_id", clients.map((c) => c.user_id)),
     supabase.from("profiles").select("id, current_plan_id").in("id", clients.map((c) => c.user_id)),
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
 
   const results: { client: string; email: string; sent: boolean }[] = [];
   for (const c of clients) {
-    const offset = today - dayNumber(denverDay(new Date(c.created_at)));
+    const offset = today - dayNumber(startOf.get(c.user_id) ?? denverDay(new Date(c.created_at)));
     const due = WELCOME_EMAILS.filter((e) => !e.queued && e.day <= offset && offset <= e.day + 2 && !sentKeys.has(`${c.user_id}:${e.key}`));
     if (!due.length) continue;
     let state: Awaited<ReturnType<typeof clientSetupState>> | null = null;

@@ -5,9 +5,10 @@
  */
 
 import { sessionUser } from '@/lib/authz';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServerClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveMasterPlanId } from '@/lib/scoring/masterPlan';
+import { recordCompletion } from '@/lib/assessmentProgress';
 
 interface DomainScore {
   domainNumber: number;
@@ -134,6 +135,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to sync scores' }, { status: 500 });
     }
     
+    // The Profit assessment's scores are saved only when it is finished.
+    await recordCompletion(createServerClient() as never, body.masterPlanId, 'profit').catch(() => {});
+
     // Auto-generate action items for low-scoring domains
     const lowScoringDomains = body.domainScores.filter(ds => (ds.score / ds.maxScore) < 0.6);
     if (lowScoringDomains.length > 0) {

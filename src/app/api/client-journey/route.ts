@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect } from "@/lib/authz";
 import { housePlanId } from "@/lib/housePlan";
 import { DEMO_PLAN_NAME } from "@/lib/scoring/masterPlan";
+import { assessmentProgress, APPROX_TOTAL, type AssessmentProgress } from "@/lib/assessmentProgress";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -31,26 +32,14 @@ export async function GET() {
   const teamEmails = new Set(((team ?? []) as { email: string | null }[]).map((m) => (m.email || "").toLowerCase()));
   type Plan = { id: string; user_id: string; client_name: string | null; client_email: string | null; created_at: string; domain_scores: unknown; profit_score: unknown };
   const clients = ((plans ?? []) as Plan[])
-    .filter((p) => p.id !== house && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && p.client_email && !teamEmails.has(p.client_email.toLowerCase()))
+    .filter((p) => p.id !== house && p.client_name !== DEMO_PLAN_NAME && p.client_name !== "Primary" && !/^eloise\b/i.test(p.client_name || "") && p.client_email && !teamEmails.has(p.client_email.toLowerCase()))
     .slice(0, MAX_CLIENTS);
 
-  // Assessments: Brain and Soul by saved answers, Profit by its score (the same rules the setup checklist uses).
-  const answers = async (planId: string, type: "brain" | "soul") => {
-    const [{ count }, { data: last }] = await Promise.all([
-      db.from("unified_client_responses").select("id", { count: "exact", head: true }).eq("master_plan_id", planId).eq("assessment_type", type),
-      db.from("unified_client_responses").select("created_at").eq("master_plan_id", planId).eq("assessment_type", type).order("created_at", { ascending: false }).limit(1),
-    ]);
-    return { has: (count ?? 0) > 0, last: ((last ?? [])[0]?.created_at as string | undefined) ?? null };
-  };
-  const state = new Map<string, { brain: boolean; soul: boolean; lastAnswered: string | null }>();
+  // Assessments: per client, how many answers are saved (progress) and whether each one was finished. A saved
+  // answer alone is progress, never "done": finished = Complete pressed on Brain and Soul, Profit scores saved.
+  const prog = new Map<string, AssessmentProgress>();
   for (let i = 0; i < clients.length; i += 10) {
-    await Promise.all(
-      clients.slice(i, i + 10).map(async (c) => {
-        const [b, s] = await Promise.all([answers(c.id, "brain"), answers(c.id, "soul")]);
-        const times = [b.last, s.last].filter(Boolean) as string[];
-        state.set(c.id, { brain: b.has, soul: s.has, lastAnswered: times.sort().slice(-1)[0] ?? null });
-      })
-    );
+    await Promise.all(clients.slice(i, i + 10).map(async (c) => { prog.set(c.id, await assessmentProgress(db as never, c.id)); }));
   }
 
   const userIds = clients.map((c) => c.user_id);
@@ -87,10 +76,9 @@ export async function GET() {
 
   const now = Date.now();
   const out = clients.map((c) => {
-    const st = state.get(c.id) ?? { brain: false, soul: false, lastAnswered: null };
-    const ds = c.domain_scores as Record<string, unknown> | null;
-    const profit = Boolean((ds && typeof ds === "object" && Object.keys(ds).length) || c.profit_score);
-    const done = st.brain && st.soul && profit;
+    const ap = prog.get(c.id)!;
+    const profit = ap.profit.status === "complete";
+    const done = ap.allComplete;
     const bk = booking.get((c.client_email || "").toLowerCase()) ?? null;
     const live = bk && bk.status !== "canceled" && bk.status !== "cancelled";
     const inviteAt = invited.get(c.user_id) ?? null;
@@ -99,17 +87,18 @@ export async function GET() {
     else if (live) stage = "booked";
     else if (done && inviteAt) stage = "invited";
     else if (done) stage = "assessments_done";
-    else if (st.brain || st.soul || profit) stage = "in_progress";
+    else if (ap.brain.status !== "not_started" || ap.soul.status !== "not_started" || ap.profit.status !== "not_started") stage = "in_progress";
     return {
       planId: c.id,
       name: c.client_name || c.client_email,
       email: c.client_email,
       joinedAt: c.created_at,
-      brain: st.brain,
-      soul: st.soul,
+      brain: ap.brain.status === "complete",
+      soul: ap.soul.status === "complete",
       profit,
+      progress: (['brain', 'soul', 'profit'] as const).map((k) => ({ key: k, status: ap[k].status, answered: ap[k].answered, approxTotal: APPROX_TOTAL[k], lastAnsweredAt: ap[k].lastAnsweredAt, completedAt: ap[k].completedAt })),
       allDone: done,
-      lastAnswered: st.lastAnswered,
+      lastAnswered: ap.lastActivityAt,
       inviteSentAt: inviteAt,
       booking: bk,
       review: review.get(c.id) ?? null,
