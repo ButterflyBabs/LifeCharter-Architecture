@@ -59,3 +59,25 @@ test("bookings and clients after a session are credited to it; cost per close ap
   assert.equal(oct22.costPerClose, 100);
   assert.equal(totalsOf(s).closes, 1);
 });
+
+import { registrationsByEvent } from "../src/lib/masterclass/results";
+
+test("registrations by event: grouped by session, newest first, returning people flagged, tests left out", () => {
+  const input = base({
+    registrants: [
+      { email: "john@x.com", at: "2026-10-07T19:17:00Z" },
+      { email: "john@x.com", at: "2026-10-09T15:47:00Z" },
+      { email: "angelina@x.com", at: "2026-10-10T17:33:00Z" },
+      { email: "msamilynne+eloise-oct22@gmail.com", at: "2026-10-11T01:55:00Z" },
+    ],
+    attendance: [{ session_date: "2026-10-08", email: "john@x.com" }],
+  });
+  const sessions = computeFunnel(input);
+  const ev = registrationsByEvent(input, sessions, new Map([["john@x.com", { name: "John", tags: ["from-linkedin"] }]]));
+  assert.deepEqual(ev.map((e) => e.date), ["2026-11-05", "2026-10-22", "2026-10-08"]);
+  const oct22 = ev.find((e) => e.date === "2026-10-22")!;
+  assert.equal(oct22.rows.length, 2);
+  assert.equal(oct22.rows.find((r) => r.email === "john@x.com")!.returning, true);
+  assert.equal(oct22.rows.find((r) => r.email === "john@x.com")!.source, "LinkedIn");
+  assert.equal(ev.find((e) => e.date === "2026-10-08")!.rows[0].status, "attended");
+});

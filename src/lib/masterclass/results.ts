@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { ownerMasterPlanId } from "@/lib/housePlan";
 
 // MasterClass performance: one funnel per session, and the series event to event (Babs approved 2026-09-27;
 // funnel per session asked for 2026-10-11).
@@ -161,6 +162,65 @@ export function computeFunnel(inp: FunnelInput): SessionRow[] {
   });
 }
 
+export interface RegistrationRow {
+  email: string;
+  name: string;
+  at: string; // when they registered
+  source: string; // where they came from, when known
+  status: "registered" | "attended" | "no-show";
+  returning: boolean; // registered for an earlier session too
+}
+export interface EventRegistrations {
+  date: string;
+  state: SessionRow["state"];
+  goal: number;
+  rows: RegistrationRow[];
+}
+
+const SOURCE_TAGS: [RegExp, string][] = [
+  [/^from-instagram$/i, "Instagram"],
+  [/^from-linkedin$/i, "LinkedIn"],
+  [/^from-facebook$/i, "Facebook"],
+  [/^lead-meta-ad$/i, "Meta ad"],
+];
+
+/** Everyone who registered for each session (by the same windows as the funnel), newest first. */
+export function registrationsByEvent(
+  inp: Pick<FunnelInput, "now" | "registrants" | "attendance">,
+  sessions: SessionRow[],
+  contacts: Map<string, { name: string; tags: string[] }>,
+): EventRegistrations[] {
+  const registrants = inp.registrants.filter((r) => !TEST_EMAIL.test(r.email));
+  const seenBefore = new Set<string>();
+  const out: EventRegistrations[] = sessions.map((sess, idx) => {
+    const start = fivePmMT(sess.date).getTime();
+    const prevStart = idx > 0 ? fivePmMT(sessions[idx - 1].date).getTime() : 0;
+    const came = new Set(inp.attendance.filter((a) => a.session_date === sess.date).map((a) => a.email.toLowerCase()));
+    const rows: RegistrationRow[] = registrants
+      .filter((r) => {
+        const t = new Date(r.at).getTime();
+        return t >= prevStart && t < start;
+      })
+      .map((r) => {
+        const e = r.email.toLowerCase();
+        const c = contacts.get(e);
+        const src = (c?.tags ?? []).map((t) => SOURCE_TAGS.find(([re]) => re.test(t))?.[1]).find(Boolean) || "";
+        return {
+          email: r.email,
+          name: c?.name || "",
+          at: r.at,
+          source: src,
+          status: sess.state !== "held" ? ("registered" as const) : came.has(e) ? ("attended" as const) : ("no-show" as const),
+          returning: seenBefore.has(e),
+        };
+      })
+      .sort((a, b) => b.at.localeCompare(a.at));
+    for (const r of rows) seenBefore.add(r.email.toLowerCase());
+    return { date: sess.date, state: sess.state, goal: sess.goal, rows };
+  });
+  return out.reverse();
+}
+
 export type Totals = {
   sessions: number;
   newRegistrations: number;
@@ -209,7 +269,7 @@ export function totalsOf(sessions: SessionRow[]): Totals {
   };
 }
 
-export async function masterclassResults(now = new Date()): Promise<{ sessions: SessionRow[]; totals: Totals }> {
+export async function masterclassResults(now = new Date()): Promise<{ sessions: SessionRow[]; totals: Totals; registrations: EventRegistrations[] }> {
   const supabase = createServerClient();
   const [regs, att, quals, subs, intakes, builds, cal, links, fin] = await Promise.all([
     supabase.from("zoom_registrant_syncs").select("email, synced_at, registered_at, event_key"),
@@ -248,7 +308,7 @@ export async function masterclassResults(now = new Date()): Promise<{ sessions: 
     ? await supabase.from("short_link_clicks").select("created_at").in("short_link_id", linkIds).limit(50000)
     : { data: [] as never[] };
 
-  const sessions = computeFunnel({
+  const input: FunnelInput = {
     now,
     registrants,
     attendance,
@@ -258,6 +318,20 @@ export async function masterclassResults(now = new Date()): Promise<{ sessions: 
     clients: Array.from(clients.values()),
     websiteBuilds: ((builds.data ?? []) as { email: string | null; created_at: string }[]).filter((b) => !TEST_EMAIL.test(b.email || "")),
     adSpend: ((fin.data ?? []) as { category: string | null; amount: number; occurred_on: string }[]).filter((e) => AD_CATEGORY.test((e.category || "").trim())),
-  });
-  return { sessions, totals: totalsOf(sessions) };
+  };
+  const sessions = computeFunnel(input);
+
+  // Names and sources for the registrants, from Contacts (Babs's account).
+  const contacts = new Map<string, { name: string; tags: string[] }>();
+  const emails = Array.from(new Set(registrants.map((r) => r.email.toLowerCase())));
+  if (emails.length) {
+    const plan = await ownerMasterPlanId(supabase).catch(() => null);
+    if (plan) {
+      const { data: cs } = await supabase.from("seq_contacts").select("email, first_name, last_name, tags").eq("master_plan_id", plan).in("email", emails);
+      for (const c of (cs ?? []) as { email: string; first_name: string | null; last_name: string | null; tags: string[] | null }[]) {
+        contacts.set(c.email.toLowerCase(), { name: [c.first_name, c.last_name].filter(Boolean).join(" "), tags: c.tags ?? [] });
+      }
+    }
+  }
+  return { sessions, totals: totalsOf(sessions), registrations: registrationsByEvent(input, sessions, contacts) };
 }

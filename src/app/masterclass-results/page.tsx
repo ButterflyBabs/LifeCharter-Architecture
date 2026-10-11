@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isAlignmentArchitect } from "@/lib/authz";
-import { ADS_START, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type SessionRow } from "@/lib/masterclass/results";
+import { ADS_START, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type EventRegistrations, type SessionRow } from "@/lib/masterclass/results";
+import Link from "next/link";
 import ReplayRelease from "./ReplayRelease";
 
 export const metadata: Metadata = { title: "MasterClass results" };
@@ -36,9 +37,10 @@ function Step({ name, value, from, cost, note }: { name: string; value: number; 
 }
 
 // Owner-only: how each MasterClass performs as a funnel, and whether the series is compounding event to event.
-export default async function MasterclassResultsPage() {
+export default async function MasterclassResultsPage({ searchParams }: { searchParams?: { tab?: string } }) {
   if (!(await isAlignmentArchitect())) notFound();
-  const { sessions, totals } = await masterclassResults();
+  const tab = searchParams?.tab === "registrations" ? "registrations" : "funnel";
+  const { sessions, totals, registrations } = await masterclassResults();
   const filling = sessions.filter((s) => s.state !== "held");
   const heldRows = sessions.filter((s) => s.state === "held");
   const newClientCount = totals.newClients.starter + totals.newClients.growth + totals.newClients.vip;
@@ -64,6 +66,23 @@ export default async function MasterclassResultsPage() {
         </p>
       </header>
 
+      <nav className="flex gap-2" aria-label="MasterClass results views">
+        {([["funnel", "Funnel"], ["registrations", "Registrations by event"]] as const).map(([k, name]) => (
+          <Link
+            key={k}
+            href={k === "funnel" ? "/masterclass-results" : "/masterclass-results?tab=registrations"}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === k ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
+            aria-current={tab === k ? "page" : undefined}
+          >
+            {name}
+          </Link>
+        ))}
+      </nav>
+
+      {tab === "registrations" ? (
+        <RegistrationsView events={registrations} />
+      ) : (
+      <>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
@@ -202,6 +221,63 @@ export default async function MasterclassResultsPage() {
           </p>
         </div>
       </section>
+      </>
+      )}
+    </div>
+  );
+}
+
+const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Denver" });
+
+function RegistrationsView({ events }: { events: EventRegistrations[] }) {
+  if (!events.length) return <p className={faint}>No sessions yet.</p>;
+  return (
+    <div className="space-y-4">
+      <p className={`text-sm ${faint}`}>
+        Everyone who registered on Zoom for each MasterClass, newest session first. A person counts for the session that starts after they registered. Test addresses are left out.
+      </p>
+      {events.map((e) => (
+        <details key={e.date} open={e.state !== "held" || e === events[0]} className={card}>
+          <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-2">
+            <span className={`text-lg font-semibold ${ink}`}>
+              {longDay(e.date)}
+              {e.state !== "held" && <span className="ml-2 rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[11px] font-semibold text-[#7a5a0e] dark:text-[#e0c35a]">{e.state === "next" ? "Next" : "Upcoming"}</span>}
+            </span>
+            <span className={`text-sm tabular-nums ${faint}`}>
+              {e.rows.length} registered{e.state !== "held" ? ` of ${e.goal}` : ""}
+              {e.state === "held" ? ` · ${e.rows.filter((r) => r.status === "attended").length} attended` : ""}
+            </span>
+          </summary>
+          {e.rows.length === 0 ? (
+            <p className={`mt-3 text-sm ${faint}`}>Nobody has registered yet.</p>
+          ) : (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className={label}>
+                  <tr>
+                    <th className="py-2 pr-4">Name</th>
+                    <th className="pr-4">Email</th>
+                    <th className="pr-4">Registered (MT)</th>
+                    <th className="pr-4">Came from</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody className={ink}>
+                  {e.rows.map((r) => (
+                    <tr key={`${r.email}-${r.at}`} className="border-t border-[#1a2b4a]/10 dark:border-white/10">
+                      <td className="py-2 pr-4 font-medium">{r.name || "—"}{r.returning ? <span className="ml-2 text-xs text-[#7b6b8d]">returning</span> : null}</td>
+                      <td className="pr-4 break-all">{r.email}</td>
+                      <td className="pr-4 tabular-nums">{when(r.at)}</td>
+                      <td className="pr-4">{r.source || "—"}</td>
+                      <td className="capitalize">{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </details>
+      ))}
     </div>
   );
 }
