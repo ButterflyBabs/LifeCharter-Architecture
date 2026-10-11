@@ -1017,7 +1017,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Business Alignment",
     question: "Does each of my businesses get its own health score?",
     answer:
-      "Yes. On Progress, 'Health by business' gives each business a score, and choosing one business at the top shows its dimensions. A business starts from your assessment scores (those are for you as a whole) and then moves with what is tied to that business: its tasks (finishing them lifts it, due dates that pass lower it) and its own compliance checklist. A business with nothing tied to it just shows your assessment score and says so. To give a task to a business, choose the business on the task.",
+      "Yes. On Progress, 'Health by business' gives each business a score, and choosing one business at the top shows its dimensions. A business starts from your assessment scores (those are for you as a whole) and then moves with what is tied to that business: its tasks (finishing them lifts it, due dates that pass lower it) and its own compliance checklist. A business with nothing tied to it just shows your assessment score and says so. A task you add while a business is chosen at the top belongs to that business.",
     keywords: ["health score", "each business", "per business", "business health", "progress", "score by business", "multiple businesses", "tasks count"],
   },
   {
