@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   // Imported while a business is chosen in the header: the money belongs to that business.
   const importBusiness = (await currentBusiness(masterPlanId))?.businessId ?? null;
-  const { error } = await supabase.from("finance_entries").insert(rows.map((r) => ({ ...(r as Record<string, unknown>), business_id: importBusiness })));
+  const { error } = await supabase.from("finance_entries").insert(rows.map((r: Record<string, unknown>) => ({ ...r, business_id: importBusiness })));
   if (error) {
     console.error("POST /api/finance/import/commit:", error.message);
     return NextResponse.json({ error: "Couldn't import — please try again." }, { status: 500 });
