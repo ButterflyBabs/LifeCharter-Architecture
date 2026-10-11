@@ -67,7 +67,7 @@ export default function AccessGate() {
         {error && <p role="alert" className="mt-4 text-sm text-[#F2B8B5]">{error}</p>}
       </form>
       <p className="mt-8 max-w-sm text-sm text-[#CBD5E1]">
-        Do not have an access code yet? Access follows a short Zoom conversation with AmiLynne.{" "}
+        Do not have an access code yet? The investor documents are provided during or after a short Zoom conversation with AmiLynne.{" "}
         <a className="font-semibold text-[#E9D7A9] underline" href="https://www.amilynnecarroll.com/investors">Request a call</a>.
       </p>
       <p className="mt-10 font-serif text-lg italic text-[#E9D7A9]">The command cockpit for founders</p>
