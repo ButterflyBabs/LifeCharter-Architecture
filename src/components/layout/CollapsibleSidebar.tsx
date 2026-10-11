@@ -200,6 +200,7 @@ const ownerSection = {
     { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
     { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },
+    { id: "quarterly-intensive", label: "Quarterly Intensive", icon: CalendarRange, href: "/quarterly-intensive" },
     { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
     { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
     { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },

@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 const EVENTS: Record<string, { business: number; project: string; goal: string; due: string | null }> = {
   "life-by-design": { business: 16, project: "Life by Design Summit (April 15-17, 2027)", goal: "Plan, promote and hold the Life by Design Summit.", due: "2027-04-17" }, // AmiLynne Speaks
   "annual-retreat": { business: 15, project: "Annual In Person Retreat", goal: "Plan and hold the annual in-person Command Suite retreat.", due: null }, // LifeCharter Command Suite
+  "quarterly-intensive": { business: 15, project: "Quarterly Intensive (Growth and VIP)", goal: "Plan, promote and hold the quarterly intensive for Growth and VIP members.", due: null }, // LifeCharter Command Suite
 };
 const eventOf = (v: unknown) => (typeof v === "string" && v in EVENTS ? v : "life-by-design");
 const SPEAKER_FIELDS = ["name", "promo_name", "email", "phone", "status", "topic", "dimension", "session_date", "session_time", "length", "style", "promo_agreement", "freebie", "giveaway", "assets", "tech_check", "notes"] as const;

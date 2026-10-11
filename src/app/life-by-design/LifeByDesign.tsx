@@ -39,6 +39,10 @@ const EVENT_COPY: Record<string, { title: string; intro: string }> = {
     title: "Life by Design Summit",
     intro: "April 15, 16 and 17, 2027 · 9am to 2pm Mountain · free and online. Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.",
   },
+  "quarterly-intensive": {
+    title: "Quarterly Intensive",
+    intro: "The quarterly intensive for Growth and VIP members: a Friday and a Saturday, 10am to 2pm Mountain, on Zoom. Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.",
+  },
   "annual-retreat": {
     title: "Annual In Person Retreat",
     intro: "The yearly in-person retreat for Command Suite clients (Wednesday to Saturday, with a mastermind day on the Sunday). Speakers, topics and every page you add for planning and tracking. A row you add to your task list lives in Tasks too, so finishing it counts toward your business health.",
