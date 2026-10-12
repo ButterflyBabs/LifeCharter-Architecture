@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Tag, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -97,7 +97,16 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     const q = new URLSearchParams(window.location.search);
     if (!embedded && q.get("add") === "1") {
       const p = q.get("platform");
-      setInitial({ scriptId: q.get("script") || "", ...(p && PLATFORMS.some((x) => x.id === p) ? { platform: p } : {}) });
+      const prof = q.get("profile") || "";
+      const handleFrom = prof.match(/(?:linkedin\.com\/in|instagram\.com|facebook\.com)\/([^/?#]+)/i)?.[1];
+      setInitial({
+        scriptId: q.get("script") || "",
+        ...(p && PLATFORMS.some((x) => x.id === p) ? { platform: p } : {}),
+        ...(q.get("name") ? { name: q.get("name")!.slice(0, 120) } : {}),
+        ...(prof ? { profileUrl: prof.slice(0, 400) } : {}),
+        ...(handleFrom ? { handle: p === "LI" ? `in/${decodeURIComponent(handleFrom)}` : `@${decodeURIComponent(handleFrom).replace(/^@/, "")}` } : {}),
+        ...(prof ? { notes: "Added with the Add to pipeline browser button." } : {}),
+      });
       setAdding(true);
       window.history.replaceState(null, "", "/dm-pipeline");
     }
@@ -272,6 +281,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       )}
 
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
+      {purpose === "outreach" && <AddFaster onAdded={() => void load(board?.id)} />}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
@@ -545,6 +555,78 @@ function AddCard({ board, stages, scripts, onClose, onSaved, post, initial }: { 
 const clock = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
 // "LinkedIn 3 / 25": DMs sent on each platform in the last 24 hours against the daily limit you set.
+// Two quick ways to get people onto the board: LinkedIn connection requests read from the inbox (Microsoft 365), and a
+// browser button that sends whoever's profile you are looking at to the Add card window. Nothing here touches LinkedIn.
+function AddFaster({ onAdded }: { onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [st, setSt] = useState<{ on: boolean; microsoft: boolean; checkedAt: string | null; recent: { name: string; at: string }[] } | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const code =
+    "javascript:(function(){var h=location.href.split('?')[0];var p='LI';if(/instagram\\.com/.test(h))p='IG';else if(/facebook\\.com/.test(h))p='FB';else if(!/linkedin\\.com/.test(h)){alert('Open a LinkedIn, Instagram or Facebook profile first.');return}" +
+    "var n=((document.querySelector('h1')||{}).innerText||document.title.replace(/\\s*[|\\-].*$/,'')).trim();" +
+    "window.open('" + (typeof window !== "undefined" ? window.location.origin : "https://lccommandsuite.com") + "/dm-pipeline?add=1&platform='+p+'&name='+encodeURIComponent(n)+'&profile='+encodeURIComponent(h),'_blank');})();";
+  useEffect(() => {
+    linkRef.current?.setAttribute("href", code);
+  }, [code, open]);
+  useEffect(() => {
+    if (!open || st) return;
+    fetch("/api/dm-pipeline/linkedin-inbox", { cache: "no-store" }).then((r) => r.json()).then(setSt).catch(() => {});
+  }, [open, st]);
+  async function toggle(on: boolean) {
+    setBusy(true);
+    setNote("");
+    const r = await fetch("/api/dm-pipeline/linkedin-inbox", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) return setNote(d.error || "Couldn't change that.");
+    setSt((s) => (s ? { ...s, on: d.on } : s));
+    setNote(on ? d.note || "Switched on." : "Switched off. Nothing more will be read from your inbox.");
+    if (on && d.added) onAdded();
+  }
+  return (
+    <div className="mb-4">
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="text-sm font-medium text-[#2E7C83] hover:underline">
+        {open ? "Hide" : "Add people faster"}
+      </button>
+      {open && (
+        <div className="mt-2 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">LinkedIn connection requests, from your inbox</p>
+            <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]">When someone asks to connect, LinkedIn emails you. Turn this on and each new request is added here as a card (To reach out, with their profile link and a reminder for today). Accept on LinkedIn, then send your first message from the card. We only read email from LinkedIn&rsquo;s invitation address, and we never touch your LinkedIn.</p>
+            {st === null ? (
+              <p className="mt-2 text-sm text-[#7a8a99]">Loading…</p>
+            ) : !st.microsoft ? (
+              <p className="mt-2 text-sm text-[#A4523C]">This reads a connected Microsoft 365 inbox. Connect yours in <Link href="/settings" className="underline">Settings &gt; Integrations</Link> first (a Gmail connection can send but not read).</p>
+            ) : (
+              <div className="mt-2 space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                  <input type="checkbox" className="h-4 w-4" checked={st.on} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
+                  Add LinkedIn connection requests from my inbox
+                </label>
+                {st.on && st.checkedAt && <p className="text-xs text-[#7a8a99]">Checked about every 15 minutes. Last check {new Date(st.checkedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.</p>}
+                {st.recent.length > 0 && <p className="text-xs text-[#7a8a99]">Recently added: {st.recent.map((x) => x.name).join(", ")}</p>}
+              </div>
+            )}
+            {note && <p className="mt-2 text-sm text-[#1F5E63]" role="status">{note}</p>}
+          </div>
+          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">&ldquo;Add to pipeline&rdquo; browser button</p>
+            <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Drag this button to your browser&rsquo;s bookmarks bar. Then, on anyone&rsquo;s LinkedIn, Instagram or Facebook profile, click it: the Add card window opens with their name and profile link already filled in.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <a ref={linkRef} href="#" onClick={(e) => e.preventDefault()} draggable className="inline-flex cursor-grab items-center rounded-full bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-[#F8F5F0]">+ Add to my pipeline</a>
+              <button onClick={() => { void navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {}); }} className="text-xs font-medium text-[#2E7C83] hover:underline">{copied ? "Copied" : "Copy the button code instead"}</button>
+            </div>
+            <p className="mt-2 text-xs text-[#7a8a99]">If dragging does not work: add any bookmark, edit it, and paste the copied code into its address field. Some browsers need the bookmarks bar shown first. You click it yourself, so nothing runs in the background and LinkedIn&rsquo;s rules are respected.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSetLimit: (platform: string, limit: number) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [val, setVal] = useState("");

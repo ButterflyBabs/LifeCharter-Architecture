@@ -449,6 +449,28 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // LinkedIn connection requests added from the inbox and not messaged yet.
+  try {
+    const { count } = await supabase
+      .from("dm_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("master_plan_id", masterPlanId)
+      .eq("platform", "LI")
+      .is("last_contacted_at", null)
+      .ilike("notes", "Connection request received on LinkedIn%");
+    if ((count ?? 0) > 0) {
+      out.push({
+        nkey: `li-requests:${count}`,
+        type: "action",
+        title: `${count} LinkedIn connection request${count === 1 ? "" : "s"} to accept`,
+        body: "They are on your Outreach Pipeline. Accept each one on LinkedIn, then send your first message from the card.",
+        href: "/dm-pipeline",
+      });
+    }
+  } catch {
+    /* best effort */
+  }
+
   // Reminders the client typed in: due now, or coming up in the next 24 hours. Snoozing or re-timing one gives it a
   // new key, so it comes back to the bell.
   try {
