@@ -37,6 +37,7 @@ import {
 import DimensionCards from "@/components/executive/DimensionCards";
 import PipelineCard from "@/components/executive/PipelineCard";
 import CollectiveCard from "@/components/executive/CollectiveCard";
+import RemindersCard from "@/components/reminders/RemindersCard";
 import First30Card, { useFirst30 } from "@/components/executive/First30Card";
 import { timezoneOptions } from "@/lib/timezones";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
@@ -260,6 +261,7 @@ export default function ExecutiveHome() {
     "pipeline",
     "collective",
     "tasks",
+    "reminders",
     "inbox",
     "ai",
   ]);
@@ -462,7 +464,7 @@ export default function ExecutiveHome() {
             const next = arr.filter((x: unknown) => typeof x === "string" && defaults.includes(x as string)) as string[];
             for (const id of defaults) {
               if (next.includes(id)) continue;
-              const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : id === "first30" ? "brief" : null;
+              const after = id === "pipeline" ? "financial" : id === "collective" ? "pipeline" : id === "first30" ? "brief" : id === "reminders" ? "tasks" : null;
               if (id === "coaching") next.unshift(id);
               else next.splice(after && next.includes(after) ? next.indexOf(after) + 1 : next.length, 0, id);
             }
@@ -1463,6 +1465,12 @@ export default function ExecutiveHome() {
         <div {...briefCardProps("pipeline")}>
           <button draggable onDragStart={() => setDragId("pipeline")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
           <PipelineCard />
+        </div>
+
+        {/* Reminders: the one-off things not to forget (tied to the bell) */}
+        <div {...briefCardProps("reminders")}>
+          <button draggable onDragStart={() => setDragId("reminders")} className="absolute top-2 right-2 z-20 p-1 rounded-md bg-white/80 shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400" aria-label="Drag to reorder"><GripVertical className="w-4 h-4" /></button>
+          <RemindersCard />
         </div>
 
         {/* The Collective (community) */}

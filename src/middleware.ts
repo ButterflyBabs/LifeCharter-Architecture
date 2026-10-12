@@ -48,6 +48,7 @@ const PUBLIC_APIS = [
   "/api/cron/followups", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-daily-tasks", // secured by its own CRON_SECRET check, not a session
   "/api/cron/calendar-connections", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/client-check-in", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-weekly-bills", // secured by its own CRON_SECRET check, not a session
   "/api/cron/new-client-review", // secured by its own CRON_SECRET check, not a session

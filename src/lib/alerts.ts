@@ -449,6 +449,31 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // Reminders the client typed in: due now, or coming up in the next 24 hours. Snoozing or re-timing one gives it a
+  // new key, so it comes back to the bell.
+  try {
+    const { data: rem } = await supabase
+      .from("reminders")
+      .select("id, title, notes, remind_at")
+      .eq("master_plan_id", masterPlanId)
+      .eq("status", "open")
+      .lte("remind_at", new Date(Date.now() + 24 * 3_600_000).toISOString())
+      .order("remind_at")
+      .limit(20);
+    for (const r of (rem ?? []) as { id: string; title: string; notes: string | null; remind_at: string }[]) {
+      const due = new Date(r.remind_at).getTime() <= Date.now();
+      out.push({
+        nkey: `reminder:${r.id}:${new Date(r.remind_at).getTime()}`,
+        type: due ? "action" : "info",
+        title: due ? `Reminder: ${r.title}` : `Coming up: ${r.title}`,
+        body: r.notes ? r.notes.slice(0, 200) : due ? "This reminder is due. Mark it done or snooze it on the Reminders page." : `Set for ${new Date(r.remind_at).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}.`,
+        href: "/reminders",
+      });
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

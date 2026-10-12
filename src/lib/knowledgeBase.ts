@@ -351,6 +351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["links", "forms", "links and forms", "all my links", "form link", "booking link", "checkout link", "where is my link", "copy link", "link directory"],
   },
   {
+    id: "dm-reminders",
+    category: "Daily Operations",
+    question: "How do I set a reminder for a one-off thing, like a free trial that is about to renew?",
+    answer:
+      "Open Reminders in the left menu, just under Tasks. Type what you need to remember (for example, \"LinkedIn Premium free trial ends in 24 hours: renew or cancel before being charged\"), add notes if you like, and choose when: In 1 hour, In 3 hours, Tomorrow 9 am, In 24 hours, Next Monday 9 am, or pick any date and time. The reminder shows on the Reminders page, in the Reminders card on Executive Home and Daily Compass, and in the bell at the top right, and you get an email when it comes due. When it is due you can mark it done or snooze it for an hour, a day or a week. Reminders are for one-off things you must not forget; use Tasks for work you have to do. You can also just ask your assistant: \"Remind me tomorrow at 9 to cancel the trial.\"",
+    keywords: ["reminder", "reminders", "remind me", "free trial", "renew", "cancel", "one-off", "bell", "snooze", "deadline", "notification"],
+  },
+  {
     id: "op-sop-templates",
     category: "Operations",
     question: "Where are the ready-made SOP templates, and how do I make them mine?",

@@ -94,7 +94,7 @@ export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
 export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[] }[] = [
-  { key: "tasks", label: "Tasks", pages: ["/tasks"], apis: ["/api/tasks", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
+  { key: "tasks", label: "Tasks", pages: ["/tasks", "/reminders"], apis: ["/api/tasks", "/api/reminders", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
   { key: "projects", label: "Projects", pages: ["/projects"], apis: ["/api/projects"] },
   { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
   { key: "content", label: "Content Calendar & Studio", pages: ["/daily-compass/calendar", "/daily-compass/content-studio"], apis: ["/api/content", "/api/social"] },

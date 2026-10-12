@@ -35,6 +35,7 @@ import { QuickActions } from "./QuickActions";
 import { useMasonry } from "@/lib/hooks/useMasonry";
 import QuickWins from "@/components/QuickWins";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
+import RemindersCard from "@/components/reminders/RemindersCard";
 
 // A task as returned by /api/tasks.
 interface RealTask {
@@ -133,7 +134,7 @@ export default function DailyCompassPage() {
   // Executive Home's briefing cards: CSS `order` driven by native HTML5 drag
   // events, so differently-sized cards can freely swap places in one grid).
   const CARD_ORDER_KEY = "compass-card-order";
-  const DEFAULT_CARD_ORDER = ["progress", "quickActions", "focus", "coaching", "deals", "activity", "upcoming", "insights"];
+  const DEFAULT_CARD_ORDER = ["progress", "quickActions", "focus", "coaching", "reminders", "deals", "activity", "upcoming", "insights"];
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -839,6 +840,12 @@ export default function DailyCompassPage() {
         <div className="relative" {...cardProps("coaching")} draggable onDragStart={() => setDragCardId("coaching")}>
           <div className="absolute top-4 right-4 z-10">{dragHandle("coaching")}</div>
           <CoachingCallsCard compact />
+        </div>
+
+        {/* Reminders — one-off things not to forget; drag to reorder */}
+        <div className="relative" {...cardProps("reminders")} draggable onDragStart={() => setDragCardId("reminders")}>
+          <div className="absolute top-4 right-4 z-10">{dragHandle("reminders")}</div>
+          <RemindersCard />
         </div>
 
         {/* Deals to move today — from the Pipeline; drag to reorder */}
