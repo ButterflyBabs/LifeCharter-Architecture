@@ -589,6 +589,29 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const [busy, setBusy] = useState(false);
   const left = Array.from(new Set(text.match(/\[[^\]]+\]/g) ?? []));
   const short = script.title.replace(/^MasterClass DM · /, "");
+  // The assistant rewrites this one message for this one person; they read it before they copy it.
+  const original = useMemo(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""), [card, script, sessionIso]);
+  const [ask, setAsk] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiNote, setAiNote] = useState("");
+  async function customize(instruction: string) {
+    setAiBusy(true);
+    setAiNote("");
+    try {
+      const r = await fetch("/api/dm-pipeline/customize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cardId: card.id, text, instruction, scriptTitle: script.title }) });
+      const d = await r.json().catch(() => ({}));
+      if (d.needsKey) setAiNote("Connect your AI in Settings > AI to have your assistant customize messages.");
+      else if (!r.ok || !d.message) setAiNote(d.error || "Couldn't rewrite it just now.");
+      else {
+        setText(d.message);
+        setAsk("");
+        setAiNote("Reworked for them. Read it, change anything, then copy it.");
+      }
+    } catch {
+      setAiNote("Couldn't reach your assistant just now.");
+    }
+    setAiBusy(false);
+  }
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
@@ -622,6 +645,22 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
         <div className="flex items-center justify-between text-xs text-[#7a8a99]">
           <span>{text.length} characters</span>
           {left.length > 0 && <span className="text-[#A4523C] font-medium">Still to fill in: {left.join("  ")}</span>}
+        </div>
+        <div className="rounded-xl bg-[#2E7C83]/10 p-3 space-y-2">
+          <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Customize this message with your assistant</p>
+          <div className="flex flex-wrap gap-2">
+            {["Make it warmer", "Make it shorter", "Mention something personal from my notes", "End with a question", "Sound more like me"].map((p) => (
+              <Button key={p} size="sm" variant="outline" disabled={aiBusy} onClick={() => void customize(p)}>{p}</Button>
+            ))}
+            {text !== original && (
+              <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setText(original); setAiNote(""); }}>Back to the original</Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="Or tell it what to change (e.g. mention we both love hiking)" aria-label="What should the assistant change?" />
+            <Button size="sm" disabled={aiBusy || !ask.trim()} onClick={() => void customize(ask)}>{aiBusy ? "Working…" : "Ask"}</Button>
+          </div>
+          {aiNote && <p className="text-xs text-[#1F5E63]" role="status">{aiNote}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => void copy()}>{copied ? "Copied" : "Copy message"}</Button>
