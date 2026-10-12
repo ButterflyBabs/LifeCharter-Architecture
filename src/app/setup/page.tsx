@@ -149,7 +149,7 @@ export default function SetupPage() {
           >
             <Compass className="mt-0.5 h-6 w-6 flex-shrink-0 text-[#1a2b4a]" aria-hidden />
             <p className="text-base font-semibold leading-snug text-[#1a2b4a]">
-              Once you have completed your three Command Suite assessments, the rest of your Command Suite opens and you will have full access to every feature.
+              Once you have completed your three Command Suite assessments (Brain, Soul and Profit), the rest of your Command Suite opens and you will have full access to every feature.
             </p>
           </div>
         )}
