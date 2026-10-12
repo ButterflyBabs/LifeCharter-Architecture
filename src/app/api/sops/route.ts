@@ -87,6 +87,39 @@ export async function POST(request: Request) {
     });
   }
 
+  // The assistant improves a SOP the client is looking at (their current text, even unsaved edits), using what it
+  // knows about them. Nothing is saved: the result goes back into the editor for them to review and Save.
+  if (body.action === "improve") {
+    const a = await planningAssistant();
+    if (!a?.key) return NextResponse.json({ needsKey: true });
+    const overCap = await memberAiGate();
+    if (overCap) return overCap;
+    const steps = Array.isArray(body.steps) ? body.steps.map((x: unknown) => String(x ?? "").slice(0, 600)).filter(Boolean).slice(0, 60) : [];
+    const instruction = typeof body.instruction === "string" && body.instruction.trim() ? body.instruction.trim().slice(0, 600) : "Make it fit my business, using what you know about me.";
+    const sys = planningSystem(
+      a,
+      "improving a standard operating procedure (SOP) already written for their business.",
+      'Return STRICT JSON: {"title":"...","purpose":"...","steps":["..."],"owner":"...","tools":"..."}. ' +
+        "Do what the instruction asks and keep everything else. Keep the same process and the same order unless asked to change it. " +
+        "Steps are a tick-box checklist: begin each step with one short action sentence, then any detail. Keep section header items (items that start with '## ') and add them when there are more than 8 steps (for example '## Before the call'). " +
+        "Replace [bracketed placeholders] with facts that appear in WHAT YOU KNOW; leave the ones you do not know as placeholders. Never invent facts. Return at most 40 steps."
+    );
+    const user = `CURRENT SOP\nTitle: ${String(body.title ?? "").slice(0, 160)}\nPurpose: ${String(body.purpose ?? "").slice(0, 1000)}\nOwner: ${String(body.owner ?? "").slice(0, 120)}\nTools: ${String(body.tools ?? "").slice(0, 300)}\nSteps:\n${steps.map((x: string, i: number) => `${i + 1}. ${x}`).join("\n")}\n\nINSTRUCTION: ${instruction}`;
+    const out = await runJson(a, sys, user, 3200);
+    if (!out) return NextResponse.json({ error: "Couldn't improve it just now." }, { status: 502 });
+    const newSteps = (Array.isArray(out.steps) ? out.steps : []).map((x) => String(x).slice(0, 600)).filter(Boolean).slice(0, 60);
+    if (!newSteps.length) return NextResponse.json({ error: "Couldn't improve it just now." }, { status: 502 });
+    return NextResponse.json({
+      improved: {
+        title: String(out.title || body.title || "").slice(0, 160),
+        purpose: String(out.purpose || "").slice(0, 1000),
+        steps: newSteps,
+        owner: String(out.owner || "").slice(0, 120),
+        tools: String(out.tools || "").slice(0, 300),
+      },
+    });
+  }
+
   const row = clean(body);
   if (!row.title) return NextResponse.json({ error: "Give the SOP a title." }, { status: 400 });
   const { data, error } = await createServerClient().from("sops").insert({ ...row, master_plan_id: masterPlanId }).select(SELECT).single();

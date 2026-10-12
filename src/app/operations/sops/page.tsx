@@ -23,7 +23,7 @@ interface Sop {
   approved_by: string | null;
   checks?: number[];
 }
-const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active" | "archived", notes: "" };
+const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active" | "archived", notes: "", ask: "" };
 const pillarName = (k: string | null) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? "General";
 // Approval state of a SOP: approved, edited after it was approved, or still waiting for sign-off.
 const approval = (s: Sop): "approved" | "edited" | "needed" =>
@@ -128,7 +128,7 @@ export default function SopLibraryPage() {
   function edit(s?: Sop) {
     setForm(
       s
-        ? { id: s.id, title: s.title, pillarKey: s.pillar_key ?? "", purpose: s.purpose ?? "", steps: s.steps.length ? s.steps : [""], owner: s.owner ?? "", tools: s.tools ?? "", status: s.status, notes: "" }
+        ? { id: s.id, title: s.title, pillarKey: s.pillar_key ?? "", purpose: s.purpose ?? "", steps: s.steps.length ? s.steps : [""], owner: s.owner ?? "", tools: s.tools ?? "", status: s.status, notes: "", ask: "" }
         : EMPTY
     );
     setView(null);
@@ -146,6 +146,20 @@ export default function SopLibraryPage() {
     if (d.needsKey) return setMsg("Connect your AI in Settings → AI to have your assistant draft SOPs.");
     if (!r.ok) return setMsg(d.error || "Couldn't draft it just now.");
     setForm((f) => ({ ...f, purpose: d.draft.purpose || f.purpose, steps: d.draft.steps?.length ? d.draft.steps : f.steps, owner: d.draft.owner || f.owner, tools: d.draft.tools || f.tools }));
+  }
+
+  // The assistant reworks what is in the editor right now, using what it knows about them. Nothing saves until they do.
+  async function improve(instruction: string) {
+    if (!form.steps.some((x) => x.trim())) return setMsg("Write or load some steps first.");
+    setBusy("improve");
+    setMsg("");
+    const r = await fetch("/api/sops", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "improve", title: form.title, purpose: form.purpose, steps: form.steps, owner: form.owner, tools: form.tools, instruction }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy("");
+    if (d.needsKey) return setMsg("Connect your AI in Settings → AI to have your assistant improve SOPs.");
+    if (!r.ok) return setMsg(d.error || "Couldn't improve it just now.");
+    setForm((f) => ({ ...f, title: d.improved.title || f.title, purpose: d.improved.purpose || f.purpose, steps: d.improved.steps, owner: d.improved.owner || f.owner, tools: d.improved.tools || f.tools, ask: "" }));
+    setMsg("Your assistant has reworked it below. Read it, change anything, then press Save SOP. Nothing is saved until you do.");
   }
 
   async function save() {
@@ -349,6 +363,26 @@ export default function SopLibraryPage() {
                 <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: [...form.steps, "## "] })}><Heading2 className="w-3.5 h-3.5 mr-1" />Add a section header</Button>
               </div>
               <p className="text-xs text-[#7a8a99]">Each step becomes a tick box. A line that starts with ## is a section header. The first sentence of a step is shown bold, so start each step with the action.</p>
+            </div>
+            <div className="rounded-xl bg-[#2E7C83]/10 p-3 space-y-2">
+              <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Have your assistant work on this SOP</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Make it fit my business",
+                  "Fill in the [placeholders] you know",
+                  "Add section headers",
+                  "Make it shorter and clearer",
+                  "Add what to prepare first",
+                ].map((p) => (
+                  <Button key={p} size="sm" variant="outline" disabled={busy === "improve"} onClick={() => improve(p)}>{p}</Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input placeholder="Or tell it what to change (e.g. add a step for sending the contract)" value={form.ask} onChange={(e) => setForm({ ...form, ask: e.target.value })} />
+                <Button size="sm" disabled={busy === "improve" || !form.ask.trim()} onClick={() => improve(form.ask)}>
+                  {busy === "improve" ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}Ask
+                </Button>
+              </div>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <Input placeholder="Owner (role)" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />

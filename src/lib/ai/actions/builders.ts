@@ -218,13 +218,13 @@ export const createSop: ActionTool = {
   kind: "write",
   apiPath: "/api/sops",
   description:
-    "Write a standard operating procedure (SOP) into the client's Playbook: a title, why it exists, the steps in order, an owner and tools. It saves as a draft the client can edit. Use placeholders in [brackets] for details you do not know. The client approves first.",
+    "Write a standard operating procedure (SOP) into the client's Playbook: a title, why it exists, the steps in order, an owner and tools. It saves as a draft the client can edit. Steps are a tick-box checklist: start each with one short action sentence, then detail, and for more than 8 steps group them with '## ' section header items such as '## Before the call' (a header is its own item in the steps list). Use placeholders in [brackets] for details you do not know. The client approves first.",
   parameters: {
     type: "object",
     properties: {
       title: { type: "string" },
       purpose: { type: "string" },
-      steps: { type: "array", items: { type: "string" }, description: "5 to 12 clear steps in order." },
+      steps: { type: "array", items: { type: "string" }, description: "5 to 20 clear steps in order, with optional '## ' section header items." },
       owner: { type: "string" },
       tools: { type: "string" },
       pillar_key: { type: "string", enum: PILLARS, description: "Which operations area it belongs to, if clear." },
@@ -233,13 +233,13 @@ export const createSop: ActionTool = {
   },
   plan: async (args) => {
     const title = str(args.title, 160);
-    const steps = Array.isArray(args.steps) ? args.steps.map((s) => str(s, 600)).filter(Boolean).slice(0, 40) : [];
+    const steps = Array.isArray(args.steps) ? args.steps.map((s) => str(s, 600)).filter(Boolean).slice(0, 60) : [];
     if (!title) return { error: "What is the process called?" };
     if (!steps.length) return { error: "I need the steps for it." };
     return { preview: { title: `Add the SOP "${title}" as a draft`, lines: [...steps.slice(0, 6).map((s, i) => `${i + 1}. ${s}`), ...(steps.length > 6 ? [`…and ${steps.length - 6} more steps`] : [])] } };
   },
   run: async (args, ctx) => {
-    const steps = Array.isArray(args.steps) ? args.steps.map((s) => str(s, 600)).filter(Boolean).slice(0, 40) : [];
+    const steps = Array.isArray(args.steps) ? args.steps.map((s) => str(s, 600)).filter(Boolean).slice(0, 60) : [];
     const pillar = PILLARS.includes(String(args.pillar_key)) ? String(args.pillar_key) : null;
     const { data, error } = await ctx.db
       .from("sops")
@@ -401,9 +401,10 @@ export const updateSop: ActionTool = {
     const r = one(await pick("sops", "title", str(a.find_title, 160), ctx, "id, title, purpose, steps, owner, tools, status"), "title");
     if (!r.row) throw new Error(r.error);
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (Array.isArray(a.steps) && a.steps.length) patch.checks = [];
     if (str(a.new_title, 160)) patch.title = str(a.new_title, 160);
     if (str(a.purpose, 1000)) patch.purpose = str(a.purpose, 1000);
-    if (Array.isArray(a.steps) && a.steps.length) patch.steps = a.steps.map((x) => str(x, 600)).filter(Boolean).slice(0, 40);
+    if (Array.isArray(a.steps) && a.steps.length) patch.steps = a.steps.map((x) => str(x, 600)).filter(Boolean).slice(0, 60);
     if (str(a.owner, 120)) patch.owner = str(a.owner, 120);
     if (str(a.tools, 300)) patch.tools = str(a.tools, 300);
     if (a.status === "draft" || a.status === "active") patch.status = a.status;
