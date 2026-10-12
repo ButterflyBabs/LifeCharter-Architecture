@@ -34,6 +34,36 @@ const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { mo
 // a tick box. The first sentence of a step is shown bold so the list can be scanned.
 const isHeader = (t: string) => /^##\s*/.test(t);
 const headerText = (t: string) => t.replace(/^##\s*/, "").trim();
+// Web addresses in an SOP are live links: https://… and bare ones like lccommandsuite.com/demo. Trailing punctuation
+// stays outside the link, and clicking one opens it in a new tab without ticking the step.
+const URL_RE = /((?:https?:\/\/|www\.)[^\s<>"]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|io|co|life|app|ai|us|edu|gov)(?:\/[^\s<>"]*)?)/gi;
+function Linked({ text }: { text: string }) {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  const re = new RegExp(URL_RE.source, "gi");
+  let k = 0;
+  while ((m = re.exec(text)) !== null) {
+    // Skip an email address: the match is right after an @.
+    if (m.index > 0 && text[m.index - 1] === "@") continue;
+    let url = m[0];
+    const trail = url.match(/[.,;:!?)\]]+$/)?.[0] ?? "";
+    if (trail) url = url.slice(0, -trail.length);
+    if (!url) continue;
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    out.push(
+      <a key={`u${k++}`} href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="break-all font-medium text-[#2E7C83] underline hover:text-[#1F5E63]">
+        {url}
+      </a>
+    );
+    last = m.index + url.length;
+    re.lastIndex = last;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return <>{out}</>;
+}
+
 function moveStep(steps: string[], i: number, d: -1 | 1): string[] {
   const j = i + d;
   if (j < 0 || j >= steps.length) return steps;
@@ -73,7 +103,7 @@ function Checklist({ sop, onChange }: { sop: Sop; onChange: (checks: number[]) =
           if (isHeader(t)) {
             return (
               <h3 key={i} className="mt-5 border-b-2 border-[#c9a227]/50 pb-1 text-lg font-bold text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">
-                {headerText(t)}
+                <Linked text={headerText(t)} />
               </h3>
             );
           }
@@ -85,8 +115,8 @@ function Checklist({ sop, onChange }: { sop: Sop; onChange: (checks: number[]) =
               <input type="checkbox" checked={checked} onChange={() => toggle(i)} className="mt-1 h-5 w-5 shrink-0 accent-[#2c6b3f]" />
               <span className={`min-w-0 text-[#1a2b4a] dark:text-[#F8F5F0] ${checked ? "opacity-60" : ""}`}>
                 <span className="mr-1 text-sm font-semibold text-[#7a8a99]">{n}.</span>
-                <span className={rest ? "font-semibold" : ""}>{lead}</span>
-                {rest && <span className="block text-sm leading-relaxed">{rest}</span>}
+                <span className={rest ? "font-semibold" : ""}><Linked text={lead} /></span>
+                {rest && <span className="block text-sm leading-relaxed"><Linked text={rest} /></span>}
               </span>
             </label>
           );
@@ -428,7 +458,7 @@ export default function SopLibraryPage() {
                 <Button size="sm" variant="ghost" onClick={() => setView(null)}>Close</Button>
               </div>
             </div>
-            {view.purpose && <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">{view.purpose}</p>}
+            {view.purpose && <p className="text-[#1a2b4a] dark:text-[#F8F5F0]"><Linked text={view.purpose} /></p>}
             <Checklist sop={view} onChange={(checks) => saveChecks(view, checks)} />
           </CardContent>
         </Card>
