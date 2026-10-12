@@ -33,17 +33,20 @@ const DEFAULT_DM_LIMIT = 25;
 async function dmUsage(db: ReturnType<typeof createServerClient>, planId: string) {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const [{ data: sends }, { data: lims }] = await Promise.all([
-    db.from("dm_sends").select("platform, sent_at").eq("master_plan_id", planId).gte("sent_at", since).order("sent_at").limit(5000),
+    db.from("dm_sends").select("platform, sent_at, kind").eq("master_plan_id", planId).gte("sent_at", since).order("sent_at").limit(5000),
     db.from("dm_platform_limits").select("platform, daily_limit").eq("master_plan_id", planId),
   ]);
-  const out: Record<string, { sent: number; limit: number; opensAt: string | null }> = {};
+  // sent = NEW first-time DMs in the last 24 hours (these count against the daily limit); followUps = follow-up DMs.
+  const out: Record<string, { sent: number; limit: number; opensAt: string | null; followUps: number }> = {};
   for (const p of CARD_PLATFORMS) {
-    const mine = ((sends ?? []) as { platform: string | null; sent_at: string }[]).filter((x) => x.platform === p.id);
+    const all = ((sends ?? []) as { platform: string | null; sent_at: string; kind: string | null }[]).filter((x) => x.platform === p.id);
+    const mine = all.filter((x) => x.kind !== "follow_up");
+    const followUps = all.length - mine.length;
     const lim = (lims ?? []).find((l) => l.platform === p.id)?.daily_limit as number | undefined;
     const limit = typeof lim === "number" ? lim : DEFAULT_DM_LIMIT;
     // When the count is at the limit, the slot that frees up first is the oldest send still inside the 24 hours.
     const opensAt = mine.length >= limit && limit > 0 ? new Date(new Date(mine[mine.length - limit].sent_at).getTime() + 24 * 3600_000).toISOString() : null;
-    out[p.id] = { sent: mine.length, limit, opensAt };
+    out[p.id] = { sent: mine.length, limit, opensAt, followUps };
   }
   return out;
 }
@@ -77,7 +80,15 @@ export async function GET(request: Request) {
     const sch = await meetingSchedule(masterclassMeetingId()).catch(() => null);
     nextSession = sch?.occurrences.find((o) => new Date(o.start).getTime() > Date.now() + 24 * 3600_000)?.start ?? null;
   }
-  return NextResponse.json({ boards, board, stages, cards: cards ?? [], today: dateIn(tz, 0), nextSession, dmUsage: await dmUsage(db, a.planId) });
+  // How many DMs each card has had, so the board can show "2 DMs sent" and the window can say New or Follow-up.
+  const counts = new Map<string, number>();
+  const cardIds = ((cards ?? []) as { id: string }[]).map((c) => c.id);
+  if (cardIds.length) {
+    const { data: sentRows } = await db.from("dm_sends").select("card_id").eq("master_plan_id", a.planId).eq("board_id", board.id).limit(10000);
+    for (const r of (sentRows ?? []) as { card_id: string }[]) counts.set(r.card_id, (counts.get(r.card_id) ?? 0) + 1);
+  }
+  const withCounts = ((cards ?? []) as { id: string }[]).map((c) => ({ ...c, dm_count: counts.get(c.id) ?? 0 }));
+  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, dmUsage: await dmUsage(db, a.planId) });
 }
 
 export async function POST(request: Request) {
@@ -260,8 +271,12 @@ export async function POST(request: Request) {
     const stages = await boardStages(db, a.planId, board.id);
     const target = b.stageId ? stages.find((s) => s.id === b.stageId) : null;
     if (target && target.id !== card.stage_id) await moveCard(db, a.planId, card.id as string, target, board.name, tz);
-    const { data: cur } = await db.from("dm_cards").select("notes, contact_id").eq("id", card.id).eq("master_plan_id", a.planId).maybeSingle();
-    const line = `[${dateIn(tz, 0)}] Sent${card.platform ? ` on ${card.platform}` : ""}: ${title || "a DM"}`;
+    const { data: cur } = await db.from("dm_cards").select("notes, contact_id, last_contacted_at").eq("id", card.id).eq("master_plan_id", a.planId).maybeSingle();
+    // New (first message to this person) or follow-up (they have been messaged before, even before DMs were logged).
+    const { count: priorSends } = await db.from("dm_sends").select("id", { count: "exact", head: true }).eq("master_plan_id", a.planId).eq("card_id", card.id);
+    const prior = (priorSends ?? 0) > 0 ? (priorSends as number) : cur?.last_contacted_at ? 1 : 0;
+    const dmKind = prior > 0 ? "follow_up" : "new";
+    const line = `[${dateIn(tz, 0)}] Sent${card.platform ? ` on ${card.platform}` : ""}${dmKind === "follow_up" ? ` (follow-up ${prior})` : " (new)"}: ${title || "a DM"}`;
     const notes = `${(cur?.notes as string | null) ?? ""}\n\n${line}`.trim().slice(-2000);
     const now = new Date().toISOString();
     const { data: saved, error } = await db
@@ -272,11 +287,11 @@ export async function POST(request: Request) {
       .select("*")
       .single();
     if (error) return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
-    await db.from("dm_sends").insert({ master_plan_id: a.planId, card_id: card.id, board_id: board.id, platform: (card.platform as string | null) ?? null, script_title: title || null }).then(({ error: e }) => { if (e) console.error("dm-sent log:", e.message); });
+    await db.from("dm_sends").insert({ master_plan_id: a.planId, card_id: card.id, board_id: board.id, platform: (card.platform as string | null) ?? null, script_title: title || null, kind: dmKind, followup_n: prior }).then(({ error: e }) => { if (e) console.error("dm-sent log:", e.message); });
     // Every DM sent counts on Sales Activities (this week's tally and goal) and, through it, toward the business health score.
     const day = dateIn(tz, 0);
     const act = `Outreach Pipelines · ${board.name} · card ${card.id}`;
-    const actTitle = (title || "DM").replace(/^MasterClass DM · /, "").slice(0, 200);
+    const actTitle = `${(title || "DM").replace(/^MasterClass DM · /, "").slice(0, 180)}${dmKind === "follow_up" ? " (follow-up)" : ""}`;
     const { data: dupe } = await db.from("sales_activities").select("id").eq("master_plan_id", a.planId).eq("type", "dm").eq("occurred_on", day).eq("title", actTitle).eq("notes", act).limit(1);
     if (!dupe?.length) {
       await db.from("sales_activities").insert({ master_plan_id: a.planId, type: "dm", contact_name: (saved.name as string) ?? "", contact_company: "", title: actTitle, priority: "warm", status: "completed", outcome: "", estimated_value: 0, occurred_on: day, notes: act }).then(({ error: e }) => { if (e) console.error("dm-sent activity:", e.message); });

@@ -12,6 +12,7 @@ import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
 export type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
 export type Card = {
+  dm_count?: number;
   id: string;
   board_id: string;
   stage_id: string;
@@ -35,7 +36,7 @@ export type Card = {
   stage_changed_at: string;
 };
 export type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
-export type DmUse = { sent: number; limit: number; opensAt: string | null };
+export type DmUse = { sent: number; limit: number; opensAt: string | null; followUps?: number };
 export type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
 const PLATFORMS = [
@@ -380,6 +381,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                                 </span>
                               )}
                               {c.last_contacted_at && <span className="text-[#7b6b8d]">Messaged {ago(c.last_contacted_at)}</span>}
+                              {(c.dm_count ?? 0) > 0 && <span className="rounded-full bg-[#2E7C83]/10 px-1.5 font-semibold text-[#1F5E63]" title="DMs sent to them so far">{c.dm_count} DM{c.dm_count === 1 ? "" : "s"} sent</span>}
                               {!c.contact_id && <span className="text-[#7b6b8d]" title="Add an email to put them in Contacts and tag them">Not in Contacts</span>}
                             </div>
                           </button>
@@ -406,7 +408,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
             stages={stages}
             sessionIso={nextSession}
             onClose={() => setSending(null)}
-            onDone={(saved, note, use) => { setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved } : x))); setSending(null); setOpenId(null); setMsg(note); if (use) setDmUsage(use); }}
+            onDone={(saved, note, use) => { setCards((cs) => (cs ?? []).map((x) => (x.id === saved.id ? { ...x, ...saved, dm_count: (x.dm_count ?? 0) + 1 } : x))); setSending(null); setOpenId(null); setMsg(note); if (use) setDmUsage(use); }}
             usage={dmUsage[c.platform ?? ""]}
             post={post}
           />
@@ -546,7 +548,7 @@ const clock = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric
 function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSetLimit: (platform: string, limit: number) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [val, setVal] = useState("");
-  const shown = PLATFORMS.filter((p) => ["IG", "FB", "LI"].includes(p.id) || (usage[p.id]?.sent ?? 0) > 0);
+  const shown = PLATFORMS.filter((p) => ["IG", "FB", "LI"].includes(p.id) || (usage[p.id]?.sent ?? 0) > 0 || (usage[p.id]?.followUps ?? 0) > 0);
   if (!Object.keys(usage).length) return null;
   return (
     <div className="mb-4 flex flex-wrap gap-2" aria-label="DMs sent in the last 24 hours">
@@ -558,7 +560,7 @@ function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSet
         return (
           <div key={p.id} className={`min-w-[170px] flex-1 rounded-xl border p-2.5 sm:flex-none ${full ? "border-[#C76F56]/60 bg-[#C76F56]/5" : near ? "border-[#c9a227]/60 bg-[#c9a227]/5" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40"}`}>
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-xs font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.label}</span>
+              <span className="text-xs font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.label} <span className="font-normal text-[#7a8a99]">new DMs</span></span>
               <span className="tabular-nums text-sm font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">
                 {u.sent} / {editing === p.id ? (
                   <input
@@ -580,6 +582,9 @@ function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSet
             <p className={`mt-1 text-[11px] ${full ? "font-semibold text-[#A4523C]" : "text-[#7a8a99]"}`}>
               {full ? (u.opensAt ? `Daily limit reached. Next one opens at ${clock(u.opensAt)}` : "Daily limit reached") : `${u.limit - u.sent} left in the last 24 hours`}
             </p>
+            <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-[#5a6472] dark:text-[#b8c2cf]" title="Follow-up DMs to people you have already messaged, in the last 24 hours">
+              {u.followUps ?? 0} follow-up DM{(u.followUps ?? 0) === 1 ? "" : "s"}
+            </p>
           </div>
         );
       })}
@@ -594,8 +599,8 @@ function DmLimitNote({ use, platform }: { use: DmUse; platform: string | null })
   return (
     <p className={`rounded-lg px-3 py-2 text-xs font-medium ${over ? "bg-[#C76F56]/10 text-[#A4523C]" : "bg-[#c9a227]/10 text-[#6b5410] dark:text-[#e6d28a]"}`}>
       {over
-        ? `You've already sent ${use.sent} on ${label} in the last 24 hours, your limit of ${use.limit}.${use.opensAt ? ` The next slot opens at ${clock(use.opensAt)}.` : ""} Sending more risks a restriction on your account.`
-        : `${use.sent} of ${use.limit} sent on ${label} in the last 24 hours. ${use.limit - use.sent} left.`}
+        ? `You've already sent ${use.sent} new DMs on ${label} in the last 24 hours, your limit of ${use.limit}.${use.opensAt ? ` The next slot opens at ${clock(use.opensAt)}.` : ""} Sending more risks a restriction on your account.`
+        : `${use.sent} of ${use.limit} new DMs sent on ${label} in the last 24 hours. ${use.limit - use.sent} left.`}
     </p>
   );
 }
@@ -688,6 +693,11 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const content = (
       <div className="space-y-3">
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">For <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</strong>. Copy it, paste it into their profile, then press <em>I sent it</em> to log it and move them on.</p>
+        <p className="text-xs font-semibold text-[#1F5E63]">
+          {(card.dm_count ?? 0) > 0 || card.last_contacted_at
+            ? `This will be follow-up DM ${Math.max(card.dm_count ?? 0, 1)} to ${firstNameOf(card.name)}. It is counted with your follow-ups, not your new DMs.`
+            : `This is a NEW first DM to ${firstNameOf(card.name)}. It counts toward your daily limit of new DMs.`}
+        </p>
         {usage && <DmLimitNote use={usage} platform={card.platform} />}
         {card.platform === "LI" && (
           <p className="rounded-lg bg-[#c9a227]/10 px-3 py-2 text-xs text-[#6b5410] dark:text-[#e6d28a]">
