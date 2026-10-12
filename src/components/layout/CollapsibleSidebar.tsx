@@ -780,8 +780,17 @@ export function CollapsibleSidebar() {
     if (!saved) return s;
     const byId = new Map(s.items.map((i) => [i.id, i]));
     const known = saved.filter((id) => byId.has(id));
-    const rest = s.items.filter((i) => !known.includes(i.id)).map((i) => i.id);
-    return { ...s, items: [...known, ...rest].map((id) => byId.get(id)!).filter(Boolean) };
+    // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
+    // client saved before it existed; anything else new goes to the end of its section.
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks" };
+    const placed = [...known];
+    for (const i of s.items) {
+      if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
+      const at = placed.indexOf(NEW_AFTER[i.id]);
+      placed.splice(at === -1 ? placed.length : at + 1, 0, i.id);
+    }
+    const rest = s.items.filter((i) => !placed.includes(i.id)).map((i) => i.id);
+    return { ...s, items: [...placed, ...rest].map((id) => byId.get(id)!).filter(Boolean) };
   });
   const GS_TITLE = "GETTING STARTED";
   const gsBaseIdx = baseSections.findIndex((x) => x.title === GS_TITLE);

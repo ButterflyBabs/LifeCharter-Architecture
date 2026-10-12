@@ -166,6 +166,13 @@ export default function DailyCompassPage() {
           const merged = saved.filter((id: string) => prev.includes(id));
           const missing = prev.filter((id) => !merged.includes(id));
           const order = [...missing.filter((id) => id === "progress"), ...merged, ...missing.filter((id) => id !== "progress")];
+          // The Reminders card, new, sits right after the coaching calls in an arrangement saved before it existed.
+          const ri = order.indexOf("reminders");
+          const ci = order.indexOf("coaching");
+          if (ri !== -1 && ci !== -1 && !merged.includes("reminders")) {
+            order.splice(ri, 1);
+            order.splice(order.indexOf("coaching") + 1, 0, "reminders");
+          }
           // Quick Actions now sit above Today's Focus. Move it there once for an arrangement saved before
           // that change; after this, wherever it is dragged is respected.
           try {
