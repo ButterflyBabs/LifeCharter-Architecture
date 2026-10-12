@@ -351,6 +351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["links", "forms", "links and forms", "all my links", "form link", "booking link", "checkout link", "where is my link", "copy link", "link directory"],
   },
   {
+    id: "gs-assessment-lock",
+    category: "Getting Started",
+    question: "Why can I only open a few pages right now?",
+    answer:
+      "Until you finish your three assessments (Brain, Soul and Profit), your Command Suite shows only Set up Suite, the three assessments, Settings, Help and your Starter Guide. Your whole Suite is built from your answers, so it stays closed until they are in, which also keeps anything from being changed before your results exist. The moment the third assessment is finished, the rest opens by itself and you have full access to every feature. Saving some answers is not the same as finishing: press Complete at the end of each assessment. Your New Client Journey progress is seen by your coach, who can help if you get stuck.",
+    keywords: ["locked", "can't open", "cannot open", "greyed out", "menu empty", "only setup", "unlock", "why is my menu short", "assessments first", "full access"],
+  },
+  {
     id: "cal-connection-alert",
     category: "Calendar & Connections",
     question: "How will I know if my calendar connection stops working?",
