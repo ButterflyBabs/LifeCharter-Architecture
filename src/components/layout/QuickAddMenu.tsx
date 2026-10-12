@@ -2,13 +2,21 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, CheckSquare, DollarSign, Share2, CalendarPlus, X, Loader2, Check } from "lucide-react";
+import { Plus, CheckSquare, DollarSign, Share2, CalendarPlus, BellRing, X, Loader2, Check } from "lucide-react";
+import { localInputValue, quickTimes } from "@/components/reminders/useReminders";
 import { dayInTz } from "@/lib/tz";
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 
 export function QuickAddMenu() {
   const [open, setOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
+  // Inline "new reminder" quick form (one-off things to be reminded of; separate from tasks).
+  const [remOpen, setRemOpen] = useState(false);
+  const [remTitle, setRemTitle] = useState("");
+  const [remWhen, setRemWhen] = useState("");
+  const [remSaving, setRemSaving] = useState(false);
+  const [remAdded, setRemAdded] = useState(false);
+  const [remError, setRemError] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -45,6 +53,35 @@ export function QuickAddMenu() {
     setKind("deadline");
     setAdded(false);
     setTaskOpen(true);
+  };
+
+  const openReminder = () => {
+    setOpen(false);
+    setRemTitle("");
+    setRemWhen(localInputValue(new Date(Date.now() + 24 * 3_600_000)));
+    setRemAdded(false);
+    setRemError("");
+    setRemOpen(true);
+  };
+
+  const saveReminder = async (iso: string) => {
+    if (!remTitle.trim()) return;
+    setRemSaving(true);
+    setRemError("");
+    try {
+      const res = await fetch("/api/reminders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: remTitle.trim(), remindAt: iso }) });
+      if (res.ok) {
+        window.dispatchEvent(new Event("reminders-changed"));
+        setRemAdded(true);
+        setRemTitle("");
+        setTimeout(() => setRemOpen(false), 900);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setRemError(d.error || "That didn't save. Try again.");
+      }
+    } finally {
+      setRemSaving(false);
+    }
   };
 
   const tz =
@@ -88,6 +125,7 @@ export function QuickAddMenu() {
 
   const items = [
     { label: "New task", icon: <CheckSquare className="w-4 h-4" />, action: openTask, desc: "Add to today" },
+    { label: "New reminder", icon: <BellRing className="w-4 h-4" />, action: openReminder, desc: "Be reminded of a one-off thing" },
     { label: "Log a sale", icon: <DollarSign className="w-4 h-4" />, action: () => go("/daily-compass/sales-activities?add=1"), desc: "Record a sales activity" },
     { label: "Create content", icon: <Share2 className="w-4 h-4" />, action: () => go("/daily-compass/calendar?new=1"), desc: "Compose a post" },
     { label: "Schedule planning session", icon: <CalendarPlus className="w-4 h-4" />, action: () => go("/planning?session=1"), desc: "Add to your calendar" },
@@ -98,7 +136,7 @@ export function QuickAddMenu() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick add"
-        title="Quick add: a task, a sale, a post or a planning session"
+        title="Quick add: a task, a reminder, a sale, a post or a planning session"
         className="w-9 h-9 rounded-full bg-[#1a2b4a] text-[#F8F5F0] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors shadow-md"
       >
         <Plus className={`w-5 h-5 transition-transform ${open ? "rotate-45" : ""}`} />
@@ -122,6 +160,60 @@ export function QuickAddMenu() {
               </span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Inline new-reminder modal */}
+      {remOpen && (
+        <div className="fixed inset-0 z-[9998] bg-black/40 flex items-start justify-center overflow-y-auto p-4">
+          <div className="bg-white dark:bg-[#111d33] rounded-2xl shadow-2xl w-full max-w-sm my-16">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a2b4a]/10">
+              <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">New reminder</h2>
+              <button onClick={() => setRemOpen(false)} aria-label="Close">
+                <X className="w-5 h-5 text-[#b8a898]" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <input
+                autoFocus
+                value={remTitle}
+                onChange={(e) => setRemTitle(e.target.value)}
+                placeholder="What do you need to remember?"
+                maxLength={200}
+                className="w-full px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+              />
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Remind me">
+                {quickTimes().map((q) => (
+                  <button
+                    key={q.label}
+                    disabled={remSaving || !remTitle.trim()}
+                    onClick={() => void saveReminder(q.iso)}
+                    className="rounded-full border border-[#2E7C83]/40 px-2.5 py-1 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5 disabled:opacity-50"
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={remWhen}
+                  onChange={(e) => setRemWhen(e.target.value)}
+                  aria-label="Date and time"
+                  className="flex-1 min-w-0 h-10 px-2 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
+                />
+                <button
+                  onClick={() => remWhen && void saveReminder(new Date(remWhen).toISOString())}
+                  disabled={remSaving || !remTitle.trim() || !remWhen}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 h-10 rounded-lg bg-[#2E7C83] text-white hover:bg-[#256b71] disabled:opacity-60"
+                >
+                  {remSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : remAdded ? <Check className="w-4 h-4" /> : null}
+                  {remAdded ? "Added" : "Save"}
+                </button>
+              </div>
+              {remError && <p className="text-xs text-[#8a2f2f]">{remError}</p>}
+            </div>
+          </div>
         </div>
       )}
 
