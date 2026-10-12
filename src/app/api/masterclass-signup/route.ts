@@ -1,3 +1,4 @@
+import { platformTag, retagContact } from "@/lib/dmPipeline";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
@@ -51,9 +52,12 @@ export async function POST(request: Request) {
       // and move it to Registered, whatever email they used.
       const cardCode = str(b._card, 24);
       if (c && cardCode) {
-        const { data: card } = await db.from("dm_cards").select("id, contact_id, email").eq("master_plan_id", plan).eq("link_code", cardCode).maybeSingle();
+        const { data: card } = await db.from("dm_cards").select("id, contact_id, email, platform").eq("master_plan_id", plan).eq("link_code", cardCode).maybeSingle();
         if (card) {
           await db.from("dm_cards").update({ contact_id: (card.contact_id as string | null) ?? c.id, email: (card.email as string | null) ?? email }).eq("id", card.id);
+          // Where the conversation happened (LinkedIn, Instagram, Facebook) becomes the contact's source tag, so
+          // MasterClass Results shows who came from which platform even when the card was typed in by hand.
+          await retagContact(db, plan, (card.contact_id as string | null) ?? c.id, [platformTag(card.platform as string | null)], []).catch(() => {});
           await advanceCards(db, plan, { cardId: card.id as string, contactId: c.id }, "registered").catch((e) => console.error("masterclass-signup card:", e));
           await logEvent(plan, c.id, "form", "Registered for the MasterClass through their personal link", { card: card.id }, db).catch(() => {});
         }
