@@ -78,6 +78,10 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     fetch("/api/me", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => setQualOn(d?.architect === true)).catch(() => {});
   }, [purpose]);
   const [filter, setFilter] = useState<string>("All");
+  // Find a person: by name, handle, email or notes, and by stage (the platform chips above already filter by platform).
+  const [q, setQ] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
+  const [elsewhere, setElsewhere] = useState<{ id: string; name: string; handle: string | null; platform: string | null; boardId: string; boardName: string; stageName: string }[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [adding, setAdding] = useState(false);
@@ -196,7 +200,32 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     } else void load(board?.id);
   }
 
-  const visible = useMemo(() => (cards ?? []).filter((c) => filter === "All" || c.platform === filter), [cards, filter]);
+  const visible = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return (cards ?? []).filter(
+      (c) =>
+        (filter === "All" || c.platform === filter) &&
+        (!stageFilter || c.stage_id === stageFilter) &&
+        (!needle || `${c.name} ${c.handle ?? ""} ${c.email ?? ""} ${c.notes ?? ""}`.toLowerCase().includes(needle))
+    );
+  }, [cards, filter, stageFilter, q]);
+  const searching = Boolean(q.trim() || stageFilter || filter !== "All");
+  // The same person on the account's other pipelines.
+  useEffect(() => {
+    const needle = q.trim();
+    if (needle.length < 2) {
+      setElsewhere([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/dm-pipeline/search?q=${encodeURIComponent(needle)}&purpose=${purpose}`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => setElsewhere(((d.results ?? []) as typeof elsewhere).filter((x) => x.boardId !== board?.id)))
+        .catch(() => setElsewhere([]));
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, purpose, board?.id]);
   const dueCount = visible.filter((c) => c.follow_up_on && today && c.follow_up_on <= today).length;
   const open = cards?.find((c) => c.id === openId) ?? null;
 
@@ -268,12 +297,47 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
         </Link>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by name, handle, email or notes"
+          aria-label="Search this pipeline"
+          className="h-9 w-72 max-w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20"
+        />
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} aria-label="Show one stage" className="h-9 rounded-lg border border-[#1a2b4a]/20 bg-white px-2 text-sm dark:bg-[#1a2b4a]/20">
+          <option value="">All stages</option>
+          {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        {searching && (
+          <>
+            <span className="text-xs text-[#7a8a99]">{visible.length} of {(cards ?? []).length} cards</span>
+            <button onClick={() => { setQ(""); setStageFilter(""); setFilter("All"); }} className="text-xs font-medium text-[#2E7C83] hover:underline">Clear search</button>
+          </>
+        )}
+      </div>
+      {elsewhere.length > 0 && (
+        <div className="mb-4 rounded-xl border border-[#c9a227]/40 bg-[#c9a227]/10 p-3 text-sm">
+          <p className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Also on your other pipelines</p>
+          <ul className="space-y-1">
+            {elsewhere.slice(0, 8).map((r) => (
+              <li key={r.id}>
+                <button onClick={() => { setFilter("All"); setStageFilter(""); void load(r.boardId); }} className="text-left text-[#2E7C83] hover:underline">
+                  {r.name}{r.handle ? ` (${r.handle})` : ""}
+                </button>
+                <span className="text-xs text-[#7a8a99]"> · {r.boardName} · {r.stageName}{r.platform ? ` · ${r.platform}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {!cards ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : (
         <div className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6">
           <div className="flex min-w-max gap-3">
-            {stages.map((s) => {
+            {stages.filter((s) => !stageFilter || s.id === stageFilter).map((s) => {
               const col = visible.filter((c) => c.stage_id === s.id);
               return (
                 <section
