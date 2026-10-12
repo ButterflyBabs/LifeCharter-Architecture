@@ -351,6 +351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["links", "forms", "links and forms", "all my links", "form link", "booking link", "checkout link", "where is my link", "copy link", "link directory"],
   },
   {
+    id: "op-sop-templates",
+    category: "Operations",
+    question: "Where are the ready-made SOP templates, and how do I make them mine?",
+    answer:
+      "Operations > Playbook & SOPs. Your account starts with a library of 50 ready-made SOP templates, each added as a draft so nothing is counted until you approve it. Open one to read it as a checklist: every step has a tick box, steps are grouped under section headers, and the first sentence of each step is bold. Press Edit to change the wording, add or remove steps, move a step up or down, or add your own section header (a line that starts with ##). Fill in the [bracketed placeholders] with your own details, then press Approve to put it in use. Use Make a copy to adapt one for a different situation, Start a fresh run to clear the ticks, and Template library at the top to add back any template you deleted. Your assistant can also draft a new SOP from a few notes.",
+    keywords: ["sop", "sops", "template", "templates", "playbook", "checklist", "procedure", "process", "standard operating procedure", "tick box", "section header"],
+  },
+  {
     id: "gs-assessment-lock",
     category: "Getting Started",
     question: "Why can I only open a few pages right now?",
