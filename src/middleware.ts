@@ -81,7 +81,7 @@ const SALES_ROLE = "sales";
 // contacts. Only the owner (super admin) and the owner's own team may
 // reach them — never a client or anyone on a client's team. (Babs, 2026-09-27: clients
 // must never have access to her contacts.)
-const HOUSE_ONLY_PAGES = ["/sales-reference"];
+const HOUSE_ONLY_PAGES = ["/sales-reference", "/short-demo-deck.html"]; // the presenter deck (slides + what to say) is for the owner and house team
 const HOUSE_ONLY_APIS = ["/api/sales"];
 
 // "View as client" (Alignment Architect, read-only). While it is on, only these calls may write
