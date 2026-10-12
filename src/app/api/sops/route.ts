@@ -17,16 +17,21 @@ export const dynamic = "force-dynamic";
 // SOPs in use (status active) feed the Systems score live; archived ones are kept but do not count.
 
 const PILLARS = new Set(OPERATIONS_PILLARS.map((p) => p.key));
-const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at, approved_at, approved_by";
+const SELECT = "id, title, pillar_key, purpose, steps, owner, tools, status, last_reviewed, updated_at, approved_at, approved_by, checks, checks_at";
 
 function clean(body: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   if (typeof body.title === "string") out.title = body.title.trim().slice(0, 160);
   if (body.pillarKey !== undefined) out.pillar_key = typeof body.pillarKey === "string" && PILLARS.has(body.pillarKey) ? body.pillarKey : null;
   if (typeof body.purpose === "string") out.purpose = body.purpose.trim().slice(0, 1000) || null;
-  if (Array.isArray(body.steps)) out.steps = body.steps.map((x) => String(x ?? "").trim().slice(0, 600)).filter(Boolean).slice(0, 40);
+  if (Array.isArray(body.steps)) out.steps = body.steps.map((x) => String(x ?? "").trim().slice(0, 600)).filter(Boolean).slice(0, 60);
   if (typeof body.owner === "string") out.owner = body.owner.trim().slice(0, 120) || null;
   if (typeof body.tools === "string") out.tools = body.tools.trim().slice(0, 300) || null;
+  // Ticked steps while someone runs the process (step positions); not part of what the SOP says.
+  if (Array.isArray(body.checks)) {
+    out.checks = Array.from(new Set(body.checks.map((n: unknown) => Number(n)).filter((n: number) => Number.isInteger(n) && n >= 0 && n < 100))).sort((a: number, b: number) => a - b);
+    out.checks_at = new Date().toISOString();
+  }
   if (body.status === "draft" || body.status === "active" || body.status === "archived") out.status = body.status;
   if (typeof body.lastReviewed === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.lastReviewed)) out.last_reviewed = body.lastReviewed;
   return out;
@@ -56,7 +61,8 @@ export async function POST(request: Request) {
     const sys = planningSystem(
       a,
       "writing a standard operating procedure (SOP) for their business.",
-      'Return STRICT JSON: {"purpose":"one or two sentences: why this process exists and what \\"done\\" looks like","steps":["5-12 clear, numbered-in-order steps, each one action a team member could follow"],"owner":"the role that owns it","tools":"tools used, comma separated"}. ' +
+      'Return STRICT JSON: {"purpose":"one or two sentences: why this process exists and what \\"done\\" looks like","steps":["5-14 clear steps in order, each one action a team member could follow"],"owner":"the role that owns it","tools":"tools used, comma separated"}. ' +
+        "Begin each step with one short action sentence, then any detail. When there are more than 8 steps, group them under section headers, each written as its own array item that starts with '## ' (for example '## Before the call'). " +
         "Fit it to their business (their offers, tools and team as known). Where you don't know a detail, use a [bracketed placeholder]."
     );
     const out = await runJson(a, sys, `PROCESS: ${title}${pillar ? `\nAREA: ${pillar}` : ""}${typeof body.notes === "string" && body.notes.trim() ? `\nTHEIR NOTES: ${body.notes.trim().slice(0, 1500)}` : ""}`, 900);
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       draft: {
         purpose: String(out.purpose || "").slice(0, 1000),
-        steps: (Array.isArray(out.steps) ? out.steps : []).map((s) => String(s).slice(0, 600)).slice(0, 20),
+        steps: (Array.isArray(out.steps) ? out.steps : []).map((s) => String(s).slice(0, 600)).slice(0, 30),
         owner: String(out.owner || "").slice(0, 120),
         tools: String(out.tools || "").slice(0, 300),
       },
@@ -103,6 +109,10 @@ export async function PATCH(request: Request) {
   const { data: cur } = await db.from("sops").select("title, pillar_key, purpose, steps, owner, tools").eq("id", body.id).eq("master_plan_id", masterPlanId).maybeSingle();
   const CONTENT = ["title", "pillar_key", "purpose", "steps", "owner", "tools"] as const;
   const edited = !cur || CONTENT.some((k) => k in row && JSON.stringify(row[k] ?? null) !== JSON.stringify((cur as Record<string, unknown>)[k] ?? null));
+  if (cur && "steps" in row && JSON.stringify(row.steps ?? null) !== JSON.stringify((cur as Record<string, unknown>).steps ?? null) && !("checks" in row)) {
+    row.checks = [];
+    row.checks_at = null;
+  }
   const { data, error } = await db
     .from("sops")
     .update({ ...row, ...(edited || body.approve !== undefined ? { updated_at: now } : {}) })

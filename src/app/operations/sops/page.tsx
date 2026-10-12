@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, BookOpen, Loader2, Plus, Printer, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, BookOpen, Heading2, Loader2, Plus, Printer, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -21,6 +21,7 @@ interface Sop {
   updated_at: string;
   approved_at: string | null;
   approved_by: string | null;
+  checks?: number[];
 }
 const EMPTY = { id: "", title: "", pillarKey: "", purpose: "", steps: [""], owner: "", tools: "", status: "draft" as "draft" | "active" | "archived", notes: "" };
 const pillarName = (k: string | null) => OPERATIONS_PILLARS.find((p) => p.key === k)?.name ?? "General";
@@ -28,6 +29,65 @@ const pillarName = (k: string | null) => OPERATIONS_PILLARS.find((p) => p.key ==
 const approval = (s: Sop): "approved" | "edited" | "needed" =>
   !s.approved_at ? "needed" : new Date(s.updated_at).getTime() - new Date(s.approved_at).getTime() > 60_000 ? "edited" : "approved";
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+// Steps are read as a checklist: a line that starts with "## " is a section header, every other line is a step with
+// a tick box. The first sentence of a step is shown bold so the list can be scanned.
+const isHeader = (t: string) => /^##\s*/.test(t);
+const headerText = (t: string) => t.replace(/^##\s*/, "").trim();
+function leadAndRest(t: string): { lead: string; rest: string } {
+  const m = t.match(/^([\s\S]{6,140}?[.:?!])\s+([\s\S]+)$/);
+  return m ? { lead: m[1], rest: m[2] } : { lead: t, rest: "" };
+}
+
+function Checklist({ sop, onChange }: { sop: Sop; onChange: (checks: number[]) => void }) {
+  const done = new Set(sop.checks ?? []);
+  const stepIdx = sop.steps.map((t, i) => (isHeader(t) ? -1 : i)).filter((i) => i >= 0);
+  const doneCount = stepIdx.filter((i) => done.has(i)).length;
+  let n = 0;
+  const toggle = (i: number) => {
+    const next = new Set(done);
+    if (next.has(i)) next.delete(i);
+    else next.add(i);
+    onChange(Array.from(next).sort((a, b) => a - b));
+  };
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3 print:hidden">
+        <div className="h-2 min-w-[8rem] flex-1 overflow-hidden rounded-full bg-[#1a2b4a]/10">
+          <div className="h-full rounded-full bg-[#2c6b3f] transition-all" style={{ width: `${stepIdx.length ? (doneCount / stepIdx.length) * 100 : 0}%` }} />
+        </div>
+        <span className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{doneCount} of {stepIdx.length} done</span>
+        {doneCount > 0 && (
+          <Button size="sm" variant="outline" onClick={() => onChange([])}><RotateCcw className="mr-1 h-3.5 w-3.5" />Start a fresh run</Button>
+        )}
+      </div>
+      <div className="space-y-2">
+        {sop.steps.map((t, i) => {
+          if (isHeader(t)) {
+            return (
+              <h3 key={i} className="mt-5 border-b-2 border-[#c9a227]/50 pb-1 text-lg font-bold text-[#1a2b4a] first:mt-0 dark:text-[#F8F5F0]">
+                {headerText(t)}
+              </h3>
+            );
+          }
+          n += 1;
+          const { lead, rest } = leadAndRest(t);
+          const checked = done.has(i);
+          return (
+            <label key={i} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${checked ? "border-[#2c6b3f]/30 bg-[#2c6b3f]/5" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/20"}`}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(i)} className="mt-1 h-5 w-5 shrink-0 accent-[#2c6b3f]" />
+              <span className={`min-w-0 text-[#1a2b4a] dark:text-[#F8F5F0] ${checked ? "opacity-60" : ""}`}>
+                <span className="mr-1 text-sm font-semibold text-[#7a8a99]">{n}.</span>
+                <span className={rest ? "font-semibold" : ""}>{lead}</span>
+                {rest && <span className="block text-sm leading-relaxed">{rest}</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function SopLibraryPage() {
   const [sops, setSops] = useState<Sop[] | null>(null);
@@ -105,6 +165,13 @@ export default function SopLibraryPage() {
     await fetch("/api/sops", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, lastReviewed: today }) });
     setView({ ...s, last_reviewed: today });
     void load();
+  }
+
+  // Ticking a step is saved on the SOP so everyone running it sees the same list; it never counts as an edit.
+  async function saveChecks(s: Sop, checks: number[]) {
+    setView({ ...s, checks });
+    setSops((cur) => (cur ? cur.map((x) => (x.id === s.id ? { ...x, checks } : x)) : cur));
+    await fetch("/api/sops", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, checks }) }).catch(() => {});
   }
 
   async function approve(s: Sop, on: boolean) {
@@ -185,12 +252,16 @@ export default function SopLibraryPage() {
               <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Steps</p>
               {form.steps.map((st, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="w-6 text-right text-sm text-[#7a8a99]">{i + 1}.</span>
-                  <Input value={st} onChange={(e) => setForm({ ...form, steps: form.steps.map((x, j) => (j === i ? e.target.value : x)) })} />
+                  <span className="w-6 text-right text-sm text-[#7a8a99]">{isHeader(st) ? "§" : i + 1 - form.steps.slice(0, i).filter(isHeader).length + "."}</span>
+                  <Input className={isHeader(st) ? "font-bold" : ""} value={st} onChange={(e) => setForm({ ...form, steps: form.steps.map((x, j) => (j === i ? e.target.value : x)) })} />
                   <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: form.steps.filter((_, j) => j !== i) })} aria-label="Remove step"><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
               ))}
-              <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: [...form.steps, ""] })}><Plus className="w-3.5 h-3.5 mr-1" />Add a step</Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: [...form.steps, ""] })}><Plus className="w-3.5 h-3.5 mr-1" />Add a step</Button>
+                <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: [...form.steps, "## "] })}><Heading2 className="w-3.5 h-3.5 mr-1" />Add a section header</Button>
+              </div>
+              <p className="text-xs text-[#7a8a99]">Each step becomes a tick box. A line that starts with ## is a section header. The first sentence of a step is shown bold, so start each step with the action.</p>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <Input placeholder="Owner (role)" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
@@ -236,7 +307,7 @@ export default function SopLibraryPage() {
               </div>
             </div>
             {view.purpose && <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">{view.purpose}</p>}
-            <ol className="list-decimal pl-6 space-y-1 text-[#1a2b4a] dark:text-[#F8F5F0]">{view.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+            <Checklist sop={view} onChange={(checks) => saveChecks(view, checks)} />
           </CardContent>
         </Card>
       )}
