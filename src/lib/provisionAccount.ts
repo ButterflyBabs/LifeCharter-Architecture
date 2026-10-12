@@ -1,3 +1,4 @@
+import { seedSopTemplates } from "@/lib/sopTemplates";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { joinCommandSuiteCommunity } from "@/lib/community/commandSuiteMember";
 import { ensureClientAffiliate } from "@/lib/affiliateStarter";
@@ -98,13 +99,20 @@ export async function provisionAccountForEmail(
     throw new Error(`Failed to create profile: ${profileError.message}`);
   }
 
-  const { error: planError } = await supabase.from("client_master_plans").insert({
-    workspace_id: workspace.id,
-    user_id: userId,
-    client_name: displayName,
-    client_email: normalizedEmail,
-    status: "active",
-  });
+  const { data: newPlan, error: planError } = await supabase
+    .from("client_master_plans")
+    .insert({
+      workspace_id: workspace.id,
+      user_id: userId,
+      client_name: displayName,
+      client_email: normalizedEmail,
+      status: "active",
+    })
+    .select("id")
+    .maybeSingle();
+  // Every client account starts with the SOP template library as editable drafts (team members exploring their own
+  // account skip it, like the walkthrough).
+  if (newPlan?.id && !opts.skipWalkthrough) await seedSopTemplates(supabase as never, newPlan.id as string).catch(() => 0);
 
   if (planError) {
     // Non-fatal: the account and workspace exist either way, and this

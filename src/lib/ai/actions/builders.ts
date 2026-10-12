@@ -206,7 +206,7 @@ export const listSops: ActionTool = {
   description: "List the client's SOPs (standard operating procedures) with status and area.",
   parameters: { type: "object", properties: {} },
   read: async (_a, ctx) => {
-    const { data } = await ctx.db.from("sops").select("title, status, pillar_key, owner").eq("master_plan_id", ctx.planId).order("updated_at", { ascending: false }).limit(60);
+    const { data } = await ctx.db.from("sops").select("title, status, pillar_key, owner").eq("master_plan_id", ctx.planId).or("template_key.is.null,status.eq.active").order("updated_at", { ascending: false }).limit(60);
     const rows = (data ?? []) as { title: string; status: string | null; pillar_key: string | null; owner: string | null }[];
     if (!rows.length) return "The client has no SOPs yet.";
     return rows.map((r) => `${r.title} | ${r.status ?? "draft"}${r.pillar_key ? ` | ${r.pillar_key}` : ""}${r.owner ? ` | owner ${r.owner}` : ""}`).join("\n");

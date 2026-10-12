@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, BookOpen, Heading2, Loader2, Plus, Printer, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, BookOpen, Copy, Heading2, Library, Loader2, Plus, Printer, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -34,6 +34,13 @@ const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { mo
 // a tick box. The first sentence of a step is shown bold so the list can be scanned.
 const isHeader = (t: string) => /^##\s*/.test(t);
 const headerText = (t: string) => t.replace(/^##\s*/, "").trim();
+function moveStep(steps: string[], i: number, d: -1 | 1): string[] {
+  const j = i + d;
+  if (j < 0 || j >= steps.length) return steps;
+  const out = [...steps];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}
 function leadAndRest(t: string): { lead: string; rest: string } {
   const m = t.match(/^([\s\S]{6,140}?[.:?!])\s+([\s\S]+)$/);
   return m ? { lead: m[1], rest: m[2] } : { lead: t, rest: "" };
@@ -98,6 +105,10 @@ export default function SopLibraryPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
+  // The template library: 50 editable starting points, copied into the account as drafts.
+  const [libOpen, setLibOpen] = useState(false);
+  const [lib, setLib] = useState<{ key: string; title: string; pillarKey: string | null; purpose: string | null; stepCount: number; added: boolean }[] | null>(null);
+  const [libQ, setLibQ] = useState("");
 
   const load = useCallback(async () => {
     const d = await fetch("/api/sops", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -167,6 +178,35 @@ export default function SopLibraryPage() {
     void load();
   }
 
+  async function openLibrary() {
+    setLibOpen((v) => !v);
+    if (lib) return;
+    const d = await fetch("/api/sops/templates", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    setLib(d.templates ?? []);
+  }
+
+  async function addTemplates(keys: string[] | "all") {
+    setBusy("tpl");
+    const r = await fetch("/api/sops/templates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keys }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy("");
+    if (!r.ok) return setMsg(d.error || "Couldn't add those.");
+    setMsg(d.added ? `Added ${d.added} template${d.added === 1 ? "" : "s"} to your SOPs as drafts. Edit them to fit your business, then approve them.` : "Those are already in your SOPs.");
+    const l = await fetch("/api/sops/templates", { cache: "no-store" }).then((x) => x.json()).catch(() => ({}));
+    setLib(l.templates ?? []);
+    void load();
+  }
+
+  // A copy to adapt: same steps, saved as a new draft.
+  async function duplicate(s: Sop) {
+    const r = await fetch("/api/sops", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: `Copy of ${s.title}`.slice(0, 160), pillarKey: s.pillar_key ?? "", purpose: s.purpose ?? "", steps: s.steps, owner: s.owner ?? "", tools: s.tools ?? "", status: "draft" }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return setMsg(d.error || "Couldn't make a copy.");
+    setView(null);
+    setMsg(`Made "Copy of ${s.title}" as a draft. Open it to edit.`);
+    void load();
+  }
+
   // Ticking a step is saved on the SOP so everyone running it sees the same list; it never counts as an edit.
   async function saveChecks(s: Sop, checks: number[]) {
     setView({ ...s, checks });
@@ -214,11 +254,56 @@ export default function SopLibraryPage() {
             {archivedCount > 0 && (
               <Button variant="outline" onClick={() => setShowArchived((v) => !v)}>{showArchived ? "Hide archived" : `Show archived (${archivedCount})`}</Button>
             )}
+            <Button variant="outline" onClick={openLibrary}><Library className="w-4 h-4 mr-1" />Template library</Button>
             <Button onClick={() => edit()}><Plus className="w-4 h-4 mr-1" />New SOP</Button>
           </div>
         </div>
         {msg && <p className="mb-4 rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm">{msg}</p>}
       </div>
+
+      {libOpen && (
+        <Card className="mb-6 print:hidden">
+          <CardHeader>
+            <CardTitle>SOP template library</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-[#7a8a99]">Fifty ready-made starting points. Add the ones you want: each becomes your own draft, with tick-box steps and section headers you can change, reorder or delete.</p>
+            <div className="flex flex-wrap gap-2">
+              <Input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="Search templates" className="w-60" />
+              <Button size="sm" variant="outline" disabled={busy === "tpl" || !(lib ?? []).some((t) => !t.added)} onClick={() => addTemplates("all")}>Add all that are not in my SOPs yet</Button>
+            </div>
+            {lib === null ? (
+              <p className="text-sm text-[#7a8a99]">Loading…</p>
+            ) : (
+              Array.from(
+                (lib ?? [])
+                  .filter((t) => !libQ || `${t.title} ${t.purpose ?? ""}`.toLowerCase().includes(libQ.toLowerCase()))
+                  .reduce((m, t) => m.set(pillarName(t.pillarKey), [...(m.get(pillarName(t.pillarKey)) ?? []), t]), new Map<string, NonNullable<typeof lib>>())
+                  .entries()
+              ).map(([group, list]) => (
+                <div key={group}>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{group}</p>
+                  <div className="divide-y divide-[#1a2b4a]/10 rounded-xl border border-[#1a2b4a]/10">
+                    {list.map((t) => (
+                      <div key={t.key} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{t.title}</p>
+                          <p className="line-clamp-1 text-xs text-[#7a8a99]">{t.stepCount} steps{t.purpose ? ` · ${t.purpose}` : ""}</p>
+                        </div>
+                        {t.added ? (
+                          <span className="text-xs font-semibold text-[#2c6b3f]">In your SOPs</span>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled={busy === "tpl"} onClick={() => addTemplates([t.key])}>Add to my SOPs</Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {open && (
         <Card className="mb-6 print:hidden">
@@ -254,6 +339,8 @@ export default function SopLibraryPage() {
                 <div key={i} className="flex items-center gap-2">
                   <span className="w-6 text-right text-sm text-[#7a8a99]">{isHeader(st) ? "§" : i + 1 - form.steps.slice(0, i).filter(isHeader).length + "."}</span>
                   <Input className={isHeader(st) ? "font-bold" : ""} value={st} onChange={(e) => setForm({ ...form, steps: form.steps.map((x, j) => (j === i ? e.target.value : x)) })} />
+                  <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => setForm({ ...form, steps: moveStep(form.steps, i, -1) })} aria-label="Move up"><ArrowUp className="w-3.5 h-3.5" /></Button>
+                  <Button size="sm" variant="ghost" disabled={i === form.steps.length - 1} onClick={() => setForm({ ...form, steps: moveStep(form.steps, i, 1) })} aria-label="Move down"><ArrowDown className="w-3.5 h-3.5" /></Button>
                   <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, steps: form.steps.filter((_, j) => j !== i) })} aria-label="Remove step"><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
               ))}
@@ -296,6 +383,7 @@ export default function SopLibraryPage() {
                 <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="w-3.5 h-3.5 mr-1" />Print</Button>
                 <Button size="sm" variant="outline" onClick={() => markReviewed(view)}>Mark reviewed today</Button>
                 {view.status !== "archived" && approval(view) !== "approved" && <Button size="sm" onClick={() => approve(view, true)}><CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve</Button>}
+                <Button size="sm" variant="outline" onClick={() => duplicate(view)}><Copy className="w-3.5 h-3.5 mr-1" />Make a copy</Button>
                 <Button size="sm" variant="outline" onClick={() => edit(view)}>Edit</Button>
                 {view.status === "archived" ? (
                   <Button size="sm" variant="outline" onClick={() => setStatus(view, "draft")}><ArchiveRestore className="w-3.5 h-3.5 mr-1" />Restore</Button>

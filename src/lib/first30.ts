@@ -85,7 +85,7 @@ const STEPS: Def[] = [
   },
   {
     key: "sop", week: 3, dims: ["systems","operations"], title: "Write down your first SOP", why: "Start with the process you explain most often.", href: "/operations/sops",
-    check: async (id, db) => (await count(db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", id).neq("status", "archived"))) > 0,
+    check: async (id, db) => (await count(db.from("sops").select("id", { count: "exact", head: true }).eq("master_plan_id", id).neq("status", "archived").or("template_key.is.null,status.eq.active"))) > 0, // an untouched template draft is not "writing your first SOP"
   },
   {
     key: "pillars", week: 3, dims: ["operations","customer_experience"], title: "Answer the Go deeper questions on 3 of your 8 operational pillars", why: "Your pillars are scored from your data and these answers, so this shows where operations need attention.", href: "/operations",

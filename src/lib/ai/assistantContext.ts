@@ -212,7 +212,7 @@ export async function buildAssistantKnowledge(
       );
     }
     // Their written SOPs (Playbook & SOPs), by title.
-    const { data: sops } = await supabase.from("sops").select("title, status").eq("master_plan_id", masterPlanId).limit(40);
+    const { data: sops } = await supabase.from("sops").select("title, status").eq("master_plan_id", masterPlanId).or("template_key.is.null,status.eq.active").limit(40); // untouched template drafts are left out
     const sopList = (sops ?? []) as { title: string; status: string }[];
     if (sopList.length) parts.push(`Their documented SOPs: ${sopList.map((x) => `"${x.title.slice(0, 60)}"${x.status === "draft" ? " (draft)" : ""}`).join(", ")}.`);
     // What their assistant last advised on Operations.

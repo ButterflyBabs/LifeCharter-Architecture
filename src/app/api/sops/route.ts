@@ -7,6 +7,8 @@ import { OPERATIONS_PILLARS } from "@/lib/operations";
 import { logActivity, q } from "@/lib/activity";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { sessionUser } from "@/lib/authz";
+import { ensureSopTemplatesSeeded } from "@/lib/sopTemplates";
+import { housePlanId } from "@/lib/housePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,14 @@ function clean(body: Record<string, unknown>) {
 export async function GET() {
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ sops: [] });
+  // Every client account is given the 50-template library as editable drafts the first time the library opens.
+  try {
+    const who = await sessionUser();
+    const db0 = createServerClient();
+    await ensureSopTemplatesSeeded(db0 as never, masterPlanId, who?.id ?? null, await housePlanId(db0));
+  } catch (e) {
+    console.error("sop templates seed:", e);
+  }
   const { data } = await createServerClient().from("sops").select(SELECT).eq("master_plan_id", masterPlanId).order("updated_at", { ascending: false });
   return NextResponse.json({ sops: data ?? [] });
 }
