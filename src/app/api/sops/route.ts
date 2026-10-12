@@ -26,7 +26,7 @@ function clean(body: Record<string, unknown>) {
   if (typeof body.title === "string") out.title = body.title.trim().slice(0, 160);
   if (body.pillarKey !== undefined) out.pillar_key = typeof body.pillarKey === "string" && PILLARS.has(body.pillarKey) ? body.pillarKey : null;
   if (typeof body.purpose === "string") out.purpose = body.purpose.trim().slice(0, 1000) || null;
-  if (Array.isArray(body.steps)) out.steps = body.steps.map((x) => String(x ?? "").trim().slice(0, 600)).filter(Boolean).slice(0, 60);
+  if (Array.isArray(body.steps)) out.steps = body.steps.map((x) => String(x ?? "").trim().slice(0, 600)).filter(Boolean).slice(0, 120);
   if (typeof body.owner === "string") out.owner = body.owner.trim().slice(0, 120) || null;
   if (typeof body.tools === "string") out.tools = body.tools.trim().slice(0, 300) || null;
   // Ticked steps while someone runs the process (step positions); not part of what the SOP says.
