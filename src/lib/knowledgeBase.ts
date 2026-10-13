@@ -939,6 +939,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "You can change your plan yourself: open Settings, then Billing, then Manage billing, and choose a different plan. When you move up, your new plan opens straight away and your card on file is charged the prorated difference for the rest of the billing period. You get an email right away confirming the new plan and the amount, and someone from our team reaches out within 3 business days to help you use what is now open to you. The morning after, you get one short check-in email asking how it is going, with a link to support. If you move down to a cheaper plan, the change happens immediately and the unused part of your current period is credited. Cancelling is not available in the billing portal: please contact support.",
   },
   {
+    id: "payment-failed-what-happens",
+    category: "Account & Settings",
+    question: "What happens if my payment doesn't go through?",
+    keywords: ["payment failed", "payment didn't go through", "declined", "card expired", "past due", "update card", "billing", "renewal", "manage billing"],
+    answer:
+      "If your monthly payment is declined (usually an expired or replaced card), three things happen: the bell shows 'Your last payment didn't go through', you get an email from LifeCharter saying the same thing, and your plan is marked past due. Fix it in about a minute: open Settings, then Billing, then Manage billing, and update your card. Stripe will try the card again on its own, and your plan keeps its billing dates. If anything still looks wrong afterwards, reply to the email or use Support.",
+  },
+  {
     id: "as-collective",
     category: "Account & Settings",
     question: "What is The Collective and how do I get to it?",
