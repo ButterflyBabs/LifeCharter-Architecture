@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { DimensionKey } from "./dimensionModel";
 
 /**
@@ -70,7 +70,7 @@ export async function scoreDimensionFromProse(
   if (!key || answers.length === 0) return null;
 
   const rubric = RUBRIC[dimensionKey] ?? `Overall strength of the "${dimensionLabel}" dimension.`;
-  const openai = new OpenAI({ apiKey: key });
+  const openai = aiClient(key);
 
   const content = answers
     .map((a, i) => `Q${i + 1}: ${a.question}\nA${i + 1}: ${a.answer}`)

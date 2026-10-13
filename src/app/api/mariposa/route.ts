@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { screenMessage, CRISIS_REPLY } from "@/lib/ai/redFlags";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
   if (!key) {
     return NextResponse.json({
       needsKey: true,
-      reply: `I'm ${name} — add your OpenAI API key in Settings → AI Assistant and I'll come fully online. For now: what's the single most important thing you could move forward today? — ${name}`,
+      reply: `I'm ${name} — add your AI key (Claude or OpenAI) in Settings → AI Assistant and I'll come fully online. For now: what's the single most important thing you could move forward today? — ${name}`,
     });
   }
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       ? await Promise.all([buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() }), loadHistory(planId)])
       : [{ text: "", answered: 0 }, []];
 
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     // The assistant can also DO things (tools). Not in the public demo, which is view-only.
     const canAct = !!planId && !isDemoRequest();
     const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), [instructions, flag.hint].filter(Boolean).join("\n\n"), { notes, message, canAct, approvedHelp: await approvedHelpFor(message) });

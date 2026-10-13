@@ -34,7 +34,7 @@ export default function HelpIdeasTab() {
     setNote("");
     const d = await post({ action: "generate" }).catch(() => ({}));
     setBusy(false);
-    if (d.needsKey) setNote("Add your OpenAI key in Settings first.");
+    if (d.needsKey) setNote("Add your AI key (Claude or OpenAI) in Settings first.");
     else setNote(d.ok ? `Looked at ${d.looked} resolved ticket${d.looked === 1 ? "" : "s"}; drafted ${d.drafted}.` : "That didn't work.");
     await load();
   }

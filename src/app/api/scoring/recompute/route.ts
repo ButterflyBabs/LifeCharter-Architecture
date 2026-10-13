@@ -49,7 +49,7 @@ async function run() {
   if (overCap) return overCap;
   if (!openAiKey) {
     return NextResponse.json(
-      { error: "Add your OpenAI key in Settings → AI Assistant to run scoring.", configured: false },
+      { error: "Add your AI key in Settings → AI Assistant to run scoring.", configured: false },
       { status: 400 }
     );
   }

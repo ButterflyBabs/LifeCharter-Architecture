@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { memberAiGate } from "@/lib/ai/memberCap";
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

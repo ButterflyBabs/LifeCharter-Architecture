@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { openaiKey, ProseAnswer } from "@/lib/scoring/aiScore";
 import { DIMENSION_LABEL, DimensionKey } from "@/lib/scoring/dimensionModel";
 
@@ -97,7 +97,7 @@ export async function generatePlan(inputs: PlanInputs, apiKey?: string): Promise
     ? inputs.answers.map((a, i) => `Q${i + 1}: ${a.question}\nA${i + 1}: ${a.answer}`).join("\n\n")
     : "(no open-ended answers available)";
 
-  const openai = new OpenAI({ apiKey: key });
+  const openai = aiClient(key);
 
   const a = inputs.assistant;
   const persona = a

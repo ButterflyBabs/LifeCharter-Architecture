@@ -80,7 +80,7 @@ const settingsSections: SettingsSection[] = [
     id: "ai",
     title: "AI Assistant",
     icon: <Sparkles className="w-5 h-5" />,
-    description: "Name your assistant and connect your OpenAI key"
+    description: "Name your assistant and connect your AI key (Claude or OpenAI)"
   },
   {
     id: "integrations",
@@ -142,6 +142,7 @@ export default function SettingsPage() {
   const [aiNotes, setAiNotes] = useState("");
   const [aiKey, setAiKey] = useState("");
   const [aiHasKey, setAiHasKey] = useState(false);
+  const [aiProvider, setAiProvider] = useState<"anthropic" | "openai" | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
   const [aiMsg, setAiMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -222,6 +223,8 @@ export default function SettingsPage() {
         setAiInstructions(d.assistantInstructions || "");
         setAiNotes(d.assistantNotes || "");
         setAiHasKey(Boolean(d.hasOpenAiKey));
+      setAiProvider(d.aiProvider ?? null);
+        setAiProvider(d.aiProvider ?? null);
       })
       .catch(() => {});
   }, []);
@@ -249,6 +252,7 @@ export default function SettingsPage() {
       }
       const d = await res.json();
       setAiHasKey(Boolean(d.hasOpenAiKey));
+      setAiProvider(d.aiProvider ?? null);
       setAiKey("");
       setAiInstructions(d.assistantInstructions || "");
       setAiMsg({
@@ -1891,7 +1895,7 @@ export default function SettingsPage() {
             <div>
               <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">AI Assistant</h3>
               <p className="text-sm text-[#b8a898]">
-                Name your assistant and connect your OpenAI key so it comes online.
+                Name your assistant and connect your AI key (Claude or OpenAI) so it comes online.
               </p>
             </div>
           </div>
@@ -1979,10 +1983,10 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          {/* OpenAI key */}
+          {/* AI key: Claude (Anthropic) or OpenAI — the app reads which from the key itself */}
           <div>
             <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
-              OpenAI API key
+              AI key (Claude or OpenAI)
             </label>
             <div className="flex flex-col sm:flex-row gap-2 max-w-lg">
               <Input
@@ -1991,18 +1995,26 @@ export default function SettingsPage() {
                 name="openai-api-key"
                 value={aiKey}
                 onChange={(e) => setAiKey(e.target.value)}
-                placeholder={aiHasKey ? "•••••••••• (a key is saved)" : "sk-…"}
+                placeholder={aiHasKey ? "•••••••••• (a key is saved)" : "sk-ant-… (Claude) or sk-… (OpenAI)"}
                 className="flex-1"
               />
             </div>
             <div className="flex items-center gap-2 mt-2">
               {aiHasKey ? (
                 <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                  <CheckCircle className="w-3.5 h-3.5" /> Key configured
+                  <CheckCircle className="w-3.5 h-3.5" /> Key configured{aiProvider ? ` — running on ${aiProvider === "anthropic" ? "Claude" : "OpenAI"}` : ""}
                 </span>
               ) : (
                 <span className="text-xs text-[#b8a898]">No key yet — the assistant stays offline until one is added.</span>
               )}
+              <a
+                href="https://platform.claude.com/settings/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline"
+              >
+                Get a Claude key <ExternalLink className="w-3 h-3" />
+              </a>
               <a
                 href="https://platform.openai.com/api-keys"
                 target="_blank"
@@ -2013,13 +2025,14 @@ export default function SettingsPage() {
               </a>
             </div>
             <p className="text-xs text-[#b8a898] mt-2">
-              Your key is stored securely and used only to power your assistant. Paste a new key to
-              replace an existing one.
+              Your key is stored securely and powers every AI feature in your Command Suite. Paste a new key to
+              replace an existing one — switching between Claude and OpenAI keeps your assistant&apos;s memory, since your
+              conversations, assessments and plans live in your Command Suite, not with the AI company.
             </p>
             <p className="mt-3 max-w-lg rounded-lg border border-[#c9a227]/40 bg-[#c9a227]/10 px-3 py-2 text-xs leading-relaxed text-[#1a2b4a] dark:text-[#F8F5F0]">
-              <strong>Good to know:</strong> this is an OpenAI API key, which is different from a ChatGPT account, so a ChatGPT login will not work here.
-              When you use the AI Assistant, OpenAI charges your own account a small amount for what you use. The cost depends on how much you use it.
-              Setting up should cost you less than $5, one time, and day-to-day use is minimal, an estimated $0.20 a day (an estimate, not a guarantee, since your own use sets the real cost). We suggest creating a separate key just for the Command Suite so you can see exactly what it costs. The Travel Partner in the corner does not use your key, and you do not need to upgrade ChatGPT. LifeCharter does not receive any of that charge and has no control over OpenAI&apos;s prices.
+              <strong>Good to know:</strong> this is an API key, which is different from a Claude or ChatGPT subscription, so a Claude.ai or ChatGPT login will not work here.
+              When you use the AI features, the AI company you chose (Anthropic for Claude, or OpenAI) charges your own account a small amount for what you use. The cost depends on how much you use it and which company you choose.
+              With an OpenAI key, setting up should cost you less than $5, one time, and day-to-day use is minimal, an estimated $0.20 a day (an estimate, not a guarantee, since your own use sets the real cost); Claude&apos;s prices differ, so check your usage on Anthropic&apos;s site after your first week. We suggest creating a separate key just for the Command Suite so you can see exactly what it costs. Voice notes need an OpenAI key; everything else works with either. The Travel Partner in the corner does not use your key, and you do not need to upgrade Claude or ChatGPT. LifeCharter does not receive any of that charge and has no control over either company&apos;s prices.
             </p>
           </div>
 

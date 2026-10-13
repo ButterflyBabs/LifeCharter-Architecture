@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { readAccountKey, resolveAiAccount } from "@/lib/ai/config";
+import { providerForKey } from "@/lib/ai/client";
 import { DEFAULT_ASSISTANT_NAME, MAX_ASSISTANT_INSTRUCTIONS, MAX_ASSISTANT_NOTES } from "@/lib/ai/defaults";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,12 @@ async function current(profileId: string | null) {
     assistantInstructions = ((data?.assistant_instructions as string) || "").trim();
     assistantNotes = ((data?.assistant_notes as string) || "").trim();
   }
-  return { assistantName, assistantInstructions, assistantNotes, hasOpenAiKey: Boolean(await readAccountKey(profileId)) };
+  const key = await readAccountKey(profileId);
+  // aiProvider says which AI the saved key runs on (Claude or OpenAI) — read from the key, never returned.
+  return { assistantName, assistantInstructions, assistantNotes, hasOpenAiKey: Boolean(key), aiProvider: key ? providerForKey(key) : null };
 }
 
-// Returns this account's AI assistant name + whether its own OpenAI key is set
+// Returns this account's AI assistant name + whether its own AI key (Claude or OpenAI) is set
 // (never the key itself).
 export async function GET() {
   const account = await resolveAiAccount();
@@ -86,6 +89,10 @@ export async function POST(request: Request) {
     }
   }
   if (typeof body?.openaiApiKey === "string") {
+    const k = body.openaiApiKey.trim();
+    if (k && !k.startsWith("sk-")) {
+      return NextResponse.json({ error: "That doesn't look like an AI key. Claude keys start with sk-ant- and OpenAI keys start with sk-." }, { status: 400 });
+    }
     const { error } = await supabase.rpc("set_account_ai_key", { p_user: account.profileId, p_key: body.openaiApiKey });
     if (error) {
       console.error("POST /api/ai-settings key:", error);

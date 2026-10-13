@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const openAiKey = assistant?.key || "";
   if (!openAiKey) {
     return NextResponse.json(
-      { error: "Add your OpenAI key in Settings → AI Assistant to generate plans.", configured: false },
+      { error: "Add your AI key in Settings → AI Assistant to generate plans.", configured: false },
       { status: 400 }
     );
   }

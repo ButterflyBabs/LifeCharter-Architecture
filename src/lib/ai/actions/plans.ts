@@ -1,5 +1,5 @@
 import type { ActionTool, ActionCtx } from "./types";
-import OpenAI from "openai";
+import { aiClient, type AiClient } from "@/lib/ai/client";
 import { getBlueprint, PLAN_KINDS, sectionQuestions, type PlanKind, type BlueprintSection } from "@/lib/plans/blueprints";
 import { resolveAiConfig } from "@/lib/ai/config";
 
@@ -129,7 +129,7 @@ export const updatePlanSection: ActionTool = {
       const empty = sectionQuestions(sec).filter((q) => !String(have[q.id] ?? "").trim());
       if (key && empty.length) {
         const full = mode === "append" && before ? `${before}\n\n${content}` : content;
-        const got = await extractAnswers(new OpenAI({ apiKey: key }), sec, full, empty);
+        const got = await extractAnswers(aiClient(key), sec, full, empty);
         if (Object.keys(got).length) {
           args.computedAnswers = got;
           lines.push(`Fields I'll fill from this text (${Object.keys(got).length} of ${sectionQuestions(sec).length}; only empty ones):`);
@@ -210,7 +210,7 @@ async function loadAnswers(ctx: ActionCtx, kind: string) {
 }
 
 // Reads one section's text and answers ONLY the questions that are still empty, using nothing but what the text says.
-async function extractAnswers(openai: OpenAI, sec: BlueprintSection, content: string, empty: ReturnType<typeof sectionQuestions>): Promise<Answers> {
+async function extractAnswers(openai: AiClient, sec: BlueprintSection, content: string, empty: ReturnType<typeof sectionQuestions>): Promise<Answers> {
   const qs = empty
     .map((q) => `- id "${q.id}" (${q.type}${q.type === "choice" ? `, choose exactly one of: ${(q.options || []).join(" | ")}` : q.type === "list" ? ", one item per line" : ""}): ${q.question}`)
     .join("\n");
@@ -265,7 +265,7 @@ export const fillPlanAnswers: ActionTool = {
     const only = ref ? findSection(kind as PlanKind, ref) : null;
     if (ref && !only) return { error: `I couldn't find that section in the ${bp.label}. Sections: ${bp.sections.map((s) => `${s.key} (${s.title})`).join("; ")}.` };
     const key = (await resolveAiConfig()).key;
-    if (!key) return { error: "I need your OpenAI key connected (Settings → AI Assistant) to read your sections into the fields." };
+    if (!key) return { error: "I need your AI key connected (Settings → AI Assistant) to read your sections into the fields." };
     const rows = await loadAnswers(ctx, kind);
     const jobs = bp.sections
       .filter((sec) => !only || sec.key === only.key)
@@ -278,7 +278,7 @@ export const fillPlanAnswers: ActionTool = {
       })
       .filter((j): j is NonNullable<typeof j> => !!j);
     if (!jobs.length) return { error: only ? "That section has no text yet, or its fields are all filled in already." : "Nothing to do: every section with text already has its fields filled in." };
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const results = await Promise.all(jobs.map(async (j) => ({ key: j.sec.key, title: j.sec.title, answers: await extractAnswers(openai, j.sec, j.content, j.empty).catch(() => ({} as Answers)), qs: j.empty })));
     const filled = results.filter((r) => Object.keys(r.answers).length);
     if (!filled.length) return { error: "The text in those sections doesn't answer the fields clearly enough for me to fill them without guessing." };

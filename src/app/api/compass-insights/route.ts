@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     const knowledge = await buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() });
     const thin = knowledge.answered === 0 && !/Overall alignment score|Tasks:|Income so far|Calendar for the next|Operational pillars/.test(knowledge.text);
 
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },

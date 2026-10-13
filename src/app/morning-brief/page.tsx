@@ -257,7 +257,7 @@ export default function MorningBriefPage() {
         {dataReady && !hasAiKey ? (
           <div>
             <p className="text-[#3F4654] leading-relaxed mb-3">
-              Add your OpenAI key to bring {assistantName} online — then this briefing writes itself
+              Add your AI key to bring {assistantName} online — then this briefing writes itself
               from your day.
             </p>
             <Link

@@ -12,6 +12,7 @@
     "legal:stamp": "node scripts/legal-stamp.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
     "@capacitor/haptics": "^8.0.2",
