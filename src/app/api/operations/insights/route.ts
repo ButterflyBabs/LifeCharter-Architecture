@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
     "2-4 insights, most important first. Be specific and encouraging. Do not invent facts not in the data.";
 
   try {
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { currentMailOwner } from "@/lib/mailOwner";
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Check if an OpenAI API key is configured (per-account or env)
     if (!key) {
       return NextResponse.json({
-        reply: `I'm ${name} — add your OpenAI key in Settings → AI Assistant to get personalized guidance. In the meantime, focus on one priority: What's the single most important action you could take this week to move your business forward?`
+        reply: `I'm ${name} — add your AI key (Claude or OpenAI) in Settings → AI Assistant to get personalized guidance. In the meantime, focus on one priority: What's the single most important action you could take this week to move your business forward?`
       });
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize OpenAI client with the resolved key
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
 
     // Prepare context about the user's business
     let contextPrompt = "";

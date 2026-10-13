@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -152,7 +153,7 @@ export async function POST(request: Request) {
     `--- NUMBERS ---\nYTD income ${usd(inc)}, expenses ${usd(exp)}, net ${usd(inc - exp)}. ${forecastLine}`;
 
   try {
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { readAccountKey } from "@/lib/ai/config";
 import { isHousePlan } from "@/lib/housePlan";
@@ -611,7 +611,7 @@ export async function aiHelp(db: Db, p: Partnership, side: Side, body: Record<st
 
   let out: Record<string, unknown> | null = null;
   try {
-    const completion = await new OpenAI({ apiKey: key }).chat.completions.create({
+    const completion = await aiClient(key).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: system },

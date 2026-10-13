@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     try {
       const { data: secs } = await db.from("plan_sections").select("section_key, content").eq("master_plan_id", planId).eq("plan_type", kind).in("section_key", bpMain.sections.slice(0, 5).map((x) => x.key));
       const facts = ((secs || []) as { section_key: string; content: string | null }[]).map((s) => `${s.section_key}: ${(s.content || "").slice(0, 600)}`).join("\n\n");
-      const res = await new OpenAI({ apiKey: key }).chat.completions.create({
+      const res = await aiClient(key).chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0.5,
         max_tokens: 700,

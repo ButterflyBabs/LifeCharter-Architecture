@@ -939,7 +939,7 @@ export default function DailyCompassPage() {
               {dataReady && !hasAiKey ? (
                 <div className="space-y-3 text-sm">
                   <p className="text-[#e8e4f0]">
-                    Bring {assistantName} online with your OpenAI key and your insights are written from your
+                    Bring {assistantName} online with your AI key and your insights are written from your
                     own assessments, scores, tasks, income and calendar.
                   </p>
                   <Link href="/settings?tab=ai">

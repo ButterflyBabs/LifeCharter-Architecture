@@ -96,7 +96,7 @@ export function FinanceAI() {
         {needsKey ? (
           <div className="text-sm">
             <p className="text-[#3F4654] mb-2">
-              Connect your OpenAI key and your assistant will grade your financial health and flag where to improve.
+              Connect your AI key and your assistant will grade your financial health and flag where to improve.
             </p>
             <Link href="/settings?tab=ai">
               <Button variant="outline" size="sm">Set up your AI assistant</Button>

@@ -1,3 +1,4 @@
+import { aiClient, providerForKey } from "@/lib/ai/client";
 // Server-only: which AI a Collective member's request runs on.
 //
 //   1. Their own Command Suite connection (their key, their assistant name) —
@@ -98,9 +99,8 @@ export function aiUnavailableMessage(ai: CollectiveAi): string {
 
 // One JSON-mode call on the small model. Throws with a member-friendly message.
 export async function aiJson(key: string, system: string, user: string, maxTokens = 400, temperature = 0.6): Promise<Record<string, unknown>> {
-  const { default: OpenAI } = await import("openai");
   try {
-    const completion = await new OpenAI({ apiKey: key }).chat.completions.create({
+    const completion = await aiClient(key).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: system },
@@ -124,6 +124,8 @@ export async function aiJson(key: string, system: string, user: string, maxToken
 
 // Speech → text for voice journaling. Throws with a member-friendly message.
 export async function aiTranscribe(key: string, file: File): Promise<string> {
+  // Claude has no speech-to-text, so voice journaling always needs an OpenAI key.
+  if (providerForKey(key) === "anthropic") throw new Error("Voice notes need an OpenAI key — your Claude key covers everything else. Type your entry instead, or add an OpenAI key.");
   const { default: OpenAI } = await import("openai");
   const client = new OpenAI({ apiKey: key });
   try {

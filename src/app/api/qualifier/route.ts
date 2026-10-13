@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount, type CrmAccount } from "../crm/guard";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
@@ -85,7 +86,7 @@ async function loadIcp(db: Db, planId: string, id: string): Promise<Icp | null> 
 }
 
 async function askJson(key: string, system: string, user: string, maxTokens: number, model = MODEL): Promise<Record<string, unknown> | null> {
-  const openai = new OpenAI({ apiKey: key });
+  const openai = aiClient(key);
   const completion = await openai.chat.completions.create({
     model,
     messages: [{ role: "system", content: system }, { role: "user", content: user }],

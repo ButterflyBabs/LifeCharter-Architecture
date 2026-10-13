@@ -157,7 +157,7 @@ export default function FinanceImportPage() {
             />
             {needsKey ? (
               <div className="mt-3 text-sm">
-                <p className="text-[#3F4654] mb-2">Parsing uses your AI assistant — add your OpenAI key to enable it.</p>
+                <p className="text-[#3F4654] mb-2">Parsing uses your AI assistant — add your AI key to enable it.</p>
                 <Link href="/settings?tab=ai">
                   <Button variant="outline" size="sm">Set up your AI assistant</Button>
                 </Link>

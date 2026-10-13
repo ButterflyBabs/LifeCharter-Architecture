@@ -147,11 +147,11 @@ export default function AIGuideHelpPage() {
       question: "How do I connect my own AI key?",
       answer: (
         <div className="space-y-2">
-          <p>Your assistant runs on your own OpenAI key:</p>
+          <p>Your assistant runs on your own AI key — Claude (Anthropic) or OpenAI, your choice:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li>Click AI Assistant under Settings in the left menu (or go to Settings → AI Assistant)</li>
-            <li>Use the &quot;Get an OpenAI key&quot; link to create a key on OpenAI&apos;s site</li>
-            <li>Paste it into the OpenAI API key box</li>
+            <li>Use the &quot;Get a Claude key&quot; or &quot;Get an OpenAI key&quot; link to create a key on that company&apos;s site</li>
+            <li>Paste it into the AI key box — the Suite recognizes which company it&apos;s from</li>
             <li>Click Save AI settings</li>
           </ol>
           <p>You will see &quot;Key configured&quot; once it is saved. Your key is stored securely and used only to power your assistant. Paste a new key any time to replace it. The Suite doesn&apos;t offer a choice of other AI providers or models.</p>
@@ -178,10 +178,10 @@ export default function AIGuideHelpPage() {
         <div className="space-y-2">
           <p className="font-medium text-[#4a9b9b]">Yes, your privacy is our priority:</p>
           <ul className="list-disc pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
-            <li>Your OpenAI key is stored securely and used only to power your assistant</li>
+            <li>Your AI key is stored securely and used only to power your assistant</li>
             <li>Your data and your conversations belong to your account and are only used for your account</li>
             <li>Anything you mark sensitive in the Soul assessment is never shown to your assistant</li>
-            <li>When your assistant answers, the question and the relevant parts of your information go to OpenAI under your own key, so OpenAI&apos;s privacy policy applies</li>
+            <li>When your assistant answers, the question and the relevant parts of your information go to the AI company you chose (Anthropic or OpenAI) under your own key, so that company&apos;s privacy policy applies</li>
             <li>You can clear your conversation history any time</li>
           </ul>
         </div>
@@ -228,8 +228,8 @@ export default function AIGuideHelpPage() {
       answer: "Conversation export isn't available. For now, you can copy important insights from a conversation by hand. We recommend noting key recommendations in your Business Plan or the relevant section of the Suite."
     },
     {
-      question: "What happens if my OpenAI key runs out of credits?",
-      answer: "If your key has no credits left or is no longer valid, your assistant won't be able to answer and may show a short message asking you to try again. Check your balance on OpenAI's site, then update your key in Settings → AI Assistant if you need to. Until a key is saved, your assistant stays offline and will point you to Settings."
+      question: "What happens if my AI key runs out of credits?",
+      answer: "If your key has no credits left or is no longer valid, your assistant won't be able to answer and may show a short message asking you to try again. Check your balance on Anthropic's or OpenAI's site, then update your key in Settings → AI Assistant if you need to. Until a key is saved, your assistant stays offline and will point you to Settings."
     }
   ];
 
@@ -348,7 +348,7 @@ export default function AIGuideHelpPage() {
               <div>
                 <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Configure Your Way</h3>
                 <p className="text-[#b8a898] text-sm mt-1">
-                  Connect your own OpenAI key, name your assistant, set how it replies and teach it about you in Settings → AI Assistant.
+                  Connect your own AI key (Claude or OpenAI), name your assistant, set how it replies and teach it about you in Settings → AI Assistant.
                 </p>
               </div>
             </div>
@@ -506,7 +506,7 @@ export default function AIGuideHelpPage() {
           <h2 className="text-2xl font-bold mb-3">Ready to Get Started?</h2>
           <p className="text-[#e8e4f0] mb-6 max-w-lg mx-auto">
             Your assistant is available from the Travel Partner button in the bottom-right corner of the page. 
-            Name it and connect your OpenAI key in Settings › AI Assistant.
+            Name it and connect your AI key (Claude or OpenAI) in Settings › AI Assistant.
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/settings?tab=ai">

@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
@@ -50,7 +50,7 @@ export function planningSystem(a: PlanningAssistant, role: string, rules: string
 // network fails, so routes can answer with a plain error.
 export async function runJson(a: PlanningAssistant, system: string, user: string, maxTokens = 1200, temperature = 0.4): Promise<Record<string, unknown> | null> {
   try {
-    const completion = await new OpenAI({ apiKey: a.key }).chat.completions.create({
+    const completion = await aiClient(a.key).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: system },

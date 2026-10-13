@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { aiClient } from "@/lib/ai/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { readAccountKey } from "@/lib/ai/config";
 import { ALIGNMENT_ARCHITECT_EMAIL, superAdminEmails } from "@/lib/authz";
@@ -82,7 +82,7 @@ export async function sparkReply(opts: {
 }): Promise<SparkAiResult | null> {
   const system = buildSystemPrompt(opts.settings, opts.channel, opts.site, opts.booking, opts.known);
   try {
-    const completion = await new OpenAI({ apiKey: opts.apiKey, timeout: 20_000, maxRetries: 1 }).chat.completions.create({
+    const completion = await aiClient(opts.apiKey, { timeout: 20_000, maxRetries: 1 }).chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.5,
       max_tokens: 350,

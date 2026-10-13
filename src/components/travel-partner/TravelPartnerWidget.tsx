@@ -62,7 +62,7 @@ const journeyStages: JourneyStage[] = [
     name: "Set up your Suite",
     description: "The same steps as Set up Suite",
     steps: [
-      { id: "ai", title: "Connect your AI", description: "Add your OpenAI key so your assistant can work from your own answers", icon: <Sparkles className="w-5 h-5" />, path: "/settings?tab=ai", section: "business", estimatedTime: 5, completed: false },
+      { id: "ai", title: "Connect your AI", description: "Add your AI key (Claude or OpenAI) so your assistant can work from your own answers", icon: <Sparkles className="w-5 h-5" />, path: "/settings?tab=ai", section: "business", estimatedTime: 5, completed: false },
       { id: "brain", title: "Brain Assessment", description: "Map how your business runs, in your own words", icon: <BarChart3 className="w-5 h-5" />, path: "/assessments/brain", section: "business", estimatedTime: 20, completed: false },
       { id: "soul", title: "Soul Assessment", description: "Your identity, values, calling and story", icon: <Target className="w-5 h-5" />, path: "/assessments/soul", section: "business", estimatedTime: 15, completed: false },
       { id: "profit", title: "Profit Assessment", description: "Score your 12 business dimensions for your baseline", icon: <TrendingUp className="w-5 h-5" />, path: "/assessments/profit", section: "business", estimatedTime: 15, completed: false },

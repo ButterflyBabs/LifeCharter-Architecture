@@ -212,7 +212,7 @@ export default function TechStackPage() {
 
             {needsKey ? (
               <div className="text-sm">
-                <p className="text-[#3F4654] mb-2">Connect your OpenAI key to get consolidation &amp; savings ideas.</p>
+                <p className="text-[#3F4654] mb-2">Connect your AI key to get consolidation &amp; savings ideas.</p>
                 <Link href="/settings?tab=ai">
                   <Button variant="outline" size="sm">Set up your AI assistant</Button>
                 </Link>

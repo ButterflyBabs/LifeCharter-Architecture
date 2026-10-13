@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+
+import { aiClient } from "@/lib/ai/client";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { PLATFORM_LABELS } from "@/lib/postStream";
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     (context.text ? `\n\n--- BACKGROUND (from the owner's Command Suite account) ---\n${context.text}\n--- END BACKGROUND ---` : "");
 
   try {
-    const openai = new OpenAI({ apiKey: key });
+    const openai = aiClient(key);
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
