@@ -95,9 +95,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Ground the answer in this client's own assessments and remember the chat.
+    const tz = await resolveUserTimeZone(null);
     const [knowledge, history] = await Promise.all([
-      buildAssistantKnowledge(planId, await resolveUserTimeZone(null), { mailOwnerId: await currentMailOwner() }),
-      loadHistory(planId),
+      buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() }),
+      loadHistory(planId, tz),
     ]);
 
     // Call OpenAI API

@@ -26,7 +26,11 @@ import * as microsoft from "@/lib/microsoft";
 
 const HISTORY_TURNS = 10;
 const KEEP_MESSAGES = 200;
-const HISTORY_MAX_AGE_MS = 6 * 3600 * 1000;
+// The assistant follows the last HISTORY_TURNS exchanges from up to 30 days back. Each past question carries its date
+// so older items read as history (possibly already done), and daily morning briefings are left out: they describe a
+// day that has passed, and a fresh one is written every morning.
+const HISTORY_MAX_AGE_MS = 30 * 24 * 3600 * 1000;
+const BRIEFING_PREFIX = "Give me my morning briefing";
 
 export interface AssistantKnowledge {
   text: string;
@@ -357,19 +361,40 @@ export async function buildAssistantKnowledge(
   return { text: parts.filter(Boolean).join("\n"), answered };
 }
 
-export async function loadHistory(masterPlanId: string): Promise<{ role: "user" | "assistant"; content: string }[]> {
+export async function loadHistory(masterPlanId: string, tz?: string): Promise<{ role: "user" | "assistant"; content: string }[]> {
   const { data } = await createServerClient()
     .from("assistant_messages")
-    .select("role, content")
+    .select("role, content, created_at")
     .eq("master_plan_id", masterPlanId)
     .is("archive_id", null)
-    // Only recent turns: older replies go stale (advice to start something they have since finished) and the model repeats them.
     .gte("created_at", new Date(Date.now() - HISTORY_MAX_AGE_MS).toISOString())
     .order("created_at", { ascending: false })
-    .limit(HISTORY_TURNS * 2);
-  return ((data ?? []) as { role: "user" | "assistant"; content: string }[])
-    .reverse()
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 1200) }));
+    // Read extra so turns remain after the briefings are taken out.
+    .limit(HISTORY_TURNS * 2 + 60);
+  const rows = ((data ?? []) as { role: "user" | "assistant"; content: string; created_at: string }[]).reverse();
+  const kept: { role: "user" | "assistant"; content: string }[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const m = rows[i];
+    if (m.role === "user" && m.content.startsWith(BRIEFING_PREFIX)) {
+      if (rows[i + 1]?.role === "assistant") i++; // its reply goes too
+      continue;
+    }
+    const text = m.content.slice(0, 1200);
+    kept.push({ role: m.role, content: m.role === "user" ? `[${stamp(m.created_at, tz)}] ${text}` : text });
+  }
+  const recent = kept.slice(-HISTORY_TURNS * 2);
+  // Open on the person's own words.
+  while (recent.length && recent[0].role !== "user") recent.shift();
+  return recent;
+}
+
+// "Sent Tue, Oct 13, 4:35 PM" in the client's own time zone.
+function stamp(iso: string, tz?: string): string {
+  try {
+    return `Sent ${new Date(iso).toLocaleString("en-US", { timeZone: tz || "America/Denver", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+  } catch {
+    return `Sent ${iso.slice(0, 10)}`;
+  }
 }
 
 export async function saveTurn(masterPlanId: string, source: string, question: string, reply: string): Promise<void> {
@@ -435,6 +460,7 @@ ${helpBlock}
 ${extra}
 HOW TO USE WHAT YOU KNOW:
 - The data above is live and current. Earlier messages in this conversation may be out of date (for example, advice to start an assessment they have since finished): when they disagree, trust the data above and never repeat old advice.
+- Earlier messages reach back up to 30 days, and each of their past messages starts with a [Sent …] date the Suite added (they did not type it, so never write one yourself). Use the dates: something from days ago may already be done, so check it against the live data above before bringing it up, and when they ask what you talked about, say when ("on Oct 4 you asked…").
 - Ground your answers in the specifics above. Refer to what they told you naturally ("you mentioned…", "your Marketing score is…") — never recite it as a list.
 - Never invent facts, numbers or history that aren't shown. If you don't know something, say so plainly.
 - ${knowledge.answered === 0 ? "They haven't answered any assessment questions yet, so once, gently, point them to the Brain, Soul or Profit assessment — every answer they give makes your guidance more specific to them." : "If a question touches an area they haven't answered yet, suggest the relevant assessment section as the way to sharpen your advice."}
