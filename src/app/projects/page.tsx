@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, ChevronDown, ChevronUp, FolderKanban, GripVertical, Plus, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, FolderKanban, GripVertical, Plus, Upload, X } from "lucide-react";
+import ImportProject from "@/components/projects/ImportProject";
 import { PROJECT_STATUS_LABEL, fmtDay, tzParam } from "@/components/projects/types";
 
 interface ProjectCard {
@@ -70,6 +71,7 @@ export default function ProjectsPage() {
   const [loaded, setLoaded] = useState(false);
   const [show, setShow] = useState<"active" | "all">("active");
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [tpl, setTpl] = useState<string>("");
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
@@ -130,7 +132,10 @@ export default function ProjectsPage() {
             <p className="text-[#7a8a99]">Group your tasks into the things you are building: a launch, a challenge, a client, a program.</p>
           </div>
         </div>
-        <button onClick={() => { setCreating(true); setTpl(""); setName(""); setGoal(""); setDay(""); setErr(""); }} className="inline-flex items-center gap-1.5 rounded-xl bg-[#1a2b4a] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" /> New project</button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setImporting(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-[#1a2b4a]/25 px-4 py-2.5 text-sm font-semibold text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0]"><Upload className="h-4 w-4" /> Import a project</button>
+          <button onClick={() => { setCreating(true); setTpl(""); setName(""); setGoal(""); setDay(""); setErr(""); }} className="inline-flex items-center gap-1.5 rounded-xl bg-[#1a2b4a] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" /> New project</button>
+        </div>
       </div>
 
       <div className="mb-4 flex gap-2 text-sm">
@@ -144,7 +149,7 @@ export default function ProjectsPage() {
       ) : list.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#1a2b4a]/20 p-10 text-center">
           <p className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">No projects yet</p>
-          <p className="mb-4 text-sm text-[#7a8a99]">Start from a ready-made plan (a MasterClass or a 21-Day Challenge) or begin with a blank project.</p>
+          <p className="mb-4 text-sm text-[#7a8a99]">Start from a ready-made plan (a MasterClass or a 21-Day Challenge), begin with a blank project, or bring one in from Notion, ClickUp, Asana or Trello.</p>
           <button onClick={() => setCreating(true)} className="rounded-lg bg-[#2E7C83] px-5 py-2 text-sm font-semibold text-white">Start a project</button>
         </div>
       ) : (
@@ -158,6 +163,8 @@ export default function ProjectsPage() {
           </SortableContext>
         </DndContext>
       )}
+
+      {importing && <ImportProject onClose={() => setImporting(false)} />}
 
       {creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCreating(false)}>

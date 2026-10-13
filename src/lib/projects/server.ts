@@ -106,6 +106,9 @@ export interface NewTask {
   startDay?: string | null;
   dueDay?: string | null;
   shared?: boolean;
+  assigneeMemberId?: string | null;
+  /** For a task that arrives already finished (an import): the day it was completed. */
+  completedDay?: string | null;
 }
 
 // Insert tasks into a project; returns their ids.
@@ -126,6 +129,8 @@ export async function insertProjectTasks(db: Db, planId: string, projectId: stri
       shared: Boolean(it.shared),
       board_position: pos++,
     };
+    if (it.assigneeMemberId) row.assignee_member_id = it.assigneeMemberId;
+    if (row.status === "done") row.completed_at = isDay(it.completedDay) ? `${it.completedDay}T12:00:00.000Z` : new Date().toISOString();
     if (isDay(it.dueDay)) {
       const due = await dueFromBody({ dueDay: it.dueDay, tz });
       if (due && due !== "invalid") Object.assign(row, due);

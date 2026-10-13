@@ -97,6 +97,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["projects", "project management", "new project", "reorder projects", "rearrange cards", "drag project", "template", "masterclass template", "21 day challenge", "command shift", "launch plan", "group tasks"],
   },
   {
+    id: "dr-project-import",
+    category: "Daily Rhythm",
+    question: "Can I bring a project in from Notion, ClickUp, Asana, Trello or another tool?",
+    answer:
+      "Yes. On the Projects page press Import a project. Export the project from your other tool (the screen shows the steps for Notion, ClickUp, Asana, Trello, Monday.com, Todoist, Jira, Airtable, Google Sheets and Excel), then upload the file: a CSV, a Trello JSON file, a Markdown checklist or a zip (Notion exports a zip, and you can upload it as it is). You can also paste copied spreadsheet cells or a plain list with one task per line. The Suite recognises the tool, matches each column to the task name, status, priority, start and due dates, who it is assigned to, notes, labels and section, and shows you the first tasks as they will arrive before anything is saved. You can change any match. Sections can become milestones on the timeline, the task status or just a note. Statuses are matched to Backlog, Today, In progress, Waiting and Done, and you can choose where each of your own status words goes. People named on tasks are matched to your team by name or email; anyone else is kept as a note on the task. The import creates a new project and never changes your existing projects or tasks. It works for up to 2,000 tasks and 5 MB at a time.",
+    keywords: ["import project", "import projects", "notion", "clickup", "asana", "trello", "monday", "todoist", "jira", "airtable", "csv", "import tasks", "bring in project", "move from notion", "move from clickup", "project management software"],
+  },
+  {
     id: "dr-project-views",
     category: "Daily Rhythm",
     question: "How do the Board, List and Timeline views work in a project?",
