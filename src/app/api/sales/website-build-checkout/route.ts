@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
             line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: WEBSITE_BUILD.foundingFullCents, product_data } }],
             payment_intent_data: { metadata },
             metadata,
-            success_url: `${APP_URL}/sales-reference?checkout=success`,
-            cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
+            success_url: `${APP_URL}/checkout/thanks`,
+            cancel_url: `${APP_URL}/checkout/thanks?status=cancelled`,
           }
         : {
             mode: "subscription",
@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
             line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: WEBSITE_BUILD.foundingInstallmentCents, recurring: { interval: "month" }, product_data } }],
             subscription_data: { metadata, description: "Website Alignment Build · 2 monthly payments" },
             metadata,
-            success_url: `${APP_URL}/sales-reference?checkout=success`,
-            cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
+            success_url: `${APP_URL}/checkout/thanks`,
+            cancel_url: `${APP_URL}/checkout/thanks?status=cancelled`,
           }
     );
     return NextResponse.json({ url: session.url });

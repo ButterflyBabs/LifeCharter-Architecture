@@ -16,15 +16,14 @@ const PLAN_NAME: Record<string, string> = { starter: "Starter", growth: "Growth"
 export const isUpgrade = (from: string | null | undefined, to: string | null | undefined) =>
   !!from && !!to && (PLAN_RANK[to] ?? 0) > (PLAN_RANK[from] ?? 99);
 
-// Which plan a Stripe subscription is on: the planId in its metadata when that is a real plan, otherwise
-// the plan whose monthly (or yearly) price matches a recurring item on the subscription. Portal plan
-// switches change the price but not the metadata, so the price match is what catches those.
+// Which plan a Stripe subscription is on: the plan whose monthly (or yearly) price matches a recurring item on the
+// subscription, because that is what the Billing Portal changes when someone switches plans. The planId in the
+// subscription's metadata is only the fallback (it is written when the subscription is created and never updated by
+// a portal switch, so trusting it first would hide every upgrade and downgrade).
 export async function planOfSubscription(
   db: Db,
   sub: { metadata?: Record<string, string> | null; items?: { data?: { price?: { unit_amount?: number | null; recurring?: { interval?: string } | null } }[] } },
 ): Promise<string | null> {
-  const meta = (sub.metadata?.planId || "").trim();
-  if (meta && PLAN_RANK[meta]) return meta;
   const { data: plans } = await db.from("plans").select("id, price_monthly, price_yearly");
   for (const it of sub.items?.data ?? []) {
     const amt = it.price?.unit_amount;
@@ -33,6 +32,8 @@ export async function planOfSubscription(
     const hit = (plans ?? []).find((p) => (yearly ? p.price_yearly : p.price_monthly) === amt);
     if (hit) return hit.id as string;
   }
+  const meta = (sub.metadata?.planId || "").trim();
+  if (meta && PLAN_RANK[meta]) return meta;
   return null;
 }
 

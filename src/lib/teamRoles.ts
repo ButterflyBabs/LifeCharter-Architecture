@@ -19,6 +19,7 @@ export const SALES_APIS = [
   "/api/sales/lookup-contact",
   "/api/sales/search-contacts",
   "/api/sales/checkout-session",
+  "/api/sales/website-build-checkout", // the Website Alignment Build buttons on the sales page
   "/api/sales/contacts",
   "/api/sales/save-call",
   "/api/sales/my-calendar", // a booking host sees their own calls and sets their own hours

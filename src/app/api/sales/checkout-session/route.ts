@@ -100,8 +100,8 @@ export async function POST(req: NextRequest) {
           },
         ],
         subscription_data: { trial_period_days: 365 },
-        success_url: `${APP_URL}/sales-reference?checkout=success`,
-        cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
+        success_url: `${APP_URL}/checkout/thanks`,
+        cancel_url: `${APP_URL}/checkout/thanks?status=cancelled`,
         metadata: {
           flow: "sales_combined_checkout",
           tier,
@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
       // Stripe checkout only accepts one `discounts` entry, so the paths are mutually exclusive here too. On the
       // 50/50 plan the credit is already taken off the total above, so only the standard path adds a discount.
       ...(isAlumni && isSplit ? {} : { discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }] }),
-      success_url: `${APP_URL}/sales-reference?checkout=success`,
-      cancel_url: `${APP_URL}/sales-reference?checkout=cancelled`,
+      success_url: `${APP_URL}/checkout/thanks`,
+      cancel_url: `${APP_URL}/checkout/thanks?status=cancelled`,
       metadata: {
         flow: "sales_combined_checkout",
         tier,
