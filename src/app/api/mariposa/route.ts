@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     const planId = await resolveMasterPlanId();
     const tz = await resolveUserTimeZone(typeof body?.tz === "string" ? body.tz : null);
     const [knowledge, history] = planId
-      ? await Promise.all([buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() }), loadHistory(planId)])
+      ? await Promise.all([buildAssistantKnowledge(planId, tz, { mailOwnerId: await currentMailOwner() }), loadHistory(planId, tz)])
       : [{ text: "", answered: 0 }, []];
 
     const openai = aiClient(key);
