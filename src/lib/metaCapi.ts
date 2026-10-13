@@ -25,6 +25,13 @@ export interface MetaEventInput {
   phone?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  /** Two-letter country code (US, CA, GB...). */
+  country?: string | null;
+  /** A stable id for this person; defaults to one derived from the email so every event links up. */
+  externalId?: string | null;
   value?: number | null;
   currency?: string | null;
   contentName?: string | null;
@@ -62,6 +69,23 @@ function normPhone(v?: string | null) {
 
 function normName(v?: string | null) {
   return (v || "").trim().toLowerCase().replace(/[\s.,'"!?()\-]+/g, "");
+}
+
+// Place fields as Meta wants them: lowercase, no spaces or punctuation; US state as two letters; zip without the +4.
+function normCity(v?: string | null) {
+  return (v || "").trim().toLowerCase().replace(/[^a-z\u00c0-\u024f]/g, "");
+}
+function normState(v?: string | null) {
+  const s = (v || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+  return s.length >= 2 ? s.slice(0, 2) : "";
+}
+function normZip(v?: string | null) {
+  const s = (v || "").trim().toLowerCase().replace(/\s+/g, "");
+  return /^\d{5}(-\d{4})?$/.test(s) ? s.slice(0, 5) : s.replace(/[^a-z0-9]/g, "").slice(0, 10);
+}
+function normCountry(v?: string | null) {
+  const s = (v || "").trim().toLowerCase();
+  return /^[a-z]{2}$/.test(s) ? s : "";
 }
 
 function cookie(header: string | null, name: string) {
@@ -108,6 +132,16 @@ export async function sendMetaEvent(e: MetaEventInput): Promise<void> {
     if (ph) user_data.ph = [sha256(ph)];
     if (fn) user_data.fn = [sha256(fn)];
     if (ln) user_data.ln = [sha256(ln)];
+    const ct = normCity(e.city);
+    const st = normState(e.state);
+    const zp = normZip(e.zip);
+    const country = normCountry(e.country);
+    if (ct) user_data.ct = [sha256(ct)];
+    if (st) user_data.st = [sha256(st)];
+    if (zp) user_data.zp = [sha256(zp)];
+    if (country) user_data.country = [sha256(country)];
+    const ext = (e.externalId || "").trim() || (em ? `lccs:${em}` : "");
+    if (ext) user_data.external_id = [sha256(ext)];
     if (e.clientIp) user_data.client_ip_address = e.clientIp;
     if (e.userAgent) user_data.client_user_agent = e.userAgent;
     if (e.fbp) user_data.fbp = e.fbp;
@@ -151,4 +185,17 @@ export async function sendMetaEvent(e: MetaEventInput): Promise<void> {
 /** A stable id for an event with no browser-side twin, so retries/double submits collapse into one. */
 export function metaEventId(...parts: (string | number | null | undefined)[]) {
   return sha256(parts.map((p) => String(p ?? "")).join("|")).slice(0, 32);
+}
+
+/** Phone and place fields from a contact record, for events whose caller only knows the contact id. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function contactMatchFields(db: { from: (t: string) => any }, contactId: string | null | undefined): Promise<Pick<MetaEventInput, "phone" | "city" | "state" | "zip" | "country">> {
+  if (!contactId) return {};
+  try {
+    const { data } = await db.from("seq_contacts").select("phone, city, region, postal_code, country").eq("id", contactId).maybeSingle();
+    const c = (data || {}) as Record<string, string | null>;
+    return { phone: c.phone || null, city: c.city || null, state: c.region || null, zip: c.postal_code || null, country: c.country || null };
+  } catch {
+    return {};
+  }
 }

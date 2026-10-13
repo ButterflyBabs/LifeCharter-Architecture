@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { ownerMasterPlanId, enrolContact } from "@/lib/sequences/engine";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
-import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
+import { browserContext, contactMatchFields, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +71,9 @@ export async function POST(request: Request) {
 
   // Lead → Meta Conversions API (a page that also fires the pixel can post the same eventId).
   const ctx = browserContext(request, str(b.pageUrl, 1000) || null);
+  const more = await contactMatchFields(db, contact.id as string);
   await sendMetaEvent({
+    ...more,
     eventName: "Lead",
     eventId: str(b.eventId, 200) || metaEventId("assessment", contact.id, Math.floor(Date.now() / 600_000)),
     email,

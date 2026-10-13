@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { loadSettingsByKey, originAllowed, corsHeaders, PUBLIC_KEY_RE } from "@/lib/spark/settings";
 import { runSparkTurn, siteLabel } from "@/lib/spark/engine";
-import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
+import { browserContext, contactMatchFields, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
+import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
   if (r.lead) {
     // Lead → Meta Conversions API, same as Suite forms. One event per conversation + contact.
     await sendMetaEvent({
+      ...(await contactMatchFields(createServerClient(), r.lead.contactId)),
       eventName: "Lead",
       eventId: metaEventId("spark-lead", r.conversationId, r.lead.contactId),
       email: r.lead.email,

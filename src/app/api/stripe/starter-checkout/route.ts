@@ -26,6 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
+import { browserContext } from "@/lib/metaCapi";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest) {
     const credit = isAlumni ? 0 : Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
     const amount = plan.onboarding_fee - Math.max(0, credit);
 
+    // What the visitor's browser tells us, kept on the session so the Purchase we later send to Meta from the
+    // Stripe webhook (which has no browser) can still be matched to the ad click.
+    const ctx = browserContext(req);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
@@ -106,6 +110,10 @@ export async function POST(req: NextRequest) {
         alumni: isAlumni ? "true" : "false",
         // An affiliate's link brought them here (credited when the payment completes).
         affiliate: cookies().get(AFF_COOKIE)?.value || "",
+        metaFbp: (ctx.fbp || "").slice(0, 200),
+        metaFbc: (ctx.fbc || "").slice(0, 300),
+        metaIp: (ctx.clientIp || "").slice(0, 60),
+        metaUa: (ctx.userAgent || "").slice(0, 400),
       },
     });
 

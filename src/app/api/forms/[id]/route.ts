@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { submitForm } from "@/lib/crm";
-import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
+import { browserContext, contactMatchFields, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
 import { cookies } from "next/headers";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
@@ -83,7 +83,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // `_event_id` (and its `_fbp`/`_fbc` cookies, which a cross-site request doesn't carry).
     const ctx = browserContext(request, pageUrl);
     const opt = (k: string) => (typeof body[k] === "string" && body[k] ? String(body[k]).slice(0, 200) : null);
+    const more = await contactMatchFields(createServerClient(), r.lead.contactId);
     await sendMetaEvent({
+      ...more,
       eventName: "Lead",
       eventId: opt("_event_id") || metaEventId("lead", params.id, r.lead.contactId, Math.floor(Date.now() / 600_000)),
       email: r.lead.email,

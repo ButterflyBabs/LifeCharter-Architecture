@@ -499,6 +499,16 @@ async function sendPurchaseToMeta(session: Stripe.Checkout.Session) {
     phone: session.customer_details?.phone,
     firstName: firstName || null,
     lastName: rest.join(" ") || null,
+    // Where they live (Stripe collects the billing address) and, for the self-serve page, the ad click and browser
+    // that were recorded when checkout was created: the extra details Meta uses to match the purchase to a person.
+    city: session.customer_details?.address?.city || null,
+    state: session.customer_details?.address?.state || null,
+    zip: session.customer_details?.address?.postal_code || null,
+    country: session.customer_details?.address?.country || null,
+    fbp: meta.metaFbp || null,
+    fbc: meta.metaFbc || null,
+    clientIp: meta.metaIp || null,
+    userAgent: meta.metaUa || null,
     value: typeof session.amount_total === "number" ? session.amount_total / 100 : null,
     currency: session.currency || "usd",
     contentName,
