@@ -14,7 +14,7 @@ const BLOCK_SCHEMA = {
     columns: { type: "array", items: { type: "string" }, description: "Table column names." },
     rows: { type: "array", items: { type: "array", items: { type: "string" } }, description: "Table rows, one array of cells per row, in column order." },
     label: { type: "string", description: "Link text." },
-    url: { type: "string", description: "https link." },
+    url: { type: "string", description: "A full https link, or a Command Suite page path to connect this page to another part of the Suite: / (Executive Home), /daily-compass, /daily-compass/calendar (Content Calendar), /tasks, /reminders, /projects, /contacts, /calendars, /dm-pipeline (Outreach Pipelines), /sales/pipeline (Pipeline), /sales/offers, /sales (Sales Plan), /business-plan, /marketing-plan, /planning (Planning Hub), /planning/goals, /planning/forecast, /finance, /operations, /operations/sops, /assessments (Alignment Profile), /progress, /compliance, /settings, or another of their pages as /my-pages/<page-name-in-lowercase-with-dashes>." },
   },
   required: ["type"],
 };
@@ -59,7 +59,7 @@ export const createPage: ActionTool = {
   kind: "write",
   apiPath: "/api/custom-pages",
   description:
-    "Create a new page in the client's own left menu (under MY PAGES) and fill it in. A page is made of blocks: headings, text, checklists, tables and links. Use it for trackers, plans, notes, SOP checklists, client lists and reference pages. It is a content page, not new app functionality. The client approves first.",
+    "Create a new page in the client's own left menu (under MY PAGES) and fill it in. A page is made of blocks: headings, text, checklists, tables and links. Use it for trackers, plans, notes, SOP checklists, client lists and reference pages. It is a content page, not new app functionality. The client approves first. To CONNECT it to other parts of the Suite, add link blocks with the Suite page path. To FILL it from their data, use what you know about them right now (tasks, scores, income against goals, calendar, pipeline, assessment answers) and write those figures into the blocks with the date they were taken (for example a table titled \"Scores as of Oct 13\"). Pages do NOT update themselves: if they ask for a page that fills or updates automatically, say plainly that pages are snapshots, offer to fill it with today's figures now, and tell them they can ask you to refresh it any time (\"refresh my Growth Tracker page\").",
   parameters: {
     type: "object",
     properties: {
@@ -194,7 +194,7 @@ export const updatePage: ActionTool = {
   kind: "write",
   apiPath: "/api/custom-pages",
   description:
-    "Change one of the client's custom pages: add blocks, add or tick off checklist items, add table rows, rename it, or rewrite it. Read the page first with read_my_pages so you target the right checklist or table by its title. The client approves first and can undo.",
+    "Change one of the client's custom pages: add blocks, add or tick off checklist items, add table rows, rename it, or rewrite it. Read the page first with read_my_pages so you target the right checklist or table by its title. The client approves first and can undo. When they ask you to REFRESH a page, replace the figures with what you know about them now and update the \"as of\" date in the title or a note, so the page shows when it was last refreshed.",
   parameters: { type: "object", properties: { page: { type: "string", description: "The page title." }, ops: { type: "array", items: OP_SCHEMA } }, required: ["page", "ops"] },
   plan: async (args, ctx) => {
     const p = await findPage(ctx, str(args.page, 80));

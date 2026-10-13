@@ -65,7 +65,8 @@ export function cleanBlocks(raw: unknown): Block[] {
         break;
       case "link": {
         const url = s(b.url, 600).trim();
-        if (/^https?:\/\//i.test(url)) out.push({ id, type: "link", label: s(b.label, 200) || url, url });
+        // A full https link, or a Command Suite page path such as /tasks or /my-pages/podcast-launch.
+        if (/^https?:\/\//i.test(url) || /^\/(?!\/)[\w\-\/?=&.%]*$/.test(url)) out.push({ id, type: "link", label: s(b.label, 200) || url, url });
         break;
       }
     }
