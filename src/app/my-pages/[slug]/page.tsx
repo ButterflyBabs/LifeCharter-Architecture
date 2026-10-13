@@ -292,7 +292,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
                 <input aria-label="Link text" readOnly={!ed} value={b.label} onChange={(e) => set(b.id, { label: e.target.value })} className={inputBase} />
                 <input aria-label="Link address" readOnly={!ed} value={b.url} onChange={(e) => set(b.id, { url: e.target.value })} className={inputBase} />
                 {/^https?:\/\//i.test(b.url) && (
-                  <a href={b.url} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-2 rounded-full bg-[#0F1A38] px-4 py-2 font-ui text-xs font-semibold text-[#E9D7A9] hover:opacity-90 sm:col-span-2">
+                  <a href={b.url} {...(b.url.startsWith("/") ? {} : { target: "_blank", rel: "noopener noreferrer" })} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#0F1A38] px-4 py-2 font-ui text-xs font-semibold text-[#E9D7A9] hover:opacity-90 sm:col-span-2">
                     {b.label || b.url} →
                   </a>
                 )}
