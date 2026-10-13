@@ -18,6 +18,16 @@ import { PLUS_FLOW, isPlusSubscription, syncPlusSubscription } from "@/lib/commu
 import { grantAccessForCheckout, grantAccessForFirstInvoice } from "@/lib/community/purchaseAccess";
 import { sendMetaEvent } from "@/lib/metaCapi";
 import { isUpgrade, notifyPlanUpgrade, planOfSubscription, planUpgradeEmailsOn } from "@/lib/planUpgrade";
+import { invoiceSubscriptionId, subscriptionPeriod } from "@/lib/stripeShapes";
+import { notifyPaymentFailed } from "@/lib/paymentFailed";
+
+// The account a Stripe subscription belongs to: the userId stamped on the subscription, else the account whose
+// subscriptions row carries that Stripe id. Null when neither exists (nothing to update on the app side).
+async function userIdForSubscription(supabase: ReturnType<typeof createClient>, subscriptionId: string, metaUserId?: string | null): Promise<string | null> {
+  if (metaUserId) return metaUserId;
+  const { data } = await supabase.from("subscriptions").select("user_id").eq("stripe_subscription_id", subscriptionId).limit(1).maybeSingle();
+  return (data?.user_id as string) ?? null;
+}
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey ? new Stripe(stripeKey, {
@@ -112,7 +122,11 @@ export async function POST(req: NextRequest) {
             await winBookingDeals(housePlan, buyer).catch((e) => console.error("win booking deals:", e));
             const [first, ...rest] = (session.customer_details?.name || meta.fullName || "").trim().split(/\s+/);
             const c = await upsertContact({ masterPlanId: housePlan, email: buyer, firstName: first || null, lastName: rest.join(" ") || null, source: "stripe:command-suite", tags: ["command-suite-customer", ...(meta.planId || meta.tier ? [`plan-${meta.planId || meta.tier}`] : []), ...(meta.alumni === "true" ? ["lifecharter-alumni"] : [])] }).catch(() => null);
-            if (c) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
+            if (c) {
+              // Stripe redelivers events (and they can be resent by hand): one timeline line per checkout session.
+              const { data: seen } = await supabase.from("crm_events").select("id").eq("contact_id", c.id).eq("kind", "purchase").eq("detail->>stripeSession", session.id).limit(1);
+              if (!seen?.length) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
+            }
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
             if (c && typeof session.amount_total === "number") {
               await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, implementationOnly: true, implementationAmount: meta.implPlan === "annual" && Number(meta.implCents) > 0 ? Number(meta.implCents) / 100 : await implementationAmount(stripe, session.id).catch(() => null), stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
@@ -200,16 +214,16 @@ export async function POST(req: NextRequest) {
 
         // Get subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const subData = subscription as unknown as { current_period_start: number; current_period_end: number };
+        const period = subscriptionPeriod(subscription);
 
-        // Update subscription record
+        // Update subscription record (period dates are only written when Stripe gave us real ones)
         await supabase
           .from("subscriptions")
           .update({
             stripe_subscription_id: subscriptionId,
             status: "active",
-            current_period_start: new Date(subData.current_period_start * 1000),
-            current_period_end: new Date(subData.current_period_end * 1000),
+            ...(period.start ? { current_period_start: period.start } : {}),
+            ...(period.end ? { current_period_end: period.end } : {}),
           })
           .eq("user_id", userId)
           .eq("plan_id", planId)
@@ -221,7 +235,7 @@ export async function POST(req: NextRequest) {
           .update({
             current_plan_id: planId,
             subscription_status: "active",
-            subscription_ends_at: new Date(subData.current_period_end * 1000),
+            ...(period.end ? { subscription_ends_at: period.end } : {}),
           })
           .eq("id", userId);
 
@@ -230,7 +244,7 @@ export async function POST(req: NextRequest) {
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        const subscriptionId = (invoice as unknown as { subscription?: string }).subscription;
+        const subscriptionId = invoiceSubscriptionId(invoice);
 
         // Affiliate credit for this payment (recurring ones included, under each link's own setting).
         // Never throws and runs on its own, so it cannot affect the subscription handling below.
@@ -241,26 +255,28 @@ export async function POST(req: NextRequest) {
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const subData = subscription as unknown as { current_period_start: number; current_period_end: number; metadata: { userId: string } };
-          const { userId } = subData.metadata;
+          const period = subscriptionPeriod(subscription);
+          const userId = await userIdForSubscription(supabase, subscriptionId, subscription.metadata?.userId);
 
           await supabase
             .from("subscriptions")
             .update({
               status: "active",
-              current_period_start: new Date(subData.current_period_start * 1000),
-              current_period_end: new Date(subData.current_period_end * 1000),
+              ...(period.start ? { current_period_start: period.start } : {}),
+              ...(period.end ? { current_period_end: period.end } : {}),
               updated_at: new Date(),
             })
             .eq("stripe_subscription_id", subscriptionId);
 
-          await supabase
-            .from("profiles")
-            .update({
-              subscription_status: "active",
-              subscription_ends_at: new Date(subData.current_period_end * 1000),
-            })
-            .eq("id", userId);
+          if (userId) {
+            await supabase
+              .from("profiles")
+              .update({
+                subscription_status: "active",
+                ...(period.end ? { subscription_ends_at: period.end } : {}),
+              })
+              .eq("id", userId);
+          }
         }
 
         break;
@@ -277,7 +293,7 @@ export async function POST(req: NextRequest) {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const subscriptionId = (invoice as unknown as { subscription?: string }).subscription;
+        const subscriptionId = invoiceSubscriptionId(invoice);
 
         if (subscriptionId) {
           await supabase
@@ -289,15 +305,19 @@ export async function POST(req: NextRequest) {
             .eq("stripe_subscription_id", subscriptionId);
 
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const subData = subscription as unknown as { metadata: { userId: string } };
-          const { userId } = subData.metadata;
+          const userId = await userIdForSubscription(supabase, subscriptionId, subscription.metadata?.userId);
 
-          await supabase
-            .from("profiles")
-            .update({
-              subscription_status: "past_due",
-            })
-            .eq("id", userId);
+          if (userId) {
+            await supabase
+              .from("profiles")
+              .update({
+                subscription_status: "past_due",
+              })
+              .eq("id", userId);
+
+            // Tell the client and Babs (the in-app alert needs no email; the emails are behind payment_failed_emails_on).
+            await notifyPaymentFailed(supabase, { userId, invoiceId: invoice.id || "", amountCents: Number(invoice.amount_due) || 0 });
+          }
         }
 
         break;
@@ -306,7 +326,10 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const subscriptionId = subscription.id;
-        const subData = subscription as unknown as { metadata: { userId: string } };
+
+        // Resolve the account before the row is touched (a subscription with no userId in Stripe, e.g. one bought
+        // through a Payment Link, has nothing to cancel on the app side).
+        const userId = await userIdForSubscription(supabase, subscriptionId, subscription.metadata?.userId);
 
         await supabase
           .from("subscriptions")
@@ -316,15 +339,15 @@ export async function POST(req: NextRequest) {
           })
           .eq("stripe_subscription_id", subscriptionId);
 
-        const { userId } = subData.metadata;
-
-        await supabase
-          .from("profiles")
-          .update({
-            subscription_status: "canceled",
-            current_plan_id: null,
-          })
-          .eq("id", userId);
+        if (userId) {
+          await supabase
+            .from("profiles")
+            .update({
+              subscription_status: "canceled",
+              current_plan_id: null,
+            })
+            .eq("id", userId);
+        }
 
         break;
       }
@@ -332,7 +355,8 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const subscriptionId = subscription.id;
-        const subData = subscription as unknown as { status: string; cancel_at_period_end: boolean; current_period_start: number; current_period_end: number };
+        const subData = subscription as unknown as { status: string; cancel_at_period_end: boolean };
+        const period = subscriptionPeriod(subscription);
 
         // Plan change (behind the plan_upgrade_emails_on flag): the Stripe subscription's plan (metadata planId,
         // or the plan matching its recurring price) moved up a tier. Record it, then send the upgrade email, the alert to Babs and Operations
@@ -356,8 +380,8 @@ export async function POST(req: NextRequest) {
           .update({
             status: subData.status,
             cancel_at_period_end: subData.cancel_at_period_end,
-            current_period_start: new Date(subData.current_period_start * 1000),
-            current_period_end: new Date(subData.current_period_end * 1000),
+            ...(period.start ? { current_period_start: period.start } : {}),
+            ...(period.end ? { current_period_end: period.end } : {}),
             ...(upgrade ? { plan_id: upgrade.toPlan } : {}),
             updated_at: new Date(),
           })

@@ -428,6 +428,25 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // A subscription payment that did not go through: the card needs updating (the webhook sets past_due).
+  try {
+    const { data: owner } = await supabase.from("client_master_plans").select("user_id").eq("id", masterPlanId).maybeSingle();
+    if (owner?.user_id) {
+      const { data: prof } = await supabase.from("profiles").select("subscription_status").eq("id", owner.user_id).maybeSingle();
+      if (prof?.subscription_status === "past_due") {
+        out.push({
+          nkey: "payment-past-due",
+          type: "action",
+          title: "Your last payment didn't go through",
+          body: "Your card was declined. Update it under Settings > Billing > Manage billing so your plan keeps running without interruption.",
+          href: "/settings",
+        });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   // Calendar connections that stopped working (Google or Microsoft): booking pages show no times until reconnected.
   try {
     const { data: hosts } = await supabase.from("booking_hosts").select("id, name").eq("master_plan_id", masterPlanId);
