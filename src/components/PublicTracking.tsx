@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SHARED_META_PIXEL_ID } from "@/lib/tracking";
 
 // Meta Pixel + Google Analytics + the Google Ads tag on lccommandsuite.com's PUBLIC pages only (Babs, 2026-09-27: one
@@ -18,7 +18,13 @@ const isPublic = (path: string | null) => !!path && PUBLIC_PREFIXES.some((p) => 
 export function PublicTracking() {
   const pathname = usePathname();
   const lastTracked = useRef<string | null>(null);
-  const on = isPublic(pathname);
+  // Only on the real site: preview and test deployments (a Stripe test copy, a branch preview) must never send
+  // fake Purchase or Lead events to the shared pixel and Analytics. Decided after mount so server and browser agree.
+  const [realSite, setRealSite] = useState(false);
+  useEffect(() => {
+    setRealSite(/(^|\.)lccommandsuite\.com$/i.test(window.location.hostname));
+  }, []);
+  const on = realSite && isPublic(pathname);
 
   // Count later in-app navigations between public pages (the snippet counts the first).
   useEffect(() => {
