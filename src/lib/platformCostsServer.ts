@@ -69,29 +69,32 @@ export async function planPrices(db: Db): Promise<{ id: string; name: string; mo
   return ((data ?? []) as { id: string; name: string; price_monthly: number }[]).map((p) => ({ id: p.id, name: p.name, monthlyCents: Number(p.price_monthly) }));
 }
 
-/** Stripe's own processing fees for the last three months, by month. Best effort: returns {} if Stripe is unavailable. */
-export async function stripeFeesByMonth(): Promise<Record<string, number>> {
-  if (!stripe) return {};
-  const out: Record<string, number> = {};
+/** Stripe's own processing fees for the last three months, by month. Best effort: says why when it cannot read them. */
+export async function stripeFeesByMonth(): Promise<{ fees: Record<string, number>; note: string | null }> {
+  if (!stripe) return { fees: {}, note: "Stripe is not connected on this deployment." };
+  const fees: Record<string, number> = {};
+  let seen = 0;
   try {
     const since = Math.floor(Date.now() / 1000) - 100 * 86_400;
-    let pages = 0;
     for await (const t of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100 })) {
-      if (++pages > 1500) break;
-      if (t.type !== "charge" && t.type !== "payment") continue;
+      if (++seen > 3000) break;
+      // Every balance transaction that carries a fee: charges, payments, refunds' fee reversals are negative.
+      if (!t.fee) continue;
       const m = monthOf(t.created * 1000);
-      out[m] = (out[m] ?? 0) + (t.fee ?? 0);
+      fees[m] = (fees[m] ?? 0) + t.fee;
     }
+    return { fees, note: seen === 0 ? "Stripe returned no balance transactions in the last 100 days." : null };
   } catch (e) {
-    console.error("platform-costs stripe fees:", e instanceof Error ? e.message : e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("platform-costs stripe fees:", msg);
+    return { fees: {}, note: `Stripe would not share fees: ${msg.slice(0, 160)}` };
   }
-  return out;
 }
 
 export async function loadSummary(db: Db, planId: string) {
-  const [entries, clients, prices, fees] = await Promise.all([loadEntries(db, planId), countClients(db, planId), planPrices(db), stripeFeesByMonth()]);
+  const [entries, clients, prices, fee] = await Promise.all([loadEntries(db, planId), countClients(db, planId), planPrices(db), stripeFeesByMonth()]);
   const months = summarizeMonths(entries);
-  return { entries, months, clients, prices, stripeFees: fees };
+  return { entries, months, clients, prices, stripeFees: fee.fees, stripeFeesNote: fee.note };
 }
 
 export interface ScanResult {

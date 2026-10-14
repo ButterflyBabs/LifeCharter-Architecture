@@ -10,6 +10,7 @@ interface Data {
   clients: { count: number; auto: number; override: number | null; names: string[] };
   prices: { id: string; name: string; monthlyCents: number }[];
   stripeFees: Record<string, number>;
+  stripeFeesNote?: string | null;
   vendors: { key: string; label: string; category: string; hint: string | null }[];
 }
 
@@ -173,7 +174,7 @@ export default function PlatformCosts() {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-[#7a8a99]">*Uses today&apos;s client count for every month; change the count below if you want a past month judged differently.{feeThis !== null && ` Card fees this month: ${money(feeThis)}.`}</p>
+        <p className="mt-2 text-xs text-[#7a8a99]">{data.stripeFeesNote && <span className="mr-1 text-[#8a3f14]">Card fees: {data.stripeFeesNote}</span>}*Uses today&apos;s client count for every month; change the count below if you want a past month judged differently.{feeThis !== null && ` Card fees this month: ${money(feeThis)}.`}</p>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
