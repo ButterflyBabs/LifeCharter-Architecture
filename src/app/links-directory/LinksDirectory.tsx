@@ -1,6 +1,6 @@
 "use client";
 
-import { collectiveUrl } from "@/lib/collective";
+import { COLLECTIVE_LANDING_URL, collectiveUrl } from "@/lib/collective";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, Search } from "lucide-react";
 import { shortUrlFor } from "@/lib/shortLinks";
@@ -23,7 +23,7 @@ const OFFERING_PAGES: Row[] = [
   { name: "Command Shift 21-Day Challenge: landing page", url: "https://shift.lccommandsuite.com/" },
   { name: "Command Shift 21-Day Challenge: the app", url: "https://challenge.lccommandsuite.com/" },
   { name: "Coaching Certification portal", url: `${APP}/certificationportal/` },
-  { name: "The LifeCharter Collective (public page)", url: `${APP}/collective` },
+  { name: "The LifeCharter Collective (public page)", url: COLLECTIVE_LANDING_URL },
   { name: "The LifeCharter Collective: sign in", url: collectiveUrl("/community/sign-in") },
   { name: "LifeCharter Program (on the website)", url: `${SITE}/life-charter` },
   { name: "LifeCharter Program app", url: "https://lifecharter.life/app" },
@@ -33,6 +33,9 @@ const OFFERING_PAGES: Row[] = [
   { name: "Life by Design Summit: Integration Pass, live event price (from April 15)", url: "https://buy.stripe.com/fZu5kEck778DbFQ8yK4ow0f", note: "$297" },
   { name: "LifeCharter Circle: Early Adapter Special", url: "https://buy.stripe.com/28E7sM1Ft1Oj9xI8yK4ow0d", note: "$497; also listed under Offers" },
   { name: "LC Fledge (social posting): sign in", url: "https://fledge.lccommandsuite.com", note: "the app formerly called LC Beacon" },
+  { name: "LC Fledge: Clips (long video to short captioned clips)", url: "https://fledge.lccommandsuite.com/clips", note: "sign in first" },
+  { name: "Pre-Founder: add your card (billing starts April 1, 2027)", url: `${APP}/api/stripe/pre-founder-card`, note: "$497/month; the link the month-5 email sends. It opens a Stripe checkout." },
+  { name: "New Client Launch Call (Zoom)", url: "https://us02web.zoom.us/j/81978705068?pwd=nKJVgw63bvRKgSZkSRjLlZvzWqNytb.1", note: "every other Thursday, 1:00 PM MT, from Oct 29; every client is welcome" },
   { name: "The Life Shift 21-Day Challenge (on the website)", url: `${SITE}/21-day-challenge` },
   { name: "SOUL Sessions", url: `${SITE}/soul-sessions` },
   { name: "Digital Planners", url: `${SITE}/planners` },
