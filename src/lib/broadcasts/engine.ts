@@ -5,6 +5,7 @@ import { accountSender, type EmailFooter } from "@/lib/email/accountSender";
 import { housePlanId } from "@/lib/housePlan";
 import { logEvent } from "@/lib/crm";
 import { OWNER_TZ, fillSlots, slotsIn } from "./shared";
+import { dailyCap, parseGuard } from "./warmup";
 
 // Broadcasts: one-off emails to everyone with a tag. When one goes out, the
 // recipients are snapshotted into crm_broadcast_sends (one row each, unique per
@@ -178,6 +179,39 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Sends as much of one broadcast as fits before `deadline` (epoch ms), at about
 // BROADCAST_PER_SECOND (default 10) emails a second. Returns how many went out.
+
+// Warm-up guard (house account only): how many more emails may go out today, or null when the guard is off.
+async function warmupRemaining(db: Db, planId: string): Promise<number | null> {
+  try {
+    const { data: rows } = await db.from("app_settings").select("key, value").like("key", "warmup_guard_%");
+    const raw = Object.fromEntries(((rows ?? []) as { key: string; value: string }[]).map((r) => [r.key, String(r.value ?? "")]));
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: OWNER_TZ });
+    const g = parseGuard(raw, today);
+    if (!g.on) return null;
+    const cap = dailyCap(g, today);
+    // Start of today in the owner's time zone, as a UTC instant.
+    const probe = new Date();
+    const local = new Date(probe.toLocaleString("en-US", { timeZone: OWNER_TZ }));
+    const startOfDay = new Date(probe.getTime() - (local.getHours() * 3600 + local.getMinutes() * 60 + local.getSeconds()) * 1000 - probe.getMilliseconds()).toISOString();
+    const { count: bc } = await db
+      .from("crm_broadcast_sends")
+      .select("id, crm_broadcasts!inner(master_plan_id)", { count: "exact", head: true })
+      .eq("status", "sent")
+      .gte("sent_at", startOfDay)
+      .eq("crm_broadcasts.master_plan_id", planId);
+    const { count: sq } = await db
+      .from("sequence_sends")
+      .select("id, sequence_enrollments!inner(sequences!inner(master_plan_id))", { count: "exact", head: true })
+      .eq("status", "sent")
+      .gte("sent_at", startOfDay)
+      .eq("sequence_enrollments.sequences.master_plan_id", planId);
+    return Math.max(0, cap - (bc ?? 0) - (sq ?? 0));
+  } catch (e) {
+    console.error("warmup guard:", e instanceof Error ? e.message : e);
+    return null; // never block sending because the guard itself failed
+  }
+}
+
 export async function processBroadcast(db: Db, id: string, deadline: number): Promise<number> {
   const now = new Date().toISOString();
   // A client account that can't send (no verified domain of its own, or no mailing
@@ -209,6 +243,7 @@ export async function processBroadcast(db: Db, id: string, deadline: number): Pr
     b = { ...b, queued_at: new Date().toISOString() };
   }
   const gap = 1000 / Math.max(1, Math.min(50, Number(process.env.BROADCAST_PER_SECOND) || 10));
+  let allowance = who.house ? await warmupRemaining(db, b.master_plan_id) : null;
   let sent = 0;
   let last = 0;
   while (Date.now() < deadline) {
@@ -227,6 +262,8 @@ export async function processBroadcast(db: Db, id: string, deadline: number): Pr
     }
     for (const r of rows) {
       if (Date.now() >= deadline) return sent;
+      // Warm-up guard: today's allowance is used up; the rest stays queued for tomorrow's runs.
+      if (allowance !== null && allowance <= 0) return sent;
       const { data: claim } = await db.from("crm_broadcast_sends").update({ status: "claimed", claimed_at: new Date().toISOString() }).eq("id", r.id).eq("status", "queued").select("id");
       if (!claim?.length) continue; // another run has it
       if (!r.seq_contacts || r.seq_contacts.unsubscribed_at) {
@@ -250,6 +287,7 @@ export async function processBroadcast(db: Db, id: string, deadline: number): Pr
         .eq("id", r.id);
       if (res.ok) {
         sent++;
+        if (allowance !== null) allowance--;
         await logEvent(b.master_plan_id, r.contact_id, "email", `Broadcast: “${fillSlots(b.subject, b.variables || {})}”`, { broadcast: b.id, name: b.name }, db).catch(() => {});
       }
     }
