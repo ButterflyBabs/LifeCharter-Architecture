@@ -70,6 +70,14 @@ export default function Year1AgreementPage() {
               45 days&apos; advance notice.
             </span>
           </li>
+          <li className="flex gap-3">
+            <span className="mt-1 text-[#c9a227]">&#9679;</span>
+            <span>
+              Founder pricing: if you purchased at founder pricing, your Monthly Fee is locked for as long as your
+              agreement stays continuously in effect, including after your Year-1 Term. If you cancel, you lose
+              founder pricing and pay the price in effect if you return.
+            </span>
+          </li>
         </ul>
 
         <div className="mt-12 rounded-2xl border border-[#c9a227]/40 bg-[#1C2236] p-6">

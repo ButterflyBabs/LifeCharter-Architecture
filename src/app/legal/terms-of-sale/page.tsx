@@ -6,20 +6,22 @@ import { createServerClient } from "@/lib/supabase/server";
 // 2026-09-28). The figures below are only a fallback if the plans can't be read.
 export const dynamic = "force-dynamic";
 const FALLBACK_TIERS = [
-  { name: "Starter", onboarding_fee: 249700, price_monthly: 34700 },
-  { name: "Growth", onboarding_fee: 299700, price_monthly: 49700 },
-  { name: "VIP", onboarding_fee: 499700, price_monthly: 99700 },
+  { name: "Starter", onboarding_fee: 249700, price_monthly: 34700, price_yearly: 500000 },
+  { name: "Growth", onboarding_fee: 299700, price_monthly: 49700, price_yearly: 700000 },
+  { name: "VIP", onboarding_fee: 499700, price_monthly: 99700, price_yearly: 1350000 },
 ];
 const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;
 async function tiers() {
   try {
     const { data } = await createServerClient()
       .from("plans")
-      .select("name, onboarding_fee, price_monthly")
+      .select("name, onboarding_fee, price_monthly, price_yearly")
       .eq("is_active", true)
       .order("price_monthly", { ascending: true });
-    const rows = (data ?? []) as { name: string; onboarding_fee: number | null; price_monthly: number | null }[];
-    return rows.length ? rows.map((r) => ({ name: r.name, onboarding_fee: r.onboarding_fee ?? 0, price_monthly: r.price_monthly ?? 0 })) : FALLBACK_TIERS;
+    const rows = (data ?? []) as { name: string; onboarding_fee: number | null; price_monthly: number | null; price_yearly: number | null }[];
+    return rows.length
+      ? rows.map((r, i) => ({ name: r.name, onboarding_fee: r.onboarding_fee ?? 0, price_monthly: r.price_monthly ?? 0, price_yearly: r.price_yearly ?? FALLBACK_TIERS[i]?.price_yearly ?? 0 }))
+      : FALLBACK_TIERS;
   } catch {
     return FALLBACK_TIERS;
   }
@@ -93,6 +95,11 @@ export default async function TermsOfSalePage() {
           </table>
         </div>
 
+        <p className={P}>
+          Clients who purchased at Founder Pricing pay the fees on their checkout page or invoice, subject to Section
+          3.7.
+        </p>
+
         <h2 className={H2}>3. Fees and Payment</h2>
         <p className={P}>
           3.1 Implementation Fee. Client pays the one-time Implementation Fee for the selected tier either (a) in full
@@ -112,8 +119,9 @@ export default async function TermsOfSalePage() {
           Fee and all recurring Monthly Fees until this Agreement ends in accordance with Section 4.
         </p>
         <p className={P}>
-          3.4 Price Changes. Company may change Monthly Fees for future billing periods with at least 30 days&apos;
-          notice. Price changes will not apply retroactively to fees already charged.
+          3.4 Price Changes. Except as stated in Section 3.7, Company may change Monthly Fees for future billing
+          periods with at least 30 days&apos; notice. Price changes will not apply retroactively to fees already
+          charged.
         </p>
         <p className={P}>
           3.5 LifeCharter Alumni Credit. A graduate of the LifeCharter Program who purchases a Command Suite tier within
@@ -123,12 +131,48 @@ export default async function TermsOfSalePage() {
         </p>
         <p className={P}>
           3.6 Annual Pay-in-Full Option. In place of the Implementation Fee and the Monthly Fees for the first twelve
-          (12) months, Client may pay a single discounted amount at the time of purchase: Starter $5,000, Growth
-          $7,000, VIP $13,500. This payment covers the Implementation Fee and the Monthly Fees for the Year-1 Term, is
+          (12) months, Client may pay a single discounted amount at the time of purchase:{" "}
+          {rows.map((t) => `${t.name} ${usd(t.price_yearly)}`).join(", ")}. This payment covers the Implementation Fee and the Monthly Fees for the Year-1 Term, is
           non-refundable on the same terms as Section 5, and any credit under Section 3.5 reduces it. If Client chooses
           this option, the Year-1 Term runs for twelve (12) months from the date of purchase and no Monthly Fee is
           charged during it. Monthly Fees begin on the day after the Year-1 Term ends and continue month to month as
           described in Section 4.3. Sections 3.2 and 4.1 apply only when this option is not chosen.
+        </p>
+
+        <p className={P}>
+          3.7 Founder Pricing. (a) Founder Period. Company offers certain tiers at introductory pricing (&ldquo;Founder
+          Pricing&rdquo;) for purchases made on or before December 31, 2026 (the &ldquo;Founder Period&rdquo;). A
+          Client&apos;s Founder Pricing is the Implementation Fee and Monthly Fee shown for the tier on the checkout
+          page or invoice the Client accepted.
+        </p>
+        <p className={P}>
+          (b) Price lock. If Client purchases a tier at Founder Pricing during the Founder Period, Company will not
+          increase that tier&apos;s Monthly Fee for Client for as long as this Agreement stays continuously in effect.
+          The lock applies during the Year-1 Term and during the month-to-month period that follows under Section
+          4.3.
+        </p>
+        <p className={P}>
+          (c) Relationship to Section 3.4. Section 3.4 (Price Changes) does not apply to a Client&apos;s Founder Pricing
+          Monthly Fee while the lock in paragraph (b) is in effect.
+        </p>
+        <p className={P}>
+          (d) Loss of Founder Pricing. Founder Pricing ends if Client cancels or this Agreement terminates for any
+          reason, including non-payment. A failed payment that Client cures within 15 days is not a cancellation. If
+          Client later purchases a tier again, Client pays the prices then in effect and does not receive Founder
+          Pricing.
+        </p>
+        <p className={P}>
+          (e) Changing tiers. If Client moves to a higher tier while the lock is in effect, the Monthly Fee for the
+          new tier is the Founder Pricing Monthly Fee for that tier. If Client moves to a lower tier, the Monthly Fee
+          is the Founder Pricing Monthly Fee for the lower tier.
+        </p>
+        <p className={P}>
+          (f) Not transferable. Founder Pricing belongs to the Client and the business named in this Agreement. It may
+          not be transferred or assigned.
+        </p>
+        <p className={P}>
+          (g) Monthly Fee only. The lock applies to the Monthly Fee. Company may still change features, limits and other
+          terms under Section 13, and Founder Pricing does not apply to any later purchase.
         </p>
 
         <h2 className={H2}>4. Year-1 Commitment</h2>
