@@ -1,8 +1,11 @@
 // Plan prices, in one place. Two sets exist:
-//   FOUNDER   the prices clients have paid since launch (and keep for the life of their contract, Terms 3.7)
+//   FOUNDER   the prices clients have paid since launch (and keep for the life of their contract, Terms 3.7); the Stripe
+//             ids come from stripeCatalog, which a test copy can override with STRIPE_CATALOG_JSON
 //   FROM_2027 the prices for anyone who buys from the switch day (January 1, 2027 unless pricing_switch_day says otherwise)
 // A client who bought at founder pricing keeps the Stripe prices they are already on; this module only decides what a
 // NEW purchase, an upgrade or a return costs. Pure functions (no database or Stripe calls) so they can be tested.
+
+import { TIER_PRICES } from "@/lib/stripeCatalog";
 
 export type Tier = "starter" | "growth" | "vip";
 export const TIERS: Tier[] = ["starter", "growth", "vip"];
@@ -19,9 +22,9 @@ export interface TierPrices {
 }
 
 export const FOUNDER: Record<Tier, TierPrices> = {
-  starter: { monthlyCents: 34700, implementationCents: 249700, annualCents: 500000, monthlyPriceId: "price_1UFxEMLtotgP5J189ky7bu03", implementationPriceId: "price_1UFx60LtotgP5J18Vih3WrJs" },
-  growth: { monthlyCents: 49700, implementationCents: 299700, annualCents: 700000, monthlyPriceId: "price_1UFxF1LtotgP5J18KeV9NI2y", implementationPriceId: "price_1UFx7VLtotgP5J18pOPwa8yO" },
-  vip: { monthlyCents: 99700, implementationCents: 499700, annualCents: 1350000, monthlyPriceId: "price_1UFxFuLtotgP5J188iWSSUg2", implementationPriceId: "price_1UFx9vLtotgP5J18LDbeFXIE" },
+  starter: { monthlyCents: 34700, implementationCents: 249700, annualCents: 500000, monthlyPriceId: TIER_PRICES.starter.monthlyPriceId, implementationPriceId: TIER_PRICES.starter.implementationPriceId },
+  growth: { monthlyCents: 49700, implementationCents: 299700, annualCents: 700000, monthlyPriceId: TIER_PRICES.growth.monthlyPriceId, implementationPriceId: TIER_PRICES.growth.implementationPriceId },
+  vip: { monthlyCents: 99700, implementationCents: 499700, annualCents: 1350000, monthlyPriceId: TIER_PRICES.vip.monthlyPriceId, implementationPriceId: TIER_PRICES.vip.implementationPriceId },
 };
 
 // Approved by Babs 2026-10-11. The annual pay-in-full amounts keep the same discounts as today (about 25%, 22%, 20%):

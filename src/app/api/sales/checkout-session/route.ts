@@ -26,13 +26,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
-import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { ALUMNI_PROMOTION_CODE_ID, FIRST_MONTH_FREE_COUPON_ID } from "@/lib/stripeCatalog";
 import { TIERS, TIER_NAME, isSwitched, pricesFor, type Tier, type TierPrices } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
-const FIRST_MONTH_FREE_COUPON_ID = "CwLz0M07"; // FIRSTMONTHFREE
 
 // Prices come from src/lib/pricing.ts: the founder list until the switch day (January 1, 2027), the new list after.
 // A saved Stripe price id is used when there is one; otherwise the price is created inline at checkout.

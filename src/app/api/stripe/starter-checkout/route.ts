@@ -30,7 +30,7 @@ import { browserContext } from "@/lib/metaCapi";
 import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
-import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeCatalog";
 import { isSwitched, pricesFor } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
