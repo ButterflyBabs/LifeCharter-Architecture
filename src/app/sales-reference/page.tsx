@@ -170,9 +170,9 @@ export default async function SalesReferencePage() {
                       href={tier.monthlyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block text-xs text-[#E3C27C] underline"
+                      className="block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"
                     >
-                      Monthly billing link only
+                      Monthly billing only — {tier.monthly}
                     </a>
                     <p className="mt-1 text-[11px] text-[#b8a898]">
                       Give them code{" "}
