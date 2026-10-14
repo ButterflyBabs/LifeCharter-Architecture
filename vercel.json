@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/platform-costs",
+      "schedule": "0 15 2 * *"
+    },
+    {
       "path": "/api/cron/client-walkthrough",
       "schedule": "* * * * *"
     },

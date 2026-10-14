@@ -189,6 +189,7 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
+    { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
     { id: "master-punch-list", label: "Master Punch List (archive)", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "sneak-peek-run-of-show", label: "Command Suite Short Demo", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "short-demo-slides", label: "Short Demo Slides", icon: Presentation, href: "https://claude.ai/artifact/CsTuHezMWhXz1DpbugffRU" },
