@@ -255,7 +255,7 @@ export function tableFromTrello(json: unknown): PTable | null {
     const ly = y.c.idList ? lists.get(y.c.idList)?.pos ?? 0 : 0;
     return lx - ly || (x.c.pos ?? 0) - (y.c.pos ?? 0) || x.i - y.i;
   });
-  const memberNames = [...members.values()].filter(Boolean);
+  const memberNames = Array.from(members.values()).filter(Boolean);
   order.forEach(({ c, i }) => {
     if (c.closed || !c.name?.trim()) return;
     const list = c.idList ? lists.get(c.idList) : undefined;
