@@ -20,6 +20,7 @@ const PLATFORMS = [
   { id: "LI", label: "LinkedIn" },
   { id: "IG", label: "Instagram" },
   { id: "FB", label: "Facebook" },
+  { id: "WA", label: "WhatsApp" },
   { id: "Email", label: "Email" },
   { id: "TXT", label: "Text" },
 ];

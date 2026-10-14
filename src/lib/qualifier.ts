@@ -89,7 +89,7 @@ export function icpRow(b: Record<string, unknown>): { error: string } | { row: R
   };
 }
 
-const PLATFORM_NAMES: Record<string, string> = { LI: "LinkedIn", IG: "Instagram", FB: "Facebook", Email: "email", TXT: "text message" };
+const PLATFORM_NAMES: Record<string, string> = { LI: "LinkedIn", IG: "Instagram", FB: "Facebook", WA: "WhatsApp", Email: "email", TXT: "text message" };
 export const platformName = (id: string | null | undefined) => PLATFORM_NAMES[id ?? ""] ?? "social media";
 
 const bullets = (t: string) => t.split("\n").map((x) => x.trim()).filter(Boolean).map((x) => `- ${x.replace(/^[-•]\s*/, "")}`).join("\n") || "- (not given)";

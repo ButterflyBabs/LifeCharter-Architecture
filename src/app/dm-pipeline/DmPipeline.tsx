@@ -45,6 +45,7 @@ const PLATFORMS = [
   { id: "IG", label: "Instagram", short: "IG", color: "bg-[#E1306C]/10 text-[#B0245A] border-[#E1306C]/30", solid: "bg-[#C13584] text-white", bar: "border-l-[#C13584]" },
   { id: "FB", label: "Facebook", short: "FB", color: "bg-[#1877F2]/10 text-[#1459B8] border-[#1877F2]/30", solid: "bg-[#1877F2] text-white", bar: "border-l-[#1877F2]" },
   { id: "LI", label: "LinkedIn", short: "LI", color: "bg-[#0A66C2]/10 text-[#0A4F96] border-[#0A66C2]/30", solid: "bg-[#0A3D62] text-white", bar: "border-l-[#0A3D62]" },
+  { id: "WA", label: "WhatsApp", short: "WA", color: "bg-[#25D366]/10 text-[#0E6B5C] border-[#25D366]/30", solid: "bg-[#128C7E] text-white", bar: "border-l-[#128C7E]" },
   { id: "Email", label: "Email", short: "Email", color: "bg-[#2E7C83]/10 text-[#1F5E63] border-[#2E7C83]/30", solid: "bg-[#2E7C83] text-white", bar: "border-l-[#2E7C83]" },
   { id: "TXT", label: "Text", short: "Text", color: "bg-[#c9a227]/15 text-[#6b5410] border-[#c9a227]/40", solid: "bg-[#8a6a15] text-white", bar: "border-l-[#8a6a15]" },
 ] as const;
@@ -144,7 +145,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     void load(last);
     fetch("/api/scripts", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setScripts(((d.items ?? []) as ScriptLite[]).filter((s) => s.channel === "dm" || (s.platforms ?? []).some((p) => ["DM", "IG", "FB", "LI", "Email", "TXT"].includes(p)))))
+      .then((d) => setScripts(((d.items ?? []) as ScriptLite[]).filter((s) => s.channel === "dm" || (s.platforms ?? []).some((p) => ["DM", "IG", "FB", "LI", "WA", "Email", "TXT"].includes(p)))))
       .catch(() => {});
   }, [load, purpose]);
 
@@ -630,7 +631,7 @@ function AddFaster({ onAdded }: { onAdded: () => void }) {
 function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSetLimit: (platform: string, limit: number) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [val, setVal] = useState("");
-  const shown = PLATFORMS.filter((p) => ["IG", "FB", "LI"].includes(p.id) || (usage[p.id]?.sent ?? 0) > 0 || (usage[p.id]?.followUps ?? 0) > 0);
+  const shown = PLATFORMS.filter((p) => ["IG", "FB", "LI", "WA"].includes(p.id) || (usage[p.id]?.sent ?? 0) > 0 || (usage[p.id]?.followUps ?? 0) > 0);
   if (!Object.keys(usage).length) return null;
   return (
     <div className="mb-4 flex flex-wrap gap-2" aria-label="DMs sent in the last 24 hours">

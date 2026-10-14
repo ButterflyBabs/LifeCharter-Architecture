@@ -17,6 +17,7 @@ export const CARD_PLATFORMS = [
   { id: "IG", label: "Instagram" },
   { id: "FB", label: "Facebook" },
   { id: "LI", label: "LinkedIn" },
+  { id: "WA", label: "WhatsApp" },
   { id: "Email", label: "Email" },
   { id: "TXT", label: "Text" },
 ] as const;

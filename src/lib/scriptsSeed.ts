@@ -27,6 +27,7 @@ export const SCRIPT_PLATFORMS = [
   { id: "IG", label: "Instagram" },
   { id: "FB", label: "Facebook" },
   { id: "LI", label: "LinkedIn" },
+  { id: "WA", label: "WhatsApp" },
   { id: "YT", label: "YouTube" },
   { id: "Spotify", label: "Spotify" },
   { id: "Email", label: "Email" },
