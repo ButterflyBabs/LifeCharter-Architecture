@@ -37,6 +37,11 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
 
   const [name, setName] = useState(DEFAULT_ASSISTANT_NAME);
   const [input, setInput] = useState("");
+  const inputBox = useRef<HTMLTextAreaElement | null>(null);
+  // After a send (or a clear) the box goes back to one line.
+  useEffect(() => {
+    if (!input && inputBox.current) inputBox.current.style.height = "auto";
+  }, [input]);
   const [loading, setLoading] = useState(false);
   const [thread, setThread] = useState<Msg[]>([]);
   // Thumbs up / down on an answer (down asks for an optional note). One rating per answer.
@@ -229,14 +234,26 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
 
       <div className={floating ? "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3" : "px-6 pb-6"}>
         <div className="flex items-center gap-3 mb-4">
-          <input
-            type="text"
+          {/* A textarea so a pasted summary keeps its paragraphs. Enter sends, Shift+Enter adds a line. */}
+          <textarea
+            ref={inputBox}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && ask()}
+            onChange={(e) => {
+              setInput(e.target.value);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                ask();
+              }
+            }}
             placeholder={floating ? `Ask ${name}${page ? ` about ${page}` : ""}…` : `Ask ${name} anything about your business...`}
             aria-label={`Ask ${name}`}
-            className="w-full px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
+            className="w-full max-h-48 resize-none overflow-y-auto px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
           />
           {canListen && (
             <button type="button" onClick={toggleListen} aria-pressed={listening} aria-label={listening ? "Stop listening" : `Speak to ${name}`} title={listening ? "Listening… tap to stop" : `Tap and speak your question to ${name}`} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${listening ? "border-[#c0632f] bg-[#c0632f] text-white animate-pulse" : "border-gray-200 bg-white text-[#1a2b4a] hover:border-[#2E7C83]"}`}>

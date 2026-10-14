@@ -219,11 +219,24 @@ interface TrelloCard {
   idMembers?: string[];
   idChecklists?: string[];
   shortUrl?: string;
+  pos?: number;
 }
+
+/** Trello stores due times in UTC; a 8 pm Mountain due time is already the next day in UTC. Take the Mountain-time day. */
+function trelloDay(v: string | null | undefined): string {
+  if (!v) return "";
+  if (!v.includes("T")) return v;
+  const t = Date.parse(v);
+  if (Number.isNaN(t)) return v;
+  return new Date(t).toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+}
+
+/** A list whose name says the work in it is finished. */
+const TRELLO_DONE_LIST = /^(done|complete|completed|finished|shipped|closed|archive[d]?)$/i;
 
 /** A Trello board exported as JSON. Archived cards and lists are left out. */
 export function tableFromTrello(json: unknown): PTable | null {
-  const b = json as { name?: string; cards?: TrelloCard[]; lists?: { id: string; name: string; closed?: boolean }[]; members?: { id: string; fullName?: string; username?: string }[]; checklists?: { id: string; idCard?: string; name?: string; checkItems?: { name?: string; state?: string }[] }[]; labels?: { id: string; name?: string; color?: string }[] };
+  const b = json as { name?: string; cards?: TrelloCard[]; lists?: { id: string; name: string; closed?: boolean; pos?: number }[]; members?: { id: string; fullName?: string; username?: string }[]; checklists?: { id: string; idCard?: string; name?: string; checkItems?: { name?: string; state?: string }[] }[]; labels?: { id: string; name?: string; color?: string }[] };
   if (!b || !Array.isArray(b.cards) || !Array.isArray(b.lists)) return null;
   const lists = new Map(b.lists.map((l) => [l.id, l]));
   const members = new Map((b.members ?? []).map((m) => [m.id, m.fullName || m.username || ""]));
@@ -236,14 +249,31 @@ export function tableFromTrello(json: unknown): PTable | null {
   }
   const rows: string[][] = [];
   const nums: number[] = [];
-  b.cards.forEach((c, i) => {
+  // The board's own order: lists left to right, cards top to bottom (the export lists cards in any order).
+  const order = b.cards.map((c, i) => ({ c, i })).sort((x, y) => {
+    const lx = x.c.idList ? lists.get(x.c.idList)?.pos ?? 0 : 0;
+    const ly = y.c.idList ? lists.get(y.c.idList)?.pos ?? 0 : 0;
+    return lx - ly || (x.c.pos ?? 0) - (y.c.pos ?? 0) || x.i - y.i;
+  });
+  const memberNames = [...members.values()].filter(Boolean);
+  order.forEach(({ c, i }) => {
     if (c.closed || !c.name?.trim()) return;
     const list = c.idList ? lists.get(c.idList) : undefined;
     if (list?.closed) return;
-    const labels = (c.labels?.length ? c.labels.map((l) => l.name || l.color || "") : (c.idLabels ?? []).map((id) => labelName.get(id) || "")).filter(Boolean).join(", ");
-    const people = (c.idMembers ?? []).map((id) => members.get(id) || "").filter(Boolean).join(", ");
+    const labelList = (c.labels?.length ? c.labels.map((l) => l.name || l.color || "") : (c.idLabels ?? []).map((id) => labelName.get(id) || "")).filter(Boolean);
+    const labels = labelList.join(", ");
+    // Cards are often tagged with a person's name as a label instead of being given to them: treat a label that is
+    // a member's name (or first name) as that person.
+    const named = (c.idMembers ?? []).map((id) => members.get(id) || "").filter(Boolean);
+    for (const l of labelList) {
+      const key = l.trim().toLowerCase();
+      const hit = memberNames.find((m) => m.toLowerCase() === key || m.toLowerCase().split(/\s+/)[0] === key);
+      if (hit && !named.includes(hit)) named.push(hit);
+    }
+    const people = named.join(", ");
     const desc = [c.desc?.trim() || "", ...(c.id && checks.get(c.id) ? ["", ...checks.get(c.id)!] : [])].join("\n").trim();
-    rows.push([c.name.trim(), list?.name || "", desc, c.start || "", c.due || "", labels, people, c.dueComplete ? "yes" : "", c.shortUrl || ""]);
+    const done = c.dueComplete || (list?.name ? TRELLO_DONE_LIST.test(list.name.trim()) : false);
+    rows.push([c.name.trim(), list?.name || "", desc, trelloDay(c.start), trelloDay(c.due), labels, people, done ? "yes" : "", c.shortUrl || ""]);
     nums.push(i + 1);
   });
   return { headers: ["Card name", "List name", "Description", "Start", "Due date", "Labels", "Members", "Done", "Link"], rows, rowNumbers: nums, source: "trello", projectName: b.name?.trim() || undefined };
