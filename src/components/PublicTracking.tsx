@@ -11,7 +11,7 @@ import { SHARED_META_PIXEL_ID } from "@/lib/tracking";
 // tracked.
 const GA_MEASUREMENT_ID = "G-EK2T4YVFF4"; // shared GA4 property, account "Sacred Kaleidoscope Community LLC"
 const GOOGLE_ADS_ID = "AW-10845925823"; // Google Ads tag "Sacred Kaleidoscope Community"
-const PUBLIC_PREFIXES = ["/collective", "/get-started", "/schedule", "/executive_consultation", "/join"];
+const PUBLIC_PREFIXES = ["/collective", "/get-started", "/schedule", "/executive_consultation", "/join", "/masterclass-signup"];
 
 const isPublic = (path: string | null) => !!path && PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
 

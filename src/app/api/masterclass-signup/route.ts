@@ -9,6 +9,8 @@ import { addMeetingRegistrant, isZoomConfigured, masterclassMeetingId } from "@/
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 import { advanceCards } from "@/lib/dmPipeline";
 import { logEvent } from "@/lib/crm";
+import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
+import { attributionFor } from "@/lib/signupAttribution";
 
 export const dynamic = "force-dynamic";
 
@@ -37,12 +39,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "We couldn't save your seat just now. Please try again in a minute." }, { status: 502 });
   }
 
+  // Which ad or link brought them: paid ads, organic posts, DMs, email, partners, an affiliate or direct. Becomes tags on
+  // the contact (so MasterClass Results and Contacts can split ad registrations from organic ones) and a timeline line.
+  const attr = attributionFor({ utm: b._utm, ref: str(b._ref, 60) || cookies().get(AFF_COOKIE)?.value || "", card: str(b._card, 24) });
+
   // From here the seat is saved, so nothing below may fail the request.
   try {
     const db = createServerClient();
     const plan = await ownerMasterPlanId();
     if (plan) {
-      const c = await upsertContact({ masterPlanId: plan, email, firstName, lastName: lastName || null, source: "masterclass-signup" }, db);
+      const c = await upsertContact({ masterPlanId: plan, email, firstName, lastName: lastName || null, source: "masterclass-signup", tags: attr.tags }, db);
+      if (c) await logEvent(plan, c.id, "form", `Registered for the MasterClass (${attr.summary})`, { attribution: attr.detail }, db).catch(() => {});
       const code = str(b._ref, 60) || cookies().get(AFF_COOKIE)?.value || "";
       if (c && code) {
         const aff = await affiliateByCode(db, plan, code);
@@ -66,5 +73,17 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error("masterclass-signup crm:", (e as Error).message);
   }
+  // Meta Conversions API: the registration itself (the browser sends the same event id, so Meta counts it once).
+  const day = new Date().toISOString().slice(0, 10);
+  const eventId = str(b._eid, 80) || metaEventId("masterclass-signup", email, day);
+  await sendMetaEvent({
+    eventName: "CompleteRegistration",
+    eventId,
+    email,
+    firstName,
+    lastName: lastName || null,
+    contentName: attr.paid ? "masterclass-signup:paid-ad" : "masterclass-signup",
+    ...browserContext(request, str(b._page, 500) || null),
+  }).catch(() => {});
   return NextResponse.json({ ok: true, joinUrl: registrant.joinUrl || null });
 }

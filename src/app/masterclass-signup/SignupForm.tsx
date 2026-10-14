@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/tracking";
 
 const box = "w-full rounded-lg border border-[#1a2b4a]/25 bg-white px-3 py-2.5 text-base text-[#1a2b4a] dark:bg-[#1a2b4a]/40 dark:text-[#F8F5F0]";
 
@@ -14,16 +15,26 @@ export default function SignupForm() {
     if (state === "busy") return;
     setState("busy");
     setErr("");
+    const sp = new URLSearchParams(window.location.search);
+    // The campaign tags and click id the visitor arrived with, so the registration can be tied to its ad or link.
+    const utm: Record<string, string> = {};
+    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"]) {
+      const v = sp.get(k);
+      if (v) utm[k] = v.slice(0, 120);
+    }
+    // One id for this registration, sent to the server and to the pixel so Meta counts it once.
+    const eid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2);
     const r = await fetch("/api/masterclass-signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...f, _ref: new URLSearchParams(window.location.search).get("ref") || undefined, _card: new URLSearchParams(window.location.search).get("c") || undefined }),
+      body: JSON.stringify({ ...f, _ref: sp.get("ref") || undefined, _card: sp.get("c") || undefined, _utm: utm, _eid: eid, _page: window.location.href }),
     }).catch(() => null);
     const d = r ? await r.json().catch(() => ({})) : {};
     if (!r?.ok) {
       setState("idle");
       return setErr(d.error || "Something went wrong. Please try again.");
     }
+    trackEvent("CompleteRegistration", { content_name: "masterclass_signup" }, { eventID: eid });
     setState("done");
   }
 
