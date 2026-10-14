@@ -1335,6 +1335,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["business alignment", "cards", "score", "radar chart", "dimensions", "trend", "revenue snapshot", "health"],
   },
   {
+    id: "archive-done-tasks",
+    category: "Daily Operations",
+    question: "How do I clear finished tasks off my Tasks page? Can I archive done tasks?",
+    answer:
+      "Open Tasks. In the Done column press Archive all done (it asks you to confirm), or press Archive on a single finished task. Archived tasks leave the board but are not deleted: they still count toward your follow-through and your history. Press Archived (with the number) at the top of the page to see them, and Restore to put one back in Done. The Done column shows your newest 12 finished tasks first, with Show all if you want the rest. Reopening a task also brings it back to the board.",
+    keywords: ["archive", "archived", "done tasks", "completed tasks", "clear done", "long list", "tasks page", "restore task", "clean up tasks", "finished tasks"],
+  },
+  {
     id: "as-whats-new",
     category: "Account & Settings",
     question: "Where can I see what's new in the Suite?",
