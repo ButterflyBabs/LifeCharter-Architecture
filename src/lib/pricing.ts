@@ -24,8 +24,8 @@ export const FOUNDER: Record<Tier, TierPrices> = {
   vip: { monthlyCents: 99700, implementationCents: 499700, annualCents: 1350000, monthlyPriceId: "price_1UFxFuLtotgP5J188iWSSUg2", implementationPriceId: "price_1UFx9vLtotgP5J18LDbeFXIE" },
 };
 
-// Approved by Babs 2026-10-11. The annual pay-in-full amounts keep the same discounts as today (about 25%, 22%, 20%)
-// and are still her decision (task 929, question 4).
+// Approved by Babs 2026-10-11. The annual pay-in-full amounts keep the same discounts as today (about 25%, 22%, 20%):
+// confirmed by Babs 2026-10-14 (task 929).
 export const FROM_2027: Record<Tier, Omit<TierPrices, "monthlyPriceId" | "implementationPriceId">> = {
   starter: { monthlyCents: 59700, implementationCents: 299700, annualCents: 760000 },
   growth: { monthlyCents: 89700, implementationCents: 399700, annualCents: 1150000 },
