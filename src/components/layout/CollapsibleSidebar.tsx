@@ -190,6 +190,7 @@ const ownerSection = {
   color: "text-[#c9a227]",
   items: [
     { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
+    { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
     { id: "master-punch-list", label: "Master Punch List (archive)", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
     { id: "sneak-peek-run-of-show", label: "Command Suite Short Demo", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
     { id: "short-demo-slides", label: "Short Demo Slides", icon: Presentation, href: "https://claude.ai/artifact/CsTuHezMWhXz1DpbugffRU" },
@@ -206,7 +207,6 @@ const ownerSection = {
     { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
     { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
     { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
-    { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
     { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
     { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },
@@ -785,7 +785,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
