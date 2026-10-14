@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { marginOf, monthOf, parseReceipt, perClientCents, summarizeMonths, looksLikeReceipt, type Entry } from "../src/lib/platformCosts";
+import { headlineMonth, marginOf, monthOf, parseReceipt, perClientCents, summarizeMonths, looksLikeReceipt, type Entry } from "../src/lib/platformCosts";
 
 // The receipt reader must read real vendor emails (these are shaped like the ones in the house mailbox).
 test("reads the paid amount from vendor receipts", () => {
@@ -31,4 +31,14 @@ test("months, totals and per-client maths", () => {
   assert.equal(perClientCents(8188, 3), 2729);
   assert.equal(perClientCents(8188, 0), null);
   assert.ok(Math.abs((marginOf(34700, 2729) ?? 0) - 0.9214) < 0.001);
+});
+
+test("the headline is the latest finished month, and a 'New invoice' notice is not a second bill", () => {
+  assert.equal(looksLikeReceipt("New invoice from Supabase Pte. Ltd. (#YDMMNY-00001)"), false);
+  assert.equal(looksLikeReceipt("Payment received for Supabase Pte. Ltd. invoice (#YDMMNY-00004)"), true);
+  const months = [
+    { month: "2026-10-01", platformCents: 931, byVendor: [], proposedCount: 0 },
+    { month: "2026-09-01", platformCents: 11688, byVendor: [], proposedCount: 0 },
+  ];
+  assert.equal(headlineMonth(months, "2026-10-14")?.month, "2026-09-01");
 });

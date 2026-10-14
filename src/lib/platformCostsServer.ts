@@ -110,8 +110,11 @@ export async function scanReceipts(db: Db, planId: string): Promise<ScanResult> 
   const token = await microsoft.getValidAccessToken({ house: true });
   if (!token) return { ...res, error: "The house mailbox (Microsoft 365) is not connected." };
   const since = Date.now() - 100 * 86_400_000;
-  const { data: seen } = await db.from("platform_cost_entries").select("receipt_ref").eq("master_plan_id", planId).not("receipt_ref", "is", null);
-  const known = new Set(((seen ?? []) as { receipt_ref: string }[]).map((r) => r.receipt_ref));
+  const { data: seen } = await db.from("platform_cost_entries").select("receipt_ref, vendor, month, amount_cents").eq("master_plan_id", planId);
+  const rows = (seen ?? []) as { receipt_ref: string | null; vendor: string; month: string; amount_cents: number }[];
+  const known = new Set(rows.map((r) => r.receipt_ref).filter((r): r is string => Boolean(r)));
+  // The same bill typed in by hand (or already confirmed) must not come back as a second proposal.
+  const same = new Set(rows.map((r) => `${r.vendor}|${String(r.month).slice(0, 7)}|${r.amount_cents}`));
   for (const v of VENDORS) {
     let hits: Awaited<ReturnType<typeof microsoft.searchInbox>> = [];
     try {
@@ -140,6 +143,10 @@ export async function scanReceipts(db: Db, planId: string): Promise<ScanResult> 
         res.skipped += 1;
         continue;
       }
+      if (same.has(`${v.key}|${monthOf(m.ts).slice(0, 7)}|${parsed.amountCents}`)) {
+        res.skipped += 1;
+        continue;
+      }
       const { error } = await db.from("platform_cost_entries").insert({
         master_plan_id: planId,
         month: monthOf(m.ts),
@@ -155,6 +162,7 @@ export async function scanReceipts(db: Db, planId: string): Promise<ScanResult> 
       else {
         res.added += 1;
         known.add(ref);
+        same.add(`${v.key}|${monthOf(m.ts).slice(0, 7)}|${parsed.amountCents}`);
       }
     }
   }

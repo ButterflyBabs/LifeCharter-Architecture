@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, Plus, RefreshCw, X } from "lucide-react";
-import { marginOf, money, perClientCents, vendorLabel, type Entry, type MonthRow } from "@/lib/platformCosts";
+import { headlineMonth, marginOf, money, perClientCents, vendorLabel, type Entry, type MonthRow } from "@/lib/platformCosts";
 
 interface Data {
   entries: Entry[];
@@ -65,9 +65,7 @@ export default function PlatformCosts() {
 
   const cur = useMemo(() => {
     if (!data) return null;
-    const m = thisMonth() + "-01";
-    const row = data.months.find((x) => x.month === m) ?? data.months.find((x) => x.platformCents > 0) ?? null;
-    return row;
+    return headlineMonth(data.months, `${thisMonth()}-01`);
   }, [data]);
 
   if (error) return <div className="mx-auto max-w-3xl p-6 text-sm text-[#8a3f14]">{error}</div>;
@@ -107,9 +105,9 @@ export default function PlatformCosts() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className={card}>
-          <div className={lab}>{cur ? monthName(cur.month) : "This month"} platform cost</div>
+          <div className={lab}>{cur ? monthName(cur.month) : "Latest month"} platform cost</div>
           <div className="mt-1 text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{cur ? money(cur.platformCents) : "No bills confirmed"}</div>
-          <div className="mt-1 text-xs text-[#7a8a99]">Confirmed bills that count toward the platform</div>
+          <div className="mt-1 text-xs text-[#7a8a99]">Latest finished month with confirmed bills</div>
         </div>
         <div className={card}>
           <div className={lab}>Active clients</div>

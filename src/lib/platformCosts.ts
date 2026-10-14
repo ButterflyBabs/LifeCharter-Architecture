@@ -81,6 +81,8 @@ export function parseReceipt(subject: string, body: string): ParsedReceipt | nul
 
 /** Is this email a receipt/invoice/refund and not marketing? Cheap subject test used before reading the body. */
 export function looksLikeReceipt(subject: string): boolean {
+  // "New invoice from …" is the notice before the "Payment received" email for the same bill: counting both would double it.
+  if (/^\s*new invoice\b/i.test(subject)) return false;
   return /\b(receipt|invoice|payment (received|successful)|refund|charged|your .{0,20}(bill|statement))\b/i.test(subject);
 }
 
@@ -122,6 +124,13 @@ export function summarizeMonths(entries: Entry[]): MonthRow[] {
     else r.byVendor.push({ vendor: e.vendor, cents: e.amountCents });
   }
   return Array.from(by.values()).sort((a, b) => (a.month < b.month ? 1 : -1));
+}
+
+/** The month to headline: the latest finished month that has confirmed bills (the current month is still filling in). */
+export function headlineMonth(months: MonthRow[], today: string): MonthRow | null {
+  const thisMonth = `${today.slice(0, 7)}-01`;
+  const full = months.filter((m) => m.month < thisMonth && m.platformCents > 0);
+  return full[0] ?? months.find((m) => m.platformCents > 0) ?? null;
 }
 
 /** Cost per client in cents; null when there are no clients to divide by. */
