@@ -151,7 +151,29 @@ function padTable(rows: string[][], headerIndex = 0): { headers: string[]; data:
 export function tableFromDelimited(text: string): PTable {
   const rows = parseDelimited(text, undefined, true);
   const { headers, data, rowNumbers } = padTable(rows);
-  return { headers, rows: data, rowNumbers, source: detectSource(headers) };
+  const source = detectSource(headers);
+  if (source === "todoist") {
+    // A Todoist export mixes TYPE rows: "section" starts a section, "note" is a comment, "task" is the task itself.
+    const iType = headers.findIndex((h) => norm(h) === "type");
+    if (iType >= 0) {
+      let section = "";
+      const outRows: string[][] = [];
+      const outNums: number[] = [];
+      data.forEach((r, n) => {
+        const type = (r[iType] ?? "").trim().toLowerCase();
+        const content = r[headers.findIndex((h) => norm(h) === "content")] ?? "";
+        if (type === "section") {
+          section = content.trim();
+          return;
+        }
+        if (type && type !== "task") return;
+        outRows.push([...r, section]);
+        outNums.push(rowNumbers[n]);
+      });
+      return { headers: [...headers, "Section"], rows: outRows, rowNumbers: outNums, source };
+    }
+  }
+  return { headers, rows: data, rowNumbers, source };
 }
 
 /** A checklist: markdown (Notion page export, a README) or plain lines. Headings are sections, checked boxes are done. */
@@ -271,6 +293,13 @@ function oneDay(raw: string, order: DateOrder, year: number): string | null {
   if (m) return validDay(+m[1], +m[2], +m[3]);
   m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (m) return validDay(+m[1], +m[2], +m[3]);
+  // Jira and some spreadsheets: 15/Sep/26, 15-Sep-2026, 15 Sep 26.
+  m = s.match(/^(\d{1,2})[\/.\s-]([A-Za-z]{3,9})\.?[\/.\s-](\d{2,4})(?:$|[\sT,])/);
+  if (m && MONTHS[m[2].slice(0, 4).toLowerCase()] !== undefined || (m && MONTHS[m[2].slice(0, 3).toLowerCase()] !== undefined)) {
+    const mon = MONTHS[m[2].slice(0, 4).toLowerCase()] ?? MONTHS[m[2].slice(0, 3).toLowerCase()];
+    const y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+    return validDay(y, mon, +m[1]);
+  }
   m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
   if (m) {
     const y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
