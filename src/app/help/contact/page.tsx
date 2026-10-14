@@ -1,5 +1,6 @@
 "use client";
 
+import { collectiveHref } from "@/lib/collective";
 import { useState } from "react";
 import MyRequests from "@/components/support/MyRequests";
 import { MyGlitches, CommunityBoard, WhatsNew, ResolvedLog } from "@/components/support/FeedbackBoard";
@@ -143,7 +144,7 @@ export default function ContactSupportPage() {
             <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-3">
               Live help on Zoom, Thursdays at 11am MT
             </p>
-            <a href="/community/events">
+            <a href={collectiveHref("/community/events")}>
               <Button variant="outline" size="sm">See the schedule</Button>
             </a>
           </CardContent>

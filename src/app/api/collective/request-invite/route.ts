@@ -1,3 +1,4 @@
+import { collectiveBaseFor, collectiveDisplayHost } from "@/lib/collective";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     : await supabase.from("cm_invite_requests").insert(row);
   if (saveErr) console.error("request-invite save:", saveErr.message);
 
-  const base = new URL(req.url).origin;
+  const base = collectiveBaseFor(req);
   const link = `${base}/join/collective?code=${encodeURIComponent(code)}`;
   const first = name.split(" ")[0];
   const address = fromEnv.match(/<([^>]+)>/)?.[1] ?? fromEnv;
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
       2. Set this week&rsquo;s intention in your private Alignment Journal.<br>
       3. Join the next live Alignment Anchor.
     </td></tr>
-    <tr><td style="font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#7F8894;padding-top:18px">You're receiving this because you requested an invitation at lccommandsuite.com/collective. If that wasn't you, you can ignore this email.</td></tr>
+    <tr><td style="font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#7F8894;padding-top:18px">You're receiving this because you requested an invitation at ${collectiveDisplayHost()}/collective. If that wasn't you, you can ignore this email.</td></tr>
   </table></td></tr></table></body></html>`;
 
   const res = await fetch("https://api.resend.com/emails", {

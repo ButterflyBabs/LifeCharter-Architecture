@@ -1,18 +1,20 @@
 "use client";
 
 // Only does anything inside the iPhone app: keeps this phone registered for
-// Apple push, opens the right page when a notification or a lccommandsuite.com
+// Apple push, opens the right page when a notification or a Collective
 // link is tapped, and matches the status bar to light/dark mode.
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCommunity } from "@/lib/community/context";
+import { COLLECTIVE_HOST, SUITE_HOST } from "@/lib/collective";
 import { isNativeApp } from "@/lib/community/native";
 
 function inAppPath(href: string | undefined | null): string | null {
   if (!href) return null;
   try {
-    const u = new URL(href, "https://lccommandsuite.com");
-    if (u.hostname !== "lccommandsuite.com") return null;
+    const u = new URL(href, `https://${COLLECTIVE_HOST}`);
+    // The Collective's own address, plus the old one (links already emailed forward to the new address).
+    if (u.hostname !== COLLECTIVE_HOST && u.hostname !== SUITE_HOST) return null;
     return u.pathname.startsWith("/community") || u.pathname.startsWith("/join") ? `${u.pathname}${u.search}${u.hash}` : null;
   } catch {
     return null;

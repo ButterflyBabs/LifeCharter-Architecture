@@ -1,5 +1,6 @@
 "use client";
 
+import { collectiveHref } from "@/lib/collective";
 import { useState, createContext, useContext, ReactNode, useRef, useEffect, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
 import { featureForPage, type FeatureMap } from "@/lib/teamRoles";
@@ -111,7 +112,7 @@ const navigationSections = [
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
-      { id: "community", label: "The Collective", icon: Users, href: "/community" },
+      { id: "community", label: "The Collective", icon: Users, href: collectiveHref("/community") },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
@@ -239,7 +240,7 @@ const DEMO_TOUR_VERSION = "2026-10-11-short-demo";
 const demoOnlyItems = [
   { id: "demo-morning-brief", label: "Morning Brief", icon: Sparkles, href: "/morning-brief" },
   { id: "demo-coaching-calls", label: "Coaching Calls (Home)", icon: LayoutDashboard, href: "/" },
-  { id: "demo-collective-events", label: "Collective Events", icon: CalendarDays, href: "/community/events" },
+  { id: "demo-collective-events", label: "Collective Events", icon: CalendarDays, href: collectiveHref("/community/events") },
 ];
 function demoTourSections() {
   const all = new Map([...navigationSections.flatMap((s) => s.items), ...demoOnlyItems].map((i) => [i.id, i]));

@@ -25,15 +25,15 @@ Inside the Collective:
 • Events on your calendar, private messages and a member directory
 • A private home for every LifeCharter program you join
 
-Membership is by invitation. Request yours at lccommandsuite.com/collective.
+Membership is by invitation. Request yours at collective.lccommandsuite.com.
 
 A safe community: report any post, reply, message or profile; block anyone; and
 delete your account at any time from Me.
 
 **Keywords (100):** community,coaching,accountability,journal,intention,alignment,founders,entrepreneur,mastermind,purpose
 
-**Support URL:** https://lccommandsuite.com/collective
-**Privacy Policy URL:** https://lccommandsuite.com/legal/privacy-policy
+**Support URL:** https://collective.lccommandsuite.com/
+**Privacy Policy URL:** https://collective.lccommandsuite.com/legal/privacy-policy
 
 ## App Privacy ("nutrition labels")
 Data linked to the user, used for App Functionality (not tracking):

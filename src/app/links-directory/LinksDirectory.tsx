@@ -1,5 +1,6 @@
 "use client";
 
+import { collectiveUrl } from "@/lib/collective";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, Search } from "lucide-react";
 import { shortUrlFor } from "@/lib/shortLinks";
@@ -23,7 +24,7 @@ const OFFERING_PAGES: Row[] = [
   { name: "Command Shift 21-Day Challenge: the app", url: "https://challenge.lccommandsuite.com/" },
   { name: "Coaching Certification portal", url: `${APP}/certificationportal/` },
   { name: "The LifeCharter Collective (public page)", url: `${APP}/collective` },
-  { name: "The LifeCharter Collective: sign in", url: `${APP}/community/sign-in` },
+  { name: "The LifeCharter Collective: sign in", url: collectiveUrl("/community/sign-in") },
   { name: "LifeCharter Program (on the website)", url: `${SITE}/life-charter` },
   { name: "LifeCharter Program app", url: "https://lifecharter.life/app" },
   { name: "LifeCharter Incubator", url: `${SITE}/lifecharterincubator` },
@@ -51,7 +52,7 @@ const OTHER_FORMS: Row[] = [
   { name: "Sign in", url: `${APP}/login` },
   { name: "Forgot or set your password", url: `${APP}/forgot-password` },
   { name: "Contact (amilynnecarroll.com)", url: `${SITE}/contact-us` },
-  { name: "Collective sign in", url: `${APP}/community/sign-in` },
+  { name: "Collective sign in", url: collectiveUrl("/community/sign-in") },
 ];
 
 const LEGAL: Row[] = [

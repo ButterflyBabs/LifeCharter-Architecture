@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { InviteForm } from "./InviteForm";
+import { COLLECTIVE_CANONICAL_BASE, COLLECTIVE_LANDING_URL } from "@/lib/collective";
 
-// Public marketing page for The LifeCharter Collective (lccommandsuite.com/collective).
+// Public marketing page for The LifeCharter Collective (collective.lccommandsuite.com; /collective on the old address).
 // Server-rendered for search; the only client piece is the invitation form.
 
-const URL_BASE = "https://lccommandsuite.com";
-const PAGE_URL = `${URL_BASE}/collective`;
+const URL_BASE = COLLECTIVE_CANONICAL_BASE;
+const PAGE_URL = COLLECTIVE_LANDING_URL;
+const OG_URL = `${URL_BASE}/collective/og`;
 const TITLE = "The LifeCharter Collective — A Free Community for Purpose-Led Lives & Mission-Driven Businesses";
 const DESCRIPTION =
   "Your life. Your life's work. You don't have to build either alone. Join The LifeCharter Collective — a free community for purpose-led lives and mission-driven businesses: weekly live sessions, accountability, a private alignment journal and aligned action.";
@@ -37,13 +39,13 @@ export const metadata: Metadata = {
     title: "Your Life. Your Life's Work. You Don't Have to Build Either Alone — The LifeCharter Collective",
     description: "A free community for purpose-led lives and mission-driven businesses. Weekly live sessions, real accountability and a private alignment journal.",
     locale: "en_US",
-    images: [{ url: `${PAGE_URL}/og`, width: 1200, height: 630, alt: "Your life. Your life's work. You don't have to build either alone — The LifeCharter Collective" }],
+    images: [{ url: OG_URL, width: 1200, height: 630, alt: "Your life. Your life's work. You don't have to build either alone — The LifeCharter Collective" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Your Life. Your Life's Work. You Don't Have to Build Either Alone — The LifeCharter Collective",
     description: "A free community for purpose-led lives and mission-driven businesses.",
-    images: [`${PAGE_URL}/og`],
+    images: [OG_URL],
   },
   icons: { apple: "/community-icons/apple-touch-icon.png" },
 };

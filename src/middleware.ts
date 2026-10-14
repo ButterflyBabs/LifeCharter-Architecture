@@ -3,6 +3,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
+import { COLLECTIVE_FORWARD_STATUS, COLLECTIVE_HOST, COLLECTIVE_HOST_LIVE, SUITE_HOST, collectiveHostAllows, isCollectiveHost, isLegacyCollectivePath, isSuiteProductionHost } from "@/lib/collective";
 import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, type FeatureMap } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
@@ -202,6 +203,7 @@ const SHORT_LINK_APP_HOSTS = new Set([
   "www.amilynnecarroll.com",
   "lifecharter.life",
   "www.lifecharter.life",
+  COLLECTIVE_HOST, // the Collective's own address: same app, never a client's short-link domain
 ]);
 function isSuiteHost(host: string): boolean {
   const h = host.split(":")[0].toLowerCase();
@@ -259,6 +261,26 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // THE COLLECTIVE'S OWN ADDRESS (collective.lccommandsuite.com, decided 2026-10-13). One app, two front doors:
+  //  - on the Collective host only the Collective's own pages and APIs exist; every Command Suite path is sent to
+  //    lccommandsuite.com (pages) or answered 404 (APIs), so the two products never blur;
+  //  - once COLLECTIVE_HOST_LIVE is on, the old Collective addresses on lccommandsuite.com (/community, /join,
+  //    /collective) forward to the same path on the new host, so every link already emailed keeps working.
+  // The old host's /api/*, /auth/confirm and /reset-password are deliberately NOT forwarded (Suite sign-in and
+  // password-reset links use them, and an already-open page may still call its own /api).
+  const reqHost = request.headers.get("host") || "";
+  const onCollectiveHost = isCollectiveHost(reqHost);
+  {
+    const p = request.nextUrl.pathname;
+    if (onCollectiveHost && p !== "/" && !collectiveHostAllows(p)) {
+      if (p.startsWith("/api/")) return NextResponse.json({ error: "not found" }, { status: 404 });
+      return NextResponse.redirect(`https://${SUITE_HOST}${p}${request.nextUrl.search}`, 307);
+    }
+    if (COLLECTIVE_HOST_LIVE && isSuiteProductionHost(reqHost) && isLegacyCollectivePath(p)) {
+      return NextResponse.redirect(`https://${COLLECTIVE_HOST}${p}${request.nextUrl.search}`, COLLECTIVE_FORWARD_STATUS);
+    }
+  }
+
   // The investor page (and its documents) sit behind an access code. Only /investor-brief is affected: the gate
   // page itself is open, everything else under it needs the signed cookie from /api/investor-access/login.
   {
@@ -281,8 +303,15 @@ export async function middleware(request: NextRequest) {
   const isApi = request.nextUrl.pathname.startsWith("/api/");
   if (isApi) response.headers.set("Cache-Control", "no-store, max-age=0");
 
-  // Gate off → passthrough (safe default).
-  if (process.env.AUTH_ENABLED !== "true") return response;
+  // Gate off → passthrough (safe default). On the Collective host "/" is still the public landing.
+  if (process.env.AUTH_ENABLED !== "true") {
+    if (onCollectiveHost && request.nextUrl.pathname === "/") {
+      const landing = request.nextUrl.clone();
+      landing.pathname = "/collective";
+      return NextResponse.rewrite(landing);
+    }
+    return response;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -309,6 +338,16 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // The Collective host's front door: "/" is the public landing for visitors and the app for anyone signed in.
+  if (onCollectiveHost && request.nextUrl.pathname === "/") {
+    if (user) return NextResponse.redirect(new URL("/community", request.url));
+    const landing = request.nextUrl.clone();
+    landing.pathname = "/collective";
+    const rewritten = NextResponse.rewrite(landing);
+    for (const c of response.cookies.getAll()) rewritten.cookies.set(c);
+    return rewritten;
+  }
 
   // DEMO IS FOR THE ALIGNMENT ARCHITECT ONLY (Babs, 2026-10-10: "it should not even appear on ANY client account
   // ever"). The lc_demo cookie is stripped from the request, and expired in the browser, for everyone who is not
@@ -460,6 +499,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPublicPage) {
+    // The Collective has its own sign-in; /login is open on its host only so a pending 2FA code can be entered.
+    if (onCollectiveHost && path === "/login" && !needsMfa) {
+      return NextResponse.redirect(new URL(authed ? "/community" : "/community/sign-in", request.url));
+    }
     // Don't bounce a signed-in user off /login while their 2FA is still pending —
     // that's where they enter the code.
     if (authed && !needsMfa && (path === "/login" || path === "/community/sign-in")) {

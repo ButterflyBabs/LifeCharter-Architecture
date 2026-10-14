@@ -1,5 +1,6 @@
 "use client";
 
+import { collectiveHref } from "@/lib/collective";
 import { Term } from "@/components/Term";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -24,7 +25,7 @@ export default function CollectiveCard() {
     <div className="h-full overflow-hidden rounded-2xl border border-gray-200/60 bg-[#FFFFFF] shadow-sm">
       <div className="flex items-center justify-between gap-2 px-6 pb-3 pt-5">
         <h3 className="font-serif text-base text-indigo-900"><Term id="collective">The Collective</Term></h3>
-        <Link href="/community" className="inline-flex items-center gap-0.5 text-xs font-medium text-[#2E7C83] hover:underline">
+        <Link href={collectiveHref("/community")} className="inline-flex items-center gap-0.5 text-xs font-medium text-[#2E7C83] hover:underline">
           Open <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -46,7 +47,7 @@ export default function CollectiveCard() {
             </span>
           </p>
         )}
-        <Link href="/community" className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+        <Link href={collectiveHref("/community")} className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
           Go to The Collective <ChevronRight className="h-4 w-4" />
         </Link>
       </div>

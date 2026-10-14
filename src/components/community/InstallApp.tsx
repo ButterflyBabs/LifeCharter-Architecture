@@ -6,6 +6,7 @@
 // and Chrome place the Share button differently), and an "open in your
 // browser first" note inside Instagram/Facebook, which can't install apps.
 import { useEffect, useState } from "react";
+import { collectiveDisplayHost } from "@/lib/collective";
 import { Check, Download, MoreVertical, Share, Smartphone, X } from "lucide-react";
 import { Button, Card } from "./ui";
 import { useIsNativeApp } from "@/lib/community/native";
@@ -165,7 +166,7 @@ export function InstallInstructions({ platform }: { platform: Platform }) {
   }
   return (
     <p className="text-[14.5px] leading-relaxed text-[var(--cm-body)]">
-      On your phone, open <strong>lccommandsuite.com/community</strong> in Safari or Chrome and come back to this page — it will show the steps for
+      On your phone, open <strong>{collectiveDisplayHost()}/community</strong> in Safari or Chrome and come back to this page — it will show the steps for
       your phone.
     </p>
   );

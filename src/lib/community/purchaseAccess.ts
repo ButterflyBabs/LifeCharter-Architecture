@@ -9,6 +9,7 @@
 // channel right away; otherwise the grant waits for that email and is applied by
 // the database the moment their Collective profile is created (or when they
 // sign in: cm_claim_purchase_access). Either way they get one email.
+import { COLLECTIVE_BASE_URL } from "@/lib/collective";
 import type Stripe from "stripe";
 import { createServerClient } from "@/lib/supabase/server";
 import { upsertContact, logEvent } from "@/lib/crm";
@@ -34,7 +35,7 @@ interface Buyer {
   address: Stripe.Address | null | undefined;
 }
 
-const appUrl = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+const appUrl = () => COLLECTIVE_BASE_URL; // access emails link into the Collective
 
 function metadataKeys(meta: Stripe.Metadata | null | undefined): string[] {
   const raw = meta?.[ACCESS_METADATA_KEY];

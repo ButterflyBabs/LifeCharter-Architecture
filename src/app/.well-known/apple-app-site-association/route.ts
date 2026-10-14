@@ -1,5 +1,6 @@
-// Universal links for the iPhone app: tapping a lccommandsuite.com/community or
-// /join link (from email, texts, the web) opens the Collective app if installed.
+// Universal links for the iPhone app: tapping a collective.lccommandsuite.com/community or /join link
+// (and the old lccommandsuite.com ones, which forward) from email, texts or the web opens the Collective app if
+// installed. The same file is served on both hosts; the app lists both under Associated Domains.
 export const dynamic = "force-static";
 
 export function GET() {

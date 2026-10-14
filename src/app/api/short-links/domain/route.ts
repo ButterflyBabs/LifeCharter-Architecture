@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 //   POST { action: "add-domain" | "check-domain" | "remove-domain", domain? }
 
 const HOST_RE = /^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
-const APP_HOSTS = new Set(["lccommandsuite.com", "www.lccommandsuite.com", "amilynnecarroll.com", "www.amilynnecarroll.com", "lifecharter.life", "www.lifecharter.life"]);
+const APP_HOSTS = new Set(["lccommandsuite.com", "www.lccommandsuite.com", "amilynnecarroll.com", "www.amilynnecarroll.com", "lifecharter.life", "www.lifecharter.life", "collective.lccommandsuite.com"]);
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
 async function view(planId: string) {

@@ -1,3 +1,4 @@
+import { collectiveBaseFor } from "@/lib/collective";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendCollectiveWelcome } from "@/lib/community/welcome-email";
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
   // If they came through the landing page, mark the invitation as accepted.
   await supabase.from("cm_invite_requests").update({ joined_user_id: uid, joined_at: new Date().toISOString() }).eq("email", email.toLowerCase()).is("joined_at", null);
 
-  await sendCollectiveWelcome({ email, name, base: new URL(req.url).origin });
+  await sendCollectiveWelcome({ email, name, base: collectiveBaseFor(req) });
 
   return NextResponse.json({ ok: true });
 }

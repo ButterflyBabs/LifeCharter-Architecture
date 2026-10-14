@@ -1,7 +1,7 @@
 # The LifeCharter Collective — iPhone app
 
 A Capacitor 8 shell (`ios/`, `capacitor.config.ts`, `capacitor-www/`) around the live
-Collective at https://lccommandsuite.com/community. Web changes ship to the app
+Collective at https://collective.lccommandsuite.com/community. Web changes ship to the app
 instantly; a new App Store build is only needed for native changes (icon, plugins,
 permissions, capacitor.config.ts).
 

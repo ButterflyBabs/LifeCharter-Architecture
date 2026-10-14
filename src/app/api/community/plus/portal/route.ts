@@ -1,3 +1,4 @@
+import { COLLECTIVE_BASE_URL } from "@/lib/collective";
 import { NextResponse } from "next/server";
 import { sessionUser } from "@/lib/authz";
 import { stripe } from "@/lib/stripe";
@@ -6,7 +7,7 @@ import { crossOriginBlocked } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
+const APP_URL = COLLECTIVE_BASE_URL; // Plus is bought and managed in the Collective, so Stripe returns there
 
 // Plus has its own portal settings (separate from Command Suite's default):
 // update card, cancel at period end, invoices. Created once, id kept in

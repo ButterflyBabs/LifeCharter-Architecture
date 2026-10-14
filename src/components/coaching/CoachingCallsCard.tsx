@@ -1,5 +1,6 @@
 "use client";
 
+import { collectiveHref } from "@/lib/collective";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Video } from "lucide-react";
@@ -84,7 +85,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
             </button>
           ))}
         </div>
-        <Link href="/community/events" className="text-xs font-medium text-[#2E7C83] hover:underline">See all calls and replays</Link>
+        <Link href={collectiveHref("/community/events")} className="text-xs font-medium text-[#2E7C83] hover:underline">See all calls and replays</Link>
       </div>
       {calls === null ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>

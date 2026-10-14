@@ -3,6 +3,7 @@
 // Super-admin console for the Collective: invite links & codes, spaces and
 // their channels, "Explore LifeCharter" discover cards, and the member list.
 import Link from "next/link";
+import { collectiveDisplayHost } from "@/lib/collective";
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -731,7 +732,7 @@ function InviteRequests() {
       </p>
       {rows.length === 0 ? (
         <EmptyState icon="✉️" title="No invitation requests yet">
-          Share lccommandsuite.com/collective. Add ?utm_source=instagram (or any source) to a link to see which channels bring people in.
+          Share {collectiveDisplayHost()}. Add ?utm_source=instagram (or any source) to a link to see which channels bring people in.
         </EmptyState>
       ) : (
         <Card className="divide-y divide-[var(--cm-line-soft)] overflow-hidden">

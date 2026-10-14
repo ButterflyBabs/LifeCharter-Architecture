@@ -3,6 +3,7 @@
 // App frame for The LifeCharter Collective. Desktop: navy sidebar with the
 // member's own spaces (never locked rooms). Mobile: slim top bar + bottom tab
 // bar, with the sidebar as a slide-over drawer for "Spaces".
+import { PushMovedNotice } from "./PushMovedNotice";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -81,6 +82,7 @@ function Frame({ children }: { children: ReactNode }) {
       <main className="pb-24 lg:ml-[272px] lg:pb-10">
         <div className="mx-auto w-full max-w-[860px] px-4 pt-4 sm:px-6 lg:pt-8">
           <SuiteRedirectNotice />
+          <PushMovedNotice />
           {children}
         </div>
       </main>

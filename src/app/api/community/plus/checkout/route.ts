@@ -1,3 +1,4 @@
+import { COLLECTIVE_BASE_URL } from "@/lib/collective";
 import { NextResponse } from "next/server";
 import { sessionUser } from "@/lib/authz";
 import { stripe } from "@/lib/stripe";
@@ -8,7 +9,7 @@ import { PLUS_FLOW } from "@/lib/community/plus";
 
 export const dynamic = "force-dynamic";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
+const APP_URL = COLLECTIVE_BASE_URL; // Plus is bought and managed in the Collective, so Stripe returns there
 
 // Starts a Collective Plus subscription in Stripe Checkout. The first 100
 // members lock in the founding price for as long as they stay subscribed.

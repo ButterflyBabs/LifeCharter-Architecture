@@ -6,6 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:collective.lccommandsuite.com</string>
+		<string>webcredentials:collective.lccommandsuite.com</string>
 		<string>applinks:lccommandsuite.com</string>
 		<string>webcredentials:lccommandsuite.com</string>
 	</array>

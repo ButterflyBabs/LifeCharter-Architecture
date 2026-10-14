@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
 import { useCommunity } from "@/lib/community/context";
 import { enableNativePush, isNativeApp, nativePushState, useIsNativeApp, type NativePushState } from "@/lib/community/native";
+import { COLLECTIVE_CUTOVER_ISO } from "@/lib/collective";
 import { Button } from "./ui";
 
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -12,6 +13,56 @@ function urlBase64ToUint8Array(base64: string) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+const uaOf = () => navigator.userAgent.slice(0, 200);
+
+type PushDb = ReturnType<typeof useCommunity>["supabase"];
+
+/**
+ * Subscribes THIS browser/device for web push on the current address and saves it. Returns the resulting state.
+ * Web push is tied to the address a subscription was made on, so after the Collective moved to its own address each
+ * member has to switch it on once more here. When that happens, this device's older subscription (made on the old
+ * address, before COLLECTIVE_CUTOVER_ISO, same browser) is retired so nobody gets every notification twice.
+ */
+export async function subscribeWebPush(supabase: PushDb, userId: string): Promise<"on" | "off" | "denied"> {
+  if (!VAPID) return "off";
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return perm === "denied" ? "denied" : "off";
+  const reg = (await navigator.serviceWorker.getRegistration("/community-sw.js")) ?? (await navigator.serviceWorker.register("/community-sw.js"));
+  await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID) });
+  const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+  await supabase.from("cm_push_subscriptions").upsert(
+    { user_id: userId, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, user_agent: uaOf() },
+    { onConflict: "endpoint" }
+  );
+  if (COLLECTIVE_CUTOVER_ISO) {
+    await supabase
+      .from("cm_push_subscriptions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("user_agent", uaOf())
+      .neq("endpoint", json.endpoint)
+      .lt("created_at", COLLECTIVE_CUTOVER_ISO);
+  }
+  return "on";
+}
+
+/** Does this device have a web-push subscription from before the move that has not been re-made here yet? */
+export async function pushNeedsRenewal(supabase: PushDb, userId: string): Promise<boolean> {
+  if (!VAPID || !COLLECTIVE_CUTOVER_ISO) return false;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return false;
+  if (Notification.permission === "denied") return false;
+  const reg = await navigator.serviceWorker.getRegistration("/community-sw.js");
+  if (await reg?.pushManager.getSubscription()) return false;
+  const { count } = await supabase
+    .from("cm_push_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("user_agent", uaOf())
+    .lt("created_at", COLLECTIVE_CUTOVER_ISO);
+  return (count ?? 0) > 0;
 }
 
 type State = "unsupported" | "needs-install" | "off" | "on" | "denied" | "not-configured";
@@ -80,17 +131,7 @@ function WebPushToggle() {
     if (!VAPID || !userId) return;
     setBusy(true);
     try {
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") return setState(perm === "denied" ? "denied" : "off");
-      const reg = (await navigator.serviceWorker.getRegistration("/community-sw.js")) ?? (await navigator.serviceWorker.register("/community-sw.js"));
-      await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID) });
-      const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-      await supabase.from("cm_push_subscriptions").upsert(
-        { user_id: userId, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, user_agent: navigator.userAgent.slice(0, 200) },
-        { onConflict: "endpoint" }
-      );
-      setState("on");
+      setState(await subscribeWebPush(supabase, userId));
     } finally {
       setBusy(false);
     }

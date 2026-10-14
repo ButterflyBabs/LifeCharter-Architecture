@@ -1,3 +1,4 @@
+import { COLLECTIVE_BASE_URL } from "@/lib/collective";
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createServerClient } from "@/lib/supabase/server";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 // Same CRON_SECRET convention as the other crons.
 
 const EMAIL_GRACE_MIN = 10;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+const APP_URL = COLLECTIVE_BASE_URL; // every link in these emails is the Collective's own
 
 interface NoteRow {
   id: string;

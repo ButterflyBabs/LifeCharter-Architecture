@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 // The LifeCharter Collective iPhone app. It loads the live Collective
-// (lccommandsuite.com/community) inside a native shell that adds Apple push
+// (collective.lccommandsuite.com/community) inside a native shell that adds Apple push
 // notifications, haptics, a launch screen, universal links and an offline
 // screen. The web app detects it via the user agent / Capacitor bridge and
 // hides anything App Store rules don't allow in-app (e.g. buying Plus).
@@ -10,9 +10,10 @@ const config: CapacitorConfig = {
   appName: "LifeCharter Collective",
   webDir: "capacitor-www",
   server: {
-    url: "https://lccommandsuite.com/community",
+    url: "https://collective.lccommandsuite.com/community",
     errorPath: "offline.html",
-    allowNavigation: ["lccommandsuite.com"],
+    // The old address stays allowed: links already emailed point there and forward to the new host.
+    allowNavigation: ["collective.lccommandsuite.com", "lccommandsuite.com"],
   },
   appendUserAgent: "LifeCharterCollectiveApp/1.0",
   backgroundColor: "#FAF8F3",

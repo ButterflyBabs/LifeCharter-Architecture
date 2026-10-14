@@ -1,6 +1,7 @@
 // Welcome email for a brand-new Collective member, sent right after /api/community/join
 // creates their account. Same look as the invitation email. Never throws: a failed send is
 // logged and the join still succeeds (they also get the in-app welcome DM).
+import { collectiveDisplayHost } from "@/lib/collective";
 
 function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -36,7 +37,7 @@ export async function sendCollectiveWelcome({ email, name, base }: { email: stri
     </td></tr>
     <tr><td style="font-family:Arial,sans-serif;font-size:14px;line-height:1.65;color:#2E3A46;padding-top:16px">
       <strong style="color:#1F2B3A">Keep the Collective on your phone</strong><br>
-      Open <a href="${home}" style="color:#2E7C83">lccommandsuite.com/community</a> on your phone, then choose <em>Add to Home Screen</em> (Safari: the Share button; Chrome: the &#8942; menu). Turn on notifications when it asks, so you never miss a reply or an event.
+      Open <a href="${home}" style="color:#2E7C83">${collectiveDisplayHost()}/community</a> on your phone, then choose <em>Add to Home Screen</em> (Safari: the Share button; Chrome: the &#8942; menu). Turn on notifications when it asks, so you never miss a reply or an event.
     </td></tr>
     <tr><td style="font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#56616E;padding-top:16px">Questions? The <a href="${help}" style="color:#2E7C83">Help &amp; FAQ</a> page has quick answers, or just reply to this email.</td></tr>
     <tr><td style="font-size:17px;font-style:italic;color:#1F2B3A;padding-top:22px">Head up - Wings out<br>Babs 🦋</td></tr>
