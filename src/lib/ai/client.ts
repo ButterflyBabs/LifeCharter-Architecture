@@ -6,6 +6,7 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall,
 } from "openai/resources/chat/completions";
+import { recordUsage } from "@/lib/ai/meter";
 
 // ONE door for every AI call in the Command Suite.
 //
@@ -50,7 +51,18 @@ export interface AiClientOptions {
 export function aiClient(key: string, opts: AiClientOptions = {}): AiClient {
   if (providerForKey(key) === "openai") {
     const openai = new OpenAI({ apiKey: key, ...opts });
-    return { provider: "openai", chat: { completions: { create: (p) => openai.chat.completions.create(p) } } };
+    return {
+      provider: "openai",
+      chat: {
+        completions: {
+          create: async (p) => {
+            const res = await openai.chat.completions.create(p);
+            recordUsage(key, { provider: "openai", model: res.model, input: res.usage?.prompt_tokens ?? 0, output: res.usage?.completion_tokens ?? 0 });
+            return res;
+          },
+        },
+      },
+    };
   }
   return new ClaudeChat(key.trim(), opts);
 }
@@ -70,7 +82,10 @@ class ClaudeChat implements AiClient {
   // original blocks are kept here (one client per request) and restored by tool-call id.
   private turns = new Map<string, Anthropic.Messages.ContentBlock[]>();
 
+  private key: string;
+
   constructor(key: string, opts: AiClientOptions) {
+    this.key = key;
     this.client = new Anthropic({ apiKey: key, timeout: opts.timeout, maxRetries: opts.maxRetries });
   }
 
@@ -114,6 +129,7 @@ class ClaudeChat implements AiClient {
       .map((b) => ({ id: b.id, type: "function", function: { name: b.name, arguments: JSON.stringify(b.input ?? {}) } }));
     for (const c of calls) this.turns.set(c.id, res.content);
 
+    recordUsage(this.key, { provider: "anthropic", model: res.model, input: res.usage.input_tokens, output: res.usage.output_tokens });
     const finish = res.stop_reason === "tool_use" ? "tool_calls" : res.stop_reason === "max_tokens" ? "length" : "stop";
     return {
       id: res.id,

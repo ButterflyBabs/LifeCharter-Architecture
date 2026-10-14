@@ -11,6 +11,7 @@ interface Data {
   prices: { id: string; name: string; monthlyCents: number }[];
   stripeFees: Record<string, number>;
   stripeFeesNote?: string | null;
+  aiUsage?: { rows: { profileId: string | null; name: string; kind: string; calls: number; inputTokens: number; outputTokens: number; estCents: number }[]; days: number; houseCents: number; clientCents: number };
   vendors: { key: string; label: string; category: string; hint: string | null }[];
 }
 
@@ -242,6 +243,35 @@ export default function PlatformCosts() {
           </p>
         </section>
       </div>
+
+      {data.aiUsage && (
+        <section className={card}>
+          <h2 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">AI use, last {data.aiUsage.days} days</h2>
+          <p className="mt-1 text-xs text-[#7a8a99]">
+            Counted per account from now on. Estimated cost, not a bill. On their own key a client pays their own provider; the House key and Collective Plus
+            are yours: about <strong>{money(data.aiUsage.houseCents)}</strong> so far{data.aiUsage.clientCents > 0 ? `; clients' own keys about ${money(data.aiUsage.clientCents)}` : ""}.
+          </p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-[#7a8a99]">
+                <tr><th className="py-2 pr-3">Account</th><th className="py-2 pr-3">Key</th><th className="py-2 pr-3">Calls</th><th className="py-2 pr-3">Tokens in / out</th><th className="py-2">Est. cost</th></tr>
+              </thead>
+              <tbody>
+                {data.aiUsage.rows.length === 0 && <tr><td colSpan={5} className="py-4 text-[#7a8a99]">No AI calls recorded yet. They appear as the assistant and AI features are used.</td></tr>}
+                {data.aiUsage.rows.map((r) => (
+                  <tr key={`${r.profileId}|${r.kind}`} className="border-t border-[#eee6d6] dark:border-[#22324f]">
+                    <td className="py-1.5 pr-3 font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</td>
+                    <td className="py-1.5 pr-3 text-[#5b6b7b] dark:text-[#b8c4d0]">{r.kind === "own" ? "their own" : r.kind}</td>
+                    <td className="py-1.5 pr-3">{r.calls.toLocaleString()}</td>
+                    <td className="py-1.5 pr-3">{r.inputTokens.toLocaleString()} / {r.outputTokens.toLocaleString()}</td>
+                    <td className="py-1.5">{money(r.estCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {confirmed.length > 0 && (
         <section className={card}>

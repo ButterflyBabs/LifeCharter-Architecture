@@ -2,6 +2,7 @@ import { authEnabled, isOwnerEmail, prefersTeamAccount, sessionUser, superAdminE
 import { createServerClient } from "@/lib/supabase/server";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import { switcherAllowed } from "@/lib/accountSwitcher";
+import { rememberKey } from "@/lib/ai/meter";
 
 // Every Command Suite account connects its own AI. This resolves whose account
 // a request belongs to and returns that account's assistant name + OpenAI key
@@ -63,7 +64,9 @@ export async function readAccountKey(profileId: string | null): Promise<string> 
   if (!profileId) return "";
   const { data, error } = await createServerClient().rpc("get_account_ai_key", { p_user: profileId });
   if (error) console.error("get_account_ai_key:", error.message);
-  return ((data as string | null) || "").trim();
+  const key = ((data as string | null) || "").trim();
+  rememberKey(key, profileId); // so the usage of this key is metered against this account
+  return key;
 }
 
 export async function resolveAiConfig(): Promise<{ name: string; key: string; instructions: string; notes: string }> {
@@ -84,6 +87,7 @@ export async function resolveAiConfig(): Promise<{ name: string; key: string; in
       notes = ((data?.assistant_notes as string) || "").trim();
     }
     const own = await readAccountKey(account.profileId);
+    if (!own && account.isOwner) rememberKey(envKey, account.profileId);
     return { name, key: own || (account.isOwner ? envKey : ""), instructions, notes };
   } catch (e) {
     console.error("resolveAiConfig:", e);

@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import * as microsoft from "@/lib/microsoft";
 import { stripe } from "@/lib/stripe";
+import { estimateCostCents } from "@/lib/ai/meter";
 import { VENDORS, looksLikeReceipt, monthOf, parseReceipt, summarizeMonths, type Entry } from "@/lib/platformCosts";
 
 // Server side of Platform Costs: reading the entries, counting real clients, and scanning the house mailbox for
@@ -91,10 +92,50 @@ export async function stripeFeesByMonth(): Promise<{ fees: Record<string, number
   }
 }
 
+
+export interface AiUsageRow {
+  profileId: string | null;
+  name: string;
+  kind: string;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  estCents: number;
+}
+
+/** AI use over the last 30 days, by account and key. Counts only; nothing about what was asked is stored. */
+export async function aiUsageSummary(db: Db): Promise<{ rows: AiUsageRow[]; days: number; houseCents: number; clientCents: number }> {
+  const days = 30;
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data } = await db.from("ai_usage_log").select("profile_id, key_kind, model, input_tokens, output_tokens").gte("created_at", since).limit(20000);
+  const by = new Map<string, AiUsageRow>();
+  for (const r of (data ?? []) as { profile_id: string | null; key_kind: string; model: string | null; input_tokens: number; output_tokens: number }[]) {
+    const k = `${r.profile_id ?? "-"}|${r.key_kind}`;
+    const row = by.get(k) ?? { profileId: r.profile_id, name: "", kind: r.key_kind, calls: 0, inputTokens: 0, outputTokens: 0, estCents: 0 };
+    row.calls += 1;
+    row.inputTokens += r.input_tokens || 0;
+    row.outputTokens += r.output_tokens || 0;
+    row.estCents += estimateCostCents(r.model, r.input_tokens || 0, r.output_tokens || 0);
+    by.set(k, row);
+  }
+  const ids = Array.from(new Set(Array.from(by.values()).map((r) => r.profileId).filter((x): x is string => Boolean(x))));
+  const names = new Map<string, string>();
+  if (ids.length) {
+    const { data: profs } = await db.from("profiles").select("id, full_name, email").in("id", ids);
+    for (const p of (profs ?? []) as { id: string; full_name: string | null; email: string | null }[]) names.set(p.id, p.full_name || p.email || "Account");
+  }
+  const rows = Array.from(by.values())
+    .map((r) => ({ ...r, name: r.profileId ? names.get(r.profileId) ?? "Account" : r.kind === "plus" ? "Collective Plus (shared key)" : r.kind === "house" ? "House key" : "Not attributed", estCents: Math.round(r.estCents) }))
+    .sort((a, b) => b.estCents - a.estCents);
+  const houseCents = rows.filter((r) => r.kind === "house" || r.kind === "plus").reduce((n, r) => n + r.estCents, 0);
+  const clientCents = rows.filter((r) => r.kind === "own").reduce((n, r) => n + r.estCents, 0);
+  return { rows, days, houseCents, clientCents };
+}
+
 export async function loadSummary(db: Db, planId: string) {
-  const [entries, clients, prices, fee] = await Promise.all([loadEntries(db, planId), countClients(db, planId), planPrices(db), stripeFeesByMonth()]);
+  const [entries, clients, prices, fee, aiUsage] = await Promise.all([loadEntries(db, planId), countClients(db, planId), planPrices(db), stripeFeesByMonth(), aiUsageSummary(db)]);
   const months = summarizeMonths(entries);
-  return { entries, months, clients, prices, stripeFees: fee.fees, stripeFeesNote: fee.note };
+  return { entries, months, clients, prices, stripeFees: fee.fees, stripeFeesNote: fee.note, aiUsage };
 }
 
 export interface ScanResult {
