@@ -62,6 +62,12 @@ export async function POST(req: NextRequest) {
     const pricingSettings = await loadPricingSettings();
     const today = todayMountain();
     const prices = pricesFor(tierKey, today, pricingSettings);
+    // After the switch day the new Stripe prices must exist (Alignment Architect: pricing step "create prices"). Without
+    // them the free-month coupon matches nothing in the cart and Stripe refuses the session, so say so plainly.
+    if (isSwitched(today, pricingSettings) && (!prices.monthlyPriceId || !prices.implementationPriceId)) {
+      console.error("Combined checkout: the new price list is live but its Stripe price ids are not saved (pricing_2027_prices).");
+      return NextResponse.json({ error: "The new Stripe prices have not been created yet. Run the pricing step in Alignment Architect first." }, { status: 503 });
+    }
     // While founder pricing is open the buyer is told, in the checkout itself, that the monthly fee is locked (Terms 3.7).
     const submitMessage =
       `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` +
