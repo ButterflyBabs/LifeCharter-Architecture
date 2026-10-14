@@ -939,6 +939,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
       "You can change your plan yourself: open Settings, then Billing, then Manage billing, and choose a different plan. When you move up, your new plan opens straight away and your card on file is charged the prorated difference for the rest of the billing period. You get an email right away confirming the new plan and the amount, and someone from our team reaches out within 3 business days to help you use what is now open to you. The morning after, you get one short check-in email asking how it is going, with a link to support. If you move down to a cheaper plan, the change happens immediately and the unused part of your current period is credited. Cancelling is not available in the billing portal: please contact support.",
   },
   {
+    id: "founder-pricing-lock",
+    category: "Account & Settings",
+    question: "Is my monthly price locked in? What is founder pricing?",
+    keywords: ["founder pricing", "price locked", "lock", "price increase", "monthly fee", "price change", "keep my price", "cancel", "upgrade price", "grandfathered"],
+    answer:
+      "If you bought a plan at founder pricing (purchases made through December 31, 2026), your monthly fee is locked for as long as your agreement stays continuously in effect: during your first 12 months and month to month after that. It is in Section 3.7 of the Terms of Sale (lccommandsuite.com/legal/terms-of-sale). A few things to know: if you move to a higher or lower plan you pay the founder price for that plan; a card that fails and is fixed within 15 days does not cost you founder pricing; and if you cancel, founder pricing ends and you would pay the price in effect at that time if you came back. Founder pricing belongs to you and your business and cannot be transferred. The lock covers your monthly fee, not features or limits. Do not quote or confirm any new prices: say that anything about future pricing will be announced by LifeCharter directly.",
+  },
+  {
     id: "payment-failed-what-happens",
     category: "Account & Settings",
     question: "What happens if my payment doesn't go through?",
