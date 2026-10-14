@@ -23,6 +23,7 @@ const PUBLIC_APIS = [
   "/api/cron/masterclass-zoom-sync", // secured by its own CRON_SECRET check, not a session — currently unenforced since CRON_SECRET isn't set yet
   "/api/readai/bootstrap", // one-time setup, secured by its own state check
   "/api/stripe/webhook", // secured by Stripe signature verification, not a session — was missing before, meaning Stripe's own webhook calls were silently getting 401'd whenever AUTH_ENABLED is true
+  "/api/stripe/pre-founder-card", // Pre-Founder card link: starts $497/month billing on April 1, 2027
   "/api/stripe/starter-checkout", // public self-serve Starter checkout entry + its /confirm sub-route
   "/api/cron/journal-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/journal-review", // secured by its own CRON_SECRET check, not a session
