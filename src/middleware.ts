@@ -47,6 +47,7 @@ const PUBLIC_APIS = [
   "/api/cron/broadcasts", // secured by its own CRON_SECRET check, not a session
   "/api/cron/spark", // secured by its own CRON_SECRET check, not a session (refreshes LC Spark Instagram tokens)
   "/api/cron/client-walkthrough", // the 3-minute New Client Setup Walkthrough; secured by its own CRON_SECRET check, not a session
+  "/api/cron/apply-pricing", // secured by its own CRON_SECRET check, not a session
   "/api/cron/platform-costs", // secured by its own CRON_SECRET check, not a session
   "/api/cron/followups", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-daily-tasks", // secured by its own CRON_SECRET check, not a session

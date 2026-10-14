@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/apply-pricing",
+      "schedule": "10 7 * * *"
+    },
+    {
       "path": "/api/cron/platform-costs",
       "schedule": "0 15 2 * *"
     },

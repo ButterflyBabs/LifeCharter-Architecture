@@ -15,6 +15,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { TIERS, isSwitched, pricesForChange, type Tier } from "@/lib/pricing";
+import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 
@@ -83,6 +85,25 @@ export async function POST(req: NextRequest) {
 
     // Create Stripe price if it doesn't exist
     let stripePriceId = plan.stripe_price_id;
+
+    // From the January 1, 2027 price change: a client already on a founder monthly fee who moves tier keeps founder
+    // pricing for that tier; anyone else (a new buyer, or someone returning after a cancellation) pays the new list.
+    try {
+      const pricing = await loadPricingSettings(supabase);
+      const today = todayMountain();
+      if (isSwitched(today, pricing) && TIERS.includes(planId as Tier)) {
+        let currentCents: number | null = null;
+        if (customerId) {
+          const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 5 });
+          const live = subs.data.find((x) => x.status === "active" || x.status === "trialing" || x.status === "past_due");
+          currentCents = live?.items.data[0]?.price?.unit_amount ?? null;
+        }
+        const chosen = pricesForChange(planId as Tier, currentCents, today, pricing);
+        if (chosen.monthlyPriceId) stripePriceId = chosen.monthlyPriceId;
+      }
+    } catch (e) {
+      console.error("[stripe/checkout] price-list check failed, using the plan's saved price:", e);
+    }
     
     if (!stripePriceId) {
       // Create product

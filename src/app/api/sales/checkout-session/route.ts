@@ -27,31 +27,26 @@ import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { TIERS, TIER_NAME, pricesFor, type Tier, type TierPrices } from "@/lib/pricing";
+import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
 const FIRST_MONTH_FREE_COUPON_ID = "CwLz0M07"; // FIRSTMONTHFREE
 
-const TIER_PRICES: Record<string, { monthlyPriceId: string; implementationPriceId: string }> = {
-  starter: {
-    monthlyPriceId: "price_1UFxEMLtotgP5J189ky7bu03",
-    implementationPriceId: "price_1UFx60LtotgP5J18Vih3WrJs",
-  },
-  growth: {
-    monthlyPriceId: "price_1UFxF1LtotgP5J18KeV9NI2y",
-    implementationPriceId: "price_1UFx7VLtotgP5J18pOPwa8yO",
-  },
-  vip: {
-    monthlyPriceId: "price_1UFxFuLtotgP5J188iWSSUg2",
-    implementationPriceId: "price_1UFx9vLtotgP5J18LDbeFXIE",
-  },
-};
-
-// Implementation fee by tier, in cents (matches the live Implementation Fee prices and the plans table).
-const IMPLEMENTATION_CENTS: Record<string, number> = { starter: 249700, growth: 299700, vip: 499700 };
-const TIER_NAME: Record<string, string> = { starter: "Starter", growth: "Growth", vip: "VIP" };
-// Annual pay-in-full: the Implementation Fee plus the first 12 monthly fees in one payment (about 20% off).
-const ANNUAL_CENTS: Record<string, number> = { starter: 500000, growth: 700000, vip: 1350000 };
+// Prices come from src/lib/pricing.ts: the founder list until the switch day (January 1, 2027), the new list after.
+// A saved Stripe price id is used when there is one; otherwise the price is created inline at checkout.
+const monthlyLine = (p: TierPrices, tier: Tier) =>
+  p.monthlyPriceId
+    ? { price: p.monthlyPriceId, quantity: 1 }
+    : {
+        quantity: 1,
+        price_data: { currency: "usd", unit_amount: p.monthlyCents, recurring: { interval: "month" as const }, product_data: { name: `LifeCharter Command Suite ${TIER_NAME[tier]} (monthly)` } },
+      };
+const implementationLine = (p: TierPrices, tier: Tier) =>
+  p.implementationPriceId
+    ? { price: p.implementationPriceId, quantity: 1 }
+    : { quantity: 1, price_data: { currency: "usd", unit_amount: p.implementationCents, product_data: { name: `LifeCharter Command Suite ${TIER_NAME[tier]} - Implementation Fee` } } };
 const ALUMNI_CREDIT_CENTS = 50000;
 
 export async function POST(req: NextRequest) {
@@ -61,10 +56,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { tier, email, fullName, sessionSource, alumni, split, annual } = await req.json();
-    const prices = TIER_PRICES[tier as string];
-    if (!prices) {
+    if (!TIERS.includes(tier as Tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
+    const tierKey = tier as Tier;
+    const prices = pricesFor(tierKey, todayMountain(), await loadPricingSettings());
     if (email && (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email))) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
@@ -74,22 +70,22 @@ export async function POST(req: NextRequest) {
     // checkout completes, so it lands on the invoice that also carries the first monthly charge). The alumni credit
     // simply comes off the total before it is halved.
     const isSplit = split === true;
-    const totalImpl = (IMPLEMENTATION_CENTS[tier as string] ?? 0) - (isAlumni && isSplit ? ALUMNI_CREDIT_CENTS : 0);
+    const totalImpl = prices.implementationCents - (isAlumni && isSplit ? ALUMNI_CREDIT_CENTS : 0);
     const firstHalf = Math.ceil(totalImpl / 2);
     const secondHalf = totalImpl - firstHalf;
-    const tierName = TIER_NAME[tier as string] ?? String(tier);
+    const tierName = TIER_NAME[tierKey];
 
     // Annual pay-in-full: one payment covers the Implementation Fee and the first 12 monthly fees. The monthly
     // subscription is set up with a 365-day trial, so monthly billing begins by itself in month 13 (Terms 4.3).
     const isAnnual = annual === true && !isSplit;
     if (isAnnual) {
-      const annualTotal = (ANNUAL_CENTS[tier as string] ?? 0) - (isAlumni ? ALUMNI_CREDIT_CENTS : 0);
+      const annualTotal = prices.annualCents - (isAlumni ? ALUMNI_CREDIT_CENTS : 0);
       const annualSession = await stripe.checkout.sessions.create({
         mode: "subscription",
         custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
         customer_email: email || undefined,
         line_items: [
-          { price: prices.monthlyPriceId, quantity: 1 },
+          monthlyLine(prices, tierKey),
           {
             quantity: 1,
             price_data: {
@@ -111,7 +107,7 @@ export async function POST(req: NextRequest) {
           affiliate: cookies().get(AFF_COOKIE)?.value || "",
           implPlan: "annual",
           // What counts as the implementation part for implementation-only affiliate links.
-          implCents: String(Math.max(0, (IMPLEMENTATION_CENTS[tier as string] ?? 0) - (isAlumni ? ALUMNI_CREDIT_CENTS : 0))),
+          implCents: String(Math.max(0, prices.implementationCents - (isAlumni ? ALUMNI_CREDIT_CENTS : 0))),
         },
       });
       return NextResponse.json({ url: annualSession.url });
@@ -123,7 +119,7 @@ export async function POST(req: NextRequest) {
       customer_email: email || undefined,
       line_items: isSplit
         ? [
-            { price: prices.monthlyPriceId, quantity: 1 },
+            monthlyLine(prices, tierKey),
             {
               quantity: 1,
               price_data: {
@@ -134,8 +130,8 @@ export async function POST(req: NextRequest) {
             },
           ]
         : [
-            { price: prices.monthlyPriceId, quantity: 1 },
-            { price: prices.implementationPriceId, quantity: 1 },
+            monthlyLine(prices, tierKey),
+            implementationLine(prices, tierKey),
           ],
       // Alumni get the $500 implementation credit instead of the free month, never both (Terms of Sale 3.5).
       // Stripe checkout only accepts one `discounts` entry, so the paths are mutually exclusive here too. On the

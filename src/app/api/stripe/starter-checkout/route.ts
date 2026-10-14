@@ -31,13 +31,10 @@ import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
+import { pricesFor } from "@/lib/pricing";
+import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
-// The Starter Implementation Fee's real catalog price — same id as
-// checkout-session's TIER_PRICES.starter.implementationPriceId (confirmed
-// against the live Stripe dashboard, not generated dynamically). Used only
-// on the alumni path so LCALUMNI500's product restriction can match it.
-const STARTER_IMPLEMENTATION_PRICE_ID = "price_1UFx60LtotgP5J18Vih3WrJs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,6 +66,13 @@ export async function POST(req: NextRequest) {
 
     // Collective Plus members get their last month of Plus credited — not
     // available on the alumni path (see the file header note above).
+    // The alumni path charges the catalog Implementation Fee price so the promotion code matches. From the January 1,
+    // 2027 price change that is the new Starter implementation price (or, if its id is not saved yet, an inline price
+    // at the new amount so a graduate is never charged the old fee).
+    const starterPrices = pricesFor("starter", todayMountain(), await loadPricingSettings());
+    const alumniLine = starterPrices.implementationPriceId
+      ? { price: starterPrices.implementationPriceId, quantity: 1 }
+      : { price_data: { currency: "usd", unit_amount: starterPrices.implementationCents, product_data: { name: "LifeCharter Command Suite - Starter Implementation Fee" } }, quantity: 1 };
     const credit = isAlumni ? 0 : Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
     const amount = plan.onboarding_fee - Math.max(0, credit);
 
@@ -80,7 +84,7 @@ export async function POST(req: NextRequest) {
       custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
       customer_email: email,
       line_items: isAlumni
-        ? [{ price: STARTER_IMPLEMENTATION_PRICE_ID, quantity: 1 }]
+        ? [alumniLine]
         : [
             {
               price_data: {

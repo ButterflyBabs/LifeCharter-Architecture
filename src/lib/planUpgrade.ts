@@ -6,6 +6,7 @@
 // so with the flag off the webhook behaves exactly as it did before.
 
 import { createServerClient } from "@/lib/supabase/server";
+import { tierOfFounderMonthly } from "@/lib/pricing";
 import { enrolContact, ownerMasterPlanId } from "@/lib/sequences/engine";
 
 type Db = ReturnType<typeof createServerClient>;
@@ -31,6 +32,10 @@ export async function planOfSubscription(
     const yearly = it.price?.recurring?.interval === "year";
     const hit = (plans ?? []).find((p) => (yearly ? p.price_yearly : p.price_monthly) === amt);
     if (hit) return hit.id as string;
+    // After the January 1, 2027 price change the plans table holds the new fees; a client still on a founder monthly
+    // fee is on the same plan, only at the price they locked in.
+    const founderTier = yearly ? null : tierOfFounderMonthly(amt);
+    if (founderTier) return founderTier;
   }
   const meta = (sub.metadata?.planId || "").trim();
   if (meta && PLAN_RANK[meta]) return meta;
