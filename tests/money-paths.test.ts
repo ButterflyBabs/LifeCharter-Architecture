@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { isUpgrade, planOfSubscription, PLAN_RANK } from "../src/lib/planUpgrade";
-import { addMonths, trialEndTag } from "../src/lib/preFounderTrial";
+import { addMonths, trialEndTag, trialEndFor } from "../src/lib/preFounderTrial";
 import { offerRow } from "../src/lib/sales/offers";
 import { dueKinds, formatEventDateTime } from "../src/lib/eventEmails";
 import { sessionTag, scheduledSession } from "../src/lib/masterclass/followUp";
@@ -46,11 +46,14 @@ test("the plan is read from metadata first, then from the recurring price", asyn
   assert.equal(await planOfSubscription(fakeDb, { metadata: { planId: "gold" }, items: { data: [{ price: { unit_amount: 34700, recurring: { interval: "month" } } }] } }), "starter");
 });
 
-test("Pre-Founder trial: six months out, tagged with the Mountain-time date", () => {
+test("Pre-Founder trial: everyone's free months end April 1, 2027; later joiners get six months", () => {
   const sent = new Date("2026-10-09T13:24:43Z");
   assert.equal(addMonths(sent, 6).toISOString().slice(0, 10), "2027-04-09");
   assert.equal(addMonths(sent, 5).toISOString().slice(0, 10), "2027-03-09");
-  assert.equal(trialEndTag(sent), "pre-founder-trial-ends-2027-04-09");
+  // Decided 2026-10-11: one first-charge day for all Pre-Founders.
+  assert.equal(trialEndTag(sent), "pre-founder-trial-ends-2027-04-01");
+  const late = new Date("2027-05-10T15:00:00Z");
+  assert.equal(trialEndFor(late, late).toISOString().slice(0, 10), "2027-11-10");
 });
 
 test("offers: name required, price and payment count validated, link gets https", () => {

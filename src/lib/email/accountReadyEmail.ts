@@ -63,6 +63,8 @@ export function defaultBody(): string {
 
 **Step 2: Watch for your walkthrough.** In a few minutes you'll get a second email from me with your first hour in Command Suite, step by step: how to sign in and bookmark it, connect your AI, name your assistant, and take your assessments in order.
 
+**Your Pre-Founder terms.** As a Pre-Founder you receive your LifeCharter Command Suite VIP account with no implementation fee and no monthly charge until April 1, 2027. Your first monthly charge of $497 is on April 1, 2027, the same day for every Pre-Founder. We email you a link on March 1, 2027 so you can add your card before then. Your Pre-Founder rate stays at $497 a month for as long as you remain a client. You can cancel any time by sending us a message. You keep access until you have received 100% of your data, and everything is yours to export.
+
 **Your MasterClass Affiliate link.** This is your personal affiliate link for the free Command Shift MasterClass: {{masterclass_link}}
 Share it with the people in your world. Anyone who registers through it is tracked back to you, earning 10% should they sign up.
 
