@@ -3,7 +3,7 @@
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, Trash2, Check, Clock } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Check, Clock, Archive, ArchiveRestore } from "lucide-react";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
 
@@ -19,6 +19,7 @@ interface Task {
   segment: { name: string; color: string } | null;
   segment_id?: number | null;
   assignee_member_id?: string | null;
+  completed_at?: string | null;
 }
 interface Member {
   id: string;
@@ -60,6 +61,12 @@ export default function TasksPage() {
   const [me, setMe] = useState<string | null>(null);
   const [view, setView] = useState<string | null>(null); // "all" | "mine" | "none" | member id
   const [newAssignee, setNewAssignee] = useState("");
+  // Done tasks can be archived: they leave the board, and "Archived" lists them so they can be restored.
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedCount, setArchivedCount] = useState(0);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [showAllDone, setShowAllDone] = useState(false);
+  const DONE_SHOWN = 12;
 
   useEffect(() => {
     setTz(localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -78,18 +85,25 @@ export default function TasksPage() {
       .catch(() => setView("all"));
   }, []);
 
-  const load = () =>
-    view === null
-      ? Promise.resolve()
-      : fetch(view === "all" ? "/api/tasks" : `/api/tasks?assignee=${encodeURIComponent(view)}`)
+  const load = () => {
+    if (view === null) return Promise.resolve();
+    const qs = new URLSearchParams();
+    if (view !== "all") qs.set("assignee", view);
+    if (showArchived) qs.set("archived", "1");
+    const url = qs.toString() ? `/api/tasks?${qs.toString()}` : "/api/tasks";
+    return fetch(url)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setTasks(d?.tasks ?? []))
+      .then((d) => {
+        setTasks(d?.tasks ?? []);
+        setArchivedCount(d?.archivedCount ?? 0);
+      })
       .catch(() => setTasks([]));
+  };
 
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, [view, showArchived]);
 
   const nameOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.name ?? "Team member" : me ? "Owner" : "Me");
   const assign = async (id: number, assigneeId: string) => {
@@ -150,6 +164,28 @@ export default function TasksPage() {
     }).catch(() => {});
     setEditingId(null);
     load();
+  };
+
+  const archiveOne = async (id: number) => {
+    setTasks((prev) => prev?.filter((t) => t.id !== id) ?? null);
+    setArchivedCount((n) => n + 1);
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ archived: true }) }).catch(() => {});
+  };
+
+  const restoreOne = async (id: number) => {
+    setTasks((prev) => prev?.filter((t) => t.id !== id) ?? null);
+    setArchivedCount((n) => Math.max(0, n - 1));
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ archived: false }) }).catch(() => {});
+  };
+
+  const archiveAllDone = async () => {
+    setConfirmArchive(false);
+    await fetch("/api/tasks/archive-done", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(view && view !== "all" ? { assignee: view } : {}),
+    }).catch(() => {});
+    void load();
   };
 
   const remove = async (id: number) => {
@@ -249,18 +285,65 @@ export default function TasksPage() {
         </button>
       </form>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => {
+            setShowArchived((v) => !v);
+            setConfirmArchive(false);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3.5 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+        >
+          <Archive className="w-4 h-4" /> {showArchived ? "Back to the board" : `Archived (${archivedCount})`}
+        </button>
+        {showArchived && <span className="text-xs text-gray-500">Done tasks you archived. They still count toward your follow-through.</span>}
+      </div>
+
       {tasks === null ? (
         <p className="text-sm text-gray-400">Loading…</p>
+      ) : showArchived ? (
+        <div className="bg-[#F8F5F0] dark:bg-white/5 rounded-2xl p-3 max-w-3xl">
+          {tasks.length === 0 && <p className="text-sm text-gray-400 px-2 py-3">Nothing archived yet.</p>}
+          <div className="space-y-2">
+            {tasks.map((t) => (
+              <div key={t.id} className="flex items-center gap-3 bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-white/10 px-3 py-2">
+                <Check className="w-3.5 h-3.5 text-[#54A33B] shrink-0" />
+                <p className="flex-1 min-w-0 text-sm text-gray-500 line-through truncate" title={t.title}>{t.title}</p>
+                {t.completed_at && <span className="text-[10px] text-gray-400 whitespace-nowrap">{dayInTz(t.completed_at, tz)}</span>}
+                <button onClick={() => restoreOne(t.id)} className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline whitespace-nowrap" title="Put it back in Done">
+                  <ArchiveRestore className="w-3.5 h-3.5" /> Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {COLUMNS.map((col) => {
-            const items = tasks.filter((t) => t.status === col.key);
+            const all = tasks.filter((t) => t.status === col.key);
+            // Done is newest first and capped, so a long history never takes over the page.
+            const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : all;
+            const items = col.key === "done" && !showAllDone ? sorted.slice(0, DONE_SHOWN) : sorted;
             return (
               <div key={col.key} className="bg-[#F8F5F0] dark:bg-white/5 rounded-2xl p-3">
                 <div className="flex items-center justify-between px-2 py-1 mb-2">
                   <h2 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{col.label}</h2>
-                  <span className="text-xs text-gray-400">{items.length}</span>
+                  <span className="text-xs text-gray-400">{all.length}</span>
                 </div>
+                {col.key === "done" && all.length > 0 && (
+                  <div className="px-2 mb-2 flex flex-wrap items-center gap-2">
+                    {confirmArchive ? (
+                      <>
+                        <span className="text-xs text-gray-600 dark:text-gray-300">Archive all {all.length}?</span>
+                        <button onClick={archiveAllDone} className="text-xs px-2.5 py-1 rounded-md bg-[#2E7C83] text-white">Yes, archive</button>
+                        <button onClick={() => setConfirmArchive(false)} className="text-xs text-gray-500 hover:underline">Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setConfirmArchive(true)} className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline">
+                        <Archive className="w-3.5 h-3.5" /> Archive all done
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {items.map((t) => (
                     <div
@@ -307,6 +390,11 @@ export default function TasksPage() {
                           <div className="mt-2 flex items-center gap-2">
                             {info && (
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[info.tone]}`}>{info.label}</span>
+                            )}
+                            {t.status === "done" && (
+                              <button onClick={() => archiveOne(t.id)} className="inline-flex items-center gap-1 text-[10px] text-[#2E7C83] hover:underline" title="Move to Archived">
+                                <Archive className="w-3 h-3" /> Archive
+                              </button>
                             )}
                             {t.status !== "done" && (
                               <button
@@ -414,6 +502,11 @@ export default function TasksPage() {
                       </select>
                     </div>
                   ))}
+                  {col.key === "done" && all.length > DONE_SHOWN && (
+                    <button onClick={() => setShowAllDone((v) => !v)} className="w-full text-xs text-[#2E7C83] hover:underline py-1.5">
+                      {showAllDone ? "Show fewer" : `Show all ${all.length}`}
+                    </button>
+                  )}
                   {items.length === 0 && <p className="text-xs text-gray-300 px-2 py-3">—</p>}
                 </div>
               </div>

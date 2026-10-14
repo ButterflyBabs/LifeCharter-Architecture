@@ -44,7 +44,11 @@ export async function GET(request: Request) {
     .eq("master_plan_id", masterPlanId);
   if (scope) q = q.eq("business_id", scope.businessId);
   // ?assignee=me (the signed-in member's; the owner's = unassigned) | none | <member id>
-  const who = new URL(request.url).searchParams.get("assignee");
+  const params = new URL(request.url).searchParams;
+  const who = params.get("assignee");
+  // ?archived=1 lists archived (done) tasks; the board never includes them.
+  const wantArchived = params.get("archived") === "1";
+  q = wantArchived ? q.not("archived_at", "is", null) : q.is("archived_at", null);
   if (who === "me") {
     const me = await myMemberId();
     q = me ? q.eq("assignee_member_id", me) : q.is("assignee_member_id", null);
@@ -58,7 +62,16 @@ export async function GET(request: Request) {
     console.error("GET /api/tasks:", error.message);
     return NextResponse.json({ tasks: [], error: error.message }, { status: 200 });
   }
-  return NextResponse.json({ tasks: data ?? [] });
+  // How many are archived (same scope and assignee filter), so the page can offer "Archived (N)".
+  let cq = supabase.from("tasks").select("id", { count: "exact", head: true }).eq("master_plan_id", masterPlanId).not("archived_at", "is", null);
+  if (scope) cq = cq.eq("business_id", scope.businessId);
+  if (who === "me") {
+    const me = await myMemberId();
+    cq = me ? cq.eq("assignee_member_id", me) : cq.is("assignee_member_id", null);
+  } else if (who === "none") cq = cq.is("assignee_member_id", null);
+  else if (who && /^[0-9a-f-]{36}$/i.test(who)) cq = cq.eq("assignee_member_id", who);
+  const { count: archivedCount } = await cq;
+  return NextResponse.json({ tasks: data ?? [], archivedCount: archivedCount ?? 0 });
 }
 
 export async function POST(request: Request) {

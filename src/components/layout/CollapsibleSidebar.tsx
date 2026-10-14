@@ -206,6 +206,7 @@ const ownerSection = {
     { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
     { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
     { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
+    { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
     { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
     { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
     { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },

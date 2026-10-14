@@ -24,6 +24,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     update.status = body.status;
     update.completed_at = body.status === "done" ? new Date().toISOString() : null;
   }
+  // Reopening a task brings it back to the board.
+  if (typeof body.status === "string" && body.status !== "done") update.archived_at = null;
+  if (typeof body.archived === "boolean") update.archived_at = body.archived ? new Date().toISOString() : null;
   if (typeof body.priority === "string") update.priority = body.priority;
   const due = await dueFromBody(body);
   if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
@@ -48,6 +51,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     update.assignee_member_id = newAssignee.id;
   }
   const { data: before } = await supabase.from("tasks").select("status, assignee_member_id").eq("id", params.id).eq("master_plan_id", masterPlanId).maybeSingle();
+  if (body.archived === true && before?.status !== "done") return NextResponse.json({ error: "Only done tasks can be archived." }, { status: 400 });
 
   const { data, error } = await supabase
     .from("tasks")
@@ -77,9 +81,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     if ("assignee_member_id" in update && (before?.assignee_member_id ?? null) !== (update.assignee_member_id ?? null)) {
       log.push({ ...base, action: "reassigned", summary: `Reassigned task ${t} to ${newAssignee ? newAssignee.name : "the account owner"}` });
     }
-    if (!log.length && Object.keys(update).some((k) => k !== "updated_at" && k !== "status" && k !== "completed_at" && k !== "assignee_member_id")) {
+    if (!log.length && Object.keys(update).some((k) => k !== "updated_at" && k !== "status" && k !== "completed_at" && k !== "assignee_member_id" && k !== "archived_at")) {
       log.push({ ...base, action: "updated", summary: `Updated task ${t}` });
     }
+    if (typeof body.archived === "boolean") log.push({ ...base, action: "updated", summary: `${body.archived ? "Archived" : "Restored"} task ${t}` });
     if (log.length) await logActivity(log);
   }
   return NextResponse.json({ task: data });
