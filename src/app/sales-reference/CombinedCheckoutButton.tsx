@@ -7,12 +7,11 @@ interface Props {
   tier: "starter" | "growth" | "vip";
   implementationDisplay: string;
   monthlyDisplay: string;
+  /** Annual pay-in-full: the implementation fee plus the first 12 monthly fees, about 20% off. Comes from src/lib/pricing.ts. */
+  annualDisplay: string;
 }
 
-// Annual pay-in-full: Implementation Fee + first 12 monthly fees, about 20% off.
-const ANNUAL_DISPLAY: Record<string, string> = { starter: "$5,000", growth: "$7,000", vip: "$13,500" };
-
-export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDisplay }: Props) {
+export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDisplay, annualDisplay }: Props) {
   const { prefill, version } = useProspect();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -67,7 +66,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
       </p>
       <p className="text-xs text-[#b8a898] mt-1">
         {annual
-          ? `${ANNUAL_DISPLAY[tier]} today covers the implementation fee and the first 12 months; ${monthlyDisplay} begins in month 13`
+          ? `${annualDisplay} today covers the implementation fee and the first 12 months; ${monthlyDisplay} begins in month 13`
           : split
             ? `Half of the ${implementationDisplay} implementation fee today + ${monthlyDisplay} starting in one billing cycle, the other half 30 days later, on the same invoice as the first monthly charge`
             : `${implementationDisplay} today + ${monthlyDisplay} starting in one billing cycle`}
@@ -96,7 +95,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
           }}
           className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
         />
-        Annual pay-in-full: {ANNUAL_DISPLAY[tier]} for the implementation fee and the first 12 months (about 20% off)
+        Annual pay-in-full: {annualDisplay} for the implementation fee and the first 12 months (about 20% off)
       </label>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">

@@ -9,6 +9,12 @@ import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
 import MyCalendar from "./MyCalendar";
+import { isSwitched, pricesFor, type Tier as PriceTier } from "@/lib/pricing";
+import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
+
+// Prices follow src/lib/pricing.ts (founder list until January 1, 2027, then the new list).
+export const dynamic = "force-dynamic";
+const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -64,7 +70,15 @@ const TIERS: Tier[] = [
   },
 ];
 
-export default function SalesReferencePage() {
+export default async function SalesReferencePage() {
+  const settings = await loadPricingSettings();
+  const today = todayMountain();
+  const switched = isSwitched(today, settings);
+  // The static Stripe Payment Links below were made at founder prices, so they are only shown until the switch day.
+  const tiers = TIERS.map((t) => {
+    const p = pricesFor(t.id as PriceTier, today, settings);
+    return { ...t, monthly: `${usd(p.monthlyCents)}/mo`, implementation: usd(p.implementationCents), annual: usd(p.annualCents) };
+  });
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
       <div className="mx-auto max-w-5xl px-6 py-16">
@@ -103,8 +117,22 @@ export default function SalesReferencePage() {
           gives you room to grow — three businesses, monthly 1:1 coaching, and more AI horsepower;
           VIP removes every limit and puts a dedicated, white-glove team behind you.
         </p>
+        <p className="mb-6 rounded-xl border border-[#c9a227]/40 bg-[#1C2236] px-4 py-3 text-sm text-[#F3EEE4] max-w-3xl">
+          {switched ? (
+            <>
+              <strong>These are the prices from January 1, 2027.</strong> Clients who bought at founder pricing keep theirs for as long as
+              their agreement stays in place (Terms of Sale 3.7).
+            </>
+          ) : (
+            <>
+              <strong>Founder pricing is open through December 31, 2026.</strong> A client who buys at these prices keeps their monthly fee
+              locked for as long as their agreement stays in place, including after their first year (Terms of Sale 3.7). If they cancel, they
+              lose it and pay the price in effect if they return. Do not quote the January prices until Babs announces them.
+            </>
+          )}
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TIERS.map((tier) => (
+          {tiers.map((tier) => (
             <div key={tier.id} className="rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6 flex flex-col">
               <h3 className="text-lg font-semibold text-[#F8F5F0]">{tier.name}</h3>
               <p className="text-sm text-[#b8a898] mt-1 min-h-[40px]">{tier.tagline}</p>
@@ -120,8 +148,10 @@ export default function SalesReferencePage() {
                 tier={tier.id as "starter" | "growth" | "vip"}
                 implementationDisplay={tier.implementation}
                 monthlyDisplay={tier.monthly}
+                annualDisplay={tier.annual}
               />
 
+              {!switched && (
               <details className="mt-4 pt-4 border-t border-[#F3EEE4]/10 group">
                 <summary className="text-xs uppercase tracking-wide text-[#b8a898] cursor-pointer select-none">
                   Or send separately ▾
@@ -152,6 +182,7 @@ export default function SalesReferencePage() {
                   </div>
                 </div>
               </details>
+              )}
             </div>
           ))}
         </div>
@@ -159,7 +190,7 @@ export default function SalesReferencePage() {
         <p className="mt-10 mb-14 text-xs text-[#b8a898]/80">
           &ldquo;Send combined checkout&rdquo; creates a fresh Stripe Checkout Session per click —
           the client enters their own card there. The &ldquo;Or send separately&rdquo; links use
-          the same static Payment Links live on the Billing tab and create nothing new.
+          the same static Payment Links live on the Billing tab and create nothing new (shown only while founder pricing is open).
         </p>
 
         <NewClientForm />

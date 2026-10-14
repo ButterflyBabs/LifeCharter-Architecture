@@ -84,3 +84,14 @@ export function tierOfFounderMonthly(cents: number | null | undefined): Tier | n
 export function pricesForChange(tier: Tier, currentMonthlyCents: number | null | undefined, today: string, s: PricingSettings): TierPrices {
   return isFounderMonthly(currentMonthlyCents) ? FOUNDER[tier] : pricesFor(tier, today, s);
 }
+
+// The static Stripe Payment Links made at founder prices (Sales Reference and Links & Forms). They cannot know about
+// the new price list, so the switch-day job turns them off; checkouts the Suite creates follow this module instead.
+export const FOUNDER_PAYMENT_LINK_URLS = [
+  "https://buy.stripe.com/6oUbJ22JxeB511caGS4ow05",
+  "https://buy.stripe.com/fZu5kE0BpgJd39k4iu4ow04",
+  "https://buy.stripe.com/fZu3cw83R78D7pAdT44ow03",
+  "https://buy.stripe.com/6oUeVeesfgJdbFQcP04ow02",
+  "https://buy.stripe.com/eVq4gA83RboT8tE5my4ow01",
+  "https://buy.stripe.com/6oUcN6ck7boTaBMaGS4ow00",
+];

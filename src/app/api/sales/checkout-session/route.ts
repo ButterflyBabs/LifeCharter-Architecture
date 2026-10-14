@@ -27,7 +27,7 @@ import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
-import { TIERS, TIER_NAME, pricesFor, type Tier, type TierPrices } from "@/lib/pricing";
+import { TIERS, TIER_NAME, isSwitched, pricesFor, type Tier, type TierPrices } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
@@ -60,7 +60,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
     const tierKey = tier as Tier;
-    const prices = pricesFor(tierKey, todayMountain(), await loadPricingSettings());
+    const pricingSettings = await loadPricingSettings();
+    const today = todayMountain();
+    const prices = pricesFor(tierKey, today, pricingSettings);
+    // While founder pricing is open the buyer is told, in the checkout itself, that the monthly fee is locked (Terms 3.7).
+    const submitMessage =
+      `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` +
+      (isSwitched(today, pricingSettings) ? "" : " Founder pricing: your monthly fee is locked for as long as your agreement stays in place (Terms of Sale 3.7).");
     if (email && (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email))) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
@@ -82,7 +88,7 @@ export async function POST(req: NextRequest) {
       const annualTotal = prices.annualCents - (isAlumni ? ALUMNI_CREDIT_CENTS : 0);
       const annualSession = await stripe.checkout.sessions.create({
         mode: "subscription",
-        custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
+        custom_text: { submit: { message: submitMessage } },
         customer_email: email || undefined,
         line_items: [
           monthlyLine(prices, tierKey),
@@ -115,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
+      custom_text: { submit: { message: submitMessage } },
       customer_email: email || undefined,
       line_items: isSplit
         ? [

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { FROM_2027, TIERS, isSwitched } from "@/lib/pricing";
+import { FOUNDER_PAYMENT_LINK_URLS, FROM_2027, TIERS, TIER_NAME, isSwitched } from "@/lib/pricing";
+import { stripe } from "@/lib/stripe";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,30 @@ export async function GET(request: Request) {
     if (error) return NextResponse.json({ ok: false, error: error.message, updated }, { status: 500 });
     updated.push(t);
   }
+  // The static Payment Links made at founder prices stop working: Stripe keeps them as inactive (nothing is deleted).
+  const turnedOff: string[] = [];
+  if (stripe) {
+    try {
+      const wanted = new Set(FOUNDER_PAYMENT_LINK_URLS);
+      for await (const link of stripe.paymentLinks.list({ active: true, limit: 100 })) {
+        if (wanted.has(link.url)) {
+          await stripe.paymentLinks.update(link.id, { active: false });
+          turnedOff.push(link.url);
+        }
+      }
+    } catch (e) {
+      console.error("[apply-pricing] could not turn off founder payment links:", e instanceof Error ? e.message : e);
+    }
+  }
+  // Links & Forms offers for the three tiers: new monthly price, and no dead link.
+  for (const t of TIERS) {
+    await db
+      .from("sales_offers")
+      .update({ price: (FROM_2027[t].monthlyCents / 100).toFixed(2), link: "" })
+      .eq("name", `LifeCharter Command Suite - ${TIER_NAME[t]}`)
+      .in("link", FOUNDER_PAYMENT_LINK_URLS);
+  }
   await db.from("app_settings").upsert({ key: "pricing_2027_applied", value: "true" }, { onConflict: "key" });
   console.log(`[apply-pricing] plans switched to the 2027 price list at ${now}`);
-  return NextResponse.json({ ok: true, switched: true, applied: true, updated });
+  return NextResponse.json({ ok: true, switched: true, applied: true, updated, paymentLinksTurnedOff: turnedOff.length });
 }

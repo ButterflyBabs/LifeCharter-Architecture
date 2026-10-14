@@ -31,7 +31,7 @@ import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeAlumni";
-import { pricesFor } from "@/lib/pricing";
+import { isSwitched, pricesFor } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const ctx = browserContext(req);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).` } },
+      custom_text: { submit: { message: `By completing this purchase you agree to the [Terms of Sale](${APP_URL}/legal/terms-of-sale) and the [Year-1 Commitment Acknowledgment](${APP_URL}/legal/year-1-agreement).${isSwitched(todayMountain(), await loadPricingSettings()) ? "" : " Founder pricing: your monthly fee is locked for as long as your agreement stays in place (Terms of Sale 3.7)."}` } },
       customer_email: email,
       line_items: isAlumni
         ? [alumniLine]
