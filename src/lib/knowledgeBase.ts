@@ -247,6 +247,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["dm", "dms", "direct message", "instagram", "facebook", "linkedin", "dm pipeline", "outreach", "follow up", "prospecting", "social selling"],
   },
   {
+    id: "sa-outreach-paste-list",
+    category: "Sales",
+    question: "How do I get a list of people from Facebook, a group or a spreadsheet into my Outreach Pipeline?",
+    answer:
+      "Facebook, LinkedIn and Instagram do not let anyone export a group or follower list, so you add people from what you can see. Two ways: (1) One at a time: in Outreach Pipelines open Add people faster, drag the Add to my pipeline button to your bookmarks bar, then click it on a person's profile and save the card. (2) A list: in Outreach Pipelines open Add people faster and use Paste a list. Type or paste one person per line (their name, then optionally their profile link and a line about them, such as the line under their name), choose the platform, and press Add to my pipeline. Up to 100 at a time; anyone already on the board is skipped. There is a spreadsheet template to download (Name, Profile link, Headline, Group). To rank a list before you message anyone, use Audience Qualifier: upload or paste the same sheet, and the highest-fit people can be sent to the pipeline. Do not use bulk scraper tools on Facebook: they break Facebook's rules and can get the account restricted. WhatsApp is also a platform on cards, so conversations there can be tracked the same way.",
+    keywords: ["facebook", "facebook group", "group members", "import", "paste a list", "list", "spreadsheet", "csv", "bulk", "add many", "add people", "whatsapp", "outreach pipeline", "export members"],
+  },
+  {
     id: "sa-meta-lead-ads",
     category: "Sales",
     question: "How do I send leads from my Facebook or Instagram lead ads into the Suite?",

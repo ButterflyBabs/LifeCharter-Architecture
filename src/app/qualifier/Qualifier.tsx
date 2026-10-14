@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
 import { DEFAULT_LEVELS, PRIORITIES, type Icp, type IcpLevel } from "@/lib/qualifier";
 import { parseDelimited } from "@/lib/contactImport";
+import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
 
 type Board = { id: string; name: string };
 type Offer = { id: string; name: string; transformation: string; idealClient: string; notFor: string };
@@ -371,6 +372,23 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
       <div className={`${panel} space-y-3`}>
         <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Score a whole list</h2>
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Upload a spreadsheet of contacts or prospects: Excel (.xlsx) or CSV, or paste the cells straight from Excel, Numbers or Google Sheets. The first row must be the column headings. Each person gets a first-pass fit and priority from what the list holds: title, headline, company, industry, location. It can&rsquo;t see their posts, so it tells you who to look at first. Do the full qualification on a person&rsquo;s pipeline card when you work it.</p>
+        <p className="text-xs text-[#7a8a99]">
+          Not sure what to put in the sheet?{" "}
+          <button
+            type="button"
+            className="font-medium text-[#2E7C83] hover:underline"
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([LIST_TEMPLATE_CSV], { type: "text/csv" }));
+              a.download = "outreach-list-template.csv";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            }}
+          >
+            Download the template (.csv)
+          </button>
+          . Name, Profile link, Headline and Group. The headline (the line under their name, or a sentence they wrote) is what gets scored.
+        </p>
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <IcpPick icps={icps} value={icpId} onChange={setIcpId} />
           <label className={label}>List name<Input value={listName} onChange={(e) => setListName(e.target.value)} placeholder="e.g. Prospect Bank, Wave 2" /></label>

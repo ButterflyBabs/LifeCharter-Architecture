@@ -4,6 +4,7 @@ import { crmAccount } from "../crm/guard";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
+import { parseList } from "@/lib/dmListParse";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, type Board } from "@/lib/dmPipeline";
 import { zonedToUtcISO } from "@/lib/tz";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
@@ -242,6 +243,44 @@ export async function POST(request: Request) {
     });
     if ("error" in r) return NextResponse.json({ error: r.error }, { status: 500 });
     return NextResponse.json({ card: r.card });
+  }
+
+  // Paste a list: one person per line (name, then optionally a profile link and a line about them). They land in the
+  // pipeline's first stage on the chosen platform. People already on the board (same profile link, or same name on the
+  // same platform) are skipped. At most 100 a paste.
+  if (b.action === "bulk-add") {
+    const board = boardOf(b.boardId) ?? boards[0];
+    if (!board) return NextResponse.json({ error: "Create a pipeline first." }, { status: 400 });
+    const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
+    const { rows, skipped } = parseList(str(b.text, 60000), 100);
+    if (!rows.length) return NextResponse.json({ error: "Paste at least one name, one person per line." }, { status: 400 });
+    const stages = await boardStages(db, a.planId, board.id);
+    const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
+    if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
+    const { data: existing } = await db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).limit(10000);
+    const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+    const seenUrl = new Set<string>();
+    const seenName = new Set<string>();
+    for (const c of (existing ?? []) as { name: string | null; profile_url: string | null; platform: string | null }[]) {
+      if (c.profile_url) seenUrl.add(norm(c.profile_url));
+      seenName.add(`${(c.name ?? "").toLowerCase()}|${c.platform ?? ""}`);
+    }
+    let added = 0;
+    const duplicates: string[] = [];
+    for (const r of rows) {
+      const u = r.profileUrl ? norm(r.profileUrl) : "";
+      const nk = `${r.name.toLowerCase()}|${platform ?? ""}`;
+      if ((u && seenUrl.has(u)) || seenName.has(nk)) {
+        duplicates.push(r.name);
+        continue;
+      }
+      const made = await createCard(db, a.planId, board, stage, tz, { name: r.name, profileUrl: r.profileUrl, platform, notes: r.notes });
+      if ("error" in made) continue;
+      added++;
+      if (u) seenUrl.add(u);
+      seenName.add(nk);
+    }
+    return NextResponse.json({ added, duplicates, skipped, stage: stage.name, boardId: board.id });
   }
 
   if (b.action === "dm-limit") {

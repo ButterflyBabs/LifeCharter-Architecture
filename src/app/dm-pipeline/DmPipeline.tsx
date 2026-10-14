@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
+import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
 
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
 export type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
@@ -282,7 +283,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       )}
 
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
-      {purpose === "outreach" && <AddFaster onAdded={() => void load(board?.id)} />}
+      {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} onAdded={() => void load(board?.id)} />}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
@@ -558,7 +559,35 @@ const clock = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric
 // "LinkedIn 3 / 25": DMs sent on each platform in the last 24 hours against the daily limit you set.
 // Two quick ways to get people onto the board: LinkedIn connection requests read from the inbox (Microsoft 365), and a
 // browser button that sends whoever's profile you are looking at to the Add card window. Nothing here touches LinkedIn.
-function AddFaster({ onAdded }: { onAdded: () => void }) {
+function AddFaster({ onAdded, boardId }: { onAdded: () => void; boardId: string | null }) {
+  // Paste a list: one person per line.
+  const [listText, setListText] = useState("");
+  const [listPlatform, setListPlatform] = useState("FB");
+  const [listBusy, setListBusy] = useState(false);
+  const [listNote, setListNote] = useState("");
+  async function addList() {
+    if (!listText.trim() || listBusy) return;
+    setListBusy(true);
+    setListNote("");
+    const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "bulk-add", boardId, platform: listPlatform, text: listText }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    setListBusy(false);
+    if (!r || !r.ok) return setListNote(d.error || "Couldn't add them. Please try again.");
+    const dup = (d.duplicates ?? []).length;
+    const skip = (d.skipped ?? []).length;
+    setListNote(`Added ${d.added} ${d.added === 1 ? "person" : "people"} to ${d.stage}.${dup ? ` ${dup} already on this board.` : ""}${skip ? ` ${skip} line${skip === 1 ? "" : "s"} could not be read.` : ""}`);
+    if (d.added) {
+      setListText("");
+      onAdded();
+    }
+  }
+  function downloadTemplate() {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([LIST_TEMPLATE_CSV], { type: "text/csv" }));
+    a.download = "outreach-list-template.csv";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
   const [open, setOpen] = useState(false);
   const [st, setSt] = useState<{ on: boolean; microsoft: boolean; checkedAt: string | null; recent: { name: string; at: string }[] } | null>(null);
   const [note, setNote] = useState("");
@@ -621,6 +650,46 @@ function AddFaster({ onAdded }: { onAdded: () => void }) {
               <button onClick={() => { void navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {}); }} className="text-xs font-medium text-[#2E7C83] hover:underline">{copied ? "Copied" : "Copy the button code instead"}</button>
             </div>
             <p className="mt-2 text-xs text-[#7a8a99]">If dragging does not work: add any bookmark, edit it, and paste the copied code into its address field. Some browsers need the bookmarks bar shown first. You click it yourself, so nothing runs in the background and LinkedIn&rsquo;s rules are respected.</p>
+          </div>
+          <div className="rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30 md:col-span-2">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Paste a list</p>
+            <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]">One person per line: their name, then (if you have them) their profile link and a line about them. Paste straight from a spreadsheet or type it. They land in the first stage of this pipeline. Up to 100 at a time; anyone already on this board is skipped.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+              <textarea
+                rows={6}
+                value={listText}
+                onChange={(e) => setListText(e.target.value)}
+                aria-label="People to add, one per line"
+                placeholder={"Jane Doe, https://www.facebook.com/jane.doe, Founder at Doe Studio\nSam Lee https://www.facebook.com/sam.lee\nAna Cruz"}
+                className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]"
+              />
+              <div className="flex flex-col gap-2 sm:w-44">
+                <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">
+                  They are on
+                  <select value={listPlatform} onChange={(e) => setListPlatform(e.target.value)} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-2 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]">
+                    {PLATFORMS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Button onClick={() => void addList()} disabled={listBusy || !listText.trim()}>
+                  {listBusy ? "Adding…" : "Add to my pipeline"}
+                </Button>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#7a8a99]">
+              <button type="button" onClick={downloadTemplate} className="font-medium text-[#2E7C83] hover:underline">
+                Download the spreadsheet template (.csv)
+              </button>
+              <span>Fill it in, then paste the rows here, or score the whole list first in the Audience Qualifier.</span>
+            </div>
+            {listNote && (
+              <p className="mt-2 text-sm text-[#1F5E63]" role="status">
+                {listNote}
+              </p>
+            )}
           </div>
         </div>
       )}
