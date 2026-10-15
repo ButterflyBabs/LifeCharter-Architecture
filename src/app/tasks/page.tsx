@@ -25,6 +25,8 @@ interface Task {
   completed_at?: string | null;
   created_at?: string | null;
   today_on?: string | null;
+  project_id?: string | null;
+  offer_id?: string | null;
 }
 interface Member {
   id: string;
@@ -102,6 +104,8 @@ export default function TasksPage() {
   const [me, setMe] = useState<string | null>(null);
   const [view, setView] = useState<string | null>(null); // "all" | "mine" | "none" | member id
   const [newAssignee, setNewAssignee] = useState("");
+  const [newProject, setNewProject] = useState("");
+  const [newOffer, setNewOffer] = useState("");
   // A Sales member sees only the tasks assigned to them, without the assistant or the team views.
   const [isSales, setIsSales] = useState(false);
   // Done tasks can be archived: they leave the board, and "Archived" lists them so they can be restored.
@@ -140,6 +144,18 @@ export default function TasksPage() {
       return next;
     });
   const [linked, setLinked] = useState<Linked[]>([]);
+  // What a task can be filed under: projects (Projects) and programs (Offers & Packages).
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [offers, setOffers] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/tasks/lookups", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        setProjects(d?.projects ?? []);
+        setOffers(d?.offers ?? []);
+      })
+      .catch(() => {});
+  }, []);
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
   const [dragId, setDragId] = useState<number | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
@@ -207,6 +223,8 @@ export default function TasksPage() {
         status: "today",
         todayOn: dayInTz(new Date(), tz),
         priority: newPriority,
+        ...(newProject ? { projectId: newProject } : {}),
+        ...(newOffer ? { offerId: newOffer } : {}),
         ...(newAssignee ? { assigneeId: newAssignee } : view && view !== "all" && view !== "none" && view !== "mine" ? { assigneeId: view } : me && view === "mine" ? { assigneeId: me } : {}),
         ...(newDay || newTime
           ? { dueDay: newDay || dayInTz(new Date(), tz), dueTime: newTime || undefined, timeKind: newKind, tz }
@@ -218,10 +236,16 @@ export default function TasksPage() {
     setNewTime("");
     setNewKind("deadline");
     setNewAssignee("");
+    setNewProject("");
+    setNewOffer("");
     setAdding(false);
     load();
   };
 
+  const fileUnder = async (id: number, field: "projectId" | "offerId", value: string) => {
+    setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, [field === "projectId" ? "project_id" : "offer_id"]: value || null } : t)) ?? null);
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [field]: value || null }) }).catch(() => {});
+  };
   // Notes and additional information, kept on the task (its description).
   const saveNote = async (id: number, text: string) => {
     const clean = text.trim();
@@ -419,6 +443,22 @@ export default function TasksPage() {
               <option key={m.id} value={m.id}>
                 {m.id === me ? `${m.name} (me)` : m.name}
               </option>
+            ))}
+          </select>
+        )}
+        {!isSales && projects.length > 0 && (
+          <select value={newProject} onChange={(e) => setNewProject(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
+            <option value="">No project</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
+        {!isSales && offers.length > 0 && (
+          <select value={newOffer} onChange={(e) => setNewOffer(e.target.value)} aria-label="Program (offer)" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
+            <option value="">No program</option>
+            {offers.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>
         )}
@@ -622,6 +662,16 @@ export default function TasksPage() {
                               {t.segment && (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: t.segment.color ?? "#7b6b8d" }}>{t.segment.name}</span>
                               )}
+                              {t.project_id && projects.find((p) => p.id === t.project_id) && (
+                                <Link href={`/projects/${t.project_id}`} className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] hover:underline" title="The project this task belongs to">
+                                  Project · {projects.find((p) => p.id === t.project_id)?.name}
+                                </Link>
+                              )}
+                              {t.offer_id && offers.find((o) => o.id === t.offer_id) && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#7a5a12]" title="The program (offer) this task belongs to">
+                                  Program · {offers.find((o) => o.id === t.offer_id)?.name}
+                                </span>
+                              )}
                               {t.status === "done" ? (
                                 <button onClick={() => archiveOne(t.id)} className="inline-flex items-center gap-1 text-[11px] text-[#2E7C83] hover:underline" title="Move to Archived">
                                   <Archive className="w-3 h-3" /> Archive
@@ -696,6 +746,36 @@ export default function TasksPage() {
                                       </div>
                                     )}
                                   </div>
+                                )}
+                                {!isSales && (
+                                  <label className="block text-xs text-gray-500">
+                                    Project
+                                    <select
+                                      value={t.project_id ?? ""}
+                                      onChange={(e) => fileUnder(t.id, "projectId", e.target.value)}
+                                      className="mt-0.5 w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#3F4654] dark:text-[#e8e4f0]"
+                                    >
+                                      <option value="">No project</option>
+                                      {projects.map((p) => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                )}
+                                {!isSales && (
+                                  <label className="block text-xs text-gray-500">
+                                    Program (offer)
+                                    <select
+                                      value={t.offer_id ?? ""}
+                                      onChange={(e) => fileUnder(t.id, "offerId", e.target.value)}
+                                      className="mt-0.5 w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#3F4654] dark:text-[#e8e4f0]"
+                                    >
+                                      <option value="">No program</option>
+                                      {offers.map((o) => (
+                                        <option key={o.id} value={o.id}>{o.name}</option>
+                                      ))}
+                                    </select>
+                                  </label>
                                 )}
                                 <SegmentSelect
                                   compact

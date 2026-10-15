@@ -44,6 +44,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
   if (due) Object.assign(update, due);
   if (body.timeKind === "scheduled" || body.timeKind === "deadline") update.time_kind = body.timeKind;
+  // File the task under one of THIS client's projects (Projects) or programs (Offers & Packages), or clear it.
+  for (const [field, table, col] of [["projectId", "projects", "project_id"], ["offerId", "sales_offers", "offer_id"]] as const) {
+    if (body[field] === null || body[field] === "") update[col] = null;
+    else if (typeof body[field] === "string") {
+      const { data: own } = await supabase.from(table).select("id").eq("id", body[field]).eq("master_plan_id", masterPlanId).maybeSingle();
+      if (!own) return NextResponse.json({ error: `Unknown ${field === "projectId" ? "project" : "program"}.` }, { status: 404 });
+      update[col] = own.id;
+    }
+  }
   // Tag (or untag) the task to one of THIS client's segments.
   if (body.segmentId === null || body.segmentId === "") update.segment_id = null;
   else if (body.segmentId !== undefined) {
