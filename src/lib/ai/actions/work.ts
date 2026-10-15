@@ -202,15 +202,17 @@ export const checkOutreach: ActionTool = {
 };
 
 type Who = "suite" | "assistant" | "you" | "both";
-type StepStatus = "scheduled" | "needs_approval" | "waiting" | "done";
+type StepStatus = "scheduled" | "needs_approval" | "waiting" | "ready" | "done";
+/** Pages a next step may link to, so the client can act on it in one click (nothing is guessed). */
+export const STEP_PAGES = ["/sequences-manager", "/contacts", "/dm-pipeline", "/tasks", "/reminders", "/projects", "/calendars", "/finance", "/links-directory", "/daily-compass/calendar"];
 export interface ReportData {
   summary: string;
   done: string[];
   found: { label: string; value: string }[];
-  next_steps: { text: string; who: Who; when: string; status: StepStatus }[];
+  next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string }[];
 }
 const WHO: Who[] = ["suite", "assistant", "you", "both"];
-const STATUS: StepStatus[] = ["scheduled", "needs_approval", "waiting", "done"];
+const STATUS: StepStatus[] = ["scheduled", "needs_approval", "waiting", "ready", "done"];
 
 /** Shape whatever the model sent into a safe, bounded report. */
 export function cleanReport(a: Record<string, unknown>): ReportData {
@@ -223,7 +225,8 @@ export function cleanReport(a: Record<string, unknown>): ReportData {
     const o = (st ?? {}) as Record<string, unknown>;
     const who = WHO.includes(o.who as Who) ? (o.who as Who) : "you";
     const status = STATUS.includes(o.status as StepStatus) ? (o.status as StepStatus) : who === "you" ? "waiting" : "scheduled";
-    return { text: str(o.text, 200), who, when: str(o.when, 60), status };
+    const open = str(o.open, 60);
+    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: STEP_PAGES.includes(open) ? open : "" };
   }).filter((x) => x.text);
   return { summary: str(a.summary, 400) || str(a.report, 400), done: list(a.done, 8, 200), found, next_steps: steps };
 }
@@ -237,7 +240,7 @@ function reportText(r: ReportData, fallback: string): string {
   if (r.summary) lines.push(r.summary);
   if (r.done.length) lines.push(`Done: ${r.done.join("; ")}.`);
   if (r.found.length) lines.push(`Found: ${r.found.map((f) => `${f.label} ${f.value}`).join("; ")}.`);
-  if (r.next_steps.length) lines.push(`Next: ${r.next_steps.map((n) => `[${WHO_LABEL[n.who]}] ${n.text}${n.when ? ` (${n.when})` : ""}`).join("; ")}.`);
+  if (r.next_steps.length) lines.push(`Next: ${r.next_steps.map((n) => `[${WHO_LABEL[n.who]}] ${n.text}${n.when ? ` (${n.when})` : ""}${n.waiting_on ? `, waiting for: ${n.waiting_on}` : ""}`).join("; ")}.`);
   return lines.join("\n").slice(0, 1800);
 }
 
@@ -261,11 +264,19 @@ export const saveWorkReport: ActionTool = {
       },
       next_steps: {
         type: "array",
-        description: "Every next step, one row each. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you prepared it and it waits for the client's Approve), you (only the client can), both. when: a short plain date or time. status: scheduled, needs_approval, waiting or done.",
+        description:
+          "Every next step, one row each, with NO guessing. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you can do it for them when they ask, or you prepared a card that waits for their Approve), you (only the client can), both. status: scheduled (the Suite will do it at the date in when), needs_approval (a card you prepared waits for their Approve), ready (the assistant can do it as soon as they press the button), waiting (blocked until something specific happens) or done. waiting_on is REQUIRED for status waiting: say exactly WHAT is being waited on and BY WHOM, for example 'Waiting for the Suite to send note 2 on Oct 20 at 8:00 AM' or 'Waiting for you to choose the batch 3 start date'. open (optional): the app page where the client does this step, one of /sequences-manager, /contacts, /dm-pipeline, /tasks, /reminders, /projects, /calendars, /finance, /links-directory, /daily-compass/calendar.",
         items: {
           type: "object",
-          properties: { text: { type: "string" }, who: { type: "string", enum: ["suite", "assistant", "you", "both"] }, when: { type: "string" }, status: { type: "string", enum: ["scheduled", "needs_approval", "waiting", "done"] } },
-          required: ["text", "who"],
+          properties: {
+            text: { type: "string" },
+            who: { type: "string", enum: ["suite", "assistant", "you", "both"] },
+            when: { type: "string" },
+            status: { type: "string", enum: ["scheduled", "needs_approval", "waiting", "ready", "done"] },
+            waiting_on: { type: "string" },
+            open: { type: "string" },
+          },
+          required: ["text", "who", "status"],
         },
       },
       report: { type: "string", description: "Only if you cannot fill the fields above: the whole report as plain text, under 1,500 characters." },
@@ -276,6 +287,8 @@ export const saveWorkReport: ActionTool = {
   plan: async (a, ctx) => {
     const r = cleanReport(a);
     if (!r.summary && !r.done.length && !r.found.length && !r.next_steps.length) return { error: "What should the report say?" };
+    const vague = r.next_steps.find((n) => n.status === "waiting" && n.waiting_on.length < 8);
+    if (vague) return { error: `The next step "${vague.text}" is marked waiting but does not say what is being waited on and by whom. Add waiting_on with the exact thing and the person or system, then save again.` };
     const q = clean(a.find_title);
     const isTask = a.item === "task";
     const { data } = isTask
@@ -288,7 +301,7 @@ export const saveWorkReport: ActionTool = {
     const lines = [
       ...(r.summary ? [r.summary] : []),
       ...(r.found.length ? [`Found: ${r.found.map((f) => `${f.label} ${f.value}`).join(" · ")}`] : []),
-      ...r.next_steps.slice(0, 5).map((n) => `${WHO_LABEL[n.who]}: ${n.text}${n.when ? ` (${n.when})` : ""}`),
+      ...r.next_steps.slice(0, 5).map((n) => `${WHO_LABEL[n.who]}: ${n.text}${n.when ? ` (${n.when})` : ""}${n.waiting_on ? `. ${n.waiting_on}` : ""}`),
     ].map((l) => (l.length > 160 ? l.slice(0, 157) + "…" : l));
     return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)] } };
   },

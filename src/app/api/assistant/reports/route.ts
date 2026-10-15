@@ -52,3 +52,22 @@ export async function GET(request: Request) {
     history: list.slice(1).map((r) => ({ id: r.id, createdAt: r.created_at, summary: ((r.report as { summary?: string })?.summary ?? "").slice(0, 160) })),
   });
 }
+
+// POST { id, step, status: "done" | "waiting" }: the client closes (or reopens) one next step on a report.
+export async function POST(request: Request) {
+  const planId = await resolveMasterPlanId();
+  if (!planId) return NextResponse.json({ error: "No account found." }, { status: 400 });
+  const b = await request.json().catch(() => ({}));
+  const id = typeof b.id === "string" ? b.id : "";
+  const step = typeof b.step === "number" ? Math.round(b.step) : -1;
+  if (!id || step < 0 || !["done", "waiting"].includes(b.status)) return NextResponse.json({ error: "Bad request." }, { status: 400 });
+  const db = createServerClient();
+  const { data: row } = await db.from("assistant_reports").select("report").eq("id", id).eq("master_plan_id", planId).maybeSingle();
+  const report = (row?.report ?? null) as { next_steps?: Record<string, unknown>[] } | null;
+  if (!report?.next_steps?.[step]) return NextResponse.json({ error: "I can't find that step." }, { status: 404 });
+  report.next_steps[step] = b.status === "done"
+    ? { ...report.next_steps[step], status: "done", waiting_on: "" }
+    : { ...report.next_steps[step], status: "waiting", waiting_on: String(report.next_steps[step].waiting_on || "Reopened by you: it still needs to be done") };
+  const { error } = await db.from("assistant_reports").update({ report }).eq("id", id).eq("master_plan_id", planId);
+  return error ? NextResponse.json({ error: "That didn't save." }, { status: 500 }) : NextResponse.json({ ok: true, step: report.next_steps[step] });
+}
