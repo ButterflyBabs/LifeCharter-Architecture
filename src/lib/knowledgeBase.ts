@@ -1351,6 +1351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["archive", "archived", "done tasks", "completed tasks", "clear done", "long list", "tasks page", "restore task", "clean up tasks", "finished tasks"],
   },
   {
+    id: "team-huddle",
+    category: "Daily Operations",
+    question: "How do I run a weekly team call (huddle) with an agenda and to-dos? Can my team see it?",
+    answer:
+      "Open Team Huddle in the left menu (Daily Operations, just under Reminders). Press New huddle: it starts from a timed agenda (check-in, wins, hot topics, urgent items, to-dos and owners, close, plus a Parking lot that is not timed) and any to-dos still open from the last call carry over. Everything is editable: titles, minutes, items, owners, dates, notes and the recording link. The badge shows your minutes against your time limit (30 by default) and turns red when you go over; Start runs the call on the clock section by section. Press Customize for your team to set your huddle's name, time limit, usual day and time, and to save the agenda you have shaped as the template every new huddle starts from. Under Who can open this page, add anyone by email and tick Can edit if they should change the agenda; people you have invited to your team open it from their own menu according to their role (admin and editor can edit, viewer can read). Send me a test emails the agenda only to you, so you can see what the team gets before you press Email this agenda. Any to-do can be sent to Tasks with one press. For a recorded call, paste the transcript (or upload the .txt or .vtt file from Zoom) and press Create summary and to-dos: it writes a summary, wins, decisions, hot topics and to-dos from what was said, and nothing is added until you press Add these to the to-dos. The summary uses your own AI key from Settings, so add one first if it asks.",
+    keywords: ["team huddle", "huddle", "weekly meeting", "team meeting", "agenda", "meeting agenda", "team call", "transcript", "meeting summary", "action items", "weekly team call", "standup", "stand up"],
+  },
+  {
     id: "as-whats-new",
     category: "Account & Settings",
     question: "Where can I see what's new in the Suite?",

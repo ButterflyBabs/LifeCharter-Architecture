@@ -158,7 +158,10 @@ export async function POST(request: Request) {
     if (!key) return NextResponse.json({ error: "Email is not set up here." }, { status: 503 });
     const { data: h } = await db.from("team_huddles").select(COLS).eq("id", str(b.id, 60)).eq("master_plan_id", a.planId).maybeSingle();
     if (!h) return NextResponse.json({ error: "not found" }, { status: 404 });
-    let to = (Array.isArray(b.to) ? b.to : []).map(normEmail).filter(validEmail);
+    // A test goes ONLY to the signed-in person, so they can see exactly what the team will get.
+    const isTest = b.test === true;
+    let to = isTest ? [normEmail(a.email)].filter(validEmail) : (Array.isArray(b.to) ? b.to : []).map(normEmail).filter(validEmail);
+    if (isTest && !to.length) return NextResponse.json({ error: "Your sign-in email could not be read." }, { status: 400 });
     if (!to.length) {
       const { data: acc } = await db.from("team_huddle_access").select("email").eq("master_plan_id", a.planId);
       to = (acc ?? []).map((r) => normEmail(r.email)).filter(validEmail);
@@ -170,7 +173,8 @@ export async function POST(request: Request) {
       agenda: cleanAgenda(h.agenda), actions: cleanActions(h.actions), notes: h.notes ?? "",
     });
     const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
-    const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a2b4a;white-space:pre-wrap">${esc(text)}</div>`;
+    const banner = isTest ? `<div style="background:#fff6d6;border:1px solid #e0a800;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px">This is a test. Only you received it. Nothing has gone to your team.</div>` : "";
+    const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a2b4a">${banner}<div style="white-space:pre-wrap">${esc(text)}</div></div>`;
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -178,7 +182,7 @@ export async function POST(request: Request) {
         from: "LifeCharter Command Suite <support@lccommandsuite.com>",
         to,
         reply_to: a.email || "support@lccommandsuite.com",
-        subject: `Agenda: ${h.title} (${h.call_date}, ${h.start_time} MT)`,
+        subject: `${isTest ? "TEST (only you got this): " : ""}Agenda: ${h.title} (${h.call_date}, ${h.start_time} MT)`,
         html,
         text,
       }),

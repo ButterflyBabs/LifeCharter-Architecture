@@ -109,6 +109,7 @@ const navigationSections = [
       { id: "content-calendar", label: "Content Calendar", icon: CalendarDays, href: "/daily-compass/calendar" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
       { id: "reminders", label: "Reminders", icon: BellRing, href: "/reminders" },
+      { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
@@ -189,7 +190,7 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
-    { id: "team-huddle", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
+    { id: "team-huddle-aa", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
     { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
     { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
     { id: "prep-documents", label: "Prep Documents (LCCS 2027 > Prep)", icon: BookOpen, href: "https://claude.ai/artifact/FmsjAZMcfyVAnsa4Xat2Dy" },
@@ -788,7 +789,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "platform-costs" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;

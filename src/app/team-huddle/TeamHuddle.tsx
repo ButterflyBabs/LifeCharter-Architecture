@@ -194,6 +194,40 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
     setBusy("");
   }
 
+  async function saveSettings(next: Settings) {
+    setBusy("settings"); setError(""); setNote("");
+    try {
+      const d = await post({ action: "settings-save", ...next });
+      setSettings(d.settings as Settings);
+      setNote("Saved. New huddles will use these settings.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't save."); }
+    setBusy("");
+  }
+
+  async function saveTemplate(reset: boolean) {
+    if (!cur) return;
+    setBusy("template"); setError(""); setNote("");
+    try {
+      if (timer.current) clearTimeout(timer.current);
+      if (!reset) await save(cur);
+      await post(reset ? { action: "template-reset" } : { action: "template-save", id: cur.id });
+      setNote(reset ? "New huddles will start from the standard agenda again." : "Saved. Every new huddle will start from this agenda.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't save the template."); }
+    setBusy("");
+  }
+
+  async function emailTest() {
+    if (!cur) return;
+    setBusy("test"); setNote(""); setError("");
+    try {
+      if (timer.current) clearTimeout(timer.current);
+      await save(cur);
+      await post({ action: "email", id: cur.id, test: true });
+      setNote("Test sent to you. Only you received it; nothing has gone to your team.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't send the test."); }
+    setBusy("");
+  }
+
   async function emailAgenda() {
     if (!cur) return;
     if (!window.confirm(`Email this agenda to ${access.length} ${access.length === 1 ? "person" : "people"} you shared the page with?`)) return;
@@ -253,12 +287,46 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
       {note && <p className="mt-3 rounded-lg bg-[#2c6b3f]/10 px-3 py-2 text-sm text-[#2c6b3f] dark:text-[#7cc596]">{note}</p>}
       {error && me && <p className="mt-3 rounded-lg bg-[#b3422f]/10 px-3 py-2 text-sm text-[#b3422f] dark:text-[#f09a86]">{error}</p>}
 
+      {me?.viewAs && <p className="mt-3 rounded-lg bg-[#c9a227]/15 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">You are looking at this account's huddles as a viewer. Nothing can be changed from here.</p>}
+      {owner && (
+        <div className="mt-4">
+          <button className={btn} onClick={() => setShowSettings((v) => !v)}>{showSettings ? "Hide settings" : "Customize for your team"}</button>
+          {showSettings && (
+            <div className={`${card} mt-3`}>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <label className="block text-xs font-semibold text-[#5d6b7a] dark:text-[#b8c2cf] sm:col-span-2">Name of your huddle
+                  <input className={`${field} mt-1`} value={settings.title} onChange={(e) => setSettings({ ...settings, title: e.target.value })} />
+                </label>
+                <label className="block text-xs font-semibold text-[#5d6b7a] dark:text-[#b8c2cf]">Time limit (minutes)
+                  <input type="number" min={5} max={120} className={`${field} mt-1`} value={settings.max_minutes} onChange={(e) => setSettings({ ...settings, max_minutes: Number(e.target.value) || 30 })} />
+                </label>
+                <label className="block text-xs font-semibold text-[#5d6b7a] dark:text-[#b8c2cf]">Usual start
+                  <input type="time" className={`${field} mt-1`} value={settings.start_time} onChange={(e) => setSettings({ ...settings, start_time: e.target.value || "08:00" })} />
+                </label>
+                <label className="block text-xs font-semibold text-[#5d6b7a] dark:text-[#b8c2cf]">Usual day
+                  <select className={`${field} mt-1`} value={settings.weekday ?? ""} onChange={(e) => setSettings({ ...settings, weekday: e.target.value === "" ? null : Number(e.target.value) })}>
+                    <option value="">No usual day</option>
+                    {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button className={btnGold} disabled={busy === "settings"} onClick={() => void saveSettings(settings)}>Save settings</button>
+                <button className={btn} disabled={!cur || busy === "template"} onClick={() => void saveTemplate(false)}>Use this agenda for every new huddle</button>
+                <button className={btn} disabled={busy === "template"} onClick={() => void saveTemplate(true)}>Go back to the standard agenda</button>
+              </div>
+              <p className="mt-2 text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">Change the sections, minutes and prompts on any huddle below until the agenda fits how your team really meets, then press "Use this agenda for every new huddle". Open to-dos always carry over.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 grid gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
         {/* The calls */}
         <aside className="min-w-0">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#5d6b7a] dark:text-[#b8c2cf]">Calls</p>
           <ul className="space-y-2">
-            {rows.length === 0 && <li className="text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">{owner ? "No huddles yet. Press New huddle." : "No huddles have been shared yet."}</li>}
+            {rows.length === 0 && <li className="text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">{owner ? "No huddles yet. Press New huddle." : "No huddles have been shared with you yet."}</li>}
             {rows.map((r) => (
               <li key={r.id}>
                 <button onClick={() => setSelId(r.id)} className={`w-full rounded-xl border px-3 py-2.5 text-left ${r.id === selId ? "border-[#c9a227] bg-[#c9a227]/10" : "border-[#e3dccd] dark:border-[#2b3b5c] bg-white dark:bg-[#16233b]"}`}>
@@ -302,6 +370,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
                       {cur.status === "done" ? "Reopen" : "Mark done"}
                     </button>
                   )}
+                  {owner && <button className={btn} onClick={emailTest} disabled={busy === "test"}><Mail className="h-4 w-4" /> Send me a test</button>}
                   {owner && <button className={`${iconBtn} text-[#b3422f]`} onClick={removeHuddle} disabled={busy === "del"} aria-label="Delete this huddle"><Trash2 className="h-4 w-4" /></button>}
                 </div>
 
@@ -402,7 +471,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
                 {/^https?:\/\//.test(cur.recording_url) && <a className="mt-2 inline-block text-sm font-semibold text-[#2e7c83] underline" href={cur.recording_url} target="_blank" rel="noreferrer">Open the recording</a>}
               </div>
 
-              {/* Transcript + summary (Babs) */}
+              {/* Transcript + summary (the person who runs the account) */}
               {owner && (
                 <div className={card}>
                   <h2 className="font-serif text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">Transcript and summary</h2>
@@ -458,11 +527,11 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
             </>
           )}
 
-          {/* Sharing (Babs) */}
+          {/* Sharing (the person who runs the account) */}
           {owner && (
             <div className={card}>
               <h2 className="font-serif text-xl text-[#1a2b4a] dark:text-[#F8F5F0]">Who can open this page</h2>
-              <p className="text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">Give someone access by the email they sign in with. They open <span className="font-mono">/huddle</span> after signing in. Tick Can edit to let them change the agenda and to-dos; otherwise they can read it.</p>
+              <p className="text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">Give someone access by the email they sign in with. They open <span className="font-mono">/huddle</span> after signing in. Tick Can edit to let them change the agenda and to-dos; otherwise they can read it. People you have already invited to your team can open this page from their own menu.</p>
               <ul className="mt-3 divide-y divide-[#e3dccd] dark:divide-[#2b3b5c]">
                 {access.length === 0 && <li className="py-2 text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">Nobody yet.</li>}
                 {access.map((p) => (
@@ -481,10 +550,13 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
                 <button className={btnGold} disabled={busy === "share" || !shareEmail.includes("@")} onClick={() => void share("share-add", shareEmail, false, shareName)}>Add</button>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button className={btn} onClick={emailTest} disabled={busy === "test" || !cur}>
+                  {busy === "test" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />} Send a test to myself
+                </button>
                 <button className={btn} onClick={emailAgenda} disabled={busy === "email" || !cur || access.length === 0}>
                   {busy === "email" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />} Email this agenda to everyone above
                 </button>
-                <span className="text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">Sends the agenda and open to-dos as a plain email from LifeCharter support, replies to you.</span>
+                <span className="text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">The test goes only to you, marked TEST, so you can see exactly what your team will get. "Email this agenda" sends the same email to everyone above.</span>
               </div>
             </div>
           )}
