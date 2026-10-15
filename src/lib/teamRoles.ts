@@ -13,7 +13,7 @@
 
 export type TeamRole = "admin" | "editor" | "viewer" | "sales";
 
-export const SALES_PAGES = ["/sales-reference"];
+export const SALES_PAGES = ["/sales-reference", "/huddle"]; // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
 export const SALES_APIS = [
   "/api/sales/onboard-client",
   "/api/sales/lookup-contact",
@@ -23,6 +23,7 @@ export const SALES_APIS = [
   "/api/sales/contacts",
   "/api/sales/save-call",
   "/api/sales/my-calendar", // a booking host sees their own calls and sets their own hours
+  "/api/team-huddle", // the Team Huddle page for people Babs shared it with (the route itself checks the email list)
   "/api/account/switch", // the account switcher: a Sales member who also has their own account can go back to it
 ];
 

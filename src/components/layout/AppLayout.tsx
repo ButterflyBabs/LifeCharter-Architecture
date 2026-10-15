@@ -44,6 +44,7 @@ const BARE_ROUTES = [
   "/auth",
   "/get-started",
   "/sales-reference",
+  "/huddle", // the shared Team Huddle (own page, no app menu)
   "/schedule",
   "/legal",
   "/join",

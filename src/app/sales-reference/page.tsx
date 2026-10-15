@@ -11,6 +11,7 @@ import AccountSwitcher from "@/components/layout/AccountSwitcher";
 import MyCalendar from "./MyCalendar";
 import { isSwitched, pricesFor, type Tier as PriceTier } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
+import { huddleAccess } from "@/lib/teamHuddleServer";
 
 // Prices follow src/lib/pricing.ts (founder list until January 1, 2027, then the new list).
 export const dynamic = "force-dynamic";
@@ -71,6 +72,7 @@ const TIERS: Tier[] = [
 ];
 
 export default async function SalesReferencePage() {
+  const huddle = await huddleAccess(); // shows a link to the Team Huddle for the people Babs shared it with
   const settings = await loadPricingSettings();
   const today = todayMountain();
   const switched = isSwitched(today, settings);
@@ -100,6 +102,14 @@ export default async function SalesReferencePage() {
             for you — nothing for the client to type.
           </p>
         </div>
+
+        {huddle && (
+          <p className="mb-6">
+            <a href="/huddle" className="inline-block rounded-full border border-[#c9a227]/60 px-4 py-2 text-sm font-semibold text-[#E3C27C] hover:bg-[#c9a227]/10">
+              Open the Team Huddle (weekly call agenda and to-dos)
+            </a>
+          </p>
+        )}
 
         <MyCalendar />
 
