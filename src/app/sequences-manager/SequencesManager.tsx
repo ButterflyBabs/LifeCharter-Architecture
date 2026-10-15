@@ -83,7 +83,10 @@ export default function SequencesManager() {
   const [sendOne, setSendOne] = useState<{ stepId: string; email: string } | null>(null);
   const [pageTab, setPageTab] = useState<"campaigns" | "broadcasts" | "welcome" | "events" | "clients" | "lbd">("campaigns");
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("tab");
+    const q = new URLSearchParams(window.location.search);
+    const wanted = q.get("seq");
+    if (wanted && /^[0-9a-f-]{36}$/i.test(wanted)) setOpenId(wanted);
+    const t = q.get("tab");
     if (t === "broadcasts") setPageTab("broadcasts");
     if (t === "welcome") setPageTab("welcome");
     if (t === "events") setPageTab("events");
@@ -95,7 +98,7 @@ export default function SequencesManager() {
     const d = await fetch("/api/sequences", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     setList(d.sequences ?? []);
     setSender(d.sender ?? null);
-    if (!openId && d.sequences?.[0]) setOpenId(d.sequences[0].id);
+    if (d.sequences?.[0]) setOpenId((cur) => cur || d.sequences[0].id);
   }, [openId]);
   const loadOne = useCallback(async (id: string) => {
     if (!id) return;

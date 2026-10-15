@@ -204,12 +204,18 @@ export const checkOutreach: ActionTool = {
 type Who = "suite" | "assistant" | "you" | "both";
 type StepStatus = "scheduled" | "needs_approval" | "waiting" | "ready" | "done";
 /** Pages a next step may link to, so the client can act on it in one click (nothing is guessed). */
-export const STEP_PAGES = ["/sequences-manager", "/contacts", "/dm-pipeline", "/tasks", "/reminders", "/projects", "/calendars", "/finance", "/links-directory", "/daily-compass/calendar"];
+export const STEP_PAGES = ["/sequences-manager", "/contacts", "/dm-pipeline", "/tasks", "/reminders", "/projects", "/calendars", "/finance", "/links-directory", "/daily-compass/calendar", "/operations/sops", "/sales/offers", "/sales/pipeline", "/business-plan", "/marketing-plan", "/sales", "/planning/forecast", "/assistant-approvals", "/my-pages"];
 export interface ReportData {
   summary: string;
   done: string[];
   found: { label: string; value: string }[];
   next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string }[];
+}
+/** An internal app path only (never an outside address), with an optional query such as ?seq=<campaign id> or ?tab=forms. */
+export function safeOpen(p: string): string {
+  if (!p.startsWith("/") || p.startsWith("//") || /[\s<>"'\\]/.test(p)) return "";
+  const first = "/" + (p.slice(1).split(/[/?#]/)[0] || "");
+  return STEP_PAGES.some((x) => x === first || x.startsWith(first + "/")) ? p.slice(0, 160) : "";
 }
 const WHO: Who[] = ["suite", "assistant", "you", "both"];
 const STATUS: StepStatus[] = ["scheduled", "needs_approval", "waiting", "ready", "done"];
@@ -225,8 +231,8 @@ export function cleanReport(a: Record<string, unknown>): ReportData {
     const o = (st ?? {}) as Record<string, unknown>;
     const who = WHO.includes(o.who as Who) ? (o.who as Who) : "you";
     const status = STATUS.includes(o.status as StepStatus) ? (o.status as StepStatus) : who === "you" ? "waiting" : "scheduled";
-    const open = str(o.open, 60);
-    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: STEP_PAGES.includes(open) ? open : "" };
+    const open = str(o.open, 160);
+    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: safeOpen(open) };
   }).filter((x) => x.text);
   return { summary: str(a.summary, 400) || str(a.report, 400), done: list(a.done, 8, 200), found, next_steps: steps };
 }
@@ -265,7 +271,7 @@ export const saveWorkReport: ActionTool = {
       next_steps: {
         type: "array",
         description:
-          "Every next step, one row each, with NO guessing. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you can do it for them when they ask, or you prepared a card that waits for their Approve), you (only the client can), both. status: scheduled (the Suite will do it at the date in when), needs_approval (a card you prepared waits for their Approve), ready (the assistant can do it as soon as they press the button), waiting (blocked until something specific happens) or done. waiting_on is REQUIRED for status waiting: say exactly WHAT is being waited on and BY WHOM, for example 'Waiting for the Suite to send note 2 on Oct 20 at 8:00 AM' or 'Waiting for you to choose the batch 3 start date'. open (optional): the app page where the client does this step, one of /sequences-manager, /contacts, /dm-pipeline, /tasks, /reminders, /projects, /calendars, /finance, /links-directory, /daily-compass/calendar.",
+          "Every next step, one row each, with NO guessing. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you can do it for them when they ask, or you prepared a card that waits for their Approve), you (only the client can), both. status: scheduled (the Suite will do it at the date in when), needs_approval (a card you prepared waits for their Approve), ready (the assistant can do it as soon as they press the button), waiting (blocked until something specific happens) or done. waiting_on is REQUIRED for status waiting: say exactly WHAT is being waited on and BY WHOM, for example 'Waiting for the Suite to send note 2 on Oct 20 at 8:00 AM' or 'Waiting for you to choose the batch 3 start date'. open (STRONGLY EXPECTED for every step the client must read, edit, approve or do): the exact app page, ideally to the very item, for example /sequences-manager?seq=<campaign id> (check_campaigns gives each campaign's link), /sequences-manager?tab=broadcasts, /contacts?tab=forms, /operations/sops, /links-directory, /dm-pipeline, /tasks, /reminders, /projects, /sales/offers, /business-plan, /marketing-plan, /sales, /planning/forecast.",
         items: {
           type: "object",
           properties: {
@@ -298,12 +304,15 @@ export const saveWorkReport: ActionTool = {
     if (!rows.length) return { error: `I couldn't find a ${isTask ? "task" : "reminder"} with that name.` };
     if (rows.length > 1 && !rows.some((x) => x.title.toLowerCase() === q.toLowerCase())) return { error: `More than one matches: ${rows.slice(0, 4).map((x) => `"${x.title}"`).join(", ")}. Which one?` };
     const name = rows.find((x) => x.title.toLowerCase() === q.toLowerCase())?.title ?? rows[0].title;
+    // Keep the card short: one sentence, then ONLY what needs the client, each with a button that opens it.
+    const mine = r.next_steps.filter((n) => (n.who === "you" || n.who === "both") && n.status !== "done");
     const lines = [
-      ...(r.summary ? [r.summary] : []),
-      ...(r.found.length ? [`Found: ${r.found.map((f) => `${f.label} ${f.value}`).join(" · ")}`] : []),
-      ...r.next_steps.slice(0, 5).map((n) => `${WHO_LABEL[n.who]}: ${n.text}${n.when ? ` (${n.when})` : ""}${n.waiting_on ? `. ${n.waiting_on}` : ""}`),
-    ].map((l) => (l.length > 160 ? l.slice(0, 157) + "…" : l));
-    return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)] } };
+      ...(r.summary ? [r.summary.length > 160 ? r.summary.slice(0, 157) + "…" : r.summary] : []),
+      ...mine.slice(0, 3).map((n) => `For you: ${n.text.length > 120 ? n.text.slice(0, 117) + "…" : n.text}`),
+      ...(mine.length > 3 ? [`…and ${mine.length - 3} more on the report`] : []),
+    ];
+    const links = mine.filter((n) => n.open).slice(0, 3).map((n) => ({ label: `Open: ${n.text.length > 36 ? n.text.slice(0, 33) + "…" : n.text}`, href: n.open }));
+    return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)], links } };
   },
   run: async (a, ctx) => {
     const r = cleanReport(a);

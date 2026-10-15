@@ -10,6 +10,7 @@ export interface ActionCardData {
   status: "proposed" | "executed" | "cancelled" | "failed" | "undone";
   title: string;
   lines: string[];
+  links?: { label: string; href: string }[];
   summary?: string;
   error?: string;
   canUndo?: boolean;
@@ -126,11 +127,20 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished, hide
       )}
       {waiting.map((c) => (
         <div key={c.id} className="rounded-xl border border-[#c9a227]/40 bg-[#FBF7EC] p-4 text-sm text-[#3F4654] dark:bg-[#2a2415] dark:text-[#e8e4f0]">
-          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.title}</p>
+          <p className="break-words font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.title}</p>
           {c.lines.length > 0 && c.status === "proposed" && (
-            <ul className="mt-1.5 list-disc pl-5 text-xs text-[#5a6472] dark:text-[#b8c2cf]">
+            <ul className="mt-1.5 list-disc break-words pl-5 text-xs text-[#5a6472] dark:text-[#b8c2cf]">
               {c.lines.map((l, i) => <li key={i}>{l}</li>)}
             </ul>
+          )}
+          {c.status === "proposed" && (c.links ?? []).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(c.links ?? []).map((l, i) => (
+                <a key={i} href={l.href} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E7C83]/50 bg-white px-3 py-1.5 text-xs font-semibold text-[#2E7C83] hover:bg-[#2E7C83]/10 dark:bg-transparent">
+                  {l.label} <span aria-hidden>↗</span>
+                </a>
+              ))}
+            </div>
           )}
           {c.status === "proposed" && (
             <div className="mt-3 flex flex-wrap items-center gap-2">

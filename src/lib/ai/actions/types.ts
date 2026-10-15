@@ -11,9 +11,15 @@ export interface ActionCtx {
   db: Db;
 }
 
+export interface PreviewLink {
+  label: string;
+  href: string; // an internal path such as /sequences-manager?seq=<id>
+}
 export interface Preview {
   title: string;
   lines: string[];
+  /** Where the client can open exactly what the card is about (to read it, or to see it after approving). */
+  links?: PreviewLink[];
 }
 
 export type PlanResult = { preview: Preview } | { error: string };

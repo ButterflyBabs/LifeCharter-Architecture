@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { authEnabled, resolveActor, sessionUser } from "@/lib/authz";
 import { memberApiAccess, featureApiAccess, cleanFeatureMap } from "@/lib/teamRoles";
 import { toolByName } from "./registry";
-import type { ActionCtx, Preview } from "./types";
+import type { ActionCtx, Preview, PreviewLink } from "./types";
 
 export interface ActionCard {
   id: string;
@@ -13,8 +13,35 @@ export interface ActionCard {
   summary?: string;
   error?: string;
   canUndo?: boolean;
+  links?: PreviewLink[]; // where to open what this card is about
   args?: Record<string, unknown>; // only while waiting for approval, so the client can ask for changes
 }
+
+// Where each kind of card lands, so EVERY approval card says where to look (a tool can give its own, more exact links).
+const TOOL_LINKS: Record<string, PreviewLink> = {
+  // Only the cards where there is something to READ before approving get a link; simple changes stay as they are.
+  draft_broadcast: { label: "Open Campaigns & Broadcasts", href: "/sequences-manager?tab=broadcasts" },
+  draft_email_sequence: { label: "Open Campaigns & Broadcasts", href: "/sequences-manager" },
+  enroll_in_campaign: { label: "Open Campaigns & Broadcasts", href: "/sequences-manager" },
+  create_content_posts: { label: "Open the Content Calendar", href: "/daily-compass/calendar" },
+  create_form: { label: "Open Forms", href: "/contacts?tab=forms" },
+  update_form: { label: "Open Forms", href: "/contacts?tab=forms" },
+  create_booking_link: { label: "Open Links & Forms", href: "/links-directory" },
+  update_booking_link: { label: "Open Links & Forms", href: "/links-directory" },
+  create_sop: { label: "Open Playbook & SOPs", href: "/operations/sops" },
+  update_sop: { label: "Open Playbook & SOPs", href: "/operations/sops" },
+  edit_sop_steps: { label: "Open Playbook & SOPs", href: "/operations/sops" },
+  add_sop_from_template: { label: "Open Playbook & SOPs", href: "/operations/sops" },
+  create_offer: { label: "Open Offers & Packages", href: "/sales/offers" },
+  update_offer: { label: "Open Offers & Packages", href: "/sales/offers" },
+};
+const linksFor = (tool: string, preview: Preview): PreviewLink[] => {
+  const own = (preview.links ?? []).filter((l) => l.href.startsWith("/") && !l.href.startsWith("//")).slice(0, 3);
+  if (own.length) return own;
+  const d = TOOL_LINKS[tool];
+  if (tool === "update_plan_section" || tool === "fill_plan_answers") return [{ label: "Open the plan to read it", href: "/business-plan" }];
+  return d ? [d] : [];
+};
 
 const MAX_ARGS_BYTES = 20000;
 
@@ -41,11 +68,11 @@ export async function handleToolCall(
     if ("error" in planned) return `Cannot do that yet: ${planned.error}`;
     const { data, error } = await ctx.db
       .from("assistant_actions")
-      .insert({ master_plan_id: ctx.planId, requested_by: ctx.userEmail, tool: tool.name, args, preview: planned.preview, status: "proposed" })
+      .insert({ master_plan_id: ctx.planId, requested_by: ctx.userEmail, tool: tool.name, args, preview: { ...planned.preview, links: linksFor(tool.name, planned.preview) }, status: "proposed" })
       .select("id")
       .single();
     if (error || !data) return "I couldn't prepare that just now.";
-    cards.push({ id: data.id as string, tool: tool.name, status: "proposed", title: planned.preview.title, lines: planned.preview.lines, args });
+    cards.push({ id: data.id as string, tool: tool.name, status: "proposed", title: planned.preview.title, lines: planned.preview.lines, links: linksFor(tool.name, planned.preview), args });
     return `Prepared for the client's approval: "${planned.preview.title}". NOTHING has changed yet. Tell them to review it and press Approve.`;
   } catch (e) {
     console.error("assistant tool", name, e);
@@ -62,6 +89,7 @@ export const toCard = (r: Record<string, unknown>): ActionCard => {
     status: r.status as ActionCard["status"],
     title: p.title ?? "",
     lines: p.lines ?? [],
+    links: (p.links && p.links.length ? p.links : (TOOL_LINKS[r.tool as string] ? [TOOL_LINKS[r.tool as string]] : [])),
     summary: res.summary,
     error: (r.error as string) ?? undefined,
     canUndo: r.status === "executed" && !!r.undo && !!toolByName(r.tool as string)?.undo,

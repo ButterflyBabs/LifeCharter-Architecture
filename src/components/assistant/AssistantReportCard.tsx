@@ -242,9 +242,9 @@ export default function AssistantReportCard({ type, itemKey }: { type: "task" | 
                   )}
                   {!done && st.status !== "scheduled" && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {st.open && PAGE_LABEL[st.open] && (
+                      {st.open && st.open.startsWith("/") && (
                         <a href={st.open} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-[#c9a227] dark:text-[#14203a]">
-                          <ExternalLink className="h-3.5 w-3.5" /> Open {PAGE_LABEL[st.open]}
+                          <ExternalLink className="h-3.5 w-3.5" /> Open {PAGE_LABEL[st.open.split("?")[0]] ?? "it"}
                         </a>
                       )}
                       {(asstCan || mineToDo) && (

@@ -67,7 +67,7 @@ export const checkCampaigns: ActionTool = {
         const { data: e } = await ctx.db.from("sequence_enrollments").select("status").eq("sequence_id", s.id).limit(5000);
         const n = new Map<string, number>();
         for (const r of e ?? []) n.set(r.status as string, (n.get(r.status as string) ?? 0) + 1);
-        lines.push(`"${s.name}" (${s.active ? "ON" : "OFF"}): ${Array.from(n).map(([k, v]) => `${v} ${k}`).join(", ") || "nobody enrolled"}`);
+        lines.push(`"${s.name}" (${s.active ? "ON" : "OFF"}, open it: /sequences-manager?seq=${s.id}): ${Array.from(n).map(([k, v]) => `${v} ${k}`).join(", ") || "nobody enrolled"}`);
       }
       return lines.join("\n");
     }
@@ -86,6 +86,7 @@ export const checkCampaigns: ActionTool = {
       const contacts = new Map(((cRows ?? []) as Contact[]).map((c) => [c.id, c]));
       const stepPos = new Map(steps.map((st) => [st.id, st]));
 
+      out.push(`Open it: /sequences-manager?seq=${s.id}`);
       out.push(`Campaign "${s.name}" (${s.active ? "ON" : "OFF"}), ${steps.length} emails: ${steps.map((st) => `#${st.position + 1} day ${st.day_offset}${st.subject ? ` "${st.subject.slice(0, 40)}"` : ""}`).join("; ")}.`);
       const status = new Map<string, number>();
       for (const e of enrs) status.set(e.status, (status.get(e.status) ?? 0) + 1);
