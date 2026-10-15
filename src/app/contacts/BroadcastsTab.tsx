@@ -94,6 +94,11 @@ export default function BroadcastsTab({ setMsg }: { setMsg: (m: string) => void 
   useEffect(() => {
     void load();
   }, [load]);
+  // A link like ?tab=broadcasts&bc=<id> opens that one broadcast's editor straight away.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("bc");
+    if (wanted) setOpenId(wanted);
+  }, []);
 
   async function create(payload: Record<string, unknown>) {
     const r = await fetch("/api/crm/broadcasts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
