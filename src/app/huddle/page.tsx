@@ -8,6 +8,6 @@ export const metadata = { title: "Team Huddle | LifeCharter" };
 // The same Team Huddle on its own, without the app menu: this is the link for Marcello, Sumbal and anyone
 // else Babs shares it with. They must be signed in with the email she added.
 export default async function HuddleSharePage() {
-  if (!(await huddleAccess())) notFound();
+  if (!(await huddleAccess({ shared: true }))) notFound();
   return <TeamHuddle bare />;
 }

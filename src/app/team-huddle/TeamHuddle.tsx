@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, ListPlus, Loader2, Mail, Plus, Sparkles, Timer, Trash2, Upload } from "lucide-react";
 import { HUDDLE_MAX_MINUTES, totalMinutes, type AgendaSection, type Huddle, type HuddleAction, type HuddleSummary } from "@/lib/teamHuddle";
 
-interface Me { email: string; owner: boolean; canEdit: boolean }
+interface Settings { title: string; max_minutes: number; weekday: number | null; start_time: string }
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+interface Me { email: string; owner: boolean; canEdit: boolean; viewAs?: boolean }
 interface Access { email: string; name: string | null; can_edit: boolean }
 type Row = Huddle & { transcript_len?: number };
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-const OWNERS = ["Babs", "Marcello", "Sumbal", "Everyone"];
 const fmtDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 const mmss = (s: number) => `${Math.floor(Math.abs(s) / 60)}:${String(Math.abs(s) % 60).padStart(2, "0")}`;
 
@@ -42,6 +44,10 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
   const [shareEmail, setShareEmail] = useState("");
   const [shareName, setShareName] = useState("");
   const [sentIds, setSentIds] = useState<string[]>([]);
+  const [settings, setSettings] = useState<Settings>({ title: "Weekly Team Huddle", max_minutes: HUDDLE_MAX_MINUTES, weekday: null, start_time: "08:00" });
+  const [names, setNames] = useState<string[]>(["Everyone"]);
+  const [showSettings, setShowSettings] = useState(false);
+  const via = bare ? "share" : undefined;
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -59,19 +65,21 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
 
   const loadList = useCallback(async (keep?: string | null) => {
     try {
-      const r = await fetch("/api/team-huddle", { cache: "no-store" });
-      if (!r.ok) throw new Error(r.status === 404 ? "This page is shared by invitation. Ask Babs to add your email." : "Couldn't load the huddles.");
+      const r = await fetch(`/api/team-huddle${bare ? "?via=share" : ""}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status === 404 ? "This page is shared by invitation. Ask the person who runs the account to add your email." : "Couldn't load the huddles.");
       const d = await r.json();
       setMe(d.me);
       setRows(d.huddles);
       setAccess(d.access ?? []);
+      if (d.settings) setSettings(d.settings);
+      if (Array.isArray(d.names)) setNames(d.names);
       const pick = keep ?? (d.huddles.find((h: Row) => h.status === "upcoming")?.id ?? d.huddles[0]?.id ?? null);
       setSelId(pick);
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load.");
     }
-  }, []);
+  }, [bare]);
   useEffect(() => { void loadList(); }, [loadList]);
 
   // Load the chosen call in full (Babs also gets the transcript text).
@@ -79,7 +87,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
     if (!selId) { setCur(null); return; }
     let live = true;
     (async () => {
-      const r = await fetch(`/api/team-huddle?id=${selId}`, { cache: "no-store" });
+      const r = await fetch(`/api/team-huddle?id=${selId}${bare ? "&via=share" : ""}`, { cache: "no-store" });
       if (!live || !r.ok) return;
       const d = await r.json();
       dirty.current = false;
@@ -87,7 +95,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
       setRun(null);
     })();
     return () => { live = false; };
-  }, [selId]);
+  }, [selId, bare]);
 
   // Autosave: any edit is saved about a second after the last keystroke.
   const save = useCallback(async (h: Row, withTranscript = false) => {
@@ -97,7 +105,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
       agenda: h.agenda, actions: h.actions, notes: h.notes, recording_url: h.recording_url,
     };
     if (withTranscript) patch.transcript = h.transcript;
-    const r = await fetch("/api/team-huddle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save", id: h.id, patch }) });
+    const r = await fetch("/api/team-huddle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save", id: h.id, patch, via }) });
     if (!r.ok) {
       const d = await r.json().catch(() => ({}));
       setError(d.error || "Couldn't save. Your last change may not be kept.");
@@ -108,7 +116,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
     setSaving("saved");
     setRows((rs) => rs.map((x) => (x.id === h.id ? { ...x, call_date: h.call_date, title: h.title, status: h.status, start_time: h.start_time } : x)));
     setTimeout(() => setSaving((s) => (s === "saved" ? "idle" : s)), 1800);
-  }, []);
+  }, [via]);
 
   const edit = (fn: (h: Row) => Row, withTranscript = false) => {
     if (!cur || !canEdit) return;
@@ -120,10 +128,11 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
   };
 
   const total = useMemo(() => (cur ? totalMinutes(cur.agenda) : 0), [cur]);
-  const over = total > HUDDLE_MAX_MINUTES;
+  const limit = settings.max_minutes;
+  const over = total > limit;
 
   async function post(body: Record<string, unknown>) {
-    const r = await fetch("/api/team-huddle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch("/api/team-huddle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, via }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || "Something went wrong.");
     return d;
@@ -135,7 +144,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
       const d = await post({ action: "create" });
       setRows((rs) => [d.huddle, ...rs]);
       setSelId(d.huddle.id);
-      setNote(d.carried ? `New huddle created. ${d.carried} open to-do${d.carried === 1 ? "" : "s"} carried over from the last call.` : "New huddle created from the standard 30-minute agenda.");
+      setNote(d.carried ? `New huddle created. ${d.carried} open to-do${d.carried === 1 ? "" : "s"} carried over from the last call.` : "New huddle created from your agenda template.");
     } catch (e) { setError(e instanceof Error ? e.message : "Couldn't create."); }
     setBusy("");
   }
@@ -158,7 +167,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
     try {
       if (timer.current) clearTimeout(timer.current);
       await save(cur, true);
-      const r = await fetch("/api/team-huddle/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cur.id }) });
+      const r = await fetch("/api/team-huddle/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cur.id, via }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Couldn't write the summary.");
       setCur({ ...cur, summary: d.summary as HuddleSummary, status: "done" });
@@ -235,9 +244,9 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
     <div className={`${bare ? "min-h-screen bg-[#F8F5F0] dark:bg-[#0e1830]" : ""} px-4 sm:px-6 py-6`}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c9a227]">LifeCharter team</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c9a227]">Your team</p>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#1a2b4a] dark:text-[#F8F5F0]">Team Huddle</h1>
-          <p className="mt-1 text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">Thirty minutes, one agenda, every to-do owned. Head up. Wings out. 🦋</p>
+          <p className="mt-1 text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">{limit} minutes, one agenda, every to-do owned. Head up. Wings out. 🦋</p>
         </div>
         {owner && <button className={btnGold} onClick={newHuddle} disabled={busy === "new"}>{busy === "new" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} New huddle</button>}
       </div>
@@ -282,9 +291,9 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${over ? "bg-[#b3422f]/15 text-[#b3422f] dark:text-[#f09a86]" : "bg-[#2c6b3f]/15 text-[#2c6b3f] dark:text-[#7cc596]"}`}>
-                    {total} / {HUDDLE_MAX_MINUTES} minutes
+                    {total} / {limit} minutes
                   </span>
-                  {over && <span className="text-sm text-[#b3422f] dark:text-[#f09a86]">Over the 30-minute limit. Trim a section or move a topic to the Parking lot.</span>}
+                  {over && <span className="text-sm text-[#b3422f] dark:text-[#f09a86]">Over your {limit}-minute limit. Trim a section or move a topic to the Parking lot.</span>}
                   <span className="ml-auto text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">
                     {saving === "saving" ? "Saving…" : saving === "saved" ? <span className="inline-flex items-center gap-1"><Check className="h-3.5 w-3.5" /> Saved</span> : canEdit ? "Changes save by themselves" : "View only"}
                   </span>
@@ -355,7 +364,7 @@ export default function TeamHuddle({ bare = false }: { bare?: boolean }) {
                   );
                 })}
                 {canEdit && <button className={btn} onClick={() => edit((h) => ({ ...h, agenda: [...h.agenda, { id: uid(), title: "New section", minutes: 0, items: [] }] }))}><Plus className="h-4 w-4" /> Add a section</button>}
-                <datalist id="huddle-owners">{OWNERS.map((o) => <option key={o} value={o} />)}</datalist>
+                <datalist id="huddle-owners">{names.map((o) => <option key={o} value={o} />)}</datalist>
               </div>
 
               {/* To-dos */}

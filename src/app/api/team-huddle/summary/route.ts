@@ -12,13 +12,13 @@ export const maxDuration = 120;
 
 const MAX_CHARS = 60000; // about 10,000 words: well past a 30-minute call
 
-// Babs only. Reads the saved transcript of one call and writes the summary, wins, decisions, hot topics,
+// The person who runs the account (and an admin they invited). Reads the saved transcript of one call and writes the summary, wins, decisions, hot topics,
 // to-dos (with owner and date when said) and follow-ups, then saves them on the call. One AI call per press.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
-  const a = await huddleAccess();
-  if (!a || !a.owner) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const b = (await request.json().catch(() => ({}))) as { id?: string };
+  const b = (await request.json().catch(() => ({}))) as { id?: string; via?: string };
+  const a = await huddleAccess({ shared: b.via === "share" });
+  if (!a || !a.manage) return NextResponse.json({ error: "not found" }, { status: 404 });
   const db = createServerClient();
   const { data: h } = await db.from("team_huddles").select("id, call_date, title, agenda, actions, transcript").eq("id", String(b.id || "")).eq("master_plan_id", a.planId).maybeSingle();
   if (!h) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -28,16 +28,16 @@ export async function POST(request: Request) {
   const { key } = await resolveAiConfig();
   const overCap = await memberAiGate(key);
   if (overCap) return overCap;
-  if (!key) return NextResponse.json({ needsKey: true, error: "No AI key is set for this account." }, { status: 400 });
+  if (!key) return NextResponse.json({ needsKey: true, error: "Add your AI key in Settings > AI first (the same one your assistant uses), then try again." }, { status: 400 });
 
   const agenda = cleanAgenda(h.agenda).map((s) => `${s.title} (${s.minutes} min): ${s.items.map((i) => i.text).filter(Boolean).join(" | ")}`).join("\n");
   const open = cleanActions(h.actions).filter((x) => !x.done && x.text).map((x) => `- ${x.text}${x.owner ? ` [${x.owner}]` : ""}`).join("\n") || "(none)";
   const clipped = transcript.length > MAX_CHARS;
 
   const sys =
-    `You write the follow-up record of a short weekly team call for LifeCharter (AmiLynne "Babs" Carroll, with Marcello and Sumbal). ` +
+    `You write the follow-up record of a short weekly team call for a small business team. ` +
     `Use ONLY what is in the transcript; never invent names, numbers, dates or decisions. If something is unclear, leave it out. ` +
-    `Write plainly and warmly, in short sentences. Owners are first names as spoken (Babs, Marcello, Sumbal, ...); leave "" if no owner was named. ` +
+    `Write plainly and warmly, in short sentences. Owners are first names as spoken; leave "" if no owner was named. ` +
     `Dates: only when a date or a weekday was spoken; give it as YYYY-MM-DD resolved from the call date, otherwise "". ` +
     `Respond ONLY as strict JSON: {"summary": "3 to 6 sentences", "wins": [""], "decisions": [""], "hot_topics": ["topic and where it landed"], ` +
     `"action_items": [{"text": "start with a verb", "owner": "", "due": ""}], "follow_ups": ["questions or items still open for next week"]}.`;

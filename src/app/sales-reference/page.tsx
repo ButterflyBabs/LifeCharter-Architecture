@@ -72,7 +72,7 @@ const TIERS: Tier[] = [
 ];
 
 export default async function SalesReferencePage() {
-  const huddle = await huddleAccess(); // shows a link to the Team Huddle for the people Babs shared it with
+  const huddle = await huddleAccess({ shared: true }); // shows a link to the Team Huddle for the people Babs shared it with
   const settings = await loadPricingSettings();
   const today = todayMountain();
   const switched = isSwitched(today, settings);
