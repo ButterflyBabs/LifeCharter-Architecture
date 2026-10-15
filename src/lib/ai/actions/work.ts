@@ -222,7 +222,11 @@ const STATUS: StepStatus[] = ["scheduled", "needs_approval", "waiting", "ready",
 
 /** Shape whatever the model sent into a safe, bounded report. */
 export function cleanReport(a: Record<string, unknown>): ReportData {
-  const list = (v: unknown, n: number, len: number) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()).slice(0, n).map((x) => (x as string).trim().slice(0, len)) : []);
+  // A single line of text is accepted as a one-item list, so a slightly different shape from the model is not lost.
+  const list = (v: unknown, n: number, len: number) => {
+    const arr = typeof v === "string" ? [v] : Array.isArray(v) ? v : [];
+    return arr.filter((x) => typeof x === "string" && x.trim()).slice(0, n).map((x) => (x as string).trim().slice(0, len));
+  };
   const found = (Array.isArray(a.found) ? a.found : []).slice(0, 6).map((f) => {
     const o = (f ?? {}) as Record<string, unknown>;
     return { label: str(o.label, 40), value: str(o.value, 80) };
