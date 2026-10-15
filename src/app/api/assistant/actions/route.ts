@@ -5,6 +5,8 @@ import { decideAction, listRecentActions } from "@/lib/ai/actions/engine";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+// Starting a batch on a campaign sends its first emails one by one, so an approval can take a while.
+export const maxDuration = 120;
 
 // The actions the assistant prepared for this account in the last day (so a card survives a reload).
 export async function GET(request: Request) {

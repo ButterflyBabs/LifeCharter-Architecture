@@ -1,6 +1,8 @@
 import type { ActionTool, ActionCtx } from "./types";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import * as microsoft from "@/lib/microsoft";
+import { enrolContact } from "@/lib/sequences/engine";
+import { selectContacts, WHO_SCHEMA } from "./crm";
 
 // Two look-up tools for email campaigns (the Suite's email series): what went out and what is next, and who
 // has replied. Both only READ. Replies are found in the account's connected Microsoft 365 inbox; Gmail is
@@ -218,4 +220,114 @@ export const checkReplies: ActionTool = {
   },
 };
 
-export const CAMPAIGN_TOOLS: ActionTool[] = [checkCampaigns, checkReplies];
+
+// ── Start people on a campaign ──────────────────────────────────────────────────────────────────────────────
+// The one tool that makes an email go out, so it is narrow: named people only (never "everyone"), a small number per
+// approval, anyone who unsubscribed, is already in, or carries a skip tag is left out, and the preview says plainly
+// what will be sent and when. Nothing runs until the client presses Approve.
+const ENROLL_MAX = 20;
+
+interface EnrolPlan {
+  seq: { id: string; key: string; name: string; active: boolean; send_hour: number | null; skip_tags: string[] | null };
+  go: { id: string; email: string; first_name: string | null; last_name: string | null }[];
+  already: string[];
+  unsub: string[];
+  skipped: string[];
+  capped: number;
+  steps: { position: number; day_offset: number; subject: string | null }[];
+}
+
+async function planEnrol(a: Record<string, unknown>, ctx: ActionCtx): Promise<EnrolPlan | { error: string }> {
+  const name = clean(a.campaign);
+  if (!name) return { error: "Which campaign? Give part of its name." };
+  const who = (a.who as Record<string, unknown>) ?? {};
+  if (who.everyone) return { error: "I can only start named people or a tag group, never everyone at once. Tell me which people or which tag." };
+  const { data: seqs } = await ctx.db.from("sequences").select("id, key, name, active, send_hour, skip_tags").eq("master_plan_id", ctx.planId).ilike("name", `%${name}%`).limit(6);
+  const list = (seqs ?? []) as EnrolPlan["seq"][];
+  if (!list.length) return { error: `No campaign has "${name}" in its name.` };
+  const seq = list.find((x) => x.name.toLowerCase() === name.toLowerCase()) ?? (list.length === 1 ? list[0] : null);
+  if (!seq) return { error: `More than one campaign matches: ${list.map((x) => `"${x.name}"`).join(", ")}. Which one?` };
+
+  const found = await selectContacts(who, ctx);
+  if ("error" in found) return { error: found.error };
+  if (!found.rows.length) return { error: "Nobody matched that." };
+  const ids = found.rows.map((r) => r.id);
+  const { data: enr } = await ctx.db.from("sequence_enrollments").select("contact_id").eq("sequence_id", seq.id).in("contact_id", ids.slice(0, 1000));
+  const inIds = new Set((enr ?? []).map((e) => e.contact_id as string));
+  const { data: flags } = await ctx.db.from("seq_contacts").select("id, unsubscribed_at, tags").eq("master_plan_id", ctx.planId).in("id", ids.slice(0, 1000));
+  const flagOf = new Map(((flags ?? []) as { id: string; unsubscribed_at: string | null; tags: string[] | null }[]).map((f) => [f.id, f]));
+  const skipTags = (seq.skip_tags ?? []).filter(Boolean);
+  const nm = (c: { first_name: string | null; last_name: string | null; email: string }) => `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || c.email;
+  const go: EnrolPlan["go"] = [];
+  const already: string[] = [];
+  const unsub: string[] = [];
+  const skipped: string[] = [];
+  for (const c of found.rows) {
+    const f = flagOf.get(c.id);
+    if (inIds.has(c.id)) already.push(nm(c));
+    else if (f?.unsubscribed_at) unsub.push(nm(c));
+    else if (skipTags.length && (f?.tags ?? []).some((t) => skipTags.includes(t))) skipped.push(nm(c));
+    else go.push({ id: c.id, email: c.email, first_name: c.first_name, last_name: c.last_name });
+  }
+  if (!go.length) {
+    const why = [already.length ? `${already.length} already in it` : "", unsub.length ? `${unsub.length} unsubscribed` : "", skipped.length ? `${skipped.length} carry a tag it skips` : ""].filter(Boolean).join(", ");
+    return { error: `Nobody can be started: ${why || "no one matched"}.` };
+  }
+  const { data: st } = await ctx.db.from("sequence_steps").select("position, day_offset, subject").eq("sequence_id", seq.id).order("position");
+  return { seq, go: go.slice(0, ENROLL_MAX), already, unsub, skipped, capped: Math.max(0, go.length - ENROLL_MAX), steps: (st ?? []) as EnrolPlan["steps"] };
+}
+
+export const enrollInCampaign: ActionTool = {
+  name: "enroll_in_campaign",
+  kind: "write",
+  apiPath: "/api/sequences",
+  description:
+    "Start specific people on one of the client's email campaigns (Campaigns & Broadcasts), for example 'start batch 3 on the warm-up'. THIS MAKES EMAIL GO OUT: the campaign's first email is sent to each person right away when the campaign is ON, and the later emails follow on its own schedule. It runs only after the client presses Approve. Give the campaign name and WHO (names, emails or a tag; never everyone); up to 20 people per approval. Anyone already in it, unsubscribed, or carrying a tag the campaign skips is left out and listed. Look at the campaign with check_campaigns first so you know who is already in.",
+  parameters: {
+    type: "object",
+    properties: {
+      campaign: { type: "string", description: "Part of the campaign's name." },
+      who: WHO_SCHEMA,
+    },
+    required: ["campaign", "who"],
+  },
+  plan: async (a, ctx) => {
+    const p = await planEnrol(a, ctx);
+    if ("error" in p) return { error: p.error };
+    const tz = await resolveUserTimeZone(null);
+    const dayLabel = (offset: number) => {
+      const d = new Date(Date.now() + offset * 86400_000);
+      return d.toLocaleDateString("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric" });
+    };
+    const names = p.go.map((c) => `${`${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || c.email}`);
+    const lines = [
+      p.seq.active
+        ? `Email 1 is sent to ${p.go.length === 1 ? "them" : "each of them"} right away, from your campaign's sender. This cannot be unsent.`
+        : `This campaign is OFF, so nothing is sent until you turn it on; they are only added.`,
+      ...p.steps.slice(1).map((s) => `Email ${s.position + 1}${s.subject ? ` ("${s.subject.slice(0, 40)}")` : ""}: ${dayLabel(s.day_offset)}${p.seq.send_hour != null ? ` around ${p.seq.send_hour}:00` : ""}`),
+      `People: ${names.slice(0, 12).join(", ")}${names.length > 12 ? `, and ${names.length - 12} more` : ""}`,
+      ...(p.already.length ? [`Left out, already in it (${p.already.length}): ${p.already.slice(0, 6).join(", ")}`] : []),
+      ...(p.unsub.length ? [`Left out, unsubscribed (${p.unsub.length}): ${p.unsub.slice(0, 6).join(", ")}`] : []),
+      ...(p.skipped.length ? [`Left out, carry a tag this campaign skips (${p.skipped.length}): ${p.skipped.slice(0, 6).join(", ")}`] : []),
+      ...(p.capped ? [`Only the first ${ENROLL_MAX} are started; ask again for the other ${p.capped}.`] : []),
+    ];
+    return { preview: { title: `Start ${p.go.length} ${p.go.length === 1 ? "person" : "people"} on "${p.seq.name}"`, lines } };
+  },
+  run: async (a, ctx) => {
+    const p = await planEnrol(a, ctx);
+    if ("error" in p) throw new Error(p.error);
+    const started: string[] = [];
+    const failed: string[] = [];
+    for (const c of p.go) {
+      const out = await enrolContact({ masterPlanId: ctx.planId, sequenceKey: p.seq.key, email: c.email, firstName: c.first_name, lastName: c.last_name, source: "assistant", sourceRef: ctx.userEmail });
+      if (out.enrollmentId) started.push(c.id);
+      else failed.push(`${c.first_name ?? c.email}: ${out.reason ?? "not started"}`);
+    }
+    return {
+      summary: `Started ${started.length} ${started.length === 1 ? "person" : "people"} on "${p.seq.name}"${p.seq.active ? " (email 1 sent)" : ""}${failed.length ? `. Not started: ${failed.slice(0, 4).join("; ")}` : ""}.`,
+      result: { started: started.length, failed: failed.length },
+    };
+  },
+};
+
+export const CAMPAIGN_TOOLS: ActionTool[] = [checkCampaigns, checkReplies, enrollInCampaign];

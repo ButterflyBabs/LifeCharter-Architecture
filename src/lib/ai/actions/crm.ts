@@ -8,7 +8,7 @@ const tagOf = (v: unknown) => str(v, 60).toLowerCase();
 const strList = (v: unknown, n = 60) => (Array.isArray(v) ? v.map((x) => str(x, n)).filter(Boolean) : []);
 
 // Who the assistant is talking about: the same few filters for every contact action.
-const WHO_SCHEMA = {
+export const WHO_SCHEMA = {
   type: "object",
   description: "Which contacts. Give at least one filter, or set everyone=true to mean every contact.",
   properties: {
@@ -23,10 +23,10 @@ const WHO_SCHEMA = {
   },
 };
 
-interface Row { id: string; email: string; first_name: string | null; last_name: string | null; tags: string[] | null }
+export interface Row { id: string; email: string; first_name: string | null; last_name: string | null; tags: string[] | null }
 const nameOf = (c: Row) => [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
 
-async function selectContacts(who: Record<string, unknown>, ctx: ActionCtx): Promise<{ rows: Row[]; capped: boolean } | { error: string }> {
+export async function selectContacts(who: Record<string, unknown>, ctx: ActionCtx): Promise<{ rows: Row[]; capped: boolean } | { error: string }> {
   const withAny = strList(who.with_any_tag).map(tagOf).filter(Boolean);
   const without = tagOf(who.without_tag);
   const search = str(who.search, 100).replace(/[%,()]/g, "");
