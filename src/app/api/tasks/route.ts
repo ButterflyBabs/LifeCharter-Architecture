@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { todayOnFrom } from "@/lib/taskToday";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   let q = supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, segment_id, assignee_member_id, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, created_at, today_on, segment_id, assignee_member_id, business:businesses(name, color), segment:segments(name, color)"
     )
     .eq("master_plan_id", masterPlanId);
   if (scope) q = q.eq("business_id", scope.businessId);
@@ -108,6 +109,8 @@ export async function POST(request: Request) {
     segment_id: segmentId,
     due_date: body.dueDate ?? null,
     due_at: body.dueAt ?? null,
+    // The day it was put on Today by hand (the page sends its own local date; otherwise the account's own zone).
+    today_on: (body.status ?? "today") === "today" ? await todayOnFrom(body.todayOn) : null,
     followup: body.followup && typeof body.followup === "object" ? body.followup : {},
   };
   // A due date/time: either the structured fields (day + optional time, read in

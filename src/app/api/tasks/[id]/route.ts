@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { todayOnFrom } from "@/lib/taskToday";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -23,6 +24,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (typeof body.status === "string") {
     update.status = body.status;
     update.completed_at = body.status === "done" ? new Date().toISOString() : null;
+    // Put on Today by hand: remember which day, so the Today list starts fresh tomorrow. Any other status clears it.
+    update.today_on = body.status === "today" ? await todayOnFrom(body.todayOn) : null;
   }
   // Reopening a task brings it back to the board.
   if (typeof body.status === "string" && body.status !== "done") update.archived_at = null;
