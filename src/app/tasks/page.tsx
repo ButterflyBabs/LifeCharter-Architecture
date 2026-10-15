@@ -29,6 +29,27 @@ interface Member {
   id: string;
   name: string;
 }
+// Open work that lives somewhere else (reminders, milestones, legal items, recurring tasks, huddle to-dos, the
+// assistant's steps for you). Shown in the same lists, completed from here, linked back to where it lives.
+interface Linked {
+  key: string;
+  kind: "reminder" | "milestone" | "legal" | "recurring" | "huddle" | "assistant";
+  id: string;
+  title: string;
+  dueDay: string | null;
+  dueLabel?: string;
+  context?: string;
+  href: string;
+  step?: number;
+}
+const LINKED_LABEL: Record<Linked["kind"], string> = {
+  reminder: "Reminder",
+  milestone: "Milestone",
+  legal: "Legal",
+  recurring: "Recurring",
+  huddle: "Huddle to-do",
+  assistant: "Assistant step",
+};
 
 // Horizontal, collapsible lists (one per status). Today is the one with a rule: tasks dated today plus anything the
 // person drags or adds into it today; see sectionOf below.
@@ -105,6 +126,7 @@ export default function TasksPage() {
       }
       return next;
     });
+  const [linked, setLinked] = useState<Linked[]>([]);
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
   const [dragId, setDragId] = useState<number | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
@@ -132,6 +154,13 @@ export default function TasksPage() {
     if (view !== "all") qs.set("assignee", view);
     if (showArchived) qs.set("archived", "1");
     const url = qs.toString() ? `/api/tasks?${qs.toString()}` : "/api/tasks";
+    // Everyone's view also carries the open work that lives elsewhere (not a single team member's own list).
+    if (view === "all" && !showArchived) {
+      fetch(`/api/tasks/linked?tz=${encodeURIComponent(tz)}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setLinked(d?.items ?? []))
+        .catch(() => setLinked([]));
+    } else setLinked([]);
     return fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -201,6 +230,22 @@ export default function TasksPage() {
     return t.status === "today" ? "backlog" : t.status;
   };
   const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, optional: 4 };
+  const linkedSection = (l: Linked): string => (l.dueDay && l.dueDay < todayStr ? "overdue" : l.dueDay === todayStr ? "today" : "backlog");
+  const completeLinked = async (l: Linked) => {
+    setLinked((prev) => prev.filter((x) => x.key !== l.key));
+    const res =
+      l.kind === "assistant"
+        ? await fetch("/api/assistant/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: l.id, step: l.step, status: "done" }) }).catch(() => null)
+        : await fetch("/api/tasks/linked", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: l.kind, id: l.id, tz }) }).catch(() => null);
+    if (!res || !res.ok) void load();
+  };
+  const linkedDue = (l: Linked): { label: string; tone: keyof typeof TONE_CLASS } | null => {
+    if (!l.dueDay) return null;
+    const pretty = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", weekday: "short", timeZone: "UTC" }).format(new Date(`${l.dueDay}T12:00:00Z`));
+    if (l.dueDay < todayStr) return { label: `Overdue · ${pretty}`, tone: "overdue" };
+    if (l.dueDay === todayStr) return { label: l.dueLabel ? `Today · ${l.dueLabel}` : "Due today", tone: "today" };
+    return { label: pretty, tone: "later" };
+  };
   const byDueThenPriority = (a: Task, b: Task) => {
     const da = a.due_at ? new Date(a.due_at).getTime() : Infinity;
     const db = b.due_at ? new Date(b.due_at).getTime() : Infinity;
@@ -392,6 +437,8 @@ export default function TasksPage() {
         <div className="space-y-4">
           {SECTIONS.map((col) => {
             const all = tasks.filter((t) => sectionOf(t) === col.key);
+            const sectionLinked = linked.filter((l) => linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
+            const total = all.length + sectionLinked.length;
             // Done is newest first and capped, so a long history never takes over the page.
             const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : [...all].sort(byDueThenPriority);
             const items = col.key === "done" && !showAllDone ? sorted.slice(0, DONE_SHOWN) : sorted;
@@ -402,7 +449,7 @@ export default function TasksPage() {
                 : col.key === "overdue"
                   ? "Dated before today and not done. Finish them or give them a new date to clear this list."
                   : "";
-            if (col.key === "overdue" && all.length === 0) return null;
+            if (col.key === "overdue" && total === 0) return null;
             return (
               <section
                 key={col.key}
@@ -431,7 +478,7 @@ export default function TasksPage() {
                 >
                   {folded ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   <h2 className={`text-base font-semibold ${col.key === "overdue" ? "text-[#B0342C]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{col.label}</h2>
-                  <span className="text-xs text-gray-400">{all.length}</span>
+                  <span className="text-xs text-gray-400">{total}</span>
                   {hint && <span className="ml-1 hidden text-xs text-gray-500 sm:inline">{hint}</span>}
                 </button>
                 {!folded && (
@@ -589,12 +636,37 @@ export default function TasksPage() {
                           </div>
                         );
                       })}
+                      {sectionLinked.map((l) => {
+                        const due = linkedDue(l);
+                        return (
+                          <div key={l.key} className="bg-white dark:bg-[#1A1A2E] rounded-xl border border-dashed border-gray-300/70 dark:border-white/15 px-3 py-2">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span className="w-4 shrink-0" aria-hidden />
+                              <button
+                                onClick={() => completeLinked(l)}
+                                title="Mark done"
+                                aria-label={`Mark done: ${l.title}`}
+                                className="w-4 h-4 rounded-full border-2 border-gray-300 hover:border-[#54A33B] flex-shrink-0"
+                              />
+                              <p className="min-w-[180px] flex-1 text-sm leading-snug text-[#3F4654] dark:text-[#e8e4f0]">{l.title}</p>
+                              {due && <span className={`text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[due.tone]}`}>{due.label}</span>}
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2E7C83]/10 text-[#1F5E63]" title="Lives here, and is shown in this list too">
+                                {LINKED_LABEL[l.kind]}
+                                {l.context ? ` · ${l.context}` : ""}
+                              </span>
+                              <Link href={l.href} className="text-[11px] text-[#2E7C83] hover:underline">
+                                Open
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
                       {col.key === "done" && all.length > DONE_SHOWN && (
                         <button onClick={() => setShowAllDone((v) => !v)} className="w-full text-xs text-[#2E7C83] hover:underline py-1.5">
                           {showAllDone ? "Show fewer" : `Show all ${all.length}`}
                         </button>
                       )}
-                      {items.length === 0 && (
+                      {items.length === 0 && sectionLinked.length === 0 && (
                         <p className="text-xs text-gray-400 px-2 py-3">{col.key === "today" ? "Nothing for today yet. Drag a task here or give one today's date." : "Nothing here."}</p>
                       )}
                     </div>
