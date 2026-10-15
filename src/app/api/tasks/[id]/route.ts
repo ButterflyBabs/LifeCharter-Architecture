@@ -31,6 +31,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (typeof body.status === "string" && body.status !== "done") update.archived_at = null;
   if (typeof body.archived === "boolean") update.archived_at = body.archived ? new Date().toISOString() : null;
   if (typeof body.priority === "string") update.priority = body.priority;
+  // Notes and additional information on the task.
+  if (typeof body.description === "string") update.description = body.description.slice(0, 20000).trim() || null;
   const due = await dueFromBody(body);
   if (due === "invalid") return NextResponse.json({ error: "Enter a valid due date." }, { status: 400 });
   if (due) Object.assign(update, due);

@@ -12,6 +12,7 @@ import { dayInTz } from "@/lib/tz";
 interface Task {
   id: number;
   title: string;
+  description?: string | null;
   status: string;
   priority: string;
   due_at?: string | null;
@@ -208,6 +209,12 @@ export default function TasksPage() {
     load();
   };
 
+  // Notes and additional information, kept on the task (its description).
+  const saveNote = async (id: number, text: string) => {
+    const clean = text.trim();
+    setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, description: clean || null } : t)) ?? null);
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description: clean }) }).catch(() => {});
+  };
   const todayStr = dayInTz(new Date(), tz);
   const setStatus = async (id: number, status: string) => {
     const todayOn = status === "today" ? todayStr : null;
@@ -531,7 +538,18 @@ export default function TasksPage() {
                                 {t.status === "done" && <Check className="w-2.5 h-2.5" />}
                               </button>
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PRIORITY_COLOR[t.priority] ?? "#9CA3AF" }} title={t.priority} />
-                              <p className={`min-w-[180px] flex-1 text-sm leading-snug ${t.status === "done" ? "line-through text-gray-400" : "text-[#3F4654] dark:text-[#e8e4f0]"}`}>{t.title}</p>
+                              <div className="min-w-[180px] flex-1">
+                                <p className={`text-sm leading-snug ${t.status === "done" ? "line-through text-gray-400" : "text-[#3F4654] dark:text-[#e8e4f0]"}`}>{t.title}</p>
+                                {t.description && !open && (
+                                  <button
+                                    onClick={() => setOpenRows((r) => ({ ...r, [t.id]: true }))}
+                                    className="mt-0.5 block max-w-full truncate text-left text-xs text-gray-400 hover:text-[#2E7C83]"
+                                    title="Open the notes"
+                                  >
+                                    {t.description.replace(/\s+/g, " ").slice(0, 140)}
+                                  </button>
+                                )}
+                              </div>
                               {info && t.status !== "done" && <span className={`text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[info.tone]}`}>{info.label}</span>}
                               {(col.key === "today" || col.key === "overdue") && t.status !== "today" && t.status !== "done" && (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{COLUMNS.find((c) => c.key === t.status)?.label ?? t.status}</span>
@@ -570,6 +588,22 @@ export default function TasksPage() {
                                 <MoreHorizontal className="w-4 h-4" /> More
                               </button>
                             </div>
+                            {open && (
+                              <div className="mt-2 mb-1">
+                                <label htmlFor={`note-${t.id}`} className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500">Notes and additional information</label>
+                                <textarea
+                                  id={`note-${t.id}`}
+                                  key={`${t.id}-${t.description ?? ""}`}
+                                  defaultValue={t.description ?? ""}
+                                  onBlur={(e) => {
+                                    if (e.target.value.trim() !== (t.description ?? "").trim()) void saveNote(t.id, e.target.value);
+                                  }}
+                                  rows={5}
+                                  placeholder="Add anything you need to remember about this task: links, what is left, who said what. It saves when you click away."
+                                  className="mt-1 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] px-3 py-2 text-sm"
+                                />
+                              </div>
+                            )}
                             {open && (
                               <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                                 {t.status !== "done" && (

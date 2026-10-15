@@ -64,7 +64,7 @@ export async function GET(request: Request) {
   for (const l of (legal.data ?? []) as { item_key: string; due_date: string | null; custom_title: string | null }[]) {
     if (seenLegal.has(l.item_key)) continue;
     seenLegal.add(l.item_key);
-    items.push({ key: `legal:${l.item_key}`, kind: "legal", id: l.item_key, title: l.custom_title || legalTitle.get(l.item_key) || l.item_key, dueDay: l.due_date, context: "Legal & Compliance", href: "/legal" });
+    items.push({ key: `legal:${l.item_key}`, kind: "legal", id: l.item_key, title: l.custom_title || legalTitle.get(l.item_key) || l.item_key, dueDay: l.due_date, context: "Legal & Compliance", href: "/compliance" });
   }
 
   const recRows = ((rec.data ?? []) as (RecurringRule & { id: string; title: string; time_of_day: string | null })[]).filter((r) => isDueOn(r, year, month, day));
