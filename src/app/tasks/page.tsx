@@ -40,6 +40,9 @@ const COLUMNS: { key: string; label: string }[] = [
   { key: "done", label: "Done" },
 ];
 
+// Overdue is a list of its own, shown before Today. It is not a status: a task lands there by its date alone.
+const SECTIONS: { key: string; label: string }[] = [{ key: "overdue", label: "Overdue" }, ...COLUMNS];
+
 const PRIORITY_COLOR: Record<string, string> = {
   critical: "#D83A34",
   high: "#F0B400",
@@ -191,6 +194,7 @@ export default function TasksPage() {
   // earlier day is no longer for today: it waits in Backlog until it is dated or dragged back.
   const sectionOf = (t: Task): string => {
     if (t.status === "done") return "done";
+    if (t.due_at && dayInTz(t.due_at, tz) < todayStr) return "overdue";
     const datedToday = Boolean(t.due_at) && dayInTz(t.due_at as string, tz) === todayStr;
     const putToday = t.status === "today" && (t.today_on ? t.today_on === todayStr : Boolean(t.created_at) && dayInTz(t.created_at as string, tz) === todayStr);
     if (datedToday || putToday) return "today";
@@ -386,7 +390,7 @@ export default function TasksPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {COLUMNS.map((col) => {
+          {SECTIONS.map((col) => {
             const all = tasks.filter((t) => sectionOf(t) === col.key);
             // Done is newest first and capped, so a long history never takes over the page.
             const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : [...all].sort(byDueThenPriority);
@@ -395,18 +399,22 @@ export default function TasksPage() {
             const hint =
               col.key === "today"
                 ? `${new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric" }).format(new Date())}. Tasks dated today, plus anything you drag here.`
-                : "";
+                : col.key === "overdue"
+                  ? "Dated before today and not done. Finish them or give them a new date to clear this list."
+                  : "";
+            if (col.key === "overdue" && all.length === 0) return null;
             return (
               <section
                 key={col.key}
                 aria-label={col.label}
                 onDragOver={(e) => {
-                  if (dragId === null) return;
+                  if (dragId === null || col.key === "overdue") return;
                   e.preventDefault();
                   setOverKey(col.key);
                 }}
                 onDragLeave={() => setOverKey((k) => (k === col.key ? null : k))}
                 onDrop={(e) => {
+                  if (col.key === "overdue") return;
                   e.preventDefault();
                   const id = dragId ?? Number(e.dataTransfer.getData("text/plain"));
                   setDragId(null);
@@ -422,9 +430,9 @@ export default function TasksPage() {
                   className="flex w-full items-center gap-2 px-2 py-1 text-left"
                 >
                   {folded ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                  <h2 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{col.label}</h2>
+                  <h2 className={`text-base font-semibold ${col.key === "overdue" ? "text-[#B0342C]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{col.label}</h2>
                   <span className="text-xs text-gray-400">{all.length}</span>
-                  {col.key === "today" && <span className="ml-1 hidden text-xs text-gray-500 sm:inline">{hint}</span>}
+                  {hint && <span className="ml-1 hidden text-xs text-gray-500 sm:inline">{hint}</span>}
                 </button>
                 {!folded && (
                   <div className="mt-2">
@@ -478,7 +486,7 @@ export default function TasksPage() {
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PRIORITY_COLOR[t.priority] ?? "#9CA3AF" }} title={t.priority} />
                               <p className={`min-w-[180px] flex-1 text-sm leading-snug ${t.status === "done" ? "line-through text-gray-400" : "text-[#3F4654] dark:text-[#e8e4f0]"}`}>{t.title}</p>
                               {info && t.status !== "done" && <span className={`text-[10px] px-2 py-0.5 rounded-full ${TONE_CLASS[info.tone]}`}>{info.label}</span>}
-                              {col.key === "today" && t.status !== "today" && t.status !== "done" && (
+                              {(col.key === "today" || col.key === "overdue") && t.status !== "today" && t.status !== "done" && (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{COLUMNS.find((c) => c.key === t.status)?.label ?? t.status}</span>
                               )}
                               {earlier && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500" title="It was on an earlier day's Today list">Earlier Today</span>}
@@ -566,7 +574,7 @@ export default function TasksPage() {
                                     ))}
                                   </select>
                                 )}
-                                <select value={sectionOf(t)} onChange={(e) => setStatus(t.id, e.target.value)} aria-label="Move to list" className="w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]">
+                                <select value={sectionOf(t) === "overdue" ? t.status : sectionOf(t)} onChange={(e) => setStatus(t.id, e.target.value)} aria-label="Move to list" className="w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]">
                                   {COLUMNS.map((c) => (
                                     <option key={c.key} value={c.key}>
                                       {c.label}
