@@ -1,3 +1,5 @@
+import taskNotes from "./taskNotes.json";
+
 // Projects start blank or from a template. A template is a list of tasks and milestones placed by "days from the
 // anchor date" (the day of the event, or Day 1 of the challenge). Negative = before, positive = after.
 export interface TemplateTask {
@@ -183,6 +185,10 @@ export const TEMPLATES: ProjectTemplate[] = [
     ],
   },
 ];
+
+// A task with no note of its own gets the standard note for that kind of task (what it is, how to do it, why).
+const noteFor = (title: string) => (taskNotes as { stem: string; note: string }[]).find((n) => title.toLowerCase().startsWith(n.stem))?.note;
+for (const tpl of TEMPLATES) for (const task of tpl.tasks) if (!task.description) task.description = noteFor(task.title) ?? task.description;
 
 export const templateByKey = (key: string | null | undefined) => TEMPLATES.find((t) => t.key === key) ?? null;
 

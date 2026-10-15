@@ -310,6 +310,25 @@ export default function TasksPage() {
     await fetch(`/api/tasks/${id}`, { method: "DELETE" }).catch(() => {});
   };
 
+  // The count in each list (tasks plus the linked items that sit in the same lists), for the strip under the add box.
+  const tally = SECTIONS.map((c) => ({
+    key: c.key,
+    label: c.label,
+    n: (tasks ?? []).filter((t) => sectionOf(t) === c.key).length + linked.filter((l) => linkedSection(l) === c.key).length,
+  }));
+  const jumpTo = (key: string) => {
+    setCollapsed((c) => {
+      const next = { ...c, [key]: false };
+      try {
+        localStorage.setItem("tasksCollapsed", JSON.stringify(next));
+      } catch {
+        /* not remembered */
+      }
+      return next;
+    });
+    setTimeout(() => document.getElementById(`tasks-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
       <Link href="/" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-4">
@@ -402,6 +421,24 @@ export default function TasksPage() {
         </button>
       </form>
 
+      {tasks !== null && !showArchived && (
+        <div className="mb-5 flex flex-wrap gap-2" aria-label="Number of tasks in each list">
+          {tally.map((c) => (
+            <button
+              key={c.key}
+              onClick={() => jumpTo(c.key)}
+              className={`inline-flex items-baseline gap-2 rounded-xl border px-3.5 py-2 text-left transition hover:shadow-sm ${
+                c.key === "overdue" && c.n > 0 ? "border-[#B0342C]/40 bg-[#FBECEA] text-[#B0342C]" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0]"
+              }`}
+              title={`Go to ${c.label}`}
+            >
+              <span className="text-xl font-semibold tabular-nums leading-none">{c.n}</span>
+              <span className="text-xs">{c.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           onClick={() => {
@@ -463,6 +500,7 @@ export default function TasksPage() {
             return (
               <section
                 key={col.key}
+                id={`tasks-${col.key}`}
                 aria-label={col.label}
                 onDragOver={(e) => {
                   if (dragId === null || col.key === "overdue") return;
