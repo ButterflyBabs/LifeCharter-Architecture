@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bell, CalendarCheck, CheckCircle2, Clock, ExternalLink, Loader2, Pencil, Sparkles, X } from "lucide-react";
-import { askAssistant } from "@/lib/assistantPopout";
+import { announceDecision, askAssistant } from "@/lib/assistantPopout";
 import type { ActionCardData } from "./ActionCards";
 
 type Who = "suite" | "assistant" | "you" | "both";
@@ -90,6 +90,7 @@ export default function AssistantReportCard({ type, itemKey }: { type: "task" | 
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "That didn't work.");
       setActions((cur) => cur.map((c) => (c.id === id ? (d.card as ActionCardData) : c)));
+      announceDecision({ origin: "report-card", card: d.card });
     } catch (e) {
       setErr((e as Error).message);
     }

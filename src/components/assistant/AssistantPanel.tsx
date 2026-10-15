@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ASK_EVENT, takePendingAsk } from "@/lib/assistantPopout";
+import { ASK_EVENT, onDecision, takePendingAsk } from "@/lib/assistantPopout";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Mic, PictureInPicture2, Sparkles, Square, Volume2, VolumeX } from "lucide-react";
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
@@ -190,6 +190,15 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     }
     setLoading(false);
   };
+
+  // Something was approved or cancelled on another screen (the full-size page, a report card): show it here too.
+  useEffect(() => {
+    return onDecision((d) => {
+      setActions((cur) => cur.filter((a) => a.id !== d.card.id));
+      void loadThread();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // A task or reminder's "Have the assistant work on this" button leaves its request here.
   const askRef = useRef(ask);

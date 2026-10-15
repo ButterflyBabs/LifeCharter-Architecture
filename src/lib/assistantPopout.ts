@@ -65,3 +65,41 @@ export function takePendingAsk(): { message: string; shown?: string } | null {
     return null;
   }
 }
+
+// A decision (Approve, Cancel, Undo) made on ANY screen is announced to every other place that shows the same
+// cards: the assistant window, the full-size approvals page, a report card, even another tab. Each place ignores
+// its own announcements.
+const DECIDED_EVENT = "assistant-action-decided";
+const CHANNEL = "assistant-actions";
+export interface DecidedDetail { origin: string; card: { id: string; status: string; title?: string; summary?: string; [k: string]: unknown } }
+
+export function announceDecision(detail: DecidedDetail) {
+  try {
+    window.dispatchEvent(new CustomEvent(DECIDED_EVENT, { detail }));
+  } catch {
+    /* nothing else is listening */
+  }
+  try {
+    const bc = new BroadcastChannel(CHANNEL);
+    bc.postMessage(detail);
+    bc.close();
+  } catch {
+    /* this browser has no BroadcastChannel */
+  }
+}
+
+export function onDecision(cb: (d: DecidedDetail) => void): () => void {
+  const local = (e: Event) => cb((e as CustomEvent<DecidedDetail>).detail);
+  window.addEventListener(DECIDED_EVENT, local);
+  let bc: BroadcastChannel | null = null;
+  try {
+    bc = new BroadcastChannel(CHANNEL);
+    bc.onmessage = (m) => cb(m.data as DecidedDetail);
+  } catch {
+    bc = null;
+  }
+  return () => {
+    window.removeEventListener(DECIDED_EVENT, local);
+    bc?.close();
+  };
+}

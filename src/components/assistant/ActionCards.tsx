@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { announceDecision, onDecision } from "@/lib/assistantPopout";
 import { CheckCircle2, Loader2, Pencil, Undo2, X, XCircle } from "lucide-react";
 
 export interface ActionCardData {
@@ -24,6 +25,7 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished, hide
   const [note, setNote] = useState("");
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const origin = useRef(`ac-${Math.random().toString(36).slice(2)}`);
 
   // Anything still waiting for approval from earlier (survives a page reload).
   useEffect(() => {
@@ -35,6 +37,14 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished, hide
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
+  }, []);
+
+  // A card decided somewhere else (the full-size page, another window) updates here too, so nothing looks pending twice.
+  useEffect(() => {
+    return onDecision((d) => {
+      if (d.origin === origin.current) return;
+      setCards((cur) => cur.map((c) => (c.id === d.card.id ? ({ ...c, ...(d.card as Partial<ActionCardData>) } as ActionCardData) : c)));
+    });
   }, []);
 
   useEffect(() => {
@@ -50,6 +60,7 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished, hide
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "That didn't work.");
       setCards((cur) => cur.map((c) => (c.id === id ? (d.card as ActionCardData) : c)));
+      announceDecision({ origin: origin.current, card: d.card });
       // What was done drops into the conversation thread, so the record stays where the conversation is.
       const done = d.card as ActionCardData;
       if (done.status === "executed") onFinished?.(`Done: ${done.summary || done.title}`);
