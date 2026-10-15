@@ -180,13 +180,13 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
       /* the account's own zone is used */
     }
     try {
-      const res = await fetch("/api/mariposa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, shown, page, tz }) });
+      const res = await fetch("/api/mariposa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, shown, page, tz }), signal: AbortSignal.timeout(130_000) });
       const data = await res.json();
       setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: data.reply ?? "Sorry, I couldn't respond right now." }]);
       setActions(Array.isArray(data.actions) ? data.actions : []);
       if (data.reply) speak(String(data.reply));
     } catch {
-      setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: "Sorry, I couldn't respond right now." }]);
+      setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: "That took longer than I could wait. Please try again, or ask for one smaller piece at a time." }]);
     }
     setLoading(false);
   };

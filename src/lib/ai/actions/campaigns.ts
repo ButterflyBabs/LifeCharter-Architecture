@@ -140,13 +140,15 @@ export const checkReplies: ActionTool = {
     const replied: string[] = [];
     const quiet: string[] = [];
     const limit = enrs.slice(0, 40);
+    const deadline = Date.now() + 40_000; // the whole check stops here so the reply is never held up
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     // One person's check. Throws when the mailbox search itself fails (busy, rate limit) so it can be retried.
     const checkOne = async (e: (typeof limit)[number]): Promise<"replied" | "quiet" | "skip"> => {
       const c = contacts.get(e.contact_id);
       if (!c?.email) return "skip";
       const since = new Date(e.enrolled_at).getTime() - 60_000;
-      const msgs = await microsoft.searchAllMail(token, c.email, 30);
+      if (Date.now() > deadline) throw new Error("out of time");
+      const msgs = await microsoft.searchAllMail(token, c.email, 30, AbortSignal.timeout(8000));
       const mine = msgs.filter((m) => m.fromEmail === c.email.toLowerCase() && m.ts >= since);
       if (mine.length) {
         const m = mine[0];
@@ -177,7 +179,7 @@ export const checkReplies: ActionTool = {
     }
     for (const e of failed) {
       const c = contacts.get(e.contact_id);
-      quiet.push(`${c ? fullName(c) : "a contact"} (the mailbox search failed twice, so not checked)`);
+      quiet.push(`${c ? fullName(c) : "a contact"} (not checked: the mailbox search was slow or failed; ask again to check these)`);
     }
     return [
       `Campaign "${seq.name}": ${limit.length} people checked${enrs.length > limit.length ? ` of ${enrs.length}` : ""}, ${replied.length} replied.`,

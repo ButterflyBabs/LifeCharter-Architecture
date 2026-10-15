@@ -17,6 +17,8 @@ import { isDemoRequest } from "@/lib/scoring/masterPlan";
 import { sessionUser } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
+// A reply can read several things (campaigns, an inbox) and call the model a few times: give it room.
+export const maxDuration = 120;
 
 // The assistant persona — {name} is the account's configured assistant name.
 function persona(name: string): string {
