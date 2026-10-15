@@ -120,13 +120,20 @@ export async function POST(request: Request) {
     let reply = "";
     let nudged = false;
     const usedOnce = new Set<string>();
-    for (let round = 0; round < 4; round++) {
+    // Looking things up and preparing cards can take several steps (read the item, check the campaign, check
+    // replies, then prepare). The LAST step never offers tools, so she always has to write her answer.
+    const MAX_ROUNDS = 7;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const lastRound = round === MAX_ROUNDS - 1;
+      if (lastRound && round > 0) {
+        messages.push({ role: "user", content: "Now write your answer for the client from what you found. Do not call any more tools. If something could not be checked, say what and why." });
+      }
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages,
         max_tokens: canAct ? 1600 : 700,
         temperature: 0.5,
-        ...(canAct ? { tools: openAiToolDefs() } : {}),
+        ...(canAct && !lastRound ? { tools: openAiToolDefs() } : {}),
       });
       const msg = completion.choices[0]?.message;
       reply = msg?.content?.trim() ?? "";
@@ -156,6 +163,7 @@ export async function POST(request: Request) {
       const labels: Record<string, string> = { business: "Business Plan", marketing: "Marketing Plan", sales: "Sales Plan", forecasting: "Forecast Plan" };
       if (Object.entries(labels).some(([k, l]) => k !== pk && reply.includes(l))) reply = "";
     }
+    if (!reply && !cards.length) reply = `I looked into that but did not get to a clear answer. Please ask again, or ask for one smaller piece at a time. — ${name}`;
     if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
     if (planId && reply) await saveTurn(planId, "mariposa", shown, reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply, actions: cards });

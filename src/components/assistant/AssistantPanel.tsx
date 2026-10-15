@@ -182,7 +182,7 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     try {
       const res = await fetch("/api/mariposa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, shown, page, tz }), signal: AbortSignal.timeout(130_000) });
       const data = await res.json();
-      setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: data.reply ?? "Sorry, I couldn't respond right now." }]);
+      setThread((t) => [...t, { id: `a${Date.now()}`, role: "assistant", content: data.reply || (Array.isArray(data.actions) && data.actions.length ? "Here is what I would do. Review it and press Approve when you are ready." : "Sorry, I couldn't respond right now.") }]);
       setActions(Array.isArray(data.actions) ? data.actions : []);
       if (data.reply) speak(String(data.reply));
     } catch {
