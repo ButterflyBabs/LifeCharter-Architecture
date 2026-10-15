@@ -92,6 +92,8 @@ export default function TasksPage() {
   const [me, setMe] = useState<string | null>(null);
   const [view, setView] = useState<string | null>(null); // "all" | "mine" | "none" | member id
   const [newAssignee, setNewAssignee] = useState("");
+  // A Sales member sees only the tasks assigned to them, without the assistant or the team views.
+  const [isSales, setIsSales] = useState(false);
   // Done tasks can be archived: they leave the board, and "Archived" lists them so they can be restored.
   const [showArchived, setShowArchived] = useState(false);
   // Which tasks have an assistant report (id -> when), and the one open in the full-width panel above the board.
@@ -142,6 +144,7 @@ export default function TasksPage() {
       .then((d) => {
         setMembers(d?.members ?? []);
         setMe(d?.me ?? null);
+        setIsSales(Boolean(d?.sales));
         const asked = new URLSearchParams(window.location.search).get("view");
         // A team member lands on their own tasks; the owner sees everything.
         setView(asked || (d?.me ? "mine" : "all"));
@@ -318,7 +321,7 @@ export default function TasksPage() {
         <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Everything across your businesses, in lists you can fold away. Drag a task into another list to move it.</p>
       </div>
 
-      {members.length > 0 && view && (
+      {members.length > 0 && view && !isSales && (
         <div className="flex flex-wrap gap-2 mb-5">
           {[["all", "Everyone"], ["mine", "Assigned to me"], ...(me ? [] : [["none", "Unassigned (mine)"]]), ...members.filter((m) => m.id !== me).map((m) => [m.id, m.name])].map(([k, label]) => (
             <button
@@ -375,7 +378,7 @@ export default function TasksPage() {
             <option value="scheduled">Do it at this time</option>
           </select>
         )}
-        {members.length > 0 && (
+        {members.length > 0 && !isSales && (
           <select
             value={newAssignee}
             onChange={(e) => setNewAssignee(e.target.value)}
@@ -565,7 +568,7 @@ export default function TasksPage() {
                                 <button onClick={() => archiveOne(t.id)} className="inline-flex items-center gap-1 text-[11px] text-[#2E7C83] hover:underline" title="Move to Archived">
                                   <Archive className="w-3 h-3" /> Archive
                                 </button>
-                              ) : (
+                              ) : isSales ? null : (
                                 <button
                                   onClick={() => askAssistant(`Work on this task and report back: "${t.title}". Read the whole task first, check what you can, prepare what you can, then give me the report.`, `Work on this task: ${t.title}`)}
                                   className="inline-flex items-center gap-1 text-[11px] text-[#2E7C83] hover:underline"
@@ -574,7 +577,7 @@ export default function TasksPage() {
                                   <Sparkles className="w-3 h-3" /> Have my assistant work on this
                                 </button>
                               )}
-                              {taskReports[String(t.id)] && (
+                              {!isSales && taskReports[String(t.id)] && (
                                 <button onClick={() => setReportTask({ id: t.id, title: t.title })} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2E7C83] hover:underline" title="Open the assistant's report on this task">
                                   <Sparkles className="w-3 h-3" /> See report
                                 </button>
@@ -645,7 +648,7 @@ export default function TasksPage() {
                                   }}
                                   className="w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]"
                                 />
-                                {members.length > 0 && (
+                                {members.length > 0 && !isSales && (
                                   <select value={t.assignee_member_id ?? ""} onChange={(e) => assign(t.id, e.target.value)} aria-label="Assigned to" className="w-full text-xs bg-transparent border border-gray-200 dark:border-white/10 rounded-md px-2 py-1 text-[#7C7C82]">
                                     <option value="">{me ? "Owner" : "Me"}</option>
                                     {members.map((m) => (

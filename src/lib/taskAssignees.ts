@@ -17,7 +17,14 @@ export async function planMembers(masterPlanId: string): Promise<Assignee[]> {
   const ids = (ws ?? []).map((w) => w.id as string);
   if (!ids.length) return [];
   const { data } = await db.from("workspace_members").select("id, name, email, role").in("workspace_id", ids).in("status", ["active", "pending"]).order("name");
-  return ((data ?? []) as Assignee[]).filter((m) => m.role !== "sales");
+  // Everyone on the team can be given a task, including a Sales member (Babs, 2026-10-15: Marcello).
+  return (data ?? []) as Assignee[];
+}
+
+// The member's id when the signed-in person is a Sales-role member. They reach only the tasks assigned to them.
+export async function salesMemberId(): Promise<string | null> {
+  const a = await resolveActor().catch(() => null);
+  return a?.kind === "member" && a.role === "sales" ? a.memberId : null;
 }
 
 // The signed-in member's id (null for the owner).

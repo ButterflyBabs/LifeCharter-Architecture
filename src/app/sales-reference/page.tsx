@@ -111,6 +111,12 @@ export default async function SalesReferencePage() {
           </p>
         )}
 
+        <p className="mb-6">
+          <a href="/tasks" className="inline-block rounded-full border border-[#c9a227]/60 px-4 py-2 text-sm font-semibold text-[#E3C27C] hover:bg-[#c9a227]/10">
+            My tasks (tasks assigned to me)
+          </a>
+        </p>
+
         <MyCalendar />
 
         <ProspectProvider>

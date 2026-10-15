@@ -5,7 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { planSegmentIds } from "@/lib/planScope";
-import { planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
+import { planMembers, myMemberId, notifyAssignee, actorName, salesMemberId } from "@/lib/taskAssignees";
 import { logActivity, q, type ActivityInput } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
+  // A Sales member may only change tasks assigned to them, and cannot hand them to someone else.
+  const salesId = await salesMemberId();
+  if (salesId) {
+    const { data: mine } = await supabase.from("tasks").select("id").eq("id", params.id).eq("master_plan_id", masterPlanId).eq("assignee_member_id", salesId).maybeSingle();
+    if (!mine) return NextResponse.json({ error: "That task is not assigned to you." }, { status: 403 });
+    delete body.assigneeId;
+  }
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof body.status === "string") {
@@ -102,6 +109,11 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const salesId = await salesMemberId();
+  if (salesId) {
+    const { data: mine } = await supabase.from("tasks").select("id").eq("id", params.id).eq("master_plan_id", masterPlanId).eq("assignee_member_id", salesId).maybeSingle();
+    if (!mine) return NextResponse.json({ error: "That task is not assigned to you." }, { status: 403 });
+  }
   const { data: gone, error } = await supabase.from("tasks").delete().eq("id", params.id).eq("master_plan_id", masterPlanId).select("id, title");
   if (error) {
     console.error("DELETE /api/tasks/[id]:", error.message);
