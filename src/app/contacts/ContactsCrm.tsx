@@ -302,16 +302,17 @@ function FormsTab({ setMsg }: { setMsg: (m: string) => void }) {
           <Button onClick={create} aria-label="Create form"><Plus className="w-4 h-4" /></Button>
         </div>
       </div>
-      {openId ? <FormEditor id={openId} seqs={seqs} setMsg={setMsg} onChanged={load} /> : <p className="text-sm text-[#7a8a99] pt-3">Choose a form to see its submissions, link and settings.</p>}
+      {openId ? <FormEditor key={openId} id={openId} seqs={seqs} setMsg={setMsg} onChanged={load} startPreview={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("form") === openId} /> : <p className="text-sm text-[#7a8a99] pt-3">Choose a form to see its submissions, link and settings.</p>}
     </div>
   );
 }
 
-function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: string; name: string }[]; setMsg: (m: string) => void; onChanged: () => void }) {
+function FormEditor({ id, seqs, setMsg, onChanged, startPreview }: { id: string; seqs: { key: string; name: string }[]; setMsg: (m: string) => void; onChanged: () => void; startPreview?: boolean }) {
   const [form, setForm] = useState<Form | null>(null);
   const [subs, setSubs] = useState<Submission[]>([]);
   const [fieldsText, setFieldsText] = useState("");
   const [tagText, setTagText] = useState("");
+  const [preview, setPreview] = useState(Boolean(startPreview)); // opened from a checklist link: show what the person sees right away
 
   const load = useCallback(async () => {
     const d = await fetch(`/api/crm/forms/${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
@@ -362,9 +363,14 @@ function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: 
         <CardContent className="p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{form.name}</p>
-            <Button variant="outline" onClick={() => save({ active: !form.active }, form.active ? "Form turned off. It won't take new submissions." : "Form is on.")}>
-              {form.active ? "Turn off" : "Turn on"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setPreview((v) => !v)} aria-expanded={preview}>
+                {preview ? "Hide preview" : "Preview"}
+              </Button>
+              <Button variant="outline" onClick={() => save({ active: !form.active }, form.active ? "Form turned off. It won't take new submissions." : "Form is on.")}>
+                {form.active ? "Turn off" : "Turn on"}
+              </Button>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-[#7a8a99]">Share link:</span>
@@ -382,6 +388,52 @@ function FormEditor({ id, seqs, setMsg, onChanged }: { id: string; seqs: { key: 
           </p>
         </CardContent>
       </Card>
+
+      {preview && (
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview: what the person sees</p>
+              <span className="rounded-md bg-[#FAEEDA] px-2 py-1 text-xs text-[#633806]">Preview only. Nothing is sent or saved. It shows the fields as typed below, including changes you have not saved yet.</span>
+            </div>
+            <div className="rounded-2xl border border-[#1a2b4a]/15 bg-white p-5 dark:bg-[#1a2b4a]/20">
+              <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{form.name.replace(/^DRAFT\s*[·-]\s*/i, "")}</p>
+              <div className="mt-4 space-y-4">
+                {(() => {
+                  const list = parseFields();
+                  const shown = list.some((f) => f.name === "email") ? list : [...list, { label: "Email", name: "email", required: true, type: "email", options: undefined as string[] | undefined }];
+                  return shown.map((f, i) => (
+                    <label key={i} className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                      {f.label}{f.required ? " *" : ""}
+                      {f.options?.length ? (
+                        <select disabled className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20">
+                          <option>Choose one</option>
+                          {f.options.map((o) => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : f.type === "textarea" ? (
+                        <textarea disabled rows={3} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white p-3 text-sm dark:bg-[#1a2b4a]/20" />
+                      ) : (
+                        <input disabled type={f.type === "email" ? "email" : f.type === "tel" ? "tel" : f.type === "date" ? "date" : "text"} className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20" />
+                      )}
+                    </label>
+                  ));
+                })()}
+              </div>
+              <button disabled className="mt-5 rounded-lg bg-[#1a2b4a] px-5 py-2 text-sm font-semibold text-white opacity-90">{form.submit_label?.trim() || "Send"}</button>
+            </div>
+            <div className="rounded-xl bg-[#F8F5F0] p-4 text-sm dark:bg-[#1a2b4a]/30">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">After they press the button</p>
+              <p className="mt-1 whitespace-pre-line text-[#1a2b4a] dark:text-[#F8F5F0]">{form.success_message || "Thanks. We got it."}</p>
+              <p className="mt-2 text-xs text-[#7a8a99]">
+                {form.sequence_key ? `Then this campaign starts for them: ${seqs.find((q) => q.key === form.sequence_key)?.name ?? form.sequence_key}.` : "No campaign starts when they submit."}
+                {form.tags?.length ? ` They are tagged: ${(form.tags as string[]).join(", ")}.` : ""}
+                {form.notify ? " You get an email for each submission." : ""}
+                {form.active ? "" : " The form is OFF, so the share link is not taking submissions yet."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="p-5 space-y-3">
