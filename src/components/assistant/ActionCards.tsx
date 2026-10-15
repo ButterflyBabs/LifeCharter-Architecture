@@ -16,13 +16,14 @@ export interface ActionCardData {
 }
 
 // What the AI assistant has prepared. Nothing runs until the client presses Approve here.
-export default function AssistantActionCards({ fresh, onRevise, onFinished }: { fresh: ActionCardData[]; onRevise?: (card: ActionCardData, instruction: string) => Promise<void>; onFinished?: (line: string) => void }) {
+export default function AssistantActionCards({ fresh, onRevise, onFinished, hideLink, emptyNote }: { fresh: ActionCardData[]; onRevise?: (card: ActionCardData, instruction: string) => Promise<void>; onFinished?: (line: string) => void; hideLink?: boolean; emptyNote?: string }) {
   const [cards, setCards] = useState<ActionCardData[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   // Anything still waiting for approval from earlier (survives a page reload).
   useEffect(() => {
@@ -32,7 +33,8 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished }: { 
         const waiting = ((d?.actions ?? []) as ActionCardData[]).filter((a) => a.status === "proposed");
         if (waiting.length) setCards((cur) => [...cur, ...waiting.filter((w) => !cur.some((c) => c.id === w.id))]);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -83,9 +85,15 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished }: { 
   // newest one) so the conversation stays in view; the chat already records what was done.
   const waiting = cards.filter((c) => c.status === "proposed");
   const lastDone = cards.find((c) => c.status !== "proposed" && !dismissed.includes(c.id));
-  if (!waiting.length && !lastDone) return null;
+  if (!waiting.length && !lastDone) return emptyNote && loaded ? <p className="text-sm text-[#5d6b7a] dark:text-[#b8c2cf]">{emptyNote}</p> : null;
   return (
     <div className="mb-3 space-y-2">
+      {!hideLink && waiting.length > 0 && (
+        <a href="/assistant-approvals" className="flex items-center justify-between gap-2 rounded-lg bg-[#1a2b4a] px-3 py-2 text-xs font-semibold text-white hover:opacity-90">
+          <span>{waiting.length} waiting for your approval</span>
+          <span>Open them full size →</span>
+        </a>
+      )}
       {lastDone && (
         <div className="flex items-center gap-2 rounded-lg border border-[#c9a227]/30 bg-[#FBF7EC] px-3 py-1.5 text-xs text-[#3F4654] dark:bg-[#2a2415] dark:text-[#e8e4f0]">
           {lastDone.status === "executed" && <CheckCircle2 className="h-3.5 w-3.5 flex-none text-[#2c6b3f]" />}

@@ -228,6 +228,7 @@ export const checkReplies: ActionTool = {
 const ENROLL_MAX = 20;
 
 interface EnrolPlan {
+  notFound: string[];
   seq: { id: string; key: string; name: string; active: boolean; send_hour: number | null; skip_tags: string[] | null };
   go: { id: string; email: string; first_name: string | null; last_name: string | null }[];
   already: string[];
@@ -241,16 +242,49 @@ async function planEnrol(a: Record<string, unknown>, ctx: ActionCtx): Promise<En
   const name = clean(a.campaign);
   if (!name) return { error: "Which campaign? Give part of its name." };
   const who = (a.who as Record<string, unknown>) ?? {};
-  if (who.everyone) return { error: "I can only start named people or a tag group, never everyone at once. Tell me which people or which tag." };
   const { data: seqs } = await ctx.db.from("sequences").select("id, key, name, active, send_hour, skip_tags").eq("master_plan_id", ctx.planId).ilike("name", `%${name}%`).limit(6);
   const list = (seqs ?? []) as EnrolPlan["seq"][];
   if (!list.length) return { error: `No campaign has "${name}" in its name.` };
   const seq = list.find((x) => x.name.toLowerCase() === name.toLowerCase()) ?? (list.length === 1 ? list[0] : null);
   if (!seq) return { error: `More than one campaign matches: ${list.map((x) => `"${x.name}"`).join(", ")}. Which one?` };
 
-  const found = await selectContacts(who, ctx);
-  if ("error" in found) return { error: found.error };
-  if (!found.rows.length) return { error: "Nobody matched that." };
+  // Named people: each name or email is looked up on its own, so a list of several people all resolve.
+  const people = (Array.isArray(a.people) ? a.people : []).map((x) => str(x, 120)).filter(Boolean).slice(0, 40);
+  const notFound: string[] = [];
+  let rows: Awaited<ReturnType<typeof selectContacts>> extends infer R ? (R extends { rows: infer T } ? T : never) : never = [] as never;
+  let capped = false;
+  if (people.length) {
+    const seen = new Set<string>();
+    const acc: typeof rows = [] as never;
+    for (const person of people) {
+      const one = /@/.test(person) ? { emails: [person.toLowerCase()] } : { search: person };
+      const r = await selectContacts(one, ctx);
+      if ("error" in r || !r.rows.length) {
+        notFound.push(person);
+        continue;
+      }
+      // A name that matches several different people is not guessed: ask which one.
+      if (r.rows.length > 1) {
+        const exact = r.rows.filter((c) => `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim().toLowerCase() === person.toLowerCase());
+        if (exact.length !== 1) {
+          notFound.push(`${person} (matches ${r.rows.length} contacts: ${r.rows.slice(0, 3).map((c) => c.email).join(", ")})`);
+          continue;
+        }
+        r.rows = exact;
+      }
+      for (const c of r.rows) if (!seen.has(c.id)) { seen.add(c.id); acc.push(c); }
+    }
+    rows = acc;
+  } else {
+    if (who.everyone) return { error: "I can only start named people or a tag group, never everyone at once. Tell me which people or which tag." };
+    const found = await selectContacts(who, ctx);
+    if ("error" in found) return { error: found.error };
+    rows = found.rows;
+    capped = found.capped;
+  }
+  void capped;
+  if (!rows.length) return { error: notFound.length ? `I could not find: ${notFound.join(", ")}.` : "Nobody matched that." };
+  const found = { rows };
   const ids = found.rows.map((r) => r.id);
   const { data: enr } = await ctx.db.from("sequence_enrollments").select("contact_id").eq("sequence_id", seq.id).in("contact_id", ids.slice(0, 1000));
   const inIds = new Set((enr ?? []).map((e) => e.contact_id as string));
@@ -274,7 +308,7 @@ async function planEnrol(a: Record<string, unknown>, ctx: ActionCtx): Promise<En
     return { error: `Nobody can be started: ${why || "no one matched"}.` };
   }
   const { data: st } = await ctx.db.from("sequence_steps").select("position, day_offset, subject").eq("sequence_id", seq.id).order("position");
-  return { seq, go: go.slice(0, ENROLL_MAX), already, unsub, skipped, capped: Math.max(0, go.length - ENROLL_MAX), steps: (st ?? []) as EnrolPlan["steps"] };
+  return { seq, go: go.slice(0, ENROLL_MAX), already, unsub, skipped, notFound, capped: Math.max(0, go.length - ENROLL_MAX), steps: (st ?? []) as EnrolPlan["steps"] };
 }
 
 export const enrollInCampaign: ActionTool = {
@@ -287,9 +321,10 @@ export const enrollInCampaign: ActionTool = {
     type: "object",
     properties: {
       campaign: { type: "string", description: "Part of the campaign's name." },
-      who: WHO_SCHEMA,
+      people: { type: "array", items: { type: "string" }, description: "Named people to start: full names or email addresses, one entry each (up to 40). Use this whenever the client names people." },
+      who: { ...WHO_SCHEMA, description: "Only when starting a TAG group instead of named people (for example with_any_tag). Leave out when you give people." },
     },
-    required: ["campaign", "who"],
+    required: ["campaign"],
   },
   plan: async (a, ctx) => {
     const p = await planEnrol(a, ctx);
@@ -309,6 +344,7 @@ export const enrollInCampaign: ActionTool = {
       ...(p.already.length ? [`Left out, already in it (${p.already.length}): ${p.already.slice(0, 6).join(", ")}`] : []),
       ...(p.unsub.length ? [`Left out, unsubscribed (${p.unsub.length}): ${p.unsub.slice(0, 6).join(", ")}`] : []),
       ...(p.skipped.length ? [`Left out, carry a tag this campaign skips (${p.skipped.length}): ${p.skipped.slice(0, 6).join(", ")}`] : []),
+      ...(p.notFound.length ? [`Not found, so NOT included (${p.notFound.length}): ${p.notFound.join(", ")}`] : []),
       ...(p.capped ? [`Only the first ${ENROLL_MAX} are started; ask again for the other ${p.capped}.`] : []),
     ];
     return { preview: { title: `Start ${p.go.length} ${p.go.length === 1 ? "person" : "people"} on "${p.seq.name}"`, lines } };

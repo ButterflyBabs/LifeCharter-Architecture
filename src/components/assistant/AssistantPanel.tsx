@@ -319,7 +319,12 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
             ) : (
               <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "bg-[#1a2b4a] text-white" : "bg-white text-[#3F4654]"}`}>
-                  {m.content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith("**") && part.endsWith("**") && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : part))}
+                  {m.content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(\/[^)\s]*\))/g).map((part, i) => {
+                    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>;
+                    const link = /^\[([^\]]+)\]\((\/[^)\s]*)\)$/.exec(part);
+                    if (link) return <a key={i} href={link[2]} className="font-semibold text-[#2E7C83] underline">{link[1]}</a>;
+                    return part;
+                  })}
                   {m.role === "assistant" && m.content.length > 40 && (
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#7a8a99]">
                       {rated[m.id] ? (

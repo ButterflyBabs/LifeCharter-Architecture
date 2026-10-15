@@ -180,6 +180,10 @@ export async function POST(request: Request) {
     }
     if (!reply && !cards.length) reply = `I looked into that but did not get to a clear answer. Please ask again, or ask for one smaller piece at a time. — ${name}`;
     if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
+    // Whenever something waits for approval, the reply says exactly where to approve it.
+    if (reply && cards.some((c) => c.status === "proposed") && !reply.includes("/assistant-approvals")) {
+      reply = `${reply.trimEnd()}\n\nApprove it here: [Waiting for your approval](/assistant-approvals)`;
+    }
     if (planId && reply) await saveTurn(planId, "mariposa", shown, reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply, actions: cards });
   } catch (e) {
