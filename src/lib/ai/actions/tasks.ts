@@ -91,7 +91,7 @@ export const updateTasks: ActionTool = {
   name: "update_tasks",
   kind: "write",
   apiPath: "/api/tasks",
-  description: "Change existing tasks: move them to today or the backlog, mark done, set priority, effort or due date. Pick the tasks by part of the title and/or their current status or priority. The client approves first.",
+  description: "Change existing tasks: move them to today or the backlog, mark done, set priority, effort or due date. Pick the tasks by part of the title and/or their current status or priority. The client approves first. When you mark a task done, also prepare or offer a follow-up in the same reply (create_task for the next piece of work, create_reminder for a time to check again): read the task first with get_task so the follow-up fits what it was.",
   parameters: { type: "object", properties: CHANGE_PROPS },
   plan: async (args, ctx) => {
     const set = changes(args);

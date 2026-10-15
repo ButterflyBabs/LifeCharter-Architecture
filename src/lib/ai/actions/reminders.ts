@@ -83,7 +83,7 @@ export const completeReminder: ActionTool = {
   name: "complete_reminder",
   kind: "write",
   apiPath: "/api/reminders",
-  description: "Mark one open reminder done, or snooze it to a later time, picking it by part of its text. The client approves first.",
+  description: "Mark one open reminder done, or snooze it to a later time, picking it by part of its text. The client approves first. When you mark a reminder done, also prepare or offer a follow-up in the same reply (create_task for the next piece of work, create_reminder for a time to check again): read it first with get_reminder so the follow-up fits what it was.",
   parameters: {
     type: "object",
     properties: {
