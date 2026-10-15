@@ -7,6 +7,22 @@ import { crossOriginBlocked } from "@/lib/security";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+type Supa = ReturnType<typeof createServerClient>;
+
+// Cancels an active Collective Plus subscription right away so nobody is billed again after asking to leave.
+// Returns "none" (nothing to cancel), "cancelled", or "failed".
+async function cancelPlus(supabase: Supa, userId: string): Promise<"none" | "cancelled" | "failed"> {
+  const { data: plus } = await supabase.from("cm_plus_subscriptions").select("stripe_subscription_id, status").eq("user_id", userId).maybeSingle();
+  if (!(plus?.stripe_subscription_id && stripe && ["active", "trialing", "past_due"].includes(String(plus.status)))) return "none";
+  try {
+    await stripe.subscriptions.cancel(plus.stripe_subscription_id as string);
+    return "cancelled";
+  } catch (e) {
+    console.error("account delete: cancel plus", e);
+    return "failed";
+  }
+}
+
 // "Delete my account" (App Store Guideline 5.1.1(v)). For a Collective member
 // this permanently deletes their login and everything tied to it — profile,
 // posts, replies, messages, journal, uploads — and cancels any Plus
@@ -27,6 +43,9 @@ export async function POST(request: Request) {
   ]);
 
   if (admin || suite || (owns && owns.length)) {
+    // Babs, 2026-10-15: asking to leave must stop the Plus billing straight away, even though the team finishes the rest.
+    const plusResult = await cancelPlus(supabase, user.id);
+    if (plusResult === "failed") return NextResponse.json({ error: "We couldn't cancel your Plus subscription — please try again, or contact us." }, { status: 502 });
     // Hand it to the team (business records, invoices and client data need care).
     const { data: me } = await supabase.from("cm_profiles").select("display_name").eq("user_id", user.id).maybeSingle();
     const { data: admins } = await supabase.from("cm_admins").select("user_id");
@@ -37,22 +56,16 @@ export async function POST(request: Request) {
           user_id: a.user_id,
           kind: "account_deletion",
           title: "Account deletion requested",
-          body: `${me?.display_name ?? user.email} (${user.email}) asked to delete their LifeCharter account, which includes Command Suite.`,
+          body: `${me?.display_name ?? user.email} (${user.email}) asked to delete their LifeCharter account, which includes Command Suite.${plusResult === "cancelled" ? " Their Collective Plus subscription was cancelled right away." : ""}`,
           href: `/community/members/${user.id}`,
         }))
     );
-    return NextResponse.json({ requested: true });
+    return NextResponse.json({ requested: true, plusCancelled: plusResult === "cancelled" });
   }
 
   // Cancel Plus now so they're never billed again.
-  const { data: plus } = await supabase.from("cm_plus_subscriptions").select("stripe_subscription_id, status").eq("user_id", user.id).maybeSingle();
-  if (plus?.stripe_subscription_id && stripe && ["active", "trialing", "past_due"].includes(String(plus.status))) {
-    try {
-      await stripe.subscriptions.cancel(plus.stripe_subscription_id as string);
-    } catch (e) {
-      console.error("account delete: cancel plus", e);
-      return NextResponse.json({ error: "We couldn't cancel your Plus subscription — please try again, or contact us." }, { status: 502 });
-    }
+  if ((await cancelPlus(supabase, user.id)) === "failed") {
+    return NextResponse.json({ error: "We couldn't cancel your Plus subscription — please try again, or contact us." }, { status: 502 });
   }
 
   // Their uploads (photos, attachments) live in their own storage folder.

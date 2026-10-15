@@ -324,6 +324,7 @@ function DeleteAccount() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requested, setRequested] = useState(false);
+  const [plusCancelled, setPlusCancelled] = useState(false);
 
   async function go() {
     setBusy(true);
@@ -332,7 +333,10 @@ function DeleteAccount() {
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setError(j.error ?? "Something went wrong — please try again.");
-    if (j.requested) return setRequested(true);
+    if (j.requested) {
+      setPlusCancelled(Boolean(j.plusCancelled));
+      return setRequested(true);
+    }
     await supabase.auth.signOut().catch(() => undefined);
     window.location.href = "/collective?deleted=1";
   }
@@ -351,6 +355,7 @@ function DeleteAccount() {
               <p>
                 Your login also includes LifeCharter Command Suite, so the LifeCharter team will complete the deletion for you and confirm by email within 7 days.
               </p>
+              {plusCancelled && <p>Your Collective Plus subscription has been cancelled, so you will not be billed again.</p>}
               <div className="flex justify-end">
                 <Button onClick={() => setOpen(false)}>Done</Button>
               </div>
