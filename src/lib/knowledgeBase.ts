@@ -1351,6 +1351,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["archive", "archived", "done tasks", "completed tasks", "clear done", "long list", "tasks page", "restore task", "clean up tasks", "finished tasks"],
   },
   {
+    id: "assistant-work-on-this",
+    category: "Daily Operations",
+    question: "Can my assistant check on a task or reminder and do the work for me? How do I get a status report?",
+    answer:
+      "Yes, for the work it can reach inside the Suite. On the Tasks page every open task has Have my assistant work on this, and on the Reminders page every reminder has the same link. Press it and your assistant opens, reads the whole task or reminder (not just the title), checks what it can, prepares what it can, and answers with a short report: what it checked, what it found (with real numbers), what it prepared and what is left for you. Anything it prepares waits on an Approve card, and it asks you to approve saving the report onto the task or reminder so it is there next time. What it can check: messages you logged as sent and follow-ups still waiting on your Outreach Pipelines (by platform, by day, or for one batch by date), how many people are in each stage such as Replied, plus contacts, projects, offers, forms and plans. What it cannot do: read LinkedIn, Instagram, Facebook or WhatsApp, read Gmail, or send anything for you; replies show up only when you move that person to a reply stage in the pipeline.",
+    keywords: ["work on this", "assistant do the work", "status", "report back", "check on task", "task status", "reminder status", "mariposa", "do the work", "check replies", "report", "assistant report"],
+  },
+  {
     id: "team-huddle",
     category: "Daily Operations",
     question: "How do I run a weekly team call (huddle) with an agenda and to-dos? Can my team see it?",

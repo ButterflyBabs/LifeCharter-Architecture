@@ -26,14 +26,14 @@ export const listReminders: ActionTool = {
   name: "list_reminders",
   kind: "read",
   apiPath: "/api/reminders",
-  description: "List the client's open reminders (the one-off things they asked to be reminded of), soonest first, with when each is due.",
+  description: "List the client's open reminders (the one-off things they asked to be reminded of), soonest first, with when each is due and the start of each note. For the whole note of one reminder use get_reminder.",
   parameters: { type: "object", properties: {} },
   read: async (_a, ctx) => {
     const tz = await resolveUserTimeZone(null);
     const { data } = await ctx.db.from("reminders").select("title, notes, remind_at").eq("master_plan_id", ctx.planId).eq("status", "open").order("remind_at").limit(40);
     const rows = (data ?? []) as { title: string; notes: string | null; remind_at: string }[];
     if (!rows.length) return "The client has no open reminders.";
-    return rows.map((r) => `${r.title} | ${whenWords(r.remind_at, Date.now(), tz)}${r.notes ? ` | ${r.notes.slice(0, 80)}` : ""}`).join("\n");
+    return rows.map((r) => `${r.title} | ${whenWords(r.remind_at, Date.now(), tz)}${r.notes ? ` | ${r.notes.slice(0, 240)}${r.notes.length > 240 ? " (…use get_reminder for the whole note)" : ""}` : ""}`).join("\n");
   },
 };
 

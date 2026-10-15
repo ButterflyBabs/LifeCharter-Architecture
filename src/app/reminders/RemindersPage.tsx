@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BellRing, Check, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { BellRing, Check, Pencil, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { askAssistant } from "@/lib/assistantPopout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { isDue, whenWords, type Reminder } from "@/lib/reminders";
@@ -83,6 +84,7 @@ export default function RemindersPage() {
                       <button className="hover:underline" onClick={() => void snooze(r.id, 60 * 24 * 7)}>Next week</button>
                     </>
                   )}
+                  <button className="inline-flex items-center gap-1 hover:underline" onClick={() => askAssistant(`Work on this reminder and report back: "${r.title}". Read the whole reminder first, check what you can, prepare what you can, then give me the report.`, `Work on this reminder: ${r.title}`)}><Sparkles className="h-3 w-3" />Have my assistant work on this</button>
                   <button className="inline-flex items-center gap-1 hover:underline" onClick={() => { setEditId(r.id); setEdit({ title: r.title, notes: r.notes ?? "", when: localInputValue(new Date(r.remind_at)) }); }}><Pencil className="h-3 w-3" />Edit</button>
                 </div>
               )}

@@ -3,7 +3,8 @@
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, Trash2, Check, Clock, Archive, ArchiveRestore } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Check, Clock, Archive, ArchiveRestore, Sparkles } from "lucide-react";
+import { askAssistant } from "@/lib/assistantPopout";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
 
@@ -394,6 +395,15 @@ export default function TasksPage() {
                             {t.status === "done" && (
                               <button onClick={() => archiveOne(t.id)} className="inline-flex items-center gap-1 text-[10px] text-[#2E7C83] hover:underline" title="Move to Archived">
                                 <Archive className="w-3 h-3" /> Archive
+                              </button>
+                            )}
+                            {t.status !== "done" && (
+                              <button
+                                onClick={() => askAssistant(`Work on this task and report back: "${t.title}". Read the whole task first, check what you can, prepare what you can, then give me the report.`, `Work on this task: ${t.title}`)}
+                                className="inline-flex items-center gap-1 text-[10px] text-[#2E7C83] hover:underline"
+                                title="Your assistant reads the task, checks what it can, prepares what it can and reports back"
+                              >
+                                <Sparkles className="w-3 h-3" /> Have my assistant work on this
                               </button>
                             )}
                             {t.status !== "done" && (

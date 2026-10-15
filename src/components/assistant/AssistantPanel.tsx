@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ASK_EVENT, takePendingAsk } from "@/lib/assistantPopout";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Mic, PictureInPicture2, Sparkles, Square, Volume2, VolumeX } from "lucide-react";
 import AssistantActionCards, { type ActionCardData } from "@/components/assistant/ActionCards";
@@ -189,6 +190,23 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     }
     setLoading(false);
   };
+
+  // A task or reminder's "Have the assistant work on this" button leaves its request here.
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  useEffect(() => {
+    const go = () => {
+      const p = takePendingAsk();
+      if (p) void askRef.current(p.message, p.shown);
+    };
+    const first = setTimeout(go, 900); // after the saved conversation has loaded
+    const onEvt = () => setTimeout(go, 250);
+    window.addEventListener(ASK_EVENT, onEvt);
+    return () => {
+      clearTimeout(first);
+      window.removeEventListener(ASK_EVENT, onEvt);
+    };
+  }, []);
 
   const newConversation = async () => {
     await fetch("/api/assistant/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "new" }) }).catch(() => {});
