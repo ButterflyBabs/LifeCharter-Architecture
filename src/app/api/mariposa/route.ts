@@ -164,14 +164,10 @@ export async function POST(request: Request) {
     // A saved report lists the other cards prepared in this same reply (follow-up task, reminder...), so the report
     // card can show them live with their own Approve and Edit buttons.
     try {
-      const rep = cards.find((c) => c.tool === "save_work_report" && c.status === "proposed");
+      const rep = cards.find((c) => c.tool === "save_work_report" && typeof c.result?.report_id === "string" && c.result.report_id);
       if (rep && planId) {
         const others = cards.filter((c) => c.id !== rep.id && c.status === "proposed").map((c) => c.id);
-        if (others.length) {
-          const args = { ...(rep.args ?? {}), related_action_ids: others };
-          await createServerClient().from("assistant_actions").update({ args }).eq("id", rep.id).eq("master_plan_id", planId);
-          rep.args = args;
-        }
+        if (others.length) await createServerClient().from("assistant_reports").update({ related_action_ids: others }).eq("id", rep.result!.report_id as string).eq("master_plan_id", planId);
       }
     } catch (e) {
       console.error("link report cards:", e);
@@ -187,6 +183,8 @@ export async function POST(request: Request) {
     // Whenever something waits for approval, the reply says exactly where to approve it.
     if (reply && cards.some((c) => c.status === "proposed") && !reply.includes("/assistant-approvals")) {
       reply = `${reply.trimEnd()}\n\nApprove it here: [Waiting for your approval](/assistant-approvals)`;
+    } else if (reply && cards.some((c) => c.tool === "save_work_report" && c.status === "executed") && !reply.includes("/assistant-approvals")) {
+      reply = `${reply.trimEnd()}\n\nYour checklist: [Open your checklist](/assistant-approvals)`;
     }
     if (planId && reply) await saveTurn(planId, "mariposa", shown, reply).catch((e) => console.error("saveTurn:", e));
     return NextResponse.json({ reply, actions: cards });

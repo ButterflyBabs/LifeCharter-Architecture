@@ -262,9 +262,10 @@ function reportText(r: ReportData, fallback: string): string {
 export const saveWorkReport: ActionTool = {
   name: "save_work_report",
   kind: "write",
+  auto: true, // only a note on the item (with Undo), so it saves itself; what needs a decision is the checklist
   apiPath: "/api/tasks",
   description:
-    "Save the report on a task or a reminder in a structured form, so the client sees a clean card on that item: what was done, the key numbers found, and the next steps with WHO does each (suite = runs by itself, assistant = you prepared it for approval, you = the client, both) and its status (scheduled, needs_approval, waiting, done). The client approves first. Call it once, after you have worked on the item and prepared any follow-up cards, and keep your chat reply to two or three sentences because the report card holds the detail.",
+    "Save the report on a task or a reminder in a structured form, so the client sees a clean card on that item: what was done, the key numbers found, and the next steps with WHO does each (suite = runs by itself, assistant = you prepared it for approval, you = the client, both) and its status (scheduled, needs_approval, waiting, done). It saves itself as a note on the item (the client can undo it): there is no Approve for the report. What needs the client is the checklist inside it. Call it once, after you have worked on the item and prepared any follow-up cards, and keep your chat reply to two or three sentences because the report card holds the detail.",
   parameters: {
     type: "object",
     properties: {
@@ -342,15 +343,17 @@ export const saveWorkReport: ActionTool = {
       return i >= 0 ? before.slice(0, i) : before;
     };
     const related = (Array.isArray(a.related_action_ids) ? a.related_action_ids : []).filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x)).slice(0, 10);
+    let reportId = "";
     const saveRow = async (key: string, title: string) => {
-      await ctx.db.from("assistant_reports").insert({
+      const { data: ins } = await ctx.db.from("assistant_reports").insert({
         master_plan_id: ctx.planId,
         item_type: isTask ? "task" : "reminder",
         item_key: key,
         item_title: title.slice(0, 200),
         report: { summary: r.summary || fallback.slice(0, 400), done: r.done, found: r.found, next_steps: r.next_steps },
         related_action_ids: related,
-      });
+      }).select("id").single();
+      reportId = (ins?.id as string) || "";
     };
     if (isTask) {
       const { data } = await ctx.db.from("tasks").select("id, title, description").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("updated_at", { ascending: false }).limit(5);
@@ -362,7 +365,7 @@ export const saveWorkReport: ActionTool = {
       const { error } = await ctx.db.from("tasks").update({ description: next, updated_at: new Date().toISOString() }).eq("id", t.id).eq("master_plan_id", ctx.planId);
       if (error) throw new Error("That didn't save.");
       await saveRow(String(t.id), t.title);
-      return { summary: `Saved the report on the task "${t.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }] }, undo: { item: "task", id: t.id, before } };
+      return { summary: `Saved the report on the task "${t.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }], report_id: reportId }, undo: { item: "task", id: t.id, before } };
     }
     const { data } = await ctx.db.from("reminders").select("id, title, notes").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("remind_at", { ascending: false }).limit(5);
     const rows = (data ?? []) as { id: string; title: string; notes: string | null }[];
@@ -373,7 +376,7 @@ export const saveWorkReport: ActionTool = {
     const { error } = await ctx.db.from("reminders").update({ notes: next, updated_at: new Date().toISOString() }).eq("id", rm.id).eq("master_plan_id", ctx.planId);
     if (error) throw new Error("That didn't save.");
     await saveRow(rm.id, rm.title);
-    return { summary: `Saved the report on the reminder "${rm.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }] }, undo: { item: "reminder", id: rm.id, before } };
+    return { summary: `Saved the report on the reminder "${rm.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }], report_id: reportId }, undo: { item: "reminder", id: rm.id, before } };
   },
   undo: async (u, ctx) => {
     if (u.item === "task") {

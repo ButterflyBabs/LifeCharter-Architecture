@@ -30,6 +30,8 @@ export interface ActionTool {
   description: string;
   parameters: Record<string, unknown>; // JSON schema
   kind: "read" | "write";
+  /** A write that is only a harmless note (it can be undone): it runs when called, with no Approve step. */
+  auto?: boolean;
   // A representative API path, so an invited team member's role and feature limits are applied.
   apiPath: string;
   read?: (args: Record<string, unknown>, ctx: ActionCtx) => Promise<string>;

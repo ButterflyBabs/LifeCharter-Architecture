@@ -14,6 +14,7 @@ export interface ActionCard {
   error?: string;
   canUndo?: boolean;
   links?: PreviewLink[]; // where to open what this card is about
+  result?: Record<string, unknown>; // for a note that saved itself: what it produced
   args?: Record<string, unknown>; // only while waiting for approval, so the client can ask for changes
 }
 
@@ -66,6 +67,30 @@ export async function handleToolCall(
     if (tool.kind === "read") return await tool.read!(args, ctx);
     const planned = await tool.plan!(args, ctx);
     if ("error" in planned) return `Cannot do that yet: ${planned.error}`;
+    // A harmless note (a saved report) saves itself and can be undone, so there is no Approve step to confuse anyone.
+    if (tool.auto && tool.run) {
+      const now = new Date().toISOString();
+      const { data: row } = await ctx.db
+        .from("assistant_actions")
+        .insert({ master_plan_id: ctx.planId, requested_by: ctx.userEmail, tool: tool.name, args, preview: planned.preview, status: "executed", decided_at: now })
+        .select("id")
+        .single();
+      const out = await tool.run(args, ctx);
+      const result = { ...(out.result ?? {}), summary: out.summary };
+      if (row?.id) await ctx.db.from("assistant_actions").update({ result, undo: out.undo ?? null }).eq("id", row.id as string);
+      cards.push({
+        id: (row?.id as string) ?? `auto-${Date.now()}`,
+        tool: tool.name,
+        status: "executed",
+        title: planned.preview.title,
+        lines: [],
+        summary: out.summary,
+        links: (out.result?.links as PreviewLink[] | undefined) ?? [],
+        result: out.result,
+        canUndo: !!out.undo && !!tool.undo,
+      });
+      return `Saved: ${out.summary} It saved itself, so there is NOTHING to approve for the report. The client's checklist is on the Waiting for your approval page.`;
+    }
     const { data, error } = await ctx.db
       .from("assistant_actions")
       .insert({ master_plan_id: ctx.planId, requested_by: ctx.userEmail, tool: tool.name, args, preview: { ...planned.preview, links: linksFor(tool.name, planned.preview) }, status: "proposed" })
