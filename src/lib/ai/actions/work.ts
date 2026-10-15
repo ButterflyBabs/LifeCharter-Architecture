@@ -92,12 +92,12 @@ export const checkOutreach: ActionTool = {
   kind: "read",
   apiPath: "/api/dm-pipeline",
   description:
-    "Check how outreach is going on the client's Outreach Pipelines: messages logged as sent (first messages and follow-ups, by platform and by day), how many people are in each stage now (for example Replied), who has been waiting for a follow-up, and what moved stage recently. Give from/to (YYYY-MM-DD, local) to look at one batch or window: the people whose messages were logged in that window are the batch. Replies are only known from people being moved to a Replied-type stage in the Suite; this cannot read LinkedIn, Instagram, Facebook or WhatsApp.",
+    "Check how outreach is going on the client's Outreach Pipelines: messages logged as sent (first messages and follow-ups, by platform and by day), how many people are in each stage now (for example Replied), who has been waiting for a follow-up, and what moved stage recently. Give from/to (YYYY-MM-DD, local) to look at one batch or window: the people whose messages were logged in that window are the batch. The answer also lists each SENDING SESSION (messages logged within an hour of each other) with its local start and end time, how many were first messages and follow-ups, and where those people are now: that is how separate batches are told apart, even on the same day. Replies are only known from people being moved to a Replied-type stage in the Suite; this cannot read LinkedIn, Instagram, Facebook or WhatsApp.",
   parameters: {
     type: "object",
     properties: {
       pipeline: { type: "string", description: "Part of the pipeline's name. Leave out to cover every outreach pipeline." },
-      from: { type: "string", description: "Start day YYYY-MM-DD (local). Default: 7 days ago." },
+      from: { type: "string", description: "Start day YYYY-MM-DD (local). Default: 14 days ago. Batches can be sent on different days, so when asked about batches leave this out or start well before the first one." },
       to: { type: "string", description: "End day YYYY-MM-DD (local), inclusive. Default: today." },
       platform: { type: "string", description: "LinkedIn, Instagram, Facebook, WhatsApp, Email or Text. Leave out for all." },
     },
@@ -107,7 +107,7 @@ export const checkOutreach: ActionTool = {
     const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: tz });
     const today = dayOf(new Date().toISOString());
     const to = DAY.test(str(a.to, 10)) ? str(a.to, 10) : today;
-    const from = DAY.test(str(a.from, 10)) ? str(a.from, 10) : dayOf(new Date(Date.now() - 7 * 86400_000).toISOString());
+    const from = DAY.test(str(a.from, 10)) ? str(a.from, 10) : dayOf(new Date(Date.now() - 14 * 86400_000).toISOString());
     // A generous UTC window around the local days; each row is then checked against its local day.
     const startIso = new Date(`${from}T00:00:00Z`).getTime() - 14 * 3600_000;
     const endIso = new Date(`${to}T00:00:00Z`).getTime() + 38 * 3600_000;
@@ -160,6 +160,27 @@ export const checkOutreach: ActionTool = {
       const todayStr = today;
       const overdue = cards.filter((c) => c.follow_up_on && c.follow_up_on <= todayStr);
 
+      // Sending sessions: messages logged within an hour of each other belong together (a batch).
+      const cardStage = new Map(cards.map((c) => [c.id, stageName.get(c.stage_id) ?? "?"]));
+      const ordered = [...sends].sort((x, y) => x.sent_at.localeCompare(y.sent_at));
+      const sessions: { start: string; end: string; items: typeof ordered }[] = [];
+      for (const m of ordered) {
+        const last = sessions[sessions.length - 1];
+        if (last && new Date(m.sent_at).getTime() - new Date(last.end).getTime() <= 3600_000) {
+          last.end = m.sent_at;
+          last.items.push(m);
+        } else sessions.push({ start: m.sent_at, end: m.sent_at, items: [m] });
+      }
+      const hm = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+      const sessionLines = sessions.slice(0, 12).map((x, i) => {
+        const n = x.items.filter((m) => m.kind !== "follow_up").length;
+        const f = x.items.filter((m) => m.kind === "follow_up").length;
+        const people = Array.from(new Set(x.items.map((m) => m.card_id)));
+        const where = new Map<string, number>();
+        for (const id of people) where.set(cardStage.get(id) ?? "?", (where.get(cardStage.get(id) ?? "?") ?? 0) + 1);
+        return `  ${i + 1}. ${dayOf(x.start)} ${hm(x.start)}${x.start === x.end ? "" : ` to ${hm(x.end)}`}: ${n} first messages, ${f} follow-ups, ${people.length} people; now ${Array.from(where).map(([k, v]) => `${k} ${v}`).join(", ")}`;
+      });
+
       // Everyone on the board now, whatever the window.
       const { data: all } = await ctx.db.from("dm_cards").select("stage_id").eq("master_plan_id", ctx.planId).eq("board_id", b.id);
       const nowStage = new Map<string, number>();
@@ -171,6 +192,7 @@ export const checkOutreach: ActionTool = {
         ...(byPlat.size ? [`- By platform: ${Array.from(byPlat).map(([p, n]) => `${p} ${n}`).join(", ")}.`] : []),
         ...(byDay.size ? [`- By day: ${Array.from(byDay).sort().map(([d, n]) => `${d} ${n}`).join(", ")}.`] : []),
         ...(ids.length ? [`- Where those ${ids.length} people are now: ${Array.from(inStage).map(([s, n]) => `${s} ${n}`).join(", ")}.`] : []),
+        ...(sessionLines.length ? [`- Sending sessions (an hour or more apart starts a new one):`, ...sessionLines] : []),
         ...(overdue.length ? [`- Waiting for a follow-up (due today or earlier): ${overdue.length}${overdue.length <= 8 ? ` (${overdue.map((c) => c.name).join(", ")})` : ""}.`] : []),
         `- Whole board right now: ${st.map((s) => `${s.name} ${nowStage.get(s.name) ?? 0}`).join(" → ")}.`
       );
@@ -191,6 +213,7 @@ export const saveWorkReport: ActionTool = {
       item: { type: "string", enum: ["task", "reminder"] },
       find_title: { type: "string", description: "Part of the task's or reminder's title." },
       report: { type: "string", description: "The report, plain text, under 1,500 characters." },
+      mode: { type: "string", enum: ["replace_last", "add"], description: "replace_last (default) swaps the assistant's previous report on this item for this one, so reports don't pile up; add keeps the earlier ones." },
     },
     required: ["item", "find_title", "report"],
   },
@@ -214,13 +237,18 @@ export const saveWorkReport: ActionTool = {
     const tz = await resolveUserTimeZone(null);
     const stamp = new Date().toLocaleString("en-US", { timeZone: tz, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     const block = `\n\n— Assistant report, ${stamp}:\n${report}`;
+    // The newest report replaces the last one the assistant saved (everything before it stays), unless asked to add.
+    const swap = (before: string) => {
+      const i = a.mode === "add" ? -1 : before.lastIndexOf("\n\n— Assistant report,");
+      return i >= 0 ? before.slice(0, i) : before;
+    };
     if (isTask) {
       const { data } = await ctx.db.from("tasks").select("id, title, description").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("updated_at", { ascending: false }).limit(5);
       const rows = (data ?? []) as { id: number; title: string; description: string | null }[];
       const t = rows.find((r) => r.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
       if (!t) throw new Error("I couldn't pick one task.");
       const before = t.description ?? "";
-      const next = (before + block).slice(-MAX_TEXT);
+      const next = (swap(before) + block).slice(-MAX_TEXT);
       const { error } = await ctx.db.from("tasks").update({ description: next, updated_at: new Date().toISOString() }).eq("id", t.id).eq("master_plan_id", ctx.planId);
       if (error) throw new Error("That didn't save.");
       return { summary: `Saved the report on the task "${t.title}".`, undo: { item: "task", id: t.id, before } };
@@ -230,7 +258,7 @@ export const saveWorkReport: ActionTool = {
     const r = rows.find((x) => x.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
     if (!r) throw new Error("I couldn't pick one reminder.");
     const before = r.notes ?? "";
-    const next = (before + block).slice(-MAX_TEXT);
+    const next = (swap(before) + block).slice(-MAX_TEXT);
     const { error } = await ctx.db.from("reminders").update({ notes: next, updated_at: new Date().toISOString() }).eq("id", r.id).eq("master_plan_id", ctx.planId);
     if (error) throw new Error("That didn't save.");
     return { summary: `Saved the report on the reminder "${r.title}".`, undo: { item: "reminder", id: r.id, before } };
