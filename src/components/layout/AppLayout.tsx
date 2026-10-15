@@ -97,6 +97,17 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) navigator.serviceWorker.register("/community-sw.js").catch(() => {});
   }, []);
+  // Tell the server this browser's time zone, so the assistant and every page read the same clock as the person using it.
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && !document.cookie.split("; ").includes(`lc_tz=${encodeURIComponent(tz)}`)) {
+        document.cookie = `lc_tz=${encodeURIComponent(tz)}; path=/; max-age=31536000; samesite=lax`;
+      }
+    } catch {
+      /* the account's own setting or UTC is used */
+    }
+  }, []);
   // Login / logout render standalone (no sidebar, header, or widgets).
   if (pathname && BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return <>{children}</>;

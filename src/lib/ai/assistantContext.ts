@@ -63,6 +63,12 @@ export async function buildAssistantKnowledge(
   const supabase = createServerClient();
   const parts: string[] = [];
   let answered = 0;
+  try {
+    const nowLabel = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date());
+    parts.push(`RIGHT NOW, on the client's own clock, it is ${nowLabel} (time zone ${tz}). Use this for "today", "tomorrow", "this afternoon" and "in an hour", and say every time of day in this zone; never convert to another zone or to UTC.`);
+  } catch {
+    /* the date lines below still carry today */
+  }
 
   // Who they are.
   try {
