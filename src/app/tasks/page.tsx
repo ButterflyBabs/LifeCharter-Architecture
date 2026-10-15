@@ -62,6 +62,16 @@ const COLUMNS: { key: string; label: string }[] = [
   { key: "done", label: "Done" },
 ];
 
+// What each list includes: shown when the person hovers (or focuses) a count under the add box.
+const SECTION_HELP: Record<string, string> = {
+  overdue: "Open work dated before today, whatever its list, plus reminders, milestones and legal items whose date has passed. Finish it or give it a new date and it leaves this list.",
+  today: "Everything for today: tasks dated today, anything you dragged here today, reminders due today, milestones due today and recurring tasks due today. It starts fresh each day.",
+  in_progress: "Work you have started, not dated today or earlier.",
+  waiting: "Held up by someone or something else: a reply, an approval, a delivery. Not dated today or earlier.",
+  backlog: "Not started and not for now: dated later or not dated yet, plus anything left over from an earlier day's Today. It moves up on its date.",
+  done: "Finished tasks. Archive them to clear the list; archived tasks still count toward your follow-through.",
+};
+
 // Overdue is a list of its own, shown before Today. It is not a status: a task lands there by its date alone.
 const SECTIONS: { key: string; label: string }[] = [{ key: "overdue", label: "Overdue" }, ...COLUMNS];
 
@@ -424,17 +434,27 @@ export default function TasksPage() {
       {tasks !== null && !showArchived && (
         <div className="mb-5 flex flex-wrap gap-2" aria-label="Number of tasks in each list">
           {tally.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => jumpTo(c.key)}
-              className={`inline-flex items-baseline gap-2 rounded-xl border px-3.5 py-2 text-left transition hover:shadow-sm ${
-                c.key === "overdue" && c.n > 0 ? "border-[#B0342C]/40 bg-[#FBECEA] text-[#B0342C]" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0]"
-              }`}
-              title={`Go to ${c.label}`}
-            >
-              <span className="text-xl font-semibold tabular-nums leading-none">{c.n}</span>
-              <span className="text-xs">{c.label}</span>
-            </button>
+            <div key={c.key} className="group relative">
+              <button
+                onClick={() => jumpTo(c.key)}
+                aria-describedby={`tally-help-${c.key}`}
+                className={`inline-flex items-baseline gap-2 rounded-xl border px-3.5 py-2 text-left transition hover:shadow-sm ${
+                  c.key === "overdue" && c.n > 0 ? "border-[#B0342C]/40 bg-[#FBECEA] text-[#B0342C]" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0]"
+                }`}
+              >
+                <span className="text-xl font-semibold tabular-nums leading-none">{c.n}</span>
+                <span className="text-xs">{c.label}</span>
+              </button>
+              <div
+                role="tooltip"
+                id={`tally-help-${c.key}`}
+                className="pointer-events-none absolute left-0 top-full z-20 mt-1.5 hidden w-64 rounded-lg border border-[#1a2b4a]/10 bg-white p-3 text-xs leading-snug text-[#3F4654] shadow-lg group-hover:block group-focus-within:block dark:bg-[#1A1A2E] dark:text-[#e8e4f0]"
+              >
+                <p className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.label}</p>
+                {SECTION_HELP[c.key]}
+                <p className="mt-1 text-[11px] text-gray-400">Press to go to this list.</p>
+              </div>
+            </div>
           ))}
         </div>
       )}
