@@ -53,7 +53,7 @@ export async function handleToolCall(
   }
 }
 
-const toCard = (r: Record<string, unknown>): ActionCard => {
+export const toCard = (r: Record<string, unknown>): ActionCard => {
   const p = (r.preview ?? {}) as Preview;
   const res = (r.result ?? {}) as { summary?: string };
   return {

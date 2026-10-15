@@ -157,6 +157,21 @@ export async function POST(request: Request) {
       }
       reply = "";
     }
+    // A saved report lists the other cards prepared in this same reply (follow-up task, reminder...), so the report
+    // card can show them live with their own Approve and Edit buttons.
+    try {
+      const rep = cards.find((c) => c.tool === "save_work_report" && c.status === "proposed");
+      if (rep && planId) {
+        const others = cards.filter((c) => c.id !== rep.id && c.status === "proposed").map((c) => c.id);
+        if (others.length) {
+          const args = { ...(rep.args ?? {}), related_action_ids: others };
+          await createServerClient().from("assistant_actions").update({ args }).eq("id", rep.id).eq("master_plan_id", planId);
+          rep.args = args;
+        }
+      }
+    } catch (e) {
+      console.error("link report cards:", e);
+    }
     // On a plan page the card is pinned to that plan; if the chat text names a different plan, say it plainly instead.
     const pk = pageKind(page);
     if (pk && cards.some((c) => ["update_plan_section", "fill_plan_answers"].includes(c.tool))) {

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Plus, Trash2, Check, Clock, Archive, ArchiveRestore, Sparkles } from "lucide-react";
 import { askAssistant } from "@/lib/assistantPopout";
+import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
 
@@ -64,6 +65,15 @@ export default function TasksPage() {
   const [newAssignee, setNewAssignee] = useState("");
   // Done tasks can be archived: they leave the board, and "Archived" lists them so they can be restored.
   const [showArchived, setShowArchived] = useState(false);
+  // Which tasks have an assistant report (id -> when), and the one open in the full-width panel above the board.
+  const [taskReports, setTaskReports] = useState<Record<string, string>>({});
+  const [reportTask, setReportTask] = useState<{ id: number; title: string } | null>(null);
+  useEffect(() => {
+    fetch("/api/assistant/reports?type=task", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.items && setTaskReports(Object.fromEntries((d.items as { key: string; createdAt: string }[]).map((i) => [i.key, i.createdAt]))))
+      .catch(() => {});
+  }, []);
   const [archivedCount, setArchivedCount] = useState(0);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [showAllDone, setShowAllDone] = useState(false);
@@ -299,6 +309,16 @@ export default function TasksPage() {
         {showArchived && <span className="text-xs text-gray-500">Done tasks you archived. They still count toward your follow-through.</span>}
       </div>
 
+      {reportTask && (
+        <div className="mb-4 max-w-4xl">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Assistant report: {reportTask.title}</p>
+            <button onClick={() => setReportTask(null)} className="text-xs text-[#2E7C83] hover:underline">Close</button>
+          </div>
+          <AssistantReportCard type="task" itemKey={String(reportTask.id)} />
+        </div>
+      )}
+
       {tasks === null ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : showArchived ? (
@@ -404,6 +424,11 @@ export default function TasksPage() {
                                 title="Your assistant reads the task, checks what it can, prepares what it can and reports back"
                               >
                                 <Sparkles className="w-3 h-3" /> Have my assistant work on this
+                              </button>
+                            )}
+                            {taskReports[String(t.id)] && (
+                              <button onClick={() => setReportTask({ id: t.id, title: t.title })} className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2E7C83] hover:underline" title="Open the assistant's report on this task">
+                                <Sparkles className="w-3 h-3" /> See report
                               </button>
                             )}
                             {t.status !== "done" && (

@@ -201,25 +201,81 @@ export const checkOutreach: ActionTool = {
   },
 };
 
+type Who = "suite" | "assistant" | "you" | "both";
+type StepStatus = "scheduled" | "needs_approval" | "waiting" | "done";
+export interface ReportData {
+  summary: string;
+  done: string[];
+  found: { label: string; value: string }[];
+  next_steps: { text: string; who: Who; when: string; status: StepStatus }[];
+}
+const WHO: Who[] = ["suite", "assistant", "you", "both"];
+const STATUS: StepStatus[] = ["scheduled", "needs_approval", "waiting", "done"];
+
+/** Shape whatever the model sent into a safe, bounded report. */
+export function cleanReport(a: Record<string, unknown>): ReportData {
+  const list = (v: unknown, n: number, len: number) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()).slice(0, n).map((x) => (x as string).trim().slice(0, len)) : []);
+  const found = (Array.isArray(a.found) ? a.found : []).slice(0, 6).map((f) => {
+    const o = (f ?? {}) as Record<string, unknown>;
+    return { label: str(o.label, 40), value: str(o.value, 80) };
+  }).filter((f) => f.label && f.value);
+  const steps = (Array.isArray(a.next_steps) ? a.next_steps : []).slice(0, 8).map((st) => {
+    const o = (st ?? {}) as Record<string, unknown>;
+    const who = WHO.includes(o.who as Who) ? (o.who as Who) : "you";
+    const status = STATUS.includes(o.status as StepStatus) ? (o.status as StepStatus) : who === "you" ? "waiting" : "scheduled";
+    return { text: str(o.text, 200), who, when: str(o.when, 60), status };
+  }).filter((x) => x.text);
+  return { summary: str(a.summary, 400) || str(a.report, 400), done: list(a.done, 8, 200), found, next_steps: steps };
+}
+
+const WHO_LABEL: Record<Who, string> = { suite: "Suite", assistant: "Assistant", you: "You", both: "You and assistant" };
+
+/** A plain-text version, kept on the task or reminder note so the daily emails and old views still read well. */
+function reportText(r: ReportData, fallback: string): string {
+  if (!r.done.length && !r.found.length && !r.next_steps.length) return fallback;
+  const lines: string[] = [];
+  if (r.summary) lines.push(r.summary);
+  if (r.done.length) lines.push(`Done: ${r.done.join("; ")}.`);
+  if (r.found.length) lines.push(`Found: ${r.found.map((f) => `${f.label} ${f.value}`).join("; ")}.`);
+  if (r.next_steps.length) lines.push(`Next: ${r.next_steps.map((n) => `[${WHO_LABEL[n.who]}] ${n.text}${n.when ? ` (${n.when})` : ""}`).join("; ")}.`);
+  return lines.join("\n").slice(0, 1800);
+}
+
 export const saveWorkReport: ActionTool = {
   name: "save_work_report",
   kind: "write",
   apiPath: "/api/tasks",
   description:
-    "Save a short dated report on a task or a reminder (what you checked, what you found, what you prepared, what is left for the client), added to the end of its description or note so it is there next time. The client approves first. Use after you have worked on an item and written the report in the chat.",
+    "Save the report on a task or a reminder in a structured form, so the client sees a clean card on that item: what was done, the key numbers found, and the next steps with WHO does each (suite = runs by itself, assistant = you prepared it for approval, you = the client, both) and its status (scheduled, needs_approval, waiting, done). The client approves first. Call it once, after you have worked on the item and prepared any follow-up cards, and keep your chat reply to two or three sentences because the report card holds the detail.",
   parameters: {
     type: "object",
     properties: {
       item: { type: "string", enum: ["task", "reminder"] },
       find_title: { type: "string", description: "Part of the task's or reminder's title." },
-      report: { type: "string", description: "The report, plain text, under 1,500 characters." },
-      mode: { type: "string", enum: ["replace_last", "add"], description: "replace_last (default) swaps the assistant's previous report on this item for this one, so reports don't pile up; add keeps the earlier ones." },
+      summary: { type: "string", description: "One or two plain sentences: where this stands." },
+      done: { type: "array", items: { type: "string" }, description: "What you actually did or checked, one short line each (max 6)." },
+      found: {
+        type: "array",
+        description: "The key numbers or facts, 2 to 4: for example {label: 'Emails sent', value: '18 of 18'}.",
+        items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] },
+      },
+      next_steps: {
+        type: "array",
+        description: "Every next step, one row each. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you prepared it and it waits for the client's Approve), you (only the client can), both. when: a short plain date or time. status: scheduled, needs_approval, waiting or done.",
+        items: {
+          type: "object",
+          properties: { text: { type: "string" }, who: { type: "string", enum: ["suite", "assistant", "you", "both"] }, when: { type: "string" }, status: { type: "string", enum: ["scheduled", "needs_approval", "waiting", "done"] } },
+          required: ["text", "who"],
+        },
+      },
+      report: { type: "string", description: "Only if you cannot fill the fields above: the whole report as plain text, under 1,500 characters." },
+      mode: { type: "string", enum: ["replace_last", "add"], description: "replace_last (default) swaps the previous report on this item for this one; add keeps the earlier ones." },
     },
-    required: ["item", "find_title", "report"],
+    required: ["item", "find_title"],
   },
   plan: async (a, ctx) => {
-    const report = str(a.report, 1500);
-    if (!report) return { error: "What should the report say?" };
+    const r = cleanReport(a);
+    if (!r.summary && !r.done.length && !r.found.length && !r.next_steps.length) return { error: "What should the report say?" };
     const q = clean(a.find_title);
     const isTask = a.item === "task";
     const { data } = isTask
@@ -227,48 +283,72 @@ export const saveWorkReport: ActionTool = {
       : await ctx.db.from("reminders").select("id, title").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("remind_at", { ascending: false }).limit(5);
     const rows = (data ?? []) as { id: string | number; title: string }[];
     if (!rows.length) return { error: `I couldn't find a ${isTask ? "task" : "reminder"} with that name.` };
-    if (rows.length > 1 && !rows.some((r) => r.title.toLowerCase() === q.toLowerCase())) return { error: `More than one matches: ${rows.slice(0, 4).map((r) => `"${r.title}"`).join(", ")}. Which one?` };
-    return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${rows.find((r) => r.title.toLowerCase() === q.toLowerCase())?.title ?? rows[0].title}"`, lines: [report.slice(0, 220) + (report.length > 220 ? "…" : "")] } };
+    if (rows.length > 1 && !rows.some((x) => x.title.toLowerCase() === q.toLowerCase())) return { error: `More than one matches: ${rows.slice(0, 4).map((x) => `"${x.title}"`).join(", ")}. Which one?` };
+    const name = rows.find((x) => x.title.toLowerCase() === q.toLowerCase())?.title ?? rows[0].title;
+    const lines = [
+      ...(r.summary ? [r.summary] : []),
+      ...(r.found.length ? [`Found: ${r.found.map((f) => `${f.label} ${f.value}`).join(" · ")}`] : []),
+      ...r.next_steps.slice(0, 5).map((n) => `${WHO_LABEL[n.who]}: ${n.text}${n.when ? ` (${n.when})` : ""}`),
+    ].map((l) => (l.length > 160 ? l.slice(0, 157) + "…" : l));
+    return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)] } };
   },
   run: async (a, ctx) => {
-    const report = str(a.report, 1500);
+    const r = cleanReport(a);
+    const fallback = str(a.report, 1500);
     const q = clean(a.find_title);
     const isTask = a.item === "task";
     const tz = await resolveUserTimeZone(null);
     const stamp = new Date().toLocaleString("en-US", { timeZone: tz, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-    const block = `\n\n— Assistant report, ${stamp}:\n${report}`;
+    const block = `\n\n— Assistant report, ${stamp}:\n${reportText(r, fallback)}`;
     // The newest report replaces the last one the assistant saved (everything before it stays), unless asked to add.
     const swap = (before: string) => {
       const i = a.mode === "add" ? -1 : before.lastIndexOf("\n\n— Assistant report,");
       return i >= 0 ? before.slice(0, i) : before;
     };
+    const related = (Array.isArray(a.related_action_ids) ? a.related_action_ids : []).filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x)).slice(0, 10);
+    const saveRow = async (key: string, title: string) => {
+      await ctx.db.from("assistant_reports").insert({
+        master_plan_id: ctx.planId,
+        item_type: isTask ? "task" : "reminder",
+        item_key: key,
+        item_title: title.slice(0, 200),
+        report: { summary: r.summary || fallback.slice(0, 400), done: r.done, found: r.found, next_steps: r.next_steps },
+        related_action_ids: related,
+      });
+    };
     if (isTask) {
       const { data } = await ctx.db.from("tasks").select("id, title, description").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("updated_at", { ascending: false }).limit(5);
       const rows = (data ?? []) as { id: number; title: string; description: string | null }[];
-      const t = rows.find((r) => r.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
+      const t = rows.find((x) => x.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
       if (!t) throw new Error("I couldn't pick one task.");
       const before = t.description ?? "";
       const next = (swap(before) + block).slice(-MAX_TEXT);
       const { error } = await ctx.db.from("tasks").update({ description: next, updated_at: new Date().toISOString() }).eq("id", t.id).eq("master_plan_id", ctx.planId);
       if (error) throw new Error("That didn't save.");
+      await saveRow(String(t.id), t.title);
       return { summary: `Saved the report on the task "${t.title}".`, undo: { item: "task", id: t.id, before } };
     }
     const { data } = await ctx.db.from("reminders").select("id, title, notes").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("remind_at", { ascending: false }).limit(5);
     const rows = (data ?? []) as { id: string; title: string; notes: string | null }[];
-    const r = rows.find((x) => x.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
-    if (!r) throw new Error("I couldn't pick one reminder.");
-    const before = r.notes ?? "";
+    const rm = rows.find((x) => x.title.toLowerCase() === q.toLowerCase()) ?? (rows.length === 1 ? rows[0] : null);
+    if (!rm) throw new Error("I couldn't pick one reminder.");
+    const before = rm.notes ?? "";
     const next = (swap(before) + block).slice(-MAX_TEXT);
-    const { error } = await ctx.db.from("reminders").update({ notes: next, updated_at: new Date().toISOString() }).eq("id", r.id).eq("master_plan_id", ctx.planId);
+    const { error } = await ctx.db.from("reminders").update({ notes: next, updated_at: new Date().toISOString() }).eq("id", rm.id).eq("master_plan_id", ctx.planId);
     if (error) throw new Error("That didn't save.");
-    return { summary: `Saved the report on the reminder "${r.title}".`, undo: { item: "reminder", id: r.id, before } };
+    await saveRow(rm.id, rm.title);
+    return { summary: `Saved the report on the reminder "${rm.title}".`, undo: { item: "reminder", id: rm.id, before } };
   },
   undo: async (u, ctx) => {
     if (u.item === "task") {
       await ctx.db.from("tasks").update({ description: (u.before as string) || null }).eq("id", u.id as number).eq("master_plan_id", ctx.planId);
+      const { data: last } = await ctx.db.from("assistant_reports").select("id").eq("master_plan_id", ctx.planId).eq("item_type", "task").eq("item_key", String(u.id)).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (last?.id) await ctx.db.from("assistant_reports").delete().eq("id", last.id as string).eq("master_plan_id", ctx.planId);
       return "Took the report off the task.";
     }
     await ctx.db.from("reminders").update({ notes: (u.before as string) || null }).eq("id", u.id as string).eq("master_plan_id", ctx.planId);
+    const { data: lastR } = await ctx.db.from("assistant_reports").select("id").eq("master_plan_id", ctx.planId).eq("item_type", "reminder").eq("item_key", String(u.id)).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (lastR?.id) await ctx.db.from("assistant_reports").delete().eq("id", lastR.id as string).eq("master_plan_id", ctx.planId);
     return "Took the report off the reminder.";
   },
 };

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BellRing, Check, Pencil, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { askAssistant } from "@/lib/assistantPopout";
+import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { isDue, whenWords, type Reminder } from "@/lib/reminders";
@@ -22,6 +23,15 @@ export default function RemindersPage() {
   const [edit, setEdit] = useState({ title: "", notes: "", when: "" });
   const [showDone, setShowDone] = useState(false);
   const [msg, setMsg] = useState("");
+  // Which reminders have an assistant report (key -> when), and which report is open.
+  const [reports, setReports] = useState<Record<string, string>>({});
+  const [openReport, setOpenReport] = useState("");
+  useEffect(() => {
+    fetch("/api/assistant/reports?type=reminder", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.items && setReports(Object.fromEntries((d.items as { key: string; createdAt: string }[]).map((i) => [i.key, i.createdAt]))))
+      .catch(() => {});
+  }, [items?.length]);
 
   // Arriving from the card's "Pick a date and time" with the words already typed.
   useEffect(() => {
@@ -71,7 +81,25 @@ export default function RemindersPage() {
             )}
             <div className="min-w-0 flex-1">
               <p className={`font-semibold ${tone === "done" ? "text-[#7a8a99] line-through" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{r.title}</p>
-              {r.notes && <p className="mt-0.5 whitespace-pre-line text-sm text-[#5a6472] dark:text-[#b8c2cf]">{r.notes}</p>}
+              {(() => {
+                // The assistant's report is kept on the note, but shown as its own card (below), not as a wall of text.
+                const marker = "\n\n— Assistant report";
+                const cut = r.notes ? r.notes.indexOf(marker) : -1;
+                const body = r.notes ? (cut >= 0 ? r.notes.slice(0, cut) : r.notes) : "";
+                return body ? <p className="mt-0.5 whitespace-pre-line text-sm text-[#5a6472] dark:text-[#b8c2cf]">{body}</p> : null;
+              })()}
+              {reports[r.id] && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => setOpenReport(openReport === r.id ? "" : r.id)}
+                    aria-expanded={openReport === r.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a227] px-3 py-1.5 text-xs font-semibold text-[#1a2b4a] hover:bg-[#c9a227]/10 dark:text-[#F8F5F0]"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> {openReport === r.id ? "Hide the assistant's report" : `See the assistant's report (${new Date(reports[r.id]).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })})`}
+                  </button>
+                  {openReport === r.id && <div className="mt-2"><AssistantReportCard type="reminder" itemKey={r.id} /></div>}
+                </div>
+              )}
               <p className={`mt-0.5 text-xs ${tone === "due" ? "font-semibold text-[#8a2f2f]" : "text-[#7a8a99]"}`}>
                 {tone === "done" && r.done_at ? `Done ${new Date(r.done_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : whenWords(r.remind_at, now)}
               </p>
