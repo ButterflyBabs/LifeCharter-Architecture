@@ -103,3 +103,17 @@ export function onDecision(cb: (d: DecidedDetail) => void): () => void {
     bc?.close();
   };
 }
+
+// "Open" buttons on cards and checklist steps open the item in ONE pop-up work window (the same window is reused),
+// so the checklist stays where it is and the person can close the window and be right back on it.
+export function openWorkWindow(href: string) {
+  try {
+    const w = Math.min(1200, Math.max(700, (window.screen?.availWidth ?? 1280) - 120));
+    const h = Math.min(900, Math.max(560, (window.screen?.availHeight ?? 800) - 120));
+    const win = window.open(href, "lc-work-window", `popup=yes,width=${w},height=${h},left=60,top=40,resizable=yes,scrollbars=yes`);
+    if (win) win.focus();
+    else window.open(href, "_blank", "noopener");
+  } catch {
+    window.location.href = href;
+  }
+}

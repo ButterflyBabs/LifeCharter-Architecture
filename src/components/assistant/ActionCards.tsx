@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { announceDecision, onDecision } from "@/lib/assistantPopout";
+import { announceDecision, onDecision, openWorkWindow } from "@/lib/assistantPopout";
 import { CheckCircle2, Loader2, Pencil, Undo2, X, XCircle } from "lucide-react";
 
 export interface ActionCardData {
@@ -136,7 +136,7 @@ export default function AssistantActionCards({ fresh, onRevise, onFinished, hide
           {c.status === "proposed" && (c.links ?? []).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {(c.links ?? []).map((l, i) => (
-                <a key={i} href={l.href} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E7C83]/50 bg-white px-3 py-1.5 text-xs font-semibold text-[#2E7C83] hover:bg-[#2E7C83]/10 dark:bg-transparent">
+                <a key={i} href={l.href} target="_blank" rel="noopener" onClick={(e) => { e.preventDefault(); openWorkWindow(l.href); }} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E7C83]/50 bg-white px-3 py-1.5 text-xs font-semibold text-[#2E7C83] hover:bg-[#2E7C83]/10 dark:bg-transparent">
                   {l.label} <span aria-hidden>↗</span>
                 </a>
               ))}

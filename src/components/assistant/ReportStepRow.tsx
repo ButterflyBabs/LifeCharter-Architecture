@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Bell, CalendarCheck, CheckCircle2, Clock, ExternalLink, Loader2, Pencil, Sparkles } from "lucide-react";
-import { askAssistant } from "@/lib/assistantPopout";
+import { askAssistant, openWorkWindow } from "@/lib/assistantPopout";
 
 export type Who = "suite" | "assistant" | "you" | "both";
 export interface ReportStep {
@@ -87,8 +87,8 @@ export default function ReportStepRow({ reportId, index, step, itemTitle, onStat
       {!done && step.status !== "scheduled" && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {link && (
-            <a href={link} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-[#c9a227] dark:text-[#14203a]">
-              <ExternalLink className="h-3.5 w-3.5" /> {kind === "approve" ? "Open and read" : "Open"}
+            <a href={link} target="_blank" rel="noopener" onClick={(e) => { e.preventDefault(); openWorkWindow(link); }} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a2b4a] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-[#c9a227] dark:text-[#14203a]">
+              <ExternalLink className="h-3.5 w-3.5" /> {kind === "approve" ? "Open and read (new window)" : "Open (new window)"}
             </a>
           )}
           {kind === "approve" && (
