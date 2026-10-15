@@ -114,7 +114,11 @@ export async function POST(request: Request) {
     // The assistant can also DO things (tools). Not in the public demo, which is view-only.
     const canAct = !!planId && !isDemoRequest();
     const sys = assistantSystemPrompt(name, persona(name), knowledge, (page ? `\nThey are currently on the "${page}" part of the app.${planHint(page)}` : ""), [instructions, flag.hint].filter(Boolean).join("\n\n"), { notes, message, canAct, approvedHelp: await approvedHelpFor(message) });
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...history, { role: "user", content: message }];
+    // One thing at a time: a request that starts from a specific task, reminder, checklist step or card begins on a
+    // clean slate, and any other chat carries only its last few turns, so one item's details never leak into another.
+    const focused = /^(Work on this (task|reminder)|Please do this next step now|Help me do this next step|Please change what you prepared|Please change ONE item only|Please prepare a reminder for me)/i.test(message);
+    const recent = focused ? [] : history.slice(-6);
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: sys }, ...recent, { role: "user", content: message }];
     const cards: ActionCard[] = [];
     const ctx = canAct ? { planId: planId as string, userEmail: (await sessionUser())?.email ?? null, db: createServerClient() } : null;
     let reply = "";

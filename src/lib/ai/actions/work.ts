@@ -1,6 +1,7 @@
 import type { ActionTool, ActionCtx } from "./types";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { whenWords } from "@/lib/reminders";
+import { confirmToClient, notifyNewRequest } from "@/lib/support/email";
 
 // "Have the assistant work on this": the assistant can read a task or reminder in FULL, check how outreach is going
 // (sends, replies, who is waiting for a follow-up) and save a short report on the task or reminder. Looking things up
@@ -388,4 +389,54 @@ export const saveWorkReport: ActionTool = {
   },
 };
 
-export const WORK_TOOLS: ActionTool[] = [getTask, getReminder, checkOutreach, saveWorkReport];
+
+// A client reports something broken in the app. The assistant cannot change the app itself, so it sends the problem
+// to LifeCharter support with the details, behind the same Approve step, so the client never has to write it up.
+export const reportProblem: ActionTool = {
+  name: "report_problem",
+  kind: "write",
+  apiPath: "/api/support/contact",
+  description:
+    "Send a problem with the app itself (a button, a dropdown, a page that does not work, a wrong number) to LifeCharter support, written up with the details, so the client does not have to. You cannot fix the app yourself, so use this whenever they report something broken. The client approves first. Fill every field from what they told you and what you can see; never ask them to go write it up themselves.",
+  parameters: {
+    type: "object",
+    properties: {
+      subject: { type: "string", description: "A short title, for example 'Dropdown on the 30-day check-in form does not open'." },
+      where: { type: "string", description: "The page or item it is on, with the name of the form, task or page, and the link if you know it." },
+      what_happened: { type: "string", description: "What the client did and what went wrong, in their words." },
+      what_expected: { type: "string", description: "What should have happened." },
+    },
+    required: ["subject", "where", "what_happened"],
+  },
+  plan: async (a) => {
+    const subject = str(a.subject, 200);
+    if (!subject || !str(a.what_happened, 2000)) return { error: "What went wrong, and where?" };
+    return {
+      preview: {
+        title: `Send this problem to LifeCharter support: ${subject}`,
+        lines: [`Where: ${str(a.where, 200) || "not given"}`, `What happened: ${str(a.what_happened, 300)}`, ...(str(a.what_expected, 200) ? [`Expected: ${str(a.what_expected, 200)}`] : []), "Support gets it with your name and account, and you get a confirmation email."],
+      },
+    };
+  },
+  run: async (a, ctx) => {
+    const subject = str(a.subject, 200);
+    const message = [`Where: ${str(a.where, 400)}`, `What happened: ${str(a.what_happened, 2000)}`, str(a.what_expected, 600) ? `Expected: ${str(a.what_expected, 600)}` : "", "", "Sent by the client's assistant, with the client's approval."].filter(Boolean).join("\n").slice(0, 5000);
+    const { data: plan } = await ctx.db.from("client_master_plans").select("user_id, client_name, client_email").eq("id", ctx.planId).maybeSingle();
+    const userId = (plan?.user_id as string) || null;
+    const { data: prof } = userId ? await ctx.db.from("profiles").select("full_name, email").eq("id", userId).maybeSingle() : { data: null };
+    const email = (ctx.userEmail || (prof?.email as string) || (plan?.client_email as string) || "").trim();
+    const name = ((prof?.full_name as string) || (plan?.client_name as string) || email.split("@")[0] || "Client").slice(0, 120);
+    if (!email) throw new Error("I couldn't tell which email to reply to.");
+    const { data, error } = await ctx.db
+      .from("support_requests")
+      .insert({ user_id: userId, master_plan_id: ctx.planId, name, email, category: "bug", priority: "normal", subject, message, status: "open", source: "travel_partner" })
+      .select("id")
+      .single();
+    if (error || !data) throw new Error("That didn't send.");
+    const r = { id: data.id as string, name, email, subject, message, category: "bug", priority: "normal", source: "travel_partner" };
+    await Promise.allSettled([notifyNewRequest(r), confirmToClient(r)]);
+    return { summary: `Sent to LifeCharter support: "${subject}".`, result: { id: data.id } };
+  },
+};
+
+export const WORK_TOOLS: ActionTool[] = [getTask, getReminder, checkOutreach, saveWorkReport, reportProblem];

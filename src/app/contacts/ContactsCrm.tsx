@@ -394,7 +394,7 @@ function FormEditor({ id, seqs, setMsg, onChanged, startPreview }: { id: string;
           <CardContent className="p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview: what the person sees</p>
-              <span className="rounded-md bg-[#FAEEDA] px-2 py-1 text-xs text-[#633806]">Preview only. Nothing is sent or saved. It shows the fields as typed below, including changes you have not saved yet.</span>
+              <span className="rounded-md bg-[#FAEEDA] px-2 py-1 text-xs text-[#633806]">Preview only. You can try the choices and type in the boxes; nothing is sent or saved. It shows the fields as typed below, including changes you have not saved yet.</span>
             </div>
             <div className="rounded-2xl border border-[#1a2b4a]/15 bg-white p-5 dark:bg-[#1a2b4a]/20">
               <p className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{form.name.replace(/^DRAFT\s*[·-]\s*/i, "")}</p>
@@ -406,20 +406,20 @@ function FormEditor({ id, seqs, setMsg, onChanged, startPreview }: { id: string;
                     <label key={i} className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                       {f.label}{f.required ? " *" : ""}
                       {f.options?.length ? (
-                        <select disabled className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20">
-                          <option>Choose one</option>
+                        <select defaultValue="" className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20">
+                          <option value="" disabled>Choose one</option>
                           {f.options.map((o) => <option key={o}>{o}</option>)}
                         </select>
                       ) : f.type === "textarea" ? (
-                        <textarea disabled rows={3} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white p-3 text-sm dark:bg-[#1a2b4a]/20" />
+                        <textarea rows={3} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white p-3 text-sm dark:bg-[#1a2b4a]/20" />
                       ) : (
-                        <input disabled type={f.type === "email" ? "email" : f.type === "tel" ? "tel" : f.type === "date" ? "date" : "text"} className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20" />
+                        <input type={f.type === "email" ? "email" : f.type === "tel" ? "tel" : f.type === "date" ? "date" : "text"} className="mt-1 h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 text-sm dark:bg-[#1a2b4a]/20" />
                       )}
                     </label>
                   ));
                 })()}
               </div>
-              <button disabled className="mt-5 rounded-lg bg-[#1a2b4a] px-5 py-2 text-sm font-semibold text-white opacity-90">{form.submit_label?.trim() || "Send"}</button>
+              <button type="button" onClick={() => setMsg("This is only a preview, so nothing was sent.")} className="mt-5 rounded-lg bg-[#1a2b4a] px-5 py-2 text-sm font-semibold text-white">{form.submit_label?.trim() || "Send"}</button>
             </div>
             <div className="rounded-xl bg-[#F8F5F0] p-4 text-sm dark:bg-[#1a2b4a]/30">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">After they press the button</p>
