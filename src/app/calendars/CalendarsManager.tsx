@@ -33,6 +33,13 @@ export default function CalendarsManager() {
     if (x?.calendars) setD(x);
   }, []);
   useEffect(() => {
+    // Deep link: /calendars?tab=calendars&cal=<id> opens that booking calendar.
+    const q = new URLSearchParams(window.location.search);
+    const t = q.get("tab");
+    if (t === "calendars" || t === "hosts" || t === "bookings") setTab(t);
+    if (q.get("cal")) setTab("calendars");
+  }, []);
+  useEffect(() => {
     void load();
   }, [load]);
   const act = useCallback(
@@ -135,7 +142,8 @@ function Bookings({ d, act }: { d: Data; act: Act }) {
 }
 
 function Calendars({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) => void }) {
-  const [openId, setOpenId] = useState(d.calendars[0]?.id ?? "");
+  const wanted = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("cal") : null;
+  const [openId, setOpenId] = useState(d.calendars.find((c) => c.id === wanted)?.id ?? d.calendars[0]?.id ?? "");
   const [newName, setNewName] = useState("");
   const cal = d.calendars.find((c) => c.id === openId);
   return (

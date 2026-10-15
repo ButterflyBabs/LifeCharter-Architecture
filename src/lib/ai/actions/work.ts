@@ -209,7 +209,7 @@ export interface ReportData {
   summary: string;
   done: string[];
   found: { label: string; value: string }[];
-  next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string }[];
+  next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string; links: { label: string; href: string }[] }[];
 }
 /** An internal app path only (never an outside address), with an optional query such as ?seq=<campaign id> or ?tab=forms. */
 export function safeOpen(p: string): string {
@@ -236,7 +236,11 @@ export function cleanReport(a: Record<string, unknown>): ReportData {
     const who = WHO.includes(o.who as Who) ? (o.who as Who) : "you";
     const status = STATUS.includes(o.status as StepStatus) ? (o.status as StepStatus) : who === "you" ? "waiting" : "scheduled";
     const open = str(o.open, 160);
-    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: safeOpen(open) };
+    const links = (Array.isArray(o.links) ? o.links : []).slice(0, 6).map((l) => {
+      const x = (l ?? {}) as Record<string, unknown>;
+      return { label: str(x.label, 60), href: safeOpen(str(x.href, 160)) };
+    }).filter((l) => l.label && l.href);
+    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: safeOpen(open), links };
   }).filter((x) => x.text);
   return { summary: str(a.summary, 400) || str(a.report, 400), done: list(a.done, 8, 200), found, next_steps: steps };
 }
@@ -275,7 +279,7 @@ export const saveWorkReport: ActionTool = {
       next_steps: {
         type: "array",
         description:
-          "Every next step, one row each, with NO guessing. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you can do it for them when they ask, or you prepared a card that waits for their Approve), you (only the client can), both. status: scheduled (the Suite will do it at the date in when), needs_approval (a card you prepared waits for their Approve), ready (the assistant can do it as soon as they press the button), waiting (blocked until something specific happens) or done. waiting_on is REQUIRED for status waiting: say exactly WHAT is being waited on and BY WHOM, for example 'Waiting for the Suite to send note 2 on Oct 20 at 8:00 AM' or 'Waiting for you to choose the batch 3 start date'. open (STRONGLY EXPECTED for every step the client must read, edit, approve or do): the exact app page, ideally to the very item, for example /sequences-manager?seq=<campaign id> (check_campaigns gives each campaign's link), /sequences-manager?tab=broadcasts, /contacts?tab=forms, /operations/sops, /links-directory, /dm-pipeline, /tasks, /reminders, /projects, /sales/offers, /business-plan, /marketing-plan, /sales, /planning/forecast.",
+          "Every next step, one row each, with NO guessing. who: suite (the Suite does it by itself, for example a scheduled email), assistant (you can do it for them when they ask, or you prepared a card that waits for their Approve), you (only the client can), both. status: scheduled (the Suite will do it at the date in when), needs_approval (a card you prepared waits for their Approve), ready (the assistant can do it as soon as they press the button), waiting (blocked until something specific happens) or done. waiting_on is REQUIRED for status waiting: say exactly WHAT is being waited on and BY WHOM, for example 'Waiting for the Suite to send note 2 on Oct 20 at 8:00 AM' or 'Waiting for you to choose the batch 3 start date'. open (STRONGLY EXPECTED for every step the client must read, edit, approve or do; use links instead when the step covers several items): the exact app page, ideally to the very item, for example /contacts?tab=forms&form=<form id> for one form, /calendars?tab=calendars&cal=<calendar id> for one booking calendar, for example /sequences-manager?seq=<campaign id> (check_campaigns gives each campaign's link), /sequences-manager?tab=broadcasts, /contacts?tab=forms, /operations/sops, /links-directory, /dm-pipeline, /tasks, /reminders, /projects, /sales/offers, /business-plan, /marketing-plan, /sales, /planning/forecast.",
         items: {
           type: "object",
           properties: {
@@ -285,6 +289,11 @@ export const saveWorkReport: ActionTool = {
             status: { type: "string", enum: ["scheduled", "needs_approval", "waiting", "ready", "done"] },
             waiting_on: { type: "string" },
             open: { type: "string" },
+            links: {
+              type: "array",
+              description: "When a step covers several specific items (three forms, three email drafts), one entry per item, each opening THAT item: {label: 'Quarterly pulse form', href: '/contacts?tab=forms&form=<id>'}. Items come from your look-up tools (check_campaigns, list_forms, list_booking_links, which print each item's link).",
+              items: { type: "object", properties: { label: { type: "string" }, href: { type: "string" } }, required: ["label", "href"] },
+            },
           },
           required: ["text", "who", "status"],
         },
@@ -315,7 +324,9 @@ export const saveWorkReport: ActionTool = {
       ...mine.slice(0, 3).map((n) => `For you: ${n.text.length > 120 ? n.text.slice(0, 117) + "…" : n.text}`),
       ...(mine.length > 3 ? [`…and ${mine.length - 3} more on the report`] : []),
     ];
-    const links = mine.filter((n) => n.open).slice(0, 3).map((n) => ({ label: `Open: ${n.text.length > 36 ? n.text.slice(0, 33) + "…" : n.text}`, href: n.open }));
+    const links = mine
+      .flatMap((n) => (n.links.length ? n.links.map((l) => ({ label: `Open: ${l.label}`, href: l.href })) : n.open ? [{ label: `Open: ${n.text.length > 36 ? n.text.slice(0, 33) + "…" : n.text}`, href: n.open }] : []))
+      .slice(0, 8);
     return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)], links } };
   },
   run: async (a, ctx) => {

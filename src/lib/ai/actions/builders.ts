@@ -25,7 +25,7 @@ export const listForms: ActionTool = {
     const { data: subs } = await ctx.db.from("crm_submissions").select("form_id").in("form_id", rows.map((r) => r.id));
     const n = new Map<string, number>();
     for (const s of (subs ?? []) as { form_id: string }[]) n.set(s.form_id, (n.get(s.form_id) ?? 0) + 1);
-    return rows.map((r) => `${r.name} | ${n.get(r.id) ?? 0} submissions | tag: ${r.key}`).join("\n");
+    return rows.map((r) => `${r.name} | ${n.get(r.id) ?? 0} submissions | tag: ${r.key} | open: /contacts?tab=forms&form=${r.id}`).join("\n");
   },
 };
 
@@ -91,10 +91,10 @@ export const listBookingLinks: ActionTool = {
   description: "List the client's booking links (calendars people can book on) with length and public address.",
   parameters: { type: "object", properties: {} },
   read: async (_a, ctx) => {
-    const { data } = await ctx.db.from("booking_calendars").select("name, slug, duration_min, active").eq("master_plan_id", ctx.planId).order("created_at").limit(40);
-    const rows = (data ?? []) as { name: string; slug: string; duration_min: number | null; active: boolean | null }[];
+    const { data } = await ctx.db.from("booking_calendars").select("id, name, slug, duration_min, active").eq("master_plan_id", ctx.planId).order("created_at").limit(40);
+    const rows = (data ?? []) as { id: string; name: string; slug: string; duration_min: number | null; active: boolean | null }[];
     if (!rows.length) return "The client has no booking links yet.";
-    return rows.map((r) => `${r.name} | ${r.duration_min ?? "?"} min | ${APP()}/book/${r.slug}${r.active === false ? " | OFF" : ""}`).join("\n");
+    return rows.map((r) => `${r.name} | ${r.duration_min ?? "?"} min | ${APP()}/book/${r.slug}${r.active === false ? " | OFF" : ""} | open: /calendars?tab=calendars&cal=${r.id}`).join("\n");
   },
 };
 

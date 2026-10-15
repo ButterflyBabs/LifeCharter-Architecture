@@ -264,6 +264,9 @@ function FormsTab({ setMsg }: { setMsg: (m: string) => void }) {
     setForms(d.forms ?? []);
   }, []);
   useEffect(() => {
+    // Deep link: /contacts?tab=forms&form=<id> opens that form's editor.
+    const f = new URLSearchParams(window.location.search).get("form");
+    if (f && /^[0-9a-f-]{36}$/i.test(f)) setOpenId(f);
     void load();
     fetch("/api/sequences", { cache: "no-store" })
       .then((r) => r.json())
