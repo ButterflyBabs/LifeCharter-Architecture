@@ -1359,6 +1359,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["work on this", "assistant do the work", "status", "report back", "check on task", "task status", "reminder status", "mariposa", "do the work", "check replies", "report", "assistant report"],
   },
   {
+    id: "assistant-approvals",
+    category: "Daily Operations",
+    question: "Where do I approve what my assistant prepared? What is Waiting for my approval?",
+    answer:
+      "Open Waiting for my approval in the left menu (just under Reminders). The top of the page lists every card your assistant has prepared and is waiting on you for: each one has its own Approve, Edit and Cancel, and an Open button that takes you to exactly where to read it (the form, the email series, the calendar). Nothing changes until you press Approve. Under that is your checklist of next steps from the assistant's reports. Every form, email or decision is its own item with its own Open, Edit (changes only that item) and Approve or Mark done, and Open shows the item in one reusable pop-up window so the checklist stays where it is. If you approve something in one place, the assistant window and every other copy of the card update at once. The assistant works on one thing at a time, and if the Suite itself is not working it offers to send the problem to support for you (behind Approve).",
+    keywords: ["waiting for my approval", "approve", "approval", "checklist", "next steps", "assistant prepared", "pop-up window", "open", "edit", "mariposa", "cards", "report a problem", "send to support"],
+  },
+  {
+    id: "form-preview",
+    category: "Clients & Sales",
+    question: "Can I see what a form looks like before I send it? How do I preview a form?",
+    answer:
+      "Yes. Open Contacts, then Forms, open the form and press Preview. You see what the person will see: the fields as they will be typed (dropdowns open and boxes take text, so you can try it), the button, the thank-you message and what happens after they submit. Nothing is saved when you try the preview. When you open a form from a link your assistant gave you, the preview is shown first.",
+    keywords: ["form preview", "preview", "see form", "what the form looks like", "forms", "test a form", "survey preview", "thank you message"],
+  },
+  {
     id: "team-huddle",
     category: "Daily Operations",
     question: "How do I run a weekly team call (huddle) with an agenda and to-dos? Can my team see it?",
