@@ -82,14 +82,14 @@ export async function handleToolCall(
 
 export const toCard = (r: Record<string, unknown>): ActionCard => {
   const p = (r.preview ?? {}) as Preview;
-  const res = (r.result ?? {}) as { summary?: string };
+  const res = (r.result ?? {}) as { summary?: string; links?: PreviewLink[] };
   return {
     id: r.id as string,
     tool: r.tool as string,
     status: r.status as ActionCard["status"],
     title: p.title ?? "",
     lines: p.lines ?? [],
-    links: (p.links && p.links.length ? p.links : (TOOL_LINKS[r.tool as string] ? [TOOL_LINKS[r.tool as string]] : [])),
+    links: r.status === "executed" && res.links?.length ? res.links : (p.links && p.links.length ? p.links : (TOOL_LINKS[r.tool as string] ? [TOOL_LINKS[r.tool as string]] : [])),
     summary: res.summary,
     error: (r.error as string) ?? undefined,
     canUndo: r.status === "executed" && !!r.undo && !!toolByName(r.tool as string)?.undo,

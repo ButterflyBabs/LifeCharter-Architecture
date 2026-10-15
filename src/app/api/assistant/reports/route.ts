@@ -13,6 +13,24 @@ export async function GET(request: Request) {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ items: [] });
   const q = new URL(request.url).searchParams;
+  // ?checklist=1: every step that is waiting on YOU, from the newest report of each task and reminder, one row per step.
+  if (q.get("checklist")) {
+    const dbc = createServerClient();
+    const { data } = await dbc.from("assistant_reports").select("id, item_type, item_key, item_title, report, created_at").eq("master_plan_id", planId).order("created_at", { ascending: false }).limit(200);
+    const seen = new Set<string>();
+    const rows: { reportId: string; index: number; itemType: string; itemKey: string; itemTitle: string; step: Record<string, unknown> }[] = [];
+    for (const r of (data ?? []) as { id: string; item_type: string; item_key: string; item_title: string; report: { next_steps?: Record<string, unknown>[] } }[]) {
+      const k = `${r.item_type}:${r.item_key}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      (r.report?.next_steps ?? []).forEach((st, index) => {
+        if ((st.who === "you" || st.who === "both") && st.status !== "done" && st.status !== "scheduled") {
+          rows.push({ reportId: r.id, index, itemType: r.item_type, itemKey: r.item_key, itemTitle: r.item_title, step: st });
+        }
+      });
+    }
+    return NextResponse.json({ checklist: rows.slice(0, 60) });
+  }
   const type = q.get("type") === "task" ? "task" : "reminder";
   const key = (q.get("key") || "").slice(0, 80);
   const db = createServerClient();

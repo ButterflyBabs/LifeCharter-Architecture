@@ -209,7 +209,7 @@ export interface ReportData {
   summary: string;
   done: string[];
   found: { label: string; value: string }[];
-  next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string; links: { label: string; href: string }[] }[];
+  next_steps: { text: string; who: Who; when: string; status: StepStatus; waiting_on: string; open: string; kind: "approve" | "decide" | "do"; links: { label: string; href: string }[] }[];
 }
 /** An internal app path only (never an outside address), with an optional query such as ?seq=<campaign id> or ?tab=forms. */
 export function safeOpen(p: string): string {
@@ -240,7 +240,7 @@ export function cleanReport(a: Record<string, unknown>): ReportData {
       const x = (l ?? {}) as Record<string, unknown>;
       return { label: str(x.label, 60), href: safeOpen(str(x.href, 160)) };
     }).filter((l) => l.label && l.href);
-    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: safeOpen(open), links };
+    return { text: str(o.text, 200), who, when: str(o.when, 60), status, waiting_on: str(o.waiting_on, 200), open: safeOpen(open), kind: (o.kind === "approve" ? "approve" : o.kind === "decide" ? "decide" : "do") as "approve" | "decide" | "do", links };
   }).filter((x) => x.text);
   return { summary: str(a.summary, 400) || str(a.report, 400), done: list(a.done, 8, 200), found, next_steps: steps };
 }
@@ -289,9 +289,10 @@ export const saveWorkReport: ActionTool = {
             status: { type: "string", enum: ["scheduled", "needs_approval", "waiting", "ready", "done"] },
             waiting_on: { type: "string" },
             open: { type: "string" },
+            kind: { type: "string", enum: ["approve", "decide", "do"], description: "approve = the client reads and approves ONE specific item (one form, one email series, one SOP); decide = a choice only they can make; do = anything else. Every item they must read and approve is its OWN step with kind approve and its own open link; never put several items in one step." },
             links: {
               type: "array",
-              description: "When a step covers several specific items (three forms, three email drafts), one entry per item, each opening THAT item: {label: 'Quarterly pulse form', href: '/contacts?tab=forms&form=<id>'}. Items come from your look-up tools (check_campaigns, list_forms, list_booking_links, which print each item's link).",
+              description: "Rarely needed: extra related links for one step. Prefer ONE STEP PER ITEM with its own open link (items come from your look-up tools: check_campaigns, list_forms, list_booking_links, which print each item's link).",
               items: { type: "object", properties: { label: { type: "string" }, href: { type: "string" } }, required: ["label", "href"] },
             },
           },
@@ -317,16 +318,13 @@ export const saveWorkReport: ActionTool = {
     if (!rows.length) return { error: `I couldn't find a ${isTask ? "task" : "reminder"} with that name.` };
     if (rows.length > 1 && !rows.some((x) => x.title.toLowerCase() === q.toLowerCase())) return { error: `More than one matches: ${rows.slice(0, 4).map((x) => `"${x.title}"`).join(", ")}. Which one?` };
     const name = rows.find((x) => x.title.toLowerCase() === q.toLowerCase())?.title ?? rows[0].title;
-    // Keep the card short: one sentence, then ONLY what needs the client, each with a button that opens it.
+    // The card only SAVES the report. What the client has to read, edit and approve is a checklist, item by item.
     const mine = r.next_steps.filter((n) => (n.who === "you" || n.who === "both") && n.status !== "done");
     const lines = [
-      ...(r.summary ? [r.summary.length > 160 ? r.summary.slice(0, 157) + "…" : r.summary] : []),
-      ...mine.slice(0, 3).map((n) => `For you: ${n.text.length > 120 ? n.text.slice(0, 117) + "…" : n.text}`),
-      ...(mine.length > 3 ? [`…and ${mine.length - 3} more on the report`] : []),
+      ...(r.summary ? [r.summary.length > 200 ? r.summary.slice(0, 197) + "…" : r.summary] : []),
+      ...(mine.length ? [`Approving this only SAVES the report. ${mine.length} thing${mine.length === 1 ? "" : "s"} for you will wait on your checklist, each one opened, edited and approved on its own.`] : []),
     ];
-    const links = mine
-      .flatMap((n) => (n.links.length ? n.links.map((l) => ({ label: `Open: ${l.label}`, href: l.href })) : n.open ? [{ label: `Open: ${n.text.length > 36 ? n.text.slice(0, 33) + "…" : n.text}`, href: n.open }] : []))
-      .slice(0, 8);
+    const links: { label: string; href: string }[] = [];
     return { preview: { title: `Save this report on the ${isTask ? "task" : "reminder"} "${name}"`, lines: lines.length ? lines : [str(a.report, 160)], links } };
   },
   run: async (a, ctx) => {
@@ -363,7 +361,7 @@ export const saveWorkReport: ActionTool = {
       const { error } = await ctx.db.from("tasks").update({ description: next, updated_at: new Date().toISOString() }).eq("id", t.id).eq("master_plan_id", ctx.planId);
       if (error) throw new Error("That didn't save.");
       await saveRow(String(t.id), t.title);
-      return { summary: `Saved the report on the task "${t.title}".`, undo: { item: "task", id: t.id, before } };
+      return { summary: `Saved the report on the task "${t.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }] }, undo: { item: "task", id: t.id, before } };
     }
     const { data } = await ctx.db.from("reminders").select("id, title, notes").eq("master_plan_id", ctx.planId).ilike("title", `%${q}%`).order("remind_at", { ascending: false }).limit(5);
     const rows = (data ?? []) as { id: string; title: string; notes: string | null }[];
@@ -374,7 +372,7 @@ export const saveWorkReport: ActionTool = {
     const { error } = await ctx.db.from("reminders").update({ notes: next, updated_at: new Date().toISOString() }).eq("id", rm.id).eq("master_plan_id", ctx.planId);
     if (error) throw new Error("That didn't save.");
     await saveRow(rm.id, rm.title);
-    return { summary: `Saved the report on the reminder "${rm.title}".`, undo: { item: "reminder", id: rm.id, before } };
+    return { summary: `Saved the report on the reminder "${rm.title}".`, result: { links: [{ label: "Open your checklist", href: "/assistant-approvals" }] }, undo: { item: "reminder", id: rm.id, before } };
   },
   undo: async (u, ctx) => {
     if (u.item === "task") {
