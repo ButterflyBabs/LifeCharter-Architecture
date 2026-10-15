@@ -140,25 +140,44 @@ export const checkReplies: ActionTool = {
     const replied: string[] = [];
     const quiet: string[] = [];
     const limit = enrs.slice(0, 40);
-    // A few at a time, so a long list does not hammer the mailbox.
-    for (let i = 0; i < limit.length; i += 5) {
-      await Promise.all(
-        limit.slice(i, i + 5).map(async (e) => {
-          const c = contacts.get(e.contact_id);
-          if (!c?.email) return;
-          const since = new Date(e.enrolled_at).getTime() - 60_000;
-          try {
-            const msgs = await microsoft.searchAllMail(token, c.email, 30);
-            const mine = msgs.filter((m) => m.fromEmail === c.email.toLowerCase() && m.ts >= since);
-            if (mine.length) {
-              const m = mine[0];
-              replied.push(`- ${fullName(c)} replied ${when(m.ts)}: "${m.subject.slice(0, 70)}" ${m.snippet.replace(/\s+/g, " ").slice(0, 140)}${mine.length > 1 ? ` (${mine.length} messages)` : ""}`);
-            } else quiet.push(fullName(c));
-          } catch {
-            quiet.push(`${fullName(c)} (could not be checked)`);
-          }
-        })
-      );
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // One person's check. Throws when the mailbox search itself fails (busy, rate limit) so it can be retried.
+    const checkOne = async (e: (typeof limit)[number]): Promise<"replied" | "quiet" | "skip"> => {
+      const c = contacts.get(e.contact_id);
+      if (!c?.email) return "skip";
+      const since = new Date(e.enrolled_at).getTime() - 60_000;
+      const msgs = await microsoft.searchAllMail(token, c.email, 30);
+      const mine = msgs.filter((m) => m.fromEmail === c.email.toLowerCase() && m.ts >= since);
+      if (mine.length) {
+        const m = mine[0];
+        replied.push(`- ${fullName(c)} replied ${when(m.ts)}: "${m.subject.slice(0, 70)}" ${m.snippet.replace(/\s+/g, " ").slice(0, 140)}${mine.length > 1 ? ` (${mine.length} messages)` : ""}`);
+        return "replied";
+      }
+      quiet.push(fullName(c));
+      return "quiet";
+    };
+    // A few at a time, so a long list does not hammer the mailbox; anything that fails is tried again one by one.
+    let failed: typeof limit = [];
+    for (let i = 0; i < limit.length; i += 4) {
+      const group = limit.slice(i, i + 4);
+      const res = await Promise.all(group.map((e) => checkOne(e).then(() => null, () => e)));
+      failed.push(...res.filter((x): x is (typeof limit)[number] => x !== null));
+    }
+    for (let round = 0; round < 2 && failed.length; round++) {
+      const again: typeof limit = [];
+      for (const e of failed) {
+        await sleep(700);
+        try {
+          await checkOne(e);
+        } catch {
+          again.push(e);
+        }
+      }
+      failed = again;
+    }
+    for (const e of failed) {
+      const c = contacts.get(e.contact_id);
+      quiet.push(`${c ? fullName(c) : "a contact"} (the mailbox search failed twice, so not checked)`);
     }
     return [
       `Campaign "${seq.name}": ${limit.length} people checked${enrs.length > limit.length ? ` of ${enrs.length}` : ""}, ${replied.length} replied.`,
