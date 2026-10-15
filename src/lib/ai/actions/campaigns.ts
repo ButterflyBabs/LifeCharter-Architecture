@@ -21,6 +21,21 @@ async function findSequences(ctx: ActionCtx, name: string): Promise<Seq[]> {
   return (data ?? []) as Seq[];
 }
 
+/** People enrolled within an hour of each other are one batch; batches are numbered 1, 2, 3 in the order they were enrolled. */
+function batchesOf(enrs: { id: string; enrolled_at: string }[]): Map<string, number> {
+  const sorted = [...enrs].sort((a, b) => a.enrolled_at.localeCompare(b.enrolled_at));
+  const out = new Map<string, number>();
+  let n = 0;
+  let last = 0;
+  for (const e of sorted) {
+    const t = new Date(e.enrolled_at).getTime();
+    if (n === 0 || t - last > 3600_000) n++;
+    out.set(e.id, n);
+    last = t;
+  }
+  return out;
+}
+
 const fullName = (c: Contact) => `${c.first_name ?? ""} ${c.last_name ?? ""}`.replace(/\s+-\s*$/, "").trim() || c.email;
 
 export const checkCampaigns: ActionTool = {
@@ -73,6 +88,15 @@ export const checkCampaigns: ActionTool = {
       const status = new Map<string, number>();
       for (const e of enrs) status.set(e.status, (status.get(e.status) ?? 0) + 1);
       out.push(`Enrolled: ${enrs.length} (${Array.from(status).map(([k, v]) => `${v} ${k}`).join(", ") || "none"}).`);
+      const batchOf = batchesOf(enrs);
+      const byBatch = new Map<number, { n: number; first: string }>();
+      for (const e of enrs) {
+        const b = batchOf.get(e.id) ?? 1;
+        const cur = byBatch.get(b);
+        if (!cur) byBatch.set(b, { n: 1, first: e.enrolled_at });
+        else cur.n++;
+      }
+      if (byBatch.size > 1 || enrs.length) out.push(`Batches (people enrolled within an hour of each other): ${Array.from(byBatch).map(([b, v]) => `batch ${b} = ${v.n} people enrolled ${when(v.first)}`).join("; ")}.`);
       for (const e of enrs.slice(0, 60)) {
         const c = contacts.get(e.contact_id);
         const mine = sends.filter((x) => x.enrollment_id === e.id && x.status === "sent" && x.sent_at).sort((x, y) => String(x.sent_at).localeCompare(String(y.sent_at)));
@@ -84,7 +108,7 @@ export const checkCampaigns: ActionTool = {
           const d = new Date(base.getTime() + next.day_offset * 86400_000);
           due = `; next: email #${next.position + 1} due ${day(d.toISOString().slice(0, 10))}${s.send_hour != null ? ` around ${s.send_hour}:00` : ""}`;
         }
-        out.push(`- ${c ? fullName(c) : "(contact removed)"} [${e.status}]: ${mine.length ? mine.map((x) => `#${(stepPos.get(x.step_id)?.position ?? 0) + 1} sent ${when(x.sent_at as string)}`).join(", ") : "nothing sent yet"}${due}`);
+        out.push(`- ${c ? fullName(c) : "(contact removed)"} [batch ${batchOf.get(e.id) ?? 1}, ${e.status}]: ${mine.length ? mine.map((x) => `#${(stepPos.get(x.step_id)?.position ?? 0) + 1} sent ${when(x.sent_at as string)}`).join(", ") : "nothing sent yet"}${due}`);
       }
       if (enrs.length > 60) out.push(`(${enrs.length - 60} more not shown)`);
       out.push("");
@@ -103,8 +127,7 @@ export const checkReplies: ActionTool = {
     type: "object",
     properties: {
       campaign: { type: "string", description: "Part of the campaign's name." },
-      batch_from: { type: "string", description: "Optional YYYY-MM-DD: only people enrolled on or after this day (one batch)." },
-      batch_to: { type: "string", description: "Optional YYYY-MM-DD: only people enrolled on or before this day." },
+      batch: { type: "number", description: "Optional: only batch 1, 2, 3 (people enrolled within an hour of each other, numbered in the order enrolled; check_campaigns lists them). Leave out to check everyone enrolled; do not pass dates." },
     },
     required: ["campaign"],
   },
@@ -126,13 +149,16 @@ export const checkReplies: ActionTool = {
     if (!token) return "No Microsoft 365 mailbox is connected for this account (a Gmail account is send-only here), so replies can't be read. Ask the client to connect Microsoft 365 in Settings > Integrations, or to tell you who replied.";
 
     const { data: enrRows } = await ctx.db.from("sequence_enrollments").select("id, contact_id, status, enrolled_at").eq("sequence_id", seq.id).order("enrolled_at").limit(300);
-    let enrs = (enrRows ?? []) as { id: string; contact_id: string; status: string; enrolled_at: string }[];
-    const from = str(a.batch_from, 10);
-    const to = str(a.batch_to, 10);
-    const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: tz });
-    if (/^\d{4}-\d{2}-\d{2}$/.test(from)) enrs = enrs.filter((e) => dayOf(e.enrolled_at) >= from);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(to)) enrs = enrs.filter((e) => dayOf(e.enrolled_at) <= to);
-    if (!enrs.length) return `Nobody is enrolled in "${seq.name}" in that window.`;
+    const allEnrs = (enrRows ?? []) as { id: string; contact_id: string; status: string; enrolled_at: string }[];
+    if (!allEnrs.length) return `Nobody is enrolled in "${seq.name}".`;
+    const batchOf = batchesOf(allEnrs);
+    const wantBatch = typeof a.batch === "number" && a.batch >= 1 ? Math.round(a.batch) : 0;
+    let enrs = wantBatch ? allEnrs.filter((e) => batchOf.get(e.id) === wantBatch) : allEnrs;
+    let batchNote = "";
+    if (wantBatch && !enrs.length) {
+      enrs = allEnrs; // a batch number that does not exist: check everyone rather than answer with nothing
+      batchNote = `There is no batch ${wantBatch} (the campaign has ${Math.max(...Array.from(batchOf.values()))}), so everyone enrolled was checked. `;
+    }
     const cids = Array.from(new Set(enrs.map((e) => e.contact_id)));
     const { data: cRows } = await ctx.db.from("seq_contacts").select("id, first_name, last_name, email").eq("master_plan_id", ctx.planId).in("id", cids.slice(0, 300));
     const contacts = new Map(((cRows ?? []) as Contact[]).map((c) => [c.id, c]));
@@ -152,7 +178,7 @@ export const checkReplies: ActionTool = {
       const mine = msgs.filter((m) => m.fromEmail === c.email.toLowerCase() && m.ts >= since);
       if (mine.length) {
         const m = mine[0];
-        replied.push(`- ${fullName(c)} replied ${when(m.ts)}: "${m.subject.slice(0, 70)}" ${m.snippet.replace(/\s+/g, " ").slice(0, 140)}${mine.length > 1 ? ` (${mine.length} messages)` : ""}`);
+        replied.push(`- ${fullName(c)} (batch ${batchOf.get(e.id) ?? 1}) replied ${when(m.ts)}: "${m.subject.slice(0, 70)}" ${m.snippet.replace(/\s+/g, " ").slice(0, 140)}${mine.length > 1 ? ` (${mine.length} messages)` : ""}`);
         return "replied";
       }
       quiet.push(fullName(c));
@@ -181,8 +207,10 @@ export const checkReplies: ActionTool = {
       const c = contacts.get(e.contact_id);
       quiet.push(`${c ? fullName(c) : "a contact"} (not checked: the mailbox search was slow or failed; ask again to check these)`);
     }
+    const perBatch = new Map<number, { n: number }>();
+    for (const e of limit) perBatch.set(batchOf.get(e.id) ?? 1, { n: (perBatch.get(batchOf.get(e.id) ?? 1)?.n ?? 0) + 1 });
     return [
-      `Campaign "${seq.name}": ${limit.length} people checked${enrs.length > limit.length ? ` of ${enrs.length}` : ""}, ${replied.length} replied.`,
+      `${batchNote}Campaign "${seq.name}": ${limit.length} people checked${enrs.length > limit.length ? ` of ${enrs.length}` : ""} (${Array.from(perBatch).map(([b, v]) => `batch ${b}: ${v.n}`).join(", ")}), ${replied.length} replied.`,
       ...(replied.length ? ["Replies:", ...replied] : ["No replies found in the connected Microsoft 365 inbox."]),
       ...(quiet.length ? [`No reply from: ${quiet.join(", ")}.`] : []),
       "Note: this reads the connected Microsoft 365 inbox only; replies sent somewhere else, or that bounced, are not seen.",
