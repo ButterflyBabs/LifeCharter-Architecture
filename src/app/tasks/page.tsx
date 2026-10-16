@@ -145,6 +145,10 @@ export default function TasksPage() {
     });
   const [linked, setLinked] = useState<Linked[]>([]);
   // What a task can be filed under: projects (Projects) and programs (Offers & Packages).
+  // Search and filters: words in the title or notes, one project, one program ("none" = not filed under one).
+  const [q, setQ] = useState("");
+  const [fProject, setFProject] = useState("");
+  const [fOffer, setFOffer] = useState("");
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [offers, setOffers] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
@@ -275,6 +279,25 @@ export default function TasksPage() {
   };
   const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, optional: 4 };
   const linkedSection = (l: Linked): string => (l.dueDay && l.dueDay < todayStr ? "overdue" : l.dueDay === todayStr ? "today" : "backlog");
+  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filtering = words.length > 0 || Boolean(fProject) || Boolean(fOffer);
+  const matchTask = (t: Task) => {
+    if (words.length) {
+      const hay = `${t.title} ${t.description ?? ""} ${projects.find((p) => p.id === t.project_id)?.name ?? ""} ${offers.find((o) => o.id === t.offer_id)?.name ?? ""}`.toLowerCase();
+      if (!words.every((w) => hay.includes(w))) return false;
+    }
+    if (fProject === "none" ? Boolean(t.project_id) : fProject && t.project_id !== fProject) return false;
+    if (fOffer === "none" ? Boolean(t.offer_id) : fOffer && t.offer_id !== fOffer) return false;
+    return true;
+  };
+  const matchLinked = (l: Linked) => {
+    if (words.length && !words.every((w) => `${l.title} ${l.context ?? ""}`.toLowerCase().includes(w))) return false;
+    // Only milestones belong to a project (their address carries its id); nothing linked belongs to a program.
+    const pid = l.kind === "milestone" ? l.href.split("/").pop() : null;
+    if (fProject === "none" ? Boolean(pid) : fProject && pid !== fProject) return false;
+    if (fOffer && fOffer !== "none") return false;
+    return true;
+  };
   const completeLinked = async (l: Linked) => {
     setLinked((prev) => prev.filter((x) => x.key !== l.key));
     const res =
@@ -348,7 +371,7 @@ export default function TasksPage() {
   const tally = SECTIONS.map((c) => ({
     key: c.key,
     label: c.label,
-    n: (tasks ?? []).filter((t) => sectionOf(t) === c.key).length + linked.filter((l) => linkedSection(l) === c.key).length,
+    n: (tasks ?? []).filter((t) => matchTask(t) && sectionOf(t) === c.key).length + linked.filter((l) => matchLinked(l) && linkedSection(l) === c.key).length,
   }));
   const jumpTo = (key: string) => {
     setCollapsed((c) => {
@@ -499,6 +522,48 @@ export default function TasksPage() {
         </div>
       )}
 
+      {tasks !== null && !showArchived && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search tasks: title, notes, project or program…"
+            aria-label="Search tasks"
+            className="flex-1 min-w-[220px] px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
+          />
+          {!isSales && (
+            <>
+              <select value={fProject} onChange={(e) => setFProject(e.target.value)} aria-label="Filter by project" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
+                <option value="">All projects</option>
+                <option value="none">No project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <select value={fOffer} onChange={(e) => setFOffer(e.target.value)} aria-label="Filter by program" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
+                <option value="">All programs</option>
+                <option value="none">No program</option>
+                {offers.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </>
+          )}
+          {filtering && (
+            <button
+              onClick={() => {
+                setQ("");
+                setFProject("");
+                setFOffer("");
+              }}
+              className="text-sm text-[#2E7C83] hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           onClick={() => {
@@ -543,13 +608,13 @@ export default function TasksPage() {
       ) : (
         <div className="space-y-4">
           {SECTIONS.map((col) => {
-            const all = tasks.filter((t) => sectionOf(t) === col.key);
-            const sectionLinked = linked.filter((l) => linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
+            const all = tasks.filter((t) => matchTask(t) && sectionOf(t) === col.key);
+            const sectionLinked = linked.filter((l) => matchLinked(l) && linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
             const total = all.length + sectionLinked.length;
             // Done is newest first and capped, so a long history never takes over the page.
             const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : [...all].sort(byDueThenPriority);
             const items = col.key === "done" && !showAllDone ? sorted.slice(0, DONE_SHOWN) : sorted;
-            const folded = Boolean(collapsed[col.key]);
+            const folded = Boolean(collapsed[col.key]) && !filtering; // a search shows its matches even in a folded list
             const hint =
               col.key === "today"
                 ? `${new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric" }).format(new Date())}. Tasks dated today, plus anything you drag here.`
