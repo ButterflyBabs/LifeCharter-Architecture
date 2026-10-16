@@ -15,7 +15,7 @@ export default function MemberAccess({
   access: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   busy: boolean;
   onSave: (next: { preset: string; features: FeatureMap; extras: AccessExtras | null } | null) => void;
-  // Babs's own account only: the Support Desk and Team Briefing areas (and the preset built around them).
+  // Babs's own account only: the Support Desk area (and the preset built around it).
   showHouse?: boolean;
 }) {
   const [preset, setPreset] = useState<string>(access?.preset ?? "role");

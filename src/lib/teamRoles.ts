@@ -93,12 +93,12 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "support_desk" | "team_briefing" | "executive_home" | "assistant" | "accountability" | "custom_pages";
+  | "team_huddle" | "support_desk" | "executive_home" | "assistant" | "accountability" | "custom_pages";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
-// houseOnly: only meaningful in Babs's own account (the Support Desk shows every client's requests; the Team Briefing is
-// her artifact), so the access screen offers them only there.
+// houseOnly: only meaningful in Babs's own account (the Support Desk shows every client's requests),
+// so the access screen offers it only there.
 export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[]; houseOnly?: boolean }[] = [
   { key: "executive_home", label: "Executive Home & notifications", pages: ["/", "/dashboard"], apis: ["/api/notifications", "/api/command-center"] },
   { key: "assistant", label: "AI assistant (acts only within the areas they have)", pages: ["/assistant-approvals"], apis: ["/api/assistant", "/api/mariposa"] },
@@ -121,7 +121,6 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
   { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
   { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"], houseOnly: true },
-  { key: "team_briefing", label: "Team Briefing: 90-Day Strategy (a link in the menu)", pages: [], apis: [], houseOnly: true },
   { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/tags", "/calendars", "/sequences-manager", "/invites", "/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/calendars", "/api/sequences", "/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
 ];
 
@@ -138,8 +137,8 @@ export const PRESETS: { key: string; label: string; blurb: string; features: Fea
   {
     key: "team_ops",
     label: "Team member: sales, content and support",
-    blurb: "Only her own tasks and reminders, Team Huddle, the Team Briefing link, contacts, pipelines, outreach, qualifier, content calendar, testimonials, calendars, campaigns, offers, projects and the Support Desk. Can add, edit and update but not delete without permission. Nothing else shows.",
-    features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "team_huddle", "support_desk", "team_briefing"]),
+    blurb: "Only her own tasks and reminders, Team Huddle, contacts, pipelines, outreach, qualifier, content calendar, testimonials, calendars, campaigns, offers, projects and the Support Desk. Can add, edit and update but not delete without permission. Nothing else shows.",
+    features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "team_huddle", "support_desk"]),
     extras: { restrict: true, ownOnly: true, noDelete: true },
     houseOnly: true,
   },

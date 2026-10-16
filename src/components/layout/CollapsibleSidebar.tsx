@@ -198,13 +198,12 @@ const efSection = {
   ],
 };
 
-// Team members Babs gave these areas to (Sumbal, 2026-10-16): the Team Briefing link and the Support Desk, in their own
-// small section. The Support Desk shows only when /api/me says the member has that feature; the Briefing is an artifact link.
+// Team members Babs gave the Support Desk to (Sumbal, 2026-10-16): the Support Desk in a small section of its own.
+// It shows only when /api/me says the member has that feature.
 const teamSection = {
   title: "TEAM",
   color: "text-[#c9a227]",
   items: [
-    { id: "team-briefing", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
     { id: "support-desk-team", label: "Support Desk", icon: Inbox, href: "/support-desk" },
   ],
 };
@@ -226,7 +225,7 @@ const ownerSection = {
     { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
     { id: "demo-account", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
     { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
-    { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
+    { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "/my-pages/team-briefing" },
     { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
@@ -697,8 +696,6 @@ export function CollapsibleSidebar() {
     // A custom page can be given to a member one at a time, even with My Pages off.
     const mine = /^\/my-pages\/([^/?]+)/.exec(href);
     if (mine) return customPageLevel(features, extras, mine[1]) !== "none";
-    // The Team Briefing link has no page of its own: it follows the team_briefing feature.
-    if (href.includes("1XzBT3JuQCRy6b8KEx3F4x")) return (features.team_briefing ?? "none") !== "none";
     const p = href.split("?")[0];
     const key = featureForPage(p);
     // "Show only their areas": a page that belongs to no area they have stays out of the menu (Settings and Help stay).
