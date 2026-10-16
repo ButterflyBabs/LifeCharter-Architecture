@@ -476,6 +476,13 @@ export function SalesScript() {
             two minutes to sign. Babs countersigns afterward.
             <AgreementSender />
           </li>
+          <li>
+            <span className="font-semibold text-[#F8F5F0]">Book their 1:1 Welcome Call with Babs.</span> While you are still on the call,
+            open the{" "}
+            <a href="/book/new-client-welcome-call" target="_blank" rel="noopener noreferrer" className="text-[#E3C27C] underline">New Client Welcome Call calendar</a>{" "}
+            with them and let them pick a time. It happens before implementation begins. The link to send by text is
+            lccommandsuite.com/book/new-client-welcome-call.
+          </li>
         </ol>
       </div>
 
