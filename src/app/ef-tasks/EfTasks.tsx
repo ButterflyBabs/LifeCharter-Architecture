@@ -25,6 +25,7 @@ interface EfProject {
   goal: string | null;
   status: "active" | "done";
   due_date: string | null;
+  parent_id?: string | null;
 }
 
 const SECTIONS: { key: string; label: string; help: string }[] = [
@@ -38,7 +39,7 @@ const SECTIONS: { key: string; label: string; help: string }[] = [
 const PRIORITY_COLOR: Record<string, string> = { critical: "#D83A34", high: "#F0B400", medium: "#54A33B", low: "#9CA3AF" };
 const RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-export default function EfTasks({ lockProject, embedded }: { lockProject?: string; embedded?: boolean } = {}) {
+export default function EfTasks({ lockProject, lockProjects, embedded }: { lockProject?: string; lockProjects?: string[]; embedded?: boolean } = {}) {
   const [tasks, setTasks] = useState<EfTask[] | null>(null);
   const [tz, setTz] = useState("UTC");
   const [title, setTitle] = useState("");
@@ -146,9 +147,15 @@ export default function EfTasks({ lockProject, embedded }: { lockProject?: strin
     });
 
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const projectName = (id: string | null) => projects.find((p) => p.id === id)?.name ?? "";
+  const projectName = (id: string | null) => {
+    const p = projects.find((x) => x.id === id);
+    if (!p) return "";
+    const par = p.parent_id ? projects.find((x) => x.id === p.parent_id) : null;
+    return par ? `${par.name} › ${p.name}` : p.name;
+  };
   const visible = (tasks ?? []).filter((t) => {
     if (words.length && !words.every((w) => `${t.title} ${t.notes ?? ""} ${projectName(t.project_id)}`.toLowerCase().includes(w))) return false;
+    if (lockProjects) return Boolean(t.project_id) && lockProjects.includes(t.project_id as string);
     if (fProject === "none") return !t.project_id;
     if (fProject) return t.project_id === fProject;
     return true;
@@ -184,7 +191,7 @@ export default function EfTasks({ lockProject, embedded }: { lockProject?: strin
           <select value={newProjectId} onChange={(e) => setNewProjectId(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
             <option value="">No project</option>
             {projects.filter((p) => p.status === "active").map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>{projectName(p.id)}</option>
             ))}
           </select>
         )}
@@ -225,7 +232,7 @@ export default function EfTasks({ lockProject, embedded }: { lockProject?: strin
           <button onClick={() => setFProject("")} className={`rounded-full px-3 py-1 text-xs ${fProject === "" ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>All</button>
           {projects.filter((p) => p.status === "active").map((p) => (
             <button key={p.id} onClick={() => setFProject(fProject === p.id ? "" : p.id)} className={`rounded-full px-3 py-1 text-xs ${fProject === p.id ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-              {p.name} <span className="opacity-60">{openCount(p.id)}</span>
+              {projectName(p.id)} <span className="opacity-60">{openCount(p.id)}</span>
             </button>
           ))}
           <button onClick={() => setFProject(fProject === "none" ? "" : "none")} className={`rounded-full px-3 py-1 text-xs ${fProject === "none" ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>No project</button>
@@ -388,7 +395,7 @@ export default function EfTasks({ lockProject, embedded }: { lockProject?: strin
                                   <select value={t.project_id ?? ""} onChange={(e) => patch(t.id, { projectId: e.target.value || null })} className="ml-1 px-2 py-1 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md max-w-[200px]">
                                     <option value="">No project</option>
                                     {projects.map((p) => (
-                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                      <option key={p.id} value={p.id}>{projectName(p.id)}</option>
                                     ))}
                                   </select>
                                 </label>

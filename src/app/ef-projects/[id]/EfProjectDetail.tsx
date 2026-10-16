@@ -10,12 +10,14 @@ import EfTasks from "../../ef-tasks/EfTasks";
 // One Embraced;Fully project: its goal and dates, its milestones and its tasks (the same lists as the task page,
 // fixed to this project). Babs only.
 
-interface Project { id: string; name: string; goal: string | null; status: "active" | "done"; due_date: string | null }
+interface Project { id: string; name: string; goal: string | null; status: "active" | "done"; due_date: string | null; parent_id: string | null }
 interface Milestone { id: string; project_id: string; title: string; due_date: string | null; done: boolean }
 
 export default function EfProjectDetail({ id }: { id: string }) {
   const router = useRouter();
   const [project, setProject] = useState<Project | null | undefined>(undefined);
+  const [all, setAll] = useState<Project[]>([]);
+  const [subName, setSubName] = useState("");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [tz, setTz] = useState("UTC");
   const [mTitle, setMTitle] = useState("");
@@ -30,7 +32,9 @@ export default function EfProjectDetail({ id }: { id: string }) {
       fetch("/api/ef-projects", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`/api/ef-milestones?projectId=${id}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
-    setProject(((p?.projects ?? []) as Project[]).find((x) => x.id === id) ?? null);
+    const list = (p?.projects ?? []) as Project[];
+    setAll(list);
+    setProject(list.find((x) => x.id === id) ?? null);
     setMilestones(m?.milestones ?? []);
   }, [id]);
   useEffect(() => {
@@ -48,6 +52,15 @@ export default function EfProjectDetail({ id }: { id: string }) {
     if (!window.confirm("Delete this project? Its tasks stay, with no project.")) return;
     await fetch("/api/ef-projects", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
     router.push("/ef-projects");
+  };
+  const addSub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subName.trim()) return;
+    const res = await fetch("/api/ef-projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: subName, parentId: id }) }).catch(() => null);
+    const d = res && res.ok ? await res.json() : null;
+    if (!d?.project) return setErr("Couldn't add the sub-project.");
+    setSubName("");
+    void load();
   };
   const addMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +95,8 @@ export default function EfProjectDetail({ id }: { id: string }) {
     );
 
   const doneMs = milestones.filter((m) => m.done).length;
+  const parent = project.parent_id ? all.find((x) => x.id === project.parent_id) ?? null : null;
+  const kids = all.filter((x) => x.parent_id === project.id);
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-8">
@@ -89,6 +104,11 @@ export default function EfProjectDetail({ id }: { id: string }) {
         <ChevronLeft className="w-4 h-4" /> Embraced;Fully projects
       </Link>
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Embraced;Fully · only you see this</p>
+      {parent && (
+        <p className="mt-1 text-sm text-gray-500">
+          Part of <Link href={`/ef-projects/${parent.id}`} className="text-[#2E7C83] hover:underline">{parent.name}</Link>
+        </p>
+      )}
 
       <div className="mt-1 mb-6 rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1A1A2E]">
         <input
@@ -119,6 +139,26 @@ export default function EfProjectDetail({ id }: { id: string }) {
         </div>
         {err && <p className="mt-2 text-sm text-[#a3281f]">{err}</p>}
       </div>
+
+      {!project.parent_id && (
+        <section className="mb-8 rounded-2xl bg-[#F8F5F0] p-4 dark:bg-white/5">
+          <h2 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Sub-projects <span className="ml-1 text-xs font-normal text-gray-400">{kids.length}</span></h2>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {kids.map((k) => (
+              <li key={k.id}>
+                <Link href={`/ef-projects/${k.id}`} className="inline-block rounded-full border border-[#1a2b4a]/15 bg-white px-3 py-1 text-sm hover:bg-[#1a2b4a]/5 dark:bg-[#1A1A2E]">{k.name}</Link>
+              </li>
+            ))}
+            {kids.length === 0 && <li className="text-xs text-gray-400">None yet. A sub-project is a part of this project with its own tasks and milestones.</li>}
+          </ul>
+          <form onSubmit={addSub} className="mt-3 flex flex-wrap gap-2">
+            <input value={subName} onChange={(e) => setSubName(e.target.value)} placeholder="Add a sub-project…" aria-label="Sub-project name" className="min-w-[200px] flex-1 px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm" />
+            <button type="submit" disabled={!subName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1a2b4a] text-white rounded-lg text-sm disabled:opacity-50">
+              <Plus className="h-4 w-4" /> Add
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="mb-8 rounded-2xl bg-[#F8F5F0] p-4 dark:bg-white/5">
         <h2 className="text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -153,8 +193,8 @@ export default function EfProjectDetail({ id }: { id: string }) {
         </form>
       </section>
 
-      <h2 className="mb-3 text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Tasks in this project</h2>
-      <EfTasks lockProject={id} embedded />
+      <h2 className="mb-3 text-base font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Tasks in this project{kids.length ? " and its sub-projects" : ""}</h2>
+      <EfTasks lockProject={id} lockProjects={[id, ...kids.map((k) => k.id)]} embedded />
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { dayInTz } from "@/lib/tz";
 
 // Embraced;Fully projects: every project with where it stands. Babs only; its own tables, never shown elsewhere.
 
-interface Project { id: string; name: string; goal: string | null; status: "active" | "done"; due_date: string | null }
+interface Project { id: string; name: string; goal: string | null; status: "active" | "done"; due_date: string | null; parent_id: string | null }
 interface Task { id: string; project_id: string | null; status: string; due_date: string | null }
 interface Milestone { id: string; project_id: string; title: string; due_date: string | null; done: boolean }
 
@@ -54,7 +54,8 @@ export default function EfProjects() {
 
   const today = dayInTz(new Date(), tz);
   const pretty = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
-  const shown = (projects ?? []).filter((p) => (showDone ? true : p.status === "active"));
+  const shown = (projects ?? []).filter((p) => !p.parent_id && (showDone ? true : p.status === "active"));
+  const kidsOf = (id: string) => (projects ?? []).filter((c) => c.parent_id === id);
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-8">
@@ -88,12 +89,14 @@ export default function EfProjects() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {shown.map((p) => {
-            const mine = tasks.filter((t) => t.project_id === p.id);
+            const kids = kidsOf(p.id);
+            const ids = [p.id, ...kids.map((k) => k.id)];
+            const mine = tasks.filter((t) => t.project_id && ids.includes(t.project_id));
             const done = mine.filter((t) => t.status === "done").length;
             const open = mine.length - done;
             const overdue = mine.filter((t) => t.status !== "done" && t.due_date && t.due_date < today).length;
             const pct = mine.length ? Math.round((done / mine.length) * 100) : 0;
-            const ms = milestones.filter((m) => m.project_id === p.id);
+            const ms = milestones.filter((m) => ids.includes(m.project_id));
             const next = ms.filter((m) => !m.done).sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))[0];
             return (
               <Link key={p.id} href={`/ef-projects/${p.id}`} className="block rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 shadow-sm transition hover:shadow-md dark:bg-[#1A1A2E]">
@@ -106,11 +109,20 @@ export default function EfProjects() {
                   <div className="h-full bg-[#54A33B]" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5d6b7a] dark:text-[#b8c2cf]">
-                  <span>{done} of {mine.length} tasks done</span>
+                  <span>{done} of {mine.length} tasks done{kids.length ? ` (with ${kids.length} sub-project${kids.length === 1 ? "" : "s"})` : ""}</span>
                   <span>{open} open</span>
                   {overdue > 0 && <span className="font-semibold text-[#B0342C]">{overdue} overdue</span>}
                   {p.due_date && <span>Due {pretty(p.due_date)}</span>}
                 </p>
+                {kids.length > 0 && (
+                  <p className="mt-2 flex flex-wrap gap-1 text-[11px]">
+                    {kids.map((k) => (
+                      <span key={k.id} className="rounded-full bg-[#1a2b4a]/8 px-2 py-0.5 text-[#1a2b4a] dark:text-[#F8F5F0]">
+                        {k.name} <span className="opacity-60">{tasks.filter((t) => t.project_id === k.id && t.status !== "done").length}</span>
+                      </span>
+                    ))}
+                  </p>
+                )}
                 {next && (
                   <p className="mt-2 text-xs text-[#3F4654] dark:text-[#e8e4f0]">
                     Next milestone: <span className="font-medium">{next.title}</span>

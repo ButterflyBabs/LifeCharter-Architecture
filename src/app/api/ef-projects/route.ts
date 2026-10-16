@@ -14,7 +14,7 @@ async function gate() {
   if (!planId) return { error: NextResponse.json({ error: "No house account found." }, { status: 500 }) } as const;
   return { planId } as const;
 }
-const SELECT = "id, name, goal, status, due_date, sort_order, created_at";
+const SELECT = "id, name, goal, status, due_date, sort_order, created_at, parent_id";
 const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 export async function GET() {
@@ -31,9 +31,16 @@ export async function POST(request: Request) {
   const b = await request.json().catch(() => ({}));
   const name = typeof b.name === "string" ? b.name.trim().slice(0, 120) : "";
   if (!name) return NextResponse.json({ error: "Name the project." }, { status: 400 });
-  const { data, error } = await createServerClient()
+  const db = createServerClient();
+  let parentId: string | null = null;
+  if (typeof b.parentId === "string" && b.parentId) {
+    // One level only: the parent must itself be a top-level project of this account.
+    const { data: par } = await db.from("ef_projects").select("id, parent_id").eq("id", b.parentId).eq("master_plan_id", g.planId).maybeSingle();
+    if (par && !par.parent_id) parentId = par.id as string;
+  }
+  const { data, error } = await db
     .from("ef_projects")
-    .insert({ master_plan_id: g.planId, name, goal: typeof b.goal === "string" && b.goal.trim() ? b.goal.trim().slice(0, 2000) : null, due_date: isDay(b.dueDate) ? b.dueDate : null })
+    .insert({ master_plan_id: g.planId, parent_id: parentId, name, goal: typeof b.goal === "string" && b.goal.trim() ? b.goal.trim().slice(0, 2000) : null, due_date: isDay(b.dueDate) ? b.dueDate : null })
     .select(SELECT)
     .single();
   if (error) return NextResponse.json({ error: "Couldn't add it." }, { status: 500 });
@@ -52,6 +59,16 @@ export async function PATCH(request: Request) {
   if (b.status === "active" || b.status === "done") patch.status = b.status;
   if (b.dueDate === null || b.dueDate === "") patch.due_date = null;
   else if (isDay(b.dueDate)) patch.due_date = b.dueDate;
+  if (b.parentId === null || b.parentId === "") patch.parent_id = null;
+  else if (typeof b.parentId === "string" && b.parentId !== b.id) {
+    const db0 = createServerClient();
+    const [{ data: par }, { count: kids }] = await Promise.all([
+      db0.from("ef_projects").select("id, parent_id").eq("id", b.parentId).eq("master_plan_id", g.planId).maybeSingle(),
+      db0.from("ef_projects").select("id", { count: "exact", head: true }).eq("parent_id", b.id).eq("master_plan_id", g.planId),
+    ]);
+    if (!par || par.parent_id || (kids ?? 0) > 0) return NextResponse.json({ error: "A project can sit under one top-level project only." }, { status: 400 });
+    patch.parent_id = par.id;
+  }
   const { data, error } = await createServerClient().from("ef_projects").update(patch).eq("id", b.id).eq("master_plan_id", g.planId).select(SELECT).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
   return NextResponse.json({ project: data });
