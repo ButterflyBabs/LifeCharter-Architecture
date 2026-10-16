@@ -56,6 +56,12 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   const [done, setDone] = useState<{ start: string; manage: string } | null>(null);
   const [more, setMore] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  // Hold the page invisible only until the calendar says which brand it wears (never longer than a moment).
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWaited(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     setTz(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver");
@@ -131,7 +137,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   );
 
   return (
-    <main className={`min-h-screen bg-white transition-opacity [color-scheme:light] ${meta ? "opacity-100" : "opacity-0"}`} style={vars}>
+    <main className={`min-h-screen bg-white transition-opacity [color-scheme:light] ${meta || waited ? "opacity-100" : "opacity-0"}`} style={vars}>
       <div className="border-b py-2.5 text-center text-xs opacity-80" style={{ borderColor: th.line }} hidden={!th.powered}>
         Powered by {th.powered}
       </div>
