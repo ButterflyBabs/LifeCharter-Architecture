@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SALES_OUTCOMES, type SalesOutcomeKey } from "@/lib/salesCall";
 import { useProspect } from "./ProspectContext";
+import { AgreementSender } from "./AgreementSender";
 
 interface Phase {
   time: string;
@@ -470,10 +471,10 @@ export function SalesScript() {
             the <a href="#new-client" className="text-[#E3C27C] underline">New Client Onboarding form</a> live on screen, confirm they see it, and walk them through their next step before ending the call.
           </li>
           <li>
-            <span className="font-semibold text-[#F8F5F0]">Send the Year-1 Operating Agreement for signature.</span> In BoldSign (
-            <a href="https://app.boldsign.com/templates/all" target="_blank" rel="noopener noreferrer" className="text-[#E3C27C] underline">Templates</a>
-            ), open &ldquo;LCCS Year-1 Operating Agreement&rdquo;, press Use template, enter the client&rsquo;s name and email as the Client, check that
-            Babs is the Company signer, and send. Tell them it is arriving by email now and that it takes about two minutes to sign.
+            <span className="font-semibold text-[#F8F5F0]">Send the Year-1 Operating Agreement for signature.</span> Check the name and
+            email below (they fill in from the contact you picked) and press send. Tell them it is arriving by email now and takes about
+            two minutes to sign. Babs countersigns afterward.
+            <AgreementSender />
           </li>
         </ol>
       </div>
