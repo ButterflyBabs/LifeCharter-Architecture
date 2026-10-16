@@ -23,8 +23,10 @@ import {
   KeyRound,
   Copy,
   Check,
+  Pencil,
 } from "lucide-react";
 import MemberAccess from "./MemberAccess";
+import MemberAccessSummary from "./MemberAccessSummary";
 import TeamActivity from "./TeamActivity";
 import MemberAiCap from "./MemberAiCap";
 import type { AccessExtras, FeatureMap } from "@/lib/teamRoles";
@@ -44,7 +46,7 @@ interface TeamMember {
   aiUsedThisMonth?: number;
 }
 
-const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", team_ops: "Team: sales, content & support", custom: "Custom access" };
+const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", team_ops: "Team: sales, content & support", support: "Support & client care", custom: "Custom access" };
 
 interface TeamManagementProps {
   workspaceId: string;
@@ -121,6 +123,14 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   // Only the account owner (not an admin) sets how much of their AI key each member may use.
   const [isAccountOwner, setIsAccountOwner] = useState(false);
   const [isArchitect, setIsArchitect] = useState(false);
+  // Titles of the account's custom pages, so a grant of one page reads as its name.
+  const [pageTitles, setPageTitles] = useState<Record<string, string>>({});
+  useEffect(() => {
+    fetch("/api/custom-pages", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPageTitles(Object.fromEntries(((d?.pages ?? []) as { slug: string; title: string }[]).map((p) => [p.slug, p.title]))))
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -527,8 +537,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
               className={member.status === "pending" ? "border-yellow-500/30" : ""}
             >
               <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-start gap-4">
                     {/* Avatar with upload button */}
                     <div className="relative flex-shrink-0">
                       <div className="w-12 h-12 rounded-full bg-[#c9a227]/20 flex items-center justify-center overflow-hidden">
@@ -557,12 +566,12 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       </button>
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Input
                           defaultValue={member.name}
                           onBlur={(e) => handleNameBlur(member.id, e.target.value)}
-                          className="h-8 py-1 max-w-[200px]"
+                          className="h-8 py-1 w-full sm:w-64"
                         />
                         {member.status === "pending" && (
                           <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded whitespace-nowrap">
@@ -570,11 +579,11 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-[#b8a898] mt-1 truncate">{member.email}</p>
+                      <p className="text-sm text-[#7a8a99] mt-1 break-all">{member.email}</p>
                     </div>
-                  </div>
+                </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                     <select
                       value={member.role}
                       disabled={isBusy}
@@ -588,8 +597,10 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                     </select>
 
                     {member.role !== "admin" && member.role !== "sales" && (
-                      <Button variant="outline" size="sm" disabled={isBusy} onClick={() => setAccessOpen(accessOpen === member.id ? null : member.id)} title="Choose which features they can reach">
-                        {member.access ? PRESET_LABEL[member.access.preset ?? "custom"] ?? "Custom access" : "Access"}
+                      <Button variant={accessOpen === member.id ? "primary" : "outline"} size="sm" disabled={isBusy} onClick={() => setAccessOpen(accessOpen === member.id ? null : member.id)} title="Add or remove what they can reach">
+                        <Pencil className="w-4 h-4" />
+                        <span className="ml-2">{accessOpen === member.id ? "Close" : "Edit access"}</span>
+                        {accessOpen !== member.id && member.access && <span className="ml-2 text-xs text-[#7a8a99]">{PRESET_LABEL[member.access.preset ?? "custom"] ?? "Custom"}</span>}
                       </Button>
                     )}
 
@@ -614,11 +625,13 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       className="text-red-500 hover:text-red-600"
                       disabled={isBusy}
                       onClick={() => handleRemoveMember(member.id)}
+                      title="Remove from the team"
                     >
                       <UserX className="w-4 h-4" />
                     </Button>
-                  </div>
                 </div>
+
+                <MemberAccessSummary role={member.role} roleText={roleDescriptions[member.role] ?? ""} access={member.access ?? null} pageTitles={pageTitles} showHouse={isArchitect} />
 
                 {member.role !== "sales" && (
                   <MemberAiCap
