@@ -1347,7 +1347,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Daily Operations",
     question: "How do I clear finished tasks off my Tasks page? Can I archive done tasks?",
     answer:
-      "Open Tasks. In the Done column press Archive all done (it asks you to confirm), or press Archive on a single finished task. Archived tasks leave the board but are not deleted: they still count toward your follow-through and your history. Press Archived (with the number) at the top of the page to see them, and Restore to put one back in Done. The Done column shows your newest 12 finished tasks first, with Show all if you want the rest. Reopening a task also brings it back to the board.",
+      "Open Tasks. In the Done list press Archive all done (it asks you to confirm), or press Archive on a single finished task. Archived tasks leave the lists but are not deleted: they still count toward your follow-through and your history. Press Archived (with the number) at the top of the page to see them, and Restore to put one back in Done. The Done list shows your newest 12 finished tasks first, with Show all if you want the rest. Reopening a task also puts it back on today's list.",
     keywords: ["archive", "archived", "done tasks", "completed tasks", "clear done", "long list", "tasks page", "restore task", "clean up tasks", "finished tasks"],
   },
   {
@@ -1357,6 +1357,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Yes, for the work it can reach inside the Suite. On the Tasks page every open task has Have my assistant work on this, and on the Reminders page every reminder has the same link. Press it and your assistant opens, reads the whole task or reminder (not just the title), checks what it can, prepares what it can, and gives you a short summary in the chat and a clean report card on the item. The card shows what it did, the key numbers, what it prepared, and every next step with who does it (Suite runs it by itself, Assistant needs your Approve, You, or both) and whether it is scheduled, waiting for your approval or waiting on you. Anything it prepared has its own Approve, Edit and Cancel buttons right on the card (Edit lets you say what to change and it prepares a corrected one). Approve the report card once and it is saved on the task or reminder; open it later from See the assistant's report on the reminder or See report on the task. When something is finished it also prepares follow-ups: after you ask it to mark a task or reminder done, it adds one to three follow-up tasks or reminders (each its own card to approve or cancel), or asks you one short question when the next step isn't clear. What it can check: messages you logged as sent and follow-ups still waiting on your Outreach Pipelines (by platform, by day, or for one batch by date), how many people are in each stage such as Replied, plus contacts, projects, offers, forms and plans. For email campaigns (Campaigns & Broadcasts) it can also tell you who was sent which email, when each person's next email goes out, and, if you have a Microsoft 365 inbox connected, who has replied to it. What it cannot do: read LinkedIn, Instagram, Facebook or WhatsApp, read Gmail, or send messages or posts for you on its own; replies there show up only when you move that person to a reply stage in the pipeline. The one exception is starting people on one of your own email campaigns: ask it to start specific people (for example batch 3) on the campaign and it prepares a card that lists who, what is sent and when, and who was left out (already in it, unsubscribed, or tagged to skip). Nothing is sent until you press Approve, then email 1 goes out right away and cannot be unsent.",
     keywords: ["work on this", "assistant do the work", "status", "report back", "check on task", "task status", "reminder status", "mariposa", "do the work", "check replies", "report", "assistant report"],
+  },
+  {
+    id: "tasks-lists-today",
+    category: "Daily Operations",
+    question: "How does the Tasks page work? What is in Today, Overdue, In Progress, Waiting and Backlog?",
+    answer:
+      "Tasks is one list for everything outstanding, in lists you can fold away. Overdue holds open work dated before today. Today holds tasks dated today plus anything you drag or add there today, so it starts fresh each morning. In Progress is work you have started, Waiting is work held up by someone or something else, and Backlog is what is not for now: dated later or not dated yet (it moves up on its date). Done holds finished tasks. Under the Add box a count for each list shows how many tasks are in it: hover a count to see what it includes and press it to jump to that list. Drag a task into another list to move it, or open More on the task and choose a list. Reminders, project milestones, legal checklist items, recurring tasks due today, huddle to-dos and your assistant's steps for you appear in the same lists with a small label saying what they are; mark them done there and they update where they live.",
+    keywords: ["tasks page", "today", "overdue", "in progress", "waiting", "backlog", "lists", "counts", "drag", "one list", "everything in one place", "fold", "collapse", "tally"],
+  },
+  {
+    id: "tasks-notes-project-program",
+    category: "Daily Operations",
+    question: "How do I add notes to a task, file it under a project or a program, or search my tasks?",
+    answer:
+      "On the Tasks page open More on any task. The Notes and additional information box saves when you click away, and the first line shows under the task title. Project files the task under one of your Projects (it then also shows on that project's page) and Program (offer) files it under one of your offers from Offers & Packages. You can choose both when you add a task and change them any time, one task at a time. To find tasks, use the search box under the counts (it looks in titles, notes, project names and program names) and the All projects and All programs drop-downs; the counts follow your filter. Clear filters puts everything back.",
+    keywords: ["notes", "note on task", "project", "program", "offer", "file task", "assign project", "assign program", "search tasks", "filter tasks", "find task", "additional information"],
   },
   {
     id: "assistant-approvals",
