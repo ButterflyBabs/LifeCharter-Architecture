@@ -18,6 +18,8 @@ export interface ProspectPrefill {
   phone?: string;
   companyName?: string;
   biggestChallenge?: string;
+  // Their answers on the booking questionnaire, so the call script can open with them.
+  booking?: { revenue?: string; bottleneck?: string; decisionMaker?: string; timeline?: string; tools?: string; at: string };
 }
 
 interface ProspectContextValue {

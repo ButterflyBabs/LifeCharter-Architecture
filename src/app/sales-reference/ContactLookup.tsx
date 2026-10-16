@@ -21,6 +21,7 @@ interface LookupResult {
   lastActiveAt?: string | null;
   tags?: string[];
   activity?: { title: string; kind: string; at: string }[];
+  booking?: { revenue?: string; bottleneck?: string; decisionMaker?: string; timeline?: string; tools?: string; at: string };
 }
 
 function fmtDate(iso: string | null | undefined): string | null {
@@ -101,6 +102,7 @@ export function ContactLookup() {
       fullName: detail.name,
       email: detail.email,
       phone: detail.phone,
+      booking: detail.booking,
     });
     setUsed(true);
   }
@@ -189,6 +191,19 @@ export function ContactLookup() {
               {fmtDate(detail.addedAt) && fmtDate(detail.lastActiveAt) && " · "}
               {fmtDate(detail.lastActiveAt) && <>Last activity {fmtDate(detail.lastActiveAt)}</>}
             </p>
+          )}
+
+          {detail.booking && (
+            <div className="mt-3 rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/5 p-3 text-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">What they told us when they booked ({fmtDate(detail.booking.at)})</p>
+              <ul className="mt-1.5 space-y-1 text-[#F3EEE4]">
+                {detail.booking.bottleneck && <li><span className="text-[#b8a898]">#1 bottleneck: </span>{detail.booking.bottleneck}</li>}
+                {detail.booking.revenue && <li><span className="text-[#b8a898]">Team size / revenue: </span>{detail.booking.revenue}</li>}
+                {detail.booking.decisionMaker && <li><span className="text-[#b8a898]">Founder or decision-maker: </span>{detail.booking.decisionMaker}</li>}
+                {detail.booking.timeline && <li><span className="text-[#b8a898]">Timeline: </span>{detail.booking.timeline}</li>}
+                {detail.booking.tools && <li><span className="text-[#b8a898]">Tools: </span>{detail.booking.tools}</li>}
+              </ul>
+            </div>
           )}
 
           {!!detail.tags?.length && (

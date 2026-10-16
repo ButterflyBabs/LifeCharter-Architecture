@@ -15,13 +15,19 @@ export const SALES_TIERS = ["Starter", "Growth", "VIP"] as const;
 // Every free-text answer: key, the label it carries on the card, and the custom field (if any)
 // it is also kept in, so it can be searched, sorted and exported from Contacts.
 export const SALES_NOTE_FIELDS: { key: string; label: string; custom?: string }[] = [
-  { key: "stuck", label: "What stuck from the MasterClass" },
+  { key: "stuck", label: "Still the main thing from their booking form?" },
   { key: "typical", label: "A normal Tuesday: where the time goes" },
   { key: "putOff", label: "What they keep putting off" },
   { key: "tools", label: "Tools and logins today", custom: "sales_tools" },
   { key: "fellThrough", label: "What fell through the cracks" },
   { key: "yearOut", label: "A year from now if nothing changes" },
+  { key: "futureWeek", label: "Their ideal workweek once it is built" },
+  { key: "futureGain", label: "What 10–12 hours back would unlock" },
+  { key: "futureLife", label: "How life outside the business would change" },
+  { key: "label", label: "Their \"that's right\" moment" },
   { key: "pain", label: "Their pain, in their own words", custom: "sales_pain" },
+  { key: "hesitation", label: "Their unspoken hesitation (accusation audit)" },
+  { key: "temperature", label: "Temperature check (1 to 10) and why", custom: "sales_temperature" },
   { key: "objectionNotes", label: "Objections and what you said" },
   { key: "nextStep", label: "Agreed next step", custom: "sales_next_step" },
   { key: "extra", label: "Anything else" },
@@ -36,5 +42,6 @@ export const SALES_CUSTOM_FIELDS: { key: string; label: string; type: "text" | "
   { key: "sales_tools", label: "Tools they use today", type: "long_text" },
   { key: "sales_objections", label: "Objections raised", type: "long_text" },
   { key: "sales_next_step", label: "Sales next step", type: "text" },
+  { key: "sales_temperature", label: "Temperature check (1 to 10)", type: "text" },
   { key: "sales_follow_up_on", label: "Sales follow-up date", type: "date" },
 ];

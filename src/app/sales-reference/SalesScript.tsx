@@ -31,31 +31,48 @@ function Note({ k, label, rows = 2, hint, d, set }: { k: string; label: string; 
   );
 }
 
-const phasesFor = (d: Draft, set: (k: string, v: string) => void): Phase[] => [
+type Booking = NonNullable<ReturnType<typeof useProspect>["prefill"]>["booking"];
+
+const phasesFor = (d: Draft, set: (k: string, v: string) => void, booking?: Booking): Phase[] => [
   {
     time: "0:00–1:30",
     title: "Open the call",
     body: (
       <>
         <p className="script-say">
-          &ldquo;Hey [Name], thanks for making time. You were at the MasterClass on [date] — what
-          stuck with you most from that?&rdquo;
+          &ldquo;Hey [Name], thanks for jumping on! Look, I know these calls can sometimes feel like a pitch fest, but today
+          is really just about you. I mean... would it be crazy to just use this time to unpack your current situation and
+          see what&rsquo;s actually holding you back?&rdquo;
         </p>
-        <p className="script-note">Listen. Whatever they name is what already landed — work from it.</p>
-        <Note k="stuck" label="What stuck from the MasterClass" d={d} set={set} hint="Their words" />
+        <p className="script-note">
+          Every prospect booked through the MasterClass or Website page already answered their revenue range, #1 bottleneck,
+          decision-maker status and timeline before this call. Look them up above before dialing, then open with THAT instead
+          of a generic question.
+        </p>
+        {booking?.bottleneck && (
+          <p className="rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/5 px-3 py-2 text-[#F3EEE4]">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">They wrote when they booked: </span>
+            &ldquo;{booking.bottleneck}&rdquo;
+          </p>
+        )}
         <p className="script-say">
-          &ldquo;Today I want to get a real picture of where things actually stand for you right
-          now, so I can show you exactly what would help — not a generic pitch. Sound good?&rdquo;
+          &ldquo;You mentioned {booking?.bottleneck ? "that" : "[their bottleneck]"} when you booked — still the main thing, or
+          has something worse surfaced?&rdquo;
         </p>
+        <Note k="stuck" label="Still the main thing from their booking form?" d={d} set={set} hint="Their words" />
+        <p className="script-note">Listen. Permission granted — pause and move directly to diagnosis.</p>
       </>
     ),
   },
   {
-    time: "1:30–6:00",
+    time: "1:30–4:30",
     title: "Surface the pain — ask, then go quiet",
     body: (
       <>
-        <p className="script-note">Ask 2–3 of these. Follow whichever one has real energy behind it.</p>
+        <p className="script-note">
+          Ask 2–3 of these. Follow whichever one has real energy behind it. Use mirroring (repeat their last 2–3 words with an
+          upward inflection) to get them to expand.
+        </p>
         <ul className="script-list">
           <li>&ldquo;Walk me through a normal Tuesday — where does your time actually go?&rdquo;</li>
           <li>&ldquo;What&rsquo;s the thing you know needs attention, but you keep putting off?&rdquo;</li>
@@ -72,15 +89,42 @@ const phasesFor = (d: Draft, set: (k: string, v: string) => void): Phase[] => [
     ),
   },
   {
-    time: "6:00–7:00",
-    title: "Mirror it back, then bridge",
+    time: "4:30–6:30",
+    title: "Surface the desired outcome (future state)",
     body: (
       <>
-      <p className="script-say">
-        &ldquo;So what I&apos;m hearing is [their exact words] — that&apos;s precisely the pattern
-        LifeCharter Command Suite was built to break. Let me show you specifically how.&rdquo;
-      </p>
-      <Note k="pain" label="Their pain, in their own words" rows={3} d={d} set={set} />
+        <p className="script-note">Pivot from the current mess to their ideal future. Quantify the gap before showing the solution.</p>
+        <ul className="script-list">
+          <li>&ldquo;If we waved a magic wand and got your operations properly architected during our initial 90-day build-out, what does your ideal workweek look like?&rdquo;</li>
+          <li>&ldquo;If you got 10–12 hours a week back and had full visibility across your business, what does that unlock for your annual revenue and growth?&rdquo;</li>
+          <li>&ldquo;How would your life outside the business change if you didn&rsquo;t have to carry every single operational decision in your head?&rdquo;</li>
+        </ul>
+        <Note k="futureWeek" label="Their ideal workweek once it is built" d={d} set={set} />
+        <Note k="futureGain" label="What 10–12 hours back would unlock" d={d} set={set} />
+        <Note k="futureLife" label="How life outside the business would change" d={d} set={set} />
+      </>
+    ),
+  },
+  {
+    time: "6:30–7:30",
+    title: "Label & trigger “That’s right”",
+    body: (
+      <>
+        <p className="script-note">
+          Don&rsquo;t just repeat their words. Use tactical empathy (labels) to capture their emotional state until they say
+          &ldquo;That&rsquo;s right.&rdquo;
+        </p>
+        <p className="script-say">
+          &ldquo;It sounds like you built this business to have freedom, but right now you feel like a high-paid prisoner to your
+          own operational chaos. It seems like every single decision still bottlenecks at your desk.&rdquo;
+        </p>
+        <p className="script-note">Wait for them to say &ldquo;That&rsquo;s right!&rdquo; Then bridge:</p>
+        <p className="script-say">
+          &ldquo;That&rsquo;s precisely the pattern LifeCharter Command Suite was built to break. Let me show you specifically
+          how.&rdquo;
+        </p>
+        <Note k="label" label="Their “that’s right” moment" d={d} set={set} hint="What they said when it landed" />
+        <Note k="pain" label="Their pain, in their own words" rows={3} d={d} set={set} />
       </>
     ),
   },
@@ -186,7 +230,7 @@ export function SalesScript() {
 
   const setNote = (k: string, v: string) => setD((x) => ({ ...x, notes: { ...x.notes, [k]: v } }));
   const toggle = (key: "pains" | "objections", v: string) => setD((x) => ({ ...x, [key]: x[key].includes(v) ? x[key].filter((i) => i !== v) : [...x[key], v] }));
-  const PHASES = phasesFor(d, setNote);
+  const PHASES = phasesFor(d, setNote, prefill?.booking);
 
   async function save() {
     if (!d.outcome) return setMsg("Choose how the call ended first.");
@@ -238,7 +282,7 @@ export function SalesScript() {
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
-            7:00–12:00
+            7:30–11:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Map their pain to the Suite</h3>
         </div>
@@ -272,7 +316,39 @@ export function SalesScript() {
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
-            12:00–14:00
+            11:30–12:30
+          </span>
+          <h3 className="text-sm font-semibold text-[#F8F5F0]">Diffuse hesitation (accusation audit)</h3>
+        </div>
+        <div className="mt-3 space-y-2 text-sm text-[#d8d3c8]">
+          <p className="text-xs uppercase tracking-wide text-[#b8a898]">Call out their unspoken fear before showing numbers to neutralize sales resistance.</p>
+          <p className="italic text-[#F3EEE4]">
+            &ldquo;Before we look at the numbers, you&rsquo;re probably sitting there thinking: &lsquo;I&rsquo;ve bought tools like
+            Notion, Slack, or HubSpot before, and I&rsquo;ve tried coaching before — why isn&rsquo;t this just going to be another
+            expensive project that sits on a shelf?&rsquo; Am I wrong?&rdquo;
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">If they say “No / you’re right”</p>
+              <p className="mt-1 italic text-[#F3EEE4]">
+                &ldquo;I completely get it. That&rsquo;s actually why Babs built this as a guided architecture, not a self-serve
+                software. Babs is your Alignment Architect — she builds this out with you directly, starting with a focused
+                first-30-days setup, inside the Suite you&rsquo;re committing to for the year ahead, so it actually sticks.&rdquo;
+              </p>
+            </div>
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">If they say “Yes / I trust Babs”</p>
+              <p className="mt-1 italic text-[#F3EEE4]">&ldquo;Fair enough! In that case, let&rsquo;s look straight at how the implementation tiers work...&rdquo;</p>
+            </div>
+          </div>
+          <Note k="hesitation" label="Their unspoken hesitation" d={d} set={setNote} hint="What they said back" />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
+            12:30–13:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Which tier fits</h3>
         </div>
@@ -287,18 +363,90 @@ export function SalesScript() {
         <p className="mt-2 text-[11px] text-[#b8a898]">Tap the one that fits. It saves on their card.</p>
       </div>
 
+      <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
+            13:30–14:30
+          </span>
+          <h3 className="text-sm font-semibold text-[#F8F5F0]">Temperature check (1 to 10 scale)</h3>
+        </div>
+        <div className="mt-3 space-y-2 text-sm text-[#d8d3c8]">
+          <p className="text-xs uppercase tracking-wide text-[#b8a898]">A casual check so they sell themselves, or the real objection surfaces.</p>
+          <p className="italic text-[#F3EEE4]">
+            &ldquo;Based on everything we&rsquo;ve looked at, on a scale of 1 to 10 — 10 being &lsquo;let&rsquo;s build this
+            today&rsquo; and 1 being &lsquo;this is totally wrong for me&rsquo; — where&rsquo;s your head at right now?&rdquo;
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">If they say 8, 9 or 10 (the reverse flip)</p>
+              <p className="mt-1 italic text-[#F3EEE4]">
+                &ldquo;Oh wow, an [8/9]? Honestly, I was expecting you to say a 4 or 5 given how much operational chaos you&rsquo;re
+                dealing with. What made you give it such a high score?&rdquo;
+              </p>
+              <p className="mt-1 text-xs text-[#b8a898]">Let them list their own reasons for needing the program. They are selling themselves.</p>
+            </div>
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">If they say 7 or below (clearing the gap)</p>
+              <p className="mt-1 italic text-[#F3EEE4]">
+                &ldquo;Fair enough. What would need to happen — or what would we need to clarify right now — to take that [5/6] up
+                to an 8 or 9?&rdquo;
+              </p>
+              <p className="mt-1 text-xs text-[#b8a898]">Address the missing piece or misunderstanding, re-verify their score, then move forward.</p>
+            </div>
+          </div>
+          <Note k="temperature" label="Their number (1 to 10) and why" d={d} set={setNote} />
+        </div>
+      </div>
+
       <div className="mt-6 rounded-xl border border-[#c9a227]/40 bg-[#1C2236] p-5">
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
-            14:00–15:00
+            14:30–15:00+
           </span>
-          <h3 className="text-sm font-semibold text-[#F8F5F0]">Transition to close</h3>
+          <h3 className="text-sm font-semibold text-[#F8F5F0]">Transition to close (calibrated close)</h3>
         </div>
-        <p className="mt-3 text-sm italic text-[#F3EEE4]">
-          &ldquo;Based on everything you just told me, [tier] is built exactly for where you are.
-          Let me show you the numbers—&rdquo; <span className="not-italic text-[#b8a898]">(scroll to pricing below)</span>{" "}
-          &ldquo;—and we can get your implementation started today.&rdquo;
+        <div className="mt-3 space-y-2 text-sm">
+          <p className="text-xs uppercase tracking-wide text-[#b8a898]">A statement plus a calibrated question gets them to commit to the action.</p>
+          <p className="italic text-[#F3EEE4]">
+            &ldquo;Based on everything you told me about [their main pain] and why [Tier] fits your goals, we&rsquo;ll start with
+            the initial 90-day architecture build-out as part of your Year-1 Operating Agreement.&rdquo;
+          </p>
+          <p className="italic text-[#F3EEE4]">
+            &ldquo;Plus, when we lock this in today, Babs includes a full Website Alignment Review within your first 14 days at no
+            extra cost to make sure your front-facing funnel matches your new backend architecture.&rdquo;
+          </p>
+          <p className="italic text-[#F3EEE4]">&ldquo;How do you see us moving forward with this?&rdquo;</p>
+          <p className="text-xs text-[#b8a898]">(or)</p>
+          <p className="italic text-[#F3EEE4]">&ldquo;How would having [Tier] implemented over the next 90 days change how you run your week?&rdquo;</p>
+          <p className="rounded-lg bg-[#141826] p-3 text-xs text-[#b8a898]">
+            Talk about the first 90 days of build-out, but don&rsquo;t let it sound like the whole relationship is 90 days. What they
+            are about to sign is the Year-1 Agreement: a 12-month term, with an early-termination fee if they cancel early.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-emerald-400/40 bg-[#1C2236] p-5">
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-mono text-emerald-300 bg-emerald-400/10 rounded-full px-2.5 py-1">15:30+</span>
+          <h3 className="text-sm font-semibold text-[#F8F5F0]">Execute the close live (do not let deals go cold)</h3>
+        </div>
+        <p className="mt-3 text-xs uppercase tracking-wide text-[#b8a898]">
+          Do not hang up or offer to &ldquo;send a link after the call.&rdquo; Stay on the line to secure the agreement and onboarding.
         </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[#d8d3c8]">
+          <li>
+            <span className="font-semibold text-[#F8F5F0]">Pull up checkout.</span> Generate the combined Stripe checkout session
+            (implementation fee + monthly subscription in one session) in the <a href="#pricing" className="text-[#E3C27C] underline">pricing section below</a>. Confirm FIRSTMONTHFREE is auto-applied.
+          </li>
+          <li>
+            <span className="font-semibold text-[#F8F5F0]">Send the link live.</span> Paste it in chat or SMS and stay on the call
+            while they enter their payment details.
+          </li>
+          <li>
+            <span className="font-semibold text-[#F8F5F0]">Launch onboarding immediately.</span> Once payment is confirmed, pull up
+            the <a href="#new-client" className="text-[#E3C27C] underline">New Client Onboarding form</a> live on screen, confirm they see it, and walk them through their next step before ending the call.
+          </li>
+        </ol>
       </div>
 
       <div className="mt-6">

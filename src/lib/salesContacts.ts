@@ -44,6 +44,8 @@ export interface SalesContactDetail {
   lastActiveAt?: string | null;
   tags?: string[];
   activity?: { title: string; kind: string; at: string }[];
+  // What they answered on the consultation questionnaire when they booked (latest), if they did.
+  booking?: { revenue?: string; bottleneck?: string; decisionMaker?: string; timeline?: string; tools?: string; at: string };
 }
 
 export class NoOwnerAccountError extends Error {}
@@ -98,6 +100,19 @@ export async function lookupSalesContact(email: string): Promise<SalesContactDet
     .eq("contact_id", c.id)
     .order("created_at", { ascending: false })
     .limit(8);
+  // The booking questionnaire (revenue range, #1 bottleneck, decision-maker, timeline) the prospect filled in.
+  const { data: q } = await db
+    .from("crm_events")
+    .select("detail, created_at")
+    .eq("master_plan_id", planId)
+    .eq("contact_id", c.id)
+    .eq("title", "Executive Consultation questionnaire")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const a = ((q?.detail as { answers?: Record<string, unknown> } | null)?.answers ?? null) as Record<string, unknown> | null;
+  const txt = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  const booking = a && q ? { revenue: txt(a.revenue_range), bottleneck: txt(a.bottleneck), decisionMaker: txt(a.is_decision_maker), timeline: txt(a.implementation_timeline), tools: txt(a.tools), at: q.created_at as string } : undefined;
   return {
     found: true,
     id: c.id,
@@ -109,5 +124,6 @@ export async function lookupSalesContact(email: string): Promise<SalesContactDet
     lastActiveAt: c.last_activity_at,
     tags: c.tags ?? [],
     activity: ((events ?? []) as { title: string; kind: string; created_at: string }[]).map((e) => ({ title: e.title, kind: e.kind, at: e.created_at })),
+    booking,
   };
 }
