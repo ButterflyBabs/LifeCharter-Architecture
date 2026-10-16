@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { availableSlots, book, calendarBySlug } from "@/lib/booking/engine";
 import { createServerClient } from "@/lib/supabase/server";
+import { housePlanId } from "@/lib/planScope";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
 import { cookies } from "next/headers";
@@ -21,8 +22,11 @@ export async function GET(request: Request, { params }: { params: { slug: string
   if (Date.parse(to) - Date.parse(from) > 45 * 86_400_000) return NextResponse.json({ error: "Range too long." }, { status: 400 });
   const { data: hosts } = await createServerClient().from("booking_hosts").select("name").eq("master_plan_id", cal.master_plan_id).in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
   const plan = await availableSlots(cal, from, to);
+  // The house account's pages wear one of its brands; every client account's page stays neutral.
+  const brand = cal.master_plan_id === (await housePlanId()) ? ((cal as unknown as { brand?: string }).brand ?? "command_suite") : "neutral";
   return NextResponse.json({
     calendar: {
+      brand,
       name: cal.name,
       description: cal.description,
       duration: cal.duration_min,
