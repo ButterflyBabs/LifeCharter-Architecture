@@ -199,3 +199,21 @@ export async function houseFeatureLevel(feature: string): Promise<"none" | "view
   }
   return actor.role === "viewer" ? "view" : level;
 }
+
+// The Demo Account (sample data for live demos): Babs, plus a member of her own team workspace she has allowed to
+// present it (permissions.extras.demo). Never a client, never a member of someone else's workspace.
+export async function canPresentDemo(): Promise<boolean> {
+  if (await isAlignmentArchitect()) return true;
+  const actor = await resolveActor();
+  if (actor.kind !== "member" || !actor.workspaceId) return false;
+  if ((actor.permissions as { extras?: { demo?: unknown } } | null)?.extras?.demo !== true) return false;
+  try {
+    const db = createServiceClient();
+    const { data: ws } = await db.from("workspaces").select("master_plan_id").eq("id", actor.workspaceId).maybeSingle();
+    if (!ws?.master_plan_id) return false;
+    const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", ws.master_plan_id).maybeSingle();
+    return superAdminEmails().includes(((plan?.client_email as string | undefined) || "").toLowerCase());
+  } catch {
+    return false;
+  }
+}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAlignmentArchitect } from "@/lib/authz";
+import { canPresentDemo } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +12,9 @@ export async function GET(request: Request) {
   if (h.get("next-router-prefetch") || h.get("rsc") || /prefetch|prerender/i.test(`${h.get("purpose") ?? ""} ${h.get("sec-purpose") ?? ""}`)) {
     return new NextResponse(null, { status: 204 });
   }
-  // Demo mode is for the Alignment Architect only: anyone else (a client, a visitor) gets a plain 404, as if
-  // there were no such page.
-  if (!(await isAlignmentArchitect())) return new NextResponse("Not found.", { status: 404 });
+  // Demo mode is for the Alignment Architect, and for a member of her own team she has allowed to present it
+  // (Marcello): anyone else (a client, a visitor) gets a plain 404, as if there were no such page.
+  if (!(await canPresentDemo())) return new NextResponse("Not found.", { status: 404 });
   const origin = new URL(request.url).origin;
   const res = NextResponse.redirect(`${origin}/`);
   res.cookies.set("lc_demo", "1", {

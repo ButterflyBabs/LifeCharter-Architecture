@@ -205,6 +205,8 @@ const teamSection = {
   color: "text-[#c9a227]",
   items: [
     { id: "support-desk-team", label: "Support Desk", icon: Inbox, href: "/support-desk" },
+    { id: "masterclass-results-team", label: "MasterClass Results", icon: TrendingUp, href: "/masterclass-results" },
+    { id: "demo-account-team", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "/demo" },
   ],
 };
 
@@ -688,6 +690,9 @@ export function CollapsibleSidebar() {
   }, []);
   // A team member with feature limits only sees the areas they can open.
   const visible = (href: string) => {
+    // Presenting the demo (a member Babs allowed): the sample-data tour shows every page.
+    if (isDemo && extras?.demo) return true;
+    if (href === "/demo") return extras?.demo === true;
     if (assessmentsLocked) {
       const p = href.split("?")[0];
       return p === "/setup" || p.endsWith("/starter-guide.html") || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
@@ -725,7 +730,7 @@ export function CollapsibleSidebar() {
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
   // The TEAM section (Briefing + Support Desk) is only for a restricted member; Babs has both elsewhere.
-  const teamExtra = !superAdmin && extras?.restrict && !isDemo ? [teamSection] : [];
+  const teamExtra = !superAdmin && (extras?.restrict || extras?.demo) ? [teamSection] : [];
   const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id))) }))
     .filter((s) => s.items.length > 0);

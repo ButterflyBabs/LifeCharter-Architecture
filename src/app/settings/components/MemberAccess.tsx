@@ -44,7 +44,7 @@ export default function MemberAccess({
     else next[slug] = l;
     setExtras({ ...extras, pages: Object.keys(next).length ? next : undefined });
   };
-  const toggle = (k: "restrict" | "ownOnly" | "noDelete") => setExtras({ ...extras, [k]: !extras[k] });
+  const toggle = (k: "restrict" | "ownOnly" | "noDelete" | "demo") => setExtras({ ...extras, [k]: !extras[k] });
   const set = (k: keyof FeatureMap, l: AccessLevel) => {
     setFeatures({ ...features, [k]: l });
     setPreset("custom");
@@ -105,6 +105,7 @@ export default function MemberAccess({
           <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.restrict)} onChange={() => toggle("restrict")} /><span>Show only the areas above (everything else, including Executive Home and the assistant, stays closed)</span></label>
           <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.ownOnly)} onChange={() => toggle("ownOnly")} /><span>Tasks and Reminders: only their own</span></label>
           <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.noDelete)} onChange={() => toggle("noDelete")} /><span>Cannot delete anything without your permission</span></label>
+          {showHouse && <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.demo)} onChange={() => toggle("demo")} /><span>Can present the Demo Account (sample data, for live demos)</span></label>}
         </div>
       )}
       <p className="text-xs text-[#7a8a99]">Team members never see billing, API keys, connected accounts or other members&rsquo; details.</p>

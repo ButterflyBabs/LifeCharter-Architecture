@@ -355,7 +355,12 @@ export async function middleware(request: NextRequest) {
   // DEMO IS FOR THE ALIGNMENT ARCHITECT ONLY (Babs, 2026-10-10: "it should not even appear on ANY client account
   // ever"). The lc_demo cookie is stripped from the request, and expired in the browser, for everyone who is not
   // signed in as her, so a forged or stale cookie can never switch the demo on for a client or a visitor.
-  if (request.cookies.get("lc_demo")?.value && !(user && (user.email || "").toLowerCase() === DEMO_OWNER_EMAIL)) {
+  let demoMember = false; // a member of her own team she allowed to present the demo (Marcello)
+  if (request.cookies.get("lc_demo")?.value && user?.email && (user.email || "").toLowerCase() !== DEMO_OWNER_EMAIL) {
+    const info = await getMemberInfo(user.email);
+    demoMember = info.isMember && info.extras?.demo === true && (await isHouseWorkspace(info.workspaceId));
+  }
+  if (request.cookies.get("lc_demo")?.value && !demoMember && !(user && (user.email || "").toLowerCase() === DEMO_OWNER_EMAIL)) {
     const carried = response.cookies.getAll();
     request.cookies.delete("lc_demo");
     response = NextResponse.next({ request: { headers: request.headers } });
@@ -489,6 +494,8 @@ export async function middleware(request: NextRequest) {
       const roleVerdict = memberApiAccess(memberRole, path, request.method, memberFeatures);
       let verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method, memberExtras) : roleVerdict;
       if (verdict.allow) verdict = extrasApiAccess(memberExtras, path, request.method);
+      // While presenting the demo (sample data), area limits step aside; the role rules above still apply.
+      if (!verdict.allow && demoMember && isDemo && roleVerdict.allow && !/delete|DELETE/.test(request.method)) verdict = { allow: true };
       // Delete-by-POST ({ action: "delete" | "stage-delete" | "share-remove" ... }): peek at the JSON body.
       if (verdict.allow && memberExtras?.noDelete && ["POST", "PUT", "PATCH"].includes(request.method) && (request.headers.get("content-type") || "").includes("json")) {
         const body = await request.clone().json().catch(() => null);
@@ -551,7 +558,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
   }
   if (isTeamMember) {
-    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path, memberExtras) ?? restrictedPageRedirect(memberFeatures, memberExtras, path);
+    const dest = memberPageRedirect(memberRole, path) ?? (demoMember && isDemo ? null : featurePageRedirect(memberFeatures, path, memberExtras) ?? restrictedPageRedirect(memberFeatures, memberExtras, path));
     if (dest) return NextResponse.redirect(new URL(dest, request.url));
   }
 

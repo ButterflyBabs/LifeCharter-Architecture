@@ -38,6 +38,7 @@ export default function MemberAccessSummary({
     ex?.restrict && "Sees only the areas listed",
     ex?.ownOnly && "Own tasks and reminders only",
     ex?.noDelete && "Cannot delete without your permission",
+    ex?.demo && showHouse && "Can present the Demo Account",
     role === "viewer" && "View-only role: cannot change anything",
   ].filter(Boolean) as string[];
 

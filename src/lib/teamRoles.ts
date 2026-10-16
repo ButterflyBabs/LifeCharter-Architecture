@@ -93,7 +93,7 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "support_desk" | "executive_home" | "assistant" | "accountability" | "custom_pages";
+  | "team_huddle" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "executive_home" | "assistant" | "accountability" | "custom_pages";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -121,7 +121,11 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
   { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
   { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"], houseOnly: true },
-  { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/tags", "/calendars", "/sequences-manager", "/invites", "/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/calendars", "/api/sequences", "/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
+  { key: "crm", label: "Contacts, tags, invites, short links & affiliates", pages: ["/contacts", "/tags", "/invites", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
+  { key: "calendars", label: "Calendars (booking pages)", pages: ["/calendars"], apis: ["/api/calendars"] },
+  { key: "campaigns", label: "Campaigns & Broadcasts", pages: ["/sequences-manager"], apis: ["/api/sequences", "/api/crm/broadcasts"] },
+  { key: "outreach", label: "Outreach Pipelines, Prospect Qualifier & Meta leads", pages: ["/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier"], apis: ["/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier"] },
+  { key: "masterclass_results", label: "MasterClass Results (funnel and registrations)", pages: ["/masterclass-results"], apis: ["/api/masterclass"], houseOnly: true },
 ];
 
 const ALL_VIEW = Object.fromEntries(FEATURES.map((f) => [f.key, "view"])) as FeatureMap;
@@ -131,14 +135,14 @@ const ONLY = (keys: FeatureKey[], extra: FeatureMap = {}) =>
 export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap; extras?: AccessExtras; houseOnly?: boolean }[] = [
   { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["executive_home", "tasks", "projects", "daily_compass", "content", "scripts", "custom_pages"]) },
   { key: "bookkeeper", label: "Bookkeeper", blurb: "Finance only.", features: ONLY(["finance"]) },
-  { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["executive_home", "sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
+  { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["executive_home", "sales_activities", "scripts", "pipeline", "tasks", "crm", "calendars", "campaigns", "outreach"]) },
   { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["executive_home", "content", "testimonials", "scripts", "tasks"]) },
   { key: "viewer", label: "Viewer", blurb: "Sees everything above, changes nothing.", features: ALL_VIEW },
   {
     key: "team_ops",
     label: "Team member: sales, content and support",
     blurb: "Only her own tasks and reminders, Team Huddle, contacts, pipelines, outreach, qualifier, content calendar, testimonials, calendars, campaigns, offers, projects and the Support Desk. Can add, edit and update but not delete without permission. Nothing else shows.",
-    features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "team_huddle", "support_desk"]),
+    features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "calendars", "campaigns", "outreach", "team_huddle", "support_desk"]),
     extras: { restrict: true, ownOnly: true, noDelete: true },
     houseOnly: true,
   },
@@ -161,6 +165,7 @@ export const featureForPage = (path: string) => longestMatch(path, (f) => f.page
 
 // Areas added after members were first set up. A member saved before an area existed keeps what they always had
 // (these were open to every member), so a key missing from a stored map means "as before" for these, "none" for the rest.
+const SPLIT_FROM_CRM: FeatureKey[] = ["calendars", "campaigns", "outreach"];
 const OPEN_BEFORE_MAPPED: FeatureKey[] = ["executive_home", "assistant", "accountability", "custom_pages"];
 
 export function cleanFeatureMap(v: unknown): FeatureMap | null {
@@ -170,6 +175,9 @@ export function cleanFeatureMap(v: unknown): FeatureMap | null {
     const l = (v as Record<string, unknown>)[f.key];
     out[f.key] = l === "edit" || l === "view" ? l : l === undefined && OPEN_BEFORE_MAPPED.includes(f.key) ? "edit" : "none";
   }
+  // "Contacts, calendars, campaigns & outreach" used to be one area (crm). A member saved before it was split keeps
+  // all four at the level they had.
+  for (const k of SPLIT_FROM_CRM) if ((v as Record<string, unknown>)[k] === undefined) out[k] = out.crm;
   return out;
 }
 
@@ -204,6 +212,7 @@ export function featurePageRedirect(features: FeatureMap | null, path: string, e
 //              other page send the person to their first area. The assistant and other powerful tools stay closed.
 //   ownOnly  — Tasks and Reminders show only what is assigned to / made by that person.
 //   noDelete — nothing can be deleted without the owner's permission (add, edit and update still work).
+//   demo     — may turn on the Demo Account for live demos (sample data; Babs's own team only).
 //   pages    — My Pages (custom pages) given one at a time: { "<page slug>": "view" | "edit" }. A page listed here opens
 //              even when "My Pages" as a whole is off, so an admin never has to hand over all of them.
 export interface AccessExtras {
@@ -211,6 +220,7 @@ export interface AccessExtras {
   ownOnly?: boolean;
   noDelete?: boolean;
   pages?: Record<string, "view" | "edit">;
+  demo?: boolean; // may present the Demo Account (sample data) — only meaningful in Babs's own team
 }
 export function cleanExtras(v: unknown): AccessExtras | null {
   if (!v || typeof v !== "object") return null;
@@ -219,6 +229,7 @@ export function cleanExtras(v: unknown): AccessExtras | null {
   if (o.restrict === true) out.restrict = true;
   if (o.ownOnly === true) out.ownOnly = true;
   if (o.noDelete === true) out.noDelete = true;
+  if (o.demo === true) out.demo = true;
   if (o.pages && typeof o.pages === "object") {
     const pages: Record<string, "view" | "edit"> = {};
     for (const [slug, l] of Object.entries(o.pages as Record<string, unknown>).slice(0, 80)) {
@@ -232,7 +243,7 @@ export function cleanExtras(v: unknown): AccessExtras | null {
 export const NO_DELETE_MESSAGE = "Deleting needs AmiLynne's permission. Ask her and she will remove it for you.";
 
 // Always open to a restricted member: their own profile, Help, sign-in pages.
-const RESTRICTED_OPEN_PAGES = ["/settings", "/help", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
+const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
 // APIs open to a restricted member beyond the ones their areas map to (profile, menu order, the small helpers the
 // allowed pages call). Everything else that belongs to no area stays closed to them.
 const RESTRICTED_OPEN_APIS = [

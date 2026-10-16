@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isAlignmentArchitect } from "@/lib/authz";
+import { houseFeatureLevel } from "@/lib/authz";
 import { ADS_START, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type EventRegistrations, type SessionRow } from "@/lib/masterclass/results";
 import Link from "next/link";
 import ReplayRelease from "./ReplayRelease";
@@ -36,9 +36,9 @@ function Step({ name, value, from, cost, note }: { name: string; value: number; 
   );
 }
 
-// Owner-only: how each MasterClass performs as a funnel, and whether the series is compounding event to event.
+// Babs, plus a team member she gave MasterClass Results: how each MasterClass performs as a funnel, and whether the series is compounding event to event.
 export default async function MasterclassResultsPage({ searchParams }: { searchParams?: { tab?: string } }) {
-  if (!(await isAlignmentArchitect())) notFound();
+  if ((await houseFeatureLevel("masterclass_results")) === "none") notFound();
   const tab = searchParams?.tab === "registrations" ? "registrations" : "funnel";
   const { sessions, totals, registrations } = await masterclassResults();
   const filling = sessions.filter((s) => s.state !== "held");
