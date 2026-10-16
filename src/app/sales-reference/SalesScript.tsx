@@ -469,6 +469,12 @@ export function SalesScript() {
             <span className="font-semibold text-[#F8F5F0]">Launch onboarding immediately.</span> Once payment is confirmed, pull up
             the <a href="#new-client" className="text-[#E3C27C] underline">New Client Onboarding form</a> live on screen, confirm they see it, and walk them through their next step before ending the call.
           </li>
+          <li>
+            <span className="font-semibold text-[#F8F5F0]">Send the Year-1 Operating Agreement for signature.</span> In BoldSign (
+            <a href="https://app.boldsign.com/templates/all" target="_blank" rel="noopener noreferrer" className="text-[#E3C27C] underline">Templates</a>
+            ), open &ldquo;LCCS Year-1 Operating Agreement&rdquo;, press Use template, enter the client&rsquo;s name and email as the Client, check that
+            Babs is the Company signer, and send. Tell them it is arriving by email now and that it takes about two minutes to sign.
+          </li>
         </ol>
       </div>
 
