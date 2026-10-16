@@ -18,8 +18,9 @@ interface Draft {
   tier: string;
   outcome: SalesOutcomeKey | "";
   followUpOn: string;
+  welcomeBooked: boolean; // the 1:1 Welcome Call with Babs was booked while still on the call
 }
-const emptyDraft = (): Draft => ({ notes: {}, pains: [], objections: [], tier: "", outcome: "", followUpOn: "" });
+const emptyDraft = (): Draft => ({ notes: {}, pains: [], objections: [], tier: "", outcome: "", followUpOn: "", welcomeBooked: false });
 const field = "w-full rounded-lg border border-[#F3EEE4]/20 bg-[#141826] px-3 py-2 text-sm text-[#F3EEE4] placeholder:text-[#b8a898]/60 focus:outline-none focus:border-[#c9a227]";
 
 // A labelled note box that saves to the prospect's card.
@@ -233,11 +234,17 @@ export function SalesScript() {
   const toggle = (key: "pains" | "objections", v: string) => setD((x) => ({ ...x, [key]: x[key].includes(v) ? x[key].filter((i) => i !== v) : [...x[key], v] }));
   const PHASES = phasesFor(d, setNote, prefill?.booking);
 
+  const [skipWelcome, setSkipWelcome] = useState(false);
   async function save() {
     if (!d.outcome) return setMsg("Choose how the call ended first.");
+    // Signed up on the call but no Welcome Call yet: stop once, so it is not forgotten.
+    if (d.outcome === "signed-paid" && !d.welcomeBooked && !skipWelcome) {
+      setSkipWelcome(true);
+      return setMsg("Before you save: the 1:1 Welcome Call with Babs isn't booked yet. Book it in step 5 above and tick the box. Or press Save again to save without it.");
+    }
     setBusy(true);
     setMsg("");
-    const r = await fetch("/api/sales/save-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId, newContact: contactId ? undefined : nc, ...d }) });
+    const r = await fetch("/api/sales/save-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId, newContact: contactId ? undefined : nc, ...d, notes: { ...d.notes, welcomeCall: d.welcomeBooked ? "Booked on the call" : d.outcome === "signed-paid" ? "NOT booked yet, follow up" : "" } }) });
     const res = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setMsg(res.error || "That didn't save. Your notes are still here; try again.");
@@ -248,6 +255,7 @@ export function SalesScript() {
       /* private mode */
     }
     setD(emptyDraft());
+    setSkipWelcome(false);
     setNc({ name: "", email: "" });
   }
 
@@ -477,11 +485,23 @@ export function SalesScript() {
             <AgreementSender />
           </li>
           <li>
-            <span className="font-semibold text-[#F8F5F0]">Book their 1:1 Welcome Call with Babs.</span> While you are still on the call,
-            open the{" "}
-            <a href="/book/new-client-welcome-call" target="_blank" rel="noopener noreferrer" className="text-[#E3C27C] underline">New Client Welcome Call calendar</a>{" "}
-            with them and let them pick a time. It happens before implementation begins. The link to send by text is
-            lccommandsuite.com/book/new-client-welcome-call.
+            <span className="font-semibold text-[#F8F5F0]">Book their 1:1 Welcome Call with Babs, now, while you are still on the call.</span>{" "}
+            It happens before implementation begins, and it is the step that gets forgotten once the call ends. Press the button, let them pick a
+            time, and tick the box when it shows as confirmed. If they would rather book later, text them lccommandsuite.com/book/new-client-welcome-call.
+            <div className="mt-3 flex flex-wrap items-center gap-4 rounded-lg border border-emerald-400/30 bg-[#141826] p-3">
+              <a
+                href={`/book/new-client-welcome-call?name=${encodeURIComponent(prefill?.fullName || "")}&email=${encodeURIComponent(prefill?.email || "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] px-4 py-2 text-sm font-semibold text-[#1a2b4a]"
+              >
+                Book their Welcome Call with Babs
+              </a>
+              <label className="flex items-center gap-2 text-sm text-[#F3EEE4]">
+                <input type="checkbox" checked={d.welcomeBooked} onChange={(e) => setD((x) => ({ ...x, welcomeBooked: e.target.checked }))} />
+                Booked. It is on the calendar.
+              </label>
+            </div>
           </li>
         </ol>
       </div>

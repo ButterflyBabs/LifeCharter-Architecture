@@ -30,6 +30,7 @@ export const SALES_NOTE_FIELDS: { key: string; label: string; custom?: string }[
   { key: "hesitation", label: "Their unspoken hesitation (accusation audit)" },
   { key: "temperature", label: "Temperature check (1 to 10) and why", custom: "sales_temperature" },
   { key: "objectionNotes", label: "Objections and what you said" },
+  { key: "welcomeCall", label: "1:1 Welcome Call with Babs" },
   { key: "nextStep", label: "Agreed next step", custom: "sales_next_step" },
   { key: "extra", label: "Anything else" },
 ];
