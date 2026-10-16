@@ -17,14 +17,15 @@ export async function GET(request: Request) {
   const { data: boards } = await db.from("pipeline_boards").select("id, name").eq("master_plan_id", a.planId).eq("purpose", purpose);
   const ids = ((boards ?? []) as { id: string; name: string }[]).map((b) => b.id);
   if (!ids.length) return NextResponse.json({ results: [] });
-  const { data: cards } = await db
+  // Every word has to appear on the card (name, handle, email or notes), in any order.
+  const words = q.split(/[\s,]+/).filter(Boolean).slice(0, 6);
+  let cq = db
     .from("dm_cards")
     .select("id, name, handle, platform, board_id, stage_id, last_contacted_at, email, notes")
     .eq("master_plan_id", a.planId)
-    .in("board_id", ids)
-    .or(`name.ilike.%${q}%,handle.ilike.%${q}%,email.ilike.%${q}%,notes.ilike.%${q}%`)
-    .order("updated_at", { ascending: false })
-    .limit(40);
+    .in("board_id", ids);
+  for (const w of words) cq = cq.or(`name.ilike.%${w}%,handle.ilike.%${w}%,email.ilike.%${w}%,notes.ilike.%${w}%`);
+  const { data: cards } = await cq.order("updated_at", { ascending: false }).limit(40);
   const { data: stages } = await db.from("dm_stages").select("id, name").in("board_id", ids);
   const stageName = new Map(((stages ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]));
   const boardName = new Map(((boards ?? []) as { id: string; name: string }[]).map((b) => [b.id, b.name]));

@@ -212,14 +212,17 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     } else void load(board?.id);
   }
 
+  // Every word typed must appear somewhere on the card, in any order, ignoring capitals and accents: "joanna lane"
+  // finds "Joanna Z. Lane, PCC, CPCC" and "renee" finds "Renée".
+  const fold = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const visible = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return (cards ?? []).filter(
-      (c) =>
-        (filter === "All" || c.platform === filter) &&
-        (!stageFilter || c.stage_id === stageFilter) &&
-        (!needle || `${c.name} ${c.handle ?? ""} ${c.email ?? ""} ${c.notes ?? ""}`.toLowerCase().includes(needle))
-    );
+    const words = fold(q).split(/[\s,]+/).filter(Boolean);
+    return (cards ?? []).filter((c) => {
+      if (!(filter === "All" || c.platform === filter) || (stageFilter && c.stage_id !== stageFilter)) return false;
+      if (!words.length) return true;
+      const hay = fold(`${c.name} ${c.handle ?? ""} ${c.email ?? ""} ${c.notes ?? ""} ${c.profile_url ?? ""}`);
+      return words.every((w) => hay.includes(w));
+    });
   }, [cards, filter, stageFilter, q]);
   const searching = Boolean(q.trim() || stageFilter || filter !== "All");
   // The same person on the account's other pipelines.
@@ -345,6 +348,12 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
         </div>
       )}
 
+      {cards && searching && visible.length === 0 && (
+        <p className="mb-4 rounded-xl border border-[#1a2b4a]/10 bg-white p-4 text-sm text-[#5a6472] dark:bg-[#1a2b4a]/20 dark:text-[#b8c2cf]">
+          No one on this pipeline matches. Every word you type has to appear on the card (name, handle, email, notes or profile link), so try fewer or shorter words, or press Clear search.
+          {elsewhere.length > 0 ? " They are on one of your other pipelines: see the list above." : ""}
+        </p>
+      )}
       {!cards ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : (
