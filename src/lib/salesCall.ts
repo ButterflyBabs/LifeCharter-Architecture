@@ -3,6 +3,7 @@
 // the save route so the labels on the card always match the form.
 
 export const SALES_OUTCOMES = [
+  { key: "signed-paid", label: "Signed up and took payment on the call", tag: "sales-outcome-signed-paid" },
   { key: "closed", label: "Moving forward / checkout sent", tag: "sales-outcome-closed" },
   { key: "follow-up", label: "Wants to think, follow up", tag: "sales-outcome-follow-up" },
   { key: "not-now", label: "Not right now", tag: "sales-outcome-not-now" },

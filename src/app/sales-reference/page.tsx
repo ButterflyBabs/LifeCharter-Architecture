@@ -9,6 +9,7 @@ import { ProspectProvider } from "./ProspectContext";
 import { CombinedCheckoutButton } from "./CombinedCheckoutButton";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
 import MyCalendar from "./MyCalendar";
+import { PageFold, ReadingControls } from "./Collapsible";
 import { isSwitched, pricesFor, type Tier as PriceTier } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 import { huddleAccess } from "@/lib/teamHuddleServer";
@@ -16,6 +17,8 @@ import { huddleAccess } from "@/lib/teamHuddleServer";
 // Prices follow src/lib/pricing.ts (founder list until January 1, 2027, then the new list).
 export const dynamic = "force-dynamic";
 const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+// Exact dollars and cents when the amount is not a whole dollar (a 50/50 half of $2,497 is $1,248.50).
+const usdExact = (cents: number) => (cents % 100 === 0 ? usd(cents) : `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
 export const metadata: Metadata = {
   title: "Sales Call Reference — LifeCharter Command Suite",
@@ -79,7 +82,8 @@ export default async function SalesReferencePage() {
   // The static Stripe Payment Links below were made at founder prices, so they are only shown until the switch day.
   const tiers = TIERS.map((t) => {
     const p = pricesFor(t.id as PriceTier, today, settings);
-    return { ...t, monthly: `${usd(p.monthlyCents)}/mo`, implementation: usd(p.implementationCents), annual: usd(p.annualCents) };
+    const first = Math.ceil(p.implementationCents / 2);
+    return { ...t, monthly: `${usd(p.monthlyCents)}/mo`, implementation: usd(p.implementationCents), annual: usd(p.annualCents), half1: usdExact(first), half2: usdExact(p.implementationCents - first) };
   });
   return (
     <main className="min-h-screen bg-[#141826] text-[#F3EEE4]">
@@ -117,16 +121,27 @@ export default async function SalesReferencePage() {
           </a>
         </p>
 
-        <MyCalendar />
+        <ReadingControls />
+
+        <PageFold id="calendar" title="My calendar: booked calls and hours" defaultOpen={false}>
+          <MyCalendar />
+        </PageFold>
 
         <ProspectProvider>
-        <Suspense fallback={null}>
-          <ContactLookup />
-        </Suspense>
-        <ContactsTab />
+        <PageFold id="lookup" title="Look up a prospect">
+          <Suspense fallback={null}>
+            <ContactLookup />
+          </Suspense>
+        </PageFold>
+        <PageFold id="contacts" title="Contacts" defaultOpen={false}>
+          <ContactsTab />
+        </PageFold>
 
-        <SalesScript />
+        <PageFold id="script" title="Call script">
+          <SalesScript />
+        </PageFold>
 
+        <PageFold id="pricing-fold" title="Pricing, payment options and checkout">
         <h2 id="pricing" className="text-2xl font-semibold text-[#F8F5F0] mb-2 scroll-mt-6">Pricing</h2>
         <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
           What actually separates the tiers: Starter is built for one business running lean; Growth
@@ -147,6 +162,37 @@ export default async function SalesReferencePage() {
             </>
           )}
         </p>
+        <div className="mb-6 rounded-2xl border border-[#c9a227]/40 bg-[#1C2236] p-5">
+          <h3 className="text-sm font-semibold text-[#F8F5F0]">Payment options: the only ones we offer, so everyone gives the same answer</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">Implementation fee</p>
+              <ul className="mt-1.5 space-y-1.5 text-sm text-[#d8d3c8]">
+                <li><span className="font-semibold text-[#F3EEE4]">Paid in full</span>, today.</li>
+                <li>
+                  <span className="font-semibold text-[#F3EEE4]">50 / 50:</span> half today and half in 30 days
+                  ({tiers.map((t) => `${t.name} ${t.half1} + ${t.half2}`).join(" · ")}). Use cautiously and sparingly.
+                </li>
+              </ul>
+            </div>
+            <div className="rounded-lg bg-[#141826] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">Ongoing</p>
+              <ul className="mt-1.5 space-y-1.5 text-sm text-[#d8d3c8]">
+                <li><span className="font-semibold text-[#F3EEE4]">Monthly subscription</span> with a 12-month minimum.</li>
+                <li>
+                  <span className="font-semibold text-[#F3EEE4]">Annual plan paid in full</span> (about 20% off):{" "}
+                  {tiers.map((t) => `${t.name} ${t.annual}`).join(" · ")}.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#b8a898]">
+            No other payment arrangements, discounts or deferred payments. We never encourage anyone to take on debt or financial
+            strain to join; if the budget isn&rsquo;t there yet, point them to a free doorway (the MasterClass or the Challenge) and
+            invite them back when the timing is right. On a 50/50 client, tell Babs if the second half isn&rsquo;t received within 30 days.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {tiers.map((tier) => (
             <div key={tier.id} className="rounded-2xl border border-[#F3EEE4]/12 bg-[#1C2236] p-6 flex flex-col">
@@ -165,6 +211,8 @@ export default async function SalesReferencePage() {
                 implementationDisplay={tier.implementation}
                 monthlyDisplay={tier.monthly}
                 annualDisplay={tier.annual}
+                halfFirstDisplay={tier.half1}
+                halfSecondDisplay={tier.half2}
               />
 
               {!switched && (
@@ -209,8 +257,14 @@ export default async function SalesReferencePage() {
           the same static Payment Links live on the Billing tab and create nothing new (shown only while founder pricing is open).
         </p>
 
-        <div id="new-client" className="scroll-mt-6"><NewClientForm /></div>
-        <WebsiteAlignment />
+        </PageFold>
+
+        <PageFold id="new-client-fold" title="New Client Onboarding">
+          <div id="new-client" className="scroll-mt-6"><NewClientForm /></div>
+        </PageFold>
+        <PageFold id="website" title="Website Alignment" defaultOpen={false}>
+          <WebsiteAlignment />
+        </PageFold>
         </ProspectProvider>
       </div>
     </main>

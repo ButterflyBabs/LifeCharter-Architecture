@@ -9,9 +9,12 @@ interface Props {
   monthlyDisplay: string;
   /** Annual pay-in-full: the implementation fee plus the first 12 monthly fees, about 20% off. Comes from src/lib/pricing.ts. */
   annualDisplay: string;
+  /** The two halves of the implementation fee on the 50/50 plan. */
+  halfFirstDisplay: string;
+  halfSecondDisplay: string;
 }
 
-export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDisplay, annualDisplay }: Props) {
+export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDisplay, annualDisplay, halfFirstDisplay, halfSecondDisplay }: Props) {
   const { prefill, version } = useProspect();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -68,35 +71,39 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         {annual
           ? `${annualDisplay} today covers the implementation fee and the first 12 months; ${monthlyDisplay} begins in month 13`
           : split
-            ? `Half of the ${implementationDisplay} implementation fee today + ${monthlyDisplay} starting in one billing cycle, the other half 30 days later, on the same invoice as the first monthly charge`
+            ? `${halfFirstDisplay} today (half of the ${implementationDisplay} implementation fee) + ${monthlyDisplay} starting in one billing cycle; the other ${halfSecondDisplay} is added 30 days later, on the same invoice as the first monthly charge`
             : `${implementationDisplay} today + ${monthlyDisplay} starting in one billing cycle`}
         {annual ? (alumni ? " (the $500 alumni credit is taken off)" : "") : <> — {alumni ? "$500 alumni implementation credit" : "FIRSTMONTHFREE"} applied automatically</>}, nothing for the client to type.
       </p>
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
-        <input
-          type="checkbox"
-          checked={split}
-          onChange={(e) => {
-            setSplit(e.target.checked);
-            if (e.target.checked) setAnnual(false);
-          }}
-          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
-        />
-        Exception only: split the implementation fee, 50% today and 50% in 30 days (offer when you are comfortable)
-      </label>
-      <label className="mt-2 flex items-center gap-2 text-xs text-[#b8a898]">
-        <input
-          type="checkbox"
-          checked={annual}
-          onChange={(e) => {
-            setAnnual(e.target.checked);
-            if (e.target.checked) setSplit(false);
-          }}
-          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
-        />
-        Annual pay-in-full: {annualDisplay} for the implementation fee and the first 12 months (about 20% off)
-      </label>
+      <div className="mt-3" role="radiogroup" aria-label="How they are paying">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E3C27C]">How are they paying?</p>
+        <div className="mt-1.5 grid gap-1.5">
+          {([
+            { key: "full", label: `Implementation in full: ${implementationDisplay} today, then ${monthlyDisplay}`, note: "" },
+            { key: "split", label: `50 / 50: ${halfFirstDisplay} today + ${halfSecondDisplay} in 30 days, then ${monthlyDisplay}`, note: "Use cautiously and sparingly." },
+            { key: "annual", label: `Annual, paid in full: ${annualDisplay} (implementation + first 12 months, about 20% off)`, note: "" },
+          ] as const).map((o) => {
+            const on = (o.key === "split" && split) || (o.key === "annual" && annual) || (o.key === "full" && !split && !annual);
+            return (
+              <button
+                key={o.key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => {
+                  setSplit(o.key === "split");
+                  setAnnual(o.key === "annual");
+                }}
+                className={`rounded-lg border px-3 py-2 text-left text-xs ${on ? "border-[#c9a227] bg-[#c9a227]/10 text-[#F8F5F0]" : "border-[#F3EEE4]/12 bg-[#141826] text-[#b8a898]"}`}
+              >
+                <span className="font-semibold">{on ? "● " : "○ "}{o.label}</span>
+                {o.note && <span className="ml-1 text-[#E3C27C]">{o.note}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
         <input

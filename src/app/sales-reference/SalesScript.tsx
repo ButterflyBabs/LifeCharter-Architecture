@@ -251,7 +251,23 @@ export function SalesScript() {
   }
 
   return (
-    <section className="mb-14">
+    <section
+      className="mb-14 [&_[data-collapsed]>:not([data-fold-head])]:hidden [&_[data-collapsed]_.fold-chev]:-rotate-90"
+      onClick={(e) => {
+        const head = (e.target as HTMLElement).closest("[data-fold-head]");
+        const card = head?.parentElement;
+        if (!card) return;
+        if (card.hasAttribute("data-collapsed")) card.removeAttribute("data-collapsed");
+        else card.setAttribute("data-collapsed", "");
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const head = (e.target as HTMLElement).closest("[data-fold-head]");
+        if (!head || e.target !== head) return;
+        e.preventDefault();
+        (head as HTMLElement).click();
+      }}
+    >
       <div className="flex items-baseline justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-semibold text-[#F8F5F0]">15-Minute Call Script</h2>
         <span className="text-xs uppercase tracking-wide text-[#b8a898]">
@@ -266,11 +282,12 @@ export function SalesScript() {
       <div className="mt-6 space-y-4">
         {PHASES.map((phase) => (
           <div key={phase.title} className="rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
-            <div className="flex items-center gap-3">
+            <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
               <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
                 {phase.time}
               </span>
               <h3 className="text-sm font-semibold text-[#F8F5F0]">{phase.title}</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
             </div>
             <div className="mt-3 space-y-2 text-sm text-[#d8d3c8] [&_.script-say]:italic [&_.script-say]:text-[#F3EEE4] [&_.script-note]:text-xs [&_.script-note]:text-[#b8a898] [&_.script-note]:uppercase [&_.script-note]:tracking-wide [&_.script-list]:list-disc [&_.script-list]:pl-5 [&_.script-list]:space-y-1.5">
               {phase.body}
@@ -280,11 +297,12 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
             7:30–11:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Map their pain to the Suite</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <p className="mt-3 text-xs text-[#b8a898] uppercase tracking-wide">
           Whatever they said above, find the closest row and speak straight from it
@@ -314,11 +332,12 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
             11:30–12:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Diffuse hesitation (accusation audit)</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <div className="mt-3 space-y-2 text-sm text-[#d8d3c8]">
           <p className="text-xs uppercase tracking-wide text-[#b8a898]">Call out their unspoken fear before showing numbers to neutralize sales resistance.</p>
@@ -346,11 +365,12 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
             12:30–13:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Which tier fits</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Tier that fits">
           {TIER_FIT.map((t) => (
@@ -364,11 +384,12 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#F3EEE4]/12 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
             13:30–14:30
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Temperature check (1 to 10 scale)</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <div className="mt-3 space-y-2 text-sm text-[#d8d3c8]">
           <p className="text-xs uppercase tracking-wide text-[#b8a898]">A casual check so they sell themselves, or the real objection surfaces.</p>
@@ -399,11 +420,12 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#c9a227]/40 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-[#c9a227] bg-[#c9a227]/10 rounded-full px-2.5 py-1">
             14:30–15:00+
           </span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Transition to close (calibrated close)</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <div className="mt-3 space-y-2 text-sm">
           <p className="text-xs uppercase tracking-wide text-[#b8a898]">A statement plus a calibrated question gets them to commit to the action.</p>
@@ -426,9 +448,10 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-emerald-400/40 bg-[#1C2236] p-5">
-        <div className="flex items-center gap-3">
+        <div data-fold-head className="flex cursor-pointer items-center gap-3" role="button" tabIndex={0}>
           <span className="text-[11px] font-mono text-emerald-300 bg-emerald-400/10 rounded-full px-2.5 py-1">15:30+</span>
           <h3 className="text-sm font-semibold text-[#F8F5F0]">Execute the close live (do not let deals go cold)</h3>
+          <span className="fold-chev ml-auto text-[#E3C27C] transition-transform" aria-hidden="true">▾</span>
         </div>
         <p className="mt-3 text-xs uppercase tracking-wide text-[#b8a898]">
           Do not hang up or offer to &ldquo;send a link after the call.&rdquo; Stay on the line to secure the agreement and onboarding.
@@ -436,7 +459,7 @@ export function SalesScript() {
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[#d8d3c8]">
           <li>
             <span className="font-semibold text-[#F8F5F0]">Pull up checkout.</span> Generate the combined Stripe checkout session
-            (implementation fee + monthly subscription in one session) in the <a href="#pricing" className="text-[#E3C27C] underline">pricing section below</a>. Confirm FIRSTMONTHFREE is auto-applied.
+            (implementation fee + monthly subscription in one session) in the <a href="#pricing" className="text-[#E3C27C] underline">pricing section below</a>. Choose how they are paying (in full, 50/50 or annual), then confirm FIRSTMONTHFREE is auto-applied.
           </li>
           <li>
             <span className="font-semibold text-[#F8F5F0]">Send the link live.</span> Paste it in chat or SMS and stay on the call
@@ -450,7 +473,7 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6">
-        <h3 className="text-sm font-semibold text-[#F8F5F0]">Quick objection reframes</h3>
+        <h3 data-fold-head className="flex cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-[#F8F5F0]" role="button" tabIndex={0}>Quick objection reframes <span className="fold-chev text-[#E3C27C] transition-transform" aria-hidden="true">▾</span></h3>
         <div className="mt-3 space-y-2">
           {OBJECTIONS.map((o) => (
             <div key={o.said} className="rounded-lg bg-[#1C2236] border border-[#F3EEE4]/10 p-3.5 text-sm">
@@ -466,7 +489,7 @@ export function SalesScript() {
       </div>
 
       <div className="mt-6 rounded-xl border border-[#c9a227]/40 bg-[#1C2236] p-5">
-        <h3 className="text-sm font-semibold text-[#F8F5F0]">How did it end?</h3>
+        <h3 data-fold-head className="flex cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-[#F8F5F0]" role="button" tabIndex={0}>How did it end? <span className="fold-chev text-[#E3C27C] transition-transform" aria-hidden="true">▾</span></h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="How the call ended">
           {SALES_OUTCOMES.map((o) => (
             <label key={o.key} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold ${d.outcome === o.key ? "border-[#c9a227] bg-[#c9a227]/10 text-[#F8F5F0]" : "border-[#F3EEE4]/15 text-[#F3EEE4]"}`}>
