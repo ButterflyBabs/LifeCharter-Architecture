@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, GripVertical, Plus } from "lucide-react";
 import { dayInTz } from "@/lib/tz";
 
 // Embraced;Fully projects: every project with where it stands. Babs only; its own tables, never shown elsewhere.
@@ -21,6 +21,8 @@ export default function EfProjects() {
   const [due, setDue] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [err, setErr] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   useEffect(() => {
     setTz(localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -55,6 +57,26 @@ export default function EfProjects() {
   const today = dayInTz(new Date(), tz);
   const pretty = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
   const shown = (projects ?? []).filter((p) => !p.parent_id && (showDone ? true : p.status === "active"));
+  // Drag a card to a new place (or use the arrows): the order is saved for next time.
+  const reorder = async (fromId: string, toId: string | null, dir?: -1 | 1) => {
+    const order = shown.map((p) => p.id);
+    const from = order.indexOf(fromId);
+    if (from < 0) return;
+    order.splice(from, 1);
+    let at: number;
+    if (dir) at = Math.max(0, Math.min(order.length, from + dir));
+    else {
+      const to = toId ? order.indexOf(toId) : -1;
+      if (to < 0) return;
+      at = from < shown.findIndex((p) => p.id === toId) ? to + 1 : to;
+    }
+    order.splice(at, 0, fromId);
+    // Keep every project (finished ones too): the shown ones take the lowest places in the new order.
+    const rest = (projects ?? []).filter((p) => !order.includes(p.id)).map((p) => p.id);
+    const full = [...order, ...rest];
+    setProjects((prev) => (prev ? full.map((id) => prev.find((p) => p.id === id)!).filter(Boolean) : prev));
+    await fetch("/api/ef-projects", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order: full }) }).catch(() => {});
+  };
   const kidsOf = (id: string) => (projects ?? []).filter((c) => c.parent_id === id);
 
   return (
@@ -99,7 +121,40 @@ export default function EfProjects() {
             const ms = milestones.filter((m) => ids.includes(m.project_id));
             const next = ms.filter((m) => !m.done).sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))[0];
             return (
-              <Link key={p.id} href={`/ef-projects/${p.id}`} className="block rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 shadow-sm transition hover:shadow-md dark:bg-[#1A1A2E]">
+              <div
+                key={p.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", p.id);
+                  e.dataTransfer.effectAllowed = "move";
+                  setDragId(p.id);
+                }}
+                onDragOver={(e) => {
+                  if (dragId && dragId !== p.id) {
+                    e.preventDefault();
+                    setOverId(p.id);
+                  }
+                }}
+                onDragLeave={() => setOverId((o) => (o === p.id ? null : o))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = dragId ?? e.dataTransfer.getData("text/plain");
+                  setDragId(null);
+                  setOverId(null);
+                  if (from && from !== p.id) void reorder(from, p.id);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setOverId(null);
+                }}
+                className={`relative rounded-2xl ${overId === p.id ? "ring-2 ring-[#2E7C83]" : ""} ${dragId === p.id ? "opacity-50" : ""}`}
+              >
+              <div className="absolute right-3 top-3 z-10 flex items-center gap-1 text-gray-300">
+                <button type="button" aria-label="Move earlier" onClick={() => reorder(p.id, null, -1)} className="rounded p-0.5 hover:text-[#1a2b4a]"><ArrowLeft className="h-3.5 w-3.5" /></button>
+                <button type="button" aria-label="Move later" onClick={() => reorder(p.id, null, 1)} className="rounded p-0.5 hover:text-[#1a2b4a]"><ArrowRight className="h-3.5 w-3.5" /></button>
+                <GripVertical className="h-4 w-4 cursor-grab" aria-hidden />
+              </div>
+              <Link href={`/ef-projects/${p.id}`} className="block rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 pr-20 shadow-sm transition hover:shadow-md dark:bg-[#1A1A2E]">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-serif text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</h2>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${p.status === "done" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#E6EFF6] text-[#2B5F8A]"}`}>{p.status === "done" ? "Finished" : "Active"}</span>
@@ -130,6 +185,7 @@ export default function EfProjects() {
                   </p>
                 )}
               </Link>
+              </div>
             );
           })}
         </div>

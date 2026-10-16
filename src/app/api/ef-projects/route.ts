@@ -52,6 +52,13 @@ export async function PATCH(request: Request) {
   const g = await gate();
   if ("error" in g) return g.error;
   const b = await request.json().catch(() => ({}));
+  // { order: [id, id, ...] }: save a new drag-and-drop order (this account's projects only).
+  if (Array.isArray(b.order)) {
+    const ids = (b.order as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 500);
+    const db = createServerClient();
+    await Promise.all(ids.map((pid, i) => db.from("ef_projects").update({ sort_order: i + 1 }).eq("id", pid).eq("master_plan_id", g.planId)));
+    return NextResponse.json({ ok: true });
+  }
   if (typeof b.id !== "string") return NextResponse.json({ error: "Missing project." }, { status: 400 });
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim().slice(0, 120);

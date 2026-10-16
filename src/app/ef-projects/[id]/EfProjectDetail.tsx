@@ -129,6 +129,21 @@ export default function EfProjectDetail({ id }: { id: string }) {
           <label className="text-gray-500">
             Due <input type="date" defaultValue={project.due_date ?? ""} onChange={(e) => void patchProject({ dueDate: e.target.value || null })} className="ml-1 px-2 py-1 text-sm bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md" />
           </label>
+          {kids.length === 0 && (
+            <label className="text-gray-500">
+              Part of{" "}
+              <select
+                value={project.parent_id ?? ""}
+                onChange={(e) => void patchProject({ parentId: e.target.value || null }).then(load)}
+                className="ml-1 px-2 py-1 text-sm bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md max-w-[220px]"
+              >
+                <option value="">Nothing (a project of its own)</option>
+                {all.filter((x) => !x.parent_id && x.id !== project.id).map((x) => (
+                  <option key={x.id} value={x.id}>{x.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <button onClick={() => patchProject({ status: project.status === "done" ? "active" : "done" })} className="text-[#2E7C83] hover:underline">
             {project.status === "done" ? "Reopen this project" : "Mark this project finished"}
           </button>
