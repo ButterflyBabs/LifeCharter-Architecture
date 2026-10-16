@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { currentBusiness } from "@/lib/businessScope";
-import { myMemberId, salesMemberId } from "@/lib/taskAssignees";
+import { myMemberId, ownTasksMemberId } from "@/lib/taskAssignees";
 import { logActivity } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   // A Sales member can only clear their own finished tasks.
-  const who = (await salesMemberId()) ? "me" : typeof body.assignee === "string" ? body.assignee : "";
+  const who = (await ownTasksMemberId()) ? "me" : typeof body.assignee === "string" ? body.assignee : "";
 
   let q = supabase
     .from("tasks")

@@ -92,7 +92,8 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
-  | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm";
+  | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
+  | "team_huddle" | "support_desk" | "team_briefing";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -112,6 +113,9 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "compliance", label: "Legal & Compliance", pages: ["/compliance"], apis: ["/api/legal-checklist"] },
   { key: "website_review", label: "Website Review", pages: ["/website-review"], apis: ["/api/website-review"] },
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
+  { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
+  { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"] },
+  { key: "team_briefing", label: "Team Briefing: 90-Day Strategy (a link in the menu)", pages: [], apis: [] },
   { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/tags", "/calendars", "/sequences-manager", "/invites", "/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/calendars", "/api/sequences", "/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
 ];
 
@@ -119,12 +123,19 @@ const ALL_VIEW = Object.fromEntries(FEATURES.map((f) => [f.key, "view"])) as Fea
 const ONLY = (keys: FeatureKey[], extra: FeatureMap = {}) =>
   ({ ...Object.fromEntries(FEATURES.map((f) => [f.key, keys.includes(f.key) ? "edit" : "none"])), ...extra }) as FeatureMap;
 
-export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap }[] = [
+export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap; extras?: AccessExtras }[] = [
   { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["tasks", "projects", "daily_compass", "content", "scripts"]) },
   { key: "bookkeeper", label: "Bookkeeper", blurb: "Finance only.", features: ONLY(["finance"]) },
   { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
   { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["content", "testimonials", "scripts", "tasks"]) },
   { key: "viewer", label: "Viewer", blurb: "Sees everything above, changes nothing.", features: ALL_VIEW },
+  {
+    key: "team_ops",
+    label: "Team member: sales, content and support",
+    blurb: "Only her own tasks and reminders, Team Huddle, the Team Briefing link, contacts, pipelines, outreach, qualifier, content calendar, testimonials, calendars, campaigns, offers, projects and the Support Desk. Can add, edit and update but not delete without permission. Nothing else shows.",
+    features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "team_huddle", "support_desk", "team_briefing"]),
+    extras: { restrict: true, ownOnly: true, noDelete: true },
+  },
 ];
 
 const longestMatch = (path: string, pick: (f: (typeof FEATURES)[number]) => string[]) => {
@@ -164,4 +175,70 @@ export function featurePageRedirect(features: FeatureMap | null, path: string): 
   if (!key || (features[key] ?? "none") !== "none") return null;
   const first = FEATURES.find((f) => f.pages.length && (features[f.key] ?? "none") !== "none");
   return first ? first.pages[0] : "/settings?tab=profile";
+}
+
+// ── Extra limits that sit beside the per-area levels ─────────────────────────
+// Stored on workspace_members.permissions.extras:
+//   restrict — default-deny the pages: only the areas set above (and Settings, Help) open; Executive Home and every
+//              other page send the person to their first area. The assistant and other powerful tools stay closed.
+//   ownOnly  — Tasks and Reminders show only what is assigned to / made by that person.
+//   noDelete — nothing can be deleted without the owner's permission (add, edit and update still work).
+export interface AccessExtras {
+  restrict?: boolean;
+  ownOnly?: boolean;
+  noDelete?: boolean;
+}
+export function cleanExtras(v: unknown): AccessExtras | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  const out: AccessExtras = {};
+  if (o.restrict === true) out.restrict = true;
+  if (o.ownOnly === true) out.ownOnly = true;
+  if (o.noDelete === true) out.noDelete = true;
+  return Object.keys(out).length ? out : null;
+}
+
+export const NO_DELETE_MESSAGE = "Deleting needs AmiLynne's permission. Ask her and she will remove it for you.";
+
+// Always open to a restricted member: their own profile, Help, sign-in pages.
+const RESTRICTED_OPEN_PAGES = ["/settings", "/help", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
+// APIs open to a restricted member beyond the ones their areas map to (profile, menu order, the small helpers the
+// allowed pages call). Everything else that belongs to no area stays closed to them.
+const RESTRICTED_OPEN_APIS = [
+  "/api/me", "/api/profile", "/api/auth", "/api/logout", "/api/nav-order", "/api/version", "/api/feedback", "/api/book",
+  "/api/account", "/api/setup", "/api/uploads", "/api/followups", "/api/event-emails", "/api/lbd-summit-emails", "/api/scripts",
+  "/api/support", "/api/workspaces", "/api/integrations",
+];
+
+/** Where a restricted member lands: their first open area (Tasks first). */
+export function restrictedLanding(features: FeatureMap | null): string {
+  const order = [FEATURES.find((f) => f.key === "tasks"), ...FEATURES.filter((f) => f.key !== "tasks")];
+  const first = order.find((f) => f && f.pages.length && (features?.[f.key] ?? "none") !== "none");
+  return first ? first.pages[0] : "/settings?tab=profile";
+}
+
+/** A restricted member opening a page outside their areas: where to send them (null = allowed or not restricted). */
+export function restrictedPageRedirect(features: FeatureMap | null, extras: AccessExtras | null, path: string): string | null {
+  if (!extras?.restrict) return null;
+  if (under(path, RESTRICTED_OPEN_PAGES)) return null;
+  const key = featureForPage(path);
+  if (key && (features?.[key] ?? "none") !== "none") return null;
+  return restrictedLanding(features);
+}
+
+/** Extra API rules: no deleting without permission, and the powerful unmapped tools closed to a restricted member. */
+export function extrasApiAccess(extras: AccessExtras | null, path: string, method: string): Verdict {
+  if (!extras) return ok;
+  if (extras.noDelete && method === "DELETE") return no(NO_DELETE_MESSAGE);
+  if (extras.restrict && !featureForApi(path) && !under(path, RESTRICTED_OPEN_APIS)) return no("That isn't part of your access.");
+  return ok;
+}
+
+/** A POST/PATCH whose JSON body asks to delete or remove something ({ action: "delete" | "stage-delete" | "share-remove" ... }). */
+export function bodyDeleteVerdict(extras: AccessExtras | null, body: unknown): Verdict {
+  if (!extras?.noDelete || !body || typeof body !== "object") return ok;
+  const b = body as Record<string, unknown>;
+  const acts = [b.action, b.op, b.intent].filter((v): v is string => typeof v === "string");
+  if (acts.some((a) => /(^|[-_ ])(delete|remove|destroy|purge)($|[-_ ])/i.test(a)) || b.delete === true) return no(NO_DELETE_MESSAGE);
+  return ok;
 }

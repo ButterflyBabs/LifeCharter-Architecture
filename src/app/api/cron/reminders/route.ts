@@ -20,23 +20,36 @@ async function run(request: Request) {
   const now = new Date();
   const { data } = await db
     .from("reminders")
-    .select("id, master_plan_id, title, notes, remind_at")
+    .select("id, master_plan_id, title, notes, remind_at, created_by")
     .eq("status", "open")
     .is("notified_at", null)
     .lte("remind_at", now.toISOString())
     .gte("remind_at", new Date(now.getTime() - 7 * 86_400_000).toISOString())
     .order("remind_at")
     .limit(300);
+  // A reminder goes to whoever made it when that is a team member (their own reminders); otherwise to the account holder.
+  const makers = Array.from(new Set(((data ?? []) as { created_by: string | null }[]).map((r) => r.created_by).filter(Boolean))) as string[];
+  const memberIds = new Set<string>();
+  if (makers.length) {
+    const { data: mem } = await db.from("workspace_members").select("user_id").in("user_id", makers);
+    for (const m of (mem ?? []) as { user_id: string }[]) memberIds.add(m.user_id);
+  }
   const byPlan = new Map<string, { id: string; title: string; notes: string | null; remind_at: string }[]>();
-  for (const r of (data ?? []) as { id: string; master_plan_id: string; title: string; notes: string | null; remind_at: string }[]) {
-    byPlan.set(r.master_plan_id, [...(byPlan.get(r.master_plan_id) ?? []), r]);
+  const recipient = new Map<string, string | null>();
+  for (const r of (data ?? []) as { id: string; master_plan_id: string; title: string; notes: string | null; remind_at: string; created_by: string | null }[]) {
+    const to = r.created_by && memberIds.has(r.created_by) ? r.created_by : null;
+    const key = `${r.master_plan_id}|${to ?? ""}`;
+    recipient.set(key, to);
+    byPlan.set(key, [...(byPlan.get(key) ?? []), r]);
   }
   let emailed = 0;
   let skipped = 0;
-  for (const [planId, list] of Array.from(byPlan.entries())) {
+  for (const [key, list] of Array.from(byPlan.entries())) {
+    const planId = key.split("|")[0];
     const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
-    if (!plan?.user_id) { skipped += list.length; continue; } // demo / unowned plans never get email
-    const { data: prof } = await db.from("profiles").select("email, full_name, timezone, task_reminder_email").eq("id", plan.user_id).maybeSingle();
+    const toUser = recipient.get(key) ?? plan?.user_id;
+    if (!toUser) { skipped += list.length; continue; } // demo / unowned plans never get email
+    const { data: prof } = await db.from("profiles").select("email, full_name, timezone, task_reminder_email").eq("id", toUser).maybeSingle();
     if (!prof?.email || prof.task_reminder_email === false) {
       // They turned email reminders off: the bell and cards still show it. Mark so it is not re-checked every run.
       await db.from("reminders").update({ notified_at: now.toISOString() }).in("id", list.map((r) => r.id));

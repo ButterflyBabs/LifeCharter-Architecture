@@ -3,7 +3,7 @@
 import { collectiveHref } from "@/lib/collective";
 import { useState, createContext, useContext, ReactNode, useRef, useEffect, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
-import { featureForPage, type FeatureMap } from "@/lib/teamRoles";
+import { featureForPage, type AccessExtras, type FeatureMap } from "@/lib/teamRoles";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -198,6 +198,17 @@ const efSection = {
   ],
 };
 
+// Team members Babs gave these areas to (Sumbal, 2026-10-16): the Team Briefing link and the Support Desk, in their own
+// small section. The Support Desk shows only when /api/me says the member has that feature; the Briefing is an artifact link.
+const teamSection = {
+  title: "TEAM",
+  color: "text-[#c9a227]",
+  items: [
+    { id: "team-briefing", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "https://claude.ai/artifact/1XzBT3JuQCRy6b8KEx3F4x" },
+    { id: "support-desk-team", label: "Support Desk", icon: Inbox, href: "/support-desk" },
+  ],
+};
+
 const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
@@ -270,7 +281,7 @@ function demoTourSections() {
   ];
 }
 
-const navigationItems = [...navigationSections, ownerSection, efSection, { items: demoOnlyItems }].flatMap((s) => s.items);
+const navigationItems = [...navigationSections, teamSection, ownerSection, efSection, { items: demoOnlyItems }].flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -654,6 +665,7 @@ export function CollapsibleSidebar() {
     };
   }, [pathname]);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
+  const [extras, setExtras] = useState<AccessExtras | null>(null);
   // Until all three assessments are finished the menu shows only Set up Suite, the assessments, Settings and support.
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
   useEffect(() => {
@@ -662,6 +674,7 @@ export function CollapsibleSidebar() {
       .then((d) => {
         setSuperAdmin(d?.architect === true);
         setFeatures(d?.features ?? null);
+        setExtras(d?.extras ?? null);
         setAssessmentsLocked(d?.assessmentsLocked === true);
       })
       .catch(() => {});
@@ -681,7 +694,12 @@ export function CollapsibleSidebar() {
       return p === "/setup" || p.endsWith("/starter-guide.html") || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
     }
     if (!features) return true;
-    const key = featureForPage(href.split("?")[0]);
+    // The Team Briefing link has no page of its own: it follows the team_briefing feature.
+    if (href.includes("1XzBT3JuQCRy6b8KEx3F4x")) return (features.team_briefing ?? "none") !== "none";
+    const p = href.split("?")[0];
+    const key = featureForPage(p);
+    // "Show only their areas": a page that belongs to no area they have stays out of the menu (Settings and Help stay).
+    if (extras?.restrict && !key) return p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
     return !key || (features[key] ?? "none") !== "none";
   };
   // The client's own pages (made by them or their AI assistant), in a section at the end of the menu.
@@ -706,7 +724,9 @@ export function CollapsibleSidebar() {
   const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
-  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }, efSection] : demoOrderedSections), ...mySection]
+  // The TEAM section (Briefing + Support Desk) is only for a restricted member; Babs has both elsewhere.
+  const teamExtra = !superAdmin && extras?.restrict && !isDemo ? [teamSection] : [];
+  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id))) }))
     .filter((s) => s.items.length > 0);
 

@@ -177,3 +177,25 @@ export async function resolveActor(): Promise<Actor> {
 
   return none;
 }
+
+// Support Desk (and any other house-only page a team member may be given): Babs has full access; a member of
+// Babs's OWN team workspace (never a client's) gets the level she set for that feature; everyone else gets none.
+export async function houseFeatureLevel(feature: string): Promise<"none" | "view" | "edit"> {
+  if (await isAlignmentArchitect()) return "edit";
+  const actor = await resolveActor();
+  if (actor.kind !== "member" || !actor.workspaceId || actor.role === "sales") return "none";
+  const feats = (actor.permissions as { features?: Record<string, string> }).features;
+  const level = feats?.[feature];
+  if (level !== "view" && level !== "edit") return "none";
+  try {
+    const db = createServiceClient();
+    const { data: ws } = await db.from("workspaces").select("master_plan_id").eq("id", actor.workspaceId).maybeSingle();
+    if (!ws?.master_plan_id) return "none";
+    const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", ws.master_plan_id).maybeSingle();
+    const owner = ((plan?.client_email as string | undefined) || "").toLowerCase();
+    if (!owner || !superAdminEmails().includes(owner)) return "none";
+  } catch {
+    return "none";
+  }
+  return actor.role === "viewer" ? "view" : level;
+}

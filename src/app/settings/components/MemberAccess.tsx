@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FEATURES, PRESETS, type AccessLevel, type FeatureMap } from "@/lib/teamRoles";
+import { FEATURES, PRESETS, type AccessExtras, type AccessLevel, type FeatureMap } from "@/lib/teamRoles";
 
 // Choose what one team member can reach: their role's defaults, a preset, or
 // feature by feature (No access / View / Edit). Billing, keys, connected
@@ -11,18 +11,23 @@ export default function MemberAccess({
   busy,
   onSave,
 }: {
-  access: { preset: string | null; features: FeatureMap } | null;
+  access: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   busy: boolean;
-  onSave: (next: { preset: string; features: FeatureMap } | null) => void;
+  onSave: (next: { preset: string; features: FeatureMap; extras: AccessExtras | null } | null) => void;
 }) {
   const [preset, setPreset] = useState<string>(access?.preset ?? "role");
   const [features, setFeatures] = useState<FeatureMap>(access?.features ?? PRESETS[0].features);
 
+  const [extras, setExtras] = useState<AccessExtras>(access?.extras ?? {});
   const choose = (key: string) => {
     setPreset(key);
     const p = PRESETS.find((x) => x.key === key);
-    if (p) setFeatures(p.features);
+    if (p) {
+      setFeatures(p.features);
+      setExtras(p.extras ?? {});
+    }
   };
+  const toggle = (k: keyof AccessExtras) => setExtras({ ...extras, [k]: !extras[k] });
   const set = (k: keyof FeatureMap, l: AccessLevel) => {
     setFeatures({ ...features, [k]: l });
     setPreset("custom");
@@ -60,11 +65,18 @@ export default function MemberAccess({
           </div>
         </>
       )}
+      {preset !== "role" && (
+        <div className="space-y-1.5 rounded-md bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.restrict)} onChange={() => toggle("restrict")} /><span>Show only the areas above (everything else, including Executive Home and the assistant, stays closed)</span></label>
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.ownOnly)} onChange={() => toggle("ownOnly")} /><span>Tasks and Reminders: only their own</span></label>
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={Boolean(extras.noDelete)} onChange={() => toggle("noDelete")} /><span>Cannot delete anything without your permission</span></label>
+        </div>
+      )}
       <p className="text-xs text-[#7a8a99]">Team members never see billing, API keys, connected accounts or other members&rsquo; details.</p>
       <button
         type="button"
         disabled={busy}
-        onClick={() => onSave(preset === "role" ? null : { preset, features })}
+        onClick={() => onSave(preset === "role" ? null : { preset, features, extras: Object.values(extras).some(Boolean) ? extras : null })}
         className="rounded-lg bg-[#2E7C83] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#256b71] disabled:opacity-60"
       >
         Save access

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAlignmentArchitect, isSuperAdmin, resolveActor, sessionUser } from "@/lib/authz";
 import { assessmentGateLocked } from "@/lib/assessmentGate";
-import { cleanFeatureMap } from "@/lib/teamRoles";
+import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
 
 
 export const dynamic = "force-dynamic";
@@ -26,6 +26,8 @@ export async function GET() {
       assessmentsLocked,
       teamRole: actor.kind === "member" ? actor.role : null,
       features: actor.kind === "member" ? cleanFeatureMap((actor.permissions as unknown as { features?: unknown } | null)?.features) : null,
+      // restrict / ownOnly / noDelete limits on a member (null = none), so the menu shows only their areas.
+      extras: actor.kind === "member" ? cleanExtras((actor.permissions as unknown as { extras?: unknown } | null)?.extras) : null,
     },
     { headers: { "Cache-Control": "no-store" } }
   );

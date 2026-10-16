@@ -4,7 +4,7 @@ import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { COLLECTIVE_FORWARD_STATUS, COLLECTIVE_HOST, COLLECTIVE_HOST_LIVE, SUITE_HOST, collectiveHostAllows, isCollectiveHost, isLegacyCollectivePath, isSuiteProductionHost } from "@/lib/collective";
-import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, type FeatureMap } from "@/lib/teamRoles";
+import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
 // window: until you set AUTH_ENABLED=true (after creating your Supabase user),
@@ -157,8 +157,8 @@ async function isCommunityMember(userId: string): Promise<boolean> {
 // edge middleware stays dependency-free. Admits active or pending members (a
 // member is still "pending" on their very first request, before resolveActor
 // flips them to active).
-async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null }> {
-  const none = { isMember: false, role: null, workspaceId: null, features: null };
+async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null; extras: AccessExtras | null }> {
+  const none = { isMember: false, role: null, workspaceId: null, features: null, extras: null };
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !svc) return none;
@@ -168,9 +168,9 @@ async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: 
       { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
     );
     if (!res.ok) return none;
-    const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown } | null }[];
+    const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown; extras?: unknown } | null }[];
     if (!Array.isArray(rows) || rows.length === 0) return none;
-    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features) };
+    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features), extras: cleanExtras(rows[0].permissions?.extras) };
   } catch {
     return none;
   }
@@ -377,6 +377,7 @@ export async function middleware(request: NextRequest) {
   let isTeamMember = false;
   let isHouseMember = false;
   let memberFeatures: FeatureMap | null = null;
+  let memberExtras: AccessExtras | null = null;
   // A paying client owns their own account: full access, no role limits. Someone who ALSO belongs to a
   // team account (lc_acct=team, set by the account switcher) is treated as that team's member instead,
   // with the role limits below; if the membership is gone they fall back to their own account.
@@ -389,6 +390,7 @@ export async function middleware(request: NextRequest) {
     isTeamMember = info.isMember;
     memberRole = info.role;
     memberFeatures = info.features;
+    memberExtras = info.extras;
     isHouseMember = info.isMember && (await isHouseWorkspace(info.workspaceId));
     // Sales outside the owner's own workspace falls back to view-only.
     if (memberRole === SALES_ROLE && !isHouseMember) memberRole = "viewer";
@@ -485,7 +487,13 @@ export async function middleware(request: NextRequest) {
     }
     if (isTeamMember) {
       const roleVerdict = memberApiAccess(memberRole, path, request.method, memberFeatures);
-      const verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method) : roleVerdict;
+      let verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method) : roleVerdict;
+      if (verdict.allow) verdict = extrasApiAccess(memberExtras, path, request.method);
+      // Delete-by-POST ({ action: "delete" | "stage-delete" | "share-remove" ... }): peek at the JSON body.
+      if (verdict.allow && memberExtras?.noDelete && ["POST", "PUT", "PATCH"].includes(request.method) && (request.headers.get("content-type") || "").includes("json")) {
+        const body = await request.clone().json().catch(() => null);
+        verdict = bodyDeleteVerdict(memberExtras, body);
+      }
       if (!verdict.allow) {
         // Pages that show the owner's inbox/calendar read "not connected" instead of erroring.
         if (request.method === "GET" && path === "/api/inbox") {
@@ -543,7 +551,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
   }
   if (isTeamMember) {
-    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path);
+    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path) ?? restrictedPageRedirect(memberFeatures, memberExtras, path);
     if (dest) return NextResponse.redirect(new URL(dest, request.url));
   }
 

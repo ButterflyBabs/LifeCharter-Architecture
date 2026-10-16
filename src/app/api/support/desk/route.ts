@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAlignmentArchitect } from "@/lib/authz";
+import { houseFeatureLevel } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { notifySupportReply } from "@/lib/support/email";
 
 export const dynamic = "force-dynamic";
 
-// The Support Desk inbox (Alignment Architect only).
+// The Support Desk inbox (Babs, plus team members she gave the Support Desk feature; view-only members cannot reply).
 //   GET ?status=open|in_progress|waiting|resolved|all        → requests + replies
 //   POST { id, body?, status? }  → reply to the client (emailed) and/or change status
 const STATUSES = ["open", "in_progress", "waiting", "resolved"];
 
 export async function GET(request: Request) {
-  if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if ((await houseFeatureLevel("support_desk")) === "none") return NextResponse.json({ error: "Not found." }, { status: 404 });
   const status = new URL(request.url).searchParams.get("status") || "active";
   const db = createServerClient();
   let q = db.from("support_requests").select("id, name, email, category, priority, subject, message, status, source, created_at, updated_at, resolved_at").order("updated_at", { ascending: false }).limit(200);
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
-  if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if ((await houseFeatureLevel("support_desk")) !== "edit") return NextResponse.json({ error: "Not found." }, { status: 404 });
   const body = await request.json().catch(() => ({}));
   if (typeof body.id !== "string") return NextResponse.json({ error: "Missing request." }, { status: 400 });
   const db = createServerClient();

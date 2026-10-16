@@ -6,7 +6,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 import { dueFromBody } from "@/lib/taskDueInput";
 import { currentBusiness } from "@/lib/businessScope";
-import { salesMemberId, planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
+import { ownTasksMemberId, planMembers, myMemberId, notifyAssignee, actorName } from "@/lib/taskAssignees";
 import { logActivity, q } from "@/lib/activity";
 
 // Always query live data per request.
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   // ?assignee=me (the signed-in member's; the owner's = unassigned) | none | <member id>
   const params = new URL(request.url).searchParams;
   // A Sales member sees only the tasks assigned to them, whatever the address asks for.
-  const salesId = await salesMemberId();
+  const salesId = await ownTasksMemberId();
   const who = salesId ? "me" : params.get("assignee");
   // ?archived=1 lists archived (done) tasks; the board never includes them.
   const wantArchived = params.get("archived") === "1";
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
   if (!masterPlanId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   // A Sales member can only add tasks for themselves.
-  const salesId = await salesMemberId();
+  const salesId = await ownTasksMemberId();
   if (salesId) body.assigneeId = salesId;
 
   if (!body?.title) {

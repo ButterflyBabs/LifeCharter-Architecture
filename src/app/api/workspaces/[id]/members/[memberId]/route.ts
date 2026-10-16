@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cleanFeatureMap, PRESETS } from "@/lib/teamRoles";
+import { cleanExtras, cleanFeatureMap, PRESETS } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin, resolveActor } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -20,7 +20,7 @@ type MemberRow = {
   status: string | null;
   avatar_url: string | null;
   joined_at: string | null;
-  permissions?: { preset?: string | null; features?: unknown } | null;
+  permissions?: { preset?: string | null; features?: unknown; extras?: unknown } | null;
   ai_monthly_cap?: number | null;
 };
 
@@ -34,7 +34,7 @@ function serialize(m: MemberRow, aiUsed = 0) {
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
     // Per-feature access (null = the role's defaults).
-    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
+    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features), extras: cleanExtras(m.permissions.extras) } : null,
     // Monthly AI cap on the owner's key (null = no cap) and this month's use.
     aiMonthlyCap: m.ai_monthly_cap ?? null,
     aiUsedThisMonth: aiUsed,
@@ -91,7 +91,8 @@ export async function PATCH(
     const features = cleanFeatureMap(body.access.features);
     if (!features) return NextResponse.json({ error: "Choose what they can reach." }, { status: 400 });
     const preset = PRESETS.some((p) => p.key === body.access.preset) ? body.access.preset : "custom";
-    update.permissions = { preset, features };
+    const extras = cleanExtras(body.access.extras);
+    update.permissions = { preset, features, ...(extras ? { extras } : {}) };
   }
 
   // Monthly AI cap on the owner's key: a whole number of requests, or null for no cap.

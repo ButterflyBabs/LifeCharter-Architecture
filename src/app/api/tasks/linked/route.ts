@@ -7,7 +7,7 @@ import { dayInTz } from "@/lib/tz";
 import { isDueOn, scheduleLabel, type RecurringRule } from "@/lib/recurring";
 import { nowParts } from "@/lib/finance/period";
 import { LEGAL_ITEMS } from "@/lib/legalChecklist";
-import { salesMemberId } from "@/lib/taskAssignees";
+import { ownTasksMemberId } from "@/lib/taskAssignees";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ const ASSISTANT_STEP_KIND = new Set(["you", "both"]);
 
 export async function GET(request: Request) {
   const planId = await resolveMasterPlanId();
-  if (!planId || (await salesMemberId())) return NextResponse.json({ items: [] });
+  if (!planId || (await ownTasksMemberId())) return NextResponse.json({ items: [] });
   const db = createServerClient();
   const tz = await resolveUserTimeZone(new URL(request.url).searchParams.get("tz"));
   const { year, month, day } = nowParts(tz);
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (await salesMemberId()) return NextResponse.json({ error: "Not available for your role." }, { status: 403 });
+  if (await ownTasksMemberId()) return NextResponse.json({ error: "Not available for your role." }, { status: 403 });
   const b = await request.json().catch(() => ({}));
   const kind = String(b.kind || "");
   const id = String(b.id || "");

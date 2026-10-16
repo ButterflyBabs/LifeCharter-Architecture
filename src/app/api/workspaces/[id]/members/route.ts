@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cleanFeatureMap } from "@/lib/teamRoles";
+import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -21,7 +21,7 @@ type MemberRow = {
   status: string | null;
   avatar_url: string | null;
   joined_at: string | null;
-  permissions?: { preset?: string | null; features?: unknown } | null;
+  permissions?: { preset?: string | null; features?: unknown; extras?: unknown } | null;
   ai_monthly_cap?: number | null;
 };
 
@@ -35,7 +35,7 @@ function serialize(m: MemberRow, aiUsed = 0) {
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
     // Per-feature access (null = the role's defaults).
-    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features) } : null,
+    access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features), extras: cleanExtras(m.permissions.extras) } : null,
     // Monthly AI cap on the owner's key (null = no cap) and this month's use.
     aiMonthlyCap: m.ai_monthly_cap ?? null,
     aiUsedThisMonth: aiUsed,

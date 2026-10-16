@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveActor } from "@/lib/authz";
+import { cleanExtras } from "@/lib/teamRoles";
 
 // Who a task can be assigned to: the account's team members (every workspace
 // of this master plan). An unassigned task is the owner's own.
@@ -25,6 +26,15 @@ export async function planMembers(masterPlanId: string): Promise<Assignee[]> {
 export async function salesMemberId(): Promise<string | null> {
   const a = await resolveActor().catch(() => null);
   return a?.kind === "member" && a.role === "sales" ? a.memberId : null;
+}
+
+// The member's id when they may reach only their OWN tasks: a Sales-role member, or anyone whose access has
+// "Tasks and Reminders: only their own" on (Babs, 2026-10-16: Sumbal).
+export async function ownTasksMemberId(): Promise<string | null> {
+  const a = await resolveActor().catch(() => null);
+  if (a?.kind !== "member") return null;
+  if (a.role === "sales") return a.memberId;
+  return cleanExtras((a.permissions as unknown as { extras?: unknown } | null)?.extras)?.ownOnly ? a.memberId : null;
 }
 
 // The signed-in member's id (null for the owner).

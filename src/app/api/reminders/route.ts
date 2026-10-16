@@ -4,6 +4,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { sessionUser } from "@/lib/authz";
 import { REMINDER_SELECT } from "@/lib/reminders";
+import { reminderViewer } from "@/lib/remindersServer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,15 @@ export async function GET() {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ reminders: [], now: new Date().toISOString() });
   const db = createServerClient();
+  const v = await reminderViewer(planId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scope = (q: any) => {
+    if (v.own) return q.eq("created_by", v.own);
+    return v.hide.length ? q.or(`created_by.is.null,created_by.not.in.(${v.hide.join(",")})`) : q;
+  };
   const [{ data: open }, { data: done }] = await Promise.all([
-    db.from("reminders").select(REMINDER_SELECT).eq("master_plan_id", planId).eq("status", "open").order("remind_at").limit(MAX_OPEN),
-    db.from("reminders").select(REMINDER_SELECT).eq("master_plan_id", planId).eq("status", "done").order("done_at", { ascending: false }).limit(20),
+    scope(db.from("reminders").select(REMINDER_SELECT).eq("master_plan_id", planId).eq("status", "open")).order("remind_at").limit(MAX_OPEN),
+    scope(db.from("reminders").select(REMINDER_SELECT).eq("master_plan_id", planId).eq("status", "done")).order("done_at", { ascending: false }).limit(20),
   ]);
   return NextResponse.json({ reminders: [...(open ?? []), ...(done ?? [])], now: new Date().toISOString() }, { headers: { "Cache-Control": "no-store" } });
 }
@@ -77,7 +84,10 @@ export async function PATCH(request: Request) {
   }
   if (typeof b.title === "string" && str(b.title, 200)) patch.title = str(b.title, 200);
   if (typeof b.notes === "string") patch.notes = str(b.notes, 1000) || null;
-  const { data, error } = await createServerClient().from("reminders").update(patch).eq("id", b.id).eq("master_plan_id", planId).select(REMINDER_SELECT).maybeSingle();
+  const v = await reminderViewer(planId);
+  let uq = createServerClient().from("reminders").update(patch).eq("id", b.id).eq("master_plan_id", planId);
+  if (v.own) uq = uq.eq("created_by", v.own);
+  const { data, error } = await uq.select(REMINDER_SELECT).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
   return NextResponse.json({ reminder: data });
 }
@@ -87,6 +97,9 @@ export async function DELETE(request: Request) {
   const planId = await resolveMasterPlanId();
   const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   if (!planId || typeof b.id !== "string") return NextResponse.json({ error: "Missing reminder." }, { status: 400 });
-  await createServerClient().from("reminders").delete().eq("id", b.id).eq("master_plan_id", planId);
+  const v = await reminderViewer(planId);
+  let dq = createServerClient().from("reminders").delete().eq("id", b.id).eq("master_plan_id", planId);
+  if (v.own) dq = dq.eq("created_by", v.own);
+  await dq;
   return NextResponse.json({ ok: true });
 }

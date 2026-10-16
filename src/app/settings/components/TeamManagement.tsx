@@ -27,7 +27,7 @@ import {
 import MemberAccess from "./MemberAccess";
 import TeamActivity from "./TeamActivity";
 import MemberAiCap from "./MemberAiCap";
-import type { FeatureMap } from "@/lib/teamRoles";
+import type { AccessExtras, FeatureMap } from "@/lib/teamRoles";
 
 type Role = "admin" | "editor" | "viewer" | "sales";
 
@@ -39,12 +39,12 @@ interface TeamMember {
   status: "active" | "pending" | "inactive";
   avatar?: string | null;
   joinedAt?: string | null;
-  access?: { preset: string | null; features: FeatureMap } | null;
+  access?: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   aiMonthlyCap?: number | null;
   aiUsedThisMonth?: number;
 }
 
-const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", custom: "Custom access" };
+const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", team_ops: "Team: sales, content & support", custom: "Custom access" };
 
 interface TeamManagementProps {
   workspaceId: string;
@@ -243,7 +243,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
     flash(true, cap === null ? "AI limit removed." : `AI limit set to ${cap} requests a month.`);
   };
   const [accessOpen, setAccessOpen] = useState<string | null>(null);
-  const saveAccess = async (id: string, access: { preset: string; features: FeatureMap } | null) => {
+  const saveAccess = async (id: string, access: { preset: string; features: FeatureMap; extras: AccessExtras | null } | null) => {
     await patchMember(id, { access } as Partial<TeamMember>);
     setAccessOpen(null);
     flash(true, access ? "Access saved. It applies the next time they open a page." : "Access set back to their role's defaults.");

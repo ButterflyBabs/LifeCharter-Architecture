@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { reminderLeadFor, minutesUntil, inMinutes, ownerTimezone, upcomingRecurringToday } from "@/lib/taskReminders";
+import { ownOnlyMemberLogins } from "@/lib/remindersServer";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 import { occurrences, type CallRow } from "@/lib/accountabilityCalls";
 
@@ -495,13 +496,14 @@ export async function deriveNotifications(
   try {
     const { data: rem } = await supabase
       .from("reminders")
-      .select("id, title, notes, remind_at")
+      .select("id, title, notes, remind_at, created_by")
       .eq("master_plan_id", masterPlanId)
       .eq("status", "open")
       .lte("remind_at", new Date(Date.now() + 24 * 3_600_000).toISOString())
       .order("remind_at")
       .limit(20);
-    for (const r of (rem ?? []) as { id: string; title: string; notes: string | null; remind_at: string }[]) {
+    const theirs = new Set(await ownOnlyMemberLogins(masterPlanId)); // a team member's own reminders stay off the owner's bell
+    for (const r of ((rem ?? []) as { id: string; title: string; notes: string | null; remind_at: string; created_by: string | null }[]).filter((x) => !(x.created_by && theirs.has(x.created_by)))) {
       const due = new Date(r.remind_at).getTime() <= Date.now();
       out.push({
         nkey: `reminder:${r.id}:${new Date(r.remind_at).getTime()}`,
