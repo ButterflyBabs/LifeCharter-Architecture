@@ -3,7 +3,7 @@
 import { collectiveHref } from "@/lib/collective";
 import { useState, createContext, useContext, ReactNode, useRef, useEffect, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
-import { featureForPage, type AccessExtras, type FeatureMap } from "@/lib/teamRoles";
+import { customPageLevel, featureForPage, type AccessExtras, type FeatureMap } from "@/lib/teamRoles";
 import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -694,6 +694,9 @@ export function CollapsibleSidebar() {
       return p === "/setup" || p.endsWith("/starter-guide.html") || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
     }
     if (!features) return true;
+    // A custom page can be given to a member one at a time, even with My Pages off.
+    const mine = /^\/my-pages\/([^/?]+)/.exec(href);
+    if (mine) return customPageLevel(features, extras, mine[1]) !== "none";
     // The Team Briefing link has no page of its own: it follows the team_briefing feature.
     if (href.includes("1XzBT3JuQCRy6b8KEx3F4x")) return (features.team_briefing ?? "none") !== "none";
     const p = href.split("?")[0];

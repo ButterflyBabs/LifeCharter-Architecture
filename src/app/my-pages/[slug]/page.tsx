@@ -30,10 +30,13 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
   const [editIds, setEditIds] = useState<string[]>([]);
   const notes = blocks.filter((x) => x.review);
   const hasNotes = notes.length > 0;
-  const editing = !review || (!hasNotes && editMode);
+  // A page shared with a team member as view-only never opens for editing (the server refuses saves too).
+  const [viewOnly, setViewOnly] = useState(false);
+  const editing = !viewOnly && (!review || (!hasNotes && editMode));
   // The note a block belongs to: itself, or (for a heading) the note right under it.
   const noteOf = (i: number) => (blocks[i]?.review ? blocks[i] : blocks[i]?.type === "heading" && blocks[i + 1]?.review ? blocks[i + 1] : null);
   const canEdit = (i: number) => {
+    if (viewOnly) return false;
     if (!review) return true;
     if (!hasNotes) return editMode;
     const n = noteOf(i);
@@ -55,6 +58,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
         setTitle(d.page.title);
         setSection(d.page.nav_section === "alignment_architect" ? "alignment_architect" : "my_pages");
         setBlocks(d.page.blocks ?? []);
+        setViewOnly(d.level === "view");
         setReview(d.page.review_status === "draft" || d.page.review_status === "approved" ? d.page.review_status : null);
         setApprovedAt(d.page.approved_at ?? null);
         setState("ready");

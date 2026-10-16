@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { sessionUser } from "@/lib/authz";
+import { resolveActor, sessionUser } from "@/lib/authz";
+import { cleanExtras, cleanFeatureMap, customPageLevel, type AccessLevel } from "@/lib/teamRoles";
 import { cleanBlocks, slugify } from "@/lib/customPages";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,19 @@ const demo = () => {
     return false;
   }
 };
+
+// What the signed-in person may do with each page. The account owner (and anyone who is not a team member) has
+// everything; a team member has what "My Pages" gives them as a whole, or what the admin granted for that one page.
+async function pageLevels(): Promise<{ level: (slug: string) => AccessLevel; all: AccessLevel }> {
+  const actor = await resolveActor().catch(() => null);
+  if (actor?.kind !== "member") return { level: () => "edit", all: "edit" };
+  const perms = actor.permissions as unknown as { features?: unknown; extras?: unknown } | null;
+  const features = cleanFeatureMap(perms?.features);
+  const extras = cleanExtras(perms?.extras);
+  const viewer = actor.role === "viewer";
+  const cap = (l: AccessLevel): AccessLevel => (viewer && l === "edit" ? "view" : l);
+  return { level: (slug) => cap(customPageLevel(features, extras, slug)), all: cap(customPageLevel(features, null, "")) };
+}
 
 // Custom Pages: the pages in this account's own left menu.
 //   GET            → the list (for the menu)
@@ -28,13 +42,15 @@ export async function GET(request: Request) {
   if (!planId) return NextResponse.json({ pages: [] });
   const db = createServerClient();
   const slug = new URL(request.url).searchParams.get("slug");
+  const lv = await pageLevels();
   if (slug) {
+    if (lv.level(slug) === "none") return NextResponse.json({ error: "Not found." }, { status: 404 });
     const { data } = await db.from("custom_pages").select("slug, title, blocks, nav_section, updated_at, review_status, approved_at").eq("master_plan_id", planId).eq("slug", slug).maybeSingle();
     if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
-    return NextResponse.json({ page: data });
+    return NextResponse.json({ page: data, level: lv.level(slug) });
   }
   const { data } = await db.from("custom_pages").select("slug, title, position, nav_section").eq("master_plan_id", planId).order("position").order("created_at");
-  return NextResponse.json({ pages: data ?? [] });
+  return NextResponse.json({ pages: (data ?? []).filter((p) => lv.level(p.slug as string) !== "none") });
 }
 
 export async function POST(request: Request) {
@@ -42,6 +58,7 @@ export async function POST(request: Request) {
   if (demo()) return NextResponse.json({ error: "The demo is view-only." }, { status: 403 });
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "No account found." }, { status: 400 });
+  if ((await pageLevels()).all !== "edit") return NextResponse.json({ error: "You can't add pages." }, { status: 403 });
   const b = await request.json().catch(() => ({}));
   const title = typeof b.title === "string" ? b.title.trim().slice(0, 80) : "";
   if (!title) return NextResponse.json({ error: "Name the page." }, { status: 400 });
@@ -66,6 +83,7 @@ export async function PATCH(request: Request) {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "No account found." }, { status: 400 });
   const b = await request.json().catch(() => ({}));
+  if ((await pageLevels()).level(String(b.slug || "")) !== "edit") return NextResponse.json({ error: "You can view this page but not change it." }, { status: 403 });
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof b.title === "string" && b.title.trim()) patch.title = b.title.trim().slice(0, 80);
   if (b.blocks !== undefined) patch.blocks = cleanBlocks(b.blocks);
@@ -113,6 +131,7 @@ export async function DELETE(request: Request) {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "No account found." }, { status: 400 });
   const b = await request.json().catch(() => ({}));
+  if ((await pageLevels()).all !== "edit") return NextResponse.json({ error: "Only the owner can delete a page." }, { status: 403 });
   await createServerClient().from("custom_pages").delete().eq("master_plan_id", planId).eq("slug", String(b.slug || ""));
   return NextResponse.json({ ok: true });
 }

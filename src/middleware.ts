@@ -487,7 +487,7 @@ export async function middleware(request: NextRequest) {
     }
     if (isTeamMember) {
       const roleVerdict = memberApiAccess(memberRole, path, request.method, memberFeatures);
-      let verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method) : roleVerdict;
+      let verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method, memberExtras) : roleVerdict;
       if (verdict.allow) verdict = extrasApiAccess(memberExtras, path, request.method);
       // Delete-by-POST ({ action: "delete" | "stage-delete" | "share-remove" ... }): peek at the JSON body.
       if (verdict.allow && memberExtras?.noDelete && ["POST", "PUT", "PATCH"].includes(request.method) && (request.headers.get("content-type") || "").includes("json")) {
@@ -551,7 +551,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
   }
   if (isTeamMember) {
-    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path) ?? restrictedPageRedirect(memberFeatures, memberExtras, path);
+    const dest = memberPageRedirect(memberRole, path) ?? featurePageRedirect(memberFeatures, path, memberExtras) ?? restrictedPageRedirect(memberFeatures, memberExtras, path);
     if (dest) return NextResponse.redirect(new URL(dest, request.url));
   }
 

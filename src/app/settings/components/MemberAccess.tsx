@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FEATURES, PRESETS, type AccessExtras, type AccessLevel, type FeatureMap } from "@/lib/teamRoles";
 
 // Choose what one team member can reach: their role's defaults, a preset, or
@@ -10,10 +10,13 @@ export default function MemberAccess({
   access,
   busy,
   onSave,
+  showHouse = false,
 }: {
   access: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   busy: boolean;
   onSave: (next: { preset: string; features: FeatureMap; extras: AccessExtras | null } | null) => void;
+  // Babs's own account only: the Support Desk and Team Briefing areas (and the preset built around them).
+  showHouse?: boolean;
 }) {
   const [preset, setPreset] = useState<string>(access?.preset ?? "role");
   const [features, setFeatures] = useState<FeatureMap>(access?.features ?? PRESETS[0].features);
@@ -24,10 +27,24 @@ export default function MemberAccess({
     const p = PRESETS.find((x) => x.key === key);
     if (p) {
       setFeatures(p.features);
-      setExtras(p.extras ?? {});
+      setExtras({ ...(p.extras ?? {}), ...(extras.pages ? { pages: extras.pages } : {}) });
     }
   };
-  const toggle = (k: keyof AccessExtras) => setExtras({ ...extras, [k]: !extras[k] });
+  // My Pages, one at a time: give a person a single page without opening all of them.
+  const [pages, setPages] = useState<{ slug: string; title: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/custom-pages", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPages(Array.isArray(d?.pages) ? d.pages.filter((p: { nav_section?: string }) => p.nav_section !== "alignment_architect") : []))
+      .catch(() => {});
+  }, []);
+  const setPage = (slug: string, l: AccessLevel) => {
+    const next = { ...(extras.pages ?? {}) };
+    if (l === "none") delete next[slug];
+    else next[slug] = l;
+    setExtras({ ...extras, pages: Object.keys(next).length ? next : undefined });
+  };
+  const toggle = (k: "restrict" | "ownOnly" | "noDelete") => setExtras({ ...extras, [k]: !extras[k] });
   const set = (k: keyof FeatureMap, l: AccessLevel) => {
     setFeatures({ ...features, [k]: l });
     setPreset("custom");
@@ -40,7 +57,7 @@ export default function MemberAccess({
         <span className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">What they can reach</span>
         <select value={preset} onChange={(e) => choose(e.target.value)} className="text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-1.5">
           <option value="role">Everything their role allows</option>
-          {PRESETS.map((p) => (
+          {PRESETS.filter((p) => showHouse || !p.houseOnly).map((p) => (
             <option key={p.key} value={p.key}>{p.label}</option>
           ))}
           <option value="custom">Custom</option>
@@ -52,7 +69,7 @@ export default function MemberAccess({
         <>
           {blurb && <p className="text-xs text-[#7a8a99]">{blurb} Adjust any area below.</p>}
           <div className="grid gap-2 sm:grid-cols-2">
-            {FEATURES.map((f) => (
+            {FEATURES.filter((f) => showHouse || !f.houseOnly).map((f) => (
               <label key={f.key} className="flex items-center justify-between gap-2 rounded-md bg-white dark:bg-[#1a2b4a]/20 px-3 py-1.5 text-sm">
                 <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{f.label}</span>
                 <select value={features[f.key] ?? "none"} onChange={(e) => set(f.key, e.target.value as AccessLevel)} className="text-xs rounded border border-[#1a2b4a]/20 bg-transparent px-2 py-1">
@@ -64,6 +81,24 @@ export default function MemberAccess({
             ))}
           </div>
         </>
+      )}
+      {preset !== "role" && pages.length > 0 && (
+        <div className="space-y-1.5 rounded-md bg-white dark:bg-[#1a2b4a]/20 px-3 py-2">
+          <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">My Pages, one at a time</p>
+          <p className="text-xs text-[#7a8a99]">Choose just the pages they should open. These work even when &ldquo;My Pages (custom pages)&rdquo; above is off.</p>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {pages.map((p) => (
+              <label key={p.slug} className="flex items-center justify-between gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <span className="truncate">{p.title}</span>
+                <select value={extras.pages?.[p.slug] ?? "none"} onChange={(e) => setPage(p.slug, e.target.value as AccessLevel)} className="text-xs rounded border border-[#1a2b4a]/20 bg-transparent px-2 py-1">
+                  <option value="none">No access</option>
+                  <option value="view">View</option>
+                  <option value="edit">Edit</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        </div>
       )}
       {preset !== "role" && (
         <div className="space-y-1.5 rounded-md bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">

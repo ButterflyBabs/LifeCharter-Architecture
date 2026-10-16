@@ -93,11 +93,17 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "support_desk" | "team_briefing";
+  | "team_huddle" | "support_desk" | "team_briefing" | "executive_home" | "assistant" | "accountability" | "custom_pages";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
-export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[] }[] = [
+// houseOnly: only meaningful in Babs's own account (the Support Desk shows every client's requests; the Team Briefing is
+// her artifact), so the access screen offers them only there.
+export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: string[]; houseOnly?: boolean }[] = [
+  { key: "executive_home", label: "Executive Home & notifications", pages: ["/", "/dashboard"], apis: ["/api/notifications", "/api/command-center"] },
+  { key: "assistant", label: "AI assistant (acts only within the areas they have)", pages: ["/assistant-approvals"], apis: ["/api/assistant", "/api/mariposa"] },
+  { key: "accountability", label: "Accountability Partner", pages: ["/accountability"], apis: ["/api/accountability", "/api/coaching-calls"] },
+  { key: "custom_pages", label: "My Pages (custom pages)", pages: ["/my-pages"], apis: ["/api/custom-pages"] },
   { key: "tasks", label: "Tasks", pages: ["/tasks", "/reminders"], apis: ["/api/tasks", "/api/reminders", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
   { key: "projects", label: "Projects", pages: ["/projects"], apis: ["/api/projects"] },
   { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
@@ -114,8 +120,8 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "website_review", label: "Website Review", pages: ["/website-review"], apis: ["/api/website-review"] },
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
   { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
-  { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"] },
-  { key: "team_briefing", label: "Team Briefing: 90-Day Strategy (a link in the menu)", pages: [], apis: [] },
+  { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"], houseOnly: true },
+  { key: "team_briefing", label: "Team Briefing: 90-Day Strategy (a link in the menu)", pages: [], apis: [], houseOnly: true },
   { key: "crm", label: "Contacts, calendars, campaigns & broadcasts", pages: ["/contacts", "/tags", "/calendars", "/sequences-manager", "/invites", "/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/calendars", "/api/sequences", "/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
 ];
 
@@ -123,17 +129,25 @@ const ALL_VIEW = Object.fromEntries(FEATURES.map((f) => [f.key, "view"])) as Fea
 const ONLY = (keys: FeatureKey[], extra: FeatureMap = {}) =>
   ({ ...Object.fromEntries(FEATURES.map((f) => [f.key, keys.includes(f.key) ? "edit" : "none"])), ...extra }) as FeatureMap;
 
-export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap; extras?: AccessExtras }[] = [
-  { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["tasks", "projects", "daily_compass", "content", "scripts"]) },
+export const PRESETS: { key: string; label: string; blurb: string; features: FeatureMap; extras?: AccessExtras; houseOnly?: boolean }[] = [
+  { key: "va", label: "Virtual assistant", blurb: "Tasks, Daily Compass, content and scripts. Inbox and calendar are off unless you turn them on.", features: ONLY(["executive_home", "tasks", "projects", "daily_compass", "content", "scripts", "custom_pages"]) },
   { key: "bookkeeper", label: "Bookkeeper", blurb: "Finance only.", features: ONLY(["finance"]) },
-  { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
-  { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["content", "testimonials", "scripts", "tasks"]) },
+  { key: "sales", label: "Sales", blurb: "Sales activities, scripts, the pipeline, and contacts, calendars & sequences.", features: ONLY(["executive_home", "sales_activities", "scripts", "pipeline", "tasks", "crm"]) },
+  { key: "content", label: "Content", blurb: "Content calendar and studio, testimonials and scripts.", features: ONLY(["executive_home", "content", "testimonials", "scripts", "tasks"]) },
   { key: "viewer", label: "Viewer", blurb: "Sees everything above, changes nothing.", features: ALL_VIEW },
   {
     key: "team_ops",
     label: "Team member: sales, content and support",
     blurb: "Only her own tasks and reminders, Team Huddle, the Team Briefing link, contacts, pipelines, outreach, qualifier, content calendar, testimonials, calendars, campaigns, offers, projects and the Support Desk. Can add, edit and update but not delete without permission. Nothing else shows.",
     features: ONLY(["tasks", "projects", "content", "testimonials", "pipeline", "crm", "team_huddle", "support_desk", "team_briefing"]),
+    extras: { restrict: true, ownOnly: true, noDelete: true },
+    houseOnly: true,
+  },
+  {
+    key: "support",
+    label: "Support & client care",
+    blurb: "Their own tasks, contacts, projects and Team Huddle only. Everything else stays closed, and they cannot delete anything without your permission.",
+    features: ONLY(["tasks", "projects", "crm", "team_huddle"]),
     extras: { restrict: true, ownOnly: true, noDelete: true },
   },
 ];
@@ -146,21 +160,27 @@ const longestMatch = (path: string, pick: (f: (typeof FEATURES)[number]) => stri
 export const featureForApi = (path: string) => longestMatch(path, (f) => f.apis);
 export const featureForPage = (path: string) => longestMatch(path, (f) => f.pages);
 
+// Areas added after members were first set up. A member saved before an area existed keeps what they always had
+// (these were open to every member), so a key missing from a stored map means "as before" for these, "none" for the rest.
+const OPEN_BEFORE_MAPPED: FeatureKey[] = ["executive_home", "assistant", "accountability", "custom_pages"];
+
 export function cleanFeatureMap(v: unknown): FeatureMap | null {
   if (!v || typeof v !== "object") return null;
   const out: FeatureMap = {};
   for (const f of FEATURES) {
     const l = (v as Record<string, unknown>)[f.key];
-    out[f.key] = l === "edit" || l === "view" ? l : "none";
+    out[f.key] = l === "edit" || l === "view" ? l : l === undefined && OPEN_BEFORE_MAPPED.includes(f.key) ? "edit" : "none";
   }
   return out;
 }
 
 /** Extra gate for a member with a features map. Runs after memberApiAccess allowed the call. */
-export function featureApiAccess(features: FeatureMap | null, path: string, method: string): Verdict {
+export function featureApiAccess(features: FeatureMap | null, path: string, method: string, extras?: AccessExtras | null): Verdict {
   if (!features) return ok;
   const key = featureForApi(path);
   if (!key) return ok; // not a feature area (profile, notifications, etc.)
+  // Custom pages given one by one: the route itself decides which pages and what level.
+  if (key === "custom_pages" && extras?.pages) return ok;
   const level = features[key] ?? "none";
   const label = FEATURES.find((f) => f.key === key)?.label ?? "this area";
   if (level === "none") return no(`You don't have access to ${label}.`);
@@ -169,8 +189,10 @@ export function featureApiAccess(features: FeatureMap | null, path: string, meth
 }
 
 /** Where to send a member who opens a page their features don't include (null = allow). */
-export function featurePageRedirect(features: FeatureMap | null, path: string): string | null {
+export function featurePageRedirect(features: FeatureMap | null, path: string, extras?: AccessExtras | null): string | null {
   if (!features) return null;
+  const mine = MY_PAGE.exec(path);
+  if (mine && customPageLevel(features, extras ?? null, mine[1]) !== "none") return null;
   const key = featureForPage(path);
   if (!key || (features[key] ?? "none") !== "none") return null;
   const first = FEATURES.find((f) => f.pages.length && (features[f.key] ?? "none") !== "none");
@@ -183,10 +205,13 @@ export function featurePageRedirect(features: FeatureMap | null, path: string): 
 //              other page send the person to their first area. The assistant and other powerful tools stay closed.
 //   ownOnly  — Tasks and Reminders show only what is assigned to / made by that person.
 //   noDelete — nothing can be deleted without the owner's permission (add, edit and update still work).
+//   pages    — My Pages (custom pages) given one at a time: { "<page slug>": "view" | "edit" }. A page listed here opens
+//              even when "My Pages" as a whole is off, so an admin never has to hand over all of them.
 export interface AccessExtras {
   restrict?: boolean;
   ownOnly?: boolean;
   noDelete?: boolean;
+  pages?: Record<string, "view" | "edit">;
 }
 export function cleanExtras(v: unknown): AccessExtras | null {
   if (!v || typeof v !== "object") return null;
@@ -195,6 +220,13 @@ export function cleanExtras(v: unknown): AccessExtras | null {
   if (o.restrict === true) out.restrict = true;
   if (o.ownOnly === true) out.ownOnly = true;
   if (o.noDelete === true) out.noDelete = true;
+  if (o.pages && typeof o.pages === "object") {
+    const pages: Record<string, "view" | "edit"> = {};
+    for (const [slug, l] of Object.entries(o.pages as Record<string, unknown>).slice(0, 80)) {
+      if (/^[a-z0-9][a-z0-9-]{0,79}$/.test(slug) && (l === "view" || l === "edit")) pages[slug] = l;
+    }
+    if (Object.keys(pages).length) out.pages = pages;
+  }
   return Object.keys(out).length ? out : null;
 }
 
@@ -221,6 +253,8 @@ export function restrictedLanding(features: FeatureMap | null): string {
 export function restrictedPageRedirect(features: FeatureMap | null, extras: AccessExtras | null, path: string): string | null {
   if (!extras?.restrict) return null;
   if (under(path, RESTRICTED_OPEN_PAGES)) return null;
+  const mine = MY_PAGE.exec(path);
+  if (mine && customPageLevel(features, extras, mine[1]) !== "none") return null;
   const key = featureForPage(path);
   if (key && (features?.[key] ?? "none") !== "none") return null;
   return restrictedLanding(features);
@@ -242,3 +276,12 @@ export function bodyDeleteVerdict(extras: AccessExtras | null, body: unknown): V
   if (acts.some((a) => /(^|[-_ ])(delete|remove|destroy|purge)($|[-_ ])/i.test(a)) || b.delete === true) return no(NO_DELETE_MESSAGE);
   return ok;
 }
+
+/** One custom page's level for a member: its own grant, else whatever "My Pages" as a whole allows. */
+export function customPageLevel(features: FeatureMap | null, extras: AccessExtras | null, slug: string): AccessLevel {
+  const own = extras?.pages?.[slug];
+  if (own) return own;
+  if (!features) return "edit"; // no feature limits: their role decides
+  return features.custom_pages ?? "none";
+}
+const MY_PAGE = /^\/my-pages\/([^/]+)/;

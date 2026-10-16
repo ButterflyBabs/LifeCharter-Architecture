@@ -120,11 +120,13 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   const [canGrantSales, setCanGrantSales] = useState(false);
   // Only the account owner (not an admin) sets how much of their AI key each member may use.
   const [isAccountOwner, setIsAccountOwner] = useState(false);
+  const [isArchitect, setIsArchitect] = useState(false);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((me) => {
         setCanGrantSales(Boolean(me?.superAdmin));
+        setIsArchitect(me?.architect === true);
         setIsAccountOwner(Boolean(me) && !me.teamRole);
       })
       .catch(() => {});
@@ -628,7 +630,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                   />
                 )}
 
-                {accessOpen === member.id && <MemberAccess access={member.access ?? null} busy={isBusy} onSave={(a) => saveAccess(member.id, a)} />}
+                {accessOpen === member.id && <MemberAccess showHouse={isArchitect} access={member.access ?? null} busy={isBusy} onSave={(a) => saveAccess(member.id, a)} />}
 
                 {/* Invitation sent by email; the link is shown too, in case it needs sending by hand. */}
                 {inviteLink?.id === member.id && (
