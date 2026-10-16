@@ -204,6 +204,7 @@ const teamSection = {
   title: "TEAM",
   color: "text-[#c9a227]",
   items: [
+    { id: "sales-reference-team", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
     { id: "support-desk-team", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "masterclass-results-team", label: "MasterClass Results", icon: TrendingUp, href: "/masterclass-results" },
     { id: "demo-account-team", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "/demo" },

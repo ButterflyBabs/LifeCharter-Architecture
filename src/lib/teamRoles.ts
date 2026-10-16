@@ -93,7 +93,7 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "executive_home" | "assistant" | "accountability" | "custom_pages";
+  | "team_huddle" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "sales_reference" | "executive_home" | "assistant" | "accountability" | "custom_pages";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -125,6 +125,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "calendars", label: "Calendars (booking pages)", pages: ["/calendars"], apis: ["/api/calendars"] },
   { key: "campaigns", label: "Campaigns & Broadcasts", pages: ["/sequences-manager"], apis: ["/api/sequences", "/api/crm/broadcasts"] },
   { key: "outreach", label: "Outreach Pipelines, Prospect Qualifier & Meta leads", pages: ["/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier"], apis: ["/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier"] },
+  { key: "sales_reference", label: "Sales Reference (call script, lookup, New Client form, checkout)", pages: ["/sales-reference"], apis: ["/api/sales"], houseOnly: true },
   { key: "masterclass_results", label: "MasterClass Results (funnel and registrations)", pages: ["/masterclass-results"], apis: ["/api/masterclass"], houseOnly: true },
 ];
 
