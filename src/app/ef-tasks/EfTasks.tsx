@@ -38,7 +38,7 @@ const SECTIONS: { key: string; label: string; help: string }[] = [
 const PRIORITY_COLOR: Record<string, string> = { critical: "#D83A34", high: "#F0B400", medium: "#54A33B", low: "#9CA3AF" };
 const RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-export default function EfTasks() {
+export default function EfTasks({ lockProject, embedded }: { lockProject?: string; embedded?: boolean } = {}) {
   const [tasks, setTasks] = useState<EfTask[] | null>(null);
   const [tz, setTz] = useState("UTC");
   const [title, setTitle] = useState("");
@@ -52,8 +52,8 @@ export default function EfTasks() {
   const [err, setErr] = useState("");
   // Projects (Embraced;Fully only): groups for these tasks, kept here and nowhere else.
   const [projects, setProjects] = useState<EfProject[]>([]);
-  const [fProject, setFProject] = useState(""); // "" all, "none", or a project id
-  const [newProjectId, setNewProjectId] = useState("");
+  const [fProject, setFProject] = useState(lockProject ?? ""); // "" all, "none", or a project id (fixed on a project page)
+  const [newProjectId, setNewProjectId] = useState(lockProject ?? "");
   const [projName, setProjName] = useState("");
   const [showProjects, setShowProjects] = useState(false);
 
@@ -157,15 +157,19 @@ export default function EfTasks() {
   const prettyDay = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", weekday: "short", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 
   return (
-    <div className="max-w-[1100px] mx-auto px-6 py-8">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-4">
-        <ChevronLeft className="w-4 h-4" /> Back to Executive Home
-      </Link>
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Alignment Architect · only you see this</p>
-        <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Embraced;Fully tasks</h1>
-        <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">A list of its own, kept apart from the Command Suite&apos;s Tasks and from your team.</p>
-      </div>
+    <div className={embedded ? "" : "max-w-[1100px] mx-auto px-6 py-8"}>
+      {!embedded && (
+        <>
+          <Link href="/" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-4">
+            <ChevronLeft className="w-4 h-4" /> Back to Executive Home
+          </Link>
+          <div className="mb-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Embraced;Fully · only you see this</p>
+            <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Embraced;Fully tasks</h1>
+            <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">A list of its own, kept apart from the Command Suite and from your team.</p>
+          </div>
+        </>
+      )}
 
       <form onSubmit={add} className="flex flex-wrap gap-2 mb-5">
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add an Embraced;Fully task…" aria-label="New task" className="flex-1 min-w-[240px] px-4 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]" />
@@ -176,7 +180,7 @@ export default function EfTasks() {
           <option value="low">Low</option>
         </select>
         <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm" />
-        {projects.filter((p) => p.status === "active").length > 0 && (
+        {!lockProject && projects.filter((p) => p.status === "active").length > 0 && (
           <select value={newProjectId} onChange={(e) => setNewProjectId(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
             <option value="">No project</option>
             {projects.filter((p) => p.status === "active").map((p) => (
@@ -214,6 +218,7 @@ export default function EfTasks() {
         </div>
       )}
 
+      {!lockProject && (
       <div className="mb-5 rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Projects</span>
@@ -224,7 +229,8 @@ export default function EfTasks() {
             </button>
           ))}
           <button onClick={() => setFProject(fProject === "none" ? "" : "none")} className={`rounded-full px-3 py-1 text-xs ${fProject === "none" ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>No project</button>
-          <button onClick={() => setShowProjects((v) => !v)} aria-expanded={showProjects} className="ml-auto text-xs text-[#2E7C83] hover:underline">
+          <Link href="/ef-projects" className="ml-auto text-xs text-[#2E7C83] hover:underline">Open Projects</Link>
+          <button onClick={() => setShowProjects((v) => !v)} aria-expanded={showProjects} className="text-xs text-[#2E7C83] hover:underline">
             {showProjects ? "Close" : "Add or manage projects"}
           </button>
         </div>
@@ -256,6 +262,7 @@ export default function EfTasks() {
           </div>
         )}
       </div>
+      )}
 
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search these tasks…" aria-label="Search" className="mb-5 w-full max-w-md px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]" />
       {err && <p className="mb-3 text-sm text-[#a3281f]">{err}</p>}
@@ -331,7 +338,7 @@ export default function EfTasks() {
                                 </button>
                               )}
                             </div>
-                            {t.project_id && projectName(t.project_id) && (
+                            {!lockProject && t.project_id && projectName(t.project_id) && (
                               <button onClick={() => setFProject(t.project_id as string)} className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] hover:underline" title="Show only this project">
                                 Project · {projectName(t.project_id)}
                               </button>

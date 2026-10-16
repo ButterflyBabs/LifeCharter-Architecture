@@ -187,11 +187,21 @@ const ARCHITECT_ONLY_IDS: string[] = QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
 // so; the pages and their APIs enforce the same check on the server.
+// Embraced;Fully: her own section, always apart from the Command Suite and the LifeCharter Program. Babs only (shown
+// only when /api/me says so; the pages and their APIs enforce the same check on the server). Never for clients or team.
+const efSection = {
+  title: "EMBRACED;FULLY",
+  color: "text-[#d9a0c0]",
+  items: [
+    { id: "ef-tasks", label: "Tasks", icon: ClipboardList, href: "/ef-tasks" },
+    { id: "ef-projects", label: "Projects", icon: FolderKanban, href: "/ef-projects" },
+  ],
+};
+
 const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
-    { id: "ef-tasks", label: "Embraced;Fully Tasks", icon: ClipboardList, href: "/ef-tasks" },
     { id: "team-huddle-aa", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
     { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
     { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
@@ -260,7 +270,7 @@ function demoTourSections() {
   ];
 }
 
-const navigationItems = [...navigationSections, ownerSection, { items: demoOnlyItems }].flatMap((s) => s.items);
+const navigationItems = [...navigationSections, ownerSection, efSection, { items: demoOnlyItems }].flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -696,7 +706,7 @@ export function CollapsibleSidebar() {
   const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
-  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }] : demoOrderedSections), ...mySection]
+  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }, efSection] : demoOrderedSections), ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id))) }))
     .filter((s) => s.items.length > 0);
 
