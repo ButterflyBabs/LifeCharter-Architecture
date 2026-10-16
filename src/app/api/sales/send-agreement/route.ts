@@ -19,7 +19,8 @@ const COMPANY_NAME = "AmiLynne Carroll";
 const COMPANY_EMAIL = process.env.BOLDSIGN_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
 
 // Field ids in the BoldSign template (BoldSign numbers them in the order they were placed). Everything we know about the
-// client is filled in and locked before it is sent, so all they have to do is read and sign.
+// client is filled in before it is sent, so all they have to do is read and sign. (BoldSign refused a read-only flag on
+// some of these field types, so the values are filled in but not locked.)
 const TIER_FIELD: Record<string, string> = { Starter: "CheckBox1", Growth: "CheckBox2", VIP: "CheckBox3" };
 const PAYMENT_FIELD: Record<string, string> = { full: "CheckBox4", split: "CheckBox5", annual: "CheckBox6" };
 
@@ -44,14 +45,14 @@ export async function POST(request: Request) {
   const phone = str(b.phone, 40);
   const tier = typeof b.tier === "string" && TIER_FIELD[b.tier] ? b.tier : "";
   const payment = typeof b.payment === "string" && PAYMENT_FIELD[b.payment] ? b.payment : "";
-  const prefill: { id: string; value: string; isReadOnly: boolean }[] = [
-    { id: "Name1", value: name, isReadOnly: true },
-    { id: "Email1", value: email, isReadOnly: true },
-    { id: "Name2", value: name, isReadOnly: false },
-    ...(businessName ? [{ id: "TextBox1", value: businessName, isReadOnly: true }] : []),
-    ...(phone ? [{ id: "TextBox2", value: phone, isReadOnly: true }] : []),
-    ...(tier ? [{ id: TIER_FIELD[tier], value: "on", isReadOnly: true }] : []),
-    ...(payment ? [{ id: PAYMENT_FIELD[payment], value: "on", isReadOnly: true }] : []),
+  const prefill: { id: string; value: string }[] = [
+    { id: "Name1", value: name },
+    { id: "Email1", value: email },
+    { id: "Name2", value: name },
+    ...(businessName ? [{ id: "TextBox1", value: businessName }] : []),
+    ...(phone ? [{ id: "TextBox2", value: phone }] : []),
+    ...(tier ? [{ id: TIER_FIELD[tier], value: "on" }] : []),
+    ...(payment ? [{ id: PAYMENT_FIELD[payment], value: "on" }] : []),
   ];
 
   const db = createServerClient();

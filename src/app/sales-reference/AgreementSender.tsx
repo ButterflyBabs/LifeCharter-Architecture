@@ -85,7 +85,7 @@ export function AgreementSender() {
           <option value="annual">Annual, paid in full</option>
         </select>
       </div>
-      <p className="mt-2 text-[11px] text-[#b8a898]">These fill in the agreement for them and lock, so all they do is read and sign.</p>
+      <p className="mt-2 text-[11px] text-[#b8a898]">These fill in the agreement for them, so all they do is read and sign.</p>
       {state === "sent" ? (
         <p className="mt-3 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
           Sent to {email}. They will have it in their inbox in a moment. It shows on their contact card, and Babs will be asked to countersign after they sign.
