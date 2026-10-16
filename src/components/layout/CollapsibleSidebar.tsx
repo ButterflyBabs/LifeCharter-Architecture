@@ -191,6 +191,7 @@ const ownerSection = {
   title: "ALIGNMENT ARCHITECT",
   color: "text-[#c9a227]",
   items: [
+    { id: "ef-tasks", label: "Embraced;Fully Tasks", icon: ClipboardList, href: "/ef-tasks" },
     { id: "team-huddle-aa", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
     { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
     { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
