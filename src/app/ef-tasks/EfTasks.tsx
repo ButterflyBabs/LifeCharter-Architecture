@@ -17,6 +17,14 @@ interface EfTask {
   due_date: string | null;
   today_on: string | null;
   completed_at: string | null;
+  project_id: string | null;
+}
+interface EfProject {
+  id: string;
+  name: string;
+  goal: string | null;
+  status: "active" | "done";
+  due_date: string | null;
 }
 
 const SECTIONS: { key: string; label: string; help: string }[] = [
@@ -42,6 +50,12 @@ export default function EfTasks() {
   const [overKey, setOverKey] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
+  // Projects (Embraced;Fully only): groups for these tasks, kept here and nowhere else.
+  const [projects, setProjects] = useState<EfProject[]>([]);
+  const [fProject, setFProject] = useState(""); // "" all, "none", or a project id
+  const [newProjectId, setNewProjectId] = useState("");
+  const [projName, setProjName] = useState("");
+  const [showProjects, setShowProjects] = useState(false);
 
   useEffect(() => {
     setTz(localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -54,9 +68,11 @@ export default function EfTasks() {
   }, []);
 
   const load = useCallback(async () => {
-    const r = await fetch("/api/ef-tasks", { cache: "no-store" }).catch(() => null);
+    const [r, pr] = await Promise.all([fetch("/api/ef-tasks", { cache: "no-store" }).catch(() => null), fetch("/api/ef-projects", { cache: "no-store" }).catch(() => null)]);
     const d = r && r.ok ? await r.json() : null;
+    const pd = pr && pr.ok ? await pr.json() : null;
     setTasks(d?.tasks ?? []);
+    setProjects(pd?.projects ?? []);
   }, []);
   useEffect(() => {
     void load();
@@ -86,7 +102,7 @@ export default function EfTasks() {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const res = await fetch("/api/ef-tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, priority, dueDate: due || undefined, todayOn: today }) }).catch(() => null);
+    const res = await fetch("/api/ef-tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, priority, dueDate: due || undefined, todayOn: today, projectId: newProjectId || undefined }) }).catch(() => null);
     const d = res && res.ok ? await res.json() : null;
     if (!d?.task) return setErr("Couldn't add it.");
     setTasks((prev) => [...(prev ?? []), d.task as EfTask]);
@@ -96,6 +112,27 @@ export default function EfTasks() {
   const remove = async (id: string) => {
     setTasks((prev) => prev?.filter((t) => t.id !== id) ?? null);
     await fetch("/api/ef-tasks", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
+  };
+  const addProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projName.trim()) return;
+    const res = await fetch("/api/ef-projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: projName }) }).catch(() => null);
+    const d = res && res.ok ? await res.json() : null;
+    if (!d?.project) return setErr("Couldn't add the project.");
+    setProjects((prev) => [...prev, d.project as EfProject]);
+    setProjName("");
+  };
+  const patchProject = async (id: string, body: Record<string, unknown>) => {
+    const res = await fetch("/api/ef-projects", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...body }) }).catch(() => null);
+    const d = res && res.ok ? await res.json() : null;
+    if (!d?.project) return setErr("That didn't save.");
+    setProjects((prev) => prev.map((p) => (p.id === id ? (d.project as EfProject) : p)));
+  };
+  const removeProject = async (id: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setTasks((prev) => prev?.map((t) => (t.project_id === id ? { ...t, project_id: null } : t)) ?? null);
+    if (fProject === id) setFProject("");
+    await fetch("/api/ef-projects", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
   };
   const toggleSection = (k: string) =>
     setCollapsed((c) => {
@@ -109,7 +146,14 @@ export default function EfTasks() {
     });
 
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const visible = (tasks ?? []).filter((t) => !words.length || words.every((w) => `${t.title} ${t.notes ?? ""}`.toLowerCase().includes(w)));
+  const projectName = (id: string | null) => projects.find((p) => p.id === id)?.name ?? "";
+  const visible = (tasks ?? []).filter((t) => {
+    if (words.length && !words.every((w) => `${t.title} ${t.notes ?? ""} ${projectName(t.project_id)}`.toLowerCase().includes(w))) return false;
+    if (fProject === "none") return !t.project_id;
+    if (fProject) return t.project_id === fProject;
+    return true;
+  });
+  const openCount = (id: string) => (tasks ?? []).filter((t) => t.project_id === id && t.status !== "done").length;
   const prettyDay = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", weekday: "short", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 
   return (
@@ -132,6 +176,14 @@ export default function EfTasks() {
           <option value="low">Low</option>
         </select>
         <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm" />
+        {projects.filter((p) => p.status === "active").length > 0 && (
+          <select value={newProjectId} onChange={(e) => setNewProjectId(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
+            <option value="">No project</option>
+            {projects.filter((p) => p.status === "active").map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
         <button type="submit" disabled={!title.trim()} className="flex items-center gap-1.5 px-4 py-2.5 bg-[#1a2b4a] text-white rounded-lg text-sm hover:bg-[#1a2b4a]/90 disabled:opacity-50">
           <Plus className="w-4 h-4" /> Add
         </button>
@@ -161,6 +213,49 @@ export default function EfTasks() {
           })}
         </div>
       )}
+
+      <div className="mb-5 rounded-2xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Projects</span>
+          <button onClick={() => setFProject("")} className={`rounded-full px-3 py-1 text-xs ${fProject === "" ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>All</button>
+          {projects.filter((p) => p.status === "active").map((p) => (
+            <button key={p.id} onClick={() => setFProject(fProject === p.id ? "" : p.id)} className={`rounded-full px-3 py-1 text-xs ${fProject === p.id ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+              {p.name} <span className="opacity-60">{openCount(p.id)}</span>
+            </button>
+          ))}
+          <button onClick={() => setFProject(fProject === "none" ? "" : "none")} className={`rounded-full px-3 py-1 text-xs ${fProject === "none" ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>No project</button>
+          <button onClick={() => setShowProjects((v) => !v)} aria-expanded={showProjects} className="ml-auto text-xs text-[#2E7C83] hover:underline">
+            {showProjects ? "Close" : "Add or manage projects"}
+          </button>
+        </div>
+        {showProjects && (
+          <div className="mt-3 space-y-3 border-t border-[#1a2b4a]/10 pt-3">
+            <form onSubmit={addProject} className="flex flex-wrap gap-2">
+              <input value={projName} onChange={(e) => setProjName(e.target.value)} placeholder="New Embraced;Fully project…" aria-label="New project name" className="flex-1 min-w-[220px] px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm" />
+              <button type="submit" disabled={!projName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1a2b4a] text-white rounded-lg text-sm disabled:opacity-50">
+                <Plus className="w-4 h-4" /> Add project
+              </button>
+            </form>
+            {projects.length === 0 && <p className="text-xs text-gray-400">No projects yet. Add one and file tasks under it from the add box or from More on any task.</p>}
+            {projects.map((p) => (
+              <div key={p.id} className="rounded-xl bg-[#F8F5F0] dark:bg-white/5 p-3 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input defaultValue={p.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== p.name && void patchProject(p.id, { name: e.target.value })} aria-label="Project name" className="flex-1 min-w-[200px] px-3 py-1.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md text-sm font-medium" />
+                  <label className="text-xs text-gray-500">
+                    Due <input type="date" defaultValue={p.due_date ?? ""} onChange={(e) => void patchProject(p.id, { dueDate: e.target.value || null })} className="ml-1 px-2 py-1 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md" />
+                  </label>
+                  <button onClick={() => patchProject(p.id, { status: p.status === "done" ? "active" : "done" })} className="text-xs text-[#2E7C83] hover:underline">{p.status === "done" ? "Reopen" : "Mark project done"}</button>
+                  <button onClick={() => removeProject(p.id)} className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-[#D83A34]" title="Its tasks stay, with no project">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+                <textarea defaultValue={p.goal ?? ""} rows={2} placeholder="What this project is for (optional)" onBlur={(e) => e.target.value.trim() !== (p.goal ?? "").trim() && void patchProject(p.id, { goal: e.target.value })} className="w-full rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] px-3 py-1.5 text-sm" />
+                <p className="text-[11px] text-gray-400">{openCount(p.id)} open task{openCount(p.id) === 1 ? "" : "s"}{p.status === "done" ? " · project marked done" : ""}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search these tasks…" aria-label="Search" className="mb-5 w-full max-w-md px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]" />
       {err && <p className="mb-3 text-sm text-[#a3281f]">{err}</p>}
@@ -236,6 +331,11 @@ export default function EfTasks() {
                                 </button>
                               )}
                             </div>
+                            {t.project_id && projectName(t.project_id) && (
+                              <button onClick={() => setFProject(t.project_id as string)} className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a2b4a]/8 text-[#1a2b4a] dark:text-[#F8F5F0] hover:underline" title="Show only this project">
+                                Project · {projectName(t.project_id)}
+                              </button>
+                            )}
                             {t.due_date && t.status !== "done" && (
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${t.due_date < today ? "bg-[#FBECEA] text-[#B0342C]" : t.due_date === today ? "bg-[#E6EFF6] text-[#2B5F8A]" : "bg-gray-100 text-gray-500"}`}>
                                 {t.due_date < today ? `Overdue · ${prettyDay(t.due_date)}` : t.due_date === today ? "Due today" : prettyDay(t.due_date)}
@@ -274,6 +374,15 @@ export default function EfTasks() {
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
                                     <option value="low">Low</option>
+                                  </select>
+                                </label>
+                                <label className="text-xs text-gray-500">
+                                  Project{" "}
+                                  <select value={t.project_id ?? ""} onChange={(e) => patch(t.id, { projectId: e.target.value || null })} className="ml-1 px-2 py-1 text-xs bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-md max-w-[200px]">
+                                    <option value="">No project</option>
+                                    {projects.map((p) => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
                                   </select>
                                 </label>
                                 <label className="text-xs text-gray-500">

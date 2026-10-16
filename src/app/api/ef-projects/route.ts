@@ -1,0 +1,69 @@
+import { NextResponse } from "next/server";
+import { isAlignmentArchitect } from "@/lib/authz";
+import { crossOriginBlocked } from "@/lib/security";
+import { createServerClient } from "@/lib/supabase/server";
+import { housePlanId } from "@/lib/planScope";
+
+export const dynamic = "force-dynamic";
+
+// Embraced;Fully projects: Alignment Architect (Babs) only. Groups for the E:F task list.
+//   GET → { projects }   POST { name, goal?, dueDate? }   PATCH { id, name?, goal?, status?, dueDate? }   DELETE { id }
+async function gate() {
+  if (!(await isAlignmentArchitect())) return { error: NextResponse.json({ error: "not found" }, { status: 404 }) } as const;
+  const planId = await housePlanId();
+  if (!planId) return { error: NextResponse.json({ error: "No house account found." }, { status: 500 }) } as const;
+  return { planId } as const;
+}
+const SELECT = "id, name, goal, status, due_date, sort_order, created_at";
+const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+export async function GET() {
+  const g = await gate();
+  if ("error" in g) return g.error;
+  const { data } = await createServerClient().from("ef_projects").select(SELECT).eq("master_plan_id", g.planId).order("sort_order").order("created_at").limit(200);
+  return NextResponse.json({ projects: data ?? [] });
+}
+
+export async function POST(request: Request) {
+  if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  const g = await gate();
+  if ("error" in g) return g.error;
+  const b = await request.json().catch(() => ({}));
+  const name = typeof b.name === "string" ? b.name.trim().slice(0, 120) : "";
+  if (!name) return NextResponse.json({ error: "Name the project." }, { status: 400 });
+  const { data, error } = await createServerClient()
+    .from("ef_projects")
+    .insert({ master_plan_id: g.planId, name, goal: typeof b.goal === "string" && b.goal.trim() ? b.goal.trim().slice(0, 2000) : null, due_date: isDay(b.dueDate) ? b.dueDate : null })
+    .select(SELECT)
+    .single();
+  if (error) return NextResponse.json({ error: "Couldn't add it." }, { status: 500 });
+  return NextResponse.json({ project: data });
+}
+
+export async function PATCH(request: Request) {
+  if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  const g = await gate();
+  if ("error" in g) return g.error;
+  const b = await request.json().catch(() => ({}));
+  if (typeof b.id !== "string") return NextResponse.json({ error: "Missing project." }, { status: 400 });
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim().slice(0, 120);
+  if (typeof b.goal === "string") patch.goal = b.goal.trim().slice(0, 2000) || null;
+  if (b.status === "active" || b.status === "done") patch.status = b.status;
+  if (b.dueDate === null || b.dueDate === "") patch.due_date = null;
+  else if (isDay(b.dueDate)) patch.due_date = b.dueDate;
+  const { data, error } = await createServerClient().from("ef_projects").update(patch).eq("id", b.id).eq("master_plan_id", g.planId).select(SELECT).maybeSingle();
+  if (error || !data) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
+  return NextResponse.json({ project: data });
+}
+
+export async function DELETE(request: Request) {
+  if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
+  const g = await gate();
+  if ("error" in g) return g.error;
+  const b = await request.json().catch(() => ({}));
+  if (typeof b.id !== "string") return NextResponse.json({ error: "Missing project." }, { status: 400 });
+  // Its tasks stay (they just lose the project): ef_tasks.project_id is set null on delete.
+  await createServerClient().from("ef_projects").delete().eq("id", b.id).eq("master_plan_id", g.planId);
+  return NextResponse.json({ ok: true });
+}

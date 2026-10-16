@@ -20,7 +20,7 @@ async function gate() {
 
 const STATUSES = ["today", "in_progress", "waiting", "backlog", "done"];
 const PRIORITIES = ["critical", "high", "medium", "low"];
-const SELECT = "id, title, notes, status, priority, due_date, today_on, completed_at, created_at";
+const SELECT = "id, title, notes, status, priority, due_date, today_on, completed_at, created_at, project_id";
 const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 export async function GET() {
@@ -37,9 +37,16 @@ export async function POST(request: Request) {
   const b = await request.json().catch(() => ({}));
   const title = typeof b.title === "string" ? b.title.trim().slice(0, 300) : "";
   if (!title) return NextResponse.json({ error: "What is the task?" }, { status: 400 });
-  const { data, error } = await createServerClient()
+  const db = createServerClient();
+  let projectId: string | null = null;
+  if (typeof b.projectId === "string" && b.projectId) {
+    const { data: own } = await db.from("ef_projects").select("id").eq("id", b.projectId).eq("master_plan_id", g.planId).maybeSingle();
+    projectId = own?.id ?? null;
+  }
+  const { data, error } = await db
     .from("ef_tasks")
     .insert({
+      project_id: projectId,
       master_plan_id: g.planId,
       title,
       notes: typeof b.notes === "string" && b.notes.trim() ? b.notes.trim().slice(0, 20000) : null,
@@ -71,6 +78,12 @@ export async function PATCH(request: Request) {
   if (typeof b.priority === "string" && PRIORITIES.includes(b.priority)) patch.priority = b.priority;
   if (b.dueDate === null || b.dueDate === "") patch.due_date = null;
   else if (isDay(b.dueDate)) patch.due_date = b.dueDate;
+  if (b.projectId === null || b.projectId === "") patch.project_id = null;
+  else if (typeof b.projectId === "string") {
+    const { data: own } = await createServerClient().from("ef_projects").select("id").eq("id", b.projectId).eq("master_plan_id", g.planId).maybeSingle();
+    if (!own) return NextResponse.json({ error: "Unknown project." }, { status: 404 });
+    patch.project_id = own.id;
+  }
   const { data, error } = await createServerClient().from("ef_tasks").update(patch).eq("id", b.id).eq("master_plan_id", g.planId).select(SELECT).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
   return NextResponse.json({ task: data });
