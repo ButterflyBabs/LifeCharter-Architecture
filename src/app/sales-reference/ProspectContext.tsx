@@ -17,6 +17,7 @@ export interface ProspectPrefill {
   email?: string;
   phone?: string;
   companyName?: string;
+  tier?: "Starter" | "Growth" | "VIP";
   biggestChallenge?: string;
   // Their answers on the booking questionnaire, so the call script can open with them.
   booking?: { revenue?: string; bottleneck?: string; decisionMaker?: string; timeline?: string; tools?: string; at: string };

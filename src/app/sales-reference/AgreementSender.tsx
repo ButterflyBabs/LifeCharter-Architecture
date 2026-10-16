@@ -9,6 +9,10 @@ export function AgreementSender() {
   const { prefill, version } = useProspect();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [business, setBusiness] = useState("");
+  const [tier, setTier] = useState("");
+  const [payment, setPayment] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");
   const [msg, setMsg] = useState("");
@@ -24,13 +28,16 @@ export function AgreementSender() {
     if (!prefill || version === 0) return;
     if (prefill.fullName) setName(prefill.fullName);
     if (prefill.email) setEmail(prefill.email);
+    if (prefill.phone) setPhone(prefill.phone);
+    if (prefill.companyName) setBusiness(prefill.companyName);
+    if (prefill.tier) setTier(prefill.tier);
     setConfirm(false);
     setState("idle");
     setMsg("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
-  const ready = name.trim().length > 1 && /^\S+@\S+\.\S+$/.test(email.trim());
+  const ready = name.trim().length > 1 && /^\S+@\S+\.\S+$/.test(email.trim()) && Boolean(tier) && Boolean(payment);
 
   async function send() {
     setState("busy");
@@ -38,7 +45,7 @@ export function AgreementSender() {
     const r = await fetch("/api/sales/send-agreement", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, contactId: prefill?.email && prefill.email.toLowerCase() === email.trim().toLowerCase() ? prefill.contactId : undefined }),
+      body: JSON.stringify({ name, email, phone, businessName: business, tier, payment, contactId: prefill?.email && prefill.email.toLowerCase() === email.trim().toLowerCase() ? prefill.contactId : undefined }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -63,7 +70,22 @@ export function AgreementSender() {
       <div className="grid gap-2 sm:grid-cols-2">
         <input className={field} aria-label="Client name" placeholder="Client name" value={name} onChange={(e) => { setName(e.target.value); setConfirm(false); setState("idle"); }} />
         <input className={field} aria-label="Client email" type="email" placeholder="Client email" value={email} onChange={(e) => { setEmail(e.target.value); setConfirm(false); setState("idle"); }} />
+        <input className={field} aria-label="Business name" placeholder="Business name" value={business} onChange={(e) => { setBusiness(e.target.value); setConfirm(false); }} />
+        <input className={field} aria-label="Client phone" placeholder="Client phone" value={phone} onChange={(e) => { setPhone(e.target.value); setConfirm(false); }} />
+        <select className={field} aria-label="Tier" value={tier} onChange={(e) => { setTier(e.target.value); setConfirm(false); }}>
+          <option value="">Which tier did they choose?</option>
+          <option value="Starter">Starter</option>
+          <option value="Growth">Growth</option>
+          <option value="VIP">VIP</option>
+        </select>
+        <select className={field} aria-label="Payment option" value={payment} onChange={(e) => { setPayment(e.target.value); setConfirm(false); }}>
+          <option value="">How are they paying?</option>
+          <option value="full">Implementation fee in full</option>
+          <option value="split">50 / 50</option>
+          <option value="annual">Annual, paid in full</option>
+        </select>
       </div>
+      <p className="mt-2 text-[11px] text-[#b8a898]">These fill in the agreement for them and lock, so all they do is read and sign.</p>
       {state === "sent" ? (
         <p className="mt-3 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
           Sent to {email}. They will have it in their inbox in a moment. It shows on their contact card, and Babs will be asked to countersign after they sign.

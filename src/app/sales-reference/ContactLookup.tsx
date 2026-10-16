@@ -103,6 +103,7 @@ export function ContactLookup() {
       email: detail.email,
       phone: detail.phone,
       booking: detail.booking,
+      tier: (["Starter", "Growth", "VIP"] as const).find((t) => detail.tags?.includes(`sales-tier-${t.toLowerCase()}`)),
     });
     setUsed(true);
   }

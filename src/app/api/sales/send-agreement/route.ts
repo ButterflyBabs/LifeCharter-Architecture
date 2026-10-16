@@ -18,6 +18,11 @@ const API_BASE = (process.env.BOLDSIGN_API_BASE || "https://api.boldsign.com").r
 const COMPANY_NAME = "AmiLynne Carroll";
 const COMPANY_EMAIL = process.env.BOLDSIGN_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
 
+// Field ids in the BoldSign template (BoldSign numbers them in the order they were placed). Everything we know about the
+// client is filled in and locked before it is sent, so all they have to do is read and sign.
+const TIER_FIELD: Record<string, string> = { Starter: "CheckBox1", Growth: "CheckBox2", VIP: "CheckBox3" };
+const PAYMENT_FIELD: Record<string, string> = { full: "CheckBox4", split: "CheckBox5", annual: "CheckBox6" };
+
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
 export async function GET() {
@@ -34,6 +39,20 @@ export async function POST(request: Request) {
   const email = str(b.email, 200).toLowerCase();
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) return NextResponse.json({ error: "Enter the client's name and a valid email." }, { status: 400 });
   if (email === COMPANY_EMAIL.toLowerCase()) return NextResponse.json({ error: "That is the company signer's email. Enter the client's." }, { status: 400 });
+
+  const businessName = str(b.businessName, 160);
+  const phone = str(b.phone, 40);
+  const tier = typeof b.tier === "string" && TIER_FIELD[b.tier] ? b.tier : "";
+  const payment = typeof b.payment === "string" && PAYMENT_FIELD[b.payment] ? b.payment : "";
+  const prefill: { id: string; value: string; isReadOnly: boolean }[] = [
+    { id: "Name1", value: name, isReadOnly: true },
+    { id: "Email1", value: email, isReadOnly: true },
+    { id: "Name2", value: name, isReadOnly: false },
+    ...(businessName ? [{ id: "TextBox1", value: businessName, isReadOnly: true }] : []),
+    ...(phone ? [{ id: "TextBox2", value: phone, isReadOnly: true }] : []),
+    ...(tier ? [{ id: TIER_FIELD[tier], value: "on", isReadOnly: true }] : []),
+    ...(payment ? [{ id: PAYMENT_FIELD[payment], value: "on", isReadOnly: true }] : []),
+  ];
 
   const db = createServerClient();
   const planId = await ownerMasterPlanId(db);
@@ -59,7 +78,7 @@ export async function POST(request: Request) {
       title: "LifeCharter Command Suite Year-1 Operating Agreement",
       message: `Hi ${name.split(/\s+/)[0]}, welcome to LifeCharter Command Suite! Please review and sign your Year-1 Operating Agreement. It takes about two minutes. If you have any questions, reply to this email or write to support@lccommandsuite.com. Head up - Wings out. Babs`,
       roles: [
-        { roleIndex: 1, signerName: name, signerEmail: email, signerType: "Signer" },
+        { roleIndex: 1, signerName: name, signerEmail: email, signerType: "Signer", existingFormFields: prefill },
         { roleIndex: 2, signerName: COMPANY_NAME, signerEmail: COMPANY_EMAIL, signerType: "Signer" },
       ],
     }),
@@ -72,7 +91,7 @@ export async function POST(request: Request) {
 
   if (contactId) {
     const user = await sessionUser().catch(() => null);
-    await logEvent(planId, contactId, "note", "Year-1 Operating Agreement sent for signature", { documentId: out.documentId, to: email, by: user?.email ?? null, via: "BoldSign" }, db);
+    await logEvent(planId, contactId, "note", "Year-1 Operating Agreement sent for signature", { documentId: out.documentId, to: email, by: user?.email ?? null, via: "BoldSign", tier: tier || null, payment: payment || null }, db);
     const { data: c } = await db.from("seq_contacts").select("tags").eq("id", contactId).eq("master_plan_id", planId).maybeSingle();
     const tags = new Set(((c?.tags as string[]) ?? []).map((t) => t.toLowerCase()));
     tags.add("agreement-sent");
