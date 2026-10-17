@@ -9,6 +9,8 @@ export interface KbEntry {
   question: string;
   answer: string;
   keywords: string[];
+  // Optional pictures shown under the answer (files in /public); each opens full size on click.
+  images?: { src: string; alt: string; caption?: string }[];
 }
 
 export const KB_CATEGORIES: string[] = [
@@ -53,6 +55,21 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Start with your Domain Assessment (Assessments) to establish a baseline across your 12 business dimensions. Then create your Business Plan and Marketing Plan. From there, set up Sales, Finance, and Operations. The Travel Partner widget lays this out as a guided journey with time estimates.",
     keywords: ["start", "begin", "first", "onboarding", "setup", "getting started"],
+  },
+
+  {
+    id: "gs-journey-maps",
+    category: "Getting Started",
+    question: "What does the whole client journey look like, from first hello to life after day 30?",
+    answer:
+      "Four one-page maps show it. Gold dots are what you do, teal dots are what the Suite does automatically, and ivory dots are what the team does. The first two maps show how you join: the Executive Consultation route (a conversation about your business, then a signed agreement and your account) and the self-serve Starter route (pay, sign first, and your account opens as soon as the agreement is signed). Either way, you then book a 30-minute Welcome Call with Babs and are invited to the next New Client Launch Call. The third map shows your first 30 days inside the Suite, and the fourth shows life after day 30 with the Command Suite and executive coaching working together. Click any picture to open it full size.",
+    keywords: ["journey", "map", "first 30 days", "after day 30", "welcome call", "launch call", "starter", "executive consultation", "sign", "account opens", "overview", "graphic"],
+    images: [
+      { src: "/journeys/executive-consultation.jpg", alt: "Executive Consultation Journey: nine steps from finding us, registering and the free MasterClass, through the consultation call, signing and paying, to your account opening and your Welcome Call.", caption: "1. Executive Consultation Journey" },
+      { src: "/journeys/self-serve-starter.jpg", alt: "Self-Serve Starter Journey: eight steps from arriving on the Get Started page, paying and signing first, to your account opening, your Welcome Call, the Launch Call and starting setup.", caption: "2. Self-Serve Starter Journey" },
+      { src: "/journeys/first-30-days.jpg", alt: "Inside the Suite, your first 30 days: day one, the Starter Guide, your foundation, live calls, the Launch Call, support, check-ins and keep growing.", caption: "3. Inside the Suite: Your First 30 Days" },
+      { src: "/journeys/life-after-day-30.jpg", alt: "Life After Day 30: executive coaching live, everyday use, growing and running your business, your AI assistant, your progress, your team and plan, and how we stay with you.", caption: "4. Life After Day 30" },
+    ],
   },
 
   // ---- Daily Rhythm ----

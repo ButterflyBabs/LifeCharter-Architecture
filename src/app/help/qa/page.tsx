@@ -21,6 +21,7 @@ interface Entry {
   question: string;
   answer: string;
   keywords: string[];
+  images?: { src: string; alt: string; caption?: string }[];
 }
 
 export default function QAPage() {
@@ -178,6 +179,19 @@ export default function QAPage() {
                       {isOpen && (
                         <div className="px-4 pb-4">
                           <p className="text-sm text-[#3a3630] dark:text-[#d8d2c8] leading-relaxed">{e.answer}</p>
+                          {e.images?.length ? (
+                            <div className="mt-4 grid gap-4">
+                              {e.images.map((im) => (
+                                <figure key={im.src}>
+                                  <a href={im.src} target="_blank" rel="noopener noreferrer" aria-label={`Open full size: ${im.caption || im.alt}`}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={im.src} alt={im.alt} loading="lazy" className="w-full rounded-lg border border-[#E8E0D4] shadow-sm" />
+                                  </a>
+                                  {im.caption && <figcaption className="mt-1 text-xs text-[#6b6358] dark:text-[#b8b0a4]">{im.caption}</figcaption>}
+                                </figure>
+                              ))}
+                            </div>
+                          ) : null}
                           {isCustom && (
                             <button
                               onClick={() => remove(e.id)}
