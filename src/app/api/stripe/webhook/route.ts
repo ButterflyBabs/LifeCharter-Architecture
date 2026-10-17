@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
               await startStarterSignup(session, { contactId: c.id }).catch((e) => console.error("starter sign-up:", e));
             }
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
-            if (c && typeof session.amount_total === "number") {
+            if (c && typeof session.amount_total === "number" && meta.test !== "true") { // internal test sessions never earn an affiliate commission
               await creditSale(affDb(), housePlan, { contactId: c.id, affiliateCode: meta.affiliate || null, description: `LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, amount: session.amount_total / 100, implementationOnly: true, implementationAmount: meta.implPlan === "annual" && Number(meta.implCents) > 0 ? Number(meta.implCents) / 100 : await implementationAmount(stripe, session.id).catch(() => null), stripeRef: session.id, source: "stripe" }).catch((e) => console.error("affiliate sale:", e));
             }
           }

@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
     const { data: testRow } = await supabase.from("app_settings").select("value").eq("key", "starter_test_email").maybeSingle();
     const testEmail = String(testRow?.value ?? "").trim().toLowerCase();
     const isTest = Boolean(testEmail) && testEmail === email.trim().toLowerCase();
-    const testCoupon = isTest ? await stripe.coupons.create({ percent_off: 100, duration: "once", name: "Internal test (100% off)" }) : null;
+    // starter_test_mode = "paid1" turns the test into a real $1.00 card charge (to prove the paid path); otherwise 100% off.
+    const { data: modeRow } = isTest ? await supabase.from("app_settings").select("value").eq("key", "starter_test_mode").maybeSingle() : { data: null };
+    const testPaid1 = isTest && String(modeRow?.value ?? "").trim().toLowerCase() === "paid1";
 
     const { data: plan, error: planError } = await supabase
       .from("plans")
@@ -84,6 +86,9 @@ export async function POST(req: NextRequest) {
       : { price_data: { currency: "usd", unit_amount: starterPrices.implementationCents, product_data: { name: "LifeCharter Command Suite - Starter Implementation Fee" } }, quantity: 1 };
     const credit = isAlumni ? 0 : Math.min(await plusCreditFor(email).catch(() => 0), plan.onboarding_fee - 50);
     const amount = plan.onboarding_fee - Math.max(0, credit);
+    const testCoupon = isTest
+      ? await stripe.coupons.create(testPaid1 ? { amount_off: Math.max(0, amount - 100), currency: "usd", duration: "once", name: "Internal test (you pay $1.00)" } : { percent_off: 100, duration: "once", name: "Internal test (100% off)" })
+      : null;
 
     // What the visitor's browser tells us, kept on the session so the Purchase we later send to Meta from the
     // Stripe webhook (which has no browser) can still be matched to the ad click.
