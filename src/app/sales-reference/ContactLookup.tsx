@@ -40,6 +40,7 @@ export function ContactLookup() {
   const [query, setQuery] = useState(params.get("email") || params.get("name") || "");
   const [searchState, setSearchState] = useState<"idle" | "busy" | "error">("idle");
   const [results, setResults] = useState<ContactSummary[] | null>(null);
+  const [moreMatches, setMoreMatches] = useState(false);
 
   const [detail, setDetail] = useState<LookupResult | null>(null);
   const [detailState, setDetailState] = useState<"idle" | "busy" | "error">("idle");
@@ -72,6 +73,7 @@ export function ContactLookup() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Search failed");
         const found: ContactSummary[] = data.results || [];
+        setMoreMatches(Boolean(data.more));
         if (found.length === 1) {
           // A single match — skip the extra click and go straight to detail.
           setResults(null);
@@ -147,7 +149,7 @@ export function ContactLookup() {
 
       {results && results.length > 1 && (
         <div className="mt-3 space-y-1.5">
-          <p className="text-xs text-[#b8a898]">{results.length} matches — pick one:</p>
+          <p className="text-xs text-[#b8a898]">{results.length}{moreMatches ? "+" : ""} matches — pick one{moreMatches ? ". There are more than this: type more of the name or email to narrow it" : ""}:</p>
           {results.map((r) => (
             <button
               key={r.email}

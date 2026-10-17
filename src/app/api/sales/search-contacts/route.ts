@@ -16,8 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const rows = await listSalesContacts({ q, limit: 8 });
-    return NextResponse.json({ results: rows.map((r) => ({ name: r.name, email: r.email, phone: r.phone || undefined })) });
+    // Up to 30 matches (one extra is fetched only to know whether there are more than 30).
+    const rows = await listSalesContacts({ q, limit: 31 });
+    return NextResponse.json({ results: rows.slice(0, 30).map((r) => ({ name: r.name, email: r.email, phone: r.phone || undefined })), more: rows.length > 30 });
   } catch (error) {
     console.error("Contact search error:", error);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });
