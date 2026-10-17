@@ -284,13 +284,14 @@ export function NewClientForm() {
               />
             </div>
             <div>
-              <label className={LABEL_CLASS}>Implementation date</label>
+              <label className={LABEL_CLASS}>Implementation date: the day they signed and paid</label>
               <input
                 type="date"
                 className={FIELD_CLASS}
                 value={form.implementationDate}
                 onChange={(e) => set("implementationDate", e.target.value)}
               />
+              <p className="mt-1 text-xs text-[#b8a898]">Not the date of their first call with Babs. Implementation starts the day they pay, and monthly billing begins about 30 days later.</p>
             </div>
           </div>
         </div>
