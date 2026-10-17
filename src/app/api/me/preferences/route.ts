@@ -8,13 +8,23 @@ export const dynamic = "force-dynamic";
 // A signed-in person's own display preferences (kept on their profile, so they follow them from device to device).
 // Only the keys listed here can be written.
 const LAYOUTS = ["list", "cards"] as const;
+const TEXT_SIZES = ["small", "medium", "large"] as const;
+const TEXT_SCALES = ["v1", "v2"] as const;
 
 export async function GET() {
   const user = await sessionUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { data } = await createServerClient().from("profiles").select("preferences").eq("id", user.id).maybeSingle();
   const prefs = (data?.preferences ?? {}) as Record<string, unknown>;
-  return NextResponse.json({ tasksView: LAYOUTS.includes(prefs.tasksView as (typeof LAYOUTS)[number]) ? prefs.tasksView : null }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    {
+      tasksView: LAYOUTS.includes(prefs.tasksView as (typeof LAYOUTS)[number]) ? prefs.tasksView : null,
+      textSize: TEXT_SIZES.includes(prefs.textSize as (typeof TEXT_SIZES)[number]) ? prefs.textSize : null,
+      // Which text scale this person gets; null = the app's default (lib/textScale.ts). Set by Claude, not by the person.
+      textScale: TEXT_SCALES.includes(prefs.textScale as (typeof TEXT_SCALES)[number]) ? prefs.textScale : null,
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function PATCH(request: Request) {
@@ -22,11 +32,20 @@ export async function PATCH(request: Request) {
   const user = await sessionUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
-  if (!LAYOUTS.includes(body.tasksView)) return NextResponse.json({ error: "tasksView must be list or cards" }, { status: 400 });
+  const change: Record<string, string> = {};
+  if (body.tasksView !== undefined) {
+    if (!LAYOUTS.includes(body.tasksView)) return NextResponse.json({ error: "tasksView must be list or cards" }, { status: 400 });
+    change.tasksView = body.tasksView;
+  }
+  if (body.textSize !== undefined) {
+    if (!TEXT_SIZES.includes(body.textSize)) return NextResponse.json({ error: "textSize must be small, medium or large" }, { status: 400 });
+    change.textSize = body.textSize;
+  }
+  if (!Object.keys(change).length) return NextResponse.json({ error: "Nothing to save" }, { status: 400 });
   const db = createServerClient();
   const { data } = await db.from("profiles").select("preferences").eq("id", user.id).maybeSingle();
-  const merged = { ...((data?.preferences ?? {}) as Record<string, unknown>), tasksView: body.tasksView };
+  const merged = { ...((data?.preferences ?? {}) as Record<string, unknown>), ...change };
   const { error } = await db.from("profiles").update({ preferences: merged }).eq("id", user.id);
   if (error) return NextResponse.json({ error: "Could not save" }, { status: 500 });
-  return NextResponse.json({ ok: true, tasksView: body.tasksView });
+  return NextResponse.json({ ok: true, ...change });
 }

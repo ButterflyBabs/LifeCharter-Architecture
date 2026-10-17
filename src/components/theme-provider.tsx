@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { ROOT_SIZES, TEXT_SCALE_DEFAULT, type TextScale } from "@/lib/textScale";
 
 type Theme = "light" | "dark" | "system";
 type ColorScheme = "lifecharter" | "sacred" | "modern";
@@ -26,6 +27,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>("lifecharter");
   const [fontSize, setFontSizeState] = useState<FontSize>("medium");
+  const [textScale, setTextScale] = useState<TextScale>(TEXT_SCALE_DEFAULT);
   const [compactMode, setCompactModeState] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -39,6 +41,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const storedColorScheme = localStorage.getItem("lc-color-scheme") as ColorScheme;
       const storedFontSize = localStorage.getItem("lc-font-size") as FontSize;
       const storedCompactMode = localStorage.getItem("lc-compact-mode");
+      const storedScale = localStorage.getItem("lc-text-scale");
+      if (storedScale === "v1" || storedScale === "v2") setTextScale(storedScale);
 
       if (storedTheme) setThemeState(storedTheme);
       if (storedColorScheme) setColorSchemeState(storedColorScheme);
@@ -47,6 +51,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       console.warn("Could not access localStorage for theme");
     }
+    // A signed-in person's saved text size (and which text scale they get) follows them to other devices.
+    fetch("/api/me/preferences", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setTextScale(d.textScale === "v1" || d.textScale === "v2" ? d.textScale : TEXT_SCALE_DEFAULT);
+        if (d.textSize === "small" || d.textSize === "medium" || d.textSize === "large") setFontSizeState(d.textSize);
+      })
+      .catch(() => {});
   }, []);
 
   // Apply theme changes
@@ -193,18 +206,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.remove("text-size-small", "text-size-medium", "text-size-large");
     root.classList.add(`text-size-${fontSize}`);
-
-    const sizes = {
-      small: "14px",
-      medium: "16px",
-      large: "18px"
-    };
-    root.style.fontSize = sizes[fontSize];
+    root.classList.toggle("text-v2", textScale === "v2");
+    root.style.fontSize = ROOT_SIZES[textScale][fontSize];
 
     try {
       localStorage.setItem("lc-font-size", fontSize);
+      localStorage.setItem("lc-text-scale", textScale);
     } catch {}
-  }, [fontSize, mounted]);
+  }, [fontSize, textScale, mounted]);
 
   // Apply compact mode changes
   useEffect(() => {
@@ -240,7 +249,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newTheme: Theme) => setThemeState(newTheme);
   const setColorScheme = (newScheme: ColorScheme) => setColorSchemeState(newScheme);
-  const setFontSize = (newSize: FontSize) => setFontSizeState(newSize);
+  const setFontSize = (newSize: FontSize) => {
+    setFontSizeState(newSize);
+    void fetch("/api/me/preferences", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ textSize: newSize }) }).catch(() => {});
+  };
   const setCompactMode = (newCompact: boolean) => setCompactModeState(newCompact);
 
   const toggleTheme = () => {

@@ -269,3 +269,48 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after { transition: none
 .text-size-large { --nav-scale: 1.25; }
 .nav-label { font-size: calc(0.875rem * var(--nav-scale)); line-height: 1.3; }
 .nav-head { font-size: calc(0.6875rem * var(--nav-scale)); }
+
+/* ===== Text scale v2 (lib/textScale.ts): one notch bigger. Fixed-pixel font sizes become rem so they scale with the text
+   size setting, and nothing is smaller than 12px at the Small setting. Applies only when <html> has the text-v2 class. ===== */
+html.text-v2.text-size-small, html.text-v2.text-size-medium, html.text-v2.text-size-large { --nav-scale: 1.06; }
+html.text-v2 .nav-head { font-size: calc(0.75rem * var(--nav-scale)); }
+html.text-v2 [class~="text-[9px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[10px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[10.5px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[11px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[11.5px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[12px]"] { font-size: 0.75rem; }
+html.text-v2 [class~="text-[12.5px]"] { font-size: 0.7812rem; }
+html.text-v2 [class~="text-[13px]"] { font-size: 0.8125rem; }
+html.text-v2 [class~="text-[13.5px]"] { font-size: 0.8438rem; }
+html.text-v2 [class~="text-[14px]"] { font-size: 0.875rem; }
+html.text-v2 [class~="text-[14.5px]"] { font-size: 0.9062rem; }
+html.text-v2 [class~="text-[15px]"] { font-size: 0.9375rem; }
+html.text-v2 [class~="text-[15.5px]"] { font-size: 0.9688rem; }
+html.text-v2 [class~="text-[16px]"] { font-size: 1rem; }
+html.text-v2 [class~="text-[17px]"] { font-size: 1.0625rem; }
+html.text-v2 [class~="text-[18px]"] { font-size: 1.125rem; }
+html.text-v2 [class~="text-[18.5px]"] { font-size: 1.1562rem; }
+html.text-v2 [class~="text-[19px]"] { font-size: 1.1875rem; }
+html.text-v2 [class~="text-[20px]"] { font-size: 1.25rem; }
+html.text-v2 [class~="text-[21px]"] { font-size: 1.3125rem; }
+html.text-v2 [class~="text-[22px]"] { font-size: 1.375rem; }
+html.text-v2 [class~="text-[23px]"] { font-size: 1.4375rem; }
+html.text-v2 [class~="text-[24px]"] { font-size: 1.5rem; }
+html.text-v2 [class~="text-[26px]"] { font-size: 1.625rem; }
+html.text-v2 [class~="text-[28px]"] { font-size: 1.75rem; }
+html.text-v2 [class~="text-[29px]"] { font-size: 1.8125rem; }
+html.text-v2 [class~="text-[30px]"] { font-size: 1.875rem; }
+html.text-v2 [class~="text-[32px]"] { font-size: 2rem; }
+html.text-v2 [class~="text-[34px]"] { font-size: 2.125rem; }
+html.text-v2 [class~="text-[36px]"] { font-size: 2.25rem; }
+html.text-v2 [class~="text-[38px]"] { font-size: 2.375rem; }
+html.text-v2 [class~="text-[40px]"] { font-size: 2.5rem; }
+html.text-v2 [class~="text-[44px]"] { font-size: 2.75rem; }
+html.text-v2 [class~="text-[120px]"] { font-size: 7.5rem; }
+html.text-v2 [style*="font-size: 10px"] { font-size: 0.75rem !important; }
+html.text-v2 [style*="font-size: 11px"] { font-size: 0.75rem !important; }
+html.text-v2 [style*="font-size: 22px"] { font-size: 1.375rem !important; }
+html.text-v2 [style*="font-size: 26px"] { font-size: 1.625rem !important; }
+html.text-v2 [style*="font-size: 32px"] { font-size: 2rem !important; }
+html.text-v2 [style*="font-size: 64px"] { font-size: 4rem !important; }
