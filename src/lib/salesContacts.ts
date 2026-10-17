@@ -68,7 +68,8 @@ export async function listSalesContacts(opts: { q?: string; page?: number; limit
     .eq("master_plan_id", planId)
     .order("last_activity_at", { ascending: false, nullsFirst: false })
     .range((page - 1) * limit, page * limit - 1);
-  if (q) query = query.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+  // Every word must match somewhere (email, first name or last name), so a full name such as "Jane Smith" finds her.
+  for (const word of q.split(/\s+/).filter(Boolean).slice(0, 5)) query = query.or(`email.ilike.%${word}%,first_name.ilike.%${word}%,last_name.ilike.%${word}%`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return ((data ?? []) as ContactRow[]).map((c) => ({
