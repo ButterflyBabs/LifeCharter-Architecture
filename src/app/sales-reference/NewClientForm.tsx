@@ -31,6 +31,8 @@ interface FormState {
   year1AgreementAccepted: boolean;
 }
 
+const todayMountain = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+
 const INITIAL: FormState = {
   fullName: "",
   email: "",
@@ -62,7 +64,8 @@ const DIMENSIONS = [
 type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null; emailed?: boolean; standardEmailApproved?: boolean } | null;
 
 export function NewClientForm() {
-  const [form, setForm] = useState<FormState>(INITIAL);
+  // The implementation date starts as today (the day they signed and paid, Babs's Mountain time); it can be changed.
+  const [form, setForm] = useState<FormState>(() => ({ ...INITIAL, implementationDate: todayMountain() }));
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<Result>(null);
@@ -187,7 +190,7 @@ export function NewClientForm() {
         <button
           type="button"
           onClick={() => {
-            setForm(INITIAL);
+            setForm({ ...INITIAL, implementationDate: todayMountain() });
             setResult(null);
           }}
           className="mt-6 text-xs text-[#b8a898] underline"
