@@ -103,6 +103,8 @@ export function NewClientForm() {
       setErrorMsg("The year-1 agreement must be acknowledged before creating the account.");
       return;
     }
+    // This creates a real Suite account and emails the client their sign-in link, so ask once before it happens.
+    if (!window.confirm(`This creates a real Suite account for ${form.email || "this client"} and emails them their sign-in link. Only do this AFTER they have signed and paid.\n\nTo save notes from a call, use "How did it end?" higher on this page instead.\n\nCreate the account now?`)) return;
     setState("busy");
     setErrorMsg("");
     try {
@@ -205,9 +207,10 @@ export function NewClientForm() {
     <section className="mb-14">
       <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">New Client Onboarding</h2>
       <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
-        Fill this out before the end of the call. Creates their Command Suite login if they
-        don&apos;t already have one — or updates their existing account if they do — tags them as a
-        client in your contacts, and saves the business info from this call.
+        <strong className="text-[#F8F5F0]">Use this only after the client has signed and paid.</strong> It creates their
+        Command Suite login if they don&apos;t already have one (or updates their existing account), emails them their
+        sign-in link, tags them as a client in your contacts, and saves the business info from this call.{" "}
+        <strong className="text-[#E3C27C]">To save notes from a call, use &ldquo;How did it end?&rdquo; in the Call script above instead.</strong>
       </p>
 
       {justPrefilled && (
