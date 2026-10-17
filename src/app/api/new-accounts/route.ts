@@ -9,6 +9,7 @@ import { ensureClientAffiliate } from "@/lib/affiliateStarter";
 import { DEFAULT_SUBJECT, bodyFor, type EmailKind, renderAccountEmail, sendRendered, ACCOUNT_EMAIL_COPY_TO } from "@/lib/email/accountReadyEmail";
 import { ensureClientTemplate, STANDARD_CLIENT } from "@/lib/email/clientTemplate";
 import { crmAccount } from "../crm/guard";
+import { accountEvidence, evidenceReady, missingText } from "@/lib/accountEvidence";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,12 @@ export async function POST(request: Request) {
       // A retry after the account was made but the email failed only resends the email.
       const retry = Boolean(have) && Boolean(r.sent_result?.includes("did NOT"));
       if (have && !retry) return NextResponse.json({ error: "This email already has an account. Nothing was changed." }, { status: 409 });
+      // Babs's rule (2026-10-17): a paying client's account is never created without a payment AND their signature on the
+      // Year-1 Operating Agreement. (Pre-Founders and team members are not paying clients and are unchanged.)
+      if (!retry && (r as { kind?: string }).kind === "client") {
+        const ev = await accountEvidence(r.email);
+        if (!evidenceReady(ev)) return NextResponse.json({ error: `Not yet. A client's account is created only after the payment and the signed Year-1 agreement are both in, and we are still waiting for ${missingText(ev)}. Nothing was created or emailed.` }, { status: 409 });
+      }
       if (!retry) {
         let userId: string;
         try {

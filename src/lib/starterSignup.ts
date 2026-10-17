@@ -53,7 +53,7 @@ export async function clientHasSigned(documentId: string, clientEmail: string): 
   return (mine?.status ?? "").toLowerCase() === "completed" || (doc.status ?? "").toLowerCase() === "completed";
 }
 
-async function remindSigner(documentId: string, clientEmail: string): Promise<void> {
+export async function remindSigner(documentId: string, clientEmail: string): Promise<void> {
   const key = process.env.BOLDSIGN_API_KEY;
   if (!key) return;
   await fetch(`${API_BASE}/v1/document/remind?documentId=${encodeURIComponent(documentId)}`, {

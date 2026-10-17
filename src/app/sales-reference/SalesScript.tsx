@@ -475,14 +475,14 @@ export function SalesScript() {
             while they enter their payment details.
           </li>
           <li>
-            <span className="font-semibold text-[#F8F5F0]">Launch onboarding immediately.</span> Once payment is confirmed, pull up
-            the <a href="#new-client" className="text-[#E3C27C] underline">New Client Onboarding form</a> live on screen, confirm they see it, and walk them through their next step before ending the call.
+            <span className="font-semibold text-[#F8F5F0]">Send the Year-1 Operating Agreement for signature.</span> Check the name and
+            email below (they fill in from the contact you picked) and press send. Send it as soon as payment is confirmed. Tell them it is arriving by email now, stay on while they sign (about
+            two minutes), and tell them their account opens the moment they do. Babs countersigns afterward.
+            <AgreementSender />
           </li>
           <li>
-            <span className="font-semibold text-[#F8F5F0]">Send the Year-1 Operating Agreement for signature.</span> Check the name and
-            email below (they fill in from the contact you picked) and press send. Tell them it is arriving by email now and takes about
-            two minutes to sign. Babs countersigns afterward.
-            <AgreementSender />
+            <span className="font-semibold text-[#F8F5F0]">Fill in the New Client Onboarding form while they sign.</span> Pull up
+            the <a href="#new-client" className="text-[#E3C27C] underline">New Client Onboarding form</a> live on screen, confirm they see it, and walk them through their next step. No account is ever created without the payment and their signature on the agreement: if both are in, their account is created now; if not, the form saves everything and the account opens by itself the moment both arrive. Nothing to come back to.
           </li>
           <li>
             <span className="font-semibold text-[#F8F5F0]">Book their 1:1 Welcome Call with Babs, now, while you are still on the call.</span>{" "}

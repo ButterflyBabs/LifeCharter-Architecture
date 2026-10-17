@@ -61,7 +61,7 @@ const DIMENSIONS = [
   "Leadership", "Vision", "Product", "Client Experience", "Legal", "Sustainability",
 ];
 
-type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null; emailed?: boolean; standardEmailApproved?: boolean } | null;
+type Result = { success: true; isNewAccount: boolean; contactSaved: boolean; loginUrl: string | null; emailed?: boolean; standardEmailApproved?: boolean; awaiting?: false } | { success: true; awaiting: true; waitingFor: string[] } | null;
 
 export function NewClientForm() {
   // The implementation date starts as today (the day they signed and paid, Babs's Mountain time); it can be changed.
@@ -104,7 +104,7 @@ export function NewClientForm() {
       return;
     }
     // This creates a real Suite account and emails the client their sign-in link, so ask once before it happens.
-    if (!window.confirm(`This creates a real Suite account for ${form.email || "this client"} and emails them their sign-in link. Only do this AFTER they have signed and paid.\n\nTo save notes from a call, use "How did it end?" higher on this page instead.\n\nCreate the account now?`)) return;
+    if (!window.confirm(`This saves ${form.email || "this client"}'s details. Their Suite account is created only when their payment AND their signed Year-1 agreement are both in: right now if they are, or by itself within a couple of minutes of the last one arriving. Then they are emailed their sign-in link.\n\nTo save notes from a call, use "How did it end?" higher on this page instead.\n\nSave and continue?`)) return;
     setState("busy");
     setErrorMsg("");
     try {
@@ -129,10 +129,29 @@ export function NewClientForm() {
   }
 
   function copyLoginUrl() {
-    if (!result?.loginUrl) return;
+    if (!result || result.awaiting || !result.loginUrl) return;
     navigator.clipboard.writeText(result.loginUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+  }
+
+  if (result && result.awaiting) {
+    return (
+      <section className="mb-14 rounded-2xl border border-[#c9a227]/40 bg-[#1C2236] p-6">
+        <h2 className="text-xl font-semibold text-[#F8F5F0]">Saved. The account is waiting: {form.fullName}</h2>
+        <p className="mt-3 rounded-lg bg-[#E3C27C]/10 px-3 py-2 text-sm text-[#E3C27C]">
+          Still waiting for {result.waitingFor.join(" and ")}. No account has been created and nothing has been emailed to the client.
+        </p>
+        <p className="mt-3 text-sm text-[#d8d3c8]">
+          Their details are saved. The moment {result.waitingFor.length > 1 ? "both arrive" : "it arrives"}, the Suite creates their account and emails them their
+          sign-in link by itself (checked every two minutes). You do not need to come back to this form. If they have not paid yet, stay on the call while they
+          pay; if they have not signed, they have the agreement by email and it takes about two minutes.
+        </p>
+        <button type="button" onClick={() => { setForm({ ...INITIAL, implementationDate: todayMountain() }); setResult(null); }} className="mt-6 text-xs text-[#b8a898] underline">
+          Onboard another client
+        </button>
+      </section>
+    );
   }
 
   if (result) {
@@ -207,9 +226,11 @@ export function NewClientForm() {
     <section className="mb-14">
       <h2 className="text-2xl font-semibold text-[#F8F5F0] mb-2">New Client Onboarding</h2>
       <p className="text-sm text-[#b8a898] max-w-2xl mb-6">
-        <strong className="text-[#F8F5F0]">Use this only after the client has signed and paid.</strong> It creates their
-        Command Suite login if they don&apos;t already have one (or updates their existing account), emails them their
-        sign-in link, tags them as a client in your contacts, and saves the business info from this call.{" "}
+        <strong className="text-[#F8F5F0]">Send the agreement first, then fill this in while they sign.</strong> No account is ever created without the
+        payment and the client&apos;s signature on the Year-1 agreement. If both are already in, this creates their Command Suite
+        login now (or updates their existing account), emails them their sign-in link, tags them as a client in your contacts and saves
+        the business info. If not, it saves everything and creates the account by itself the moment both are in, so there is nothing to
+        come back to.{" "}
         <strong className="text-[#E3C27C]">To save notes from a call, use &ldquo;How did it end?&rdquo; in the Call script above instead.</strong>
       </p>
 
