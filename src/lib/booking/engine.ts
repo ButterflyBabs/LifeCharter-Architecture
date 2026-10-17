@@ -7,6 +7,7 @@ import { upsertContact, logEvent, EMAIL_RE, type FormField } from "@/lib/crm";
 import { enrolContact, isValidTz } from "@/lib/sequences/engine";
 import { dealForBooking, moveDeal } from "@/lib/booking/deals";
 import { accountSender, senderCache, type AccountSender } from "@/lib/email/accountSender";
+import { inviteToLaunchCall } from "@/lib/launchCallInvite";
 
 // The booking engine. A calendar offers a time when at least one of its hosts is
 // inside their working hours, clear of every connected calendar (plus buffers),
@@ -291,6 +292,12 @@ async function afterBooking(
     await db.from("bookings").update({ contact_id: contact.id }).eq("id", bookingId);
     await logEvent(cal.master_plan_id, contact.id, "booking", `${b.rescheduled ? "Rescheduled" : "Booked"} ${cal.name} with ${host.name} for ${fmt(startISO, b.tz)}`, { booking: bookingId, answers: b.answers }, db);
     if (cal.sequence_key && !b.rescheduled) await enrolContact({ masterPlanId: cal.master_plan_id, sequenceKey: cal.sequence_key, email: b.email, source: `booking:${cal.slug}` }).catch(() => {});
+  }
+
+  // New clients who book their 1:1 Welcome Call (Executive Consultation or self-serve Starter) are invited to the next New
+  // Client Launch Call: date, Zoom link and a calendar file in their own email (see lib/launchCallInvite).
+  if (cal.slug === "new-client-welcome-call" && !b.rescheduled && who.house) {
+    await inviteToLaunchCall({ masterPlanId: cal.master_plan_id, contactId: contact?.id ?? null, name: b.name, email: b.email, after: new Date(b.start) });
   }
 
   // Pipeline: one deal per person per calendar (a reschedule keeps its deal).

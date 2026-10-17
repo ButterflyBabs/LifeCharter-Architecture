@@ -487,7 +487,7 @@ export function SalesScript() {
           <li>
             <span className="font-semibold text-[#F8F5F0]">Book their 1:1 Welcome Call with Babs, now, while you are still on the call.</span>{" "}
             It happens before implementation begins, and it is the step that gets forgotten once the call ends. Press the button, let them pick a
-            time, and tick the box when it shows as confirmed. If they would rather book later, text them lccommandsuite.com/book/new-client-welcome-call.
+            time, and tick the box when it shows as confirmed. If they would rather book later, text them lccommandsuite.com/book/new-client-welcome-call. The moment they book, the Suite emails them an invitation to the next New Client Launch Call (every other Thursday, 1:00 PM Mountain) with the date, the Zoom link and a calendar file, so there is nothing for you to send.
             <div className="mt-3 flex flex-wrap items-center gap-4 rounded-lg border border-emerald-400/30 bg-[#141826] p-3">
               <a
                 href={`/book/new-client-welcome-call?name=${encodeURIComponent(prefill?.fullName || "")}&email=${encodeURIComponent(prefill?.email || "")}`}
