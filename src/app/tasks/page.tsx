@@ -3,7 +3,7 @@
 import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Plus, Trash2, Check, Clock, Archive, ArchiveRestore, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Plus, Trash2, Check, Clock, Archive, ArchiveRestore, Sparkles, LayoutList, LayoutGrid } from "lucide-react";
 import { askAssistant } from "@/lib/assistantPopout";
 import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
@@ -126,6 +126,39 @@ export default function TasksPage() {
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [showAllDone, setShowAllDone] = useState(false);
   const DONE_SHOWN = 12;
+  // List or Cards: each person chooses. Remembered on this device straight away and saved to their account, so it
+  // follows them to other devices.
+  const [layout, setLayout] = useState<"list" | "cards">("list");
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("tasksLayout");
+      if (raw === "list" || raw === "cards") setLayout(raw);
+    } catch {
+      /* default */
+    }
+    fetch("/api/me/preferences", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.tasksView === "list" || d?.tasksView === "cards") {
+          setLayout(d.tasksView);
+          try {
+            localStorage.setItem("tasksLayout", d.tasksView);
+          } catch {
+            /* ignore */
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+  const chooseLayout = (next: "list" | "cards") => {
+    setLayout(next);
+    try {
+      localStorage.setItem("tasksLayout", next);
+    } catch {
+      /* ignore */
+    }
+    void fetch("/api/me/preferences", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tasksView: next }) }).catch(() => {});
+  };
   // Collapsed lists are remembered on this device; Done starts folded because it only grows.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({ done: true });
   useEffect(() => {
@@ -541,6 +574,24 @@ export default function TasksPage() {
             aria-label="Search tasks"
             className="flex-1 min-w-[220px] px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
           />
+          <div role="group" aria-label="How tasks are shown" className="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] text-sm">
+            <button
+              type="button"
+              onClick={() => chooseLayout("list")}
+              aria-pressed={layout === "list"}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "list" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
+            >
+              <LayoutList className="h-4 w-4" /> List
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseLayout("cards")}
+              aria-pressed={layout === "cards"}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "cards" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
+            >
+              <LayoutGrid className="h-4 w-4" /> Cards
+            </button>
+          </div>
           {!isSales && (
             <>
               <select value={fProject} onChange={(e) => setFProject(e.target.value)} aria-label="Filter by project" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
@@ -681,7 +732,7 @@ export default function TasksPage() {
                         )}
                       </div>
                     )}
-                    <div className="space-y-1.5">
+                    <div className={layout === "cards" ? "grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3 items-stretch" : "space-y-1.5"}>
                       {items.map((t) => {
                         const info = dueInfo(t, tz);
                         const open = Boolean(openRows[t.id]);
@@ -699,7 +750,7 @@ export default function TasksPage() {
                               setDragId(null);
                               setOverKey(null);
                             }}
-                            className={`bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-white/10 px-3 py-2 shadow-sm ${dragId === t.id ? "opacity-50" : ""}`}
+                            className={`bg-white dark:bg-[#1A1A2E] border border-gray-200/60 dark:border-white/10 ${layout === "cards" ? "flex h-full flex-col rounded-2xl px-4 py-3 shadow-md" : "rounded-xl px-3 py-2 shadow-sm"} ${dragId === t.id ? "opacity-50" : ""}`}
                           >
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                               <GripVertical className="w-4 h-4 text-gray-300 cursor-grab shrink-0" aria-hidden />
@@ -714,12 +765,12 @@ export default function TasksPage() {
                                 {t.status === "done" && <Check className="w-2.5 h-2.5" />}
                               </button>
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PRIORITY_COLOR[t.priority] ?? "#9CA3AF" }} title={t.priority} />
-                              <div className="min-w-[180px] flex-1">
-                                <p className={`text-sm leading-snug ${t.status === "done" ? "line-through text-gray-400" : "text-[#3F4654] dark:text-[#e8e4f0]"}`}>{t.title}</p>
+                              <div className={layout === "cards" ? "min-w-0 flex-[1_1_70%]" : "min-w-[180px] flex-1"}>
+                                <p className={`${layout === "cards" ? "text-[15px] font-medium" : "text-sm"} leading-snug ${t.status === "done" ? "line-through text-gray-400" : "text-[#3F4654] dark:text-[#e8e4f0]"}`}>{t.title}</p>
                                 {t.description && !open && (
                                   <button
                                     onClick={() => setOpenRows((r) => ({ ...r, [t.id]: true }))}
-                                    className="mt-0.5 block max-w-full truncate text-left text-xs text-gray-400 hover:text-[#2E7C83]"
+                                    className={`mt-0.5 block max-w-full text-left text-xs text-gray-400 hover:text-[#2E7C83] ${layout === "cards" ? "line-clamp-3" : "truncate"}`}
                                     title="Open the notes"
                                   >
                                     {t.description.replace(/\s+/g, " ").slice(0, 140)}
@@ -775,7 +826,7 @@ export default function TasksPage() {
                               </button>
                             </div>
                             {t.status === "waiting" && (
-                              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-9 text-xs">
+                              <div className={`mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs ${layout === "cards" ? "pl-0" : "pl-9"}`}>
                                 <label htmlFor={`wo-${t.id}`} className="font-semibold text-[#7a5a12]">Waiting on</label>
                                 <input
                                   id={`wo-${t.id}`}
