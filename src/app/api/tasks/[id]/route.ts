@@ -72,6 +72,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     update.assignee_member_id = newAssignee.id;
   }
   const { data: before } = await supabase.from("tasks").select("status, assignee_member_id").eq("id", params.id).eq("master_plan_id", masterPlanId).maybeSingle();
+  // Waiting list: who or what the task waits on, and the day to check back. Entering Waiting stamps "since";
+  // leaving it clears all three so a finished wait never lingers on the card.
+  if (typeof body.status === "string") {
+    if (body.status === "waiting" && before?.status !== "waiting") update.waiting_since = new Date().toISOString();
+    if (body.status !== "waiting") {
+      update.waiting_on = null;
+      update.waiting_since = null;
+      update.check_back_on = null;
+    }
+  }
+  if (body.waitingOn === null || typeof body.waitingOn === "string") update.waiting_on = typeof body.waitingOn === "string" ? body.waitingOn.trim().slice(0, 160) || null : null;
+  if (body.checkBackOn === null || body.checkBackOn === "") update.check_back_on = null;
+  else if (typeof body.checkBackOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.checkBackOn)) update.check_back_on = body.checkBackOn;
   if (body.archived === true && before?.status !== "done") return NextResponse.json({ error: "Only done tasks can be archived." }, { status: 400 });
 
   const { data, error } = await supabase

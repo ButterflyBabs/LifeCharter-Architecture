@@ -27,6 +27,9 @@ interface Task {
   today_on?: string | null;
   project_id?: string | null;
   offer_id?: string | null;
+  waiting_on?: string | null;
+  waiting_since?: string | null;
+  check_back_on?: string | null;
 }
 interface Member {
   id: string;
@@ -256,10 +259,15 @@ export default function TasksPage() {
     setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, description: clean || null } : t)) ?? null);
     await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description: clean }) }).catch(() => {});
   };
+  // Waiting list: who or what it waits on, and the day to check back.
+  const saveWaiting = async (id: number, patch: { waitingOn?: string | null; checkBackOn?: string | null }) => {
+    setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, ...("waitingOn" in patch ? { waiting_on: patch.waitingOn || null } : {}), ...("checkBackOn" in patch ? { check_back_on: patch.checkBackOn || null } : {}) } : t)) ?? null);
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).catch(() => {});
+  };
   const todayStr = dayInTz(new Date(), tz);
   const setStatus = async (id: number, status: string) => {
     const todayOn = status === "today" ? todayStr : null;
-    setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, status, today_on: todayOn } : t)) ?? null);
+    setTasks((prev) => prev?.map((t) => (t.id === id ? { ...t, status, today_on: todayOn, ...(status === "waiting" ? { waiting_since: t.waiting_since ?? new Date().toISOString() } : { waiting_on: null, waiting_since: null, check_back_on: null }) } : t)) ?? null);
     await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -274,7 +282,9 @@ export default function TasksPage() {
     if (t.due_at && dayInTz(t.due_at, tz) < todayStr) return "overdue";
     const datedToday = Boolean(t.due_at) && dayInTz(t.due_at as string, tz) === todayStr;
     const putToday = t.status === "today" && (t.today_on ? t.today_on === todayStr : Boolean(t.created_at) && dayInTz(t.created_at as string, tz) === todayStr);
-    if (datedToday || putToday) return "today";
+    // A waiting task comes back to Today on its check-back day, so nothing waits forever.
+    const checkBack = t.status === "waiting" && Boolean(t.check_back_on) && (t.check_back_on as string) <= todayStr;
+    if (datedToday || putToday || checkBack) return "today";
     return t.status === "today" ? "backlog" : t.status;
   };
   const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, optional: 4 };
@@ -764,6 +774,34 @@ export default function TasksPage() {
                                 <MoreHorizontal className="w-4 h-4" /> More
                               </button>
                             </div>
+                            {t.status === "waiting" && (
+                              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-9 text-xs">
+                                <label htmlFor={`wo-${t.id}`} className="font-semibold text-[#7a5a12]">Waiting on</label>
+                                <input
+                                  id={`wo-${t.id}`}
+                                  key={`wo-${t.id}-${t.waiting_on ?? ""}`}
+                                  defaultValue={t.waiting_on ?? ""}
+                                  maxLength={160}
+                                  placeholder="Who or what (a person, Google review, a delivery)"
+                                  onBlur={(e) => {
+                                    if (e.target.value.trim() !== (t.waiting_on ?? "").trim()) void saveWaiting(t.id, { waitingOn: e.target.value });
+                                  }}
+                                  className="min-w-[220px] flex-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] px-2 py-1"
+                                />
+                                <label htmlFor={`cb-${t.id}`} className="text-gray-500">Check back</label>
+                                <input
+                                  id={`cb-${t.id}`}
+                                  type="date"
+                                  value={t.check_back_on ?? ""}
+                                  onChange={(e) => void saveWaiting(t.id, { checkBackOn: e.target.value || null })}
+                                  className="rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] px-2 py-1"
+                                />
+                                {t.check_back_on && t.check_back_on <= todayStr && (
+                                  <span className="rounded-full bg-[#F0B400]/20 px-2 py-0.5 text-[10px] font-semibold text-[#7a5a12]">Time to check</span>
+                                )}
+                                {t.waiting_since && <span className="text-gray-400">since {new Date(t.waiting_since).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: tz })}</span>}
+                              </div>
+                            )}
                             {open && (
                               <div className="mt-2 mb-1">
                                 <label htmlFor={`note-${t.id}`} className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500">Notes and additional information</label>

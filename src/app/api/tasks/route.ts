@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   let q = supabase
     .from("tasks")
     .select(
-      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, created_at, today_on, project_id, offer_id, segment_id, assignee_member_id, business:businesses(name, color), segment:segments(name, color)"
+      "id, title, description, status, priority, energy, due_date, due_at, due_has_time, time_kind, followup, completed_at, created_at, today_on, project_id, offer_id, segment_id, assignee_member_id, waiting_on, waiting_since, check_back_on, business:businesses(name, color), segment:segments(name, color)"
     )
     .eq("master_plan_id", masterPlanId);
   if (scope) q = q.eq("business_id", scope.businessId);
