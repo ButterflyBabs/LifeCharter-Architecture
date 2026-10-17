@@ -32,7 +32,7 @@ const OFFERING_PAGES: Row[] = [
   { name: "Life by Design Summit: Integration Pass, early price (through April 14)", url: "https://buy.stripe.com/7sY5kEgAn8cHh0a02e4ow0e", note: "$197; not on the page or in emails until the Stripe logo is added" },
   { name: "Life by Design Summit: Integration Pass, live event price (from April 15)", url: "https://buy.stripe.com/fZu5kEck778DbFQ8yK4ow0f", note: "$297" },
   { name: "LifeCharter Circle: Early Adapter Special", url: "https://buy.stripe.com/28E7sM1Ft1Oj9xI8yK4ow0d", note: "$497; also listed under Offers" },
-  { name: "LC Fledge (social posting): sign in", url: "https://fledge.lccommandsuite.com", note: "the app formerly called LC Beacon" },
+  { name: "LC Fledge (social posting): sign in", url: "https://fledge.lccommandsuite.com", note: "LifeCharter's own social posting app" },
   { name: "LC Fledge: Clips (long video to short captioned clips)", url: "https://fledge.lccommandsuite.com/clips", note: "sign in first" },
   { name: "Pre-Founder: add your card (billing starts April 1, 2027)", url: `${APP}/api/stripe/pre-founder-card`, note: "$497/month; the link the month-5 email sends. It opens a Stripe checkout." },
   { name: "New Client Launch Call (Zoom)", url: "https://us02web.zoom.us/j/81978705068?pwd=nKJVgw63bvRKgSZkSRjLlZvzWqNytb.1", note: "every other Thursday, 1:00 PM MT, from Oct 29; every client is welcome" },
