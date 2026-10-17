@@ -1,19 +1,20 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { occurrences, type RecurringEventFields } from "@/lib/community/recurrence";
 import { logEvent } from "@/lib/crm";
+import { dayInTz } from "@/lib/tz";
 
 // New clients (Executive Consultation and self-serve Starter alike) book a 1:1 Welcome Call with Babs; the moment they do,
 // they are invited to the next New Client Launch Call (every other Thursday, 1:00 PM MT, 90 minutes, Zoom). The call is a
 // Collective event with a repeat rule, so its dates (and any skipped date, such as a holiday) come from that event.
-// Rule: the first Launch Call that starts at least two days from now AND after their Welcome Call, so they meet Babs first
-// and never get an invite for a call that is about to start.
+// Rule (Babs, 2026-10-17): the cut-off for joining a Launch Call is the day before it (Wednesday, Mountain time). A client
+// who books their Welcome Call on or before that Wednesday is invited to that Thursday's call; after it, to the next one.
+// The call must also start after their Welcome Call, so they meet Babs first.
 
 const LAUNCH_CALL_EVENT_ID = "98803b0a-d494-47ea-a8cc-5e29e2eaa04f";
 const FROM = "AmiLynne Carroll <hello@lccommandsuite.com>";
 const REPLY_TO = "support@lccommandsuite.com";
 const ORGANIZER_EMAIL = "amilynne@amilynnecarroll.com";
 const COPY_TO = "amilynne@amilynnecarroll.com";
-const MIN_NOTICE_MS = 2 * 24 * 3_600_000;
 
 interface LaunchEvent extends RecurringEventFields {
   title: string;
@@ -34,8 +35,11 @@ export async function nextLaunchCall(after: Date): Promise<LaunchCallDate | null
   const { data: ev } = await createServerClient().from("cm_events").select("id, title, description, starts_at, ends_at, timezone, join_url, recur_freq, recur_until, recur_exdates").eq("id", LAUNCH_CALL_EVENT_ID).is("deleted_at", null).maybeSingle();
   if (!ev?.join_url) return null;
   const e = ev as LaunchEvent;
-  const earliest = new Date(Math.max(after.getTime(), Date.now() + MIN_NOTICE_MS));
-  const next = occurrences(e, earliest, new Date(earliest.getTime() + 120 * 24 * 3_600_000), 3).find((o) => o.start > earliest);
+  const now = new Date();
+  const today = dayInTz(now, "America/Denver"); // YYYY-MM-DD in Mountain time
+  const from = new Date(Math.max(after.getTime(), now.getTime()));
+  // Cut-off: still today <= the day before the call, i.e. strictly before the call's own date.
+  const next = occurrences(e, from, new Date(from.getTime() + 120 * 24 * 3_600_000), 8).find((o) => o.start > from && today < o.date);
   if (!next) return null;
   return { start: next.start, end: next.end, date: next.date, title: e.title, description: e.description ?? "", joinUrl: e.join_url! };
 }
