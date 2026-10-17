@@ -1,20 +1,17 @@
 /**
  * Called by the /get-started/success page right after Stripe redirects a
- * paying customer back. Verifies the session actually paid (never trust the
- * client), provisions their account if it doesn't exist yet, and hands back
- * a Supabase recovery link so they land signed-in with a chance to set a
- * password — all synchronously in their own browser, since production SMTP
- * for Supabase's own auth emails isn't wired up yet (a separate open item):
- * this sidesteps needing an email to be sent at all for the critical first
- * login. The webhook (/api/stripe/webhook) does the same provisioning as a
- * server-side safety net in case the customer closes the tab before this
- * ever runs — provisionAccountForEmail is idempotent either way.
+ * paying customer back, and again every few seconds while they sign the
+ * Year-1 Operating Agreement. Verifies the session actually paid (never trust
+ * the client). The account is NOT created at payment: it is created here (or
+ * by the two-minute job, /api/cron/starter-signups, if they signed and left)
+ * only after BoldSign shows the client's signature. Then it hands back a
+ * Supabase recovery link so they land signed-in with a chance to set a
+ * password, synchronously in their own browser.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { provisionAccountForEmail } from "@/lib/provisionAccount";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { clientHasSigned, getSignup, openAccount, passwordLinkFor, startStarterSignup } from "@/lib/starterSignup";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -44,31 +41,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No email on this session" }, { status: 400 });
     }
 
-    const planId = session.metadata?.planId || "starter";
-    const fullName = session.metadata?.fullName || undefined;
+    const test = session.metadata?.test === "true";
 
-    await provisionAccountForEmail(email, planId, fullName);
-
-    const supabase = createServiceClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: { redirectTo: `${APP_URL}/auth/callback?next=/reset-password` },
-    });
-
-    if (error || !data?.properties?.action_link) {
-      // Account exists either way — send them to sign in manually rather
-      // than fail the whole request over a link-generation hiccup.
-      console.error("generateLink failed:", error?.message);
-      return NextResponse.json({ redirectUrl: `${APP_URL}/login`, test: session.metadata?.test === "true" });
+    // The account is created only after the client signs the Year-1 Operating Agreement. Until then this answers
+    // "awaiting_signature" and the success page keeps asking; the moment BoldSign shows their signature, it opens the account.
+    let row = await getSignup(sessionId);
+    if (!row) row = await startStarterSignup(session); // the webhook is normally first; whoever gets here first starts it, once
+    if (!row) return NextResponse.json({ error: "Could not start your sign-up" }, { status: 500 });
+    if (row.status === "pending") {
+      if (!row.agreement_document_id || !(await clientHasSigned(row.agreement_document_id, row.email))) {
+        return NextResponse.json({ state: "awaiting_signature", email: row.email, sent: Boolean(row.agreement_document_id), test });
+      }
+      await openAccount(row);
     }
 
-    return NextResponse.json({ redirectUrl: data.properties.action_link, test: session.metadata?.test === "true" });
+    const link = await passwordLinkFor(row.email);
+    // Account exists either way: send them to sign in manually rather than fail over a link-generation hiccup.
+    return NextResponse.json({ redirectUrl: link || `${APP_URL}/login`, test });
   } catch (error) {
     console.error("Starter checkout confirm error:", error);
     return NextResponse.json({ error: "Failed to confirm signup" }, { status: 500 });

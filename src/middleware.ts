@@ -58,6 +58,7 @@ const PUBLIC_APIS = [
   "/api/cron/client-care", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-weekly-bills", // secured by its own CRON_SECRET check, not a session
   "/api/cron/new-client-review", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/starter-signups", // opens self-serve Starter accounts once the agreement is signed; secured by its own CRON_SECRET check, not a session
   "/api/cron/affiliate-link-expiry", // secured by its own CRON_SECRET check, not a session
   "/api/cron/pre-founder-trials", // secured by its own CRON_SECRET check, not a session
   "/api/cron/call-attendance", // secured by its own CRON_SECRET check (the owner's signed-in dry run is checked in the route)

@@ -3,12 +3,11 @@
  * Processes Stripe events and updates subscriptions
  */
 
-import { sendYear1Agreement } from "@/lib/year1Agreement";
+import { startStarterSignup } from "@/lib/starterSignup";
 import { WEBSITE_BUILD } from "@/lib/websiteBuild";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
-import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { enrolContact, ownerMasterPlanId, timezoneFor } from "@/lib/sequences/engine";
 import { logEvent, upsertContact } from "@/lib/crm";
 import { creditSale, implementationAmount } from "@/lib/affiliates";
@@ -129,10 +128,10 @@ export async function POST(req: NextRequest) {
               if (!seen?.length) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
             }
             // Self-serve Starter: send the Year-1 Operating Agreement for signature right away (with the link to book their
-            // 1:1 Welcome Call with Babs in the email). Calls bought with Marcello get it from the Sales Reference page instead.
+            // 1:1 Welcome Call with Babs in the email). The account is created only once they sign it (see lib/starterSignup).
+            // Calls bought with Marcello get the agreement from the Sales Reference page instead.
             if (c && meta.flow === "self_serve_starter") {
-              const who = (session.customer_details?.name || meta.fullName || "").trim() || buyer.split("@")[0];
-              await sendYear1Agreement({ masterPlanId: housePlan, contactId: c.id, name: who, email: buyer, phone: session.customer_details?.phone || "", tier: "Starter", payment: "full", by: "self-serve sign-up", welcomeCallLink: true }).catch((e) => console.error("year-1 agreement:", e));
+              await startStarterSignup(session, { contactId: c.id }).catch((e) => console.error("starter sign-up:", e));
             }
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
             if (c && typeof session.amount_total === "number") {
@@ -155,14 +154,9 @@ export async function POST(req: NextRequest) {
         }
 
         if (meta.flow === "self_serve_starter") {
-          // Safety-net duplicate of what /api/stripe/starter-checkout/confirm
-          // already does synchronously in the customer's browser right after
-          // payment — provisionAccountForEmail is idempotent, so whichever of
-          // the two runs first wins and this becomes a no-op.
-          const email = session.customer_details?.email || session.customer_email;
-          if (email) {
-            await provisionAccountForEmail(email, meta.planId || "starter", meta.fullName || undefined);
-          }
+          // No account yet: it is created after the client signs the agreement (lib/starterSignup; the success page and a
+          // two-minute job finish it). If the buyer was not saved above (no house account), still start the sign-up.
+          await startStarterSignup(session).catch((e) => console.error("starter sign-up:", e));
           break;
         }
 

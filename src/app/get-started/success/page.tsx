@@ -12,8 +12,9 @@ import { useSearchParams } from "next/navigation";
 function GetStartedSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "signing" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (!sessionId) {
@@ -21,19 +22,42 @@ function GetStartedSuccessContent() {
       setErrorMsg("Missing checkout session — if you just paid, contact us and we'll get you set up.");
       return;
     }
-    fetch(`/api/stripe/starter-checkout/confirm?session_id=${encodeURIComponent(sessionId)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.redirectUrl) throw new Error(data.error || "Could not finish setting up your account");
-        // Same event id the Stripe webhook sends to the Conversions API, so Meta counts one purchase.
-        // The internal free test session never counts as a purchase in the ad pixel.
-        if (!data.test) trackEvent("Purchase", { content_name: "command_suite_starter", currency: "USD" }, { eventID: sessionId });
-        setTimeout(() => { window.location.href = data.redirectUrl; }, 300);
-      })
-      .catch((err) => {
-        setStatus("error");
-        setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
-      });
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let counted = false;
+    // The account is created only after the client signs the Year-1 Operating Agreement (emailed right after payment).
+    // So this asks every few seconds until their signature is in, then moves on by itself.
+    const check = () => {
+      fetch(`/api/stripe/starter-checkout/confirm?session_id=${encodeURIComponent(sessionId)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (stopped) return;
+          // Same event id the Stripe webhook sends to the Conversions API, so Meta counts one purchase (once, when payment is confirmed).
+          // The internal free test session never counts as a purchase in the ad pixel.
+          if ((data.redirectUrl || data.state === "awaiting_signature") && !counted && !data.test) {
+            counted = true;
+            trackEvent("Purchase", { content_name: "command_suite_starter", currency: "USD" }, { eventID: sessionId });
+          }
+          if (data.state === "awaiting_signature") {
+            setEmail(data.email || "");
+            setStatus("signing");
+            timer = setTimeout(check, 5000);
+            return;
+          }
+          if (!data.redirectUrl) throw new Error(data.error || "Could not finish setting up your account");
+          setTimeout(() => { window.location.href = data.redirectUrl; }, 300);
+        })
+        .catch((err) => {
+          if (stopped) return;
+          setStatus("error");
+          setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
+        });
+    };
+    check();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [sessionId]);
 
   return (
@@ -43,9 +67,25 @@ function GetStartedSuccessContent() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
             Payment received
           </p>
-          <h1 className="mt-3 text-2xl font-semibold text-[#F8F5F0]">Setting up your account…</h1>
+          <h1 className="mt-3 text-2xl font-semibold text-[#F8F5F0]">Getting your agreement ready…</h1>
           <p className="mt-3 text-sm text-[#b8a898]">
-            This takes just a moment — you&apos;ll be redirected automatically.
+            This takes just a moment.
+          </p>
+        </>
+      ) : status === "signing" ? (
+        <>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
+            Payment received. One last step
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold text-[#F8F5F0]">Sign your agreement to open your account</h1>
+          <p className="mt-3 text-sm text-[#b8a898]">
+            We just emailed your Year-1 Operating Agreement{email ? <> to <span className="text-[#F8F5F0]">{email}</span></> : null}. It takes about two minutes to sign. Your Command Suite account opens the moment you sign.
+          </p>
+          <p className="mt-3 text-sm text-[#b8a898]">
+            You can keep this page open and it will continue by itself. If you close it, we will email you a sign-in link as soon as you have signed.
+          </p>
+          <p className="mt-4 text-xs text-[#b8a898]/80">
+            Can&apos;t find it? Check your spam or promotions folder for an email from BoldSign, or write to support@lccommandsuite.com.
           </p>
         </>
       ) : (
@@ -68,7 +108,7 @@ export default function GetStartedSuccessPage() {
       <Suspense
         fallback={
           <div className="max-w-md text-center">
-            <h1 className="text-2xl font-semibold text-[#F8F5F0]">Setting up your account…</h1>
+            <h1 className="text-2xl font-semibold text-[#F8F5F0]">Getting your agreement ready…</h1>
           </div>
         }
       >

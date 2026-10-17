@@ -28,6 +28,8 @@ export interface AgreementInput {
   payment: string;
   by?: string | null; // who or what sent it, for the timeline
   welcomeCallLink?: boolean; // add the Welcome Call booking link to the email (automatic sends; on a call it is booked live)
+  redirectUrl?: string; // where BoldSign sends the client after signing (self-serve: back to the page that opens their account)
+  accountOpensOnSigning?: boolean; // self-serve: the Suite account is created only once they sign, and the email says so
 }
 
 export type AgreementResult = { ok: true; documentId: string } | { ok: false; status: number; error: string };
@@ -70,21 +72,26 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
   const first = name.split(/\s+/)[0];
   const message =
     `Hi ${first}, welcome to LifeCharter Command Suite! Please review and sign your Year-1 Operating Agreement. It takes about two minutes. ` +
+    (i.accountOpensOnSigning ? `Your Command Suite account opens the moment you sign. ` : "") +
     (i.welcomeCallLink ? `After you sign, please choose a time for your 1:1 Welcome Call with me: ${APP_URL}/book/new-client-welcome-call?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)} ` : "") +
     `If you have any questions, reply to this email or write to support@lccommandsuite.com. Head up - Wings out. Babs`;
 
-  const res = await fetch(`${API_BASE}/v1/template/send?templateId=${encodeURIComponent(TEMPLATE_ID)}`, {
-    method: "POST",
-    headers: { "X-API-KEY": key, "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      title: "LifeCharter Command Suite Year-1 Operating Agreement",
-      message,
-      roles: [
-        { roleIndex: 1, signerName: name, signerEmail: email, signerType: "Signer", existingFormFields: prefill },
-        { roleIndex: 2, signerName: COMPANY_NAME, signerEmail: COMPANY_EMAIL, signerType: "Signer" },
-      ],
-    }),
-  }).catch(() => null);
+  const send = (withRedirect: boolean) =>
+    fetch(`${API_BASE}/v1/template/send?templateId=${encodeURIComponent(TEMPLATE_ID)}`, {
+      method: "POST",
+      headers: { "X-API-KEY": key, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        title: "LifeCharter Command Suite Year-1 Operating Agreement",
+        message,
+        roles: [
+          { roleIndex: 1, signerName: name, signerEmail: email, signerType: "Signer", existingFormFields: prefill, ...(withRedirect && i.redirectUrl ? { redirectUrl: i.redirectUrl } : {}) },
+          { roleIndex: 2, signerName: COMPANY_NAME, signerEmail: COMPANY_EMAIL, signerType: "Signer" },
+        ],
+      }),
+    }).catch(() => null);
+  // The redirect after signing is a nicety: if BoldSign doesn't accept it on a template send, send without it.
+  let res = await send(true);
+  if (res?.status === 400 && i.redirectUrl) res = await send(false);
   const out = (await res?.json().catch(() => ({}))) as { documentId?: string } | undefined;
   if (!res || !res.ok || !out?.documentId) {
     console.error("BoldSign send failed:", res?.status, JSON.stringify(out ?? {}).slice(0, 400));

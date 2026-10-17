@@ -9,6 +9,10 @@
       "schedule": "0 15 2 * *"
     },
     {
+      "path": "/api/cron/starter-signups",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/client-walkthrough",
       "schedule": "* * * * *"
     },
