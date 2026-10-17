@@ -26,12 +26,12 @@ export default function RemindersCard() {
 
   return (
     <div className="h-full overflow-hidden rounded-2xl border border-gray-200/60 bg-[#FFFFFF] shadow-sm">
-      <div className="flex items-center justify-between gap-2 px-6 pb-3 pt-5">
-        <h3 className="flex items-center gap-2 font-serif text-base text-indigo-900">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-6 pb-3 pt-5">
+        <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 font-serif text-base text-indigo-900">
           <BellRing className="h-4 w-4 text-[#c9a227]" aria-hidden /> Reminders
-          {due.length > 0 && <span className="rounded-full bg-[#A4523C] px-2 py-0.5 text-[11px] font-semibold text-white">{due.length} due</span>}
+          {due.length > 0 && <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-[#A4523C] px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-white">{due.length} due</span>}
         </h3>
-        <Link href="/reminders" className="inline-flex items-center gap-0.5 text-xs font-medium text-[#2E7C83] hover:underline">
+        <Link href="/reminders" className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-xs font-medium text-[#2E7C83] hover:underline">
           All reminders <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>
