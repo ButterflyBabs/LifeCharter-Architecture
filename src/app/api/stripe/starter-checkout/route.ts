@@ -31,6 +31,7 @@ import { stripe } from "@/lib/stripe";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { plusCreditFor } from "@/lib/community/plus";
 import { ALUMNI_PROMOTION_CODE_ID } from "@/lib/stripeCatalog";
+import { ALUMNI_OFFER_OPEN } from "@/lib/alumniOffer";
 import { isSwitched, pricesFor } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
 
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!email || typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
     }
-    const isAlumni = alumni === true;
+    const isAlumni = ALUMNI_OFFER_OPEN && alumni === true; // the $500 graduate credit is paused (src/lib/alumniOffer.ts)
 
     const supabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

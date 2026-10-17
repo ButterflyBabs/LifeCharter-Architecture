@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ALUMNI_OFFER_OPEN } from "@/lib/alumniOffer";
 
 interface Props {
   /** Which MasterClass/channel sent them here, e.g. "mc-2026-09-24" — carried into Stripe metadata. */
@@ -25,7 +26,7 @@ export function StarterSignupForm({ sessionSource, initialAlumni }: Props) {
       const res = await fetch("/api/stripe/starter-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fullName, sessionSource, alumni }),
+        body: JSON.stringify({ email, fullName, sessionSource, alumni: ALUMNI_OFFER_OPEN && alumni }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
@@ -66,15 +67,17 @@ export function StarterSignupForm({ sessionSource, initialAlumni }: Props) {
           className="w-full rounded-lg border border-[#F3EEE4]/20 bg-[#141826] px-3 py-2.5 text-sm text-[#F8F5F0] placeholder:text-[#b8a898]/60 focus:outline-none focus:border-[#c9a227]"
         />
       </div>
-      <label className="flex items-center gap-2 text-xs text-[#b8a898]">
-        <input
-          type="checkbox"
-          checked={alumni}
-          onChange={(e) => setAlumni(e.target.checked)}
-          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
-        />
-        I&apos;m a LifeCharter graduate — $500 off implementation
-      </label>
+      {ALUMNI_OFFER_OPEN && (
+        <label className="flex items-center gap-2 text-xs text-[#b8a898]">
+          <input
+            type="checkbox"
+            checked={alumni}
+            onChange={(e) => setAlumni(e.target.checked)}
+            className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
+          />
+          I&apos;m a LifeCharter graduate — $500 off implementation
+        </label>
+      )}
       <button
         type="submit"
         disabled={state === "busy"}
