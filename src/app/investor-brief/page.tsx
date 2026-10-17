@@ -28,7 +28,7 @@ const T = thumbs as Record<string, string>;
 const MASTER: PdfDoc = {
   file: "LCCS-Investor-Package.pdf",
   title: "LCCS Investor Package",
-  note: "The master document: investor summary, the full brief, product screens, financial model outputs, security and privacy summary and replacement-cost assumptions, all in one file.",
+  note: "The master document: investor summary, the full brief, product screens, client journeys, financial model outputs, security and privacy summary and replacement-cost assumptions, all in one file.",
   pages: P["LCCS-Investor-Package.pdf"],
   featured: true,
 };
