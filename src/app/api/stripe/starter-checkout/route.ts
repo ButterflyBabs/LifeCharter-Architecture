@@ -54,6 +54,14 @@ export async function POST(req: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // INTERNAL TEST ROUTE (Babs, 2026-10-16): when app_settings.starter_test_email holds exactly this address, the
+    // checkout is 100% off so the whole self-serve path (account, agreement, welcome call) can be tested without a real
+    // charge. The setting is empty except while a test is running, and the session is flagged test in its metadata.
+    const { data: testRow } = await supabase.from("app_settings").select("value").eq("key", "starter_test_email").maybeSingle();
+    const testEmail = String(testRow?.value ?? "").trim().toLowerCase();
+    const isTest = Boolean(testEmail) && testEmail === email.trim().toLowerCase();
+    const testCoupon = isTest ? await stripe.coupons.create({ percent_off: 100, duration: "once", name: "Internal test (100% off)" }) : null;
+
     const { data: plan, error: planError } = await supabase
       .from("plans")
       .select("id, name, onboarding_fee")
@@ -102,11 +110,12 @@ export async function POST(req: NextRequest) {
           ],
       // Alumni get the $500 implementation credit instead of the free month
       // — never both (Terms of Sale 3.5).
-      discounts: isAlumni ? [{ promotion_code: ALUMNI_PROMOTION_CODE_ID }] : undefined,
+      discounts: isTest && testCoupon ? [{ coupon: testCoupon.id }] : isAlumni ? [{ promotion_code: ALUMNI_PROMOTION_CODE_ID }] : undefined,
       success_url: `${APP_URL}/get-started/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_URL}/get-started`,
       metadata: {
         flow: "self_serve_starter",
+        ...(isTest ? { test: "true" } : {}),
         planId: plan.id,
         fullName: fullName || "",
         sessionSource: typeof sessionSource === "string" ? sessionSource : "",

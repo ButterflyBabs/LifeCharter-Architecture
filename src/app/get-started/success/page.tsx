@@ -26,7 +26,8 @@ function GetStartedSuccessContent() {
       .then((data) => {
         if (!data.redirectUrl) throw new Error(data.error || "Could not finish setting up your account");
         // Same event id the Stripe webhook sends to the Conversions API, so Meta counts one purchase.
-        trackEvent("Purchase", { content_name: "command_suite_starter", currency: "USD" }, { eventID: sessionId });
+        // The internal free test session never counts as a purchase in the ad pixel.
+        if (!data.test) trackEvent("Purchase", { content_name: "command_suite_starter", currency: "USD" }, { eventID: sessionId });
         setTimeout(() => { window.location.href = data.redirectUrl; }, 300);
       })
       .catch((err) => {

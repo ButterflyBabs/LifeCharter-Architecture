@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     // Every completed checkout is a Purchase for Meta ads (Conversions API): Command Suite,
     // Life Shift and SOUL Sessions Payment Links, Collective Plus, Website Build. Never throws.
     if (event.type === "checkout.session.completed") {
-      await sendPurchaseToMeta(event.data.object as Stripe.Checkout.Session);
+      if ((event.data.object as Stripe.Checkout.Session).metadata?.test !== "true") await sendPurchaseToMeta(event.data.object as Stripe.Checkout.Session);
     }
 
     // Collective Plus subscriptions are handled on their own and never touch
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
           if (buyer && housePlan) {
             await winBookingDeals(housePlan, buyer).catch((e) => console.error("win booking deals:", e));
             const [first, ...rest] = (session.customer_details?.name || meta.fullName || "").trim().split(/\s+/);
-            const c = await upsertContact({ masterPlanId: housePlan, email: buyer, firstName: first || null, lastName: rest.join(" ") || null, source: "stripe:command-suite", tags: ["command-suite-customer", ...(meta.planId || meta.tier ? [`plan-${meta.planId || meta.tier}`] : []), ...(meta.alumni === "true" ? ["lifecharter-alumni"] : [])] }).catch(() => null);
+            const c = await upsertContact({ masterPlanId: housePlan, email: buyer, firstName: first || null, lastName: rest.join(" ") || null, source: "stripe:command-suite", tags: [...(meta.test === "true" ? ["test"] : []), "command-suite-customer", ...(meta.planId || meta.tier ? [`plan-${meta.planId || meta.tier}`] : []), ...(meta.alumni === "true" ? ["lifecharter-alumni"] : [])] }).catch(() => null);
             if (c) {
               // Stripe redelivers events (and they can be resent by hand): one timeline line per checkout session.
               const { data: seen } = await supabase.from("crm_events").select("id").eq("contact_id", c.id).eq("kind", "purchase").eq("detail->>stripeSession", session.id).limit(1);

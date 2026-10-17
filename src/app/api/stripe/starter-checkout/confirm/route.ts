@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (session.payment_status !== "paid") {
+    // A real purchase must be paid. The internal 100%-off test session (metadata.test) completes with nothing to pay.
+    if (session.payment_status !== "paid" && !(session.payment_status === "no_payment_required" && session.metadata?.test === "true")) {
       return NextResponse.json({ error: "Payment not completed" }, { status: 402 });
     }
     if (session.metadata?.flow !== "self_serve_starter") {
@@ -64,10 +65,10 @@ export async function GET(req: NextRequest) {
       // Account exists either way — send them to sign in manually rather
       // than fail the whole request over a link-generation hiccup.
       console.error("generateLink failed:", error?.message);
-      return NextResponse.json({ redirectUrl: `${APP_URL}/login` });
+      return NextResponse.json({ redirectUrl: `${APP_URL}/login`, test: session.metadata?.test === "true" });
     }
 
-    return NextResponse.json({ redirectUrl: data.properties.action_link });
+    return NextResponse.json({ redirectUrl: data.properties.action_link, test: session.metadata?.test === "true" });
   } catch (error) {
     console.error("Starter checkout confirm error:", error);
     return NextResponse.json({ error: "Failed to confirm signup" }, { status: 500 });
