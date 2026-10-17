@@ -218,6 +218,7 @@ const ownerSection = {
     { id: "team-huddle-aa", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
     { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
     { id: "exec-consultation-map", label: "Executive Consultation Road Map", icon: BookOpen, href: "https://claude.ai/artifact/VgFMEfKm37vg7XvxMbFs3o" },
+    { id: "starter-signup-map", label: "Starter Sign-Up Map", icon: BookOpen, href: "https://claude.ai/artifact/Q8YshdhqnBFX3sMwNVve2R" },
     { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
     { id: "prep-documents", label: "Prep Documents (LCCS 2027 > Prep)", icon: BookOpen, href: "https://claude.ai/artifact/FmsjAZMcfyVAnsa4Xat2Dy" },
     { id: "fb-event-copy", label: "From Hustle to Command: Facebook Event Copy", icon: BookOpen, href: "https://claude.ai/artifact/QdNU7zJng7DovSwjFrrrge" },
