@@ -22,9 +22,9 @@ export async function GET(request: Request) {
   if (!code) return back("canceled");
 
   try {
-    const { userId, pages } = await fbExchangeCode(code);
+    const { userId, pages, granted } = await fbExchangeCode(code);
     await ensureSettings(planId);
-    if (!pages.length) return back("no-pages");
+    if (!pages.length) return back(`no-pages&g=${encodeURIComponent(granted.join(",").slice(0, 300) || "none")}`);
     if (pages.length === 1) {
       const r = await connectFbPage(planId, userId, pages[0]);
       return back(!r.ok ? "failed" : r.webhook ? "connected" : "connected-no-webhook");

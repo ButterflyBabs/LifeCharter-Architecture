@@ -68,13 +68,14 @@ export default function LcSparkManager() {
       window.history.replaceState(null, "", "/lc-spark" + (t ? `?tab=${t}` : ""));
     }
     const fb = p.get("fb");
+    const fbGranted = p.get("g");
     if (fb) {
       setMsg(
         ({
           connected: "Facebook Page connected. LC Spark will answer new messages while it's switched on.",
           "connected-no-webhook": "Facebook Page connected, but message notifications couldn't be switched on. Try connecting again.",
           choose: "Choose which Facebook Page LC Spark should answer for.",
-          "no-pages": "That Facebook login doesn't manage any Pages. Sign in with the account that manages your business Page.",
+          "no-pages": `Facebook didn't return any Pages for that login. Permissions Facebook granted: ${fbGranted || "none"}. If your Page belongs to a business portfolio, the business_management permission is needed too.`,
           "not-set-up": "Facebook isn't set up yet (the Meta app keys aren't added).",
           expired: "That connect link expired. Please try again.",
           denied: "Please sign in as the account owner and try again.",

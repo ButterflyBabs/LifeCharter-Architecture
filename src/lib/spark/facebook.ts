@@ -56,22 +56,45 @@ export interface FbPage {
 }
 
 /** Everything needed after "Continue with Facebook": who they are and which Pages they manage. Throws on a Meta error. */
-export async function fbExchangeCode(code: string): Promise<{ userId: string; pages: FbPage[] }> {
+export async function fbExchangeCode(code: string): Promise<{ userId: string; pages: FbPage[]; granted: string[]; via: string }> {
   const id = process.env.SPARK_FB_APP_ID!;
   const secret = process.env.SPARK_FB_APP_SECRET!;
-  const get = async (path: string, q: Record<string, string>) => {
+  const get = async (path: string, q: Record<string, string>, soft = false) => {
     const res = await fetch(`${FB_GRAPH}${path}?${new URLSearchParams(q).toString()}`, { signal: AbortSignal.timeout(10_000) });
     const j = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!res.ok) throw new Error(`facebook ${path} ${res.status}`);
+    if (!res.ok) {
+      if (soft) return {} as Record<string, unknown>;
+      throw new Error(`facebook ${path} ${res.status}`);
+    }
     return j;
   };
   const short = await get("/oauth/access_token", { client_id: id, client_secret: secret, redirect_uri: FB_REDIRECT_URI, code });
   const long = await get("/oauth/access_token", { grant_type: "fb_exchange_token", client_id: id, client_secret: secret, fb_exchange_token: String(short.access_token) });
   const userToken = String(long.access_token);
   const me = await get("/me", { fields: "id", access_token: userToken });
-  const accounts = (await get("/me/accounts", { fields: "id,name,access_token", limit: "50", access_token: userToken })) as { data?: { id: string; name: string; access_token?: string }[] };
-  const pages = (accounts.data ?? []).filter((p) => p.id && p.access_token).map((p) => ({ id: String(p.id), name: String(p.name || p.id), token: String(p.access_token) }));
-  return { userId: String(me.id), pages };
+  const perms = (await get("/me/permissions", { access_token: userToken }, true)) as { data?: { permission: string; status: string }[] };
+  const granted = (perms.data ?? []).filter((p) => p.status === "granted").map((p) => p.permission);
+
+  const found = new Map<string, FbPage>();
+  const take = (rows: { id: string; name?: string; access_token?: string }[] | undefined) => {
+    for (const p of rows ?? []) if (p.id && p.access_token && !found.has(String(p.id))) found.set(String(p.id), { id: String(p.id), name: String(p.name || p.id), token: String(p.access_token) });
+  };
+  // Pages the person has a role on directly.
+  const accounts = (await get("/me/accounts", { fields: "id,name,access_token", limit: "50", access_token: userToken }, true)) as { data?: { id: string; name: string; access_token?: string }[] };
+  take(accounts.data);
+  let via = found.size ? "accounts" : "";
+  // Pages that belong to a business portfolio the person is part of (needs the business_management permission).
+  if (!found.size && granted.includes("business_management")) {
+    const biz = (await get("/me/businesses", { fields: "id,name", limit: "25", access_token: userToken }, true)) as { data?: { id: string }[] };
+    for (const b of biz.data ?? []) {
+      for (const edge of ["owned_pages", "client_pages"]) {
+        const r = (await get(`/${b.id}/${edge}`, { fields: "id,name,access_token", limit: "50", access_token: userToken }, true)) as { data?: { id: string; name: string; access_token?: string }[] };
+        take(r.data);
+      }
+    }
+    if (found.size) via = "business";
+  }
+  return { userId: String(me.id), pages: Array.from(found.values()), granted, via };
 }
 
 /** Saves the chosen Page on the account and subscribes it to message events. */
