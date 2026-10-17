@@ -60,7 +60,7 @@ export default function PrivacyPolicyPage() {
         <ul className="space-y-3 text-[#b8a898] leading-relaxed mb-4">
           <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Send email:</strong> to send an email from your own Gmail address when you write or approve it. We do not read your mailbox with this permission.</span></li>
           <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Calendar:</strong> to check when you are free so your booking pages never double-book you, and to add, update or cancel booked events on your own calendar.</span></li>
-          <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Drive:</strong> to save a file you choose to upload into a folder the Suite creates in your own Drive. The Suite can only see files it created.</span></li>
+          <li className={LI}><span className={DOT}>&#9679;</span><span><strong className="text-[#F3EEE4]">Drive:</strong> the Suite asks for access only to files it creates itself. Today, the only thing it saves to Drive is recordings of the account owner&apos;s own live sessions, into a folder in the owner&apos;s own Drive. The Suite cannot see any other file in your Drive.</span></li>
         </ul>
         <p className={P}>
           We use Google user data only to provide and improve these features. We do not sell it, do not use it for
