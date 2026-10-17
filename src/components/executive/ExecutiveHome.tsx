@@ -1885,8 +1885,8 @@ export default function ExecutiveHome() {
             </div>
           )}
 
-          {/* Search */}
-          {googleConnected && (
+          {/* Search (hidden when every connected account is send-only: there is no mail the Suite can read or search) */}
+          {googleConnected && !(accounts.length > 0 && accounts.every((a) => a.error === "send_only")) && (
             <div className="px-6 pt-3 flex items-center gap-2">
               <input
                 value={searchQuery}
@@ -2041,7 +2041,8 @@ export default function ExecutiveHome() {
             )}
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons (Reply and Mark Read act on messages the Suite has read, so they are hidden for send-only accounts) */}
+          {!(accounts.length > 0 && accounts.every((a) => a.error === "send_only")) && (
           <div className="px-6 pb-6 flex gap-3">
             <button
               onClick={openReply}
@@ -2058,6 +2059,7 @@ export default function ExecutiveHome() {
               Mark Read
             </button>
           </div>
+          )}
           </>)}
         </div>
         </div>
