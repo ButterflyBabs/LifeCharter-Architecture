@@ -9,7 +9,7 @@ import { bookingUrl, type SparkSettings, type SparkSite } from "./settings";
 // (the unit for per-conversation billing on client accounts).
 
 type Db = ReturnType<typeof createServerClient>;
-export type SparkChannel = "web" | "instagram";
+export type SparkChannel = "web" | "instagram" | "facebook";
 
 export const MAX_TEXT = 1000;
 const MAX_MESSAGES = 40; // per conversation (visitor + assistant)
@@ -24,10 +24,12 @@ export interface SparkTurnInput {
   text: string;
   site: SparkSite | null;
   pageUrl?: string | null;
+  /** Instagram @handle or Facebook name, for the conversation list (best effort). */
+  handle?: string | null;
 }
 
 export type SparkTurnResult =
-  | { ok: true; reply: string; conversationId: string; bookingUrl: string | null; lead: { email: string; firstName: string | null; contactId: string } | null }
+  | { ok: true; reply: string; conversationId: string; bookingUrl: string | null; lead: { email: string; firstName: string | null; contactId: string } | null; paused?: boolean }
   | { ok: false; error: string; status: number };
 
 interface Conversation {
@@ -44,6 +46,9 @@ interface Conversation {
   message_count: number;
   billable: boolean;
   summary: string | null;
+  ai_paused: boolean;
+  needs_reply: boolean;
+  visitor_handle: string | null;
 }
 
 const monthStart = () => {
@@ -63,7 +68,7 @@ const cleanName = (s: string | null) => {
 };
 
 export function siteLabel(site: SparkSite | null, channel: SparkChannel) {
-  return channel === "instagram" ? "Instagram" : site?.label || site?.origin || "Website";
+  return channel === "instagram" ? "Instagram" : channel === "facebook" ? "Facebook" : site?.label || site?.origin || "Website";
 }
 
 // A site with one booking calendar uses it. Instagram and mixed-audience sites have none:
@@ -94,6 +99,7 @@ async function findOrStartConversation(db: Db, i: SparkTurnInput): Promise<Conve
       contact_id: (last?.contact_id as string) ?? null,
       visitor_name: (last?.visitor_name as string) ?? null,
       visitor_email: (last?.visitor_email as string) ?? null,
+      visitor_handle: i.handle ?? (last?.visitor_handle as string) ?? null,
       message_count: 0,
       billable: false,
     })
@@ -153,8 +159,24 @@ export async function runSparkTurn(i: SparkTurnInput): Promise<SparkTurnResult> 
   const billable = conv.billable || !canned;
   await db
     .from("spark_conversations")
-    .update({ message_count: conv.message_count + 1, last_message_at: now, billable, ...(conv.summary ? {} : { summary: text.slice(0, 200) }) })
+    .update({
+      message_count: conv.message_count + 1,
+      last_message_at: now,
+      last_visitor_at: now,
+      billable,
+      ...(conv.summary ? {} : { summary: text.slice(0, 200) }),
+      ...(i.handle && !conv.visitor_handle ? { visitor_handle: i.handle } : {}),
+      // The owner took the conversation over (or is being asked for): it is her turn.
+      ...(conv.ai_paused ? { needs_reply: true } : {}),
+    })
     .eq("id", conv.id);
+
+  // The owner has taken over this conversation: LC Spark stays quiet and tells her someone wrote.
+  if (conv.ai_paused) {
+    const owner = await sparkAccountAi(i.settings.master_plan_id);
+    await notifyOnce(db, conv.id, "reply", i, owner.ownerEmail, 30 * 60_000).catch((e) => console.error("spark notify:", e));
+    return { ok: true, reply: "", conversationId: conv.id, bookingUrl: null, lead: null, paused: true };
+  }
 
   const { data: msgs } = await db.from("spark_messages").select("role, content").eq("conversation_id", conv.id).in("role", ["visitor", "assistant"]).order("created_at", { ascending: false }).limit(16);
   const history = ((msgs ?? []) as SparkHistoryItem[]).reverse();
@@ -196,7 +218,7 @@ export async function runSparkTurn(i: SparkTurnInput): Promise<SparkTurnResult> 
   if (email && email !== conv.visitor_email) {
     const label = siteLabel(i.site, i.channel);
     const contact = await upsertContact(
-      { masterPlanId: i.settings.master_plan_id, email, firstName, source: `LC Spark (${label})`, tags: ["lc-spark", i.channel === "instagram" ? "lc-spark-instagram" : "lc-spark-web"] },
+      { masterPlanId: i.settings.master_plan_id, email, firstName, source: `LC Spark (${label})`, tags: ["lc-spark", i.channel === "instagram" ? "lc-spark-instagram" : i.channel === "facebook" ? "lc-spark-facebook" : "lc-spark-web"] },
       db
     );
     if (contact) {
@@ -210,6 +232,7 @@ export async function runSparkTurn(i: SparkTurnInput): Promise<SparkTurnResult> 
   } else if (name && conv.visitor_email && !conv.visitor_name) {
     await upsertContact({ masterPlanId: i.settings.master_plan_id, email: conv.visitor_email, firstName: name }, db);
   }
+  if (handoff) updates.needs_reply = true;
   if (Object.keys(updates).length) await db.from("spark_conversations").update(updates).eq("id", conv.id);
 
   if (lead) await notifyOnce(db, conv.id, "lead", i, account.ownerEmail).catch((e) => console.error("spark notify:", e));
@@ -223,9 +246,12 @@ export async function runSparkTurn(i: SparkTurnInput): Promise<SparkTurnResult> 
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-async function notifyOnce(db: Db, conversationId: string, kind: "lead" | "handoff", i: SparkTurnInput, ownerEmail: string | null) {
+async function notifyOnce(db: Db, conversationId: string, kind: "lead" | "handoff" | "reply", i: SparkTurnInput, ownerEmail: string | null, throttleMs = 0) {
   const marker = `notified:${kind}`;
-  const { data: already } = await db.from("spark_messages").select("id").eq("conversation_id", conversationId).eq("role", "system").eq("content", marker).limit(1);
+  // "lead" and "handoff" go out once per conversation; "reply" (someone wrote while the owner has the conversation) at most once per throttle window.
+  let q = db.from("spark_messages").select("id").eq("conversation_id", conversationId).eq("role", "system").eq("content", marker);
+  if (throttleMs > 0) q = q.gte("created_at", new Date(Date.now() - throttleMs).toISOString());
+  const { data: already } = await q.limit(1);
   if (already?.length) return;
   await db.from("spark_messages").insert({ conversation_id: conversationId, role: "system", content: marker });
 
@@ -241,7 +267,7 @@ async function notifyOnce(db: Db, conversationId: string, kind: "lead" | "handof
   const transcript = (msgs ?? [])
     .map((m) => `<p style="margin:0 0 8px"><strong style="color:${m.role === "visitor" ? "#1a2b4a" : "#c9a227"}">${m.role === "visitor" ? esc(who) : esc(name)}:</strong> ${esc(m.content as string).replace(/\n/g, "<br>")}</p>`)
     .join("");
-  const subject = kind === "lead" ? `LC Spark: new lead from ${where} — ${who}` : `LC Spark: ${who} asked for the team (${where})`;
+  const subject = kind === "lead" ? `LC Spark: new lead from ${where} — ${who}` : kind === "reply" ? `LC Spark: ${who} wrote back on ${where}: your turn` : `LC Spark: ${who} asked for the team (${where})`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -251,10 +277,10 @@ async function notifyOnce(db: Db, conversationId: string, kind: "lead" | "handof
       ...(conv?.visitor_email ? { reply_to: conv.visitor_email } : {}),
       subject: subject.slice(0, 200),
       html: `<div style="font-family:Arial,sans-serif;font-size:14px;max-width:560px">
-<p style="font-size:16px;color:#1a2b4a"><strong>${kind === "lead" ? "LC Spark captured a new lead" : "Someone asked LC Spark for a person"}</strong></p>
+<p style="font-size:16px;color:#1a2b4a"><strong>${kind === "lead" ? "LC Spark captured a new lead" : kind === "reply" ? "You have this conversation, and they wrote back" : "Someone asked LC Spark for a person"}</strong></p>
 <p style="color:#7a8a99">${esc(who)}${conv?.visitor_email ? ` · ${esc(conv.visitor_email as string)}` : ""} · ${esc(where)}</p>
 <div style="border-left:3px solid #c9a227;padding-left:12px">${transcript}</div>
-<p><a href="https://lccommandsuite.com/lc-spark" style="color:#2E7C83">Open LC Spark in the Suite</a>${conv?.visitor_email ? " · Reply to this email to answer them directly." : ""}</p></div>`,
+<p><a href="https://lccommandsuite.com/lc-spark?tab=conversations&c=${conversationId}" style="color:#2E7C83">${i.channel === "web" ? "Open LC Spark in the Suite" : "Answer them in the Suite"}</a>${conv?.visitor_email ? " · Reply to this email to answer them directly." : ""}</p></div>`,
     }),
   });
   if (!res.ok) console.error("spark notify resend:", res.status);

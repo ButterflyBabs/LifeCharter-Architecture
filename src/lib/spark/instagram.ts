@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { chunkText, parseMetaSignedRequest, signState, validHubSignature, verifyState } from "./messaging";
 
 // Instagram DMs through the "Instagram API with Instagram Login" (graph.instagram.com).
 // Env: SPARK_IG_APP_ID, SPARK_IG_APP_SECRET (Instagram app id/secret from the Meta app),
@@ -12,47 +12,17 @@ export const igConfigured = () => Boolean(process.env.SPARK_IG_APP_ID && process
 
 // ── Signed OAuth state: which account started the connect, 20 minutes ───────
 const stateSecret = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.CRON_SECRET || "";
-
-export function signIgState(planId: string): string {
-  const payload = Buffer.from(JSON.stringify({ p: planId, t: Date.now() })).toString("base64url");
-  return `sp.${payload}.${createHmac("sha256", stateSecret()).update(`sp.${payload}`).digest("base64url")}`;
-}
-
-export function verifyIgState(state: string | null): string | null {
-  if (!state || !stateSecret()) return null;
-  const [prefix, payload, sig] = state.split(".");
-  if (prefix !== "sp" || !payload || !sig) return null;
-  const want = createHmac("sha256", stateSecret()).update(`sp.${payload}`).digest("base64url");
-  if (Buffer.from(sig).length !== Buffer.from(want).length || !timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return null;
-  try {
-    const o = JSON.parse(Buffer.from(payload, "base64url").toString());
-    if (typeof o.p !== "string" || typeof o.t !== "number" || Date.now() - o.t > 20 * 60 * 1000) return null;
-    return o.p;
-  } catch {
-    return null;
-  }
-}
+export const signIgState = (planId: string): string => signState("sp", stateSecret(), planId);
+export const verifyIgState = (state: string | null): string | null => verifyState("sp", stateSecret(), state);
 
 // Meta signs each webhook POST: X-Hub-Signature-256: sha256=<hex HMAC of the raw body>.
-export function validIgSignature(rawBody: string, header: string | null): boolean {
-  const secret = process.env.SPARK_IG_APP_SECRET;
-  if (!secret || !header || !header.startsWith("sha256=")) return false;
-  const got = Buffer.from(header.slice(7), "hex");
-  const want = createHmac("sha256", secret).update(rawBody, "utf8").digest();
-  return got.length === want.length && timingSafeEqual(got, want);
-}
+export const validIgSignature = (rawBody: string, header: string | null): boolean => validHubSignature(process.env.SPARK_IG_APP_SECRET, rawBody, header);
+
+export type SendResult = { ok: true } | { ok: false; error: string };
 
 // Instagram DMs are capped at 1,000 characters per message.
-export async function sendIgMessage(token: string, recipientId: string, text: string): Promise<boolean> {
-  const chunks: string[] = [];
-  let rest = text.trim();
-  while (rest.length > 0 && chunks.length < 3) {
-    let cutAt = rest.length <= 1000 ? rest.length : rest.lastIndexOf(" ", 1000);
-    if (cutAt < 500) cutAt = Math.min(1000, rest.length);
-    chunks.push(rest.slice(0, cutAt).trim());
-    rest = rest.slice(cutAt).trim();
-  }
-  for (const c of chunks) {
+export async function sendIgDm(token: string, recipientId: string, text: string): Promise<SendResult> {
+  for (const c of chunkText(text, 1000)) {
     const res = await fetch(`${IG_GRAPH}/me/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -63,28 +33,28 @@ export async function sendIgMessage(token: string, recipientId: string, text: st
       return null;
     });
     if (!res?.ok) {
-      if (res) console.error("spark ig send:", res.status, (await res.text().catch(() => "")).slice(0, 300));
-      return false;
+      const detail = res ? (await res.text().catch(() => "")).slice(0, 300) : "no response";
+      if (res) console.error("spark ig send:", res.status, detail);
+      return { ok: false, error: detail };
     }
   }
-  return true;
+  return { ok: true };
 }
 
-// Meta's signed_request (deauthorize + data deletion callbacks): "<sig>.<payload>",
-// both base64url, sig = HMAC-SHA256(payload, app secret). Returns the payload or null.
-export function parseSignedRequest(signed: string | null): { user_id?: string | number } | null {
-  const secret = process.env.SPARK_IG_APP_SECRET;
-  if (!secret || !signed || !signed.includes(".")) return null;
-  const [sig, payload] = signed.split(".", 2);
-  const got = Buffer.from(sig.replace(/-/g, "+").replace(/_/g, "/"), "base64");
-  const want = createHmac("sha256", secret).update(payload).digest();
-  if (got.length !== want.length || !timingSafeEqual(got, want)) return null;
-  try {
-    return JSON.parse(Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
-  } catch {
-    return null;
-  }
+export async function sendIgMessage(token: string, recipientId: string, text: string): Promise<boolean> {
+  return (await sendIgDm(token, recipientId, text)).ok;
 }
+
+/** Best effort: the person's Instagram name and @handle, for the conversation list. */
+export async function fetchIgProfile(token: string, igsid: string): Promise<{ name: string | null; username: string | null }> {
+  const res = await fetch(`${IG_GRAPH}/${encodeURIComponent(igsid)}?fields=name,username`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8_000) }).catch(() => null);
+  if (!res?.ok) return { name: null, username: null };
+  const j = (await res.json().catch(() => ({}))) as { name?: string; username?: string };
+  return { name: j.name?.trim() || null, username: j.username?.trim() || null };
+}
+
+// Meta's signed_request (deauthorize + data deletion callbacks): "<sig>.<payload>".
+export const parseSignedRequest = (signed: string | null): { user_id?: string | number } | null => parseMetaSignedRequest(process.env.SPARK_IG_APP_SECRET, signed);
 
 // Someone removed the app or asked for their data: forget the Instagram connection
 // for that account, and (for a DM sender) their LC Spark Instagram conversations.

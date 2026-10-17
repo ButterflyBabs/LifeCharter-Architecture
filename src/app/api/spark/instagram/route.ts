@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { validIgSignature, sendIgMessage } from "@/lib/spark/instagram";
+import { validIgSignature, sendIgMessage, fetchIgProfile } from "@/lib/spark/instagram";
 import { runSparkTurn } from "@/lib/spark/engine";
 import type { SparkSettings } from "@/lib/spark/settings";
 
@@ -56,8 +56,18 @@ export async function POST(request: Request) {
         const settings = { ...(data as unknown as SparkSettings), sites: Array.isArray(data.sites) ? data.sites : [] } as SparkSettings;
         if (!settings.ig_access_token) continue;
         const r = await runSparkTurn({ settings, channel: "instagram", visitorKey: senderId.slice(0, 64), text: text.slice(0, 1000), site: null });
-        const reply = r.ok ? (r.bookingUrl && !r.reply.includes(r.bookingUrl) ? `${r.reply}\n\n${r.bookingUrl}` : r.reply) : r.status === 429 ? null : r.error;
+        // The owner has taken the conversation over (r.paused): nothing is sent, she answers from the Suite.
+        const reply = r.ok ? (r.paused ? null : r.bookingUrl && !r.reply.includes(r.bookingUrl) ? `${r.reply}\n\n${r.bookingUrl}` : r.reply) : r.status === 429 ? null : r.error;
         if (reply) await sendIgMessage(settings.ig_access_token, senderId, reply);
+        // Once per conversation: who they are, for the conversation list.
+        if (r.ok) {
+          const { data: cv } = await db.from("spark_conversations").select("visitor_handle").eq("id", r.conversationId).maybeSingle();
+          if (cv && !cv.visitor_handle) {
+            const prof = await fetchIgProfile(settings.ig_access_token, senderId);
+            const handle = prof.username ? `@${prof.username}` : prof.name;
+            if (handle) await db.from("spark_conversations").update({ visitor_handle: handle }).eq("id", r.conversationId);
+          }
+        }
       } catch (e) {
         console.error("spark ig event:", e instanceof Error ? e.message : e);
       }

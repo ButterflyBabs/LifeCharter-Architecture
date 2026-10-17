@@ -9,12 +9,13 @@ interface Site { origin: string; label: string; enabled: boolean; bookingSlug?: 
 interface Settings {
   enabled: boolean; public_key: string | null; assistant_name: string | null; greeting: string | null; knowledge: string | null; instructions: string | null; sites: Site[];
   ig_enabled: boolean; ig_user_id: string | null; ig_username: string | null; ig_token_expires_at: string | null; ig_connected: boolean;
+  fb_enabled: boolean; fb_page_id: string | null; fb_page_name: string | null; fb_connected: boolean;
   price_per_conversation_cents: number | null; monthly_conversation_cap: number | null;
 }
-interface Conv { id: string; channel: "web" | "instagram"; site_origin: string | null; contact_id: string | null; visitor_name: string | null; visitor_email: string | null; started_at: string; last_message_at: string; message_count: number; booked: boolean; billable: boolean; summary: string | null }
+interface Conv { id: string; channel: "web" | "instagram" | "facebook"; ai_paused?: boolean; needs_reply?: boolean; visitor_handle?: string | null; site_origin: string | null; contact_id: string | null; visitor_name: string | null; visitor_email: string | null; started_at: string; last_message_at: string; message_count: number; booked: boolean; billable: boolean; summary: string | null }
 interface Stat { conversations: number; billable: number; messages: number; emails: number; booked: number }
 interface Data {
-  settings: Settings; igConfigured: boolean; calendars: { slug: string; name: string }[]; conversations: Conv[];
+  settings: Settings; igConfigured: boolean; fbConfigured: boolean; fbPending: { id: string; name: string }[]; calendars: { slug: string; name: string }[]; conversations: Conv[];
   usage: { thisMonth: Stat; lastMonth: Stat; days: { day: string; conversations: number; messages: number; emails: number; booked: number }[] };
 }
 type Act = (b: Record<string, unknown>) => Promise<boolean>;
@@ -24,6 +25,8 @@ const TABS = [
   ["settings", "Settings"],
   ["websites", "Websites"],
   ["instagram", "Instagram"],
+  ["facebook", "Facebook"],
+  ["linkedin", "LinkedIn"],
   ["usage", "Usage & billing"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -61,6 +64,23 @@ export default function LcSparkManager() {
           canceled: "Instagram connect was canceled.",
           failed: "Instagram didn't connect. Please try again.",
         } as Record<string, string>)[ig] || ""
+      );
+      window.history.replaceState(null, "", "/lc-spark" + (t ? `?tab=${t}` : ""));
+    }
+    const fb = p.get("fb");
+    if (fb) {
+      setMsg(
+        ({
+          connected: "Facebook Page connected. LC Spark will answer new messages while it's switched on.",
+          "connected-no-webhook": "Facebook Page connected, but message notifications couldn't be switched on. Try connecting again.",
+          choose: "Choose which Facebook Page LC Spark should answer for.",
+          "no-pages": "That Facebook login doesn't manage any Pages. Sign in with the account that manages your business Page.",
+          "not-set-up": "Facebook isn't set up yet (the Meta app keys aren't added).",
+          expired: "That connect link expired. Please try again.",
+          denied: "Please sign in as the account owner and try again.",
+          canceled: "Facebook connect was canceled.",
+          failed: "Facebook didn't connect. Please try again.",
+        } as Record<string, string>)[fb] || ""
       );
       window.history.replaceState(null, "", "/lc-spark" + (t ? `?tab=${t}` : ""));
     }
@@ -110,13 +130,17 @@ export default function LcSparkManager() {
       {!d ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : tab === "conversations" ? (
-        <Conversations d={d} />
+        <Conversations d={d} act={act} />
       ) : tab === "settings" ? (
         <SettingsTab key={d.settings.public_key ?? "s"} s={d.settings} act={act} />
       ) : tab === "websites" ? (
         <Websites d={d} act={act} />
       ) : tab === "instagram" ? (
         <InstagramTab d={d} act={act} />
+      ) : tab === "facebook" ? (
+        <FacebookTab d={d} act={act} />
+      ) : tab === "linkedin" ? (
+        <LinkedInTab />
       ) : (
         <Usage d={d} act={act} />
       )}
@@ -125,35 +149,81 @@ export default function LcSparkManager() {
 }
 
 // ── Conversations ────────────────────────────────────────────────────────────
-function Conversations({ d }: { d: Data }) {
+function Conversations({ d, act }: { d: Data; act: Act }) {
   const [open, setOpen] = useState<string | null>(null);
   const [t, setT] = useState<{ role: string; content: string; created_at: string }[] | null>(null);
+  const [info, setInfo] = useState<{ canReply: boolean; replyWindowHours: number } | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const name = d.settings.assistant_name || "LC Spark";
+
+  const loadOne = useCallback(async (id: string) => {
+    const x = await fetch(`/api/spark?conversation=${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+    setT(x?.messages ?? []);
+    setInfo(x ? { canReply: Boolean(x.canReply), replyWindowHours: x.replyWindowHours ?? 24 } : null);
+  }, []);
   const show = async (id: string) => {
     if (open === id) return setOpen(null);
     setOpen(id);
     setT(null);
-    const x = await fetch(`/api/spark?conversation=${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
-    setT(x?.messages ?? []);
+    setDraft("");
+    await loadOne(id);
   };
-  const name = d.settings.assistant_name || "LC Spark";
-  if (!d.conversations.length) return <p className="text-sm text-[#7a8a99]">No conversations yet. Once LC Spark is on and added to a website (or Instagram is connected), every chat shows up here.</p>;
+  // A link from the "your turn" email opens that conversation.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("c");
+    if (c && /^[0-9a-f-]{36}$/i.test(c) && d.conversations.some((x) => x.id === c)) {
+      setOpen(c);
+      void loadOne(c);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const send = async (id: string) => {
+    if (!draft.trim() || busy) return;
+    setBusy(true);
+    const ok = await act({ action: "reply", id, text: draft });
+    setBusy(false);
+    if (ok) {
+      setDraft("");
+      await loadOne(id);
+    }
+  };
+  const flip = async (id: string, action: "ai-pause" | "ai-resume" | "handled") => {
+    await act({ action, id });
+    await loadOne(id);
+  };
+
+  if (!d.conversations.length) return <p className="text-sm text-[#7a8a99]">No conversations yet. Once LC Spark is on and added to a website (or Instagram or Facebook is connected), every chat shows up here.</p>;
+  const waiting = d.conversations.filter((c) => c.needs_reply).length;
+  const list = onlyMine ? d.conversations.filter((c) => c.needs_reply) : d.conversations;
+  const chan = (c: Conv) => (c.channel === "instagram" ? "Instagram" : c.channel === "facebook" ? "Facebook" : host(c.site_origin) || "Website");
   return (
     <div className="space-y-2">
-      {d.conversations.map((c) => (
-        <div key={c.id} className="rounded-xl border border-[#1a2b4a]/10 text-sm">
+      <div className="flex flex-wrap items-center gap-2 pb-1">
+        <button onClick={() => setOnlyMine(false)} className={`rounded-full px-3 py-1 text-xs font-medium ${!onlyMine ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>All conversations</button>
+        <button onClick={() => setOnlyMine(true)} className={`rounded-full px-3 py-1 text-xs font-medium ${onlyMine ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>Needs your reply ({waiting})</button>
+      </div>
+      {!list.length && <p className="text-sm text-[#7a8a99]">Nothing is waiting for you.</p>}
+      {list.map((c) => (
+        <div key={c.id} className={`rounded-xl border text-sm ${c.needs_reply ? "border-[#c9a227]" : "border-[#1a2b4a]/10"}`}>
           <button onClick={() => show(c.id)} aria-expanded={open === c.id} className="w-full text-left p-4 flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
-                {c.visitor_name || c.visitor_email || "Visitor"}
-                {c.visitor_name && c.visitor_email ? <span className="font-normal text-[#5a6472]"> · {c.visitor_email}</span> : null}
+                {c.visitor_name || c.visitor_handle || c.visitor_email || "Visitor"}
+                {c.visitor_name && c.visitor_handle ? <span className="font-normal text-[#5a6472]"> · {c.visitor_handle}</span> : null}
+                {(c.visitor_name || c.visitor_handle) && c.visitor_email ? <span className="font-normal text-[#5a6472]"> · {c.visitor_email}</span> : null}
               </p>
               <p className="text-[#5a6472] truncate">{c.summary || "—"}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-[#1a2b4a]/5 px-2.5 py-0.5">{c.channel === "instagram" ? "Instagram" : host(c.site_origin) || "Website"}</span>
+              {c.needs_reply && <span className="rounded-full bg-[#c9a227]/20 px-2.5 py-0.5 font-medium text-[#6b5200] dark:text-[#E3C27C]">Your turn</span>}
+              {c.ai_paused && <span className="rounded-full bg-[#1a2b4a]/10 px-2.5 py-0.5">You have this one</span>}
+              <span className="rounded-full bg-[#1a2b4a]/5 px-2.5 py-0.5">{chan(c)}</span>
               <span className="text-[#7a8a99]">{c.message_count} msgs</span>
               {c.booked && <span className="rounded-full bg-[#2E7C83]/10 px-2.5 py-0.5 text-[#1F5E63]">Booked</span>}
-              <span className="text-[#7a8a99]">{when(c.started_at)}</span>
+              <span className="text-[#7a8a99]">{when(c.last_message_at || c.started_at)}</span>
             </div>
           </button>
           {open === c.id && (
@@ -167,11 +237,35 @@ function Conversations({ d }: { d: Data }) {
                 <p className="text-[#7a8a99]">Loading…</p>
               ) : (
                 t.map((m, i) => (
-                  <p key={i} className={m.role === "visitor" ? "" : "pl-4 border-l-2 border-[#c9a227]"}>
-                    <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{m.role === "visitor" ? c.visitor_name || "Visitor" : name}:</strong>{" "}
+                  <p key={i} className={m.role === "visitor" ? "" : m.role === "owner" ? "pl-4 border-l-2 border-[#2E7C83]" : "pl-4 border-l-2 border-[#c9a227]"}>
+                    <strong className="text-[#1a2b4a] dark:text-[#F8F5F0]">{m.role === "visitor" ? c.visitor_name || c.visitor_handle || "Visitor" : m.role === "owner" ? "You" : name}:</strong>{" "}
                     <span className="whitespace-pre-wrap">{m.content}</span>
                   </p>
                 ))
+              )}
+              {c.channel !== "web" ? (
+                <div className="pt-3 space-y-2">
+                  {info && !info.canReply ? (
+                    <p className="rounded-lg bg-[#c9a227]/15 px-3 py-2 text-[#5a4a00] dark:text-[#E3C27C]">
+                      {chan(c)} only allows a reply within {info.replyWindowHours} hours of their last message, and that time has passed. Answer them inside {chan(c)} if you still want to.
+                    </p>
+                  ) : (
+                    <>
+                      <label className={label} htmlFor={`reply-${c.id}`}>Your reply (sent as {c.channel === "instagram" ? "your Instagram account" : "your Facebook Page"})</label>
+                      <textarea id={`reply-${c.id}`} className={field} rows={3} maxLength={1900} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Write to them here. When you send, LC Spark steps back so you are not talking over each other." />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button size="sm" onClick={() => send(c.id)} disabled={busy || !draft.trim()}>{busy ? "Sending…" : "Send reply"}</Button>
+                        {!c.ai_paused && <Button variant="ghost" size="sm" onClick={() => flip(c.id, "ai-pause")}>Take over (pause LC Spark)</Button>}
+                      </div>
+                    </>
+                  )}
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {c.ai_paused && <button className="underline text-[#2E7C83]" onClick={() => flip(c.id, "ai-resume")}>Hand this back to LC Spark</button>}
+                    {c.needs_reply && <button className="underline text-[#2E7C83]" onClick={() => flip(c.id, "handled")}>Mark as handled</button>}
+                  </div>
+                </div>
+              ) : (
+                <p className="pt-2 text-xs text-[#7a8a99]">Website chats can&rsquo;t be answered from here. If they left their email, reply to the notification email.</p>
               )}
             </div>
           )}
@@ -372,6 +466,102 @@ function InstagramTab({ d, act }: { d: Data; act: Act }) {
           </a>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Facebook ────────────────────────────────────────────────────────────────
+function FacebookTab({ d, act }: { d: Data; act: Act }) {
+  const s = d.settings;
+  if (!d.fbConfigured) {
+    return (
+      <div className="rounded-xl border border-[#c9a227]/40 p-4 text-sm max-w-2xl space-y-2">
+        <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Facebook isn&rsquo;t set up yet</p>
+        <p className="text-[#7a8a99]">LC Spark needs a Facebook app with the Messenger product in the Suite&rsquo;s Meta developer account. Once its keys (SPARK_FB_APP_ID, SPARK_FB_APP_SECRET, SPARK_FB_VERIFY_TOKEN) are added, a Connect Facebook button appears here.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4 max-w-2xl text-sm">
+      {d.fbPending.length > 0 && (
+        <div className="rounded-xl border border-[#c9a227] p-4 space-y-2">
+          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Which Page should LC Spark answer for?</p>
+          <div className="flex flex-wrap gap-2">
+            {d.fbPending.map((p) => (
+              <Button key={p.id} variant="ghost" size="sm" onClick={() => void act({ action: "fb-select", pageId: p.id })}>{p.name}</Button>
+            ))}
+          </div>
+        </div>
+      )}
+      {s.fb_connected ? (
+        <div className="rounded-xl border border-[#1a2b4a]/10 p-4 space-y-3">
+          <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Connected to the Facebook Page &ldquo;{s.fb_page_name || s.fb_page_id}&rdquo;</p>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" className="h-4 w-4 accent-[#1a2b4a]" checked={s.fb_enabled} onChange={(e) => act({ action: "fb-toggle", enabled: e.target.checked })} /> Answer Facebook Page messages with LC Spark
+          </label>
+          {!s.enabled && <p className="text-[#9b6b00]">LC Spark is off in Settings, so messages won&rsquo;t be answered until it&rsquo;s on.</p>}
+          <p className="text-[#7a8a99]">You can answer any conversation yourself from the Conversations tab. Facebook only allows a reply within 24 hours of the person&rsquo;s last message.</p>
+          <div className="flex gap-2">
+            <a href="/api/spark/facebook/connect" className="inline-flex items-center rounded-full border-2 border-[#c9a227] px-4 py-1.5 text-[#1a2b4a] dark:text-[#F8F5F0]">Reconnect or change Page</a>
+            <Button variant="ghost" size="sm" onClick={() => { if (confirm("Disconnect Facebook? LC Spark will stop answering Page messages.")) void act({ action: "fb-disconnect" }); }}>Disconnect</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#1a2b4a]/10 p-4 space-y-3">
+          <p className="text-[#1a2b4a] dark:text-[#F8F5F0]">Connect the Facebook Page that people message so LC Spark can answer in your voice, and so you can answer from here. Messenger doesn&rsquo;t share email addresses, so LC Spark asks for a name and email in the chat.</p>
+          <a href="/api/spark/facebook/connect" className="inline-flex items-center gap-2 rounded-full bg-[#1a2b4a] px-5 py-2.5 text-[#F8F5F0]">Connect Facebook</a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LinkedIn ────────────────────────────────────────────────────────────────
+function LinkedInTab() {
+  const [text, setText] = useState("");
+  const [who, setWho] = useState("");
+  const [out, setOut] = useState<string | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const draft = async () => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    setOut(null);
+    setErr("");
+    const r = await fetch("/api/spark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "linkedin-draft", text, name: who }) });
+    const x = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (r.ok && x.draft) setOut(x.draft);
+    else setErr(x.error || "Couldn't write a draft.");
+  };
+  return (
+    <div className="space-y-4 max-w-2xl text-sm">
+      <div className="rounded-xl border border-[#1a2b4a]/10 p-4 space-y-3">
+        <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Draft a LinkedIn reply</p>
+        <p className="text-[#7a8a99]">LinkedIn doesn&rsquo;t let apps read or answer messages, so LC Spark can&rsquo;t sit inside your LinkedIn inbox. Paste what someone sent you, LC Spark writes a reply in your voice from your Knowledge, and you copy it and send it in LinkedIn yourself.</p>
+        <div>
+          <label className={label} htmlFor="li-who">Their first name (optional)</label>
+          <Input id="li-who" value={who} onChange={(e) => setWho(e.target.value)} maxLength={60} />
+        </div>
+        <div>
+          <label className={label} htmlFor="li-text">The message you received</label>
+          <textarea id="li-text" className={field} rows={5} maxLength={1500} value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste their LinkedIn message here." />
+        </div>
+        <Button onClick={draft} disabled={busy || !text.trim()}>{busy ? "Writing…" : "Write a draft reply"}</Button>
+        {err && <p className="text-[#8a2f2f]" role="alert">{err}</p>}
+        {out && (
+          <div className="rounded-lg border border-[#c9a227]/50 bg-[#F8F5F0] dark:bg-[#1a2b4a]/20 p-3 space-y-2">
+            <p className="whitespace-pre-wrap">{out}</p>
+            <Button variant="ghost" size="sm" onClick={() => { void navigator.clipboard?.writeText(out).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {}); }}>{copied ? "Copied" : "Copy reply"}</Button>
+            <p className="text-xs text-[#7a8a99]">Read it and change anything you like before you send it. Nothing is saved or sent from here.</p>
+          </div>
+        )}
+      </div>
+      <div className="rounded-xl border border-[#1a2b4a]/10 p-4 space-y-1 text-[#7a8a99]">
+        <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Other ways LinkedIn can feed LC Spark and the Suite</p>
+        <p>LinkedIn Lead Gen Forms can send each new lead to the Suite through Make, the same way your Facebook lead ads do. Leads you message by hand are tracked on the Outreach pipeline cards.</p>
+      </div>
     </div>
   );
 }

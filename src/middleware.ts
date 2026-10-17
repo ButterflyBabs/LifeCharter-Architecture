@@ -68,6 +68,7 @@ const PUBLIC_APIS = [
   "/api/payhip/webhook", // Payhip orders; signature = sha256(PAYHIP_API_KEY)
   "/api/spark/public", // LC Spark website chat widget; origin-checked against the account's own sites, public key picks the account, rate-limited + honeypot
   "/api/spark/instagram", // LC Spark Meta webhook (verify token + X-Hub-Signature-256) and OAuth callback (signed state + owner session); /connect checks the owner itself
+  "/api/spark/facebook", // LC Spark Facebook Page webhook (verify token + X-Hub-Signature-256), Meta deauthorize/data-deletion callbacks and OAuth callback (signed state + owner session); /connect checks the owner itself
   "/api/google/callback", // OAuth return; verifies its own signed state (mailbox flow also requires the signed-in owner)
   "/api/microsoft/callback", // same
   "/api/book", // public booking pages (slots, book, manage by private token)

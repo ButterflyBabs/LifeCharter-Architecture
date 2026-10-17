@@ -28,6 +28,11 @@ export interface SparkSettings {
   ig_username: string | null;
   ig_access_token: string | null;
   ig_token_expires_at: string | null;
+  fb_enabled: boolean;
+  fb_page_id: string | null;
+  fb_page_name: string | null;
+  fb_user_id: string | null;
+  fb_access_token: string | null;
   price_per_conversation_cents: number | null;
   monthly_conversation_cap: number | null;
   created_at?: string;
