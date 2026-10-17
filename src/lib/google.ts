@@ -167,7 +167,19 @@ export async function listConnections(
 }
 
 export async function removeConnection(ownerId: string, accountKey: string): Promise<void> {
-  await createServerClient().from("google_credentials").delete().eq("owner_id", ownerId).eq("account_key", accountKey);
+  const db = createServerClient();
+  // Disconnecting also revokes the grant at Google (best effort), so the Suite no longer appears under the person's
+  // Google Account > Security > Third-party access. The stored tokens are then deleted either way.
+  const { data: row } = await db.from("google_credentials").select("refresh_token, access_token").eq("owner_id", ownerId).eq("account_key", accountKey).maybeSingle();
+  const token = (row?.refresh_token as string | null) || (row?.access_token as string | null);
+  if (token) {
+    await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }).toString(),
+    }).catch(() => null);
+  }
+  await db.from("google_credentials").delete().eq("owner_id", ownerId).eq("account_key", accountKey);
 }
 
 export async function isConnected(scope?: MailScope): Promise<boolean> {

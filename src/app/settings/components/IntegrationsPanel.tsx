@@ -96,7 +96,7 @@ function CalendarConnections() {
         )}
       </div>
       <p className="text-xs text-[#b8a898] mb-3">
-        Connect Google or Microsoft to read your inbox &amp; calendar and let the app add events (like planning sessions).
+        Connect Google or Microsoft to see your calendar, send emails from your own address and let the app add events (like planning sessions). A Microsoft 365 account also lets the Suite show your inbox.
         Each connected email account counts toward your plan&apos;s limit.
       </p>
       <p className="text-xs text-[#b8a898] mb-3">
