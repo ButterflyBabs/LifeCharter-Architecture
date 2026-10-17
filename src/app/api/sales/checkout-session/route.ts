@@ -23,6 +23,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ALUMNI_OFFER_OPEN } from "@/lib/alumniOffer";
 import { cookies } from "next/headers";
 import { AFF_COOKIE } from "@/lib/affiliates";
 import { stripe } from "@/lib/stripe";
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     if (email && (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email))) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
-    const isAlumni = alumni === true;
+    const isAlumni = ALUMNI_OFFER_OPEN && alumni === true; // the $500 graduate credit is paused (src/lib/alumniOffer.ts)
 
     // 50/50 plan: half of the implementation fee today, the other half 30 days later (added by the webhook once the
     // checkout completes, so it lands on the invoice that also carries the first monthly charge). The alumni credit

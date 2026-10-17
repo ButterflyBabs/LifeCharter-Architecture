@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useProspect } from "./ProspectContext";
+import { ALUMNI_OFFER_OPEN } from "@/lib/alumniOffer";
 
 interface Props {
   tier: "starter" | "growth" | "vip";
@@ -42,7 +43,7 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
       const res = await fetch("/api/sales/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni, split, annual }),
+        body: JSON.stringify({ tier, email: email || undefined, fullName: fullName || undefined, alumni: ALUMNI_OFFER_OPEN && alumni, split, annual }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Something went wrong");
@@ -105,15 +106,17 @@ export function CombinedCheckoutButton({ tier, implementationDisplay, monthlyDis
         </div>
       </div>
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
-        <input
-          type="checkbox"
-          checked={alumni}
-          onChange={(e) => setAlumni(e.target.checked)}
-          className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
-        />
-        I&apos;m a LifeCharter graduate — $500 off implementation instead of FIRSTMONTHFREE
-      </label>
+      {ALUMNI_OFFER_OPEN && (
+        <label className="mt-3 flex items-center gap-2 text-xs text-[#b8a898]">
+          <input
+            type="checkbox"
+            checked={alumni}
+            onChange={(e) => setAlumni(e.target.checked)}
+            className="rounded border-[#F3EEE4]/30 bg-[#141826] accent-[#c9a227]"
+          />
+          I&apos;m a LifeCharter graduate — $500 off implementation instead of FIRSTMONTHFREE
+        </label>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
         <input
