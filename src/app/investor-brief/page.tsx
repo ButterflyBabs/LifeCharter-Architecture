@@ -98,6 +98,7 @@ const CSS = `
 
 function dateLabel(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
+  if (!d) return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" }); // month only, no day
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
