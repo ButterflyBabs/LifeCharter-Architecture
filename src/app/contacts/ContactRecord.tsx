@@ -242,6 +242,36 @@ function HistorySection({ kind, title, items, contactId, onChanged, setMsg }: { 
   );
 }
 
+// Reports written in LC Volant from a session with this person (newest first). Hidden when there are none,
+// or when a team member has no access to LC Volant.
+function VolantReports({ contactId }: { contactId: string }) {
+  const [items, setItems] = useState<{ id: string; title: string; session_date: string }[]>([]);
+  const [name, setName] = useState("LC Volant");
+  useEffect(() => {
+    fetch(`/api/volant?contact=${contactId}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        setItems(d?.reports ?? []);
+        if (d?.settings?.label) setName(d.settings.label);
+      })
+      .catch(() => setItems([]));
+  }, [contactId]);
+  if (!items.length) return null;
+  return (
+    <div>
+      <p className={heading}>{name} reports</p>
+      <ul className="space-y-1">
+        {items.map((r) => (
+          <li key={r.id} className="text-sm">
+            <a href={`/volant?report=${r.id}`} className="text-[#2E7C83] hover:underline">{r.title}</a>
+            <span className="text-xs text-[#7a8a99]"> · {new Date(`${r.session_date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function ContactRecord({
   id,
   allTags,
@@ -598,6 +628,8 @@ export default function ContactRecord({
         </div>
 
         <FollowUpScheduler contact={{ id: c.id, name: fullName(c), email: c.email }} setMsg={setMsg} />
+
+        <VolantReports contactId={c.id} />
 
         <ContactEmails contactId={c.id} name={fullName(c)} />
 

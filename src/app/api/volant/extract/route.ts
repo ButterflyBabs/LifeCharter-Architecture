@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { crmAccount } from "../../crm/guard";
+import { volantAccount } from "@/lib/volantServer";
 import { cleanCaptionFile, docxXmlToText, VOLANT_MAX_TRANSCRIPT } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ const MAX_BYTES = 4 * 1024 * 1024; // under the host's request limit; a 2-hour t
 // LC Volant: read the words out of an uploaded transcript file (from any app or device) and hand them back to the
 // page. Nothing is stored here; the text is saved only when the report is made. Accepts .txt .md .vtt .srt .docx .pdf.
 export async function POST(request: Request) {
-  const a = await crmAccount(request);
+  const a = await volantAccount(request);
   if ("denied" in a) return a.denied;
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");

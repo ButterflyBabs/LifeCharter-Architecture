@@ -27,9 +27,15 @@ export async function GET() {
   if (demo()) return NextResponse.json({ has: false });
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ has: false });
-  const { data } = await createServerClient().from("nav_preferences").select("section_order, item_order").eq("master_plan_id", planId).maybeSingle();
-  if (!data) return NextResponse.json({ has: false });
-  return NextResponse.json({ has: true, sectionOrder: data.section_order ?? [], itemOrder: data.item_order ?? {} });
+  const db = createServerClient();
+  const [{ data }, { data: volant }] = await Promise.all([
+    db.from("nav_preferences").select("section_order, item_order").eq("master_plan_id", planId).maybeSingle(),
+    db.from("volant_settings").select("label").eq("master_plan_id", planId).maybeSingle(),
+  ]);
+  // Pages the account renamed for itself (LC Volant can be called anything), keyed by menu item id.
+  const labels: Record<string, string> = volant?.label ? { volant: String(volant.label) } : {};
+  if (!data) return NextResponse.json({ has: false, labels });
+  return NextResponse.json({ has: true, sectionOrder: data.section_order ?? [], itemOrder: data.item_order ?? {}, labels });
 }
 
 export async function PUT(request: Request) {

@@ -11,6 +11,8 @@
 //
 // Imported by the edge middleware, so it must stay dependency-free.
 
+import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
+
 export type TeamRole = "admin" | "editor" | "viewer" | "sales";
 
 export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
@@ -94,7 +96,7 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "sales_reference" | "executive_home" | "assistant" | "accountability" | "custom_pages";
+  | "team_huddle" | "volant" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "sales_reference" | "executive_home" | "assistant" | "accountability" | "custom_pages";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -121,6 +123,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "website_review", label: "Website Review", pages: ["/website-review"], apis: ["/api/website-review"] },
   { key: "inbox_calendar", label: "Inbox & Calendar", pages: [], apis: ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar"] },
   { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
+  { key: "volant", label: "LC Volant (transcripts into reports)", pages: ["/volant"], apis: ["/api/volant"], houseOnly: !VOLANT_OPEN_TO_ALL },
   { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"], houseOnly: true },
   { key: "crm", label: "Contacts, tags, invites, short links & affiliates", pages: ["/contacts", "/tags", "/invites", "/affiliates", "/short-links", "/links-directory"], apis: ["/api/crm", "/api/affiliates", "/api/short-links", "/api/links-directory"] },
   { key: "calendars", label: "Calendars (booking pages)", pages: ["/calendars"], apis: ["/api/calendars"] },

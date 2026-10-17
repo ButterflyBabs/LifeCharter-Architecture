@@ -5,7 +5,7 @@ import { logEvent } from "@/lib/crm";
 import { aiClient, extractJson } from "@/lib/ai/client";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
-import { crmAccount } from "../../crm/guard";
+import { volantAccount } from "@/lib/volantServer";
 import { buildPrompt, cleanReport, templateByKey, templateName, VOLANT_MAX_TRANSCRIPT } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0
 // account's own key, the report saved (with the transcript) and, when a contact was picked, a line on their timeline.
 // Nothing becomes a task here: each action item waits for its own Approve on the page.
 export async function POST(request: Request) {
-  const a = await crmAccount(request);
+  const a = await volantAccount(request);
   if ("denied" in a) return a.denied;
   const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const t = templateByKey(str(b.templateKey, 60));

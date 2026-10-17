@@ -112,6 +112,11 @@ function ContactsTab({ setMsg }: { setMsg: (m: string) => void }) {
     if (t) setTag(t);
   }, []);
   const [openId, setOpenId] = useState("");
+  // Arriving from an LC Volant report: /contacts?contact=<id> opens that person's record.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("contact");
+    if (c && /^[0-9a-f-]{36}$/i.test(c)) setOpenId(c);
+  }, []);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [add, setAdd] = useState({ email: "", firstName: "", lastName: "", phone: "", note: "" });

@@ -76,6 +76,7 @@ import {
   Rocket,
   LogOut,
   Users,
+  Feather,
   ClipboardCheck,
   Mountain,
   BookOpen,
@@ -94,6 +95,7 @@ import {
   Eye,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
+import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 
 // Navigation grouped into labeled sections, matching the Executive
 // Dashboard's sidebar pattern (colored section dot + uppercase label) —
@@ -112,6 +114,7 @@ const navigationSections = [
       { id: "reminders", label: "Reminders", icon: BellRing, href: "/reminders" },
       { id: "assistant-approvals", label: "Waiting for my approval", icon: ClipboardCheck, href: "/assistant-approvals" },
       { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
+      { id: "volant", label: "LC Volant", icon: Feather, href: "/volant" },
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
@@ -184,7 +187,7 @@ const navigationSections = [
 ];
 
 // Pages in the everyday sections that only Babs sees while they are being shaped.
-const ARCHITECT_ONLY_IDS: string[] = QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"];
+const ARCHITECT_ONLY_IDS: string[] = [...(QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"]), ...(VOLANT_OPEN_TO_ALL ? [] : ["volant"])];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
 // so; the pages and their APIs enforce the same check on the server.
@@ -753,6 +756,7 @@ export function CollapsibleSidebar() {
   // The order is saved on the ACCOUNT (so it is the same on every device and for the account's team);
   // this device keeps a copy so the menu doesn't jump while the saved order loads.
   const [navLoaded, setNavLoaded] = useState(false);
+  const [itemLabels, setItemLabels] = useState<Record<string, string>>({});
   const skipSave = useRef(true);
   useEffect(() => {
     if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) {
@@ -762,6 +766,7 @@ export function CollapsibleSidebar() {
     fetch("/api/nav-order", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
+        if (d?.labels && typeof d.labels === "object") setItemLabels(d.labels);
         if (d?.has) {
           skipSave.current = true;
           setSectionOrder(Array.isArray(d.sectionOrder) ? d.sectionOrder : []);
@@ -832,7 +837,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
@@ -841,7 +846,7 @@ export function CollapsibleSidebar() {
     }
     const rest = s.items.filter((i) => !placed.includes(i.id)).map((i) => i.id);
     return { ...s, items: [...placed, ...rest].map((id) => byId.get(id)!).filter(Boolean) };
-  });
+  }).map((s) => (Object.keys(itemLabels).length ? { ...s, items: s.items.map((i) => (itemLabels[i.id] ? { ...i, label: itemLabels[i.id] } : i)) } : s));
   const GS_TITLE = "GETTING STARTED";
   const gsBaseIdx = baseSections.findIndex((x) => x.title === GS_TITLE);
   const gsPinned = !isDemo && pinGettingStarted && gsBaseIdx > 0;
