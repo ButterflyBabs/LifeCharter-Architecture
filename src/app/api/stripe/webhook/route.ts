@@ -3,6 +3,7 @@
  * Processes Stripe events and updates subscriptions
  */
 
+import { sendYear1Agreement } from "@/lib/year1Agreement";
 import { WEBSITE_BUILD } from "@/lib/websiteBuild";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -126,6 +127,12 @@ export async function POST(req: NextRequest) {
               // Stripe redelivers events (and they can be resent by hand): one timeline line per checkout session.
               const { data: seen } = await supabase.from("crm_events").select("id").eq("contact_id", c.id).eq("kind", "purchase").eq("detail->>stripeSession", session.id).limit(1);
               if (!seen?.length) await logEvent(housePlan, c.id, "purchase", `Bought LifeCharter Command Suite${meta.planId || meta.tier ? ` (${meta.planId || meta.tier})` : ""}`, { stripeSession: session.id }).catch(() => {});
+            }
+            // Self-serve Starter: send the Year-1 Operating Agreement for signature right away (with the link to book their
+            // 1:1 Welcome Call with Babs in the email). Calls bought with Marcello get it from the Sales Reference page instead.
+            if (c && meta.flow === "self_serve_starter") {
+              const who = (session.customer_details?.name || meta.fullName || "").trim() || buyer.split("@")[0];
+              await sendYear1Agreement({ masterPlanId: housePlan, contactId: c.id, name: who, email: buyer, phone: session.customer_details?.phone || "", tier: "Starter", payment: "full", by: "self-serve sign-up", welcomeCallLink: true }).catch((e) => console.error("year-1 agreement:", e));
             }
             // Credit the affiliate who sent them (their link at checkout, or who referred this contact).
             if (c && typeof session.amount_total === "number") {
