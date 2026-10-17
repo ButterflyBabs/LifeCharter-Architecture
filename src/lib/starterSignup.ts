@@ -5,7 +5,7 @@ import { logEvent, upsertContact } from "@/lib/crm";
 import { sendYear1Agreement } from "@/lib/year1Agreement";
 import { provisionAccountForEmail } from "@/lib/provisionAccount";
 import { ownerMasterPlanId } from "@/lib/housePlan";
-import { renderAccountEmail, sendRendered } from "@/lib/email/accountReadyEmail";
+import { sendRendered } from "@/lib/email/accountReadyEmail";
 
 // Self-serve Starter sign-up: pay -> sign the Year-1 Operating Agreement -> the account opens.
 // The account (and any access to the Suite) is created ONLY after the client has signed, so nobody is ever chased for paperwork.
@@ -101,7 +101,6 @@ async function sendAgreementFor(row: StarterRow, phone: string, contactId: strin
     tier: "Starter",
     payment: "full",
     by: "self-serve sign-up",
-    welcomeCallLink: true,
     redirectUrl: `${APP_URL}/get-started/success?session_id=${encodeURIComponent(row.stripe_session_id)}`,
     accountOpensOnSigning: true,
   });
@@ -141,19 +140,35 @@ export async function passwordLinkFor(email: string): Promise<string | null> {
   return data.properties.action_link;
 }
 
-async function emailAccountOpen(row: StarterRow): Promise<void> {
-  const link = (await passwordLinkFor(row.email)) || `${APP_URL}/forgot-password`;
+const escHtml = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// The branded email that goes out the moment they sign: a big button to book the 1:1 Welcome Call with Babs. When they
+// left the page before the account opened (the two-minute job opened it), it also carries the "choose my password and
+// sign in" button. Sent once, by whichever path opened the account.
+export async function emailAfterSigning(row: StarterRow, opts: { signIn: boolean }): Promise<void> {
   const first = (row.full_name || "").trim().split(/\s+/)[0] || "";
   const welcome = `${APP_URL}/book/new-client-welcome-call?name=${encodeURIComponent(row.full_name || "")}&email=${encodeURIComponent(row.email)}`;
-  const body = [
-    "{{greeting}}",
-    "Thank you for signing your Year-1 Operating Agreement. Your LifeCharter Command Suite account is now open.",
-    "{{password_link}}",
-    `That button signs you in so you can choose your password. If it has expired, go to ${APP_URL}/forgot-password and enter this email address.`,
-    `If you have not yet chosen a time for your 1:1 Welcome Call with me, you can do that here: ${welcome}`,
+  const signInLink = opts.signIn ? (await passwordLinkFor(row.email)) || `${APP_URL}/forgot-password` : null;
+  const p = 'style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#2E3A46"';
+  const btn = (href: string, label: string, primary: boolean) =>
+    `<p style="margin:22px 0"><a href="${escHtml(href)}" style="display:inline-block;${primary ? "background:#0F1A38;color:#E9D7A9" : "background:#E9D7A9;color:#0F1A38"};font-weight:bold;font-size:16px;padding:14px 26px;border-radius:999px;text-decoration:none">${escHtml(label)}</a></p>`;
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;color:#0F1A38">
+<p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8923A;font-weight:bold">LifeCharter Command Suite</p>
+<h1 style="margin:0 0 18px;font-size:24px;line-height:1.25;color:#0F1A38">Thank you for signing, ${escHtml(first || "welcome")}. Next: book your Welcome Call.</h1>
+<p ${p}>Your Year-1 Operating Agreement is signed${opts.signIn ? ", and your Command Suite account is now open" : ""}. The next step is your 1:1 Welcome Call with me. It is 30 minutes, just the two of us, before your implementation begins.</p>
+${btn(welcome, "Choose a time for my Welcome Call", true)}
+${signInLink ? `<p ${p}>Your account is open. This button signs you in so you can choose your password. If it has expired, go to ${escHtml(APP_URL)}/forgot-password and enter this email address.</p>${btn(signInLink, "Choose my password and sign in", false)}` : ""}
+<p ${p}>Questions? Just reply to this email or write to support@lccommandsuite.com.</p>
+<p ${p}>Head up - Wings out<br>Babs 🦋</p></div>`;
+  const text = [
+    `Thank you for signing, ${first || "welcome"}. Next: book your Welcome Call.`,
+    `Your Year-1 Operating Agreement is signed${opts.signIn ? ", and your Command Suite account is now open" : ""}. The next step is your 1:1 Welcome Call with me: 30 minutes, just the two of us, before your implementation begins.`,
+    `Choose a time for my Welcome Call: ${welcome}`,
+    ...(signInLink ? [`Your account is open. Choose your password and sign in: ${signInLink} (if it has expired, go to ${APP_URL}/forgot-password and enter this email address).`] : []),
+    "Questions? Reply to this email or write to support@lccommandsuite.com.",
     "Head up - Wings out\nBabs 🦋",
   ].join("\n\n");
-  const ok = await sendRendered(row.email, renderAccountEmail("Your LifeCharter Command Suite account is open", body, { firstName: first, loginUrl: link, masterclassLink: null }));
+  const ok = await sendRendered(row.email, { subject: "Next step: book your Welcome Call with Babs", html, text });
   if (ok) await createServerClient().from("starter_signups").update({ emailed_at: new Date().toISOString() }).eq("stripe_session_id", row.stripe_session_id);
 }
 
@@ -179,7 +194,7 @@ export async function processPendingSignups(): Promise<{ checked: number; opened
     }
     if (await clientHasSigned(row.agreement_document_id, row.email)) {
       if (await openAccount(row)) {
-        await emailAccountOpen(row);
+        await emailAfterSigning(row, { signIn: true });
         opened++;
       }
       continue;

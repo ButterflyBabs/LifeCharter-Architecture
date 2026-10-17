@@ -72,7 +72,7 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
   const first = name.split(/\s+/)[0];
   const message =
     `Hi ${first}, welcome to LifeCharter Command Suite! Please review and sign your Year-1 Operating Agreement. It takes about two minutes. ` +
-    (i.accountOpensOnSigning ? `Your Command Suite account opens the moment you sign. ` : "") +
+    (i.accountOpensOnSigning ? `Your Command Suite account opens the moment you sign, and we will email you right after so you can book your 1:1 Welcome Call with me. ` : "") +
     (i.welcomeCallLink ? `After you sign, please choose a time for your 1:1 Welcome Call with me: ${APP_URL}/book/new-client-welcome-call?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)} ` : "") +
     `If you have any questions, reply to this email or write to support@lccommandsuite.com. Head up - Wings out. Babs`;
 

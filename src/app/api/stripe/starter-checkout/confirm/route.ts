@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { clientHasSigned, getSignup, openAccount, passwordLinkFor, startStarterSignup } from "@/lib/starterSignup";
+import { clientHasSigned, emailAfterSigning, getSignup, openAccount, passwordLinkFor, startStarterSignup } from "@/lib/starterSignup";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       if (!row.agreement_document_id || !(await clientHasSigned(row.agreement_document_id, row.email))) {
         return NextResponse.json({ state: "awaiting_signature", email: row.email, sent: Boolean(row.agreement_document_id), test });
       }
-      await openAccount(row);
+      if (await openAccount(row)) await emailAfterSigning(row, { signIn: false }).catch(() => {});
     }
 
     const link = await passwordLinkFor(row.email);
