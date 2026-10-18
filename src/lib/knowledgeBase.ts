@@ -1456,6 +1456,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["client portal", "portal", "client page", "private link", "client login", "sessions left", "package", "session count", "homework", "client files", "share notes", "messages", "client messages", "attended", "customize portal", "portal colors", "portal logo", "banner", "rename sections", "portal look", "branding"],
   },
   {
+    id: "programs",
+    category: "Sales",
+    question: "How do I run a group program or cohort? What is Programs?",
+    answer:
+      "Open Clients & Sales, then Programs, type a name and press Create. Fill in the details (dates, a description members see, and the offer it is sold as: once payments are on, anyone who buys that offer joins automatically and gets their portal link). Add members from Contacts (tick Email their portal link if they don't have one yet). Add sessions with a date, time and join link; lessons with text, a video link, another link or a file, each open now or on a date you pick (members see locked lessons with their opening date); group homework each member ticks off (you see who is done); and LC Volant group session notes to share (private notes and drafts never show). The group conversation lets members post and reply, showing first names only; you can post as the host, reply, pin and delete, or turn the conversation off for a program. Members see all of it in the Programs section of their own client portal. Archive hides a program from members.",
+    keywords: ["program", "programs", "cohort", "group program", "group coaching", "course", "mastermind", "lessons", "modules", "drip", "group homework", "community feed", "group conversation", "members"],
+  },
+  {
     id: "client-care",
     category: "Sales",
     question: "How do I check in with my clients automatically? What is Client Care?",
