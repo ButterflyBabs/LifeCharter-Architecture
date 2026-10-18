@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FileSignature, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
-// Clients & Sales › Agreements & Proposals (task 1072): write or upload a document, add signers, send for signature
+// Clients & Sales › LC Plume, agreements and proposals with e-signature (task 1072): write or upload a document, add signers, send for signature
 // (emailed link + 6-digit code), follow every step, and download the sealed copy with its certificate of completion.
 
 type Row = { id: string; title: string; kind: string; status: string; source: string; sent_at: string | null; completed_at: string | null; updated_at: string; signers: { name: string; status: string }[] };
@@ -96,8 +96,8 @@ export default function Agreements() {
       <header className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1a2b4a] to-[#c9a227]"><FileSignature className="h-6 w-6 text-white" /></div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Clients &amp; Sales</p>
-          <h1 className="text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Agreements &amp; Proposals</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Clients &amp; Sales · Agreements &amp; Proposals</p>
+          <h1 className="text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">LC Plume</h1>
           <p className="mt-1 max-w-3xl text-[15px] text-[#5b5f73] dark:text-[#b8a898]">Write or upload an agreement or proposal, send it for e-signature, and get back a sealed PDF with a certificate of completion. Signers open a private link and confirm a code sent to their email; every step is recorded.</p>
         </div>
       </header>

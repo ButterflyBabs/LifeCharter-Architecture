@@ -2,7 +2,7 @@ import type { ActionTool } from "./types";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
 import { brandFor } from "@/lib/esignServer";
 
-// The assistant and Agreements & Proposals (task 1072): it can report who has signed and draft a document with its
+// The assistant and LC Plume (task 1072): it can report who has signed and draft a document with its
 // signers. It never sends one: the client reads it and presses Send for signature themselves.
 const clean = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -12,7 +12,7 @@ export const listAgreements: ActionTool = {
   name: "list_agreements",
   kind: "read",
   apiPath: "/api/agreements",
-  description: "List the client's agreements and proposals (Agreements & Proposals) with status and who has or hasn't signed yet, and the starter and saved templates. Use for 'has Ann signed?', 'what's waiting for signatures', and before drafting one.",
+  description: "List the client's agreements and proposals (LC Plume) with status and who has or hasn't signed yet, and the starter and saved templates. Use for 'has Ann signed?', 'what's waiting for signatures', and before drafting one.",
   parameters: { type: "object", properties: {} },
   read: async (_a, ctx) => {
     const [{ data: docs }, { data: tpls }] = await Promise.all([
@@ -37,7 +37,7 @@ export const draftAgreement: ActionTool = {
   kind: "write",
   apiPath: "/api/agreements",
   description:
-    "Draft an agreement or proposal in Agreements & Proposals, saved as a DRAFT with its signers; it is never sent by you (the client reads it and presses Send for signature). Either name a template (part of its name, from list_agreements) or write the body yourself in plain words with '## ' headings, in the client's voice, using only facts you know; leave anything unknown as a {{Blank}} for them to fill. For a proposal you may give amount in US dollars. Starter templates are not legal advice: say their attorney should review. The client approves first.",
+    "Draft an agreement or proposal in LC Plume, saved as a DRAFT with its signers; it is never sent by you (the client reads it and presses Send for signature). Either name a template (part of its name, from list_agreements) or write the body yourself in plain words with '## ' headings, in the client's voice, using only facts you know; leave anything unknown as a {{Blank}} for them to fill. For a proposal you may give amount in US dollars. Starter templates are not legal advice: say their attorney should review. The client approves first.",
   parameters: {
     type: "object",
     properties: {
@@ -65,7 +65,7 @@ export const draftAgreement: ActionTool = {
           left.length ? `Blanks still to fill: ${left.slice(0, 8).join(", ")}${left.length > 8 ? "…" : ""}` : "Every blank is filled.",
           "Saved as a draft. Nothing is emailed until you press Send for signature.",
         ],
-        links: [{ label: "Open Agreements & Proposals", href: "/agreements" }],
+        links: [{ label: "Open LC Plume", href: "/agreements" }],
       },
     };
   },
@@ -83,7 +83,7 @@ export const draftAgreement: ActionTool = {
     }
     if (rows.length) await ctx.db.from("sign_signers").insert(rows);
     await ctx.db.from("sign_events").insert({ document_id: data.id, event: "Created", detail: "drafted by the assistant" });
-    return { summary: `Saved "${r.title}" as a draft. Open Agreements & Proposals to read it, fill any blanks and press Send for signature.`, result: { documentId: data.id }, undo: { documentId: data.id } };
+    return { summary: `Saved "${r.title}" as a draft. Open LC Plume to read it, fill any blanks and press Send for signature.`, result: { documentId: data.id }, undo: { documentId: data.id } };
   },
   undo: async (u, ctx) => {
     await ctx.db.from("sign_documents").delete().eq("master_plan_id", ctx.planId).eq("id", u.documentId as string).eq("status", "draft");

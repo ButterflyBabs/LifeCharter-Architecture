@@ -8,7 +8,7 @@ import { DOC_COLUMNS, SIGNER_COLUMNS, audit, brandFor, loadDoc, sendDocument, si
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Clients & Sales › Agreements & Proposals (task 1072), the owner's side.
+// Clients & Sales › LC Plume (task 1072), the owner's side.
 //   GET            -> documents with signer progress, templates (starter + own), offers
 //   GET ?id=<doc>  -> one document with its signers and audit trail
 //   POST { action: "create" | "save" | "send" | "remind" | "void" | "duplicate" | "delete" | "download" | "save-template" | "delete-template", ... }

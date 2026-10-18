@@ -3,7 +3,7 @@ import { logEvent, upsertContact } from "@/lib/crm";
 import { fillPlaceholders, newToken } from "@/lib/esign";
 import { loadDoc, sendDocument } from "@/lib/esignServer";
 
-// Sends the Year-1 Operating Agreement for e-signature through the Suite's own Agreements & Proposals (attorney
+// Sends the Year-1 Operating Agreement for e-signature through LC Plume, the Suite's own e-signature (attorney
 // approved 2026-10-18). Used by the Sales Reference page
 // (Marcello, on a call) and by the self-serve Starter sign-up (automatic, right after payment). The document is made
 // from the house template "LCCS Year-1 Operating Agreement" with everything we know filled in; the Client signs first,
@@ -53,11 +53,11 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
   if (contactId) {
     const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const { data: recent } = await db.from("crm_events").select("id").eq("master_plan_id", i.masterPlanId).eq("contact_id", contactId).eq("title", "Year-1 Operating Agreement sent for signature").gte("created_at", since).limit(1);
-    if (recent?.length) return { ok: false, status: 409, error: "The agreement was already sent to this client in the last 24 hours. Check Agreements & Proposals before sending it again." };
+    if (recent?.length) return { ok: false, status: 409, error: "The agreement was already sent to this client in the last 24 hours. Check LC Plume before sending it again." };
   }
 
   const { data: tpl } = await db.from("sign_templates").select("body").eq("master_plan_id", i.masterPlanId).eq("key", TEMPLATE_KEY).maybeSingle();
-  if (!tpl?.body) return { ok: false, status: 503, error: "The Year-1 Operating Agreement template is missing from Agreements & Proposals. Ask Babs." };
+  if (!tpl?.body) return { ok: false, status: 503, error: "The Year-1 Operating Agreement template is missing from LC Plume. Ask Babs." };
   const body = fillPlaceholders(String(tpl.body), {
     "Client name": name,
     "Business name of the client": i.businessName?.trim().slice(0, 160) || "(not given)",

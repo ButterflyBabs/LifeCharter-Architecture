@@ -24,7 +24,7 @@ export const SALES_APIS = [
   "/api/sales/website-build-checkout", // the Website Alignment Build buttons on the sales page
   "/api/sales/contacts",
   "/api/sales/save-call",
-  "/api/sales/send-agreement", // sends the Year-1 Operating Agreement for e-signature (Agreements & Proposals)
+  "/api/sales/send-agreement", // sends the Year-1 Operating Agreement for e-signature (LC Plume)
   "/api/sales/my-calendar", // a booking host sees their own calls and sets their own hours
   "/api/tasks", // their own assigned tasks only (each route narrows a Sales member to tasks assigned to them)
   "/api/team-huddle", // the Team Huddle page for people Babs shared it with (the route itself checks the email list)

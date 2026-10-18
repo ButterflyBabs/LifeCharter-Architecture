@@ -222,7 +222,7 @@ export default function SignPage({ params }: { params: { token: string } }) {
         )}
         {v.next && <a href={v.next} className={`${btn} inline-block`}>Continue</a>}
         {v.canDownload && <button className={btn} disabled={busy} onClick={download}>Download the signed copy</button>}
-        <footer className="pt-6 text-center text-xs text-[#9aa3ad]">Signed electronically through the LifeCharter Command Suite. Every step is recorded in a certificate of completion.</footer>
+        <footer className="pt-6 text-center text-xs text-[#9aa3ad]">Signed electronically with LC Plume, part of the LifeCharter Command Suite. Every step is recorded in a certificate of completion.</footer>
       </div>
     </main>
   );
