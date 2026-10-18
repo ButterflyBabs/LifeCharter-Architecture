@@ -2,10 +2,10 @@ import { createHash, randomBytes, randomInt } from "crypto";
 
 // E-signature (task 1072), the pure parts: placeholders, tokens and codes, the consent wording and signer order.
 // Legal basics (US ESIGN Act / UETA): the signer shows intent to sign, agrees to do business electronically, the
-// signature is tied to the record, and every signer can keep a copy. The consent and certificate wording below are
-// DRAFTS for Babs's attorney to approve before real use.
+// signature is tied to the record, and every signer can keep a copy. The consent, the sign line and the certificate of
+// completion were approved by Babs's attorney on 2026-10-18 (task 1164): change their wording only with the attorney.
 
-export const CONSENT_VERSION = "2026-10-18-draft";
+export const CONSENT_VERSION = "2026-10-18-attorney-approved";
 export const consentText = (business: string) =>
   `I agree to use electronic records and signatures for this document with ${business}. I understand that my electronic signature is as legally binding as a handwritten one, that I can download a copy of the signed document, and that I may ask ${business} for a paper copy or to sign on paper instead.`;
 export const SIGN_AGREE = "By pressing Sign, I adopt the signature above as my own and agree to sign this document electronically.";

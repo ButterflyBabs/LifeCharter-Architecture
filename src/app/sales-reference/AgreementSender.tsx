@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useProspect } from "./ProspectContext";
 
-// Sends the Year-1 Operating Agreement for signature (BoldSign) to the client, from the live close. The name and
+// Sends the Year-1 Operating Agreement for e-signature (the Suite's own Agreements & Proposals) to the client, from the live close. The name and
 // email come from the contact picked in the lookup; they can be typed too. It asks once more before sending.
 export function AgreementSender() {
   const { prefill, version } = useProspect();

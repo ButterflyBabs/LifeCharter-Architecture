@@ -1,21 +1,21 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { logEvent, upsertContact } from "@/lib/crm";
+import { fillPlaceholders, newToken } from "@/lib/esign";
+import { loadDoc, sendDocument } from "@/lib/esignServer";
 
-// Sends the Year-1 Operating Agreement for signature through BoldSign. Used by the Sales Reference page (Marcello, on a
-// call) and by the self-serve Starter sign-up (automatic, right after payment). The BoldSign template is
-// "LCCS Year-1 Operating Agreement": role 1 is the Client (signs first), role 2 is the Company (AmiLynne countersigns).
-// Everything we know about the client is filled in; the template locks those fields, so the client only signs.
-// Needs BOLDSIGN_API_KEY on Vercel; BOLDSIGN_TEMPLATE_ID, BOLDSIGN_API_BASE and BOLDSIGN_COMPANY_SIGNER_EMAIL can override.
+// Sends the Year-1 Operating Agreement for e-signature through the Suite's own Agreements & Proposals (task 1094;
+// BoldSign retired 2026-10-18 after the attorney approved the Suite version). Used by the Sales Reference page
+// (Marcello, on a call) and by the self-serve Starter sign-up (automatic, right after payment). The document is made
+// from the house template "LCCS Year-1 Operating Agreement" with everything we know filled in; the Client signs first,
+// then AmiLynne countersigns. Agreements sent through BoldSign before the switch are still checked there.
 
-const TEMPLATE_ID = process.env.BOLDSIGN_TEMPLATE_ID || "aacf6304-86ae-4585-9ead-47823a4e0aa5";
-const API_BASE = (process.env.BOLDSIGN_API_BASE || "https://api.boldsign.com").replace(/\/$/, "");
+const TEMPLATE_KEY = "lccs-year1";
 const COMPANY_NAME = "AmiLynne Carroll";
-const COMPANY_EMAIL = process.env.BOLDSIGN_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
+const COMPANY_EMAIL = process.env.YEAR1_COMPANY_SIGNER_EMAIL || process.env.BOLDSIGN_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 
-// Field ids in the BoldSign template (BoldSign numbers them in the order they were placed).
-export const TIER_FIELD: Record<string, string> = { Starter: "CheckBox1", Growth: "CheckBox2", VIP: "CheckBox3" };
-export const PAYMENT_FIELD: Record<string, string> = { full: "CheckBox4", split: "CheckBox5", annual: "CheckBox6" };
+export const TIER_FIELD: Record<string, string> = { Starter: "Starter", Growth: "Growth", VIP: "VIP" };
+export const PAYMENT_FIELD: Record<string, string> = { full: "Implementation Fee paid in full, then the Monthly Fee", split: "50/50: half of the Implementation Fee today and half in about 30 days, then the Monthly Fee", annual: "Annual plan paid in full (covers the Implementation Fee and the first 12 months)" };
 
 export interface AgreementInput {
   masterPlanId: string;
@@ -28,17 +28,15 @@ export interface AgreementInput {
   payment: string;
   by?: string | null; // who or what sent it, for the timeline
   welcomeCallLink?: boolean; // add the Welcome Call booking link to the email (automatic sends; on a call it is booked live)
-  redirectUrl?: string; // where BoldSign sends the client after signing (self-serve: back to the page that opens their account)
+  redirectUrl?: string; // where the client continues after signing (self-serve: back to the page that opens their account)
   accountOpensOnSigning?: boolean; // self-serve: the Suite account is created only once they sign, and the email says so
 }
 
 export type AgreementResult = { ok: true; documentId: string } | { ok: false; status: number; error: string };
 
-export const agreementConfigured = () => Boolean(process.env.BOLDSIGN_API_KEY);
+export const agreementConfigured = () => true;
 
 export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementResult> {
-  const key = process.env.BOLDSIGN_API_KEY;
-  if (!key) return { ok: false, status: 503, error: "Sending from this page isn't switched on yet (the BoldSign key hasn't been added). Ask Babs, or send it from BoldSign for now." };
   const name = i.name.trim().slice(0, 120);
   const email = i.email.trim().toLowerCase().slice(0, 200);
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) return { ok: false, status: 400, error: "Enter the client's name and a valid email." };
@@ -57,18 +55,20 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
   if (contactId) {
     const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const { data: recent } = await db.from("crm_events").select("id").eq("master_plan_id", i.masterPlanId).eq("contact_id", contactId).eq("title", "Year-1 Operating Agreement sent for signature").gte("created_at", since).limit(1);
-    if (recent?.length) return { ok: false, status: 409, error: "The agreement was already sent to this client in the last 24 hours. Check BoldSign before sending it again." };
+    if (recent?.length) return { ok: false, status: 409, error: "The agreement was already sent to this client in the last 24 hours. Check Agreements & Proposals before sending it again." };
   }
 
-  const prefill: { id: string; value: string }[] = [
-    { id: "Name1", value: name },
-    { id: "Email1", value: email },
-    { id: "Name2", value: name },
-    ...(i.businessName?.trim() ? [{ id: "TextBox1", value: i.businessName.trim().slice(0, 160) }] : []),
-    ...(i.phone?.trim() ? [{ id: "TextBox2", value: i.phone.trim().slice(0, 40) }] : []),
-    ...(tier ? [{ id: TIER_FIELD[tier], value: "on" }] : []),
-    ...(payment ? [{ id: PAYMENT_FIELD[payment], value: "on" }] : []),
-  ];
+  const { data: tpl } = await db.from("sign_templates").select("body").eq("master_plan_id", i.masterPlanId).eq("key", TEMPLATE_KEY).maybeSingle();
+  if (!tpl?.body) return { ok: false, status: 503, error: "The Year-1 Operating Agreement template is missing from Agreements & Proposals. Ask Babs." };
+  const body = fillPlaceholders(String(tpl.body), {
+    "Client name": name,
+    "Business name of the client": i.businessName?.trim().slice(0, 160) || "(not given)",
+    "Client email": email,
+    "Client phone": i.phone?.trim().slice(0, 40) || "(not given)",
+    "Tier: Starter, Growth or VIP": tier || "(to be confirmed)",
+    "Payment option: in full, 50/50, or annual": payment ? PAYMENT_FIELD[payment] : "(to be confirmed)",
+    'Promotional or alumni credit, or "None"': "None",
+  });
   const first = name.split(/\s+/)[0];
   const message =
     `Hi ${first}, welcome to LifeCharter Command Suite! Please review and sign your Year-1 Operating Agreement. It takes about two minutes. ` +
@@ -76,34 +76,29 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
     (i.welcomeCallLink ? `After you sign, please choose a time for your 1:1 Welcome Call with me: ${APP_URL}/book/new-client-welcome-call?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)} ` : "") +
     `If you have any questions, reply to this email or write to support@lccommandsuite.com. Head up - Wings out. Babs`;
 
-  const send = (withRedirect: boolean) =>
-    fetch(`${API_BASE}/v1/template/send?templateId=${encodeURIComponent(TEMPLATE_ID)}`, {
-      method: "POST",
-      headers: { "X-API-KEY": key, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        title: "LifeCharter Command Suite Year-1 Operating Agreement",
-        message,
-        roles: [
-          { roleIndex: 1, signerName: name, signerEmail: email, signerType: "Signer", existingFormFields: prefill, ...(withRedirect && i.redirectUrl ? { redirectUrl: i.redirectUrl } : {}) },
-          { roleIndex: 2, signerName: COMPANY_NAME, signerEmail: COMPANY_EMAIL, signerType: "Signer" },
-        ],
-      }),
-    }).catch(() => null);
-  // The redirect after signing is a nicety: if BoldSign doesn't accept it on a template send, send without it.
-  let res = await send(true);
-  if (res?.status === 400 && i.redirectUrl) res = await send(false);
-  const out = (await res?.json().catch(() => ({}))) as { documentId?: string } | undefined;
-  if (!res || !res.ok || !out?.documentId) {
-    console.error("BoldSign send failed:", res?.status, JSON.stringify(out ?? {}).slice(0, 400));
-    return { ok: false, status: 502, error: res?.status === 401 || res?.status === 403 ? "BoldSign refused the key. Ask Babs to check it." : "BoldSign couldn't send it. Check BoldSign, or try again in a minute." };
+  const { data: doc, error } = await db
+    .from("sign_documents")
+    .insert({ master_plan_id: i.masterPlanId, title: "LifeCharter Command Suite Year-1 Operating Agreement", kind: "agreement", body, contact_id: contactId || null, message, owner_signs: true, external_ref: i.redirectUrl || null, created_by: i.by || "year1" })
+    .select("id")
+    .single();
+  if (error || !doc) return { ok: false, status: 500, error: "Couldn't prepare the agreement. Please try again." };
+  await db.from("sign_signers").insert([
+    { document_id: doc.id, order_no: 1, name, email, token_hash: newToken().hash },
+    { document_id: doc.id, order_no: 2, name: COMPANY_NAME, email: COMPANY_EMAIL.toLowerCase(), is_owner: true, token_hash: newToken().hash },
+  ]);
+  const { doc: full, signers } = await loadDoc(db, doc.id);
+  const sent = full ? await sendDocument(db, full, signers) : { ok: false as const, error: "missing" };
+  if (!sent.ok || sent.sent < 1) {
+    console.error("Year-1 send failed:", sent.ok ? "no email went out" : sent.error);
+    return { ok: false, status: 502, error: "The agreement couldn't be emailed. Please try again in a minute." };
   }
 
   if (contactId) {
-    await logEvent(i.masterPlanId, contactId, "note", "Year-1 Operating Agreement sent for signature", { documentId: out.documentId, to: email, by: i.by ?? null, via: "BoldSign", tier: tier || null, payment: payment || null }, db);
+    await logEvent(i.masterPlanId, contactId, "note", "Year-1 Operating Agreement sent for signature", { documentId: doc.id, to: email, by: i.by ?? null, via: "LCCS e-signature", tier: tier || null, payment: payment || null }, db);
     const { data: c } = await db.from("seq_contacts").select("tags").eq("id", contactId).eq("master_plan_id", i.masterPlanId).maybeSingle();
     const tags = new Set(((c?.tags as string[]) ?? []).map((t) => t.toLowerCase()));
     tags.add("agreement-sent");
     await db.from("seq_contacts").update({ tags: Array.from(tags), updated_at: new Date().toISOString() }).eq("id", contactId).eq("master_plan_id", i.masterPlanId);
   }
-  return { ok: true, documentId: out.documentId };
+  return { ok: true, documentId: doc.id as string };
 }

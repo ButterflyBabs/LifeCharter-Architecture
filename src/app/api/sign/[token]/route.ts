@@ -60,6 +60,8 @@ export async function GET(request: Request, { params }: { params: { token: strin
       consent: consentText(brand.name),
       agree: SIGN_AGREE,
       canDownload: verified && doc.status === "completed" && Boolean(doc.final_path),
+      // Where the client continues after signing (the self-serve sign-up opens their account there).
+      next: signer.status === "signed" && !signer.is_owner && doc.external_ref && /^https:\/\//.test(doc.external_ref) ? doc.external_ref : null,
     },
     { headers: { "Cache-Control": "no-store" } }
   );

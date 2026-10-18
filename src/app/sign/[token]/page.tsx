@@ -18,6 +18,7 @@ type View = {
   consent: string;
   agree: string;
   canDownload: boolean;
+  next: string | null;
 };
 
 const btn = "rounded-full bg-[#2E7C83] px-6 py-3 text-base font-semibold text-white hover:opacity-90 disabled:opacity-50";
@@ -219,6 +220,7 @@ export default function SignPage({ params }: { params: { token: string } }) {
         {(v.state === "signed" || v.state === "completed") && !done && (
           <p className="rounded-2xl bg-[#2E7C83]/10 p-6">{v.state === "completed" ? "Everyone has signed." : "You've signed. We'll email you a signed copy when everyone has signed."}</p>
         )}
+        {v.next && <a href={v.next} className={`${btn} inline-block`}>Continue</a>}
         {v.canDownload && <button className={btn} disabled={busy} onClick={download}>Download the signed copy</button>}
         <footer className="pt-6 text-center text-xs text-[#9aa3ad]">Signed electronically through the LifeCharter Command Suite. Every step is recorded in a certificate of completion.</footer>
       </div>

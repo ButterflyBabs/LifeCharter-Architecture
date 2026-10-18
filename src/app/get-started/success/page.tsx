@@ -85,7 +85,7 @@ function GetStartedSuccessContent() {
             You can keep this page open and it will continue by itself. If you close it, we will email you a sign-in link as soon as you have signed.
           </p>
           <p className="mt-4 text-xs text-[#b8a898]/80">
-            Can&apos;t find it? Check your spam or promotions folder for an email from BoldSign, or write to support@lccommandsuite.com.
+            Can&apos;t find it? Check your spam or promotions folder for an email titled &ldquo;Please sign: LifeCharter Command Suite Year-1 Operating Agreement&rdquo; from signatures@lccommandsuite.com, or write to support@lccommandsuite.com.
           </p>
         </>
       ) : (

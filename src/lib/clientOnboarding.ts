@@ -258,7 +258,7 @@ export async function completeOnboarding(body: OnboardBody, o: { presser: string
 
 /**
  * Cron (every two minutes, with the Starter sign-ups): creates the account for every waiting New Client Onboarding the moment the
- * payment and the client's signature are both in, and sends BoldSign reminders at about 1 and 3 days while they are unsigned.
+ * payment and the client's signature are both in, and sends signing reminders at about 1 and 3 days while they are unsigned.
  */
 export async function processAwaitingOnboardings(): Promise<{ waiting: number; opened: number; reminded: number }> {
   const db = createServerClient();
