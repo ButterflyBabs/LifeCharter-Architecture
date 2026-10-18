@@ -114,8 +114,18 @@ export default function BookPage({ params }: { params: { slug: string } }) {
       window.location.href = d.pay; // pay on the owner's own Stripe; the booking is confirmed when Stripe says it's paid
       return;
     }
-    if (r.ok) setDone({ start: pick, manage: d.manage });
-    else {
+    if (r.ok) {
+      setDone({ start: pick, manage: d.manage });
+      // Booked from a landing page (task 1153): count it there, and tell the page (for the owner's Meta pixel).
+      const q = new URLSearchParams(window.location.search);
+      const lp = q.get("lp");
+      if (lp && /^[0-9a-f-]{36}$/i.test(lp)) {
+        fetch(`/api/lp/${lp}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "booked", v: q.get("v") || undefined }) }).catch(() => null);
+        try {
+          window.parent?.postMessage({ type: "lccs-booked" }, "*");
+        } catch {}
+      }
+    } else {
       setErr(d.error || "Something went wrong. Please try again.");
       if (r.status === 409) setPick("");
     }

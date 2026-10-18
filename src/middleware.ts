@@ -12,8 +12,9 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureAp
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go"];
 const PUBLIC_APIS = [
+  "/api/lp/", // landing pages (task 1153): visits, sign-ups, registrations, Buy clicks, bookings, main image
   "/api/e/", // public event pages (task 1149): sign-up, calendar file, a registrant's challenge page (their private link is the key)
   "/api/cron/events", // secured by its own CRON_SECRET check, not a session
   "/api/portal", // a client's private portal (task 1147): the unguessable link is the key; writes are origin-checked and limited to that client
@@ -226,13 +227,31 @@ function isSuiteHost(host: string): boolean {
 
 // Is this host a client's own verified short-link domain? REST, not the full
 // Supabase client — middleware runs on the Edge runtime.
-async function isVerifiedShortLinkDomain(host: string): Promise<boolean> {
+async function verifiedShortLinkPlan(host: string): Promise<string | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !svc) return null;
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/client_master_plans?select=id&short_link_domain=eq.${encodeURIComponent(host)}&short_link_domain_status=eq.verified`,
+      { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json()) as { id: string }[];
+    return Array.isArray(rows) && rows[0]?.id ? rows[0].id : null;
+  } catch {
+    return null;
+  }
+}
+
+// Is <slug> one of this account's published landing pages (task 1153)?
+async function isLandingPage(planId: string, slug: string): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !svc) return false;
   try {
     const res = await fetch(
-      `${url}/rest/v1/client_master_plans?select=id&short_link_domain=eq.${encodeURIComponent(host)}&short_link_domain_status=eq.verified`,
+      `${url}/rest/v1/landing_pages?select=id&master_plan_id=eq.${encodeURIComponent(planId)}&slug=eq.${encodeURIComponent(slug)}&status=eq.published`,
       { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
     );
     if (!res.ok) return false;
@@ -253,9 +272,18 @@ export async function middleware(request: NextRequest) {
   // signed in to the Suite and must never be bounced toward /login.
   {
     const host = request.headers.get("host") || "";
-    if (host && !isSuiteHost(host) && (await isVerifiedShortLinkDomain(host))) {
+    const planId = host && !isSuiteHost(host) ? await verifiedShortLinkPlan(host) : null;
+    if (planId) {
       const path = request.nextUrl.pathname;
+      // A landing page's own calls (visits, sign-ups) reach the app as they are.
+      if (path.startsWith("/api/lp/")) return NextResponse.next();
       const target = request.nextUrl.clone();
+      // <their domain>/<slug> (or /go/<slug>) is one of their published landing pages; anything else is a short link.
+      const slug = (path.match(/^\/(?:go\/)?([a-z0-9-]{3,60})\/?$/i)?.[1] || "").toLowerCase();
+      if (slug && (await isLandingPage(planId, slug))) {
+        target.pathname = `/go/${slug}`;
+        return NextResponse.rewrite(target);
+      }
       target.pathname = `/l${path === "/" ? "" : path}`;
       return NextResponse.rewrite(target);
     }
