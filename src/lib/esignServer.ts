@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
-import { brandFor, PORTAL_BUCKET } from "@/lib/portal";
+import { brandFor as portalBrand, PORTAL_BUCKET } from "@/lib/portal";
+import { isHousePlan } from "@/lib/housePlan";
 import { logEvent } from "@/lib/crm";
 import { CODE_MAX_TRIES, CODE_MINUTES, allSigned, consentText, currentRound, hashCode, newCode, newToken, sha256 } from "@/lib/esign";
 import { sealPdf } from "@/lib/esignPdf";
@@ -12,6 +13,12 @@ import { sealPdf } from "@/lib/esignPdf";
 type Db = ReturnType<typeof createServerClient>;
 const APP = () => (process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com").replace(/\/$/, "");
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** The name signers see. Babs's own account signs as "LifeCharter Command Suite" (her choice, 2026-10-18). */
+export async function brandFor(db: Db, planId: string): Promise<{ name: string; logo: string | null }> {
+  const b = await portalBrand(db, planId);
+  return (await isHousePlan(planId, db)) ? { ...b, name: "LifeCharter Command Suite" } : b;
+}
 
 export const DOC_COLUMNS = "id, master_plan_id, title, kind, source, body, file_path, file_name, contact_id, offer_id, amount, message, status, owner_signs, expires_on, sent_at, completed_at, final_path, final_hash, original_hash, external_ref, created_by, created_at, updated_at";
 export const SIGNER_COLUMNS = "id, document_id, order_no, name, email, is_owner, status, verified_at, consented_at, signed_at, signature_type, signature_text, signature_image, ip, user_agent, decline_reason, last_reminded_at, code_hash, code_expires_at, code_attempts";

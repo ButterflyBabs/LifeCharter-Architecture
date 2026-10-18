@@ -1,6 +1,6 @@
 import type { ActionTool } from "./types";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
-import { brandFor } from "@/lib/portal";
+import { brandFor } from "@/lib/esignServer";
 
 // The assistant and Agreements & Proposals (task 1072): it can report who has signed and draft a document with its
 // signers. It never sends one: the client reads it and presses Send for signature themselves.

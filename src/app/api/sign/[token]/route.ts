@@ -2,9 +2,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
-import { brandFor, PORTAL_BUCKET } from "@/lib/portal";
+import { PORTAL_BUCKET } from "@/lib/portal";
 import { SIGN_AGREE, consentText, currentRound, validDrawnSignature, validTypedSignature } from "@/lib/esign";
-import { audit, declineDocument, sendCode, signDocument, signerByToken, verifyCode } from "@/lib/esignServer";
+import { audit, brandFor, declineDocument, sendCode, signDocument, signerByToken, verifyCode } from "@/lib/esignServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

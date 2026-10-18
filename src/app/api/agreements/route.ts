@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
-import { brandFor, PORTAL_BUCKET } from "@/lib/portal";
+import { PORTAL_BUCKET } from "@/lib/portal";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
-import { DOC_COLUMNS, SIGNER_COLUMNS, audit, loadDoc, sendDocument, signMail, signerUrl, voidDocument, type Doc } from "@/lib/esignServer";
+import { DOC_COLUMNS, SIGNER_COLUMNS, audit, brandFor, loadDoc, sendDocument, signMail, signerUrl, voidDocument, type Doc } from "@/lib/esignServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
