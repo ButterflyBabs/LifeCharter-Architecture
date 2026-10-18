@@ -13,7 +13,7 @@ export const maxDuration = 120;
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
-// LC Volant: make a report. { templateKey, transcript, title?, date?, contactId?, consent: true } -> one AI call on the
+// LC Volant: make a report. { templateKey, transcript, title?, date?, contactId?, recordingId?, consent: true } -> one AI call on the
 // account's own key, the report saved (with the transcript) and, when a contact was picked, a line on their timeline.
 // Nothing becomes a task here: each action item waits for its own Approve on the page.
 export async function POST(request: Request) {
@@ -77,6 +77,8 @@ export async function POST(request: Request) {
       console.error("POST /api/volant/report insert:", error?.message);
       return NextResponse.json({ error: "The report was written but couldn't be saved. Try again." }, { status: 500 });
     }
+    // A recording turned into this report stops showing in the bell as waiting.
+    if (str(b.recordingId, 60)) await db.from("volant_recordings").update({ used_at: now }).eq("id", str(b.recordingId, 60)).eq("master_plan_id", a.planId);
     if (contactId) await logEvent(a.planId, contactId, "note", `LC Volant report: ${title}`, { volant_report_id: row.id }, db).catch(() => {});
     return NextResponse.json({ id: row.id });
   } catch (e) {

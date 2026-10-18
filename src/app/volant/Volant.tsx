@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BellRing, CalendarPlus, Check, Copy, FileText, ListChecks, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
+import Recordings from "./Recordings";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
 import { localInputValue } from "@/components/reminders/useReminders";
 import { reportToText, templateName, VOLANT_NAME, type ActionItem, type VolantReport, type VolantTemplate } from "@/lib/volant";
@@ -74,7 +75,7 @@ export default function Volant() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#1a2b4a] to-[#c9a227]"><FileText className="h-6 w-6 text-white" /></div>
           <div>
             <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{settings.label}</h1>
-            <p className="text-[#7a8a99]">Turn any transcript into a clear report. Upload the file from Zoom, Otter, your phone or any recorder, pick a template, and approve each action item into Tasks.</p>
+            <p className="text-[#7a8a99]">Turn any recording or transcript into a clear report. Upload the video, audio or transcript from Zoom, your phone or any recorder, pick a template, and send each action item to Tasks, a reminder or your calendar.</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -124,6 +125,7 @@ function NewReport({ templates, settings, onMade }: { templates: VolantTemplate[
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
   const [consent, setConsent] = useState(false);
+  const [recordingId, setRecordingId] = useState("");
   const [busy, setBusy] = useState<"" | "file" | "report">("");
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -142,6 +144,7 @@ function NewReport({ templates, settings, onMade }: { templates: VolantTemplate[
     if (!r.ok) return setMsg(d.error || "That file could not be read.");
     setText(d.text || "");
     setFileName(d.name || file.name);
+    setRecordingId("");
     if (d.cut) setMsg("That transcript is very long, so only the first part was kept.");
   }
 
@@ -151,7 +154,7 @@ function NewReport({ templates, settings, onMade }: { templates: VolantTemplate[
     if (text.trim().length < 200) return setMsg("Paste or upload the transcript first (it looks too short to make a report).");
     if (!consent) return setMsg("Tick the box to confirm everyone agreed to be recorded.");
     setBusy("report");
-    const { ok, d } = await post("/api/volant/report", { templateKey: t.key, transcript: text, title, date, contactId: contact?.id ?? "", consent: true });
+    const { ok, d } = await post("/api/volant/report", { templateKey: t.key, transcript: text, title, date, contactId: contact?.id ?? "", recordingId, consent: true });
     setBusy("");
     if (!ok) return setMsg(d.error || "Couldn't write the report. Try again.");
     onMade(d.id);
@@ -201,23 +204,24 @@ function NewReport({ templates, settings, onMade }: { templates: VolantTemplate[
       </section>
 
       <section className={card}>
-        <p className={label}>3. The transcript</p>
-        <p className="mb-2 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Upload the transcript file (.txt, .docx, .pdf, .vtt, .srt or .md) from any app or device, or paste the text. Audio and video files are coming in the next update.</p>
+        <p className={label}>3. The recording or transcript</p>
+        <label className="mb-3 flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <span>Everyone in this conversation knew it was being recorded and agreed. (Some states require every person&apos;s consent.)</span>
+        </label>
+        <Recordings consent={consent} onUse={(t, recId, name) => { setText(t); setFileName(name); setRecordingId(recId); }} />
+        <p className="mb-2 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Already have a transcript? Upload the file (.txt, .docx, .pdf, .vtt, .srt or .md) from any app or device, or paste the text.</p>
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <button className={btn} disabled={busy !== ""} onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />{busy === "file" ? "Reading the file…" : "Upload a file"}</button>
           <input ref={fileRef} type="file" accept=".txt,.md,.vtt,.srt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => void upload(e.target.files?.[0])} />
           {fileName && <span className="text-xs text-[#7a8a99]">From {fileName}</span>}
         </div>
-        <textarea className={`${field} min-h-[220px] font-mono text-xs`} value={text} onChange={(e) => { setText(e.target.value); setFileName(""); }} placeholder="…or paste the transcript here" aria-label="Transcript" />
+        <textarea className={`${field} min-h-[220px] font-mono text-xs`} value={text} onChange={(e) => { setText(e.target.value); setFileName(""); setRecordingId(""); }} placeholder="…or paste the transcript here" aria-label="Transcript" />
         <p className="mt-1 text-xs text-[#7a8a99]">{text.trim() ? `${text.trim().split(/\s+/).length.toLocaleString()} words` : ""}</p>
       </section>
 
       <section className={card}>
-        <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-          <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>Everyone in this conversation knew it was being recorded and agreed. (Some states require every person&apos;s consent.)</span>
-        </label>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button className={btnGold} disabled={busy !== ""} onClick={() => void make()}>{busy === "report" ? "Writing your report… (up to a minute)" : "Write my report"}</button>
           <span className="text-xs text-[#7a8a99]">Uses your own AI key. Nothing goes into Tasks until you approve each item.</span>
         </div>

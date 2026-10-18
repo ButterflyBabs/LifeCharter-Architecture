@@ -517,6 +517,27 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // LC Volant recordings: a transcript that is ready to turn into a report, or one that failed (last 14 days).
+  try {
+    const { data: recs } = await supabase
+      .from("volant_recordings")
+      .select("id, file_name, status, error")
+      .eq("master_plan_id", masterPlanId)
+      .in("status", ["ready", "failed"])
+      .is("used_at", null)
+      .gte("created_at", new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .limit(10);
+    for (const r of (recs ?? []) as { id: string; file_name: string; status: string; error: string | null }[]) {
+      out.push(
+        r.status === "ready"
+          ? { nkey: `volant-ready:${r.id}`, type: "action", title: `Transcribed: ${r.file_name}`, body: "Name the voices and write the report in LC Volant.", href: "/volant" }
+          : { nkey: `volant-failed:${r.id}`, type: "warning", title: `Couldn't transcribe: ${r.file_name}`, body: r.error || "Delete it in LC Volant and upload it again.", href: "/volant" },
+      );
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }
