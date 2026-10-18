@@ -273,6 +273,61 @@ function VolantReports({ contactId }: { contactId: string }) {
 }
 
 // Payments and invoices for this person (get paid inside the Suite). Hidden when payments aren't open to this account.
+function ContactTexts({ contactId }: { contactId: string }) {
+  const [d, setD] = useState<{ approved: boolean; number: string; phone: string | null; canText: boolean; why: string | null; cap: number; used: number; messages: { id: string; direction: "in" | "out"; kind: string; body: string; status: string; error: string | null; created_at: string }[] } | null>(null);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const load = useCallback(() => {
+    fetch(`/api/sms/contact?contact=${contactId}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setD)
+      .catch(() => setD(null));
+  }, [contactId]);
+  useEffect(() => load(), [load]);
+  if (!d) return null; // texting isn't open on this account
+  async function send() {
+    setBusy(true);
+    setErr("");
+    const r = await fetch("/api/sms/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contactId, body }) });
+    const x = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) return setErr(x.error || "The text didn't send.");
+    setBody("");
+    load();
+  }
+  const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return (
+    <div>
+      <p className={heading}>Texts{d.phone ? ` · ${d.phone}` : ""}</p>
+      {d.messages.length > 0 && (
+        <div className="mb-2 max-h-72 space-y-1.5 overflow-y-auto rounded-lg bg-[#F7F4EE] p-2">
+          {d.messages.map((m) => (
+            <div key={m.id} className={`flex ${m.direction === "out" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-sm ${m.direction === "out" ? "bg-[#2E7C83] text-white" : "bg-white text-[#2E3A46]"}`}>
+                <p className="whitespace-pre-wrap">{m.body}</p>
+                <p className={`mt-0.5 text-[10px] ${m.direction === "out" ? "text-white/70" : "text-[#7a8a99]"}`}>{when(m.created_at)}{m.direction === "out" ? ` · ${m.kind === "reminder" ? "reminder · " : ""}${m.status}` : ""}{m.error ? ` · ${m.error}` : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {d.canText ? (
+        <>
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} maxLength={640} placeholder="Write a text…" className={box} />
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className="text-xs text-[#7a8a99]">{body.length}/640 · {d.used.toLocaleString()} of {d.cap.toLocaleString()} texts used this month</span>
+            <Button onClick={send} disabled={busy || !body.trim()}>{busy ? "Sending…" : "Send text"}</Button>
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-[#7a8a99]">{d.why}</p>
+      )}
+      {err && <p className="mt-1 text-sm text-red-700">{err}</p>}
+    </div>
+  );
+}
+
 function ContactPayments({ contactId }: { contactId: string }) {
   const [d, setD] = useState<{ connected: boolean; payments: { id: string; amount: number; refunded: number; description: string; paid_at: string; livemode: boolean }[]; invoices: { id: string; description: string; amount: number; status: string; hosted_url: string | null }[] } | null>(null);
   useEffect(() => {
@@ -672,6 +727,8 @@ export default function ContactRecord({
         <VolantReports contactId={c.id} />
 
         <ContactPayments contactId={c.id} />
+
+        <ContactTexts contactId={c.id} />
 
         <div>
           <p className={heading}>Client portal</p>

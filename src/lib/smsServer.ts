@@ -143,7 +143,12 @@ export async function registerNumber(db: Db, planId: string, b: Business, sample
     const list = (avail.data.available_phone_numbers as { phone_number: string }[] | undefined) ?? [];
     if (!list.length) return { ok: false, error: "No texting numbers are free right now. Please try again in a few minutes." };
     const buy = await twilio("POST", `${API()}/IncomingPhoneNumbers.json`, { PhoneNumber: list[0].phone_number, SmsUrl: `${APP()}/api/sms/inbound`, SmsMethod: "POST", FriendlyName: `LCCS ${planId}` });
-    if (!buy.ok) return { ok: false, error: String(buy.data.message || "Couldn't get a number.") };
+    if (!buy.ok) {
+      const m = String(buy.data.message || "");
+      // Twilio checks the Suite's own business identity (Trust Hub) once, before it sells any numbers.
+      if (/compliance profile|trust hub|kyc/i.test(m)) return { ok: false, error: "Texting numbers aren't available yet: the LifeCharter Command Suite's own business check with our texting provider is still being finished. Nothing was charged. Please try again in a few days." };
+      return { ok: false, error: m || "Couldn't get a number." };
+    }
     phoneSid = String(buy.data.sid);
     phone = String(buy.data.phone_number);
     await db.from("sms_accounts").update({ phone_sid: phoneSid, phone_number: phone, updated_at: new Date().toISOString() }).eq("master_plan_id", planId);
