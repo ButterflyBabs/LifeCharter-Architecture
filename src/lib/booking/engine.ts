@@ -1,4 +1,6 @@
 import { isAwayOn } from "@/lib/awayMode";
+import { DEFAULT_1H, DEFAULT_24H, fillReminder, inQuietHours } from "@/lib/sms";
+import { sendSms } from "@/lib/smsServer";
 import { createHash, randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { zonedToUtcISO, dayInTz } from "@/lib/tz";
@@ -257,8 +259,9 @@ export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; boo
   if (i.hold) return { ok: true, bookingId, manageToken: token }; // confirmed (and followed up) once Stripe says it's paid
   if (i.rescheduleOf) {
     // A paid booking that moves keeps its payment (no second charge).
-    const { data: old } = await db.from("bookings").select("pay_amount, paid_amount, pay_session_id").eq("id", i.rescheduleOf).maybeSingle();
+    const { data: old } = await db.from("bookings").select("pay_amount, paid_amount, pay_session_id, sms_ok").eq("id", i.rescheduleOf).maybeSingle();
     if (old?.paid_amount) await db.from("bookings").update({ pay_amount: old.pay_amount, paid_amount: old.paid_amount, pay_session_id: old.pay_session_id }).eq("id", bookingId);
+    if (old?.sms_ok) await db.from("bookings").update({ sms_ok: true }).eq("id", bookingId); // text reminders follow a moved booking
   }
 
   // Everything after this point is best-effort: the booking itself is saved.
@@ -494,6 +497,8 @@ export async function sendReminders(): Promise<number> {
     const cal = b.booking_calendars as { name: string; slug: string };
     const host = b.booking_hosts as { name: string; email: string };
     const tz = b.invitee_timezone || "America/Denver";
+    // A text too, when they ticked "text me reminders" (task 1151). Never between 9 PM and 8 AM their time.
+    if (b.sms_ok && b.invitee_phone) await textReminder(db, b, which, cal?.name || "appointment", tz).catch((e) => console.error("sms reminder:", e));
     const who = await sender(b.master_plan_id as string, false);
     if (!who.ok) continue; // client account without its own verified domain: no reminder email
     await sendMail(who, {
@@ -507,6 +512,22 @@ export async function sendReminders(): Promise<number> {
     sent++;
   }
   return sent;
+}
+
+async function textReminder(db: Db, b: Record<string, unknown>, which: "r1" | "r24", event: string, tz: string) {
+  if (inQuietHours(new Date(), tz)) return;
+  const planId = b.master_plan_id as string;
+  const { data: acct } = await db.from("sms_accounts").select("status, reminders_on, reminder_24h, reminder_1h, template_24h, template_1h, business").eq("master_plan_id", planId).maybeSingle();
+  if (!acct || acct.status !== "approved" || !acct.reminders_on) return;
+  if ((which === "r24" && !acct.reminder_24h) || (which === "r1" && !acct.reminder_1h)) return;
+  const biz = (acct.business ?? {}) as { dba?: string; legalName?: string };
+  const start = new Date(String(b.start_at));
+  const time = start.toLocaleString("en-US", { timeZone: tz, weekday: which === "r24" ? "long" : undefined, hour: "numeric", minute: "2-digit" });
+  const date = start.toLocaleDateString("en-US", { timeZone: tz, month: "long", day: "numeric" });
+  const first = String(b.invitee_name || "").trim().split(/\s+/)[0] || "";
+  const body = fillReminder((which === "r24" ? acct.template_24h : acct.template_1h) || (which === "r24" ? DEFAULT_24H : DEFAULT_1H), { first, business: biz.dba || biz.legalName || "Your appointment", event, time, date });
+  const { data: c } = await db.from("seq_contacts").select("id").eq("master_plan_id", planId).eq("email", String(b.invitee_email || "")).maybeSingle();
+  await sendSms(db, planId, { to: String(b.invitee_phone), body, kind: "reminder", contactId: (c?.id as string) ?? null, bookingId: String(b.id) });
 }
 
 // ── Mail + formatting ────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ interface Meta {
   hostName: string | null;
   brand?: string;
   payment?: { amount: number; kind: "full" | "deposit" } | null;
+  sms?: { consent: string } | null;
 }
 
 interface Theme {
@@ -115,7 +116,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
     const r = await fetch(`/api/book/${params.slug}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ start: pick, name: f.name, email: f.email, phone: f.phone, timezone: tz, answers, _hp: f._hp, _ref: new URLSearchParams(window.location.search).get("ref") || undefined }),
+      body: JSON.stringify({ start: pick, name: f.name, email: f.email, phone: f.phone, smsOk: f.sms_ok === "on", timezone: tz, answers, _hp: f._hp, _ref: new URLSearchParams(window.location.search).get("ref") || undefined }),
     });
     const d = await r.json().catch(() => ({}));
     setSending(false);
@@ -249,6 +250,12 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               <label className="block text-sm font-semibold">Name *<input name="name" required defaultValue={prefill.name} autoComplete="name" className={inputCls} style={{ borderColor: th.line }} /></label>
               <label className="block text-sm font-semibold">Email *<input name="email" type="email" required defaultValue={prefill.email} autoComplete="email" className={inputCls} style={{ borderColor: th.line }} /></label>
               <label className="block text-sm font-semibold">Phone{meta?.location === "phone" ? " *" : ""}<input name="phone" type="tel" required={meta?.location === "phone"} autoComplete="tel" className={inputCls} style={{ borderColor: th.line }} /></label>
+              {meta?.sms && (
+                <label className="flex items-start gap-2.5 text-sm">
+                  <input type="checkbox" name="sms_ok" className="mt-1 h-4 w-4 shrink-0" style={{ accentColor: th.accent }} />
+                  <span className="opacity-80">{meta.sms.consent}</span>
+                </label>
+              )}
               {(meta?.questions ?? []).map((q) => (
                 <label key={q.name} className="block text-sm font-semibold">
                   {q.label}

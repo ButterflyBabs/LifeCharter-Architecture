@@ -6,6 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { housePlanId } from "@/lib/planScope";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
+import { consentText, toE164 } from "@/lib/sms";
 import { awayAhead, awayDates, awayNote } from "@/lib/awayMode";
 import { cookies } from "next/headers";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
@@ -24,7 +25,13 @@ export async function GET(request: Request, { params }: { params: { slug: string
   const to = u.searchParams.get("to") || new Date(Date.now() + 14 * 86_400_000).toISOString();
   if (Date.parse(to) - Date.parse(from) > 45 * 86_400_000) return NextResponse.json({ error: "Range too long." }, { status: 400 });
   const { data: hosts } = await createServerClient().from("booking_hosts").select("name").eq("master_plan_id", cal.master_plan_id).in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
-  const [plan, away] = await Promise.all([availableSlots(cal, from, to), awayAhead(createServerClient(), cal.master_plan_id)]);
+  const [plan, away, sms] = await Promise.all([
+    availableSlots(cal, from, to),
+    awayAhead(createServerClient(), cal.master_plan_id),
+    createServerClient().from("sms_accounts").select("status, reminders_on, business").eq("master_plan_id", cal.master_plan_id).maybeSingle(),
+  ]);
+  const smsBiz = sms.data?.business as { dba?: string; legalName?: string } | undefined;
+  const smsOn = sms.data?.status === "approved" && sms.data.reminders_on ? consentText(smsBiz?.dba || smsBiz?.legalName || "us") : null;
   // The house account's pages wear one of its brands; every client account's page stays neutral.
   const brand = cal.master_plan_id === (await housePlanId()) ? ((cal as unknown as { brand?: string }).brand ?? "command_suite") : "neutral";
   return NextResponse.json({
@@ -37,6 +44,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
       maxDaysAhead: cal.max_days_ahead,
       questions: cal.questions,
       hostName: cal.assignment === "single" ? (hosts ?? [])[0]?.name ?? null : null,
+      sms: smsOn ? { consent: smsOn } : null,
       payment: (() => {
         const c = bookingCharge(cal);
         return c ? { amount: c.cents / 100, kind: c.kind } : null;
@@ -66,6 +74,16 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     timezone: str(b.timezone) || null,
     answers: b.answers && typeof b.answers === "object" ? (b.answers as Record<string, string>) : {},
   });
+  // Ticked "text me reminders" (task 1151): remember it on the booking and the contact.
+  if (r.ok && b.smsOk === true && toE164(str(b.phone))) {
+    const db = createServerClient();
+    const { data: acct } = await db.from("sms_accounts").select("status").eq("master_plan_id", cal.master_plan_id).maybeSingle();
+    if (acct?.status === "approved") {
+      await db.from("bookings").update({ sms_ok: true }).eq("id", r.bookingId);
+      const { data: c } = await db.from("seq_contacts").select("id, phone").eq("master_plan_id", cal.master_plan_id).eq("email", str(b.email).trim().toLowerCase()).maybeSingle();
+      if (c) await db.from("seq_contacts").update({ sms_consent_at: new Date().toISOString(), ...(c.phone ? {} : { phone: str(b.phone).trim().slice(0, 40) }) }).eq("id", c.id);
+    }
+  }
   // Came through an affiliate's link: credit the booking to them.
   if (r.ok) {
     const code = str(b._ref) || cookies().get(AFF_COOKIE)?.value || "";

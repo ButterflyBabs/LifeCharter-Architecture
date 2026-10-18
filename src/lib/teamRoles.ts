@@ -82,8 +82,8 @@ export function memberPageRedirect(role: string | null, path: string): string | 
 /** Settings tabs to hide for a role (the UI mirror of the rules above). */
 export function hiddenSettingsTabs(role: string | null): string[] {
   if (!role) return []; // owners and clients see everything
-  if (role === "admin") return ["ai", "integrations", "billing", "data"];
-  return ["workspace", "away", "ai", "integrations", "billing", "data"]; // editor, viewer, and Sales outside the owner's workspace
+  if (role === "admin") return ["ai", "integrations", "billing", "data", "texts"];
+  return ["workspace", "away", "texts", "ai", "integrations", "billing", "data"]; // editor, viewer, and Sales outside the owner's workspace
 }
 
 // ── Per-feature access (cs183) ───────────────────────────────────────────────

@@ -42,9 +42,11 @@ import {
   Lock,
   FileText,
   Sparkles,
-  Plane
+  Plane,
+  MessageSquareText
 } from "lucide-react";
 import AwayCard from "./components/AwayCard";
+import TextsCard from "./components/TextsCard";
 
 interface SettingsSection {
   id: string;
@@ -77,6 +79,12 @@ const settingsSections: SettingsSection[] = [
     title: "Out of office",
     icon: <Plane className="w-5 h-5" />,
     description: "Away dates: close bookings, answer portal messages, pause reminders"
+  },
+  {
+    id: "texts",
+    title: "Text messages",
+    icon: <MessageSquareText className="w-5 h-5" />,
+    description: "Your texting number and booking reminders by text"
   },
   {
     id: "appearance",
@@ -2078,6 +2086,7 @@ export default function SettingsPage() {
       case "workspace": return renderWorkspaceSettings();
       case "notifications": return renderNotificationSettings();
       case "away": return <AwayCard />;
+      case "texts": return <TextsCard />;
       case "appearance": return renderAppearanceSettings();
       case "ai": return renderAiSettings();
       case "integrations": return renderIntegrationSettings();
