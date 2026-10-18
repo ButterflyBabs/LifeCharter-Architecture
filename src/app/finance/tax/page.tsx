@@ -153,11 +153,16 @@ export default function TaxPrepPage() {
             <p className="text-[#b8a898]">{data ? `Year to date · ${data.year}` : "Year to date"}</p>
           </div>
         </div>
-        <a href={`/api/finance/export?period=year&tz=${encodeURIComponent(tz())}`}>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-1.5" /> Export year (CSV)
-          </Button>
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/finance/1099">
+            <Button variant="outline" size="sm">1099 contractor totals</Button>
+          </Link>
+          <a href={`/api/finance/export?period=year&tz=${encodeURIComponent(tz())}`}>
+            <Button variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-1.5" /> Export year (CSV)
+            </Button>
+          </a>
+        </div>
       </div>
 
       <FinanceRelated variant="tax" overview={overview} />

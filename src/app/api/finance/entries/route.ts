@@ -24,6 +24,7 @@ type Row = {
   payment_type?: string | null;
   frequency?: string | null;
   renewal?: string | null;
+  receipt_path?: string | null;
 };
 
 function serialize(r: Row) {
@@ -40,6 +41,7 @@ function serialize(r: Row) {
     paymentType: r.payment_type === "recurring" ? "recurring" : "one_time",
     frequency: r.frequency || null,
     renewal: r.renewal || null,
+    hasReceipt: Boolean(r.receipt_path),
   };
 }
 
@@ -74,7 +76,7 @@ export async function GET(request: Request) {
   const scope = masterPlanId ? await currentBusiness(masterPlanId) : null;
   let entriesQ = supabase
     .from("finance_entries")
-    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
   if (scope) entriesQ = entriesQ.or(businessMoneyFilter(scope));
@@ -267,6 +269,12 @@ export async function POST(request: Request) {
         ? (await currentBusiness(masterPlanId))?.businessId ?? null
         : null;
 
+  // A receipt photo the assistant read (task 1150): the new expense keeps it.
+  const receiptId = typeof body.receiptId === "string" && /^[0-9a-f-]{36}$/i.test(body.receiptId) ? body.receiptId : null;
+  const { data: receipt } = receiptId && masterPlanId
+    ? await supabase.from("finance_receipts").select("id, path, file_name").eq("id", receiptId).eq("master_plan_id", masterPlanId).maybeSingle()
+    : { data: null };
+
   // A recurring expense also becomes a bill, so its next renewal shows on the Bills & cash calendar
   // (auto-renew shows as autopay; manual renew is something you mark paid yourself).
   let billId: string | null = null;
@@ -312,10 +320,12 @@ export async function POST(request: Request) {
       frequency,
       renewal,
       bill_id: billId,
+      ...(receipt ? { receipt_path: receipt.path, receipt_name: receipt.file_name } : {}),
     })
-    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal")
+    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
     .single();
 
+  if (!error && receipt && data?.id) await supabase.from("finance_receipts").update({ status: "saved", entry_id: data.id }).eq("id", receipt.id);
   if (error) {
     console.error("POST /api/finance/entries:", error.message);
     if (billId) await supabase.from("finance_bills").delete().eq("id", billId);

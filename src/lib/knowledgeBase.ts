@@ -1464,6 +1464,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["client portal", "portal", "client page", "private link", "client login", "sessions left", "package", "session count", "homework", "client files", "share notes", "messages", "client messages", "attended", "customize portal", "portal colors", "portal logo", "banner", "rename sections", "portal look", "branding"],
   },
   {
+    id: "receipt-photo",
+    category: "Daily Rhythm",
+    question: "Can I snap a photo of a receipt instead of typing the expense?",
+    answer:
+      "Yes. Open Finance, then Expenses, and press Snap a receipt (on a phone it opens the camera; on a computer pick a photo). Your assistant reads it with your own AI key and fills in who you paid, the date, the total, a category (one of yours when it fits) and what it was for. Nothing is saved until you check the fields and press Add; if part of the receipt was hard to read, it tells you to check every field. The photo is kept with the expense: the small document icon on the expense opens it. Photos can be JPG, PNG or WebP, up to 8 MB.",
+    keywords: ["receipt", "receipts", "photo", "snap", "scan receipt", "camera", "expense", "upload receipt", "read receipt", "bookkeeping"],
+  },
+  {
+    id: "contractor-1099",
+    category: "Daily Rhythm",
+    question: "Who do I need to send a 1099 to? Where are my contractor totals?",
+    answer:
+      "Open Finance, then Tax Preparation, and press 1099 contractor totals (or go to lccommandsuite.com/finance/1099). Pick the year. Everyone you paid shows with their total, taken from the Paid to name on your expenses (expenses with no Paid to are totaled separately so you can fill them in). Tick Contractor for people or businesses you paid for work who aren't employees, W-9 on file once you have their form, and Only by card / PayPal if you never paid them any other way (those payments are reported by the card company, not you). Contractors you paid $2,000 or more in 2026 ($600 or more through 2025) are marked Likely needed, with a reminder if you still need their W-9; 1099-NEC forms are due by January 31. Download for my accountant gives a spreadsheet. This is a guide for your accountant, not tax advice.",
+    keywords: ["1099", "1099-nec", "contractor", "contractors", "w-9", "w9", "year end", "tax", "who to send 1099", "vendor totals", "paid to"],
+  },
+  {
     id: "time-tracking",
     category: "Daily Rhythm",
     question: "How do I track my time and see how full my week is?",

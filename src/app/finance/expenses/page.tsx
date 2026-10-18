@@ -5,7 +5,7 @@ import UnassignedBanner from "@/components/finance/UnassignedBanner";import { us
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft, TrendingDown, Plus, X, Trash2 } from "lucide-react";
+import { ArrowLeft, TrendingDown, Plus, X, Trash2, Camera, Receipt, FileText } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
@@ -27,6 +27,7 @@ interface Entry {
   paymentType?: string;
   frequency?: string | null;
   renewal?: string | null;
+  hasReceipt?: boolean;
 }
 interface CatBudget {
   category: string;
@@ -65,6 +66,10 @@ export default function ExpensesPage() {
   const [saving, setSaving] = useState(false);
   const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // A receipt photo the assistant read (task 1150): its id rides along when the expense is saved.
+  const [receiptId, setReceiptId] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
@@ -114,6 +119,7 @@ export default function ExpensesPage() {
           paymentType,
           frequency: paymentType === "recurring" ? frequency : undefined,
           renewal: paymentType === "recurring" ? renewal : undefined,
+          receiptId: receiptId || undefined,
         }),
       });
       if (!res.ok) {
@@ -127,6 +133,8 @@ export default function ExpensesPage() {
         setSegmentId("");
         setVendor("");
         setPaymentType("one_time");
+        setReceiptId(null);
+        setReadNote(null);
         forgetCategories();
         const saved = await res.json().catch(() => ({}));
         setBillMatch(saved?.billMatch && saved?.entry?.id ? { match: saved.billMatch, entryId: saved.entry.id } : null);
@@ -149,6 +157,33 @@ export default function ExpensesPage() {
     }
   };
 
+  const readReceipt = async (file: File | null | undefined) => {
+    if (!file) return;
+    setReading(true);
+    setMsg(null);
+    setReadNote(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const r = await fetch("/api/finance/receipts", { method: "POST", body: fd });
+    const d = await r.json().catch(() => ({}));
+    setReading(false);
+    if (!r.ok) {
+      setShowAdd(true);
+      setMsg(d?.error || "Couldn't read that receipt.");
+      return;
+    }
+    const x = d.read as { vendor: string; date: string; amount: number; category: string; description: string; confident: boolean };
+    setReceiptId(d.receiptId || null);
+    setAmount(x.amount ? String(x.amount) : "");
+    setVendor(x.vendor || "");
+    setOccurredOn(x.date || "");
+    setCategory(x.category || "");
+    setDescription(x.description || "");
+    setPaymentType("one_time");
+    setShowAdd(true);
+    setReadNote(x.confident ? "Read from your receipt. Check it, then press Add." : "Parts of the receipt were hard to read. Please check every field, then press Add.");
+  };
+
   const overBudget = budget > 0 && mtd > budget;
 
   return (
@@ -167,15 +202,28 @@ export default function ExpensesPage() {
             <p className="text-[#b8a898]">Money going out — tracked to the ledger</p>
           </div>
         </div>
-        <Button onClick={() => setShowAdd((v) => !v)}>
-          {showAdd ? <X className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
-          {showAdd ? "Close" : "Add expense"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <label className={`inline-flex cursor-pointer items-center rounded-lg border border-[#1a2b4a]/20 px-4 py-2 text-sm font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0] ${reading ? "pointer-events-none opacity-60" : ""}`}>
+            <Camera className="w-4 h-4 mr-1.5" />
+            {reading ? "Reading your receipt…" : "Snap a receipt"}
+            <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => { void readReceipt(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+          <Button onClick={() => { setShowAdd((v) => !v); if (showAdd) { setReceiptId(null); setReadNote(null); } }}>
+            {showAdd ? <X className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
+            {showAdd ? "Close" : "Add expense"}
+          </Button>
+        </div>
       </div>
 
       {showAdd && (
         <Card className="mb-6 border-[#b06a5a]/30">
           <CardContent className="p-5">
+            {readNote && (
+              <p className="mb-3 flex items-center gap-2 rounded-lg bg-[#2E7C83]/10 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <Receipt className="w-4 h-4 shrink-0 text-[#2E7C83]" />
+                {readNote} The photo is kept with the expense.
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
@@ -320,6 +368,11 @@ export default function ExpensesPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {e.hasReceipt && (
+                        <a href={`/api/finance/receipts?entry=${e.id}`} target="_blank" rel="noreferrer" className="text-[#2E7C83] hover:text-[#1a2b4a]" title="Open the receipt">
+                          <FileText className="w-4 h-4" />
+                        </a>
+                      )}
                       <span className="text-sm font-semibold text-[#b06a5a]">−{usd(e.amount)}</span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
