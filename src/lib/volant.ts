@@ -389,7 +389,18 @@ export const VOLANT_TEMPLATES: VolantTemplate[] = [
 export const templateByKey = (key: string) => VOLANT_TEMPLATES.find((t) => t.key === key) ?? null;
 
 export interface ReportSection { title: string; content: string; kind: SectionKind }
-export interface ActionItem { id: string; text: string; owner: string; due: string; task_id: number | null }
+export interface ActionItem {
+  id: string;
+  text: string;
+  owner: string;
+  due: string;
+  task_id: number | null;
+  /** Set when the owner turned this item into a reminder or a calendar event (each item can be all three). */
+  reminder?: { id: string; at: string } | null;
+  event?: { id: string; at: string; provider: string } | null;
+  /** Added by hand on the report, not by the AI. */
+  added?: boolean;
+}
 export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -471,6 +482,12 @@ export function cleanReport(raw: unknown, t: VolantTemplate, clipped: boolean, m
     })
     .filter((i) => i.text);
   return { sections, action_items, made_at: madeAt, clipped };
+}
+
+/** A new action item typed in by hand on the report. */
+export function newItem(v: unknown): ActionItem | null {
+  const e = cleanItemEdit(v);
+  return e.text ? { id: uid(), ...e, task_id: null, reminder: null, event: null, added: true } : null;
 }
 
 /** Clean an action item edited in the browser. */

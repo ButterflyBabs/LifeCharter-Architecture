@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, FileText, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
+import { BellRing, CalendarPlus, Check, Copy, FileText, ListChecks, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
+import { localInputValue } from "@/components/reminders/useReminders";
 import { reportToText, templateName, VOLANT_NAME, type ActionItem, type VolantReport, type VolantTemplate } from "@/lib/volant";
 
 type Contact = { first_name: string | null; last_name: string | null; email: string } | null;
@@ -234,9 +235,6 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
   const [name, setName] = useState("");
   const [showTranscript, setShowTranscript] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editId, setEditId] = useState("");
-  const [edit, setEdit] = useState({ text: "", owner: "", due: "" });
-  const [busyItem, setBusyItem] = useState("");
 
   useEffect(() => {
     fetch(`/api/volant?id=${id}`, { cache: "no-store" })
@@ -252,16 +250,6 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
   if (!r) return <p className="text-sm text-[#7a8a99]">Loading…</p>;
   const report = r.report;
 
-  async function item(action: "approve-item" | "edit-item" | "remove-item", it: ActionItem, extra: Record<string, unknown> = {}) {
-    setBusyItem(it.id);
-    setMsg("");
-    const { ok, d } = await post("/api/volant", { action, id: r!.id, itemId: it.id, ...extra });
-    setBusyItem("");
-    if (!ok) return setMsg(d.error || "That didn't save.");
-    if (d.report) setR({ ...r!, report: d.report });
-    if (action === "edit-item") setEditId("");
-    onChanged();
-  }
   async function rename() {
     const { ok, d } = await post("/api/volant", { action: "rename", id: r!.id, title: name });
     if (!ok) return setMsg(d.error || "Couldn't rename it.");
@@ -327,45 +315,15 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           <section className={card}>
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{actTitle}</h3>
-              <span className="text-xs text-[#7a8a99]">Each one goes into Tasks only when you approve it.</span>
+              <span className="text-xs text-[#7a8a99]">Send each one to Tasks, a reminder or your calendar. Nothing happens until you press a button.</span>
             </div>
-            {report.action_items.length === 0 ? (
-              <p className="text-sm text-[#7a8a99]">No action items came up in this conversation.</p>
-            ) : (
-              <ul className="space-y-2">
-                {report.action_items.map((it) => (
-                  <li key={it.id} className={`rounded-xl border p-3 ${it.task_id ? "border-[#2E7C83]/40 bg-[#2E7C83]/5" : "border-[#1a2b4a]/10"}`}>
-                    {editId === it.id ? (
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_140px_150px]">
-                        <input className={field} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })} maxLength={400} aria-label="Action item" />
-                        <input className={field} value={edit.owner} onChange={(e) => setEdit({ ...edit, owner: e.target.value })} maxLength={60} placeholder="Owner" aria-label="Owner" />
-                        <input className={field} type="date" value={edit.due} onChange={(e) => setEdit({ ...edit, due: e.target.value })} aria-label="Due date" />
-                        <div className="flex gap-2 sm:col-span-3">
-                          <button className={btnGold} disabled={busyItem === it.id} onClick={() => void item("edit-item", it, { item: edit })}>Save</button>
-                          <button className={btn} onClick={() => setEditId("")}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.text}</p>
-                          <p className="text-xs text-[#7a8a99]">{[it.owner && `Owner: ${it.owner}`, it.due && `Due ${fmtDate(it.due)}`].filter(Boolean).join(" · ") || "No owner or date named"}</p>
-                        </div>
-                        {it.task_id ? (
-                          <Link href="/tasks" className="inline-flex items-center gap-1 text-xs font-semibold text-[#2E7C83] hover:underline"><Check className="h-3.5 w-3.5" />In Tasks</Link>
-                        ) : (
-                          <div className="flex flex-wrap items-center gap-3">
-                            <button className={small} disabled={busyItem === it.id} onClick={() => { setEditId(it.id); setEdit({ text: it.text, owner: it.owner, due: it.due }); }}><Pencil className="h-3 w-3" />Edit</button>
-                            <button className={small} disabled={busyItem === it.id} onClick={() => void item("remove-item", it)}><X className="h-3 w-3" />Remove</button>
-                            <button className="inline-flex items-center gap-1 rounded-full bg-[#2E7C83] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50" disabled={busyItem === it.id} onClick={() => void item("approve-item", it)}><Check className="h-3.5 w-3.5" />{busyItem === it.id ? "Adding…" : "Approve into Tasks"}</button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            {report.action_items.length === 0 && <p className="text-sm text-[#7a8a99]">No action items came up in this conversation. Add your own below.</p>}
+            <ul className="space-y-2">
+              {report.action_items.map((it) => (
+                <ItemRow key={it.id} it={it} reportId={r.id} reportTitle={r.title} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} setMsg={setMsg} />
+              ))}
+            </ul>
+            <AddItem reportId={r.id} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} setMsg={setMsg} />
           </section>
 
           {report.sections.map((s) => (
@@ -381,6 +339,162 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           ))}
         </>
       )}
+    </div>
+  );
+}
+
+const pill = "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-50";
+const whenAt = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+// A sensible starting time: the item's due date at 9 AM, or tomorrow at 9 AM.
+const startFor = (due: string) => {
+  const d = due ? new Date(`${due}T09:00:00`) : new Date(Date.now() + 86_400_000);
+  if (!due) d.setHours(9, 0, 0, 0);
+  return localInputValue(d);
+};
+
+// One action item: Edit / Remove until it has gone anywhere, then Add to Tasks, Set a reminder and Add to calendar,
+// each on its own press and each shown as done once made. An item can be all three.
+function ItemRow({ it, reportId, reportTitle, onReport, setMsg }: { it: ActionItem; reportId: string; reportTitle: string; onReport: (r: VolantReport) => void; setMsg: (m: string) => void }) {
+  const [mode, setMode] = useState<"" | "edit" | "remind" | "event">("");
+  const [edit, setEdit] = useState({ text: it.text, owner: it.owner, due: it.due });
+  const [when, setWhen] = useState(startFor(it.due));
+  const [minutes, setMinutes] = useState(30);
+  const [busy, setBusy] = useState(false);
+  const sent = Boolean(it.task_id || it.reminder || it.event);
+
+  async function act(action: string, extra: Record<string, unknown> = {}) {
+    const { ok, d } = await post("/api/volant", { action, id: reportId, itemId: it.id, ...extra });
+    if (!ok) {
+      setMsg(d.error || "That didn't save.");
+      return false;
+    }
+    if (d.report) onReport(d.report);
+    return true;
+  }
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    setMsg("");
+    await fn();
+    setBusy(false);
+  }
+  const note = `From the LC Volant report "${reportTitle}".${it.owner ? ` Owner: ${it.owner}.` : ""}`;
+
+  const remind = () => run(async () => {
+    if (!when) return setMsg("Pick when to be reminded.");
+    const at = new Date(when).toISOString();
+    const r = await fetch("/api/reminders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: it.text.slice(0, 200), notes: note, remindAt: at }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.reminder?.id) return setMsg(d.error || "Couldn't set the reminder.");
+    if (await act("mark-item", { kind: "reminder", ref: d.reminder.id, at })) {
+      setMode("");
+      setMsg(`Reminder set for ${whenAt(at)}. It shows in Reminders, the bell and your email when it comes due.`);
+    }
+  });
+  const addEvent = () => run(async () => {
+    if (!when) return setMsg("Pick a date and time for the calendar.");
+    const startISO = new Date(when).toISOString();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const r = await fetch("/api/calendar/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject: it.text.slice(0, 200), startISO, durationMin: minutes, note, timeZone }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.eventId) {
+      return setMsg(d.needsScope ? "Your Google calendar is connected read-only. Reconnect Google in Settings > Integrations to allow adding events, then try again." : d.error === "No calendar connected." ? "Connect your Google or Microsoft calendar in Settings > Integrations first." : d.error || "Couldn't add it to your calendar.");
+    }
+    if (await act("mark-item", { kind: "event", ref: d.eventId, at: startISO, provider: d.provider })) {
+      setMode("");
+      setMsg(`Added to your ${d.provider === "google" ? "Google" : "Microsoft"} calendar for ${whenAt(startISO)}.`);
+    }
+  });
+
+  return (
+    <li className={`rounded-xl border p-3 ${sent ? "border-[#2E7C83]/40 bg-[#2E7C83]/5" : "border-[#1a2b4a]/10"}`}>
+      {mode === "edit" ? (
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_140px_150px]">
+          <input className={field} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })} maxLength={400} aria-label="Action item" />
+          <input className={field} value={edit.owner} onChange={(e) => setEdit({ ...edit, owner: e.target.value })} maxLength={60} placeholder="Owner" aria-label="Owner" />
+          <input className={field} type="date" value={edit.due} onChange={(e) => setEdit({ ...edit, due: e.target.value })} aria-label="Due date" />
+          <div className="flex gap-2 sm:col-span-3">
+            <button className={btnGold} disabled={busy} onClick={() => void run(async () => { if (await act("edit-item", { item: edit })) setMode(""); })}>Save</button>
+            <button className={btn} onClick={() => setMode("")}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.text}</p>
+              <p className="text-xs text-[#7a8a99]">{[it.owner && `Owner: ${it.owner}`, it.due && `Due ${fmtDate(it.due)}`, it.added && "Added by you"].filter(Boolean).join(" · ") || "No owner or date named"}</p>
+            </div>
+            {!sent && (
+              <div className="flex flex-wrap items-center gap-3">
+                <button className={small} disabled={busy} onClick={() => { setEdit({ text: it.text, owner: it.owner, due: it.due }); setMode("edit"); }}><Pencil className="h-3 w-3" />Edit</button>
+                <button className={small} disabled={busy} onClick={() => void run(async () => { await act("remove-item"); })}><X className="h-3 w-3" />Remove</button>
+              </div>
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {it.task_id ? (
+              <Link href="/tasks" className={`${pill} bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#9fd3d6]`}><Check className="h-3.5 w-3.5" />In Tasks</Link>
+            ) : (
+              <button className={`${pill} bg-[#2E7C83] text-white hover:opacity-90`} disabled={busy} onClick={() => void run(async () => { if (await act("approve-item")) setMsg("Added to Tasks."); })}><ListChecks className="h-3.5 w-3.5" />Add to Tasks</button>
+            )}
+            {it.reminder ? (
+              <Link href="/reminders" className={`${pill} bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#9fd3d6]`}><Check className="h-3.5 w-3.5" />Reminder {whenAt(it.reminder.at)}</Link>
+            ) : (
+              <button className={`${pill} border border-[#2E7C83] text-[#1F5E63] hover:bg-[#2E7C83]/10 dark:text-[#9fd3d6]`} disabled={busy} onClick={() => { setWhen(startFor(it.due)); setMode(mode === "remind" ? "" : "remind"); }}><BellRing className="h-3.5 w-3.5" />Set a reminder</button>
+            )}
+            {it.event ? (
+              <span className={`${pill} bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#9fd3d6]`}><Check className="h-3.5 w-3.5" />On your calendar {whenAt(it.event.at)}</span>
+            ) : (
+              <button className={`${pill} border border-[#2E7C83] text-[#1F5E63] hover:bg-[#2E7C83]/10 dark:text-[#9fd3d6]`} disabled={busy} onClick={() => { setWhen(startFor(it.due)); setMode(mode === "event" ? "" : "event"); }}><CalendarPlus className="h-3.5 w-3.5" />Add to calendar</button>
+            )}
+          </div>
+          {(mode === "remind" || mode === "event") && (
+            <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-[#c9a227]/10 p-2">
+              <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">{mode === "remind" ? "Remind me" : "Starts"}
+                <input type="datetime-local" className={`${field} mt-1`} value={when} onChange={(e) => setWhen(e.target.value)} />
+              </label>
+              {mode === "event" && (
+                <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">How long
+                  <select className={`${field} mt-1`} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
+                    {[15, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`}</option>)}
+                  </select>
+                </label>
+              )}
+              <button className={btnGold} disabled={busy} onClick={() => void (mode === "remind" ? remind() : addEvent())}>{busy ? "Saving…" : mode === "remind" ? "Set reminder" : "Add to calendar"}</button>
+              <button className={btn} onClick={() => setMode("")}>Cancel</button>
+            </div>
+          )}
+        </>
+      )}
+    </li>
+  );
+}
+
+// Type in an action item the AI missed; it then gets the same Tasks, reminder and calendar buttons.
+function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (r: VolantReport) => void; setMsg: (m: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [v, setV] = useState({ text: "", owner: "", due: "" });
+  const [busy, setBusy] = useState(false);
+  async function add() {
+    if (!v.text.trim()) return setMsg("Type the action item first.");
+    setBusy(true);
+    const { ok, d } = await post("/api/volant", { action: "add-item", id: reportId, item: v });
+    setBusy(false);
+    if (!ok) return setMsg(d.error || "Couldn't add that.");
+    onReport(d.report);
+    setV({ text: "", owner: "", due: "" });
+    setOpen(false);
+  }
+  if (!open) return <button className={`${small} mt-3`} onClick={() => setOpen(true)}><Plus className="h-3 w-3" />Add an action item</button>;
+  return (
+    <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_140px_150px]">
+      <input className={field} value={v.text} onChange={(e) => setV({ ...v, text: e.target.value })} maxLength={400} placeholder="What needs doing" aria-label="New action item" />
+      <input className={field} value={v.owner} onChange={(e) => setV({ ...v, owner: e.target.value })} maxLength={60} placeholder="Owner" aria-label="Owner" />
+      <input className={field} type="date" value={v.due} onChange={(e) => setV({ ...v, due: e.target.value })} aria-label="Due date" />
+      <div className="flex gap-2 sm:col-span-3">
+        <button className={btnGold} disabled={busy} onClick={() => void add()}>Add</button>
+        <button className={btn} onClick={() => setOpen(false)}>Cancel</button>
+      </div>
     </div>
   );
 }

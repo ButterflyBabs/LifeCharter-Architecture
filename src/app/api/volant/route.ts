@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
 import { volantAccount } from "@/lib/volantServer";
-import { cleanItemEdit, templateByKey, VOLANT_NAME, VOLANT_TEMPLATES, type VolantReport } from "@/lib/volant";
+import { cleanItemEdit, newItem, templateByKey, VOLANT_NAME, VOLANT_TEMPLATES, type VolantReport } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -11,7 +11,7 @@ export const maxDuration = 30;
 //   GET                 -> { reports (no transcript), settings, templates }
 //   GET ?id=            -> { report (with transcript) }
 //   GET ?contact=       -> { reports } saved on that contact
-//   POST { action }     -> approve-item | edit-item | remove-item | rename | delete | settings-save
+//   POST { action }     -> approve-item | edit-item | remove-item | add-item | mark-item | rename | delete | settings-save
 const LIST = "id, template_key, title, session_date, contact_id, created_at, updated_at, report, seq_contacts(first_name, last_name, email)";
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const firstName = (full: unknown) => {
@@ -88,8 +88,19 @@ export async function POST(request: Request) {
     return error ? NextResponse.json({ error: "Couldn't rename the report." }, { status: 500 }) : NextResponse.json({ ok: true });
   }
 
-  const report = row.report as VolantReport | null;
+  const report = (row.report as VolantReport | null) ?? null;
   if (!report) return NextResponse.json({ error: "This report has no action items." }, { status: 400 });
+  const saveReport = async (next: VolantReport) =>
+    (await db.from("volant_reports").update({ report: next, updated_at: now }).eq("id", row.id).eq("master_plan_id", a.planId)).error;
+
+  if (action === "add-item") {
+    const it = newItem(b.item);
+    if (!it) return NextResponse.json({ error: "Type the action item first." }, { status: 400 });
+    if (report.action_items.length >= 60) return NextResponse.json({ error: "This report has a lot of action items already." }, { status: 400 });
+    const next = { ...report, action_items: [...report.action_items, it] };
+    const error = await saveReport(next);
+    return error ? NextResponse.json({ error: "Couldn't add that." }, { status: 500 }) : NextResponse.json({ ok: true, report: next, itemId: it.id });
+  }
   const itemId = str(b.itemId, 40);
   const idx = report.action_items.findIndex((i) => i.id === itemId);
   if (idx === -1) return NextResponse.json({ error: "That action item could not be found." }, { status: 404 });
@@ -98,6 +109,19 @@ export async function POST(request: Request) {
     const { error } = await db.from("volant_reports").update({ report: next, updated_at: now }).eq("id", row.id).eq("master_plan_id", a.planId);
     return error;
   };
+
+  if (action === "mark-item") {
+    // The page made the reminder (/api/reminders) or the calendar event (/api/calendar/event) itself, under the
+    // person's own access; this only remembers it on the item so it shows as done.
+    const kind = str(b.kind, 10);
+    const ref = str(b.ref, 300);
+    const at = typeof b.at === "string" && !Number.isNaN(Date.parse(b.at)) ? new Date(b.at).toISOString() : "";
+    if (!ref || !at || (kind !== "reminder" && kind !== "event")) return NextResponse.json({ error: "Missing details." }, { status: 400 });
+    const patch = kind === "reminder" ? { reminder: { id: ref, at } } : { event: { id: ref, at, provider: str(b.provider, 20) } };
+    const next = { ...report, action_items: report.action_items.map((x, i) => (i === idx ? { ...x, ...patch } : x)) };
+    const error = await saveReport(next);
+    return error ? NextResponse.json({ error: "Saved, but couldn't mark it on the report." }, { status: 500 }) : NextResponse.json({ ok: true, report: next });
+  }
 
   if (action === "edit-item") {
     if (item.task_id) return NextResponse.json({ error: "This one is already in Tasks. Change it there." }, { status: 400 });
@@ -109,7 +133,7 @@ export async function POST(request: Request) {
   }
 
   if (action === "remove-item") {
-    if (item.task_id) return NextResponse.json({ error: "This one is already in Tasks." }, { status: 400 });
+    if (item.task_id || item.reminder || item.event) return NextResponse.json({ error: "This one is already in Tasks, Reminders or your calendar." }, { status: 400 });
     const next = { ...report, action_items: report.action_items.filter((_, i) => i !== idx) };
     const error = await save(next);
     return error ? NextResponse.json({ error: "Couldn't remove that." }, { status: 500 }) : NextResponse.json({ ok: true, report: next });

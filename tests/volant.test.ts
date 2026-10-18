@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, docxXmlToText, reportToText, templateByKey, templateName } from "../src/lib/volant";
+import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName } from "../src/lib/volant";
 
 test("all 21 approved templates are there, each with one action list and unique keys", () => {
     assert.equal(VOLANT_TEMPLATES.length, 21);
@@ -52,4 +52,14 @@ test("renamed templates, item edits and the copied text", () => {
     const text = reportToText("Session", "Oct 17", r, "Commitments");
     assert.doesNotMatch(text, /Coach's private notes/);
     assert.match(text, /Insights and breakthroughs/);
+});
+
+test("an action item typed in by hand is cleaned and marked as added", () => {
+    assert.equal(newItem({ text: "   " }), null);
+    const it = newItem({ text: " Book the venue ", owner: "Babs", due: "2026-11-01" })!;
+    assert.equal(it.text, "Book the venue");
+    assert.equal(it.added, true);
+    assert.equal(it.task_id, null);
+    assert.equal(it.reminder, null);
+    assert.equal(it.event, null);
 });
