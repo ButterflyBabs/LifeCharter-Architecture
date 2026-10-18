@@ -97,8 +97,12 @@ export async function sealPdf(input: SealInput): Promise<Uint8Array> {
     for (const block of (input.body || "").split(/\n{2,}/)) {
       const b = block.trim();
       if (!b) continue;
-      if (/^#{1,3}\s/.test(b)) w.text(b.replace(/^#{1,3}\s+/, ""), { size: 12.5, bold: true, gap: 4 });
-      else w.text(b, { gap: 8 });
+      if (/^#{1,3}\s/.test(b)) {
+        // A heading is its first line only; any text right under it is a normal paragraph.
+        const [first, ...rest] = b.split("\n");
+        w.text(first.replace(/^#{1,3}\s+/, ""), { size: 12.5, bold: true, gap: 4 });
+        if (rest.join("\n").trim()) w.text(rest.join("\n").trim(), { gap: 8 });
+      } else w.text(b, { gap: 8 });
     }
   }
 

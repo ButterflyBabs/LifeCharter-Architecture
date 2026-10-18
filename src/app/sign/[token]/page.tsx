@@ -160,7 +160,16 @@ export default function SignPage({ params }: { params: { token: string } }) {
           <>
             {v.body && (
               <article className="space-y-3 rounded-2xl border border-[#E5DDCF] bg-white p-6 text-[15px] leading-relaxed sm:p-8">
-                {paras.map((p, i) => (/^#{1,3}\s/.test(p) ? <h2 key={i} className="pt-2 text-lg font-semibold">{p.replace(/^#{1,3}\s+/, "")}</h2> : <p key={i} className="whitespace-pre-line">{p}</p>))}
+                {paras.map((p, i) => {
+                  if (!/^#{1,3}\s/.test(p)) return <p key={i} className="whitespace-pre-line">{p}</p>;
+                  const [first, ...rest] = p.split("\n");
+                  return (
+                    <div key={i}>
+                      <h2 className="pt-2 text-lg font-semibold">{first.replace(/^#{1,3}\s+/, "")}</h2>
+                      {rest.join("\n").trim() && <p className="mt-2 whitespace-pre-line">{rest.join("\n").trim()}</p>}
+                    </div>
+                  );
+                })}
               </article>
             )}
             {v.fileUrl && (
