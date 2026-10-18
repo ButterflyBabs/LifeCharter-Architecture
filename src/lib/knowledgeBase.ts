@@ -280,6 +280,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["meta", "facebook lead ads", "instagram lead ads", "lead form", "make", "make.com", "zapier", "instant form", "ad leads", "webhook"],
   },
   {
+    id: "sa-linkedin-lead-forms",
+    category: "Sales",
+    question: "How do I send leads from my LinkedIn lead forms into the Suite?",
+    answer:
+      "Open Clients & Sales → Meta Lead Ads and scroll to LinkedIn lead forms. It shows a second private address (it uses the same private key as your Facebook address) and the steps for a free Make account (make.com): pick LinkedIn Lead Gen Forms as the trigger, then an HTTP request that posts each new response to that address with the person's email, first name, last name and the form's name. Each person is saved in Contacts with the tags lead-linkedin-form and the form's own tag, and gets a LinkedIn card in the pipeline you pick on the same page (choose Contacts only to skip the card). They show in Latest leads with the source LinkedIn. This is only for LinkedIn lead forms: LinkedIn doesn't let the Suite read or answer your LinkedIn messages. Add &dry=1 to the address to test it without adding anyone.",
+    keywords: ["linkedin", "linkedin lead form", "lead gen form", "linkedin leads", "make", "make.com", "zapier", "lead form", "webhook", "linkedin ads"],
+  },
+  {
     id: "sa-prospect-qualifier",
     category: "Sales",
     question: "How do I find out whether a prospect is a good fit before I message them (Prospect Qualifier and Ideal Client Profiles)?",

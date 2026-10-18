@@ -26,8 +26,9 @@ export default async function MetaLeadsPage() {
     set = { secret, board_id: null };
   }
   const boards = house || demo ? [] : await ensureBoards(db, plan, "outreach");
-  const { data: leads } = await db.from("meta_leads").select("id, email, name, ad_name, status, detail, created_at").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(30);
+  const { data: leads } = await db.from("meta_leads").select("id, email, name, ad_name, form_name, source, status, detail, created_at").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(30);
   const url = `https://lccommandsuite.com/api/meta-leads?k=${(set?.secret as string) ?? "(your private address appears here once you sign in)"}`;
+  const liUrl = url.replace("/api/meta-leads", "/api/linkedin-leads");
   const day = (s: string) => new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Denver" });
   return (
     <div className="py-8 px-4 sm:px-6 max-w-[1100px] mx-auto">
@@ -41,14 +42,15 @@ export default async function MetaLeadsPage() {
       ) : (
         <div className="mt-2 overflow-x-auto rounded-xl border border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40">
           <table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-xs text-[#7a8a99]"><th className="p-3">When (Mountain)</th><th className="p-3">Name</th><th className="p-3">Email</th><th className="p-3">Ad</th><th className="p-3">Status</th></tr></thead>
+            <thead><tr className="text-left text-xs text-[#7a8a99]"><th className="p-3">When (Mountain)</th><th className="p-3">Name</th><th className="p-3">Email</th><th className="p-3">Source</th><th className="p-3">Ad or form</th><th className="p-3">Status</th></tr></thead>
             <tbody>
               {leads.map((l) => (
                 <tr key={l.id as string} className="border-t border-[#1a2b4a]/10">
                   <td className="p-3 whitespace-nowrap">{day(l.created_at as string)}</td>
                   <td className="p-3">{(l.name as string) || ""}</td>
                   <td className="p-3">{(l.email as string) || ""}</td>
-                  <td className="p-3">{(l.ad_name as string) || ""}</td>
+                  <td className="p-3">{l.source === "linkedin" ? "LinkedIn" : "Meta"}</td>
+                  <td className="p-3">{(l.ad_name as string) || (l.form_name as string) || ""}</td>
                   <td className={`p-3 ${l.status === "failed" ? "text-[#A4523C] font-medium" : ""}`}>{l.status as string}{l.detail ? `: ${l.detail as string}` : ""}</td>
                 </tr>
               ))}
@@ -80,6 +82,19 @@ export default async function MetaLeadsPage() {
       <p className="mt-3 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
         If Make is ever down, open Meta&apos;s Leads Center, download your leads as a file and use the box below. Zapier works the same way if you prefer it: Facebook Lead Ads trigger, then Webhooks by Zapier, POST, to the same address.
       </p>
+      <h2 className="mt-10 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">LinkedIn lead forms</h2>
+      <p className="mt-1 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
+        People who fill in a LinkedIn Lead Gen Form (on a LinkedIn ad or on your Page) can arrive the same way. The Suite saves them as a contact tagged lead-linkedin-form and the form&apos;s own tag{house ? ", and (when the address ends in &masterclass=1) registers them on the MasterClass Zoom meeting" : ""}, and puts a LinkedIn card in the pipeline above{house ? " if you chose one" : ""}. They show in Latest leads with the source LinkedIn. LinkedIn does not let the Suite read your LinkedIn messages, so this is only for lead forms.
+      </p>
+      <CopyField value={house ? `${liUrl}&masterclass=1` : liUrl} />
+      <p className="mt-1 max-w-2xl text-xs text-[#7a8a99]">{house ? "This address registers people on the MasterClass. Remove &masterclass=1 if the form is for something else." : "Use your own Make account, the same one as for Facebook if you have it."}</p>
+      <ol className="mt-3 max-w-2xl list-decimal space-y-3 pl-5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+        <li>In Make, create a new scenario and click the big <b>+</b>. Search <b>LinkedIn Lead Gen Forms</b> and pick the trigger that watches for new form responses. Connect the LinkedIn account that manages your Page or ad account (you need to be an admin of it), then choose the form.</li>
+        <li>Click the small <b>+</b> after it, search <b>HTTP</b> and pick <b>Make a request</b>. Paste the address above into <b>URL</b>. Set <b>Method</b> to <b>POST</b> and <b>Body type</b> to <b>Application/x-www-form-urlencoded</b>.</li>
+        <li>Under <b>Fields</b> add <b>email</b>, <b>first_name</b>, <b>last_name</b> and <b>form_name</b>. For each <b>Value</b> click inside the box and choose the matching item from LinkedIn&apos;s list (the person&apos;s email, first name, last name and the form&apos;s name). Anything else you add, such as <b>company</b> or <b>job_title</b>, is saved on their card too.</li>
+        <li>To check it without adding anyone, add <b>&amp;dry=1</b> to the end of the address, press <b>Run once</b>, and look for a reply that says dry. Then remove <b>&amp;dry=1</b>, press <b>Run once</b> with a real test response, and look for the person in Latest leads.</li>
+        <li>Turn the scenario on so it reads <b>Active</b>.</li>
+      </ol>
       <h2 className="mt-8 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Upload leads from a file</h2>
       <UploadLeads address={url} />
     </div>

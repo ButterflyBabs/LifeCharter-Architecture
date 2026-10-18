@@ -15,6 +15,7 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureAp
 const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks"];
 const PUBLIC_APIS = [
   "/api/meta-leads", // Meta lead ads, secured by the secret in its address (?k=), not a session
+  "/api/linkedin-leads", // LinkedIn Lead Gen Forms (through Make or Zapier), secured by the same secret in its address (?k=), not a session
   "/api/masterclass-signup", // the public MasterClass signup page registers people on Zoom
   "/api/investor-access/login", // the investor page's access-code check (rate limited, signed cookie)
   "/api/reviews/collect",
