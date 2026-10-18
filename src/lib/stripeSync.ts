@@ -67,6 +67,8 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
   const key = creds ? creds.key : ((integ?.api_key as string) || "").trim();
   const account = creds?.account;
   if (!integ || !key || integ.status !== "connected") return { added: 0, checked: 0, error: "Stripe isn't connected." };
+  // Test-mode payments never reach the real books (or affiliate credits): a test connection syncs nothing.
+  if (viaConnect ? meta.livemode === false : /^(sk|rk)_test_/.test(key)) return { added: 0, checked: 0 };
   const since = Number(meta.last_sync_created) || Math.floor(Date.now() / 1000) - 90 * 86400;
 
   const txns: Txn[] = [];
