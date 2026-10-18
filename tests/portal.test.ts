@@ -25,3 +25,18 @@ test("portal look: unknown values fall back, sections keep every section once in
   assert.equal(onAccent("#2E7C83"), "#FFFFFF");
   assert.equal(onAccent("#F5E6A8"), "#1F2B3A");
 });
+
+test("events: challenge days count from the start date; calendar links carry the time and join link", async () => {
+  const { challengeDay, googleCalendarUrl, icsFor, replayOpen } = await import("../src/lib/events");
+  assert.equal(challengeDay("2026-10-20", "2026-10-19"), 0);
+  assert.equal(challengeDay("2026-10-20", "2026-10-20"), 1);
+  assert.equal(challengeDay("2026-10-20", "2026-10-24"), 5);
+  const ev = { id: "e1", title: "Clarity, Live", starts_at: "2026-11-05T18:00:00.000Z", duration_min: 90, join_url: "https://zoom.us/j/1", description: "Bring a pen" };
+  assert.match(googleCalendarUrl(ev)!, /dates=20261105T180000Z%2F20261105T193000Z/);
+  const ics = icsFor(ev);
+  assert.match(ics, /DTSTART:20261105T180000Z/);
+  assert.match(ics, /SUMMARY:Clarity\\, Live/);
+  assert.equal(replayOpen({ replay_url: "https://v", replay_hours: 72, replay_sent_at: new Date(Date.now() - 73 * 3_600_000).toISOString() }), false);
+  assert.equal(replayOpen({ replay_url: "https://v", replay_hours: 72, replay_sent_at: new Date().toISOString() }), true);
+  assert.equal(replayOpen({ replay_url: null, replay_hours: null, replay_sent_at: null }), false);
+});

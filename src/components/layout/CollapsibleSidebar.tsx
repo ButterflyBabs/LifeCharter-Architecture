@@ -144,6 +144,7 @@ const navigationSections = [
       { id: "client-care", label: "Client Care", icon: HeartHandshake, href: "/client-care" },
       { id: "client-portals", label: "Client Portals", icon: UsersRound, href: "/client-portals" },
       { id: "programs", label: "Programs", icon: GraduationCap, href: "/programs" },
+      { id: "events", label: "Events", icon: Megaphone, href: "/events" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
@@ -847,7 +848,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care", programs: "client-portals" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care", programs: "client-portals", events: "programs" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
