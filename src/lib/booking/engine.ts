@@ -1,3 +1,4 @@
+import { isAwayOn } from "@/lib/awayMode";
 import { createHash, randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { zonedToUtcISO, dayInTz } from "@/lib/tz";
@@ -122,7 +123,9 @@ export async function availableSlots(cal: Calendar, fromISO: string, toISO: stri
   const from = Math.max(Date.parse(fromISO), now + cal.min_notice_hours * 3_600_000);
   const to = Math.min(Date.parse(toISO), now + cal.max_days_ahead * 86_400_000);
   if (!(to > from)) return { slots: [] };
-  const hosts = await hostsOf(cal, db);
+  const [hosts, { data: awayRow }] = await Promise.all([hostsOf(cal, db), db.from("away_mode").select("starts_on, ends_on, block_bookings").eq("master_plan_id", cal.master_plan_id).maybeSingle()]);
+  // Out-of-office (task 1155): no times on the owner's away dates.
+  const away = awayRow?.block_bookings ? (awayRow as { starts_on: string; ends_on: string }) : null;
   const pad = (cal.buffer_before_min + cal.buffer_after_min + cal.duration_min) * 60_000;
   const rangeFrom = new Date(from - pad).toISOString();
   const rangeTo = new Date(to + pad).toISOString();
@@ -142,6 +145,7 @@ export async function availableSlots(cal: Calendar, fromISO: string, toISO: stri
         const lo = s - cal.buffer_before_min * 60_000;
         const hi = e + cal.buffer_after_min * 60_000;
         if (busy.some((b) => b.start < hi && b.end > lo)) continue;
+        if (away && isAwayOn(away, dayInTz(new Date(s), tz))) continue;
         if (cal.daily_cap && (perDay.get(dayInTz(new Date(s), tz)) ?? 0) >= cal.daily_cap) continue;
         bySlot.set(s, [...(bySlot.get(s) ?? []), h.id]);
       }

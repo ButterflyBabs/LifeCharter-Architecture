@@ -1,3 +1,4 @@
+import { nudgesPaused } from "@/lib/awayMode";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { ownerMasterPlanId } from "@/lib/housePlan";
@@ -64,6 +65,7 @@ async function run(request: Request) {
 
   const planId = await ownerMasterPlanId(db);
   if (!planId) return NextResponse.json({ skipped: "no owner account" });
+  if ((await nudgesPaused(db)).has(planId)) return NextResponse.json({ skipped: "away" }); // out-of-office (task 1155)
   const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
   const { data: prof } = plan?.user_id ? await db.from("profiles").select("email, full_name").eq("id", plan.user_id).maybeSingle() : { data: null };
   if (!prof?.email) return NextResponse.json({ skipped: "no owner email" });

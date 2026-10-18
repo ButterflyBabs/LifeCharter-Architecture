@@ -41,8 +41,10 @@ import {
   Trash2,
   Lock,
   FileText,
-  Sparkles
+  Sparkles,
+  Plane
 } from "lucide-react";
+import AwayCard from "./components/AwayCard";
 
 interface SettingsSection {
   id: string;
@@ -69,6 +71,12 @@ const settingsSections: SettingsSection[] = [
     title: "Notifications",
     icon: <Bell className="w-5 h-5" />,
     description: "Email, SMS, and in-app notification preferences"
+  },
+  {
+    id: "away",
+    title: "Out of office",
+    icon: <Plane className="w-5 h-5" />,
+    description: "Away dates: close bookings, answer portal messages, pause reminders"
   },
   {
     id: "appearance",
@@ -2069,6 +2077,7 @@ export default function SettingsPage() {
       case "profile": return renderProfileSettings();
       case "workspace": return renderWorkspaceSettings();
       case "notifications": return renderNotificationSettings();
+      case "away": return <AwayCard />;
       case "appearance": return renderAppearanceSettings();
       case "ai": return renderAiSettings();
       case "integrations": return renderIntegrationSettings();

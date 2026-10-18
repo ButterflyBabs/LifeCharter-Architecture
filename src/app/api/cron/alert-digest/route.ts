@@ -1,3 +1,4 @@
+import { nudgesPaused } from "@/lib/awayMode";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { isEmailWorthy, syncNotifications } from "@/lib/alerts";
@@ -40,7 +41,9 @@ async function run(request: Request) {
   const { data: plans } = await supabase.from("client_master_plans").select("id, user_id, created_at").not("user_id", "is", null).limit(1000);
 
   let emailed = 0;
+  const away = await nudgesPaused(supabase);
   for (const plan of (plans ?? []) as { id: string; user_id: string; created_at: string | null }[]) {
+    if (away.has(plan.id)) continue; // out-of-office (task 1155)
     // A new client hears nothing from the Suite's "worth your attention" emails until their three assessments are done
     // (or their account is two weeks old), so the very first emails are a welcome and not a to-do list.
     if (!(await setupDone(supabase, plan.id, plan.created_at))) continue;

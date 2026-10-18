@@ -15,6 +15,7 @@ export default function SlotPicker({ slug, tz, onPick, onMeta }: { slug: string;
   const [err, setErr] = useState("");
   const [day, setDay] = useState("");
   const [maxAhead, setMaxAhead] = useState(60);
+  const [away, setAway] = useState<{ dates: string; note: string } | null>(null);
 
   useEffect(() => {
     setSlots(null);
@@ -29,6 +30,7 @@ export default function SlotPicker({ slug, tz, onPick, onMeta }: { slug: string;
       .then((d) => {
         if (d.error) setErr(d.error);
         setSlots(d.slots ?? []);
+        setAway(d.away ?? null);
         if (typeof d.calendar?.maxDaysAhead === "number") setMaxAhead(d.calendar.maxDaysAhead);
         if (d.calendar && onMeta) onMeta(d.calendar);
       })
@@ -105,6 +107,11 @@ export default function SlotPicker({ slug, tz, onPick, onMeta }: { slug: string;
             );
           })}
         </div>
+        {away && (
+          <p className="mt-3 rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(199,111,86,0.10)" }}>
+            <strong>Away {away.dates}.</strong> {away.note}
+          </p>
+        )}
         {err && <p className="mt-3 text-sm text-[#8a2f2f]">{err}</p>}
         {slots === null && !err && <p className="mt-3 text-sm opacity-60">Finding open times…</p>}
         {slots && !slots.length && !err && <p className="mt-3 text-sm opacity-70">No open times this month. Try the next month.</p>}

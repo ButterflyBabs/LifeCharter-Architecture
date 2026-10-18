@@ -1,3 +1,4 @@
+import { portalAutoReply } from "@/lib/awayMode";
 import { NextResponse } from "next/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { notifyOwnerOfMessage, portalFor, portalView } from "@/lib/portal";
@@ -40,6 +41,7 @@ export async function POST(request: Request, { params }: { params: { token: stri
     if ((count ?? 0) >= 20) return NextResponse.json({ error: "That's a lot of messages in an hour. Please wait a little." }, { status: 429 });
     await db.from("portal_messages").insert({ master_plan_id: p.master_plan_id, contact_id: p.contact_id, author: "client", body });
     await notifyOwnerOfMessage(db, p.master_plan_id, p.contact_id, body);
+    await portalAutoReply(db, p.master_plan_id, p.contact_id).catch(() => false);
     return NextResponse.json({ ok: true });
   }
   if (b.action === "program-task" || b.action === "program-post") {

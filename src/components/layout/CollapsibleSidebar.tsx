@@ -95,6 +95,7 @@ import {
   Eye,
   Receipt,
   UsersRound,
+  Award,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
@@ -167,6 +168,7 @@ const navigationSections = [
       { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
       { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
+      { id: "year-in-review", label: "Year in Review", icon: Award, href: "/year-in-review" },
       { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
       { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },

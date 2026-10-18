@@ -24,6 +24,7 @@ interface AppLayoutProps {
 // impression for an anonymous prospect and, on mobile, was completely
 // unusable before the sidebar got an off-canvas mobile state.
 const BARE_ROUTES = [
+  "/yr",
   "/reviews/collect",
   "/unsubscribe",
   "/f",

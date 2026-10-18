@@ -9,6 +9,7 @@ import ProgramCard, { type Program } from "./ProgramCard";
 type Item = { id: string; title: string; body: string | null; url: string | null; fileName: string | null; hasFile: boolean; dueOn: string | null; status: string; doneAt: string | null; fromClient: boolean };
 type View = {
   programs: Program[];
+  away: { dates: string; note: string } | null;
   brand: { name: string; logo: string | null };
   look: { accent: string; background: string; font: string; heading: string; banner: string | null; sections: { key: SectionKey; title: string; hidden: boolean }[] };
   client: { firstName: string | null };
@@ -269,6 +270,11 @@ export default function PortalPage() {
             <h1 className="text-3xl font-semibold [font-family:var(--pf-heading)]">{look.heading}</h1>
           </div>
         </header>
+        {v.away && (
+          <p className="rounded-2xl border px-5 py-3 text-[15px]" style={{ borderColor: look.accent }}>
+            <strong>Away {v.away.dates}.</strong> {v.away.note}
+          </p>
+        )}
         {v.welcome && <p className="whitespace-pre-wrap rounded-2xl px-5 py-4 text-[15px]" style={{ background: `${look.accent}14` }}>{v.welcome}</p>}
         {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
 

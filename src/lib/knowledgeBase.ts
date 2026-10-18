@@ -1464,6 +1464,22 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["time", "time tracking", "timer", "hours", "billable", "hourly rate", "capacity", "timesheet", "track time", "how many hours", "retainer"],
   },
   {
+    id: "out-of-office",
+    category: "Account & Settings",
+    question: "How do I set my away dates (out of office)?",
+    answer:
+      "Open Settings, then Out of office. Pick your first and last day away and, if you like, write a note for clients (leave it blank and they see: I'm away right now and back on (the day after your last day). I'll reply when I'm back.). Then choose what the Suite does while you're away: Close my booking pages on those dates (no one can book a time on those days and your booking pages show your note), Answer portal messages for me (a client who writes in their portal gets your note back once per trip; you still get their message) and Pause my reminder emails (your daily alerts, task reminders and to-do emails stop until you're back). Press Set my away dates. Everything your clients have signed up for keeps running: campaigns, event emails, booking reminders and Client Care. Press I'm back (turn off) to end it early. Email sent straight to your Gmail or Outlook inbox needs that inbox's own vacation responder.",
+    keywords: ["out of office", "away", "vacation", "holiday", "time off", "away dates", "auto reply", "autoreply", "pause bookings", "block dates", "away message"],
+  },
+  {
+    id: "year-in-review",
+    category: "Daily Rhythm",
+    question: "Where can I see my year at a glance and share it?",
+    answer:
+      "Open Year in Review in the left menu (Alignment & Systems, under Weekly Review) and pick the year. It gathers what is already in your Suite: income, expenses and net with your best month and a month-by-month chart (from Finance), new customers and new contacts, sessions held and hours, events and sign-ups, program members, tasks finished and goals reached, your business score at the start and end of the year, and up to three testimonials your clients agreed to share. Press Make a share link to share it with a private link; income, expenses and net stay hidden on the shared page unless you tick Show income, expenses and net. Stop sharing turns the link off at once.",
+    keywords: ["year in review", "annual review", "year end", "wrapped", "my year", "yearly summary", "share my year", "best month", "annual report"],
+  },
+  {
     id: "events",
     category: "Sales",
     question: "How do I run a webinar, MasterClass, workshop or challenge? What is Events?",

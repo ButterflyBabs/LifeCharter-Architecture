@@ -6,6 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { housePlanId } from "@/lib/planScope";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 import { isHousePlan } from "@/lib/housePlan";
+import { awayAhead, awayDates, awayNote } from "@/lib/awayMode";
 import { cookies } from "next/headers";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 
@@ -23,7 +24,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
   const to = u.searchParams.get("to") || new Date(Date.now() + 14 * 86_400_000).toISOString();
   if (Date.parse(to) - Date.parse(from) > 45 * 86_400_000) return NextResponse.json({ error: "Range too long." }, { status: 400 });
   const { data: hosts } = await createServerClient().from("booking_hosts").select("name").eq("master_plan_id", cal.master_plan_id).in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
-  const plan = await availableSlots(cal, from, to);
+  const [plan, away] = await Promise.all([availableSlots(cal, from, to), awayAhead(createServerClient(), cal.master_plan_id)]);
   // The house account's pages wear one of its brands; every client account's page stays neutral.
   const brand = cal.master_plan_id === (await housePlanId()) ? ((cal as unknown as { brand?: string }).brand ?? "command_suite") : "neutral";
   return NextResponse.json({
@@ -42,6 +43,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
       })(),
     },
     slots: plan.slots.map((s) => s.start),
+    away: away?.block_bookings ? { dates: awayDates(away), note: awayNote(away) } : null,
   });
 }
 

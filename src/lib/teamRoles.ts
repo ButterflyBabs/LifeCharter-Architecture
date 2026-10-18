@@ -83,7 +83,7 @@ export function memberPageRedirect(role: string | null, path: string): string | 
 export function hiddenSettingsTabs(role: string | null): string[] {
   if (!role) return []; // owners and clients see everything
   if (role === "admin") return ["ai", "integrations", "billing", "data"];
-  return ["workspace", "ai", "integrations", "billing", "data"]; // editor, viewer, and Sales outside the owner's workspace
+  return ["workspace", "away", "ai", "integrations", "billing", "data"]; // editor, viewer, and Sales outside the owner's workspace
 }
 
 // ── Per-feature access (cs183) ───────────────────────────────────────────────
@@ -114,7 +114,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },
   { key: "sales_activities", label: "Sales Activities", pages: ["/daily-compass/sales-activities"], apis: ["/api/sales-activities"] },
   { key: "pipeline", label: "Pipeline, Offers & Sales Plan", pages: ["/sales"], apis: ["/api/pipeline", "/api/offers"] },
-  { key: "finance", label: "Finance", pages: ["/finance", "/revenue", "/payments"], apis: ["/api/finance", "/api/payments", "/api/financial-pulse", "/api/revenue-by-segment", "/api/revenue-snapshot"] },
+  { key: "finance", label: "Finance", pages: ["/finance", "/revenue", "/payments", "/year-in-review"], apis: ["/api/finance", "/api/payments", "/api/year-review", "/api/financial-pulse", "/api/revenue-by-segment", "/api/revenue-snapshot"] },
   { key: "planning", label: "Planning & Goals", pages: ["/planning", "/business-plan", "/marketing-plan"], apis: ["/api/planning", "/api/goals", "/api/plans", "/api/review"] },
   { key: "operations", label: "Operations & SOPs", pages: ["/operations"], apis: ["/api/operations", "/api/operational", "/api/sops", "/api/operating-rhythm"] },
   { key: "testimonials", label: "Testimonials", pages: ["/reviews"], apis: ["/api/reviews"] },

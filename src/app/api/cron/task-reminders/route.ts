@@ -1,3 +1,4 @@
+import { nudgesPaused } from "@/lib/awayMode";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { REMINDER_LEADS, DEFAULT_LEAD_MIN, minutesUntil, inMinutes, upcomingRecurringToday } from "@/lib/taskReminders";
@@ -116,7 +117,9 @@ async function run(request: Request) {
     at: new Date(dueAt).getTime(),
   });
 
+  const away = await nudgesPaused(supabase);
   for (const [planId, tasks] of Array.from(byPlan.entries())) {
+    if (away.has(planId)) continue; // out-of-office (task 1155)
     const { data: plan } = await supabase.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
     if (!plan?.user_id) continue; // demo / unowned plans never get email
     const { data: prof } = await supabase
