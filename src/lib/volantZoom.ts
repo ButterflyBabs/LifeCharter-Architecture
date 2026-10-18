@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
 import { isZoomConfigured, zoomAccountToken } from "@/lib/zoom";
 import { submitAudioUrl, transcriptionKey } from "@/lib/volantRecordingServer";
+import { RECORDING_BUCKET } from "@/lib/volantRecording";
 
 // LC Volant + Zoom: find an account's Zoom cloud recordings and hand the audio to the transcription service.
 //  - The house account (Babs) uses the Suite's own Zoom app (ZOOM_ACCOUNT_ID / ZOOM_CLIENT_ID / ZOOM_CLIENT_SECRET),
@@ -174,6 +175,8 @@ export function zoomFileName(r: Pick<ZoomCloudRecording, "topic" | "startTime">)
 export async function importZoomRecording(db: Db, planId: string, access: ZoomAccess, r: ZoomCloudRecording, createdBy: string | null): Promise<string | null> {
   if (!r.file || !r.ready) throw new Error("not-ready");
   if (!transcriptionKey()) throw new Error("no-key");
+  // A recording that failed before can be tried again: clear the failed attempt first.
+  await db.from("volant_recordings").delete().eq("master_plan_id", planId).eq("zoom_uuid", r.uuid).eq("status", "failed");
   const { data: row, error } = await db
     .from("volant_recordings")
     .insert({ master_plan_id: planId, file_name: zoomFileName(r), size_bytes: r.file.size, storage_path: null, status: "transcribing", source: "zoom", zoom_uuid: r.uuid, created_by: createdBy, consent_at: null })
@@ -184,12 +187,22 @@ export async function importZoomRecording(db: Db, planId: string, access: ZoomAc
     throw new Error(error.message);
   }
   try {
-    const sep = r.file.url.includes("?") ? "&" : "?";
-    const providerId = await submitAudioUrl(row.id as string, `${r.file.url}${sep}access_token=${encodeURIComponent(access.token)}`);
-    await db.from("volant_recordings").update({ provider_id: providerId, updated_at: new Date().toISOString() }).eq("id", row.id);
+    const audioUrl = await zoomAudioLink(db, planId, row.id as string, r.file, access.token);
+    const providerId = await submitAudioUrl(row.id as string, audioUrl.url);
+    await db.from("volant_recordings").update({ provider_id: providerId, storage_path: audioUrl.storagePath, updated_at: new Date().toISOString() }).eq("id", row.id);
     return row.id as string;
   } catch (e) {
-    await db.from("volant_recordings").update({ status: "failed", error: "This Zoom recording couldn't be sent for transcription. Delete it and try again.", updated_at: new Date().toISOString() }).eq("id", row.id);
+    const detail = e instanceof Error ? e.message : String(e);
+    const denied = /zoom-download (401|403)/.test(detail);
+    await db
+      .from("volant_recordings")
+      .update({
+        status: "failed",
+        error: denied ? "Zoom didn't allow the Suite to download this recording. Reconnect Zoom (or ask support) and try again." : "This Zoom recording couldn't be sent for transcription. Delete it and try again.",
+        error_detail: detail.slice(0, 1000),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
     throw e;
   }
 }
@@ -202,3 +215,27 @@ export function zoomSignatureOk(body: string, ts: string | null, sig: string | n
   return want.length === sig.length && timingSafeEqual(Buffer.from(want), Buffer.from(sig));
 }
 export const zoomValidationToken = (plain: string) => createHmac("sha256", process.env.ZOOM_OAUTH_WEBHOOK_SECRET || "").update(plain).digest("hex");
+
+/**
+ * A link AssemblyAI can fetch the Zoom audio from. Zoom wants the token in an Authorization header (not in the
+ * address), so the Suite asks Zoom itself: Zoom normally answers with a redirect to a signed, short-lived file link,
+ * which is handed on as it is (nothing passes through the Suite). If Zoom sends the file directly instead, it is
+ * copied into the private recordings bucket and a private link to that copy is used (deleted after transcription).
+ */
+async function zoomAudioLink(db: Db, planId: string, recId: string, file: { url: string; type: string }, token: string): Promise<{ url: string; storagePath: string | null }> {
+  const res = await fetch(file.url, { headers: { Authorization: `Bearer ${token}` }, redirect: "manual" });
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get("location");
+    if (!loc) throw new Error(`zoom-download ${res.status} without a location`);
+    return { url: new URL(loc, file.url).toString(), storagePath: null };
+  }
+  if (!res.ok) throw new Error(`zoom-download ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const ext = file.type === "M4A" ? "m4a" : "mp4";
+  const path = `${planId}/zoom-${recId}.${ext}`;
+  const up = await db.storage.from(RECORDING_BUCKET).upload(path, bytes, { contentType: ext === "m4a" ? "audio/mp4" : "video/mp4", upsert: true });
+  if (up.error) throw new Error(`zoom copy to storage: ${up.error.message}`);
+  const { data: link, error } = await db.storage.from(RECORDING_BUCKET).createSignedUrl(path, 6 * 3600);
+  if (error || !link?.signedUrl) throw new Error(`signed url: ${error?.message || "none"}`);
+  return { url: link.signedUrl, storagePath: path };
+}

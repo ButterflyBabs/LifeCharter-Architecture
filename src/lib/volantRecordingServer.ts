@@ -92,7 +92,7 @@ export async function settleRecording(db: Db, id: string): Promise<void> {
   } else if (d.status === "error") {
     await db
       .from("volant_recordings")
-      .update({ status: "failed", error: friendlyError(d.error), storage_path: null, updated_at: now })
+      .update({ status: "failed", error: friendlyError(d.error), error_detail: String(d.error || "").slice(0, 1000) || null, storage_path: null, updated_at: now })
       .eq("id", rec.id)
       .eq("status", "transcribing");
     await removeEverywhere(db, rec);
@@ -104,6 +104,7 @@ function friendlyError(e: string | undefined): string {
   if (/no spoken audio|no speech|silence/.test(m)) return "No speech was found in this recording.";
   if (/unsupported|format|codec|could not|decode/.test(m)) return "This file's format couldn't be read. Try exporting it as .mp4 or .mp3.";
   if (/duration|too long|too short/.test(m)) return "This recording is too long or too short to transcribe.";
+  if (/download|unable to (access|fetch)|403|401|forbidden|unauthori/.test(m)) return "The recording couldn't be fetched for transcription. Delete it and try again.";
   return "The transcription didn't work. Delete it and try uploading again.";
 }
 

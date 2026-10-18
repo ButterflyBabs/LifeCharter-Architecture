@@ -49,3 +49,6 @@ revoke all on function public.set_zoom_tokens(uuid, text) from public, anon, aut
 revoke all on function public.get_zoom_tokens(uuid) from public, anon, authenticated;
 grant execute on function public.set_zoom_tokens(uuid, text) to service_role;
 grant execute on function public.get_zoom_tokens(uuid) to service_role;
+
+-- The service's own words when a transcription fails (for support; the page shows the friendly message in error).
+alter table public.volant_recordings add column if not exists error_detail text;

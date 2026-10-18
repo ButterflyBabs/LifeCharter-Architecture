@@ -6,7 +6,7 @@ import { monthlyHoursFor, secondsThisMonth, transcriptionKey } from "@/lib/volan
 import { authorizeUrl, disconnectZoom, importZoomRecording, listZoomRecordings, zoomAccess, zoomOauthConfigured } from "@/lib/volantZoom";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // LC Volant + Zoom for the signed-in account.
 //   GET              -> { connected, kind, email, canConnect, auto, match, recordings (last 30 days, with what was picked up) }

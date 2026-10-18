@@ -112,7 +112,9 @@ export default function ZoomPanel({ consent, onImported, setMsg }: { consent: bo
                     <p className="truncate text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">{r.topic}</p>
                     <p className="text-xs text-[#7a8a99]">{when(r.startTime)} · {r.durationMin} min</p>
                   </div>
-                  {r.picked ? (
+                  {r.picked && r.picked.status === "failed" ? (
+                    <button className={small} disabled={busy === r.uuid} onClick={() => void transcribe(r)}>{busy === r.uuid ? "Sending…" : "Didn't work: try again"}</button>
+                  ) : r.picked ? (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2E7C83]">{r.picked.status === "transcribing" ? <><Loader2 className="h-3 w-3 animate-spin" />Transcribing</> : r.picked.status === "failed" ? "Couldn't transcribe" : <><Check className="h-3 w-3" />Transcribed</>}</span>
                   ) : !r.ready ? (
                     <span className="text-xs text-[#7a8a99]">Zoom is still processing</span>
