@@ -120,7 +120,8 @@ export async function POST(request: Request) {
       .eq("id", doc.id);
     // Signers are replaced as a set (a draft has no links out yet). The owner signs last when asked to.
     await db.from("sign_signers").delete().eq("document_id", doc.id);
-    const rows = signers.map((x) => ({ document_id: doc.id, name: x.name, email: x.email, order_no: x.order_no, token_hash: newToken().hash }));
+    // Every row carries is_owner, so a batch that adds the owner too is saved in one go.
+    const rows = signers.map((x) => ({ document_id: doc.id, name: x.name, email: x.email, order_no: x.order_no, is_owner: false, token_hash: newToken().hash }));
     if (b.ownerSigns) {
       const { data: plan } = await db.from("client_master_plans").select("client_email, client_name").eq("id", a.planId).maybeSingle();
       const ownerEmail = String(a.userEmail || plan?.client_email || "").toLowerCase();

@@ -82,10 +82,15 @@ export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementRe
     .select("id")
     .single();
   if (error || !doc) return { ok: false, status: 500, error: "Couldn't prepare the agreement. Please try again." };
-  await db.from("sign_signers").insert([
-    { document_id: doc.id, order_no: 1, name, email, token_hash: newToken().hash },
+  const { error: sErr } = await db.from("sign_signers").insert([
+    { document_id: doc.id, order_no: 1, name, email, is_owner: false, token_hash: newToken().hash },
     { document_id: doc.id, order_no: 2, name: COMPANY_NAME, email: COMPANY_EMAIL.toLowerCase(), is_owner: true, token_hash: newToken().hash },
   ]);
+  if (sErr) {
+    console.error("Year-1 signers:", sErr.message);
+    await db.from("sign_documents").delete().eq("id", doc.id);
+    return { ok: false, status: 500, error: "Couldn't prepare the agreement. Please try again." };
+  }
   const { doc: full, signers } = await loadDoc(db, doc.id);
   const sent = full ? await sendDocument(db, full, signers) : { ok: false as const, error: "missing" };
   if (!sent.ok || sent.sent < 1) {

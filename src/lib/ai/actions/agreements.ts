@@ -75,7 +75,7 @@ export const draftAgreement: ActionTool = {
     const amount = Number(args.amount);
     const { data, error } = await ctx.db.from("sign_documents").insert({ master_plan_id: ctx.planId, title: r.title, kind: r.kind, body: r.body, amount: r.kind === "proposal" && amount > 0 ? Math.round(amount * 100) / 100 : null, owner_signs: Boolean(args.owner_signs), created_by: "assistant" }).select("id").single();
     if (error || !data) throw new Error("Couldn't save the draft.");
-    const rows = r.signers.map((s, i) => ({ document_id: data.id, name: s.name, email: s.email, order_no: i + 1, token_hash: newToken().hash }));
+    const rows = r.signers.map((s, i) => ({ document_id: data.id, name: s.name, email: s.email, order_no: i + 1, is_owner: false, token_hash: newToken().hash }));
     if (args.owner_signs) {
       const { data: plan } = await ctx.db.from("client_master_plans").select("client_email, client_name").eq("id", ctx.planId).maybeSingle();
       const email = String(ctx.userEmail || plan?.client_email || "").toLowerCase();
