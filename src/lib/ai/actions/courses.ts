@@ -33,7 +33,7 @@ async function findCourse(ctx: ActionCtx, ref: unknown) {
 }
 
 const lessonLines = (ls: LessonIn[], kind: ProgramKind) =>
-  ls.slice(0, 8).map((l) => `• ${l.module ? `${l.module}: ` : ""}${l.title}${kind !== "cohort" && l.open_after_days ? ` (opens day ${l.open_after_days})` : ""}`).concat(ls.length > 8 ? [`…and ${ls.length - 8} more.`] : []);
+  ls.slice(0, 8).map((l) => `${l.module ? `${l.module}: ` : ""}${l.title}${kind !== "cohort" && l.open_after_days ? ` (opens day ${l.open_after_days})` : ""}`).concat(ls.length > 8 ? [`…and ${ls.length - 8} more.`] : []);
 
 export const listCourses: ActionTool = {
   name: "list_courses",
@@ -294,7 +294,7 @@ export const createLandingPage: ActionTool = {
         lines: [
           `Headline: ${clean(args.headline, 160)}`,
           ...(clean(args.subheadline, 300) ? [clean(args.subheadline, 300)] : []),
-          ...(Array.isArray(args.bullets) ? (args.bullets as unknown[]).slice(0, 6).map((b) => `• ${clean(b, 200)}`) : []),
+          ...(Array.isArray(args.bullets) ? (args.bullets as unknown[]).slice(0, 6).map((b) => clean(b, 200)) : []),
           linked ? `Uses: ${linked.name}` : `Not linked yet: choose ${templateInfo(t).uses} in the editor before publishing.`,
           "Saved as a draft. You check it and press Publish yourself.",
         ],

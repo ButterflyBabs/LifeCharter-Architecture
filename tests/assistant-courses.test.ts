@@ -10,7 +10,7 @@ test("course card shows lessons and promises no members or email", async () => {
   assert.ok("preview" in r);
   if ("preview" in r) {
     assert.match(r.preview.title, /self-paced course "Price With Confidence"/);
-    assert.ok(r.preview.lines.some((l) => l.includes("Say it out loud (opens day 7)")));
+    assert.ok(r.preview.lines.some((l) => l.includes("Module 1: Say it out loud (opens day 7)")));
     assert.ok(r.preview.lines.some((l) => /No members are added and nothing is emailed/.test(l)));
     assert.ok(r.preview.lines.some((l) => /Access lasts 90 days/.test(l)));
   }
