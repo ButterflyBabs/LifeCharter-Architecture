@@ -19,9 +19,11 @@ export async function GET() {
   const { data } = await createServerClient().from("client_integrations").select("status, external_id, connected_at, api_key, metadata").eq("master_plan_id", masterPlanId).eq("provider", PROVIDER).maybeSingle();
   const meta = (data?.metadata as Record<string, unknown>) ?? {};
   const hasKey = Boolean(((data?.api_key as string) || "").trim());
+  const viaConnect = meta.mode === "connect" && Boolean(data?.external_id);
   return NextResponse.json({
-    connected: hasKey && data?.status === "connected",
-    account: (data?.external_id as string) || "",
+    connected: (hasKey || viaConnect) && data?.status === "connected",
+    viaConnect,
+    account: (viaConnect ? (meta.account_name as string) || (data?.external_id as string) : (data?.external_id as string)) || "",
     lastSyncAt: (meta.last_sync_at as string) || null,
     lastAdded: (meta.last_added as number) ?? null,
     lastError: (meta.last_error as string) || null,
@@ -45,15 +47,17 @@ export async function POST(request: Request) {
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
   const db = createServerClient();
-  const { data: existing } = await db.from("client_integrations").select("id").eq("master_plan_id", masterPlanId).eq("provider", PROVIDER).maybeSingle();
+  const { data: existing } = await db.from("client_integrations").select("id, metadata").eq("master_plan_id", masterPlanId).eq("provider", PROVIDER).maybeSingle();
   if (!existing?.id) {
     const { allowed } = await withinStandingLimit("integrations", masterPlanId, (await integrationUsage(masterPlanId)).count);
     if (!allowed) return NextResponse.json(INTEGRATION_LIMIT_BODY, { status: 403 });
   }
-  const row = { master_plan_id: masterPlanId, provider: PROVIDER, api_key: apiKey, external_id: check.account || null, status: "connected", updated_at: new Date().toISOString() };
+  // A pasted key replaces a "Connect with Stripe" connection (the sync then reads with the key again).
+  const metadata = { ...((existing?.metadata as Record<string, unknown>) ?? {}), mode: "key" };
+  const row = { master_plan_id: masterPlanId, provider: PROVIDER, api_key: apiKey, external_id: check.account || null, status: "connected", metadata, updated_at: new Date().toISOString() };
   const { error } = existing?.id
     ? await db.from("client_integrations").update(row).eq("id", existing.id)
-    : await db.from("client_integrations").insert({ ...row, connected_at: new Date().toISOString(), metadata: {} });
+    : await db.from("client_integrations").insert({ ...row, connected_at: new Date().toISOString() });
   if (error) return NextResponse.json({ error: "Could not save the connection." }, { status: 500 });
   const first = await syncStripe(masterPlanId);
   return NextResponse.json({ connected: true, account: check.account, added: first.added, syncError: first.error ?? null });

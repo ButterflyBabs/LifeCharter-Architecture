@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 
 interface Status {
   connected: boolean;
+  viaConnect?: boolean;
   account: string;
   lastSyncAt: string | null;
   lastAdded: number | null;
@@ -22,10 +23,31 @@ export default function StripeConnectCard() {
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // "Connect with Stripe" (the client's own account, so the Suite can make payment links): shown only where it is open.
+  const [cx, setCx] = useState<{ configured: boolean; testMode: boolean } | null>(null);
   const load = useCallback(async () => {
     const d = await fetch("/api/integrations/stripe", { cache: "no-store" }).then((r) => r.json()).catch(() => null);
     if (d) setS(d);
+    const c = await fetch("/api/stripe-connect", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    setCx(c ? { configured: Boolean(c.configured), testMode: Boolean(c.testMode) } : null);
   }, []);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("stripe");
+    if (q === "connected") setMsg({ ok: true, text: "Your Stripe account is connected. You can now make payment links on Offers & Packages." });
+    else if (q === "cancelled") setMsg({ ok: false, text: "Connecting Stripe was cancelled. Nothing changed." });
+    else if (q === "failed") setMsg({ ok: false, text: "Stripe didn't connect. Please try Connect with Stripe again." });
+  }, []);
+  async function connectWithStripe() {
+    setBusy("oauth");
+    setMsg(null);
+    const r = await fetch("/api/stripe-connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start" }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.url) {
+      setBusy("");
+      return setMsg({ ok: false, text: d.error || "Couldn't start connecting Stripe." });
+    }
+    window.location.href = d.url;
+  }
   useEffect(() => {
     void load();
   }, [load]);
@@ -58,7 +80,8 @@ export default function StripeConnectCard() {
   async function disconnect() {
     if (!confirm("Disconnect Stripe? Payments already in your ledger stay there.")) return;
     setBusy("disconnect");
-    await call("DELETE");
+    if (s?.viaConnect) await fetch("/api/stripe-connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "disconnect" }) });
+    else await call("DELETE");
     setBusy("");
     setMsg({ ok: true, text: "Stripe disconnected." });
     void load();
@@ -74,7 +97,7 @@ export default function StripeConnectCard() {
               <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Stripe (your payments → your ledger)</h3>
               {s?.connected && (
                 <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                  <CheckCircle className="w-3.5 h-3.5" /> Connected{s.account ? ` · ${s.account}` : ""}
+                  <CheckCircle className="w-3.5 h-3.5" /> {s.viaConnect ? "Connected with Stripe" : "Connected"}{s.account ? ` · ${s.account}` : ""}
                 </span>
               )}
             </div>
@@ -96,6 +119,13 @@ export default function StripeConnectCard() {
           </div>
         ) : (
           <div className="space-y-2">
+            {cx?.configured && (
+              <div className="rounded-lg border border-[#635bff]/30 bg-[#635bff]/5 p-3 space-y-2">
+                <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"><strong>Recommended: Connect with Stripe.</strong> One click, no keys to copy. Your payments still go straight to your own Stripe account; the Suite can also make payment links for your offers.{cx.testMode ? " (Test mode: use a Stripe test account.)" : ""}</p>
+                <Button onClick={connectWithStripe} disabled={!!busy} className="bg-[#635bff] hover:bg-[#5249e0] text-white">{busy === "oauth" ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}Connect with Stripe</Button>
+                <p className="text-xs text-[#7a8a99]">Or, to only bring payments into your Finance Center, paste a read-only key instead:</p>
+              </div>
+            )}
             <ol className="list-decimal pl-5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] space-y-1">
               <li>In Stripe, go to <strong>Developers → API keys → Create restricted key</strong>.</li>
               <li>Name it &ldquo;LifeCharter Command Suite&rdquo; and set <strong>Balance</strong> and <strong>Charges</strong> to <strong>Read</strong> (leave everything else as None).</li>

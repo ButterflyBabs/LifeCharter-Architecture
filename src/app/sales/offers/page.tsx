@@ -8,6 +8,7 @@ import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordi
 import { CSS } from "@dnd-kit/utilities";
 import { OFFER_BILLING, OFFER_FORMATS, OFFER_STATUSES, offerPriceLabel, type Offer } from "@/lib/sales/offers";
 import SalesNav from "@/components/sales/SalesNav";
+import OfferPaymentLink, { type PayLinks } from "@/components/sales/OfferPaymentLink";
 
 type Business = { id: number; name: string };
 type Form = {
@@ -90,6 +91,15 @@ export default function OffersPage() {
   useEffect(() => {
     load();
   }, [load]);
+  // Payment links on the client's own Stripe (only where "get paid inside the Suite" is open; otherwise hidden).
+  const [pay, setPay] = useState<PayLinks | null>(null);
+  const loadPay = useCallback(async () => {
+    const d = await fetch("/api/offers/payment-links", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    setPay(d);
+  }, []);
+  useEffect(() => {
+    void loadPay();
+  }, [loadPay, offers]);
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -263,6 +273,7 @@ export default function OffersPage() {
                   {o.deliverables.length > 4 && <li className="list-none text-[#7b6b8d]">+ {o.deliverables.length - 4} more</li>}
                 </ul>
               )}
+              {pay && <OfferPaymentLink offerId={o.id} data={pay} onChange={() => void loadPay()} />}
               <div className="mt-auto flex flex-wrap items-center gap-3 pt-4 text-sm">
                 {o.capacity !== null && <span className="inline-flex items-center gap-1 text-[#7b6b8d]"><Users className="h-3.5 w-3.5" /> {o.capacity} spots</span>}
                 {o.link && <a href={o.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Sales page</a>}

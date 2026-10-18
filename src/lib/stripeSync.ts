@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { connectedCredentials } from "@/lib/stripeConnect";
 import { anySaleCredited, creditSale } from "@/lib/affiliates";
 import { applyRefundForCharge, fallbackRefundId, implementationForPayment, latestRefund, paymentContext, stripeReader } from "@/lib/affiliateStripe";
 
@@ -9,10 +10,12 @@ import { applyRefundForCharge, fallbackRefundId, implementationForPayment, lates
 const PROVIDER = "stripe";
 const API = "https://api.stripe.com/v1";
 
-async function stripeGet(key: string, path: string, params: Record<string, string> = {}) {
+// `account` is set for a client connected with "Connect with Stripe": the Suite's platform key reads THEIR account
+// (Stripe-Account header). Without it, `key` is the client's own pasted read-only key.
+async function stripeGet(key: string, path: string, params: Record<string, string> = {}, account?: string) {
   const url = new URL(`${API}${path}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${key}` }, cache: "no-store" });
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${key}`, ...(account ? { "Stripe-Account": account } : {}) }, cache: "no-store" });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body?.error?.message || `Stripe error ${res.status}`);
   return body;
@@ -54,13 +57,16 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
   const db = createServerClient();
   const { data: integ } = await db
     .from("client_integrations")
-    .select("id, api_key, status, metadata")
+    .select("id, api_key, external_id, status, metadata")
     .eq("master_plan_id", masterPlanId)
     .eq("provider", PROVIDER)
     .maybeSingle();
-  const key = ((integ?.api_key as string) || "").trim();
+  const meta = (integ?.metadata as Record<string, unknown>) ?? {};
+  const viaConnect = meta.mode === "connect" && Boolean(integ?.external_id);
+  const creds = viaConnect ? connectedCredentials(integ!.external_id as string) : null;
+  const key = creds ? creds.key : ((integ?.api_key as string) || "").trim();
+  const account = creds?.account;
   if (!integ || !key || integ.status !== "connected") return { added: 0, checked: 0, error: "Stripe isn't connected." };
-  const meta = (integ.metadata as Record<string, unknown>) ?? {};
   const since = Number(meta.last_sync_created) || Math.floor(Date.now() / 1000) - 90 * 86400;
 
   const txns: Txn[] = [];
@@ -69,7 +75,7 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
     for (let page = 0; page < 20; page++) {
       const params: Record<string, string> = { limit: "100", "created[gte]": String(since) };
       if (startingAfter) params.starting_after = startingAfter;
-      const out = await stripeGet(key, "/balance_transactions", params);
+      const out = await stripeGet(key, "/balance_transactions", params, account);
       const data = (out.data ?? []) as Txn[];
       txns.push(...data);
       if (!out.has_more || !data.length) break;
@@ -112,9 +118,9 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
   let credited = 0;
   let creditNote: string | null = null;
   let refunded = 0;
-  const read = stripeReader(key);
+  const read = stripeReader(key, account);
   try {
-    const out = await stripeGet(key, "/charges", { limit: "100", "created[gte]": String(since) });
+    const out = await stripeGet(key, "/charges", { limit: "100", "created[gte]": String(since) }, account);
     type Charge = { id: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; payment_intent?: string | null; billing_details?: { email?: string | null } };
     for (const c of ((out.data ?? []) as Charge[]).slice(0, 100)) {
       if (!c.paid) continue;

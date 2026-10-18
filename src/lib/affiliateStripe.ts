@@ -16,11 +16,11 @@ type Json = any;
 export type StripeRead = (path: string, params?: Record<string, string>) => Promise<Json>;
 
 // A read-only reader for one Stripe account's key (the Suite's own key, or a client's restricted key).
-export function stripeReader(key: string): StripeRead {
+export function stripeReader(key: string, account?: string): StripeRead {
   return async (path, params = {}) => {
     const url = new URL(`${API}${path}`);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${key}`, "Stripe-Version": STRIPE_VERSION }, cache: "no-store" });
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${key}`, "Stripe-Version": STRIPE_VERSION, ...(account ? { "Stripe-Account": account } : {}) }, cache: "no-store" });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body?.error?.message || `Stripe error ${res.status}`);
     return body;
