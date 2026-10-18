@@ -230,17 +230,19 @@ async function zoomAudioLink(db: Db, planId: string, recId: string, file: { url:
   const id = uuid.startsWith("/") || uuid.includes("//") ? encodeURIComponent(encodeURIComponent(uuid)) : encodeURIComponent(uuid);
   let target = file.url;
   let headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  let metaNote = "";
   const meta = await fetch(`https://api.zoom.us/v2/meetings/${id}/recordings?include_fields=download_access_token&ttl=21600`, { headers });
   if (meta.ok) {
     const m = (await meta.json().catch(() => ({}))) as { download_access_token?: string; recording_files?: Array<{ file_type?: string; file_size?: number; download_url?: string }> };
     const files = (m.recording_files || []).filter((f) => f.download_url && (f.file_type === "M4A" || f.file_type === "MP4"));
     const pick = files.find((f) => f.file_type === "M4A") || files.sort((a, b) => (a.file_size || 0) - (b.file_size || 0))[0];
+    metaNote = `meta 200, pass ${m.download_access_token ? "yes" : "no"}, files ${(m.recording_files || []).map((f) => f.file_type).join("/")}`;
     if (pick?.download_url && m.download_access_token) {
       target = `${pick.download_url}${pick.download_url.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(m.download_access_token)}`;
       headers = {};
     }
   } else {
-    console.error("zoom meeting recordings:", meta.status, (await meta.text().catch(() => "")).slice(0, 200));
+    metaNote = `meta ${meta.status}: ${(await meta.text().catch(() => "")).slice(0, 200)}`;
   }
   const res = await fetch(target, { headers, redirect: "manual" });
   if (res.status >= 300 && res.status < 400) {
@@ -248,7 +250,7 @@ async function zoomAudioLink(db: Db, planId: string, recId: string, file: { url:
     if (!loc) throw new Error(`zoom-download ${res.status} without a location`);
     return { url: new URL(loc, target).toString(), storagePath: null };
   }
-  if (!res.ok) throw new Error(`zoom-download ${res.status}${headers.Authorization ? " (header)" : " (download pass)"}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`zoom-download ${res.status}${headers.Authorization ? " (header)" : " (download pass)"}: ${(await res.text().catch(() => "")).slice(0, 300)} | ${metaNote}`);
   const bytes = new Uint8Array(await res.arrayBuffer());
   const ext = file.type === "M4A" ? "m4a" : "mp4";
   const path = `${planId}/zoom-${recId}.${ext}`;
