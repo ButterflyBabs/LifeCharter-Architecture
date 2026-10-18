@@ -60,6 +60,9 @@ export async function handleBridge(db: Db, c: Connection, raw: Record<string, un
     await logEvent(planId, contact.id, "purchase", `Refunded on ${label}: ${names}${ev.amountCents ? ` (${money})` : ""}`, { bridge: externalId }, db).catch(() => null);
     // Take the sale back out of income (it was recorded under the order's id).
     await db.from("finance_entries").delete().eq("master_plan_id", planId).eq("source", `bridge:${c.platform}`).eq("external_id", externalId);
+    // A refunded buyer leaves the Suite course this product gave them.
+    const progIds = rules.map((r) => r.program_id).filter(Boolean) as string[];
+    if (progIds.length) await db.from("program_members").update({ status: "removed", ended_at: new Date().toISOString(), end_reason: `refunded on ${label}` }).in("program_id", progIds).eq("contact_id", contact.id).eq("status", "active");
     return "refund recorded";
   }
   if (ev.kind === "cancel") {
