@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
-import { cleanUtterances, RECORDING_BUCKET } from "@/lib/volantRecording";
+import { cleanUtterances, RECORDING_BUCKET, RECORDING_MONTHLY_HOURS } from "@/lib/volantRecording";
+import { isHousePlan } from "@/lib/housePlan";
 
 // LC Volant recordings, server side: talks to AssemblyAI (the transcription service the Suite pays for, key in
 // ASSEMBLYAI_API_KEY on Vercel) and tidies up after it. The recording itself is deleted from our storage and from
@@ -25,15 +26,21 @@ export function webhookSecretOk(recordingId: string, got: string | null): boolea
 
 /** Hand the uploaded file to AssemblyAI through a short-lived private link. Returns its job id. */
 export async function submitTranscription(db: Db, rec: { id: string; storage_path: string }): Promise<string> {
-  const key = transcriptionKey();
-  if (!key) throw new Error("no-key");
   const { data: link, error } = await db.storage.from(RECORDING_BUCKET).createSignedUrl(rec.storage_path, 6 * 3600);
   if (error || !link?.signedUrl) throw new Error(`signed url: ${error?.message || "none"}`);
+  return submitAudioUrl(rec.id, link.signedUrl);
+}
+
+/** Hand AssemblyAI a link it can download the audio from (our storage, or a Zoom download link with a token). */
+export async function submitAudioUrl(recordingId: string, audioUrl: string): Promise<string> {
+  const key = transcriptionKey();
+  if (!key) throw new Error("no-key");
+  const rec = { id: recordingId };
   const res = await fetch(`${API}/transcript`, {
     method: "POST",
     headers: { authorization: key, "content-type": "application/json" },
     body: JSON.stringify({
-      audio_url: link.signedUrl,
+      audio_url: audioUrl,
       speaker_labels: true,
       language_detection: true,
       webhook_url: `${SITE}/api/volant/webhook?rec=${rec.id}`,
@@ -122,4 +129,9 @@ export async function secondsThisMonth(db: Db, planId: string): Promise<{ second
     if (r.status === "transcribing" || r.status === "uploading") pending += 1;
   }
   return { seconds, pending };
+}
+
+/** Hours a month this account may transcribe: the standard allowance, more for the house account. */
+export async function monthlyHoursFor(db: Db, planId: string): Promise<number> {
+  return (await isHousePlan(planId, db)) ? 40 : RECORDING_MONTHLY_HOURS;
 }

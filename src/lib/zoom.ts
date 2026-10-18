@@ -26,6 +26,11 @@ export function masterclassMeetingId(): string {
   return process.env.ZOOM_MASTERCLASS_MEETING_ID || DEFAULT_MASTERCLASS_MEETING_ID;
 }
 
+/** The Suite's own (house) Zoom app token, for the owner's account features such as LC Volant pickup. */
+export async function zoomAccountToken(): Promise<string> {
+  return getAccessToken();
+}
+
 async function getAccessToken(): Promise<string> {
   const accountId = process.env.ZOOM_ACCOUNT_ID!;
   const clientId = process.env.ZOOM_CLIENT_ID!;

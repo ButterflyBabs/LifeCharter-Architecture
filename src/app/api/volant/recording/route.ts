@@ -4,9 +4,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { sessionUser } from "@/lib/authz";
 import { volantAccount } from "@/lib/volantServer";
 import {
-  cleanSpeakerNames, cleanUtterances, RECORDING_BUCKET, RECORDING_MAX_BYTES, RECORDING_MONTHLY_HOURS, recordingExt, recordingKind, safeFileBase, speakersOf,
+  cleanSpeakerNames, cleanUtterances, RECORDING_BUCKET, RECORDING_MAX_BYTES, recordingExt, recordingKind, safeFileBase, speakersOf,
 } from "@/lib/volantRecording";
-import { deleteRecording, secondsThisMonth, settleRecording, submitTranscription, transcriptionKey } from "@/lib/volantRecordingServer";
+import { deleteRecording, monthlyHoursFor, secondsThisMonth, settleRecording, submitTranscription, transcriptionKey } from "@/lib/volantRecordingServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -18,7 +18,7 @@ export const maxDuration = 30;
 //                         uploaded {id}                      -> hands it to the transcription service
 //                         speakers {id, names}               -> the person's names for each voice
 //                         delete {id}
-const LIST = "id, file_name, size_bytes, status, duration_seconds, error, speakers, used_at, created_at, updated_at";
+const LIST = "id, file_name, size_bytes, source, status, duration_seconds, error, speakers, used_at, created_at, updated_at";
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
 export async function GET(request: Request) {
@@ -36,12 +36,13 @@ export async function GET(request: Request) {
   // Anything still transcribing for more than a minute gets checked here too, in case a webhook was missed.
   const { data: waiting } = await db.from("volant_recordings").select("id, updated_at").eq("master_plan_id", a.planId).eq("status", "transcribing").limit(5);
   for (const w of waiting ?? []) if (Date.now() - Date.parse(w.updated_at as string) > 60_000) await settleRecording(db, w.id as string).catch(() => {});
-  const [{ data }, usage] = await Promise.all([
+  const [{ data }, usage, limit] = await Promise.all([
     db.from("volant_recordings").select(LIST).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(20),
     secondsThisMonth(db, a.planId),
+    monthlyHoursFor(db, a.planId),
   ]);
   return NextResponse.json(
-    { recordings: data ?? [], usage: { hours: Math.round((usage.seconds / 3600) * 10) / 10, limit: RECORDING_MONTHLY_HOURS }, ready: Boolean(transcriptionKey()) },
+    { recordings: data ?? [], usage: { hours: Math.round((usage.seconds / 3600) * 10) / 10, limit }, ready: Boolean(transcriptionKey()) },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -63,7 +64,8 @@ export async function POST(request: Request) {
     if (!Number.isFinite(size) || size <= 0) return NextResponse.json({ error: "That file looks empty." }, { status: 400 });
     if (size > RECORDING_MAX_BYTES) return NextResponse.json({ error: "That file is over 2 GB. Upload the audio only (.m4a or .mp3), or a shorter recording." }, { status: 400 });
     const usage = await secondsThisMonth(db, a.planId);
-    if (usage.seconds >= RECORDING_MONTHLY_HOURS * 3600) return NextResponse.json({ error: `You've transcribed ${RECORDING_MONTHLY_HOURS} hours of recordings this month, the monthly limit. You can still upload transcript files.` }, { status: 429 });
+    const limit = await monthlyHoursFor(db, a.planId);
+    if (usage.seconds >= limit * 3600) return NextResponse.json({ error: `You've transcribed ${limit} hours of recordings this month, the monthly limit. You can still upload transcript files.` }, { status: 429 });
     if (usage.pending >= 3) return NextResponse.json({ error: "Three recordings are already uploading or transcribing. Wait for one to finish." }, { status: 429 });
 
     const path = `${a.planId}/${randomUUID()}-${safeFileBase(name)}.${recordingExt(name)}`;
@@ -75,7 +77,7 @@ export async function POST(request: Request) {
     const who = await sessionUser().catch(() => null);
     const { data: row, error: insErr } = await db
       .from("volant_recordings")
-      .insert({ master_plan_id: a.planId, file_name: name, size_bytes: Math.round(size), storage_path: path, status: "uploading", consent_at: now, created_by: who?.id ?? null })
+      .insert({ master_plan_id: a.planId, file_name: name, size_bytes: Math.round(size), storage_path: path, status: "uploading", source: b.source === "browser" ? "browser" : "upload", consent_at: now, created_by: who?.id ?? null })
       .select("id")
       .single();
     if (insErr || !row) return NextResponse.json({ error: "Couldn't start the upload. Try again." }, { status: 500 });

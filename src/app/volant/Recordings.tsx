@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Captions, Check, Film, Loader2, Trash2, Upload, Users } from "lucide-react";
+import Recorder from "./Recorder";
+import ZoomPanel from "./ZoomPanel";
 import { RECORDING_ACCEPT, RECORDING_MAX_BYTES, recordingKind, toSrt, transcriptText, type Utterance } from "@/lib/volantRecording";
 
 type Rec = { id: string; file_name: string; size_bytes: number; status: "uploading" | "transcribing" | "ready" | "failed"; duration_seconds: number | null; error: string | null; speakers: Record<string, string>; used_at: string | null; created_at: string };
@@ -69,14 +71,14 @@ export default function Recordings({ consent, onUse }: { consent: boolean; onUse
     return () => clearInterval(t);
   }, [busy, load]);
 
-  async function upload(file: File | undefined) {
+  async function upload(file: File | undefined, source: "upload" | "browser" = "upload") {
     if (fileRef.current) fileRef.current.value = "";
     if (!file) return;
     setMsg("");
     if (!consent) return setMsg("Tick the box above to confirm everyone agreed to be recorded, then upload.");
     if (!recordingKind(file.name, file.type)) return setMsg("Upload an audio or video file (for example .mp4, .mov, .mp3, .m4a or .wav).");
     if (file.size > RECORDING_MAX_BYTES) return setMsg("That file is over 2 GB. Upload the audio only (.m4a or .mp3), or a shorter recording.");
-    const { ok, d } = await post({ action: "start", name: file.name, size: file.size, type: file.type, consent: true });
+    const { ok, d } = await post({ action: "start", name: file.name, size: file.size, type: file.type, consent: true, source });
     if (!ok) return setMsg(d.error || "Couldn't start the upload.");
     setProgress(0);
     await load();
@@ -113,7 +115,9 @@ export default function Recordings({ consent, onUse }: { consent: boolean; onUse
           {on ? <>From Zoom, your phone, a camera or any recorder. Up to 2 GB. The recording is deleted once it&apos;s transcribed.{usage ? ` ${usage.hours} of ${usage.limit} hours used this month.` : ""}</> : "Recording transcription isn't switched on yet. Upload a transcript file or paste the text for now."}
         </span>
       </div>
+      {on && <Recorder consent={consent} busy={progress !== null} onDone={(file) => void upload(file, "browser")} setMsg={setMsg} />}
       {progress !== null && <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full bg-[#2E7C83] transition-all" style={{ width: `${progress}%` }} /></div>}
+      {on && <ZoomPanel consent={consent} onImported={() => void load()} setMsg={setMsg} />}
       {msg && <p className="mt-2 text-sm text-[#1F5E63]" role="status">{msg}</p>}
 
       {shown.length > 0 && (
