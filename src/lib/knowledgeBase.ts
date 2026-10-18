@@ -1456,6 +1456,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["client portal", "portal", "client page", "private link", "client login", "sessions left", "package", "session count", "homework", "client files", "share notes", "messages", "client messages", "attended", "customize portal", "portal colors", "portal logo", "banner", "rename sections", "portal look", "branding"],
   },
   {
+    id: "time-tracking",
+    category: "Daily Rhythm",
+    question: "How do I track my time and see how full my week is?",
+    answer:
+      "Open Time in the left menu (Daily Operations, under LC Volant). Pick a client, project or task if you like, say what you're working on, and press Start; press Stop when you finish (starting a new timer stops the one running). Forgot to start it? Use Add time by hand. Each entry can be billable or not, with an hourly rate: set a default rate and rates for particular clients under Capacity and rates, and new entries use them. The page shows this week's hours against the hours you want to work (set under Capacity and rates), billable hours and their value, totals by client and by project, and every entry by day, where you can fix the minutes, switch billable, or delete. Use the arrows for other weeks, tick Only my time to see just yours, and Download CSV for your records or invoicing. Each team member tracks their own time.",
+    keywords: ["time", "time tracking", "timer", "hours", "billable", "hourly rate", "capacity", "timesheet", "track time", "how many hours", "retainer"],
+  },
+  {
     id: "events",
     category: "Sales",
     question: "How do I run a webinar, MasterClass, workshop or challenge? What is Events?",
