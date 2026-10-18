@@ -1,5 +1,7 @@
 "use client";
 
+import { smsTextsLabel } from "@/lib/planLabels";
+
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -36,6 +38,7 @@ const COPY: Record<string, { tagline: string; features: string[]; popular?: bool
       "Guided, self-paced Suite setup",
       "1 business workspace · just you",
       "1 connected email account",
+      smsTextsLabel("starter"),
       "Up to 5 integrations (AI not counted)",
       "Standard AI for scoring and AI features",
     ],
@@ -50,6 +53,7 @@ const COPY: Record<string, { tagline: string; features: string[]; popular?: bool
       "Priority in Hope Seat & community",
       "Up to 3 business workspaces · + 1 collaborator seat",
       "Up to 3 connected email accounts",
+      smsTextsLabel("growth"),
       "Up to 10 integrations (AI not counted)",
       "Expanded AI limits",
     ],
@@ -63,6 +67,7 @@ const COPY: Record<string, { tagline: string; features: string[]; popular?: bool
       "First seat in Hope Seat & community",
       "Unlimited business workspaces · team seats",
       "Unlimited connected email accounts",
+      smsTextsLabel("vip"),
       "Unlimited integrations, customized to you",
       "Priority AI — highest limits",
       "Early access to new modules",

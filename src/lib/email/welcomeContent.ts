@@ -1,3 +1,4 @@
+import { smsTextsLabel } from "@/lib/planLabels";
 // Command Suite new-client welcome sequence: the copy. Written with Babs on the Master Punch
 // List (Drafts tab, item cs144); change it there first, then here. Placeholders: {{GREETING}},
 // {{INCLUDED}} (Email 1's plan-specific list) and {{REVIEW_DUE}}. Every email ends with Babs's
@@ -71,6 +72,7 @@ export const INCLUDED_BY_PLAN: Record<string, string> = {
 - Growth Sessions and the Hope Seat, twice a month
 - The full Suite: three assessments, Daily Compass, plans, finance and scripts
 - Your private community, off Facebook
+- ${smsTextsLabel("starter")}, sent to the people who book with you
 - A free Website Alignment Review within 14 days`,
   growth: `What's included in your membership:
 - A 1:1 session with me every month, plus a done-with-you kickoff intensive
@@ -79,6 +81,7 @@ export const INCLUDED_BY_PLAN: Record<string, string> = {
 - Room for up to three businesses, plus a collaborator seat
 - The full Suite: three assessments, Daily Compass, plans, finance and scripts
 - Your private community, off Facebook
+- ${smsTextsLabel("growth")}, sent to the people who book with you
 - A free Website Alignment Review within 14 days`,
   vip: `What's included in your membership:
 - Two 1:1 sessions with me every month, plus direct access between sessions
@@ -88,5 +91,6 @@ export const INCLUDED_BY_PLAN: Record<string, string> = {
 - Unlimited businesses and team seats
 - The full Suite: three assessments, Daily Compass, plans, finance and scripts
 - Your private community, off Facebook
+- ${smsTextsLabel("vip")}, sent to the people who book with you
 - A free Website Alignment Review within 14 days`,
 };

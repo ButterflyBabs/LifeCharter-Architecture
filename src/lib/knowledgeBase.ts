@@ -960,8 +960,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Account & Settings",
     question: "What's the difference between Starter, Growth and VIP?",
     answer:
-      "Starter is built for one business running lean (1 business workspace, 1 seat, 1 connected email account, up to 5 integrations). Growth gives you room to grow — up to 3 business workspaces, 2 seats, 3 connected email accounts, up to 10 integrations, monthly 1:1 coaching, and expanded AI limits. VIP removes the limits — unlimited workspaces, seats, email accounts and integrations, customized to you, priority AI, and white-glove support. Everything in the Command Suite is included in every plan; the plans differ in capacity and hands-on help. Your current plan and billing are under Settings, where 'Manage billing' opens your billing portal.",
-    keywords: ["plans", "tiers", "starter", "growth", "vip", "difference", "upgrade", "limits", "pricing", "billing", "what's included"],
+      "Starter is built for one business running lean (1 business workspace, 1 seat, 1 connected email account, up to 5 integrations, 500 text message reminders a month). Growth gives you room to grow — up to 3 business workspaces, 2 seats, 3 connected email accounts, up to 10 integrations, 1,000 text message reminders a month, monthly 1:1 coaching, and expanded AI limits. VIP removes the limits — unlimited workspaces, seats, email accounts and integrations, customized to you, 2,500 text message reminders a month, priority AI, and white-glove support. Text reminders are rolling out to accounts now. Everything in the Command Suite is included in every plan; the plans differ in capacity and hands-on help. Your current plan and billing are under Settings, where 'Manage billing' opens your billing portal.",
+    keywords: ["plans", "tiers", "starter", "growth", "vip", "difference", "upgrade", "limits", "pricing", "billing", "what's included", "texts", "text messages"],
+  },
+  {
+    id: "sms-texts",
+    category: "Account & Settings",
+    question: "Can the Suite text reminders to my clients? How many texts do I get?",
+    answer:
+      "Yes, from your own texting number, included in your plan: Starter 500 texts a month, Growth 1,000 and VIP 2,500 (it starts fresh on the 1st; there is no extra charge, texting just pauses if you reach the limit). Open Settings, then Text messages, fill in your business details (US carriers approve every texting number for a real business; an EIN is needed unless you are a sole proprietor) and press Get my texting number. Approval usually takes 5 to 15 business days and the page updates on its own. Once approved, your booking pages show an unticked box: people who tick it get a reminder text the day before and about an hour before. You can turn either off and change the wording; your business name and Reply STOP to opt out are always included. Texts only go out between 8 AM and 9 PM their time and never to anyone who replied STOP. Replies come to you by email. Text reminders are rolling out to accounts now.",
+    keywords: ["text", "texts", "sms", "text message", "text reminders", "reminder text", "phone", "how many texts", "texting number", "a2p", "toll-free", "stop", "opt out"],
   },
   {
     id: "plan-upgrade-what-happens",

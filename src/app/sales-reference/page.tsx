@@ -1,3 +1,4 @@
+import { smsTextsLabel } from "@/lib/planLabels";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SalesScript } from "./SalesScript";
@@ -48,7 +49,7 @@ const TIERS: Tier[] = [
     tagline: "Find your clarity in the cohort — self-driven, running one business.",
     monthly: "$347/mo",
     implementation: "$2,497",
-    emailAccounts: "1 connected email account · up to 5 integrations",
+    emailAccounts: `1 connected email account · up to 5 integrations · ${smsTextsLabel("starter")}`,
     implementationUrl: "https://buy.stripe.com/6oUbJ22JxeB511caGS4ow05",
     monthlyUrl: "https://buy.stripe.com/6oUeVeesfgJdbFQcP04ow02",
   },
@@ -58,7 +59,7 @@ const TIERS: Tier[] = [
     tagline: "Get hands-on help implementing it — a monthly hand on the wheel.",
     monthly: "$497/mo",
     implementation: "$2,997",
-    emailAccounts: "3 connected email accounts · up to 10 integrations",
+    emailAccounts: `3 connected email accounts · up to 10 integrations · ${smsTextsLabel("growth")}`,
     implementationUrl: "https://buy.stripe.com/fZu5kE0BpgJd39k4iu4ow04",
     monthlyUrl: "https://buy.stripe.com/eVq4gA83RboT8tE5my4ow01",
   },
@@ -68,7 +69,7 @@ const TIERS: Tier[] = [
     tagline: "Have it built with you, at your side — white-glove, room to run everything.",
     monthly: "$997/mo",
     implementation: "$4,997",
-    emailAccounts: "Unlimited email accounts & integrations, customized",
+    emailAccounts: `Unlimited email accounts & integrations, customized · ${smsTextsLabel("vip")}`,
     implementationUrl: "https://buy.stripe.com/fZu3cw83R78D7pAdT44ow03",
     monthlyUrl: "https://buy.stripe.com/6oUcN6ck7boTaBMaGS4ow00",
   },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { StarterSignupForm } from "./StarterSignupForm";
-import { emailAccountsLabel } from "@/lib/planLabels";
+import { emailAccountsLabel, smsTextsLabel } from "@/lib/planLabels";
 
 export const metadata: Metadata = {
   title: "Get Started — LifeCharter Command Suite",
@@ -16,7 +16,7 @@ interface PlanRow {
   description: string | null;
   price_monthly: number;
   onboarding_fee: number | null;
-  capabilities: { mailboxes?: number } | null;
+  capabilities: { mailboxes?: number; sms_texts?: number } | null;
 }
 
 function usd(cents: number): string {
@@ -90,6 +90,7 @@ export default async function GetStartedPage({
                 + {usd(starter.onboarding_fee ?? 0)} one-time implementation
               </p>
               <p className="text-xs text-[#E3C27C] mt-3">{emailAccountsLabel(starter.capabilities?.mailboxes)}</p>
+              <p className="text-xs text-[#E3C27C] mt-1">{smsTextsLabel(starter.capabilities?.sms_texts ?? starter.id)}</p>
               <div className="mt-6">
                 <StarterSignupForm sessionSource={src} initialAlumni={alumni} />
               </div>
@@ -110,6 +111,7 @@ export default async function GetStartedPage({
                 + {usd(plan.onboarding_fee ?? 0)} one-time implementation
               </p>
               <p className="text-xs text-[#E3C27C] mt-3">{emailAccountsLabel(plan.capabilities?.mailboxes)}</p>
+              <p className="text-xs text-[#E3C27C] mt-1">{smsTextsLabel(plan.capabilities?.sms_texts ?? plan.id)}</p>
               <a
                 href={websiteConsultHref}
                 className="mt-6 block text-center rounded-lg border border-[#c9a227]/50 text-[#E3C27C] px-4 py-2.5 text-sm font-medium hover:bg-[#c9a227]/10 transition-colors"
