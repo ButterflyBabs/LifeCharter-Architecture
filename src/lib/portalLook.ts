@@ -4,6 +4,7 @@
 
 export const PORTAL_SECTIONS = [
   { key: "sessions", title: "Your sessions" },
+  { key: "programs", title: "Your programs" },
   { key: "homework", title: "Your homework" },
   { key: "pay", title: "To pay" },
   { key: "goals", title: "Your goals" },

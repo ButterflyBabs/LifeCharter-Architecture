@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PORTAL_BUCKET, portalFor } from "@/lib/portal";
+import { isMember } from "@/lib/programs";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request, { params }: { params: { token: string } }) {
   const ctx = await portalFor(params.token);
   if (!ctx) return NextResponse.json({ error: "This portal link isn't active." }, { status: 404 });
+  const lessonId = new URL(request.url).searchParams.get("lesson");
+  if (lessonId) {
+    const { data: l } = await ctx.db.from("program_lessons").select("program_id, file_path, file_name, opens_on").eq("id", lessonId).maybeSingle();
+    const open = l && (!l.opens_on || (l.opens_on as string) <= new Date().toISOString().slice(0, 10));
+    if (!l?.file_path || !open || !(await isMember(ctx.db, ctx.p.master_plan_id, l.program_id as string, ctx.p.contact_id))) return NextResponse.json({ error: "That file isn't here." }, { status: 404 });
+    const { data } = await ctx.db.storage.from(PORTAL_BUCKET).createSignedUrl(l.file_path as string, 300, { download: (l.file_name as string) || true });
+    return data?.signedUrl ? NextResponse.redirect(data.signedUrl) : NextResponse.json({ error: "The file couldn't be opened." }, { status: 500 });
+  }
   const id = new URL(request.url).searchParams.get("id") || "";
   const { data: item } = await ctx.db.from("portal_items").select("file_path, file_name").eq("id", id).eq("contact_id", ctx.p.contact_id).maybeSingle();
   if (!item?.file_path) return NextResponse.json({ error: "That file isn't here." }, { status: 404 });

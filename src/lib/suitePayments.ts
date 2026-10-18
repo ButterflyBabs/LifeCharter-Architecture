@@ -293,6 +293,11 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
       await logEvent(p.planId, contactId, "purchase", `Paid ${money(p.cents)}${offerName ? ` for ${offerName}` : p.description ? ` for ${p.description}` : ""}${p.livemode ? "" : " (test)"}`, { suitePayment: p.ref, kind: p.kind }, db).catch(() => {});
     }
     await winDeals(db, p.planId, p.email, p.offerId).catch((e) => console.error("win deals:", e));
+    // Programs sold through this offer: the buyer joins them (and gets their portal link).
+    if (p.offerId && contactId) {
+      const { enrollForOffer } = await import("@/lib/programs");
+      await enrollForOffer(db, p.planId, p.offerId, contactId).catch((e) => console.error("program enrol:", e));
+    }
   }
   // Income, fees and affiliate credit come from the sync (live payments only), so a payment is never counted twice.
   await syncStripe(p.planId).catch((e) => console.error("sync after payment:", e));

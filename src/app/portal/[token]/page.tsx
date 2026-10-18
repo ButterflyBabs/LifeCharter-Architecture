@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, CheckCircle2, Circle, FileText, Link2, Loader2, MessageCircle, Paperclip, Send, Target } from "lucide-react";
 import { PORTAL_FONTS, onAccent, type SectionKey } from "@/lib/portalLook";
+import ProgramCard, { type Program } from "./ProgramCard";
 
 type Item = { id: string; title: string; body: string | null; url: string | null; fileName: string | null; hasFile: boolean; dueOn: string | null; status: string; doneAt: string | null; fromClient: boolean };
 type View = {
+  programs: Program[];
   brand: { name: string; logo: string | null };
   look: { accent: string; background: string; font: string; heading: string; banner: string | null; sections: { key: SectionKey; title: string; hidden: boolean }[] };
   client: { firstName: string | null };
@@ -90,6 +92,12 @@ export default function PortalPage() {
   const font = PORTAL_FONTS.find((f) => f.key === look.font) ?? PORTAL_FONTS[0];
   const ink = onAccent(look.accent);
   const blocks: Record<SectionKey, React.ReactNode> = {
+    programs: v.programs.length ? (
+          <section className={card}>
+            <h2 className={h2}>{title("programs")}</h2>
+            <div className="space-y-4">{v.programs.map((p) => <ProgramCard key={p.id} p={p} token={token} act={post} />)}</div>
+          </section>
+    ) : null,
     sessions: (
           <section className={card}>
             <h2 className={h2}><CalendarDays className="h-5 w-5 text-[var(--pf-accent)]" />{title("sessions")}</h2>
@@ -265,7 +273,7 @@ export default function PortalPage() {
         {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
 
         <div className="grid gap-5 lg:grid-cols-2">
-          {shown.map((x) => <div key={x.key} className="min-w-0 [&>section]:h-full">{blocks[x.key]}</div>)}
+          {shown.map((x) => <div key={x.key} className={`min-w-0 [&>section]:h-full ${x.key === "programs" ? "lg:col-span-2" : ""}`}>{blocks[x.key]}</div>)}
         </div>
         <footer className="pt-4 text-center text-xs text-[#9aa3ad]">This page is private to you. Powered by LifeCharter Command Suite.</footer>
       </div>

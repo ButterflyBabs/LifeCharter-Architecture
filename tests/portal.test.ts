@@ -19,7 +19,7 @@ test("portal look: unknown values fall back, sections keep every section once in
   assert.equal(l.background, "#ffffff");
   assert.equal(l.font, "classic");
   assert.deepEqual(l.sections.slice(0, 2), [{ key: "messages", title: "Talk to me", hidden: false }, { key: "sessions", title: "Your sessions", hidden: true }]);
-  assert.equal(l.sections.length, 7);
+  assert.equal(l.sections.length, 8);
   assert.equal(headingFor(l, "Eloise"), "Hi Eloise!");
   assert.equal(cleanLook({ logoPath: "../../etc/passwd" }).logoPath, null);
   assert.equal(onAccent("#2E7C83"), "#FFFFFF");

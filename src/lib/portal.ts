@@ -143,7 +143,10 @@ export async function portalView(db: Db, p: PortalRow) {
   const calById = new Map(((cals ?? []) as { id: string; slug: string; name: string; active: boolean }[]).map((x) => [x.id, x]));
   const look = cleanLook(p.look ?? {});
   const assetUrl = (k: "logo" | "banner") => `/api/portal/${p.token}/asset?k=${k}&v=${encodeURIComponent((k === "logo" ? look.logoPath : look.bannerPath) || "").slice(-24)}`;
+  const { programsForMember } = await import("@/lib/programs");
+  const programs = await programsForMember(db, p.master_plan_id, p.contact_id, brand.name);
   return {
+    programs,
     brand: { name: brand.name, logo: look.useAccountLogo ? brand.logo : look.logoPath ? assetUrl("logo") : null },
     look: { accent: look.accent, background: look.background, font: look.font, heading: headingFor(look, (c?.first_name as string) || null), banner: look.bannerPath ? assetUrl("banner") : null, sections: look.sections },
     client: { firstName: (c?.first_name as string) || null },
