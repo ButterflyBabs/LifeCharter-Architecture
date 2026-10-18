@@ -40,3 +40,17 @@ test("events: challenge days count from the start date; calendar links carry the
   assert.equal(replayOpen({ replay_url: "https://v", replay_hours: 72, replay_sent_at: new Date().toISOString() }), true);
   assert.equal(replayOpen({ replay_url: null, replay_hours: null, replay_sent_at: null }), false);
 });
+
+test("time tracking: minutes, totals and the billable amount", async () => {
+  const { minutesOf, totals, hm, weekStart } = await import("../src/lib/timeTracking");
+  const s = "2026-10-19T15:00:00.000Z";
+  assert.equal(minutesOf({ started_at: s, ended_at: "2026-10-19T16:30:00.000Z" }), 90);
+  assert.equal(minutesOf({ started_at: s, ended_at: null }, Date.parse("2026-10-19T15:10:00.000Z")), 10);
+  const t = totals([
+    { started_at: s, ended_at: "2026-10-19T16:00:00.000Z", billable: true, rate: 150, contact_id: null, project_id: null },
+    { started_at: s, ended_at: "2026-10-19T15:30:00.000Z", billable: false, rate: 150, contact_id: null, project_id: null },
+  ]);
+  assert.deepEqual(t, { min: 90, billMin: 60, amount: 150 });
+  assert.equal(hm(125), "2 h 05 m");
+  assert.equal(weekStart(new Date("2026-10-21T12:00:00")).getDay(), 1);
+});

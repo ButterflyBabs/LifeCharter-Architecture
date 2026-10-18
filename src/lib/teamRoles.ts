@@ -108,7 +108,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "accountability", label: "Accountability Partner", pages: ["/accountability"], apis: ["/api/accountability", "/api/coaching-calls"] },
   { key: "custom_pages", label: "My Pages (custom pages)", pages: ["/my-pages"], apis: ["/api/custom-pages"] },
   { key: "tasks", label: "Tasks", pages: ["/tasks", "/reminders"], apis: ["/api/tasks", "/api/reminders", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
-  { key: "projects", label: "Projects", pages: ["/projects"], apis: ["/api/projects"] },
+  { key: "projects", label: "Projects and Time", pages: ["/projects", "/time"], apis: ["/api/projects", "/api/time"] },
   { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
   { key: "content", label: "Content Calendar & Studio", pages: ["/daily-compass/calendar", "/daily-compass/content-studio"], apis: ["/api/content", "/api/social"] },
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },

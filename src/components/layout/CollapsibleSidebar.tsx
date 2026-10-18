@@ -119,6 +119,7 @@ const navigationSections = [
       { id: "assistant-approvals", label: "Waiting for my approval", icon: ClipboardCheck, href: "/assistant-approvals" },
       { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
       { id: "volant", label: "LC Volant", icon: Feather, href: "/volant" },
+      { id: "time", label: "Time", icon: Timer, href: "/time" },
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
@@ -848,7 +849,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care", programs: "client-portals", events: "programs" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care", programs: "client-portals", events: "programs", time: "volant" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
