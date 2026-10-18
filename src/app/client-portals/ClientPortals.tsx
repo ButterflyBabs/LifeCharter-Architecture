@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, Loader2, Minus, Paperclip, Plus, Send, Trash2, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, Loader2, Minus, Palette, Paperclip, Plus, Send, Trash2, UsersRound } from "lucide-react";
+import { COLOR_PRESETS, PORTAL_FONTS, onAccent, type PortalLook } from "@/lib/portalLook";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
 type Portal = { contactId: string; name: string; email: string; active: boolean; sentAt: string | null; lastSeenAt: string | null; unread: number };
@@ -9,7 +10,9 @@ type Pkg = { id: string; name: string; sessions_total: number; used: number; cal
 type Item = { id: string; kind: "homework" | "goal" | "resource"; title: string; body: string | null; url: string | null; file_name: string | null; file_path: string | null; due_on: string | null; status: string; done_by: string | null };
 type Detail = {
   contact: { id: string; email: string; first_name: string | null; last_name: string | null };
-  portal: { active: boolean; welcome: string | null; sent_at: string | null; last_seen_at: string | null; url: string } | null;
+  portal: { active: boolean; welcome: string | null; sent_at: string | null; last_seen_at: string | null; url: string; look: PortalLook } | null;
+  defaultLook: PortalLook;
+  accountLogo: string | null;
   packages: Pkg[];
   items: Item[];
   messages: { id: string; author: "owner" | "client"; body: string; read_at: string | null; created_at: string }[];
@@ -177,6 +180,8 @@ function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<s
         </div>
       </section>
 
+      <LookEditor d={d} act={act} busy={busy} setMsg={setMsg} reload={reload} />
+
       <section className={card}>
         <h2 className={h2}>Packages and sessions</h2>
         <p className="mb-3 text-xs text-[#7b6b8d]">A session is used when you mark their booking Attended in Calendars. Use − and + to adjust by hand.</p>
@@ -310,6 +315,119 @@ function ItemsSection({ kind, d, act, busy, setMsg, reload }: { kind: "homework"
           </label>
         )}
       </div>
+    </section>
+  );
+}
+
+// How this one client's portal looks: colors, font, heading, logo, banner and the sections (shown, renamed, ordered).
+function LookEditor({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<string, unknown>, ok?: string) => Promise<boolean>; busy: boolean; setMsg: (m: string) => void; reload: () => Promise<void> }) {
+  const saved = d.portal!.look;
+  const [open, setOpen] = useState(false);
+  const [l, setL] = useState<PortalLook>(saved);
+  const [uploading, setUploading] = useState("");
+  // After a save or an upload the saved look changes: start from it again (the panel stays open).
+  const savedKey = JSON.stringify(saved);
+  useEffect(() => setL(JSON.parse(savedKey) as PortalLook), [savedKey]);
+  const dirty = JSON.stringify(l) !== JSON.stringify(saved);
+  const ink = onAccent(l.accent);
+  const font = PORTAL_FONTS.find((f) => f.key === l.font) ?? PORTAL_FONTS[0];
+  const move = (i: number, dir: -1 | 1) => {
+    const next = [...l.sections];
+    const j = i + dir;
+    if (j < 0 || j >= next.length) return;
+    [next[i], next[j]] = [next[j], next[i]];
+    setL({ ...l, sections: next });
+  };
+  async function upload(asset: "logo" | "banner", file: File | undefined) {
+    if (!file) return;
+    setUploading(asset);
+    const fd = new FormData();
+    fd.append("contactId", d.contact.id);
+    fd.append("asset", asset);
+    fd.append("file", file);
+    const r = await fetch("/api/client-portal/upload", { method: "POST", body: fd });
+    setUploading("");
+    if (!r.ok) return setMsg((await r.json().catch(() => ({}))).error || "The image didn't upload.");
+    setMsg(asset === "logo" ? "Logo added to this portal." : "Banner added to this portal.");
+    await reload();
+  }
+  const first = d.contact.first_name || "there";
+  return (
+    <section className={card}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]"><Palette className="h-4 w-4 text-[#c9a227]" />How {d.contact.first_name ? `${d.contact.first_name}'s` : "their"} portal looks</h2>
+        <button className={btn} onClick={() => setOpen((o) => !o)} aria-expanded={open}>{open ? "Close" : "Customize"}</button>
+      </div>
+      {/* A small live preview of the header, always visible. */}
+      <div className="mt-3 overflow-hidden rounded-xl border border-[#1a2b4a]/10" style={{ background: l.background }}>
+        <div className="h-1" style={{ background: l.accent }} />
+        <div className="flex items-center gap-3 px-4 py-3">
+          {(l.useAccountLogo ? d.accountLogo : l.logoPath) && <span className="h-9 w-9 shrink-0 rounded-full bg-white" style={{ boxShadow: `0 0 0 2px ${l.accent}22` }} />}
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: l.accent }}>Your business</p>
+            <p className="truncate text-lg font-semibold text-[#1F2B3A]" style={{ fontFamily: font.heading }}>{l.heading.replace(/\{first\}/gi, first)}</p>
+          </div>
+          <span className="ml-auto rounded-full px-3 py-1 text-xs font-semibold" style={{ background: l.accent, color: ink }}>Button</span>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-4 space-y-5">
+          <div>
+            <p className={label}>Colors</p>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PRESETS.map((c) => (
+                <button key={c.name} type="button" onClick={() => setL({ ...l, accent: c.accent, background: c.background })} className="flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-2.5 py-1 text-xs font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]" aria-pressed={l.accent === c.accent}>
+                  <span className="h-4 w-4 rounded-full" style={{ background: c.accent, boxShadow: `0 0 0 3px ${c.background}` }} />{c.name}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm">
+              <label className="flex items-center gap-2">Accent <input type="color" value={l.accent} onChange={(e) => setL({ ...l, accent: e.target.value })} className="h-8 w-12 cursor-pointer rounded border border-[#1a2b4a]/15" /></label>
+              <label className="flex items-center gap-2">Background <input type="color" value={l.background} onChange={(e) => setL({ ...l, background: e.target.value })} className="h-8 w-12 cursor-pointer rounded border border-[#1a2b4a]/15" /></label>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div><label className={label} htmlFor="look-font">Font style</label><select id="look-font" className={input} value={l.font} onChange={(e) => setL({ ...l, font: e.target.value as PortalLook["font"] })}>{PORTAL_FONTS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}</select></div>
+            <div><label className={label} htmlFor="look-heading">Heading ({"{first}"} = their first name)</label><input id="look-heading" className={input} value={l.heading} maxLength={80} onChange={(e) => setL({ ...l, heading: e.target.value })} /></div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className={label}>Logo</p>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={l.useAccountLogo} onChange={(e) => setL({ ...l, useAccountLogo: e.target.checked })} />Use my account logo{d.accountLogo ? "" : " (none set yet)"}</label>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className={`${btn} cursor-pointer`}><input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" className="sr-only" disabled={!!uploading} onChange={(e) => void upload("logo", e.target.files?.[0])} />{uploading === "logo" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}{l.logoPath ? "Replace this portal's logo" : "Upload a logo for this portal"}</label>
+                {l.logoPath && <button className={btn} disabled={busy} onClick={() => void act({ action: "look", look: { ...l, useAccountLogo: true }, removeLogo: true }, "Logo removed.")}>Remove</button>}
+              </div>
+            </div>
+            <div>
+              <p className={label}>Banner image (optional, wide)</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className={`${btn} cursor-pointer`}><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" disabled={!!uploading} onChange={(e) => void upload("banner", e.target.files?.[0])} />{uploading === "banner" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}{l.bannerPath ? "Replace banner" : "Upload a banner"}</label>
+                {l.bannerPath && <button className={btn} disabled={busy} onClick={() => void act({ action: "look", look: l, removeBanner: true }, "Banner removed.")}>Remove</button>}
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className={label}>Sections: show, rename and order</p>
+            <ul className="space-y-2">
+              {l.sections.map((sec, i) => (
+                <li key={sec.key} className="flex flex-wrap items-center gap-2">
+                  <input type="checkbox" aria-label={`Show ${sec.title}`} checked={!sec.hidden} onChange={(e) => setL({ ...l, sections: l.sections.map((x) => (x.key === sec.key ? { ...x, hidden: !e.target.checked } : x)) })} />
+                  <input aria-label={`Name for ${sec.key}`} className={`${input} max-w-xs flex-1 ${sec.hidden ? "opacity-50" : ""}`} value={sec.title} maxLength={60} onChange={(e) => setL({ ...l, sections: l.sections.map((x) => (x.key === sec.key ? { ...x, title: e.target.value } : x)) })} />
+                  <button className={btn} aria-label={`Move ${sec.title} up`} disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp className="h-3.5 w-3.5" /></button>
+                  <button className={btn} aria-label={`Move ${sec.title} down`} disabled={i === l.sections.length - 1} onClick={() => move(i, 1)}><ArrowDown className="h-3.5 w-3.5" /></button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs text-[#7b6b8d]">Sections with nothing in them (for example To pay with no invoices) stay out of sight on their own.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button className={primary} disabled={busy || !dirty} onClick={() => void act({ action: "look", look: l }, "Look saved. Open See what they see to check it.")}>Save this look</button>
+            <button className={btn} disabled={busy || dirty} onClick={() => void act({ action: "look-default" }, "Saved as your default: every new portal starts with this look.")} title={dirty ? "Save this look first" : undefined}>Use as my default for new portals</button>
+            <button className={btn} disabled={busy} onClick={() => void act({ action: "look-reset" }, "Your default look is back on this portal.")}>Reset to my default</button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

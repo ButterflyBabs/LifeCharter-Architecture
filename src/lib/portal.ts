@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
 import { sendMail } from "@/lib/booking/engine";
 import type { VolantReport } from "@/lib/volant";
+import { cleanLook, headingFor, type PortalLook } from "@/lib/portalLook";
 
 // Client portal (task 1147). Each account's own clients get a private link (no password; the unguessable link is the
 // key, like shared project pages) to a page in the account's own branding: package and sessions left, upcoming
@@ -19,13 +20,20 @@ export const validToken = (t: string) => /^[A-Za-z0-9_-]{24,64}$/.test(t);
 export const PORTAL_BUCKET = "portal-files";
 export const MAX_FILE = 50 * 1024 * 1024;
 
-export interface PortalRow { id: string; master_plan_id: string; contact_id: string; token: string; active: boolean; welcome: string | null; sent_at: string | null; last_seen_at: string | null }
+export interface PortalRow { id: string; master_plan_id: string; contact_id: string; token: string; active: boolean; welcome: string | null; sent_at: string | null; last_seen_at: string | null; look?: unknown }
+export const PORTAL_COLUMNS = "id, master_plan_id, contact_id, token, active, welcome, sent_at, last_seen_at, look";
+
+/** The account's default look (what a new portal starts from). */
+export async function defaultLook(db: Db, planId: string): Promise<PortalLook> {
+  const { data } = await db.from("client_portal_defaults").select("look").eq("master_plan_id", planId).maybeSingle();
+  return cleanLook(data?.look ?? {});
+}
 
 /** The portal behind a private link, if the link is well formed and still on. */
 export async function portalFor(token: string) {
   if (!validToken(token)) return null;
   const db = createServerClient();
-  const { data } = await db.from("client_portals").select("id, master_plan_id, contact_id, token, active, welcome, sent_at, last_seen_at").eq("token", token).maybeSingle();
+  const { data } = await db.from("client_portals").select(PORTAL_COLUMNS).eq("token", token).maybeSingle();
   if (!data || !data.active) return null;
   return { db, p: data as PortalRow };
 }
@@ -133,8 +141,11 @@ export async function portalView(db: Db, p: PortalRow) {
   const calIds = Array.from(new Set([...pk.filter((x) => x.status === "active").flatMap((x) => x.calendar_ids ?? []), ...((bookings ?? []) as { calendar_id: string }[]).map((b) => b.calendar_id)]));
   const { data: cals } = calIds.length ? await db.from("booking_calendars").select("id, slug, name, active").in("id", calIds) : { data: [] };
   const calById = new Map(((cals ?? []) as { id: string; slug: string; name: string; active: boolean }[]).map((x) => [x.id, x]));
+  const look = cleanLook(p.look ?? {});
+  const assetUrl = (k: "logo" | "banner") => `/api/portal/${p.token}/asset?k=${k}&v=${encodeURIComponent((k === "logo" ? look.logoPath : look.bannerPath) || "").slice(-24)}`;
   return {
-    brand,
+    brand: { name: brand.name, logo: look.useAccountLogo ? brand.logo : look.logoPath ? assetUrl("logo") : null },
+    look: { accent: look.accent, background: look.background, font: look.font, heading: headingFor(look, (c?.first_name as string) || null), banner: look.bannerPath ? assetUrl("banner") : null, sections: look.sections },
     client: { firstName: (c?.first_name as string) || null },
     welcome: p.welcome,
     packages: pk.map((x) => {

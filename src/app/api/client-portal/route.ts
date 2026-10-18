@@ -4,7 +4,8 @@ import { crmAccount } from "../crm/guard";
 import { PORTAL_OPEN_TO_ALL } from "@/lib/portalFlag";
 import { accountSender } from "@/lib/email/accountSender";
 import { sendMail } from "@/lib/booking/engine";
-import { PORTAL_BUCKET, brandFor, newPortalToken, portalUrl, sendPortalLink, sessionsUsed, type PortalRow } from "@/lib/portal";
+import { PORTAL_BUCKET, PORTAL_COLUMNS, brandFor, defaultLook, newPortalToken, portalUrl, sendPortalLink, sessionsUsed, type PortalRow } from "@/lib/portal";
+import { cleanLook } from "@/lib/portalLook";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ async function account(request?: Request) {
   if (!PORTAL_OPEN_TO_ALL && !a.isArchitect) return { denied: NextResponse.json({ error: "not found" }, { status: 404 }) };
   return a;
 }
-const PORTAL_COLS = "id, master_plan_id, contact_id, token, active, welcome, sent_at, last_seen_at";
+const PORTAL_COLS = PORTAL_COLUMNS;
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const isDay = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
@@ -56,9 +57,12 @@ export async function GET(request: Request) {
     db.from("booking_calendars").select("id, name, slug, active").eq("master_plan_id", a.planId).order("name"),
   ]);
   const used = await sessionsUsed(db, ((pkgs ?? []) as { id: string }[]).map((p) => p.id));
+  const [dflt, brand] = await Promise.all([defaultLook(db, a.planId), brandFor(db, a.planId)]);
   return NextResponse.json({
     contact: c,
-    portal: portal ? { ...(portal as PortalRow), url: portalUrl((portal as PortalRow).token) } : null,
+    portal: portal ? { ...(portal as PortalRow), url: portalUrl((portal as PortalRow).token), look: cleanLook((portal as PortalRow).look ?? {}, dflt) } : null,
+    defaultLook: dflt,
+    accountLogo: brand.logo,
     packages: ((pkgs ?? []) as { id: string; sessions_total: number }[]).map((p) => ({ ...p, used: Math.max(0, used.get(p.id) ?? 0) })),
     items: items ?? [],
     messages: messages ?? [],
@@ -84,7 +88,8 @@ export async function POST(request: Request) {
       if (!c) return NextResponse.json({ error: "That contact could not be found." }, { status: 404 });
       const have = await portalOf();
       if (have) return NextResponse.json({ ok: true });
-      const { error } = await db.from("client_portals").insert({ master_plan_id: a.planId, contact_id: contactId, token: newPortalToken() });
+      // A new portal starts from the account's default look.
+      const { error } = await db.from("client_portals").insert({ master_plan_id: a.planId, contact_id: contactId, token: newPortalToken(), look: await defaultLook(db, a.planId) });
       if (error) return NextResponse.json({ error: "Couldn't create the portal." }, { status: 500 });
       return NextResponse.json({ ok: true });
     }
@@ -111,6 +116,29 @@ export async function POST(request: Request) {
       const p = await portalOf();
       if (!p) return NextResponse.json({ error: "No portal yet." }, { status: 404 });
       await db.from("client_portals").update({ welcome: str(b.text, 2000) || null, updated_at: now }).eq("id", p.id);
+      return NextResponse.json({ ok: true });
+    }
+    case "look": {
+      // This client's portal look (colors, font, heading, logo, banner, sections).
+      const p = await portalOf();
+      if (!p) return NextResponse.json({ error: "No portal yet." }, { status: 404 });
+      const prev = cleanLook(p.look ?? {});
+      const next = cleanLook({ ...((b.look as Record<string, unknown>) ?? {}), logoPath: prev.logoPath, bannerPath: prev.bannerPath, ...(b.removeLogo ? { logoPath: null } : {}), ...(b.removeBanner ? { bannerPath: null } : {}) }, prev);
+      await db.from("client_portals").update({ look: next, updated_at: now }).eq("id", p.id);
+      return NextResponse.json({ ok: true });
+    }
+    case "look-default": {
+      // Save this client's look as the account default for new portals.
+      const p = await portalOf();
+      if (!p) return NextResponse.json({ error: "No portal yet." }, { status: 404 });
+      await db.from("client_portal_defaults").upsert({ master_plan_id: a.planId, look: cleanLook(p.look ?? {}), updated_at: now }, { onConflict: "master_plan_id" });
+      return NextResponse.json({ ok: true });
+    }
+    case "look-reset": {
+      // Put the account default look back on this client's portal.
+      const p = await portalOf();
+      if (!p) return NextResponse.json({ error: "No portal yet." }, { status: 404 });
+      await db.from("client_portals").update({ look: await defaultLook(db, a.planId), updated_at: now }).eq("id", p.id);
       return NextResponse.json({ ok: true });
     }
     case "package-add": {
