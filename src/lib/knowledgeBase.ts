@@ -1432,6 +1432,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["team huddle", "huddle", "weekly meeting", "team meeting", "agenda", "meeting agenda", "team call", "transcript", "meeting summary", "action items", "weekly team call", "standup", "stand up"],
   },
   {
+    id: "gs-welcome-overview",
+    category: "Getting Started",
+    question: "Is there a picture of the whole Command Suite? What is the Welcome Overview?",
+    answer:
+      "Yes. Open Getting Started in the left menu and press Welcome Overview (just under Starter Guide). It opens a short picture tour as a PDF in a new tab: a welcome note from Babs, a brain map of the whole Suite, your first 30 days, one page for each of the ten areas (Coaching, Support & Community; Alignment & Health; Run Your Day; Your AI Assistant; Plans & Goals; Clients & CRM; Sales & Outreach; Your Money; Meetings & Team; Systems & Operations) with what it is, where to find it and where to start, then life after day 30 and your first steps. You can open it before your assessments are finished, and save or print it from the PDF window.",
+    keywords: ["welcome overview", "overview", "brain map", "mind map", "map of the suite", "tour", "what's in the suite", "all features", "first 30 days", "after day 30", "welcome pdf", "getting started"],
+  },
+  {
     id: "lc-volant",
     category: "Daily Operations",
     question: "How do I turn a recording or transcript into a report? What is LC Volant?",

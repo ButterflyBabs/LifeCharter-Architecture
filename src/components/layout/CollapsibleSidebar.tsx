@@ -22,7 +22,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { STARTER_GUIDE_URL } from "@/lib/starterGuide";
+import { STARTER_GUIDE_URL, WELCOME_OVERVIEW_PATH, WELCOME_OVERVIEW_URL } from "@/lib/starterGuide";
 import {
   LayoutDashboard,
   FileText,
@@ -181,6 +181,7 @@ const navigationSections = [
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
       { id: "starter-guide", label: "Starter Guide", icon: BookOpen, href: STARTER_GUIDE_URL },
+      { id: "welcome-overview", label: "Welcome Overview", icon: BookOpen, href: WELCOME_OVERVIEW_URL },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
     ],
   },
@@ -241,7 +242,7 @@ const ownerSection = {
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
-    { id: "client-welcome-overview", label: "Client Welcome Overview (PDF)", icon: BookOpen, href: "https://lccommandsuite.com/handouts/client-welcome-overview.pdf" },
+    { id: "client-welcome-overview", label: "Client Welcome Overview (PDF)", icon: BookOpen, href: WELCOME_OVERVIEW_URL },
     { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
     { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
     { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
@@ -705,7 +706,7 @@ export function CollapsibleSidebar() {
     if (href === "/demo") return extras?.demo === true;
     if (assessmentsLocked) {
       const p = href.split("?")[0];
-      return p === "/setup" || p.endsWith("/starter-guide.html") || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
+      return p === "/setup" || p.endsWith("/starter-guide.html") || p.endsWith(WELCOME_OVERVIEW_PATH) || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
     }
     if (!features) return true;
     // A custom page can be given to a member one at a time, even with My Pages off.
@@ -838,7 +839,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
