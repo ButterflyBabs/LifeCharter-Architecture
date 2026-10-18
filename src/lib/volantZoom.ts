@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
-import { isZoomConfigured, zoomAccountToken } from "@/lib/zoom";
+import { isZoomConfigured, zoomAccountToken, zoomScopes } from "@/lib/zoom";
 import { submitAudioUrl, transcriptionKey } from "@/lib/volantRecordingServer";
 import { RECORDING_BUCKET } from "@/lib/volantRecording";
 
@@ -192,8 +192,10 @@ export async function importZoomRecording(db: Db, planId: string, access: ZoomAc
     await db.from("volant_recordings").update({ provider_id: providerId, storage_path: audioUrl.storagePath, updated_at: new Date().toISOString() }).eq("id", row.id);
     return row.id as string;
   } catch (e) {
-    const detail = e instanceof Error ? e.message : String(e);
+    let detail = e instanceof Error ? e.message : String(e);
     const denied = /zoom-download (401|403)/.test(detail);
+    // Say which permissions the Suite's Zoom app actually has, so a missing one is plain to see.
+    if (denied && access.kind === "account") detail += ` | app scopes: ${(await zoomScopes().catch(() => "")) || "(none read)"}`;
     await db
       .from("volant_recordings")
       .update({
