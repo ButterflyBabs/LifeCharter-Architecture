@@ -3,8 +3,8 @@
 // or network here, so the cleaning and prompt rules can be tested.
 
 export const VOLANT_NAME = "LC Volant";
-/** Babs only until she approves it on the preview (2026-10-17); flip to true to open LC Volant to every account. */
-export const VOLANT_OPEN_TO_ALL = false;
+/** Open to every account since 2026-10-18 (Babs: "open LC Volant to everyone"). false = Babs only. */
+export const VOLANT_OPEN_TO_ALL = true;
 export const VOLANT_MAX_TRANSCRIPT = 200000; // stored
 export const VOLANT_MAX_PROMPT = 60000; // sent to the AI: about 10,000 words, past an hour of talk
 

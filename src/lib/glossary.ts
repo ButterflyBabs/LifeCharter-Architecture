@@ -44,6 +44,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { id: "founders-half-hour", term: "Founder's Half Hour", category: "Command Suite", short: "A free weekly call open to any founder.", long: "A free 30-minute call every Tuesday at 1pm Mountain, open to everyone. Bring a founder you know.", match: ["Founder’s Half Hour"] },
   { id: "office-hours", term: "Office Hours", category: "Command Suite", short: "The Thursday tech call: a demo, then your questions.", long: "Every Thursday at 11am Mountain. The first half is a demo of something in the Suite; the second half is open for your questions and challenges." },
   { id: "lc-fledge", term: "LC Fledge", category: "Command Suite", short: "The Suite's own tool for scheduling and posting social content.", long: "LifeCharter's social posting app. Connect your accounts, then write, schedule or post, and keep ideas and drafts in one place." },
+  { id: "lc-volant", term: "LC Volant", category: "Command Suite", short: "Turns a recording or transcript into a report with action items.", long: "Upload a video, audio file or transcript from any device, pick one of 21 templates, and get a report whose action items you can send to Tasks, a reminder or your calendar. Volant means \"in flight\"." },
   { id: "lc-spark", term: "LC Spark", category: "Command Suite", short: "The AI chat that talks with visitors and captures leads.", long: "An AI chat for your website and Instagram messages that answers visitors and captures them as leads in Contacts." },
 
   // ---- Business ----

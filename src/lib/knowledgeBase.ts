@@ -1432,6 +1432,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["team huddle", "huddle", "weekly meeting", "team meeting", "agenda", "meeting agenda", "team call", "transcript", "meeting summary", "action items", "weekly team call", "standup", "stand up"],
   },
   {
+    id: "lc-volant",
+    category: "Daily Operations",
+    question: "How do I turn a recording or transcript into a report? What is LC Volant?",
+    answer:
+      "Open LC Volant in the left menu (Daily Operations, just under Team Huddle) and press New report. 1. Pick one of 21 templates: Coaching Sessions, Mastermind Sessions, Group Coaching Sessions, Team Meetings, Consultations, Brain Dumps, Conferences, Workshops I Lead, Workshops I Attend, Speaking Engagement Planning, Retreat Planning, Client Kickoff Calls, Strategy & Planning Sessions, Podcasts & Interviews, Webinars & MasterClasses, Partnership & Collaboration Calls, Vendor & Contractor Calls, Client Success Interviews, Hiring Interviews, Networking & Coffee Chats, or Advisor & Investor Meetings. 2. Add a name, the date and, if the session was with someone, pick them from your contacts so the report is saved on their record. 3. Tick the box that everyone agreed to be recorded, then either upload a recording (video or audio from Zoom, your phone, a camera or any recorder, up to 2 GB) or upload a transcript file (.txt, .docx, .pdf, .vtt, .srt or .md) or paste the text. A recording transcribes in a few minutes; you can leave the page and the bell tells you when it is ready. Then name each voice (their first words are shown to help) and press Use this transcript, or download a captions file (.srt) for your videos. The recording itself is deleted as soon as it is transcribed; only the text is kept. Each account can transcribe 10 hours of recordings a month. 4. Press Write my report (it uses your own AI key from Settings). Every action item has its own Add to Tasks, Set a reminder and Add to calendar (your connected Google or Microsoft calendar), plus Edit and Remove, and nothing happens until you press a button; add your own items with Add an action item. Copy report copies it without private notes, and draft emails have Copy draft and are never sent for you. Press Names to call the page and each template whatever fits your business.",
+    keywords: ["lc volant", "volant", "transcript", "transcribe", "transcription", "recording", "record a meeting", "video", "audio", "voice memo", "meeting notes", "session notes", "coaching notes", "report", "summary", "action items", "captions", "srt", "subtitles", "zoom recording", "otter", "plaud", "notetaker", "note taker"],
+  },
+  {
     id: "as-whats-new",
     category: "Account & Settings",
     question: "Where can I see what's new in the Suite?",
