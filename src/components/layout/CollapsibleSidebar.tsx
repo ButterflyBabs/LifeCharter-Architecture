@@ -93,9 +93,11 @@ import {
   UserCheck,
   KeyRound,
   Eye,
+  Receipt,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
+import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
 
 // Navigation grouped into labeled sections, matching the Executive
 // Dashboard's sidebar pattern (colored section dot + uppercase label) —
@@ -120,6 +122,7 @@ const navigationSections = [
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: collectiveHref("/community") },
       { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+      { id: "payments", label: "Payments & Invoices", icon: Receipt, href: "/payments" },
       { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
       { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
     ],
@@ -188,7 +191,7 @@ const navigationSections = [
 ];
 
 // Pages in the everyday sections that only Babs sees while they are being shaped.
-const ARCHITECT_ONLY_IDS: string[] = [...(QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"]), ...(VOLANT_OPEN_TO_ALL ? [] : ["volant"])];
+const ARCHITECT_ONLY_IDS: string[] = [...(QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"]), ...(VOLANT_OPEN_TO_ALL ? [] : ["volant"]), ...(PAYMENTS_OPEN_TO_ALL ? [] : ["payments"])];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
 // so; the pages and their APIs enforce the same check on the server.
@@ -839,7 +842,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;

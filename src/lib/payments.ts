@@ -3,8 +3,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { isAlignmentArchitect, resolveActor, sessionUser } from "@/lib/authz";
 
-/** Babs only until she has tested Connect with Stripe and payment links (2026-10-18); true opens it to every account. */
-export const PAYMENTS_OPEN_TO_ALL = false;
+import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
+export { PAYMENTS_OPEN_TO_ALL };
 
 export type PaymentsAccount = { planId: string; email: string | null };
 

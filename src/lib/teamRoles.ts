@@ -114,7 +114,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },
   { key: "sales_activities", label: "Sales Activities", pages: ["/daily-compass/sales-activities"], apis: ["/api/sales-activities"] },
   { key: "pipeline", label: "Pipeline, Offers & Sales Plan", pages: ["/sales"], apis: ["/api/pipeline", "/api/offers"] },
-  { key: "finance", label: "Finance", pages: ["/finance", "/revenue"], apis: ["/api/finance", "/api/financial-pulse", "/api/revenue-by-segment", "/api/revenue-snapshot"] },
+  { key: "finance", label: "Finance", pages: ["/finance", "/revenue", "/payments"], apis: ["/api/finance", "/api/payments", "/api/financial-pulse", "/api/revenue-by-segment", "/api/revenue-snapshot"] },
   { key: "planning", label: "Planning & Goals", pages: ["/planning", "/business-plan", "/marketing-plan"], apis: ["/api/planning", "/api/goals", "/api/plans", "/api/review"] },
   { key: "operations", label: "Operations & SOPs", pages: ["/operations"], apis: ["/api/operations", "/api/operational", "/api/sops", "/api/operating-rhythm"] },
   { key: "testimonials", label: "Testimonials", pages: ["/reviews"], apis: ["/api/reviews"] },

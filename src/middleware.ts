@@ -14,6 +14,7 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureAp
 
 const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks"];
 const PUBLIC_APIS = [
+  "/api/stripe-connect/webhook", // events from clients' connected Stripe accounts; each event is fetched back from Stripe, not trusted from the body
   "/api/volant/webhook", // AssemblyAI says an LC Volant transcript is done; secured by a per-recording secret header, not a session
   "/api/volant/zoom/events", // Zoom app notifications (URL check, app removed); secured by Zoom's signature, not a session
   "/api/cron/volant-zoom", // secured by its own CRON_SECRET check, not a session

@@ -272,6 +272,46 @@ function VolantReports({ contactId }: { contactId: string }) {
   );
 }
 
+// Payments and invoices for this person (get paid inside the Suite). Hidden when payments aren't open to this account.
+function ContactPayments({ contactId }: { contactId: string }) {
+  const [d, setD] = useState<{ connected: boolean; payments: { id: string; amount: number; refunded: number; description: string; paid_at: string; livemode: boolean }[]; invoices: { id: string; description: string; amount: number; status: string; hosted_url: string | null }[] } | null>(null);
+  useEffect(() => {
+    fetch(`/api/payments?contact=${contactId}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setD)
+      .catch(() => setD(null));
+  }, [contactId]);
+  if (!d) return null;
+  const usd = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return (
+    <div>
+      <p className={heading}>Payments &amp; invoices</p>
+      {d.invoices.length > 0 && (
+        <ul className="mb-1 space-y-1">
+          {d.invoices.map((i) => (
+            <li key={i.id} className="text-sm">
+              Invoice: {i.description} · {usd(i.amount)} · <span className="text-xs text-[#7a8a99]">{i.status.replace("plan_", "plan ")}</span>
+              {i.hosted_url && i.status !== "paid" && <a href={i.hosted_url} target="_blank" rel="noreferrer" className="ml-1 text-xs text-[#2E7C83] hover:underline">open</a>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {d.payments.length > 0 && (
+        <ul className="mb-1 space-y-1">
+          {d.payments.map((p) => (
+            <li key={p.id} className="text-sm">
+              Paid {usd(p.amount)}{p.description ? ` · ${p.description}` : ""}
+              <span className="text-xs text-[#7a8a99]"> · {new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}{p.refunded > 0 ? ` · refunded ${usd(p.refunded)}` : ""}{p.livemode ? "" : " · test"}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!d.invoices.length && !d.payments.length && <p className="text-sm text-[#7a8a99]">No payments yet.</p>}
+      <a href={`/payments?contact=${contactId}`} className="text-sm font-semibold text-[#2E7C83] hover:underline">{d.connected ? "Send an invoice" : "Set up payments"}</a>
+    </div>
+  );
+}
+
 export default function ContactRecord({
   id,
   allTags,
@@ -630,6 +670,8 @@ export default function ContactRecord({
         <FollowUpScheduler contact={{ id: c.id, name: fullName(c), email: c.email }} setMsg={setMsg} />
 
         <VolantReports contactId={c.id} />
+
+        <ContactPayments contactId={c.id} />
 
         <ContactEmails contactId={c.id} name={fullName(c)} />
 
