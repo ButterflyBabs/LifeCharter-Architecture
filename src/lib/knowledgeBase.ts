@@ -1504,6 +1504,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["landing page", "landing pages", "opt-in page", "squeeze page", "lead magnet", "freebie", "webinar page", "registration page", "sales page", "book a call page", "funnel", "page builder", "meta pixel", "conversion rate"],
   },
   {
+    id: "course-bridge",
+    category: "Sales",
+    question: "I still sell on Kajabi, Teachable, Thinkific or Payhip. Can those sales come into the Suite?",
+    answer:
+      "Yes, while you move your courses into the Suite. Open Courses & Memberships and press Bring your buyers over (or go to lccommandsuite.com/course-bridge). Pick your platform and press Connect: you get a private address and the steps to paste it into that platform (Payhip: Settings > Developer > Webhooks; Kajabi on the Growth or Pro plan: an outbound webhook for Purchase; Teachable on the Growth plan or higher: Settings > Webhooks; Thinkific: Settings > Code & analytics > Webhooks; anything else through Zapier or Make). Press Send a test sale to see one arrive from the test person Eloise. From then on every sale adds or updates the buyer in Contacts (tagged customer, from-the-platform and bought-the-product) with a note on their timeline, and records the money in Finance as Course sales; a refund takes it back out. Each product appears under Products after its first sale, where you can add tags, start a campaign and give the buyer a seat in one of your Suite courses (they get their portal link). A cancelled subscription on the platform ends the matching Suite membership. Keep the address private; Pause or Disconnect stops it.",
+    keywords: ["kajabi", "teachable", "thinkific", "payhip", "zapier", "make", "bridge", "import buyers", "move my course", "migrate", "course platform", "webhook", "sales from another platform"],
+  },
+  {
     id: "programs",
     category: "Sales",
     question: "How do I build a course, membership or group program? What is Courses & Memberships?",

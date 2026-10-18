@@ -87,6 +87,7 @@ export default function Programs({ programId }: { programId: string | null }) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Clients &amp; Sales</p>
           <h1 className="text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Courses &amp; Memberships</h1>
           <p className="mt-1 max-w-3xl text-[15px] text-[#5b5f73] dark:text-[#b8a898]">Build your courses, memberships and group programs right here: lessons in modules that open on a schedule, progress for each member, live sessions, homework and a group conversation, all inside each member&apos;s own client portal. Connect an offer and buyers join automatically.</p>
+          <a href="/course-bridge" className="mt-1 inline-block text-sm font-semibold text-[#2E7C83] hover:underline">Moving from Kajabi, Teachable, Thinkific or Payhip? Bring your buyers over →</a>
         </div>
       </header>
 
