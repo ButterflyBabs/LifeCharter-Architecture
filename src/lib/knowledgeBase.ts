@@ -1456,6 +1456,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["client portal", "portal", "client page", "private link", "client login", "sessions left", "package", "session count", "homework", "client files", "share notes", "messages", "client messages", "attended", "customize portal", "portal colors", "portal logo", "banner", "rename sections", "portal look", "branding"],
   },
   {
+    id: "events",
+    category: "Sales",
+    question: "How do I run a webinar, MasterClass, workshop or challenge? What is Events?",
+    answer:
+      "Open Clients & Sales, then Events. Type a title, choose Live event or Challenge and press Create. Fill in the page (title, subtitle, description, host name, color and web address), then the date and time, length and your own join link (Zoom, Google Meet, Teams or any link) for a live event, or the number of days, Day 1 (or each person starts the day after they join) and the daily email time for a challenge, and write each day. Press Open for sign-ups and share the sign-up link (lccommandsuite.com/e/your-event). Everyone who signs up gets a confirmation from your own email address with an add-to-calendar link, reminders the day before and an hour before, and lands in Contacts tagged registered-your-event. Challenge days go out by email at the daily time and open on each person's private challenge page, where they tick days off. After a live event mark each person Attended or Missed (they are tagged attended- or missed-), paste the replay link, set how many hours it stays up (optional) and press Email the replay to everyone; a reminder goes out about 12 hours before it closes. Choose a follow-up campaign to start when the replay goes out or the challenge ends. Set up Contacts > Email sending first. Paid tickets come once payments are on.",
+    keywords: ["event", "events", "webinar", "masterclass", "workshop", "challenge", "registration", "sign-up page", "reminder", "replay", "attendance", "zoom link", "live event", "5-day challenge"],
+  },
+  {
     id: "programs",
     category: "Sales",
     question: "How do I run a group program or cohort? What is Programs?",
