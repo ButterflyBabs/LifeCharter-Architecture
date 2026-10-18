@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BellRing, CalendarPlus, Check, Copy, FileText, ListChecks, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
+import { BellRing, CalendarPlus, Check, Copy, FileText, LifeBuoy, ListChecks, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
 import Recordings from "./Recordings";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
 import { localInputValue } from "@/components/reminders/useReminders";
@@ -81,6 +81,7 @@ export default function Volant() {
         <div className="flex gap-2">
           <button className={btnGold} onClick={() => { setView("new"); setOpenId(""); window.history.replaceState(null, "", "/volant"); }}><Plus className="h-4 w-4" />New report</button>
           <button className={btn} onClick={() => setView("names")}><Settings2 className="h-4 w-4" />Names</button>
+          <a className={btn} href="/help/contact?product=volant"><LifeBuoy className="h-4 w-4" />Get help</a>
         </div>
       </div>
       {error && <p className="mb-3 text-sm text-[#8a2f2f]" role="alert">{error}</p>}

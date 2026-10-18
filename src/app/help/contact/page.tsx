@@ -1,7 +1,7 @@
 "use client";
 
 import { collectiveHref } from "@/lib/collective";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MyRequests from "@/components/support/MyRequests";
 import { MyGlitches, CommunityBoard, WhatsNew, ResolvedLog } from "@/components/support/FeedbackBoard";
 import { Sparkles, MessageSquareHeart } from "lucide-react";
@@ -28,8 +28,13 @@ export default function ContactSupportPage() {
     subject: "",
     category: "",
     message: "",
-    priority: "normal"
+    priority: "normal",
+    product: "lccs",
   });
+  // Opened from LC Volant's Get help link (?product=volant): start on LC Volant.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("product") === "volant") setFormData((f) => ({ ...f, product: "volant" }));
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [suggestions, setSuggestions] = useState<{ question: string; answer: string }[]>([]);
@@ -69,7 +74,8 @@ export default function ContactSupportPage() {
         subject: "",
         category: "",
         message: "",
-        priority: "normal"
+        priority: "normal",
+        product: formData.product,
       });
     } catch {
       setSubmitError("Failed to submit request. Please try again or email us directly.");
@@ -261,6 +267,20 @@ export default function ContactSupportPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
+                    Which app is this about?
+                  </label>
+                  <select
+                    name="product"
+                    value={formData.product}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0] focus:outline-none focus:ring-2 focus:ring-[#c9a227]/50"
+                  >
+                    <option value="lccs">Command Suite</option>
+                    <option value="volant">LC Volant</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2">
                     Category *

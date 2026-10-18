@@ -6,6 +6,15 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://
 const FROM = process.env.SUPPORT_EMAIL_FROM || "LifeCharter Support <support@lccommandsuite.com>";
 export const SUPPORT_INBOX = "support@lccommandsuite.com";
 
+import { SUPPORT_PRODUCTS, productLabel, supportProduct } from "@/lib/support/products";
+
+// Where a client follows their request: the Suite's Contact Support, or LC Fledge for a Fledge request.
+const homeOf = (product?: string) => {
+  const h = SUPPORT_PRODUCTS.find((p) => p.id === supportProduct(product))!.home;
+  return h.startsWith("http") ? h : `${APP_URL}${h}`;
+};
+const tagOf = (product?: string) => (supportProduct(product) === "lccs" ? "" : `[${productLabel(product)}] `);
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function wrap(heading: string, bodyHtml: string, button?: { href: string; label: string }) {
@@ -33,13 +42,13 @@ async function send(to: string, subject: string, html: string) {
   return res.ok;
 }
 
-export function notifyNewRequest(r: { id: string; name: string; email: string; subject: string; message: string; category: string; priority: string; source: string }) {
+export function notifyNewRequest(r: { id: string; name: string; email: string; subject: string; message: string; category: string; priority: string; source: string; product?: string }) {
   return send(
     SUPPORT_INBOX,
-    `[Support] ${r.subject}`,
+    `[Support] ${tagOf(r.product)}${r.subject}`,
     wrap(
       `New ${r.priority === "high" || r.priority === "urgent" ? "priority " : ""}request from ${r.name}`,
-      `<p><strong>${esc(r.subject)}</strong> · ${esc(r.category)}${r.source === "travel_partner" ? " · from Travel Partner" : ""}</p><p>${para(r.message)}</p><p style="color:#8A8BA3;font-size:13px">${esc(r.name)} · ${esc(r.email)}</p>`,
+      `<p><strong>${esc(r.subject)}</strong> · ${esc(productLabel(r.product))} · ${esc(r.category)}${r.source === "travel_partner" ? " · from Travel Partner" : ""}</p><p>${para(r.message)}</p><p style="color:#8A8BA3;font-size:13px">${esc(r.name)} · ${esc(r.email)}</p>`,
       { href: `${APP_URL}/support-desk?id=${r.id}`, label: "Open in the Support Desk" }
     )
   );
@@ -55,13 +64,13 @@ export function notifyNewIdea(i: { kind: "suggestion" | "feedback"; name: string
   );
 }
 
-export function confirmToClient(r: { email: string; name: string; subject: string }) {
+export function confirmToClient(r: { email: string; name: string; subject: string; product?: string }) {
   const first = r.name.trim().split(/\s+/)[0] || "there";
   return send(
     r.email,
     `We've got your request: ${r.subject}`,
-    wrap(`Thanks, ${first}. We've got it.`, `<p>Your request “${esc(r.subject)}” is in. We'll reply here by email and you can follow it any time under Help → Contact Support → My requests.</p>`, {
-      href: `${APP_URL}/help/contact`,
+    wrap(`Thanks, ${first}. We've got it.`, `<p>Your request “${esc(r.subject)}” is in. We'll reply here by email${supportProduct(r.product) === "fledge" ? "." : " and you can follow it any time under Help → Contact Support → My requests."}</p>`, {
+      href: homeOf(r.product),
       label: "See my requests",
     })
   );
@@ -71,13 +80,13 @@ export function notifyClientReply(r: { id: string; name: string; subject: string
   return send(SUPPORT_INBOX, `[Support] Reply: ${r.subject}`, wrap(`${r.name} replied`, `<p>${para(body)}</p>`, { href: `${APP_URL}/support-desk?id=${r.id}`, label: "Open in the Support Desk" }));
 }
 
-export function notifySupportReply(r: { email: string; name: string; subject: string }, body: string, resolved: boolean) {
+export function notifySupportReply(r: { email: string; name: string; subject: string; product?: string }, body: string, resolved: boolean) {
   const first = r.name.trim().split(/\s+/)[0] || "there";
   return send(
     r.email,
     `${resolved ? "Resolved" : "Reply"}: ${r.subject}`,
     wrap(`Hi ${first},`, `<p>${para(body)}</p>${resolved ? `<p style="color:#8A8BA3;font-size:13px">We've marked this resolved. Reply any time if you need more help.</p>` : ""}`, {
-      href: `${APP_URL}/help/contact`,
+      href: homeOf(r.product),
       label: "Reply or see the conversation",
     })
   );

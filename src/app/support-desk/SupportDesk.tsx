@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import FeedbackAdminTab from "@/components/support/FeedbackAdminTab";
 import AssistantFeedbackTab from "@/components/support/AssistantFeedbackTab";
 import HelpIdeasTab from "@/components/support/HelpIdeasTab";
+import { SUPPORT_PRODUCTS, productLabel } from "@/lib/support/products";
 
 interface Reply {
   author: "client" | "support";
@@ -23,10 +24,17 @@ interface Req {
   message: string;
   status: string;
   source: string;
+  product?: string;
   created_at: string;
   updated_at: string;
   replies: Reply[];
 }
+// Which app a request came from (one support route for the Command Suite, LC Volant and LC Fledge).
+function AppBadge({ product }: { product?: string }) {
+  if (!product || product === "lccs") return null;
+  return <span className="shrink-0 rounded-full bg-[#2E7C83]/15 px-2 text-[11px] font-semibold text-[#1f5e63]">{productLabel(product)}</span>;
+}
+const APP_FILTERS: [string, string][] = [["", "All apps"], ...SUPPORT_PRODUCTS.map((p) => [p.id, p.label] as [string, string])];
 const FILTERS: [string, string][] = [
   ["active", "Needs attention"],
   ["open", "Open"],
@@ -50,6 +58,7 @@ const TOP_TABS: [string, string][] = [
 export default function SupportDesk() {
   const [topTab, setTopTab] = useState("tickets");
   const [filter, setFilter] = useState("active");
+  const [app, setApp] = useState("");
   const [reqs, setReqs] = useState<Req[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [sel, setSel] = useState<string | null>(null);
@@ -74,6 +83,7 @@ export default function SupportDesk() {
   }, []);
 
   const cur = (reqs ?? []).find((r) => r.id === sel) ?? null;
+  const shown = reqs && app ? reqs.filter((r) => (r.product ?? "lccs") === app) : reqs;
 
   async function act(payload: Record<string, unknown>) {
     if (!cur) return;
@@ -131,20 +141,24 @@ export default function SupportDesk() {
             {k !== "active" && k !== "all" && counts[k] ? ` · ${counts[k]}` : ""}
           </button>
         ))}
+        <select aria-label="App" value={app} onChange={(e) => setApp(e.target.value)} className="ml-auto rounded-full border border-[#1a2b4a]/15 bg-transparent px-3 py-1.5 text-[13px] font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
+          {APP_FILTERS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+        </select>
       </div>
       {msg && <p className="mb-4 rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm">{msg}</p>}
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
           <CardContent className="p-0 divide-y divide-[#1a2b4a]/10">
-            {reqs === null ? (
+            {shown === null ? (
               <p className="p-4 text-sm text-[#7a8a99]">Loading…</p>
-            ) : !reqs.length ? (
+            ) : !shown.length ? (
               <p className="p-4 text-sm text-[#7a8a99]">Nothing here. 🦋</p>
             ) : (
-              reqs.map((r) => (
+              shown.map((r) => (
                 <button key={r.id} onClick={() => setSel(r.id)} className={`block w-full p-4 text-left hover:bg-[#1a2b4a]/5 ${sel === r.id ? "bg-[#c9a227]/10" : ""}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{r.subject}</span>
+                    <AppBadge product={r.product} />
                     {(r.priority === "high" || r.priority === "urgent") && <span className="shrink-0 rounded-full bg-[#b06a5a]/15 px-2 text-[11px] font-semibold text-[#8a2f2f]">{r.priority}</span>}
                   </div>
                   <p className="text-xs text-[#7a8a99]">
@@ -165,7 +179,7 @@ export default function SupportDesk() {
                   <div>
                     <h2 className="text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{cur.subject}</h2>
                     <p className="text-xs text-[#7a8a99]">
-                      {cur.name} · <a href={`mailto:${cur.email}`} className="underline">{cur.email}</a> · {cur.category} · {cur.priority}
+                      {productLabel(cur.product)} · {cur.name} · <a href={`mailto:${cur.email}`} className="underline">{cur.email}</a> · {cur.category} · {cur.priority}
                       {cur.source === "travel_partner" ? " · from Travel Partner" : ""} · opened {when(cur.created_at)}
                     </p>
                     <button

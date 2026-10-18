@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   if ((await houseFeatureLevel("support_desk")) === "none") return NextResponse.json({ error: "Not found." }, { status: 404 });
   const status = new URL(request.url).searchParams.get("status") || "active";
   const db = createServerClient();
-  let q = db.from("support_requests").select("id, name, email, category, priority, subject, message, status, source, created_at, updated_at, resolved_at").order("updated_at", { ascending: false }).limit(200);
+  let q = db.from("support_requests").select("id, name, email, category, priority, subject, message, status, source, product, created_at, updated_at, resolved_at").order("updated_at", { ascending: false }).limit(200);
   if (status === "active") q = q.neq("status", "resolved");
   else if (STATUSES.includes(status)) q = q.eq("status", status);
   const { data: reqs } = await q;
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   if (typeof body.id !== "string") return NextResponse.json({ error: "Missing request." }, { status: 400 });
   const db = createServerClient();
-  const { data: r } = await db.from("support_requests").select("id, name, email, subject").eq("id", body.id).maybeSingle();
+  const { data: r } = await db.from("support_requests").select("id, name, email, subject, product").eq("id", body.id).maybeSingle();
   if (!r) return NextResponse.json({ error: "Request not found." }, { status: 404 });
   const text = typeof body.body === "string" ? body.body.trim().slice(0, 5000) : "";
   const status = STATUSES.includes(body.status) ? body.status : text ? "waiting" : null;
@@ -48,6 +48,6 @@ export async function POST(request: Request) {
       .eq("id", r.id);
   }
   let emailed = false;
-  if (text) emailed = await notifySupportReply({ email: r.email as string, name: r.name as string, subject: r.subject as string }, text, status === "resolved").catch(() => false);
+  if (text) emailed = await notifySupportReply({ email: r.email as string, name: r.name as string, subject: r.subject as string, product: r.product as string }, text, status === "resolved").catch(() => false);
   return NextResponse.json({ ok: true, emailed });
 }
