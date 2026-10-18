@@ -97,7 +97,7 @@ export default function AwayCard() {
             </div>
             <label className="block text-sm">
               <span className="mb-1 block font-medium">Note to clients (optional)</span>
-              <textarea rows={3} className="w-full rounded-md border border-border bg-background px-3 py-2" placeholder="Leave blank for: I'm away right now and back on (date). I'll reply when I'm back." value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} />
+              <textarea rows={3} className="w-full rounded-md border border-border bg-background px-3 py-2" placeholder="Leave blank for: I'm away and back on (date). I'll reply when I'm back." value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} />
             </label>
             <div className="grid gap-2">
               {box("blockBookings", "Close my booking pages on those dates", "No one can book a time while you're away. Your booking pages show your note.")}

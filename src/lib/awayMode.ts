@@ -58,7 +58,7 @@ export function awayNote(a: Pick<Away, "ends_on" | "message">): string {
   const own = (a.message || "").trim();
   if (own) return own;
   const back = new Date(Date.parse(`${a.ends_on}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
-  return `I'm away right now and back on ${fmt(back)}. I'll reply when I'm back.`;
+  return `I'm away and back on ${fmt(back)}. I'll reply when I'm back.`;
 }
 
 export const awayDates = (a: Pick<Away, "starts_on" | "ends_on">) => (a.starts_on === a.ends_on ? fmt(a.starts_on) : `${fmt(a.starts_on)} to ${fmt(a.ends_on)}`);

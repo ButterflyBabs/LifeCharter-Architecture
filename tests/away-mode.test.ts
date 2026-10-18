@@ -12,7 +12,7 @@ test("is on only between the first and last day", () => {
     assert.equal(isAwayOn(null, "2026-12-25"), false);
 });
 test("writes a default note with the day they're back", () => {
-    assert.equal(awayNote(a), "I'm away right now and back on January 1. I'll reply when I'm back.");
+    assert.equal(awayNote(a), "I'm away and back on January 1. I'll reply when I'm back.");
     assert.equal(awayNote({ ...a, message: "  Gone fishing  " }), "Gone fishing");
 });
 test("shows the dates plainly", () => {
