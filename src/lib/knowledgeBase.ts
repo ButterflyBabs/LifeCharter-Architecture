@@ -1417,7 +1417,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
   },
   {
     id: "form-preview",
-    category: "Clients & Sales",
+    category: "Sales",
     question: "Can I see what a form looks like before I send it? How do I preview a form?",
     answer:
       "Yes. Open Contacts, then Forms, open the form and press Preview. You see what the person will see: the fields as they will be typed (dropdowns open and boxes take text, so you can try it), the button, the thank-you message and what happens after they submit. Nothing is saved when you try the preview. When you open a form from a link your assistant gave you, the preview is shown first.",
@@ -1446,6 +1446,30 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     answer:
       "Open LC Volant in the left menu (Daily Operations, just under Team Huddle) and press New report. 1. Pick one of 21 templates: Coaching Sessions, Mastermind Sessions, Group Coaching Sessions, Team Meetings, Consultations, Brain Dumps, Conferences, Workshops I Lead, Workshops I Attend, Speaking Engagement Planning, Retreat Planning, Client Kickoff Calls, Strategy & Planning Sessions, Podcasts & Interviews, Webinars & MasterClasses, Partnership & Collaboration Calls, Vendor & Contractor Calls, Client Success Interviews, Hiring Interviews, Networking & Coffee Chats, or Advisor & Investor Meetings. 2. Add a name, the date and, if the session was with someone, pick them from your contacts so the report is saved on their record. 3. Tick the box that everyone agreed to be recorded, then press Record now to record right in the Suite (your microphone; tick the box to also record an online call in another Chrome or Edge tab, pause or resume any time, and press Stop and transcribe when you finish, keeping the page open meanwhile), upload a recording (video or audio from Zoom, your phone, a camera or any recorder, up to 2 GB), transcribe one of your Zoom cloud recordings from the Zoom cloud recordings box once Zoom is connected (or tick Pick up new recordings automatically, optionally only for meetings whose name includes words you choose; your recordings stay in Zoom), or upload a transcript file (.txt, .docx, .pdf, .vtt, .srt or .md) or paste the text. A recording transcribes in a few minutes; you can leave the page and the bell tells you when it is ready. Then name each voice (their first words are shown to help) and press Use this transcript, or download a captions file (.srt) for your videos. The recording itself is deleted as soon as it is transcribed; only the text is kept. Each account can transcribe 10 hours of recordings a month. 4. Press Write my report (it uses your own AI key from Settings). Every action item has its own Add to Tasks, Set a reminder and Add to calendar (your connected Google or Microsoft calendar), plus Edit and Remove, and nothing happens until you press a button; add your own items with Add an action item. Copy report copies it without private notes, and draft emails have Copy draft and are never sent for you. Press Names to call the page and each template whatever fits your business.",
     keywords: ["lc volant", "volant", "transcript", "transcribe", "transcription", "recording", "record a meeting", "video", "audio", "voice memo", "meeting notes", "session notes", "coaching notes", "report", "summary", "action items", "captions", "srt", "subtitles", "zoom recording", "otter", "plaud", "notetaker", "note taker", "record", "record now", "microphone", "connect zoom", "zoom cloud recording", "automatic"],
+  },
+  {
+    id: "client-portals",
+    category: "Sales",
+    question: "How do I give a client their own portal? What is a Client Portal?",
+    answer:
+      "Open Clients & Sales, then Client Portals (or press Open their portal on any contact). Pick the client and press Create their portal, then Email them the link. The link is private to them, so there is no password; if they lose it they can get it again at lccommandsuite.com/portal. Their portal shows your business name and logo and: their package with sessions left (a session is used when you mark their booking Attended in Calendars; use - and + to adjust by hand), upcoming bookings with Book buttons for the package's calendars, invoices to pay, the LC Volant session notes you choose to share (press Share in portal; your private notes and drafts never show), homework they tick off, goals, files and links (they can share files with you too, up to 50 MB) and messages. When you write, they get an email; when they write, you get an email and a bell notice. Turn off or New link stops the old link at once.",
+    keywords: ["client portal", "portal", "client page", "private link", "client login", "sessions left", "package", "session count", "homework", "client files", "share notes", "messages", "client messages", "attended"],
+  },
+  {
+    id: "client-care",
+    category: "Sales",
+    question: "How do I check in with my clients automatically? What is Client Care?",
+    answer:
+      "Open Clients & Sales, then Client Care. Everything is written and loaded switched off; turn on each piece you want: a 30-day check-in (30 days after someone becomes a client), a quarterly pulse (every 90 days), an exit survey (when you tag someone former-client) and Quiet clients (a task for you when a client has had no bookings, payments, emails or notes for 2 weeks; nothing is emailed automatically, and you can start the 3 ready quiet-client notes for them yourself). A client is anyone tagged client or customer (payments through the Suite add customer). Emails go from your own address with your own sign-off, so set up Contacts > Email sending first. Read or edit every email and form from the links on each card.",
+    keywords: ["client care", "check-in", "check in", "survey", "pulse", "quarterly", "exit survey", "former client", "quiet client", "client feedback", "retention", "nps"],
+  },
+  {
+    id: "help-any-app",
+    category: "Account & Settings",
+    question: "How do I get help with LC Volant, LC Spark or LC Fledge?",
+    answer:
+      "Every LifeCharter app uses the same support team. In LC Volant and LC Spark press Get help at the top of the page; in LC Fledge open Help in its left menu. Or open Help, then Contact Support, and choose the app under Which app is this about. You get a confirmation email and our reply comes by email too.",
+    keywords: ["help", "support", "volant help", "spark help", "fledge help", "contact support", "get help", "which app"],
   },
   {
     id: "as-whats-new",

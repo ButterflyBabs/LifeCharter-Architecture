@@ -1,2 +1,2 @@
-/** Client portals: Babs only until she has tested them (2026-10-18); true opens them to every account. */
-export const PORTAL_OPEN_TO_ALL = false;
+/** Client portals: open to every account since 2026-10-18 (Babs: "make it all live for all", after her tests). */
+export const PORTAL_OPEN_TO_ALL = true;

@@ -308,7 +308,6 @@ function ContactPayments({ contactId }: { contactId: string }) {
       )}
       {!d.invoices.length && !d.payments.length && <p className="text-sm text-[#7a8a99]">No payments yet.</p>}
       <a href={`/payments?contact=${contactId}`} className="text-sm font-semibold text-[#2E7C83] hover:underline">{d.connected ? "Send an invoice" : "Set up payments"}</a>
-      <a href={`/client-portals?contact=${contactId}`} className="ml-4 text-sm font-semibold text-[#2E7C83] hover:underline">Client portal</a>
     </div>
   );
 }
@@ -673,6 +672,12 @@ export default function ContactRecord({
         <VolantReports contactId={c.id} />
 
         <ContactPayments contactId={c.id} />
+
+        <div>
+          <p className={heading}>Client portal</p>
+          <a href={`/client-portals?contact=${c.id}`} className="text-sm font-semibold text-[#2E7C83] hover:underline">Open {c.first_name ? `${c.first_name}'s` : "their"} portal</a>
+          <span className="text-xs text-[#7a8a99]"> · sessions, homework, files, notes and messages in one private page</span>
+        </div>
 
         <ContactEmails contactId={c.id} name={fullName(c)} />
 
