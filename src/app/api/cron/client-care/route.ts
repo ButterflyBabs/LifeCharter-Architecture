@@ -4,6 +4,7 @@ import { housePlanId } from "@/lib/housePlan";
 import { DEMO_PLAN_NAME } from "@/lib/scoring/masterPlan";
 import { enrolContact } from "@/lib/sequences/engine";
 import { internalEmails, isInternalClient } from "@/lib/clientCare";
+import { runClientCare, type CareRun } from "@/lib/clientCareAccounts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -103,7 +104,20 @@ async function run(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, dry, checked: clients.length, series: out });
+  // 4. Every other account's own Client Care (task 1148): only accounts that opened the Client Care page have a
+  // settings row, and nothing runs for a piece they haven't switched on.
+  const { data: accounts } = await db.from("client_care_settings").select("master_plan_id").neq("master_plan_id", house).limit(2000);
+  const accountRuns: CareRun[] = [];
+  for (const acc of (accounts ?? []) as { master_plan_id: string }[]) {
+    try {
+      const r = await runClientCare(db, acc.master_plan_id, dry);
+      if (r.thirty.length || r.pulse.length || r.exit.length || r.quiet.length) accountRuns.push(r);
+    } catch (e) {
+      console.error("client care account run:", acc.master_plan_id, e instanceof Error ? e.message : e);
+    }
+  }
+
+  return NextResponse.json({ ok: true, dry, checked: clients.length, series: out, accounts: accountRuns });
 }
 export const GET = run;
 export const POST = run;
