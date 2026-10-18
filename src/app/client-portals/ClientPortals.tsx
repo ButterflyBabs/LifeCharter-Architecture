@@ -150,7 +150,7 @@ function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<s
       <section className={card}>
         <h2 className={h2}>{name}</h2>
         <p className="text-sm text-[#5b5f73] dark:text-[#b8a898]">{name} doesn&apos;t have a portal yet.</p>
-        <button className={`${primary} mt-3`} disabled={busy} onClick={() => void act({ action: "create" }, "Portal created. Email them the link when you're ready.")}><Plus className="h-4 w-4" />Create {d.contact.first_name || "their"} portal</button>
+        <button className={`${primary} mt-3`} disabled={busy} onClick={() => void act({ action: "create" }, "Portal created. Email them the link when you're ready.")}><Plus className="h-4 w-4" />Create {d.contact.first_name ? `${d.contact.first_name}'s` : "their"} portal</button>
       </section>
     );
 
