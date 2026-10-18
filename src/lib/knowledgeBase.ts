@@ -1488,6 +1488,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["event", "events", "webinar", "masterclass", "workshop", "challenge", "registration", "sign-up page", "reminder", "replay", "attendance", "zoom link", "live event", "5-day challenge"],
   },
   {
+    id: "landing-pages",
+    category: "Sales",
+    question: "How do I make a landing page (opt-in, webinar, sales or book a call)?",
+    answer:
+      "Open Clients & Sales, then Landing Pages. Type a page name if you like and pick a template: Opt-in (a freebie sign-up on one of your forms; sign-ups land in Contacts with that form's tags and campaign), Webinar or event (people save their seat for one of your Events right on the page and get its emails), Sales page (your offer's name and price with a Buy button to the offer's payment link, or a link you paste) or Book a call (your booking calendar right on the page; a paid booking page shows a button instead). Choose the form, event, offer or booking page it uses. To have your assistant write it, add a few notes (who it's for, the tone) and press Draft the words: it writes from your offer or event using your own AI key and never makes up results or testimonials; press Use on each part you want (or Use all), then Save. Change any words yourself, add testimonials (pick from your Testimonials shared with consent, or type them) and questions, pick colors, a font style and a main image, and see it in the live preview. Press Publish: the page is live at lccommandsuite.com/go/your-page and, if you set up your own short-link domain, at yourdomain/your-page too. Each page shows visits, sign-ups (or registrations, bookings or Buy clicks) and the rate for the last 30 days and all time. Running ads? Paste your Meta pixel ID under Ads tracking. Unpublish takes it offline; Duplicate copies it; Archive puts it away.",
+    keywords: ["landing page", "landing pages", "opt-in page", "squeeze page", "lead magnet", "freebie", "webinar page", "registration page", "sales page", "book a call page", "funnel", "page builder", "meta pixel", "conversion rate"],
+  },
+  {
     id: "programs",
     category: "Sales",
     question: "How do I run a group program or cohort? What is Programs?",

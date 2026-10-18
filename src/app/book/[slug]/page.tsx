@@ -60,6 +60,15 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   const [more, setMore] = useState(false);
   const [unpaid, setUnpaid] = useState(false);
   useEffect(() => setUnpaid(new URLSearchParams(window.location.search).get("unpaid") === "1"), []);
+  // Shown inside a landing page (task 1153): tell the page how tall to make its frame.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get("lp") || window.parent === window) return;
+    const send = () => window.parent.postMessage({ type: "lccs-height", h: document.documentElement.scrollHeight }, "*");
+    const ro = new ResizeObserver(send);
+    ro.observe(document.body);
+    send();
+    return () => ro.disconnect();
+  }, []);
   const [now, setNow] = useState(() => new Date());
   // Hold the page invisible only until the calendar says which brand it wears (never longer than a moment).
   const [waited, setWaited] = useState(false);

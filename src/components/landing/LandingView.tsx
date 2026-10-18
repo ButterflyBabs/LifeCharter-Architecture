@@ -63,6 +63,7 @@ export default function LandingView({ page, preview = false }: { page: PublicPag
   const [done, setDone] = useState<{ text: string; link?: string | null } | null>(null);
   const [err, setErr] = useState("");
   const act = useRef<HTMLDivElement>(null);
+  const [frameH, setFrameH] = useState(1100);
 
   useEffect(() => {
     setTz(Intl.DateTimeFormat().resolvedOptions().timeZone || undefined);
@@ -72,7 +73,10 @@ export default function LandingView({ page, preview = false }: { page: PublicPag
     fetch(`/api/lp/${page.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "view", v: id }) }).catch(() => null);
     if (page.pixelId) loadPixel(page.pixelId);
     const onMsg = (e: MessageEvent) => {
-      if (e.origin === SUITE && (e.data as { type?: string })?.type === "lccs-booked") track("Schedule");
+      if (e.origin !== SUITE) return;
+      const d = e.data as { type?: string; h?: number };
+      if (d?.type === "lccs-booked") track("Schedule");
+      if (d?.type === "lccs-height" && typeof d.h === "number" && d.h > 300) setFrameH(Math.min(4000, Math.ceil(d.h)));
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -194,7 +198,7 @@ export default function LandingView({ page, preview = false }: { page: PublicPag
           {err && <p className="mt-3 text-sm text-[#8a2f2f]">{err}</p>}
         </div>
       );
-    return <iframe title={page.booking.name} src={href} className="h-[1100px] w-full rounded-2xl border-0 bg-white shadow-sm" />;
+    return <iframe title={page.booking.name} src={href} style={{ height: frameH }} className="w-full rounded-2xl border-0 bg-white shadow-sm" />;
   })();
 
   return (
