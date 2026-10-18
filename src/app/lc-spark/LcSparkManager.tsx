@@ -561,7 +561,7 @@ function LinkedInTab() {
       </div>
       <div className="rounded-xl border border-[#1a2b4a]/10 p-4 space-y-1 text-[#7a8a99]">
         <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Other ways LinkedIn can feed LC Spark and the Suite</p>
-        <p>LinkedIn Lead Gen Forms can send each new lead to the Suite through Make, the same way your Facebook lead ads do. Leads you message by hand are tracked on the Outreach pipeline cards.</p>
+        <p>LinkedIn Lead Gen Forms can send each new lead to the Suite through Make, the same way your Facebook lead ads do. The address and steps are on <a className="underline text-[#2E7C83]" href="/meta-leads">Clients &amp; Sales, Meta Lead Ads</a>, under LinkedIn lead forms. Leads you message by hand are tracked on the Outreach pipeline cards.</p>
       </div>
     </div>
   );
