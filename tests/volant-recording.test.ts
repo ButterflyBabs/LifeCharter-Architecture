@@ -29,7 +29,8 @@ test("turns are cleaned, voices listed in speaking order, and only real voices c
 
 test("the transcript uses the names given, and captions are timed", () => {
     const u = cleanUtterances(raw);
-    const t = transcriptText(u, { A: "Babs", B: "Eloise" });
+    const t = transcriptText(u, { A: "Babs ", B: "Eloise" });
+    assert.equal(t.split("\n")[0].slice(0, 6), "Babs: ");
     assert.equal(t.split("\n")[1], "Eloise: Busy but good.");
     assert.match(transcriptText(u, {}, true), /^\[0:00\] Speaker A:/);
     const srt = toSrt(u);

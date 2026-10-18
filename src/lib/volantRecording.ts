@@ -86,9 +86,12 @@ const clock = (ms: number) => {
   return h ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`;
 };
 
+/** The name typed for a voice (trimmed), or "Speaker A". */
+const voiceName = (speaker: string, names: Record<string, string>) => (names[speaker] || "").trim() || `Speaker ${speaker}`;
+
 /** The transcript as text, one line per turn, using the names the person gave each voice. */
 export function transcriptText(utts: Utterance[], names: Record<string, string> = {}, withTimes = false): string {
-  return utts.map((u) => `${withTimes ? `[${clock(u.start_ms)}] ` : ""}${names[u.speaker] || `Speaker ${u.speaker}`}: ${u.text}`).join("\n");
+  return utts.map((u) => `${withTimes ? `[${clock(u.start_ms)}] ` : ""}${voiceName(u.speaker, names)}: ${u.text}`).join("\n");
 }
 
 /** A caption file (.srt) from the turns: long turns are split into short timed lines. */
@@ -111,7 +114,7 @@ export function toSrt(utts: Utterance[], names: Record<string, string> = {}, wit
     chunks.forEach((c, i) => {
       const a = u.start_ms + Math.round((span * i) / chunks.length);
       const b = u.start_ms + Math.round((span * (i + 1)) / chunks.length);
-      const who = withNames && i === 0 ? `${names[u.speaker] || `Speaker ${u.speaker}`}: ` : "";
+      const who = withNames && i === 0 ? `${voiceName(u.speaker, names)}: ` : "";
       cues.push(`${++n}\n${stamp(a)} --> ${stamp(b)}\n${who}${c}`);
     });
   }
