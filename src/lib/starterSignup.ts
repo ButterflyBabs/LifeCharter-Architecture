@@ -13,7 +13,6 @@ import { sendRendered } from "@/lib/email/accountReadyEmail";
 // Three things move a row forward, whichever comes first: the success page (polls while the client waits), the webhook
 // (starts it), and the every-two-minutes job (finishes it if the client signed after closing the page, and sends reminders).
 
-const API_BASE = (process.env.BOLDSIGN_API_BASE || "https://api.boldsign.com").replace(/\/$/, "");
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com").replace(/\/$/, "");
 const HOUR = 3_600_000;
 
@@ -41,19 +40,10 @@ export async function getSignup(sessionId: string): Promise<StarterRow | null> {
   return (data as StarterRow | null) ?? null;
 }
 
-// Has the client (not AmiLynne's countersignature) finished signing? Agreements go through the Suite's own
-// e-signature since 2026-10-18; one sent through BoldSign before the switch is still checked there.
+// Has the client (not AmiLynne's countersignature) finished signing the Year-1 Operating Agreement the Suite sent?
 export async function clientHasSigned(documentId: string, clientEmail: string): Promise<boolean> {
   const suite = await suiteSignerStatus(documentId, clientEmail);
-  if (suite) return suite.status === "signed";
-  const key = process.env.BOLDSIGN_API_KEY;
-  if (!key) return false;
-  const res = await fetch(`${API_BASE}/v1/document/properties?documentId=${encodeURIComponent(documentId)}`, { headers: { "X-API-KEY": key, Accept: "application/json" } }).catch(() => null);
-  if (!res?.ok) return false;
-  const doc = (await res.json().catch(() => null)) as { status?: string; signerDetails?: { signerEmail?: string; status?: string }[] } | null;
-  if (!doc) return false;
-  const mine = (doc.signerDetails ?? []).find((s) => (s.signerEmail ?? "").toLowerCase() === clientEmail.toLowerCase());
-  return (mine?.status ?? "").toLowerCase() === "completed" || (doc.status ?? "").toLowerCase() === "completed";
+  return suite?.status === "signed";
 }
 
 async function suiteSignerStatus(documentId: string, clientEmail: string): Promise<{ id: string; status: string; token: string | null; name: string } | null> {
@@ -67,24 +57,14 @@ async function suiteSignerStatus(documentId: string, clientEmail: string): Promi
 
 export async function remindSigner(documentId: string, clientEmail: string): Promise<void> {
   const suite = await suiteSignerStatus(documentId, clientEmail);
-  if (suite) {
-    if (suite.status === "signed" || !suite.token) return;
-    const db = createServerClient();
-    const { data: doc } = await db.from("sign_documents").select("master_plan_id, status").eq("id", documentId).maybeSingle();
-    if (!doc || doc.status !== "sent") return;
-    const { signMail, signerUrl, audit } = await import("@/lib/esignServer");
-    const ok = await signMail(db, doc.master_plan_id as string, { to: clientEmail, subject: "Reminder: your Year-1 Operating Agreement", heading: "A quick reminder", lines: [`Hi ${suite.name.split(" ")[0] || "there"}, your LifeCharter Command Suite account opens the moment you sign your Year-1 Operating Agreement. It takes about two minutes.`, "Head up - Wings out. Babs"], button: { label: "Review and sign", url: signerUrl(suite.token) } });
-    await db.from("sign_signers").update({ last_reminded_at: new Date().toISOString() }).eq("id", suite.id);
-    await audit(db, documentId, ok ? "Reminder sent" : "Reminder failed", { signerId: suite.id });
-    return;
-  }
-  const key = process.env.BOLDSIGN_API_KEY;
-  if (!key) return;
-  await fetch(`${API_BASE}/v1/document/remind?documentId=${encodeURIComponent(documentId)}`, {
-    method: "POST",
-    headers: { "X-API-KEY": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ receiverEmails: [clientEmail], message: "A quick reminder: your LifeCharter Command Suite account opens the moment you sign your Year-1 Operating Agreement. It takes about two minutes. Head up - Wings out. Babs" }),
-  }).catch(() => null);
+  if (!suite || suite.status === "signed" || !suite.token) return;
+  const db = createServerClient();
+  const { data: doc } = await db.from("sign_documents").select("master_plan_id, status").eq("id", documentId).maybeSingle();
+  if (!doc || doc.status !== "sent") return;
+  const { signMail, signerUrl, audit } = await import("@/lib/esignServer");
+  const ok = await signMail(db, doc.master_plan_id as string, { to: clientEmail, subject: "Reminder: your Year-1 Operating Agreement", heading: "A quick reminder", lines: [`Hi ${suite.name.split(" ")[0] || "there"}, your LifeCharter Command Suite account opens the moment you sign your Year-1 Operating Agreement. It takes about two minutes.`, "Head up - Wings out. Babs"], button: { label: "Review and sign", url: signerUrl(suite.token) } });
+  await db.from("sign_signers").update({ last_reminded_at: new Date().toISOString() }).eq("id", suite.id);
+  await audit(db, documentId, ok ? "Reminder sent" : "Reminder failed", { signerId: suite.id });
 }
 
 /**
@@ -223,7 +203,7 @@ export async function processPendingSignups(): Promise<{ checked: number; opened
       }
       continue;
     }
-    // Not signed yet: a nudge from BoldSign at about 1 day and 3 days (once each).
+    // Not signed yet: a reminder email at about 1 day and 3 days (once each).
     const marks = [24 * HOUR, 72 * HOUR];
     const stage = marks.filter((m) => age >= m).length;
     const done = row.last_error?.startsWith("reminded:") ? Number(row.last_error.split(":")[1]) : 0;

@@ -3,15 +3,15 @@ import { logEvent, upsertContact } from "@/lib/crm";
 import { fillPlaceholders, newToken } from "@/lib/esign";
 import { loadDoc, sendDocument } from "@/lib/esignServer";
 
-// Sends the Year-1 Operating Agreement for e-signature through the Suite's own Agreements & Proposals (task 1094;
-// BoldSign retired 2026-10-18 after the attorney approved the Suite version). Used by the Sales Reference page
+// Sends the Year-1 Operating Agreement for e-signature through the Suite's own Agreements & Proposals (attorney
+// approved 2026-10-18). Used by the Sales Reference page
 // (Marcello, on a call) and by the self-serve Starter sign-up (automatic, right after payment). The document is made
 // from the house template "LCCS Year-1 Operating Agreement" with everything we know filled in; the Client signs first,
-// then AmiLynne countersigns. Agreements sent through BoldSign before the switch are still checked there.
+// then AmiLynne countersigns.
 
 const TEMPLATE_KEY = "lccs-year1";
 const COMPANY_NAME = "AmiLynne Carroll";
-const COMPANY_EMAIL = process.env.YEAR1_COMPANY_SIGNER_EMAIL || process.env.BOLDSIGN_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
+const COMPANY_EMAIL = process.env.YEAR1_COMPANY_SIGNER_EMAIL || "amilynne@amilynnecarroll.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 
 export const TIER_FIELD: Record<string, string> = { Starter: "Starter", Growth: "Growth", VIP: "VIP" };
@@ -33,8 +33,6 @@ export interface AgreementInput {
 }
 
 export type AgreementResult = { ok: true; documentId: string } | { ok: false; status: number; error: string };
-
-export const agreementConfigured = () => true;
 
 export async function sendYear1Agreement(i: AgreementInput): Promise<AgreementResult> {
   const name = i.name.trim().slice(0, 120);

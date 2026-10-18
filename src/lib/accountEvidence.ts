@@ -5,7 +5,7 @@ import { clientHasSigned } from "@/lib/starterSignup";
 // Babs's rule (2026-10-17): no Command Suite account is ever created without a payment AND the client's signature on the
 // Year-1 Operating Agreement. This is the one place that answers "may this person's account be created yet?".
 //   paid:   the Stripe webhook put "Bought LifeCharter Command Suite ..." on their contact (self-serve and sales checkouts)
-//   signed: BoldSign says the CLIENT has signed the agreement the Suite sent them (AmiLynne's countersignature does not hold
+//   signed: the Suite's e-signature says the CLIENT has signed the agreement the Suite sent them (AmiLynne's countersignature does not hold
 //           anyone up: it follows the client's)
 // A person who already has a Command Suite account is only being updated, so nothing is held back for them.
 

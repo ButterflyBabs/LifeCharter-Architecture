@@ -4,7 +4,7 @@
  * Year-1 Operating Agreement. Verifies the session actually paid (never trust
  * the client). The account is NOT created at payment: it is created here (or
  * by the two-minute job, /api/cron/starter-signups, if they signed and left)
- * only after BoldSign shows the client's signature. Then it hands back a
+ * only after the Suite shows the client's signature. Then it hands back a
  * Supabase recovery link so they land signed-in with a chance to set a
  * password, synchronously in their own browser.
  */
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const test = session.metadata?.test === "true";
 
     // The account is created only after the client signs the Year-1 Operating Agreement. Until then this answers
-    // "awaiting_signature" and the success page keeps asking; the moment BoldSign shows their signature, it opens the account.
+    // "awaiting_signature" and the success page keeps asking; the moment the Suite shows their signature, it opens the account.
     let row = await getSignup(sessionId);
     if (!row) row = await startStarterSignup(session); // the webhook is normally first; whoever gets here first starts it, once
     if (!row) return NextResponse.json({ error: "Could not start your sign-up" }, { status: 500 });

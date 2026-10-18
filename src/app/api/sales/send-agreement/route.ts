@@ -2,17 +2,13 @@ import { NextResponse } from "next/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { sessionUser } from "@/lib/authz";
 import { ownerMasterPlanId } from "@/lib/housePlan";
-import { agreementConfigured, sendYear1Agreement } from "@/lib/year1Agreement";
+import { sendYear1Agreement } from "@/lib/year1Agreement";
 
 export const dynamic = "force-dynamic";
 
 // Sends the Year-1 Operating Agreement for signature from /sales-reference (Babs, 2026-10-16). The sending itself
 // lives in src/lib/year1Agreement.ts (shared with the automatic send after a self-serve Starter sign-up).
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
-
-export async function GET() {
-  return NextResponse.json({ configured: agreementConfigured() });
-}
 
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });

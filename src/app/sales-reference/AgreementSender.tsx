@@ -16,14 +16,6 @@ export function AgreementSender() {
   const [confirm, setConfirm] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");
   const [msg, setMsg] = useState("");
-  const [configured, setConfigured] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetch("/api/sales/send-agreement", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setConfigured(Boolean(d?.configured)))
-      .catch(() => setConfigured(null));
-  }, []);
   useEffect(() => {
     if (!prefill || version === 0) return;
     if (prefill.fullName) setName(prefill.fullName);
@@ -61,12 +53,6 @@ export function AgreementSender() {
   const field = "w-full rounded-lg border border-[#F3EEE4]/20 bg-[#141826] px-3 py-2 text-sm text-[#F3EEE4] placeholder:text-[#b8a898]/60 focus:outline-none focus:border-[#c9a227]";
   return (
     <div className="mt-3 rounded-lg border border-emerald-400/30 bg-[#141826] p-3">
-      {configured === false && (
-        <p className="mb-2 text-xs text-[#E3C27C]">
-          Sending from here isn&rsquo;t switched on yet. For now, send it from BoldSign:{" "}
-          <a href="https://app.boldsign.com/templates/all" target="_blank" rel="noopener noreferrer" className="underline">Templates</a>, open &ldquo;LCCS Year-1 Operating Agreement&rdquo;, Use template.
-        </p>
-      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <input className={field} aria-label="Client name" placeholder="Client name" value={name} onChange={(e) => { setName(e.target.value); setConfirm(false); setState("idle"); }} />
         <input className={field} aria-label="Client email" type="email" placeholder="Client email" value={email} onChange={(e) => { setEmail(e.target.value); setConfirm(false); setState("idle"); }} />
@@ -93,7 +79,7 @@ export function AgreementSender() {
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {!confirm ? (
-            <button type="button" disabled={!ready || state === "busy" || configured === false} onClick={() => setConfirm(true)} className="rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] px-4 py-2 text-sm font-semibold text-[#1a2b4a] disabled:opacity-50">
+            <button type="button" disabled={!ready || state === "busy"} onClick={() => setConfirm(true)} className="rounded-lg bg-gradient-to-r from-[#D4AF63] to-[#c9a227] px-4 py-2 text-sm font-semibold text-[#1a2b4a] disabled:opacity-50">
               Send the Year-1 Agreement for signature
             </button>
           ) : (

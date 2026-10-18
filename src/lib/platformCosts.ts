@@ -25,7 +25,6 @@ export const VENDORS: Vendor[] = [
   { key: "modal", label: "Modal (Fledge clips)", category: "hosting", domain: "modal.com", countsByDefault: true },
   { key: "resend", label: "Resend", category: "email", domain: "resend.com", countsByDefault: true },
   { key: "cloudflare", label: "Cloudflare", category: "hosting", domain: "cloudflare.com", countsByDefault: true },
-  { key: "boldsign", label: "BoldSign (e-signature)", category: "tools", domain: "boldsign.com", countsByDefault: true, hint: "On the free plan today ($0). Receipts start when a paid plan does." },
 ];
 
 export const vendorByKey = (k: string) => VENDORS.find((v) => v.key === k) ?? null;
