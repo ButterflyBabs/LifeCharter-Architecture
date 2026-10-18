@@ -19,6 +19,10 @@ async function account(request?: Request) {
 }
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const isDay = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const days = (v: unknown) => {
+  const n = Math.floor(Number(v));
+  return v !== null && v !== "" && Number.isFinite(n) && n >= 1 && n <= 3650 ? n : null;
+};
 const link = (v: unknown) => (/^https?:\/\//i.test(str(v, 1000)) ? str(v, 1000) : null);
 const nameOf = (c: { first_name?: string | null; last_name?: string | null; email?: string | null } | undefined) => [c?.first_name, c?.last_name].filter(Boolean).join(" ") || c?.email || "Someone";
 
@@ -29,7 +33,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) {
     const [{ data: progs }, { data: members }] = await Promise.all([
-      db.from("programs").select("id, name, starts_on, ends_on, status, offer_id").eq("master_plan_id", a.planId).order("created_at", { ascending: false }),
+      db.from("programs").select("id, name, starts_on, ends_on, status, offer_id, kind").eq("master_plan_id", a.planId).order("created_at", { ascending: false }),
       db.from("program_members").select("program_id").eq("master_plan_id", a.planId).eq("status", "active"),
     ]);
     const count = new Map<string, number>();
@@ -39,7 +43,7 @@ export async function GET(request: Request) {
   const { data: prog } = await db.from("programs").select("*").eq("id", id).eq("master_plan_id", a.planId).maybeSingle();
   if (!prog) return NextResponse.json({ error: "That program could not be found." }, { status: 404 });
   const [{ data: members }, { data: sessions }, { data: lessons }, { data: tasks }, { data: posts }, { data: reports }, { data: offers }] = await Promise.all([
-    db.from("program_members").select("contact_id, status, source, joined_at").eq("program_id", id).order("joined_at"),
+    db.from("program_members").select("contact_id, status, source, joined_at, ended_at, end_reason").eq("program_id", id).order("joined_at"),
     db.from("program_sessions").select("*").eq("program_id", id).order("starts_at"),
     db.from("program_lessons").select("*").eq("program_id", id).order("position").order("created_at"),
     db.from("program_tasks").select("*").eq("program_id", id).order("position").order("created_at"),
@@ -49,6 +53,10 @@ export async function GET(request: Request) {
   ]);
   const ids = Array.from(new Set([...((members ?? []) as { contact_id: string }[]).map((m) => m.contact_id), ...((posts ?? []) as { contact_id: string | null }[]).map((p) => p.contact_id).filter(Boolean)])) as string[];
   const taskIds = ((tasks ?? []) as { id: string }[]).map((t) => t.id);
+  const lessonIds = ((lessons ?? []) as { id: string }[]).map((l) => l.id);
+  const { data: ldone } = lessonIds.length ? await db.from("program_lesson_done").select("lesson_id, contact_id").in("lesson_id", lessonIds) : { data: [] };
+  const lessonsDone = new Map<string, number>();
+  for (const x of (ldone ?? []) as { contact_id: string }[]) lessonsDone.set(x.contact_id, (lessonsDone.get(x.contact_id) ?? 0) + 1);
   const [{ data: people }, { data: portals }, { data: done }] = await Promise.all([
     ids.length ? db.from("seq_contacts").select("id, first_name, last_name, email").in("id", ids) : Promise.resolve({ data: [] }),
     ids.length ? db.from("client_portals").select("contact_id, active, sent_at, last_seen_at").in("contact_id", ids) : Promise.resolve({ data: [] }),
@@ -58,7 +66,7 @@ export async function GET(request: Request) {
   const portalOf = new Map(((portals ?? []) as { contact_id: string; active: boolean; sent_at: string | null; last_seen_at: string | null }[]).map((p) => [p.contact_id, p]));
   return NextResponse.json({
     program: prog,
-    members: ((members ?? []) as { contact_id: string; status: string; source: string | null; joined_at: string }[]).map((m) => ({ ...m, name: nameOf(byId.get(m.contact_id)), email: byId.get(m.contact_id)?.email ?? "", portal: portalOf.get(m.contact_id) ?? null })),
+    members: ((members ?? []) as { contact_id: string; status: string; source: string | null; joined_at: string }[]).map((m) => ({ ...m, name: nameOf(byId.get(m.contact_id)), email: byId.get(m.contact_id)?.email ?? "", portal: portalOf.get(m.contact_id) ?? null, lessonsDone: lessonsDone.get(m.contact_id) ?? 0 })),
     sessions: sessions ?? [],
     lessons: lessons ?? [],
     tasks: ((tasks ?? []) as { id: string }[]).map((t) => ({ ...t, doneBy: ((done ?? []) as { task_id: string; contact_id: string }[]).filter((d) => d.task_id === t.id).map((d) => byId.get(d.contact_id)?.first_name || "Someone") })),
@@ -77,7 +85,9 @@ export async function POST(request: Request) {
   if (b.action === "create") {
     const name = str(b.name, 160);
     if (!name) return NextResponse.json({ error: "Name the program." }, { status: 400 });
-    const { data, error } = await db.from("programs").insert({ master_plan_id: a.planId, name }).select("id").single();
+    const kind = ["cohort", "course", "membership"].includes(String(b.kind)) ? String(b.kind) : "cohort";
+    // A self-paced course or a membership starts with the group conversation off (people join at different times).
+    const { data, error } = await db.from("programs").insert({ master_plan_id: a.planId, name, kind, feed_on: kind === "cohort" }).select("id").single();
     return error || !data ? NextResponse.json({ error: "Couldn't create it." }, { status: 500 }) : NextResponse.json({ ok: true, id: data.id });
   }
   const programId = str(b.id, 60);
@@ -94,6 +104,12 @@ export async function POST(request: Request) {
       if (b.endsOn !== undefined) patch.ends_on = isDay(b.endsOn) ? b.endsOn : null;
       if (typeof b.feedOn === "boolean") patch.feed_on = b.feedOn;
       if (b.status === "active" || b.status === "archived") patch.status = b.status;
+      if (["cohort", "course", "membership"].includes(String(b.kind))) patch.kind = b.kind;
+      if (b.accessDays !== undefined) {
+        const n = Math.floor(Number(b.accessDays));
+        patch.access_days = Number.isFinite(n) && n >= 1 && n <= 3650 ? n : null;
+      }
+      if (b.completionMessage !== undefined) patch.completion_message = str(b.completionMessage, 2000) || null;
       if (b.offerId !== undefined) {
         const { data: o } = str(b.offerId, 60) ? await db.from("sales_offers").select("id").eq("id", str(b.offerId, 60)).eq("master_plan_id", a.planId).maybeSingle() : { data: null };
         patch.offer_id = (o?.id as string) ?? null;
@@ -130,7 +146,7 @@ export async function POST(request: Request) {
       const title = str(b.title, 200);
       if (!title) return NextResponse.json({ error: "Give the lesson a title." }, { status: 400 });
       const { count } = await db.from("program_lessons").select("id", { count: "exact", head: true }).eq("program_id", programId);
-      await db.from("program_lessons").insert({ program_id: programId, title, body: str(b.body, 8000) || null, url: link(b.url), video_url: link(b.videoUrl), opens_on: isDay(b.opensOn) ? b.opensOn : null, position: count ?? 0 });
+      await db.from("program_lessons").insert({ program_id: programId, title, body: str(b.body, 8000) || null, url: link(b.url), video_url: link(b.videoUrl), opens_on: isDay(b.opensOn) ? b.opensOn : null, open_after_days: days(b.openAfterDays), module: str(b.module, 120) || null, position: count ?? 0 });
       return ok;
     }
     case "lesson-update": {
@@ -140,6 +156,8 @@ export async function POST(request: Request) {
       if (b.url !== undefined) patch.url = link(b.url);
       if (b.videoUrl !== undefined) patch.video_url = link(b.videoUrl);
       if (b.opensOn !== undefined) patch.opens_on = isDay(b.opensOn) ? b.opensOn : null;
+      if (b.openAfterDays !== undefined) patch.open_after_days = days(b.openAfterDays);
+      if (b.module !== undefined) patch.module = str(b.module, 120) || null;
       await db.from("program_lessons").update(patch).eq("id", str(b.lessonId, 60)).eq("program_id", programId);
       return ok;
     }

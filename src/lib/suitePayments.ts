@@ -444,6 +444,24 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
       return "updated";
     }
 
+    case "customer.subscription.deleted": {
+      // A membership's monthly payment was cancelled (task 1152): that member's membership access ends.
+      // Payment plans also end as a subscription, but a finished payment plan keeps its course, so only plain
+      // subscriptions sold through an offer count here.
+      const sub = event.data.object as Stripe.Subscription;
+      const m = meta(sub.metadata);
+      if (!m.lccs_offer_id || m.lccs_plan_payments) return "not a membership";
+      const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      const customer = await s.customers.retrieve(customerId, {}, opts).catch(() => null);
+      const email = customer && !("deleted" in customer && customer.deleted) ? String((customer as Stripe.Customer).email || "").toLowerCase() : "";
+      if (!email) return "no customer email";
+      const { data: c } = await db.from("seq_contacts").select("id").eq("master_plan_id", planId).eq("email", email).maybeSingle();
+      if (!c) return "no contact";
+      const { endMembershipsForOffer } = await import("@/lib/programs");
+      const n = await endMembershipsForOffer(db, planId, m.lccs_offer_id, c.id as string);
+      return `memberships ended: ${n}`;
+    }
+
     case "charge.refunded": {
       const ch = event.data.object as Stripe.Charge;
       const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
@@ -471,5 +489,6 @@ export const CONNECT_EVENTS = [
   "invoice.voided",
   "invoice.marked_uncollectible",
   "subscription_schedule.canceled",
+  "customer.subscription.deleted",
   "charge.refunded",
 ] as const;

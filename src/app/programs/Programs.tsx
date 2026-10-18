@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, GraduationCap, Loader2, Paperclip, Pin, Plus, Send, Trash2 } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
+import { KINDS, kindLabel, percent, type ProgramKind } from "@/lib/courses";
 
-type ProgramRow = { id: string; name: string; starts_on: string | null; ends_on: string | null; status: string; members: number };
+type ProgramRow = { id: string; name: string; starts_on: string | null; ends_on: string | null; status: string; members: number; kind: ProgramKind };
 type Detail = {
-  program: { id: string; name: string; description: string | null; offer_id: string | null; starts_on: string | null; ends_on: string | null; feed_on: boolean; status: string };
-  members: { contact_id: string; status: string; source: string | null; name: string; email: string; portal: { active: boolean; sent_at: string | null; last_seen_at: string | null } | null }[];
+  program: { id: string; name: string; description: string | null; offer_id: string | null; starts_on: string | null; ends_on: string | null; feed_on: boolean; status: string; kind: ProgramKind; access_days: number | null; completion_message: string | null };
+  members: { contact_id: string; status: string; source: string | null; name: string; email: string; joined_at: string; end_reason: string | null; lessonsDone: number; portal: { active: boolean; sent_at: string | null; last_seen_at: string | null } | null }[];
   sessions: { id: string; title: string; starts_at: string; duration_min: number; join_url: string | null }[];
-  lessons: { id: string; title: string; body: string | null; url: string | null; video_url: string | null; file_name: string | null; opens_on: string | null }[];
+  lessons: { id: string; title: string; body: string | null; url: string | null; video_url: string | null; file_name: string | null; opens_on: string | null; open_after_days: number | null; module: string | null }[];
   tasks: { id: string; title: string; due_on: string | null; doneBy: string[] }[];
   posts: { id: string; parent_id: string | null; author: string; by: string; body: string; pinned: boolean; created_at: string }[];
   reports: { id: string; title: string; session_date: string; program_id: string | null; program_shared_at: string | null }[];
@@ -30,6 +31,7 @@ export default function Programs({ programId }: { programId: string | null }) {
   const [sel, setSel] = useState<string | null>(programId);
   const [d, setD] = useState<Detail | null>(null);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<ProgramKind>("course");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -70,7 +72,7 @@ export default function Programs({ programId }: { programId: string | null }) {
   }, [sel, loadOne, loadList]);
 
   async function create() {
-    const j = await act({ action: "create", name }, "Program created. Add members, sessions and lessons below.");
+    const j = await act({ action: "create", name, kind }, kind === "cohort" ? "Program created. Add members, sessions and lessons below." : `${kindLabel(kind)} created. Add your lessons (in modules if you like), then connect the offer it's sold as.`);
     if (j?.id) {
       setName("");
       setSel(j.id as string);
@@ -83,26 +85,31 @@ export default function Programs({ programId }: { programId: string | null }) {
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1a2b4a] to-[#c9a227]"><GraduationCap className="h-6 w-6 text-white" /></div>
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Clients &amp; Sales</p>
-          <h1 className="text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Programs</h1>
-          <p className="mt-1 max-w-3xl text-[15px] text-[#5b5f73] dark:text-[#b8a898]">Run group programs and cohorts: members, live sessions, lessons that open when you choose, group homework, a group conversation and session notes, all inside each member&apos;s own client portal.</p>
+          <h1 className="text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Courses &amp; Memberships</h1>
+          <p className="mt-1 max-w-3xl text-[15px] text-[#5b5f73] dark:text-[#b8a898]">Build your courses, memberships and group programs right here: lessons in modules that open on a schedule, progress for each member, live sessions, homework and a group conversation, all inside each member&apos;s own client portal. Connect an offer and buyers join automatically.</p>
         </div>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="space-y-3">
           <div className={card}>
-            <label className={label} htmlFor="prog-new">New program</label>
-            <input id="prog-new" className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Spring 2027 Cohort" />
+            <label className={label} htmlFor="prog-kind">Make a new…</label>
+            <select id="prog-kind" className={`${input} mb-2`} value={kind} onChange={(e) => setKind(e.target.value as ProgramKind)}>
+              {KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
+            </select>
+            <p className="mb-2 text-xs text-[#7b6b8d]">{KINDS.find((k) => k.key === kind)?.blurb}</p>
+            <label className={label} htmlFor="prog-new">Name</label>
+            <input id="prog-new" className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder={kind === "course" ? "Brand Voice in 30 Days" : kind === "membership" ? "The Inner Circle" : "Spring 2027 Cohort"} />
             <button className={`${primary} mt-2`} disabled={busy || !name.trim()} onClick={() => void create()}><Plus className="h-4 w-4" />Create</button>
           </div>
           <div className={`${card} p-0`}>
-            {list === null ? <p className="p-4 text-sm text-[#7b6b8d]">Loading…</p> : !list.length ? <p className="p-4 text-sm text-[#7b6b8d]">No programs yet.</p> : (
+            {list === null ? <p className="p-4 text-sm text-[#7b6b8d]">Loading…</p> : !list.length ? <p className="p-4 text-sm text-[#7b6b8d]">Nothing yet. Make your first course above.</p> : (
               <ul className="divide-y divide-[#1a2b4a]/10">
                 {list.map((p) => (
                   <li key={p.id}>
                     <button type="button" onClick={() => setSel(p.id)} className={`block w-full px-4 py-3 text-left hover:bg-[#1a2b4a]/5 ${sel === p.id ? "bg-[#c9a227]/10" : ""}`}>
                       <span className="block truncate font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</span>
-                      <span className="block text-xs text-[#7b6b8d]">{p.members} member{p.members === 1 ? "" : "s"}{p.status === "archived" ? " · archived" : p.starts_on ? ` · starts ${day(p.starts_on)}` : ""}</span>
+                      <span className="block text-xs text-[#7b6b8d]">{kindLabel(p.kind)} · {p.members} member{p.members === 1 ? "" : "s"}{p.status === "archived" ? " · archived" : p.starts_on ? ` · starts ${day(p.starts_on)}` : ""}</span>
                     </button>
                   </li>
                 ))}
@@ -123,12 +130,13 @@ export default function Programs({ programId }: { programId: string | null }) {
 
 function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<string, unknown>, ok?: string) => Promise<Record<string, unknown> | null>; busy: boolean; setMsg: (m: string) => void; reload: () => Promise<void> }) {
   const p = d.program;
-  const [info, setInfo] = useState({ name: p.name, description: p.description ?? "", startsOn: p.starts_on ?? "", endsOn: p.ends_on ?? "", offerId: p.offer_id ?? "", feedOn: p.feed_on });
+  const [info, setInfo] = useState({ name: p.name, description: p.description ?? "", startsOn: p.starts_on ?? "", endsOn: p.ends_on ?? "", offerId: p.offer_id ?? "", feedOn: p.feed_on, kind: p.kind, accessDays: p.access_days ? String(p.access_days) : "", completionMessage: p.completion_message ?? "" });
+  const selfPaced = info.kind !== "cohort";
   const [who, setWho] = useState("");
   const [pick, setPick] = useState<LookupContact | null>(null);
   const [sendLink, setSendLink] = useState(true);
   const [ses, setSes] = useState({ title: "", startsAt: "", durationMin: "60", joinUrl: "" });
-  const [les, setLes] = useState({ title: "", opensOn: "", videoUrl: "", url: "", body: "" });
+  const [les, setLes] = useState({ title: "", opensOn: "", openAfterDays: "", module: d.lessons.length ? d.lessons[d.lessons.length - 1].module ?? "" : "", videoUrl: "", url: "", body: "" });
   const [task, setTask] = useState({ title: "", dueOn: "" });
   const [post, setPost] = useState("");
   const [reply, setReply] = useState<Record<string, string>>({});
@@ -149,13 +157,20 @@ function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<s
   return (
     <>
       <section className={card}>
-        <h2 className={h2}>Program details</h2>
+        <h2 className={h2}>{kindLabel(p.kind)} details</h2>
         <div className="grid gap-3 md:grid-cols-2">
+          <div><label className={label} htmlFor="p-kind">Type</label><select id="p-kind" className={input} value={info.kind} onChange={(e) => setInfo({ ...info, kind: e.target.value as ProgramKind })}>{KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}</select></div>
+          {info.kind === "course" ? (
+            <div><label className={label} htmlFor="p-access">Access length in days (empty = lifetime)</label><input id="p-access" inputMode="numeric" className={input} value={info.accessDays} onChange={(e) => setInfo({ ...info, accessDays: e.target.value.replace(/[^0-9]/g, "") })} placeholder="365" /></div>
+          ) : info.kind === "membership" ? (
+            <p className="self-end pb-2 text-xs text-[#7b6b8d]">Access lasts while they&apos;re a member. If their monthly payment is cancelled, access ends on its own.</p>
+          ) : <div />}
           <div><label className={label} htmlFor="p-name">Name</label><input id="p-name" className={input} value={info.name} onChange={(e) => setInfo({ ...info, name: e.target.value })} /></div>
           <div><label className={label} htmlFor="p-offer">Sold as (buyers join automatically)</label><select id="p-offer" className={input} value={info.offerId} onChange={(e) => setInfo({ ...info, offerId: e.target.value })}><option value="">No offer</option>{d.offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
-          <div><label className={label} htmlFor="p-start">Starts</label><input id="p-start" type="date" className={input} value={info.startsOn} onChange={(e) => setInfo({ ...info, startsOn: e.target.value })} /></div>
-          <div><label className={label} htmlFor="p-end">Ends</label><input id="p-end" type="date" className={input} value={info.endsOn} onChange={(e) => setInfo({ ...info, endsOn: e.target.value })} /></div>
+          <div><label className={label} htmlFor="p-start">{selfPaced ? "Opens for sign-ups (optional)" : "Starts"}</label><input id="p-start" type="date" className={input} value={info.startsOn} onChange={(e) => setInfo({ ...info, startsOn: e.target.value })} /></div>
+          <div><label className={label} htmlFor="p-end">{selfPaced ? "Closes (optional)" : "Ends"}</label><input id="p-end" type="date" className={input} value={info.endsOn} onChange={(e) => setInfo({ ...info, endsOn: e.target.value })} /></div>
           <div className="md:col-span-2"><label className={label} htmlFor="p-desc">Description (members see it)</label><textarea id="p-desc" rows={3} className={input} value={info.description} onChange={(e) => setInfo({ ...info, description: e.target.value })} /></div>
+          {selfPaced && <div className="md:col-span-2"><label className={label} htmlFor="p-done">Message when they finish every lesson (optional)</label><textarea id="p-done" rows={2} className={input} value={info.completionMessage} onChange={(e) => setInfo({ ...info, completionMessage: e.target.value })} placeholder="You did it! Book your graduation call here…" /></div>}
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={info.feedOn} onChange={(e) => setInfo({ ...info, feedOn: e.target.checked })} />Group conversation on (members see each other&apos;s posts, first names only)</label>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -174,7 +189,7 @@ function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<s
         <ul className="mt-4 divide-y divide-[#1a2b4a]/10 text-sm">
           {active.map((m) => (
             <li key={m.contact_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span><a href={`/client-portals?contact=${m.contact_id}`} className="font-semibold text-[#2E7C83] hover:underline">{m.name}</a> <span className="text-xs text-[#7b6b8d]">{m.email} · {m.portal?.last_seen_at ? `last visit ${day(m.portal.last_seen_at)}` : m.portal?.sent_at ? "link sent, not opened yet" : "link not sent"}{m.source === "payment" ? " · joined by paying" : ""}</span></span>
+              <span><a href={`/client-portals?contact=${m.contact_id}`} className="font-semibold text-[#2E7C83] hover:underline">{m.name}</a> <span className="text-xs text-[#7b6b8d]">{m.email} · {d.lessons.length ? `${m.lessonsDone} of ${d.lessons.length} lessons (${percent(m.lessonsDone, d.lessons.length)}%) · ` : ""}joined {day(m.joined_at)} · {m.portal?.last_seen_at ? `last visit ${day(m.portal.last_seen_at)}` : m.portal?.sent_at ? "link sent, not opened yet" : "link not sent"}{m.source === "payment" ? " · joined by paying" : ""}</span></span>
               <span className="flex gap-1">
                 <button className={btn} disabled={busy} onClick={() => void act({ action: "member-send-link", contactId: m.contact_id }, `Portal link emailed to ${m.email}.`)}><Send className="h-3.5 w-3.5" />Email link</button>
                 <button className={btn} disabled={busy} onClick={() => void act({ action: "member-remove", contactId: m.contact_id }, `${m.name} removed from the program.`)}>Remove</button>
@@ -206,31 +221,40 @@ function Detail({ d, act, busy, setMsg, reload }: { d: Detail; act: (b: Record<s
 
       <section className={card}>
         <h2 className={h2}>Lessons</h2>
+        {selfPaced && <p className="mb-3 text-xs text-[#7b6b8d]">Each person starts on the day they join. Set &quot;Opens after&quot; to drip a lesson that many days later; leave it empty to open right away.</p>}
         <ul className="mb-3 space-y-2 text-sm">
           {d.lessons.map((l, i) => (
             <li key={l.id} className="rounded-xl bg-[#1a2b4a]/5 px-3 py-2">
+              {(i === 0 || (d.lessons[i - 1].module || "") !== (l.module || "")) && l.module && <p className="-mt-0.5 mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#c9a227]">{l.module}</p>}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold">{l.title}</span>
                 <span className="flex flex-wrap items-center gap-1">
-                  <label className="flex items-center gap-1 text-xs">Opens<input type="date" aria-label={`Opens on for ${l.title}`} className="rounded border border-[#1a2b4a]/15 bg-transparent px-1 py-0.5 text-xs" value={l.opens_on ?? ""} onChange={(e) => void act({ action: "lesson-update", lessonId: l.id, opensOn: e.target.value || null })} /></label>
+                  <label className="flex items-center gap-1 text-xs">Module<input aria-label={`Module for ${l.title}`} className="w-28 rounded border border-[#1a2b4a]/15 bg-transparent px-1 py-0.5 text-xs" defaultValue={l.module ?? ""} onBlur={(e) => e.target.value !== (l.module ?? "") && void act({ action: "lesson-update", lessonId: l.id, module: e.target.value })} /></label>
+                  {selfPaced && <label className="flex items-center gap-1 text-xs">Opens after<input inputMode="numeric" aria-label={`Days after joining for ${l.title}`} className="w-12 rounded border border-[#1a2b4a]/15 bg-transparent px-1 py-0.5 text-xs" defaultValue={l.open_after_days ?? ""} onBlur={(e) => String(l.open_after_days ?? "") !== e.target.value && void act({ action: "lesson-update", lessonId: l.id, openAfterDays: e.target.value })} />days</label>}
+                  <label className="flex items-center gap-1 text-xs">{selfPaced ? "Not before" : "Opens"}<input type="date" aria-label={`Opens on for ${l.title}`} className="rounded border border-[#1a2b4a]/15 bg-transparent px-1 py-0.5 text-xs" value={l.opens_on ?? ""} onChange={(e) => void act({ action: "lesson-update", lessonId: l.id, opensOn: e.target.value || null })} /></label>
                   <label className={`${btn} cursor-pointer`}><input type="file" className="sr-only" onChange={(e) => void upload(l.id, e.target.files?.[0])} /><Paperclip className="h-3.5 w-3.5" />{l.file_name ? "Replace file" : "Attach file"}</label>
                   <button className={btn} aria-label="Move up" disabled={busy || i === 0} onClick={() => void act({ action: "lesson-move", lessonId: l.id, dir: -1 })}><ArrowUp className="h-3.5 w-3.5" /></button>
                   <button className={btn} aria-label="Move down" disabled={busy || i === d.lessons.length - 1} onClick={() => void act({ action: "lesson-move", lessonId: l.id, dir: 1 })}><ArrowDown className="h-3.5 w-3.5" /></button>
                   <button className={btn} aria-label={`Delete ${l.title}`} disabled={busy} onClick={() => void act({ action: "lesson-delete", lessonId: l.id }, "Lesson removed.")}><Trash2 className="h-3.5 w-3.5" /></button>
                 </span>
               </div>
-              <p className="text-xs text-[#7b6b8d]">{l.opens_on ? `Opens ${day(l.opens_on)}` : "Open now"}{l.video_url ? " · video" : ""}{l.url ? " · link" : ""}{l.file_name ? ` · ${l.file_name}` : ""}</p>
+              <p className="text-xs text-[#7b6b8d]">{selfPaced && l.open_after_days ? `Opens ${l.open_after_days} day${l.open_after_days === 1 ? "" : "s"} after joining${l.opens_on ? `, not before ${day(l.opens_on)}` : ""}` : l.opens_on ? `Opens ${day(l.opens_on)}` : "Open now"}{l.video_url ? " · video" : ""}{l.url ? " · link" : ""}{l.file_name ? ` · ${l.file_name}` : ""}</p>
             </li>
           ))}
         </ul>
         <div className="grid gap-3 md:grid-cols-2">
-          <div><label className={label} htmlFor="l-title">Lesson title</label><input id="l-title" className={input} value={les.title} onChange={(e) => setLes({ ...les, title: e.target.value })} placeholder="Module 1: Your why" /></div>
-          <div><label className={label} htmlFor="l-open">Opens on (empty = now)</label><input id="l-open" type="date" className={input} value={les.opensOn} onChange={(e) => setLes({ ...les, opensOn: e.target.value })} /></div>
+          <div><label className={label} htmlFor="l-title">Lesson title</label><input id="l-title" className={input} value={les.title} onChange={(e) => setLes({ ...les, title: e.target.value })} placeholder="Lesson 1: Your why" /></div>
+          <div><label className={label} htmlFor="l-module">Module (optional)</label><input id="l-module" className={input} value={les.module} onChange={(e) => setLes({ ...les, module: e.target.value })} placeholder="Module 1: Foundations" /></div>
+          {selfPaced ? (
+            <div><label className={label} htmlFor="l-after">Opens how many days after they join (empty = right away)</label><input id="l-after" inputMode="numeric" className={input} value={les.openAfterDays} onChange={(e) => setLes({ ...les, openAfterDays: e.target.value.replace(/[^0-9]/g, "") })} placeholder="7" /></div>
+          ) : (
+            <div><label className={label} htmlFor="l-open">Opens on (empty = now)</label><input id="l-open" type="date" className={input} value={les.opensOn} onChange={(e) => setLes({ ...les, opensOn: e.target.value })} /></div>
+          )}
           <div><label className={label} htmlFor="l-video">Video link (YouTube, Vimeo, Loom…)</label><input id="l-video" className={input} value={les.videoUrl} onChange={(e) => setLes({ ...les, videoUrl: e.target.value })} placeholder="https://" /></div>
           <div><label className={label} htmlFor="l-url">Other link</label><input id="l-url" className={input} value={les.url} onChange={(e) => setLes({ ...les, url: e.target.value })} placeholder="https://" /></div>
           <div className="md:col-span-2"><label className={label} htmlFor="l-body">Lesson text</label><textarea id="l-body" rows={3} className={input} value={les.body} onChange={(e) => setLes({ ...les, body: e.target.value })} /></div>
         </div>
-        <button className={`${primary} mt-3`} disabled={busy || !les.title.trim()} onClick={async () => { if (await act({ action: "lesson-add", ...les }, "Lesson added. Attach a file to it from the list if you like.")) setLes({ title: "", opensOn: "", videoUrl: "", url: "", body: "" }); }}><Plus className="h-4 w-4" />Add lesson</button>
+        <button className={`${primary} mt-3`} disabled={busy || !les.title.trim()} onClick={async () => { if (await act({ action: "lesson-add", ...les }, "Lesson added. Attach a file to it from the list if you like.")) setLes({ title: "", opensOn: "", openAfterDays: "", module: les.module, videoUrl: "", url: "", body: "" }); }}><Plus className="h-4 w-4" />Add lesson</button>
       </section>
 
       <section className={card}>

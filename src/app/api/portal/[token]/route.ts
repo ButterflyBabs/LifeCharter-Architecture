@@ -1,3 +1,4 @@
+import { lessonOpen } from "@/lib/courses";
 import { portalAutoReply } from "@/lib/awayMode";
 import { NextResponse } from "next/server";
 import { crossOriginBlocked } from "@/lib/security";
@@ -42,6 +43,17 @@ export async function POST(request: Request, { params }: { params: { token: stri
     await db.from("portal_messages").insert({ master_plan_id: p.master_plan_id, contact_id: p.contact_id, author: "client", body });
     await notifyOwnerOfMessage(db, p.master_plan_id, p.contact_id, body);
     await portalAutoReply(db, p.master_plan_id, p.contact_id).catch(() => false);
+    return NextResponse.json({ ok: true });
+  }
+  if (b.action === "lesson-done") {
+    // Courses & Memberships (task 1152): a member ticks an open lesson complete (or not).
+    const x = b as { programId?: string; lessonId?: string; done?: boolean };
+    const m = await isMember(db, p.master_plan_id, String(x.programId || ""), p.contact_id);
+    if (!m) return NextResponse.json({ error: "That program isn't here." }, { status: 404 });
+    const { data: l } = await db.from("program_lessons").select("id, opens_on, open_after_days").eq("id", String(x.lessonId || "")).eq("program_id", String(x.programId)).maybeSingle();
+    if (!l || !lessonOpen(l as { opens_on: string | null; open_after_days: number | null }, m.kind, m.joinedDay, new Date().toISOString().slice(0, 10))) return NextResponse.json({ error: "That lesson isn't open yet." }, { status: 404 });
+    if (x.done) await db.from("program_lesson_done").upsert({ lesson_id: l.id, contact_id: p.contact_id }, { onConflict: "lesson_id,contact_id" });
+    else await db.from("program_lesson_done").delete().eq("lesson_id", l.id).eq("contact_id", p.contact_id);
     return NextResponse.json({ ok: true });
   }
   if (b.action === "program-task" || b.action === "program-post") {

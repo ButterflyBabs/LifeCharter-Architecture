@@ -5,13 +5,17 @@ import { CalendarDays, CheckCircle2, Circle, Lock, MessageCircle, Paperclip, Pin
 
 export type Program = {
   id: string;
+  kind: "cohort" | "course" | "membership";
+  accessEndsOn: string | null;
+  progress: { done: number; total: number; percent: number };
+  completionMessage: string | null;
   name: string;
   description: string | null;
   startsOn: string | null;
   endsOn: string | null;
   feedOn: boolean;
   sessions: { id: string; title: string; start: string; minutes: number; joinUrl: string | null; notes: string | null }[];
-  lessons: { id: string; title: string; open: boolean; opensOn: string | null; body: string | null; url: string | null; videoUrl: string | null; hasFile: boolean; fileName: string | null }[];
+  lessons: { id: string; title: string; module: string | null; open: boolean; opensOn: string | null; done: boolean; body: string | null; url: string | null; videoUrl: string | null; hasFile: boolean; fileName: string | null }[];
   tasks: { id: string; title: string; body: string | null; dueOn: string | null; done: boolean }[];
   recaps: { id: string; title: string; date: string; sections: { title: string; content: string }[]; commitments: { text: string; due: string | null }[] }[];
   feed: { id: string; body: string; pinned: boolean; at: string; by: string; mine: boolean; owner: boolean; replies: { id: string; body: string; at: string; by: string; mine: boolean; owner: boolean }[] }[];
@@ -40,8 +44,18 @@ export default function ProgramCard({ p, token, act }: { p: Program; token: stri
   return (
     <div className="rounded-xl border border-[#E5DDCF] p-4">
       <h3 className="text-xl font-semibold [font-family:var(--pf-heading)]">{p.name}</h3>
-      {(p.startsOn || p.endsOn) && <p className="text-xs text-[#56616E]">{p.startsOn ? day(p.startsOn) : ""}{p.endsOn ? ` to ${day(p.endsOn)}` : ""}</p>}
+      {p.kind === "cohort" && (p.startsOn || p.endsOn) && <p className="text-xs text-[#56616E]">{p.startsOn ? day(p.startsOn) : ""}{p.endsOn ? ` to ${day(p.endsOn)}` : ""}</p>}
+      {p.accessEndsOn && <p className="text-xs text-[#56616E]">Your access lasts until {day(p.accessEndsOn)}</p>}
       {p.description && <p className="mt-1 whitespace-pre-wrap text-sm text-[#3d4652]">{p.description}</p>}
+      {p.progress.total > 0 && (
+        <div className="mt-3">
+          <div className="h-2 w-full rounded-full bg-[#E5DDCF]" role="progressbar" aria-valuenow={p.progress.percent} aria-valuemin={0} aria-valuemax={100} aria-label="Your progress">
+            <div className="h-2 rounded-full bg-[var(--pf-accent)]" style={{ width: `${p.progress.percent}%` }} />
+          </div>
+          <p className="mt-1 text-xs text-[#56616E]">{p.progress.done} of {p.progress.total} lessons complete ({p.progress.percent}%)</p>
+        </div>
+      )}
+      {p.completionMessage && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-[var(--pf-accent)]/10 px-3 py-2 text-sm font-semibold">{p.completionMessage}</p>}
 
       {p.sessions.length > 0 && (
         <>
@@ -61,13 +75,19 @@ export default function ProgramCard({ p, token, act }: { p: Program; token: stri
         <>
           <p className={sub}>Lessons</p>
           <ul className="divide-y divide-[#E5DDCF] text-sm">
-            {p.lessons.map((l) => (
+            {p.lessons.map((l, i) => (
               <li key={l.id} className="py-2">
+                {(i === 0 || (p.lessons[i - 1].module || "") !== (l.module || "")) && l.module && <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#56616E]">{l.module}</p>}
                 {l.open ? (
                   <>
-                    <button type="button" onClick={() => setOpenLesson(openLesson === l.id ? null : l.id)} aria-expanded={openLesson === l.id} className="flex w-full items-center gap-2 text-left font-semibold">
-                      <PlayCircle className="h-4 w-4 shrink-0 text-[var(--pf-accent)]" />{l.title}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setOpenLesson(openLesson === l.id ? null : l.id)} aria-expanded={openLesson === l.id} className={`flex min-w-0 flex-1 items-center gap-2 text-left font-semibold ${l.done ? "text-[#56616E]" : ""}`}>
+                        <PlayCircle className="h-4 w-4 shrink-0 text-[var(--pf-accent)]" />{l.title}
+                      </button>
+                      <button type="button" onClick={() => void act({ action: "lesson-done", programId: p.id, lessonId: l.id, done: !l.done })} aria-label={l.done ? `Mark "${l.title}" not complete` : `Mark "${l.title}" complete`} className="shrink-0 text-[var(--pf-accent)]">
+                        {l.done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+                      </button>
+                    </div>
                     {openLesson === l.id && (
                       <div className="mt-2 space-y-2 pl-6">
                         {l.body && <p className="whitespace-pre-wrap">{l.body}</p>}
@@ -76,6 +96,7 @@ export default function ProgramCard({ p, token, act }: { p: Program; token: stri
                           {l.url && <a href={l.url} target="_blank" rel="noreferrer" className="text-[var(--pf-accent)] underline">Open the link</a>}
                           {l.hasFile && <a href={`/api/portal/${token}/file?lesson=${l.id}`} className="text-[var(--pf-accent)] underline"><Paperclip className="mr-0.5 inline h-3 w-3" />{l.fileName || "Download"}</a>}
                         </div>
+                        {!l.done && <button type="button" onClick={() => void act({ action: "lesson-done", programId: p.id, lessonId: l.id, done: true })} className="rounded-full bg-[var(--pf-accent)] px-3 py-1 text-xs font-semibold text-[var(--pf-on)]">Mark complete</button>}
                       </div>
                     )}
                   </>

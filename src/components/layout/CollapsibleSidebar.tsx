@@ -146,7 +146,7 @@ const navigationSections = [
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "client-care", label: "Client Care", icon: HeartHandshake, href: "/client-care" },
       { id: "client-portals", label: "Client Portals", icon: UsersRound, href: "/client-portals" },
-      { id: "programs", label: "Programs", icon: GraduationCap, href: "/programs" },
+      { id: "programs", label: "Courses & Memberships", icon: GraduationCap, href: "/programs" },
       { id: "events", label: "Events", icon: Megaphone, href: "/events" },
       { id: "landing-pages", label: "Landing Pages", icon: PanelsTopLeft, href: "/landing-pages" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
