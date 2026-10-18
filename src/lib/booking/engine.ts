@@ -521,7 +521,7 @@ const SUITE_NAME = "LifeCharter Command Suite";
 // Babs's account: exactly as always (reminders@lccommandsuite.com, the Command Suite
 // support address). A client account: only from its own verified domain, with its own
 // support address; if it can't send yet, nothing is emailed (never a Babs address).
-async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
+export async function sendMail(who: AccountSender, m: { to: string | string[]; replyTo?: string; fromName: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string } }) {
   if (!who.ok) return;
   // A client account sends through its own Resend key; Babs's account uses the Suite's.
   const key = who.house ? process.env.RESEND_API_KEY : who.resendKey;

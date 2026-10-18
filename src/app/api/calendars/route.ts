@@ -10,6 +10,7 @@ import { senderProfile, senderVerdict, SENDING_SETUP_PATH } from "@/lib/email/ac
 import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
 import { isAlignmentArchitect } from "@/lib/authz";
 import { getConnection } from "@/lib/stripeConnect";
+import { countAttendedSession } from "@/lib/portal";
 
 // Paid booking shows only where "get paid inside the Suite" is open (Babs only until PAYMENTS_OPEN_TO_ALL).
 const paymentsOpen = async () => PAYMENTS_OPEN_TO_ALL || (await isAlignmentArchitect().catch(() => false));
@@ -212,6 +213,8 @@ export async function POST(request: Request) {
       if (!bk) return NextResponse.json({ error: "Not found." }, { status: 404 });
       await db.from("bookings").update({ status: b.status }).eq("id", bk.id).eq("master_plan_id", a.planId);
       if (b.status === "no_show" && bk.status === "confirmed") await markNoShow(bk.id as string).catch((e) => console.error("no-show follow-up:", e));
+      // Client portal packages: an Attended booking uses one of the client's sessions (once per booking).
+      if (b.status === "completed") await countAttendedSession(db, a.planId, bk.id as string).catch((e) => console.error("package session:", e));
       if (bk.contact_id) {
         const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).eq("master_plan_id", a.planId).maybeSingle();
         await logEvent(a.planId, bk.contact_id, "booking", `${b.status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });

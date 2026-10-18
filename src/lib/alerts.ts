@@ -538,6 +538,22 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // Client portals: a client wrote and the owner hasn't read it yet.
+  try {
+    const { data: unread } = await supabase.from("portal_messages").select("id, contact_id").eq("master_plan_id", masterPlanId).eq("author", "client").is("read_at", null).limit(20);
+    const byContact = new Map<string, number>();
+    for (const m of (unread ?? []) as { id: string; contact_id: string }[]) byContact.set(m.contact_id, (byContact.get(m.contact_id) ?? 0) + 1);
+    if (byContact.size) {
+      const { data: people } = await supabase.from("seq_contacts").select("id, first_name, last_name, email").in("id", Array.from(byContact.keys()));
+      for (const p of (people ?? []) as { id: string; first_name: string | null; last_name: string | null; email: string }[]) {
+        const n = byContact.get(p.id) ?? 0;
+        out.push({ nkey: `portal-msg:${p.id}:${n}`, type: "action", title: `${[p.first_name, p.last_name].filter(Boolean).join(" ") || p.email} wrote in their portal`, body: `${n} new message${n === 1 ? "" : "s"}.`, href: `/client-portals?contact=${p.id}` });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }

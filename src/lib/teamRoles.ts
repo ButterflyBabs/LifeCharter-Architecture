@@ -125,7 +125,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "team_huddle", label: "Team Huddle", pages: ["/team-huddle", "/huddle"], apis: ["/api/team-huddle"] },
   { key: "volant", label: "LC Volant (transcripts into reports)", pages: ["/volant"], apis: ["/api/volant"], houseOnly: !VOLANT_OPEN_TO_ALL },
   { key: "support_desk", label: "Support Desk (every client's support requests)", pages: ["/support-desk"], apis: ["/api/support/desk"], houseOnly: true },
-  { key: "crm", label: "Contacts, tags, invites, short links & affiliates", pages: ["/contacts", "/tags", "/invites", "/affiliates", "/short-links", "/links-directory", "/client-care"], apis: ["/api/crm", "/api/affiliates", "/api/short-links", "/api/links-directory", "/api/client-care"] },
+  { key: "crm", label: "Contacts, tags, invites, short links & affiliates", pages: ["/contacts", "/tags", "/invites", "/affiliates", "/short-links", "/links-directory", "/client-care", "/client-portals"], apis: ["/api/crm", "/api/affiliates", "/api/short-links", "/api/links-directory", "/api/client-care", "/api/client-portal"] },
   { key: "calendars", label: "Calendars (booking pages)", pages: ["/calendars"], apis: ["/api/calendars"] },
   { key: "campaigns", label: "Campaigns & Broadcasts", pages: ["/sequences-manager"], apis: ["/api/sequences", "/api/crm/broadcasts"] },
   { key: "outreach", label: "Outreach Pipelines, Prospect Qualifier & Meta leads", pages: ["/dm-pipeline", "/dm-send", "/meta-leads", "/qualifier"], apis: ["/api/dm-pipeline", "/api/meta-lead-settings", "/api/qualifier"] },

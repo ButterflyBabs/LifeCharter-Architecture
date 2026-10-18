@@ -12,8 +12,9 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureAp
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal"];
 const PUBLIC_APIS = [
+  "/api/portal", // a client's private portal (task 1147): the unguessable link is the key; writes are origin-checked and limited to that client
   "/api/support/intake", // LC Fledge support requests; checked with the person's own Supabase sign-in token, not a Suite session
   "/api/stripe-connect/webhook", // events from clients' connected Stripe accounts; each event is fetched back from Stripe, not trusted from the body
   "/api/volant/webhook", // AssemblyAI says an LC Volant transcript is done; secured by a per-recording secret header, not a session

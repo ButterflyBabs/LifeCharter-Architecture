@@ -94,10 +94,12 @@ import {
   KeyRound,
   Eye,
   Receipt,
+  UsersRound,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
+import { PORTAL_OPEN_TO_ALL } from "@/lib/portalFlag";
 
 // Navigation grouped into labeled sections, matching the Executive
 // Dashboard's sidebar pattern (colored section dot + uppercase label) —
@@ -140,6 +142,7 @@ const navigationSections = [
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
       { id: "client-care", label: "Client Care", icon: HeartHandshake, href: "/client-care" },
+      { id: "client-portals", label: "Client Portals", icon: UsersRound, href: "/client-portals" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
@@ -192,7 +195,7 @@ const navigationSections = [
 ];
 
 // Pages in the everyday sections that only Babs sees while they are being shaped.
-const ARCHITECT_ONLY_IDS: string[] = [...(QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"]), ...(VOLANT_OPEN_TO_ALL ? [] : ["volant"]), ...(PAYMENTS_OPEN_TO_ALL ? [] : ["payments"])];
+const ARCHITECT_ONLY_IDS: string[] = [...(QUALIFIER_OPEN_TO_ALL ? [] : ["qualifier"]), ...(VOLANT_OPEN_TO_ALL ? [] : ["volant"]), ...(PAYMENTS_OPEN_TO_ALL ? [] : ["payments"]), ...(PORTAL_OPEN_TO_ALL ? [] : ["client-portals"])];
 
 // Alignment Architect pages: Babs only (her email, hard-wired). Shown only when /api/me says
 // so; the pages and their APIs enforce the same check on the server.
@@ -843,7 +846,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;

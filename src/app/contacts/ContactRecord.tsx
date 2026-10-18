@@ -308,6 +308,7 @@ function ContactPayments({ contactId }: { contactId: string }) {
       )}
       {!d.invoices.length && !d.payments.length && <p className="text-sm text-[#7a8a99]">No payments yet.</p>}
       <a href={`/payments?contact=${contactId}`} className="text-sm font-semibold text-[#2E7C83] hover:underline">{d.connected ? "Send an invoice" : "Set up payments"}</a>
+      <a href={`/client-portals?contact=${contactId}`} className="ml-4 text-sm font-semibold text-[#2E7C83] hover:underline">Client portal</a>
     </div>
   );
 }
