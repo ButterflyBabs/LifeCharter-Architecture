@@ -7,6 +7,12 @@ import { isValidTz } from "@/lib/sequences/engine";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
 import { canCreateZoomMeetings, isZoomConfigured } from "@/lib/zoom";
 import { senderProfile, senderVerdict, SENDING_SETUP_PATH } from "@/lib/email/accountSender";
+import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
+import { isAlignmentArchitect } from "@/lib/authz";
+import { getConnection } from "@/lib/stripeConnect";
+
+// Paid booking shows only where "get paid inside the Suite" is open (Babs only until PAYMENTS_OPEN_TO_ALL).
+const paymentsOpen = async () => PAYMENTS_OPEN_TO_ALL || (await isAlignmentArchitect().catch(() => false));
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -63,7 +69,8 @@ export async function GET() {
   const profile = await senderProfile(a.planId, db);
   const v = senderVerdict(profile, false);
   const sender = profile.house ? { house: true, ok: true } : { house: false, ok: v.ok, reason: v.ok ? null : v.reason, setupPath: SENDING_SETUP_PATH };
-  return NextResponse.json({ calendars: calendars ?? [], hosts: (hosts ?? []).map((h) => ({ ...h, connections: (conns ?? []).filter((c) => c.host_id === h.id) })), bookings: bookings ?? [], zoom, house: a.house, sender });
+  const payments = (await paymentsOpen()) ? { allowed: true, connected: Boolean(await getConnection(db, a.planId)) } : { allowed: false, connected: false };
+  return NextResponse.json({ calendars: calendars ?? [], hosts: (hosts ?? []).map((h) => ({ ...h, connections: (conns ?? []).filter((c) => c.host_id === h.id) })), bookings: bookings ?? [], zoom, house: a.house, sender, payments });
 }
 
 export async function POST(request: Request) {
@@ -183,6 +190,17 @@ export async function POST(request: Request) {
       if (b.dealValue !== undefined) p.deal_value = Number.isFinite(Number(b.dealValue)) && Number(b.dealValue) > 0 ? Math.round(Number(b.dealValue) * 100) / 100 : null;
       if (b.noshowSubject !== undefined) p.noshow_subject = str(b.noshowSubject, 200) || null;
       if (b.noshowBody !== undefined) p.noshow_body = str(b.noshowBody, 5000) || null;
+      if (b.payMode !== undefined && (await paymentsOpen())) {
+        const mode = ["none", "full", "deposit"].includes(b.payMode) ? b.payMode : "none";
+        const money = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) >= 0.5 ? Math.round(Number(v) * 100) / 100 : null);
+        const price = money(b.price);
+        const deposit = money(b.deposit);
+        if (mode === "full" && !price) return NextResponse.json({ error: "Enter the price (at least $0.50)." }, { status: 400 });
+        if (mode === "deposit" && !deposit) return NextResponse.json({ error: "Enter the deposit (at least $0.50)." }, { status: 400 });
+        if (mode === "deposit" && price && deposit && deposit > price) return NextResponse.json({ error: "The deposit can't be more than the price." }, { status: 400 });
+        if (mode !== "none" && !(await getConnection(db, a.planId))) return NextResponse.json({ error: "Connect your Stripe account first (Settings › Integrations)." }, { status: 400 });
+        Object.assign(p, { pay_mode: mode, price, deposit });
+      }
       if (typeof b.active === "boolean") p.active = b.active;
       const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id).eq("master_plan_id", a.planId);
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken." : "Couldn't save." }, { status: 400 });

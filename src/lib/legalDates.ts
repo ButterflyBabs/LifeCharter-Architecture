@@ -5,8 +5,8 @@
 // behind the text. After editing a legal page, run:  npm run legal:stamp
 // (it sets "updated" to today, Mountain time, for each page whose text changed, and refreshes the hash).
 export const LEGAL_PAGES = {
-  "terms-of-sale": { effective: "October 1, 2026", updated: "October 14, 2026", hash: "440fff78851119b1" },
-  "privacy-policy": { effective: "October 10, 2026", updated: "October 17, 2026", hash: "8a37e3b3c5747be0" },
+  "terms-of-sale": { effective: "October 1, 2026", updated: "October 18, 2026", hash: "9d3ce8aac446eda6" },
+  "privacy-policy": { effective: "October 10, 2026", updated: "October 18, 2026", hash: "40fa3f8814e287ae" },
   "year-1-agreement": { effective: "October 1, 2026", updated: "October 14, 2026", hash: "a7e877eb84c39119" },
   "community-guidelines": { effective: "September 23, 2026", updated: "September 23, 2026", hash: "d0628f1eb5edc8aa" },
 } as const;

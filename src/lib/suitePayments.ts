@@ -6,8 +6,10 @@ import { ensureStages } from "@/lib/sales/pipeline";
 import { moveDeal } from "@/lib/booking/deals";
 import { syncStripe } from "@/lib/stripeSync";
 import { invoiceSubscriptionId } from "@/lib/stripeShapes";
+import { HOLD_MINUTES, confirmPaidBooking, fmt, releaseHold } from "@/lib/booking/engine";
 
 // Get paid inside the Suite, step b (task 1146): invoices from a contact, invoice payment plans, and automatic posting.
+// Step c: paid and deposit booking (bookingCheckout + the booking branch of the webhook).
 //
 // Same rule as step a: everything is created ON the client's own connected Stripe account (the Stripe-Account header),
 // direct charges, no platform fee; the money goes straight to the client.
@@ -164,6 +166,32 @@ export async function cancelInvoice(db: Db, planId: string, id: string): Promise
   return true;
 }
 
+// ── Paid booking (step c) ────────────────────────────────────────────────────
+
+const SITE = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
+
+/** Stripe Checkout for a held booking, on the account owner's own Stripe. The webhook confirms the booking. */
+export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean }): Promise<string> {
+  const s = platform();
+  const meta = { lccs_booking_id: b.bookingId, lccs_plan_id: b.planId };
+  const session = await s.checkout.sessions.create(
+    {
+      mode: "payment",
+      customer_email: b.email,
+      customer_creation: "always",
+      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } } }],
+      metadata: meta,
+      payment_intent_data: { metadata: meta, description: `${b.calName}${b.deposit ? " deposit" : ""}` },
+      expires_at: Math.floor(Date.now() / 1000) + HOLD_MINUTES * 60 + 60,
+      success_url: `${SITE()}/book/manage/${b.token}?paid=1`,
+      cancel_url: `${SITE()}/book/${b.slug}?unpaid=1`,
+    },
+    { stripeAccount: c.accountId },
+  );
+  if (!session.url) throw new Error("Stripe didn't return a payment page.");
+  return session.url;
+}
+
 // ── Automatic posting (Connect webhook) ──────────────────────────────────────
 
 const meta = (m: unknown): Record<string, string> => (m && typeof m === "object" ? (m as Record<string, string>) : {});
@@ -196,7 +224,7 @@ interface Paid {
   account: string;
   livemode: boolean;
   ref: string;
-  kind: "link" | "invoice" | "plan" | "subscription";
+  kind: "link" | "invoice" | "plan" | "subscription" | "booking";
   cents: number;
   currency: string;
   email: string | null;
@@ -286,6 +314,21 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
     case "checkout.session.async_payment_succeeded": {
       const cs = event.data.object as Stripe.Checkout.Session;
       if (cs.mode !== "payment" || cs.payment_status !== "paid") return "not a paid one-time checkout"; // subscriptions post on invoice.paid
+      const bookingId = meta(cs.metadata).lccs_booking_id;
+      if (bookingId) {
+        const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id").eq("id", bookingId).maybeSingle();
+        if (!bk || bk.master_plan_id !== planId) return "booking not in this account";
+        const confirmed = await confirmPaidBooking(bookingId, cs.amount_total ?? 0, cs.id);
+        const { data: cal } = await db.from("booking_calendars").select("name, pay_mode").eq("id", bk.calendar_id).maybeSingle();
+        const r = await postPayment(db, {
+          planId, account, livemode: event.livemode, ref: cs.id, kind: "booking",
+          cents: cs.amount_total ?? 0, currency: cs.currency || "usd",
+          email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
+          offerId: null, invoiceId: null, description: `${cal?.name ?? "Booking"}${cal?.pay_mode === "deposit" ? " (deposit)" : ""}, ${new Date(bk.start_at as string).toISOString().slice(0, 10)}`,
+          chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
+        });
+        return `booking ${confirmed}, payment ${r}`;
+      }
       const linkId = typeof cs.payment_link === "string" ? cs.payment_link : cs.payment_link?.id;
       let offerId: string | null = meta(cs.metadata).lccs_offer_id || null;
       if (!offerId && linkId) {
@@ -299,6 +342,15 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
         offerId, invoiceId: null, description: "", chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
       });
       return r;
+    }
+
+    case "checkout.session.expired": {
+      const cs = event.data.object as Stripe.Checkout.Session;
+      const bookingId = meta(cs.metadata).lccs_booking_id;
+      if (!bookingId) return "ignored";
+      const { data: bk } = await db.from("bookings").select("master_plan_id").eq("id", bookingId).maybeSingle();
+      if (bk?.master_plan_id === planId) await releaseHold(bookingId);
+      return "hold released";
     }
 
     case "invoice.paid": {
@@ -406,6 +458,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
 /** The events the Connect webhook endpoint should send. */
 export const CONNECT_EVENTS = [
   "checkout.session.completed",
+  "checkout.session.expired",
   "checkout.session.async_payment_succeeded",
   "invoice.paid",
   "invoice.finalized",

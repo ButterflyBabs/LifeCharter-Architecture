@@ -29,6 +29,8 @@ const TOOL_LINKS: Record<string, PreviewLink> = {
   update_form: { label: "Open Forms", href: "/contacts?tab=forms" },
   create_booking_link: { label: "Open Links & Forms", href: "/links-directory" },
   update_booking_link: { label: "Open Links & Forms", href: "/links-directory" },
+  send_invoice: { label: "Open Payments & Invoices", href: "/payments" },
+  create_payment_link: { label: "Open Offers & Packages", href: "/sales/offers" },
   create_sop: { label: "Open Playbook & SOPs", href: "/operations/sops" },
   update_sop: { label: "Open Playbook & SOPs", href: "/operations/sops" },
   edit_sop_steps: { label: "Open Playbook & SOPs", href: "/operations/sops" },

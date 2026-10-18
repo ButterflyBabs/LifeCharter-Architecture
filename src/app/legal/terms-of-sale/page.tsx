@@ -205,6 +205,13 @@ export default async function TermsOfSalePage() {
           Client agrees to provide accurate information, use the Suite for lawful business purposes only, keep login
           credentials confidential, and participate in good faith in the implementation and coaching process.
         </p>
+        <p className={P}>
+          Taking payments in the Suite. If Client connects its own Stripe account, payments from Client&apos;s customers
+          are made directly to Client&apos;s Stripe account under Client&apos;s own agreement with Stripe. SKC LLC is not a
+          party to those payments, does not receive, hold or transfer Client&apos;s funds, and charges no fee on them.
+          Client is responsible for its prices, taxes, refunds, disputes and its own terms with its customers, and may
+          disconnect Stripe at any time.
+        </p>
 
         <h2 className={H2}>7. Intellectual Property</h2>
         <p className={P}>

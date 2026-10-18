@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck, Check, Clock, Globe, MapPin, Phone, User, Video } from "lucide-react";
+import { CalendarCheck, Check, Clock, CreditCard, Globe, MapPin, Phone, User, Video } from "lucide-react";
 import SlotPicker from "@/components/booking/SlotPicker";
 
 // Public booking page: lccommandsuite.com/book/<slug>. ?name=&email= prefill. A month calendar, then the times for the
@@ -22,6 +22,7 @@ interface Meta {
   questions: Q[];
   hostName: string | null;
   brand?: string;
+  payment?: { amount: number; kind: "full" | "deposit" } | null;
 }
 
 interface Theme {
@@ -44,6 +45,8 @@ const THEMES: Record<string, Theme> = {
 };
 const serif = "'EB Garamond', Georgia, 'Times New Roman', serif";
 
+const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+
 const inputCls = "mt-1 w-full rounded-xl border bg-white px-4 py-2.5 text-[15px] outline-none focus:ring-2";
 
 export default function BookPage({ params }: { params: { slug: string } }) {
@@ -55,6 +58,8 @@ export default function BookPage({ params }: { params: { slug: string } }) {
   const [err, setErr] = useState("");
   const [done, setDone] = useState<{ start: string; manage: string } | null>(null);
   const [more, setMore] = useState(false);
+  const [unpaid, setUnpaid] = useState(false);
+  useEffect(() => setUnpaid(new URLSearchParams(window.location.search).get("unpaid") === "1"), []);
   const [now, setNow] = useState(() => new Date());
   // Hold the page invisible only until the calendar says which brand it wears (never longer than a moment).
   const [waited, setWaited] = useState(false);
@@ -105,6 +110,10 @@ export default function BookPage({ params }: { params: { slug: string } }) {
     });
     const d = await r.json().catch(() => ({}));
     setSending(false);
+    if (r.ok && d.pay) {
+      window.location.href = d.pay; // pay on the owner's own Stripe; the booking is confirmed when Stripe says it's paid
+      return;
+    }
     if (r.ok) setDone({ start: pick, manage: d.manage });
     else {
       setErr(d.error || "Something went wrong. Please try again.");
@@ -171,7 +180,9 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               {meta && <Pill icon={Clock}>{meta.duration} minutes</Pill>}
               {meta?.hostName && <Pill icon={User}>{meta.hostName}</Pill>}
               {meta && where && <Pill icon={LocIcon}>{meta.location === "zoom" ? "Zoom" : "Phone"}</Pill>}
+              {meta?.payment && <Pill icon={CreditCard}>{money(meta.payment.amount)}{meta.payment.kind === "deposit" ? " deposit" : ""}</Pill>}
             </div>
+            {unpaid && <p className="mx-auto mt-4 max-w-xl text-center text-sm text-[#8a2f2f]">Your payment wasn&apos;t finished, so that time wasn&apos;t booked. Please choose a time again.</p>}
             {desc && (
               <div className="mx-auto mt-6 max-w-2xl text-[16px] leading-relaxed opacity-90">
                 <p className={`whitespace-pre-line ${!more && longDesc ? "line-clamp-5" : ""}`}>{desc}</p>
@@ -237,8 +248,9 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               ))}
               <input name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
+              {meta?.payment && <p className="text-center text-xs opacity-70">Your time is held for 30 minutes while you pay securely with Stripe.</p>}
               <button disabled={sending} className="w-full rounded-full px-6 py-3.5 text-base font-semibold disabled:opacity-60" style={{ background: th.accent, color: th.accentInk }}>
-                {sending ? "Booking…" : "Confirm booking"}
+                {sending ? "Booking…" : meta?.payment ? `Continue to pay ${money(meta.payment.amount)}${meta.payment.kind === "deposit" ? " deposit" : ""}` : "Confirm booking"}
               </button>
             </form>
           </>

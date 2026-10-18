@@ -28,6 +28,18 @@ export default function ManageBooking({ params }: { params: { token: string } })
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Back from paying: Stripe confirms within a few seconds, so check again until it does.
+  const pending = d?.booking.status === "pending_payment";
+  useEffect(() => {
+    if (!pending) return;
+    const t = setInterval(() => void load(), 3000);
+    const stop = setTimeout(() => clearInterval(t), 90_000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(stop);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
 
   const when = (s: string) => new Date(s).toLocaleString("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -57,7 +69,7 @@ export default function ManageBooking({ params }: { params: { token: string } })
             <p className="mt-1 text-[#2E3A46]">
               {when(d.booking.start)} · {d.calendar.duration} minutes{d.hostName ? ` with ${d.hostName}` : ""}
             </p>
-            <p className="mt-1 text-sm capitalize text-[#56616E]">{d.booking.status === "confirmed" ? "Confirmed" : d.booking.status}</p>
+            <p className="mt-1 text-sm capitalize text-[#56616E]">{d.booking.status === "confirmed" ? "Confirmed" : d.booking.status === "pending_payment" ? "Waiting for your payment to confirm…" : d.booking.status.replace("_", " ")}</p>
             {d.booking.meetingUrl && (
               <a href={d.booking.meetingUrl} className="mt-3 inline-block text-sm text-[#2E7C83] underline">Join on Zoom</a>
             )}

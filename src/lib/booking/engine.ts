@@ -43,6 +43,9 @@ export interface Calendar {
   deal_value: number | null;
   noshow_subject: string | null;
   noshow_body: string | null;
+  pay_mode?: "none" | "full" | "deposit";
+  price?: number | null;
+  deposit?: number | null;
 }
 export interface Host {
   id: string;
@@ -76,7 +79,7 @@ async function hostsOf(cal: Calendar, db: Db): Promise<Host[]> {
 async function hostBusy(host: Host, fromISO: string, toISO: string, db: Db): Promise<Busy[]> {
   const [{ data: conns }, { data: booked }] = await Promise.all([
     db.from("booking_connections").select("*").eq("host_id", host.id).eq("check_busy", true),
-    db.from("bookings").select("start_at, end_at").eq("host_id", host.id).eq("status", "confirmed").lt("start_at", toISO).gt("end_at", fromISO),
+    db.from("bookings").select("start_at, end_at").eq("host_id", host.id).in("status", ["confirmed", "pending_payment"]).lt("start_at", toISO).gt("end_at", fromISO),
   ]);
   const out: Busy[] = ((booked ?? []) as { start_at: string; end_at: string }[]).map((b) => ({ start: Date.parse(b.start_at), end: Date.parse(b.end_at) }));
   const results = await Promise.all(((conns ?? []) as Connection[]).map((c) => busyFor(c, fromISO, toISO)));
@@ -114,6 +117,7 @@ export interface SlotPlan {
 
 // Open times (UTC ISO) for [fromISO, toISO), capped at the calendar's window.
 export async function availableSlots(cal: Calendar, fromISO: string, toISO: string, db: Db = createServerClient()): Promise<SlotPlan> {
+  await releaseExpiredHolds(db).catch(() => null);
   const now = Date.now();
   const from = Math.max(Date.parse(fromISO), now + cal.min_notice_hours * 3_600_000);
   const to = Math.min(Date.parse(toISO), now + cal.max_days_ahead * 86_400_000);
@@ -128,7 +132,7 @@ export async function availableSlots(cal: Calendar, fromISO: string, toISO: stri
     hosts.map(async (h) => {
       const [busy, { data: mine }] = await Promise.all([
         hostBusy(h, rangeFrom, rangeTo, db),
-        db.from("bookings").select("start_at").eq("host_id", h.id).eq("calendar_id", cal.id).eq("status", "confirmed").gte("start_at", rangeFrom).lt("start_at", rangeTo),
+        db.from("bookings").select("start_at").eq("host_id", h.id).eq("calendar_id", cal.id).in("status", ["confirmed", "pending_payment"]).gte("start_at", rangeFrom).lt("start_at", rangeTo),
       ]);
       const tz = isValidTz(h.timezone) ? h.timezone : "America/Denver";
       const perDay = new Map<string, number>();
@@ -170,6 +174,24 @@ export interface BookInput {
   timezone?: string | null;
   answers?: Record<string, string>;
   rescheduleOf?: string | null; // booking id being moved
+  hold?: { amount: number } | null; // paid booking: hold the time unpaid for HOLD_MINUTES; confirmPaidBooking finishes it
+}
+
+/** How long an unpaid time is held while the person pays (Stripe Checkout's shortest expiry is 30 minutes). */
+export const HOLD_MINUTES = 30;
+
+/** What a calendar asks for at booking: nothing, the full price, or a deposit (in cents). */
+export function bookingCharge(cal: Pick<Calendar, "pay_mode" | "price" | "deposit">): { cents: number; kind: "full" | "deposit" } | null {
+  const mode = cal.pay_mode ?? "none";
+  const amount = mode === "full" ? Number(cal.price) : mode === "deposit" ? Number(cal.deposit) : 0;
+  const cents = Math.round((Number.isFinite(amount) ? amount : 0) * 100);
+  if (mode === "none" || cents < 50) return null;
+  return { cents, kind: mode };
+}
+
+// Unpaid holds past their time go back on the calendar (no emails: nothing was ever confirmed).
+async function releaseExpiredHolds(db: Db) {
+  await db.from("bookings").update({ status: "canceled", cancel_reason: "Payment not completed", canceled_at: new Date().toISOString(), pending_token: null }).eq("status", "pending_payment").lt("pay_expires_at", new Date().toISOString());
 }
 
 export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; bookingId: string; manageToken: string } | { ok: false; error: string }> {
@@ -215,6 +237,9 @@ export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; boo
         answers,
         manage_token_hash: hashToken(token),
         rescheduled_from: i.rescheduleOf || null,
+        ...(i.hold
+          ? { status: "pending_payment", pay_amount: i.hold.amount, pay_expires_at: new Date(Date.now() + HOLD_MINUTES * 60_000).toISOString(), pending_token: token }
+          : {}),
       })
       .select("id")
       .single();
@@ -225,10 +250,62 @@ export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; boo
     }
   }
   if (!bookingId) return { ok: false, error: "That time was just taken. Please choose another." };
+  if (i.hold) return { ok: true, bookingId, manageToken: token }; // confirmed (and followed up) once Stripe says it's paid
+  if (i.rescheduleOf) {
+    // A paid booking that moves keeps its payment (no second charge).
+    const { data: old } = await db.from("bookings").select("pay_amount, paid_amount, pay_session_id").eq("id", i.rescheduleOf).maybeSingle();
+    if (old?.paid_amount) await db.from("bookings").update({ pay_amount: old.pay_amount, paid_amount: old.paid_amount, pay_session_id: old.pay_session_id }).eq("id", bookingId);
+  }
 
   // Everything after this point is best-effort: the booking itself is saved.
   await afterBooking(db, cal, bookingId, hostId, { name, email, phone: i.phone || null, tz, answers, token, start, end, rescheduled: Boolean(i.rescheduleOf), rescheduleOf: i.rescheduleOf || null }).catch((e) => console.error("booking follow-up:", e));
   return { ok: true, bookingId, manageToken: token };
+}
+
+/**
+ * Stripe says a held booking is paid: confirm it and run everything a free booking runs (meeting link, calendar
+ * event, contact, deal, emails). If the hold had already been released and the time is still free, it is taken back;
+ * if someone else took it meanwhile, the booking stays canceled and the owner is told to refund or rebook.
+ */
+export async function confirmPaidBooking(bookingId: string, paidCents: number, sessionId: string): Promise<"confirmed" | "already" | "lost" | "missing"> {
+  const db = createServerClient();
+  const { data: b } = await db.from("bookings").select("*").eq("id", bookingId).maybeSingle();
+  if (!b) return "missing";
+  if (b.status === "confirmed" || b.status === "completed") return "already";
+  const { error } = await db
+    .from("bookings")
+    .update({ status: "confirmed", paid_amount: paidCents / 100, pay_session_id: sessionId, pending_token: null, cancel_reason: null, canceled_at: null })
+    .eq("id", bookingId)
+    .in("status", ["pending_payment", "canceled"]);
+  const { data: cal } = await db.from("booking_calendars").select("*").eq("id", b.calendar_id).maybeSingle();
+  if (error) {
+    // The slot went to someone else after the hold ran out.
+    await db.from("bookings").update({ paid_amount: paidCents / 100, pay_session_id: sessionId, cancel_reason: "Paid after the hold ran out; the time was taken. Refund or rebook." }).eq("id", bookingId);
+    const { data: host } = await db.from("booking_hosts").select("name, email, timezone").eq("id", b.host_id).maybeSingle();
+    if (host && cal) {
+      const who = await accountSender(cal.master_plan_id, { marketing: false }, db);
+      await sendMail(who, {
+        to: host.email,
+        fromName: "Bookings",
+        subject: `Action needed: ${b.invitee_name} paid but their time was taken`,
+        heading: "A payment needs your attention",
+        lines: [`${b.invitee_name} (${b.invitee_email}) paid $${(paidCents / 100).toFixed(2)} for ${cal.name} at ${fmt(b.start_at, host.timezone || "America/Denver")}, but finished paying after the 30-minute hold and the time was booked by someone else.`, "Please reach out to rebook them, or refund the payment in your Stripe account."],
+      }).catch(() => null);
+    }
+    return "lost";
+  }
+  if (cal && b.pending_token) {
+    await afterBooking(db, cal as Calendar, bookingId, b.host_id, {
+      name: b.invitee_name, email: b.invitee_email, phone: b.invitee_phone, tz: b.invitee_timezone || "America/Denver", answers: (b.answers as Record<string, string>) ?? {},
+      token: b.pending_token, start: Date.parse(b.start_at), end: Date.parse(b.end_at), rescheduled: false, rescheduleOf: null, paid: paidCents / 100,
+    }).catch((e) => console.error("paid booking follow-up:", e));
+  }
+  return "confirmed";
+}
+
+/** Checkout expired or was abandoned: put the time back (nothing was confirmed, so no emails). */
+export async function releaseHold(bookingId: string): Promise<void> {
+  await createServerClient().from("bookings").update({ status: "canceled", cancel_reason: "Payment not completed", canceled_at: new Date().toISOString(), pending_token: null }).eq("id", bookingId).eq("status", "pending_payment");
 }
 
 async function afterBooking(
@@ -236,7 +313,7 @@ async function afterBooking(
   cal: Calendar,
   bookingId: string,
   hostId: string,
-  b: { name: string; email: string; phone: string | null; tz: string; answers: Record<string, string>; token: string; start: number; end: number; rescheduled: boolean; rescheduleOf: string | null }
+  b: { name: string; email: string; phone: string | null; tz: string; answers: Record<string, string>; token: string; start: number; end: number; rescheduled: boolean; rescheduleOf: string | null; paid?: number | null }
 ) {
   const { data: host } = await db.from("booking_hosts").select("*").eq("id", hostId).eq("master_plan_id", cal.master_plan_id).maybeSingle();
   if (!host) return;
@@ -323,6 +400,7 @@ async function afterBooking(
       `<strong>${esc(cal.name)}</strong> with ${esc(host.name)}`,
       `${esc(fmt(startISO, b.tz))} (${esc(b.tz.replace(/_/g, " "))})`,
       meetingUrl ? `Join on Zoom: <a href="${meetingUrl}">${esc(meetingUrl)}</a>` : esc(where),
+      b.paid ? `Paid: $${b.paid.toFixed(2)}${cal.pay_mode === "deposit" ? " deposit" : ""}. Your receipt comes from Stripe.` : "",
       cal.confirmation_note ? esc(cal.confirmation_note) : "",
       "A calendar invitation is on its way too.",
     ],
@@ -337,6 +415,7 @@ async function afterBooking(
     heading: `${b.rescheduled ? "Rescheduled" : "New"} ${cal.name}`,
     lines: [
       `<strong>${esc(b.name)}</strong> · <a href="mailto:${esc(b.email)}">${esc(b.email)}</a>${b.phone ? ` · ${esc(b.phone)}` : ""}`,
+      b.paid ? `Paid $${b.paid.toFixed(2)}${cal.pay_mode === "deposit" ? " (deposit)" : ""} to your Stripe account.` : "",
       `${esc(fmt(startISO, host.timezone))} (${esc(host.timezone.replace(/_/g, " "))}) · host: ${esc(host.name)}`,
       meetingUrl ? `Zoom: <a href="${meetingUrl}">${esc(meetingUrl)}</a>` : esc(where),
       ...qa.map(esc),
@@ -381,7 +460,7 @@ export async function cancelBooking(bookingId: string, reason: string, by: "invi
       fromName: SUITE_NAME,
       subject: `Canceled: ${cal.name} with ${b.invitee_name}, ${fmt(b.start_at, host.timezone, "short")}`,
       heading: `${cal.name} canceled`,
-      lines: [`${esc(b.invitee_name)} (${esc(b.invitee_email)}) · ${esc(fmt(b.start_at, host.timezone))}`, `Canceled ${by === "invitee" ? "by them" : "by you"}${reason ? `: ${esc(reason)}` : ""}`],
+      lines: [`${esc(b.invitee_name)} (${esc(b.invitee_email)}) · ${esc(fmt(b.start_at, host.timezone))}`, `Canceled ${by === "invitee" ? "by them" : "by you"}${reason ? `: ${esc(reason)}` : ""}`, Number(b.paid_amount) > 0 ? `They paid $${Number(b.paid_amount).toFixed(2)} when booking. Payments aren't refunded automatically: refund it in your Stripe account if your policy allows.` : ""],
     });
   }
   return true;

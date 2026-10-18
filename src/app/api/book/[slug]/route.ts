@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { availableSlots, book, calendarBySlug } from "@/lib/booking/engine";
+import { availableSlots, book, bookingCharge, calendarBySlug, releaseHold } from "@/lib/booking/engine";
+import { getConnection } from "@/lib/stripeConnect";
+import { bookingCheckout } from "@/lib/suitePayments";
 import { createServerClient } from "@/lib/supabase/server";
 import { housePlanId } from "@/lib/planScope";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
@@ -34,6 +36,10 @@ export async function GET(request: Request, { params }: { params: { slug: string
       maxDaysAhead: cal.max_days_ahead,
       questions: cal.questions,
       hostName: cal.assignment === "single" ? (hosts ?? [])[0]?.name ?? null : null,
+      payment: (() => {
+        const c = bookingCharge(cal);
+        return c ? { amount: c.cents / 100, kind: c.kind } : null;
+      })(),
     },
     slots: plan.slots.map((s) => s.start),
   });
@@ -45,7 +51,12 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const b = await request.json().catch(() => ({}));
   if (typeof b._hp === "string" && b._hp.trim()) return NextResponse.json({ ok: true });
   const str = (v: unknown) => (typeof v === "string" ? v : "");
+  // Paid or deposit booking: the time is held while they pay on the owner's own Stripe account.
+  const charge = bookingCharge(cal);
+  const connection = charge ? await getConnection(createServerClient(), cal.master_plan_id) : null;
+  if (charge && !connection) return NextResponse.json({ error: "This booking page can't take payments right now. Please contact us to book." }, { status: 409 });
   const r = await book(cal, {
+    hold: charge ? { amount: charge.cents / 100 } : null,
     startISO: str(b.start),
     name: str(b.name),
     email: str(b.email),
@@ -79,6 +90,19 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       contentName: `booking:${cal.slug}`,
       ...browserContext(request),
     });
+  }
+  if (r.ok && charge && connection) {
+    try {
+      const pay = await bookingCheckout(connection, {
+        bookingId: r.bookingId, planId: cal.master_plan_id, slug: cal.slug, calName: cal.name, startISO: str(b.start),
+        tz: str(b.timezone) || "America/Denver", email: str(b.email).trim().toLowerCase(), token: r.manageToken, cents: charge.cents, deposit: charge.kind === "deposit",
+      });
+      return NextResponse.json({ ok: true, pay, manage: `/book/manage/${r.manageToken}` });
+    } catch (e) {
+      console.error("booking checkout:", e instanceof Error ? e.message : e);
+      await releaseHold(r.bookingId);
+      return NextResponse.json({ error: "Payment couldn't be started. Please try again in a moment." }, { status: 409 });
+    }
   }
   return r.ok ? NextResponse.json({ ok: true, manage: `/book/manage/${r.manageToken}` }) : NextResponse.json({ error: r.error }, { status: 409 });
 }

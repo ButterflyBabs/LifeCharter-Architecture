@@ -14,9 +14,10 @@ interface Cal {
   min_notice_hours: number; max_days_ahead: number; daily_cap: number | null; assignment: "single" | "round_robin"; host_ids: string[]; cc_emails: string[];
   location: "zoom" | "phone" | "custom"; location_detail: string | null; questions: Q[]; tags: string[]; sequence_key: string | null; confirmation_note: string | null; active: boolean;
   create_deal: boolean; deal_value: number | null; noshow_subject: string | null; noshow_body: string | null;
+  pay_mode?: "none" | "full" | "deposit"; price?: number | null; deposit?: number | null;
 }
 interface Booking { id: string; calendar_id: string; host_id: string | null; start_at: string; invitee_name: string; invitee_email: string; invitee_phone: string | null; answers: Record<string, string>; status: string; meeting_url: string | null; cancel_reason: string | null }
-interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
+interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; payments?: { allowed: boolean; connected: boolean }; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
 
 const DAYS: [string, string][] = [["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]];
 const TZS = ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu", "Europe/London"];
@@ -160,17 +161,17 @@ function Calendars({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) 
           <Button aria-label="Create calendar" onClick={async () => { const x = await act({ action: "create-calendar", name: newName }); if (x?.id) { setNewName(""); setOpenId(String(x.id)); } }}><Plus className="w-4 h-4" /></Button>
         </div>
       </div>
-      {cal ? <CalendarEditor key={cal.id} cal={cal} hosts={d.hosts} house={Boolean(d.house)} act={act} setMsg={setMsg} /> : <p className="text-sm text-[#7a8a99]">Create a calendar to get started.</p>}
+      {cal ? <CalendarEditor key={cal.id} cal={cal} hosts={d.hosts} house={Boolean(d.house)} payments={d.payments} act={act} setMsg={setMsg} /> : <p className="text-sm text-[#7a8a99]">Create a calendar to get started.</p>}
     </div>
   );
 }
 
-function CalendarEditor({ cal, hosts, house, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; act: Act; setMsg: (m: string) => void }) {
+function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; payments?: { allowed: boolean; connected: boolean }; act: Act; setMsg: (m: string) => void }) {
   const [f, setF] = useState({
     name: cal.name, slug: cal.slug, description: cal.description ?? "", duration: cal.duration_min, step: cal.slot_step_min, bufferBefore: cal.buffer_before_min, bufferAfter: cal.buffer_after_min,
     minNotice: cal.min_notice_hours, maxDays: cal.max_days_ahead, dailyCap: cal.daily_cap ?? 0, assignment: cal.assignment, hostIds: cal.host_ids, cc: cal.cc_emails.join(", "),
     location: !house && cal.location === "zoom" ? "custom" : cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
-    createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
+    createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, payMode: cal.pay_mode ?? "none", price: cal.price ?? 0, deposit: cal.deposit ?? 0, noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
     questions: cal.questions.map((q) => `${q.label}${q.required ? " *" : ""}${q.type === "textarea" ? " (textarea)" : ""}${q.options?.length ? `: ${q.options.join(" | ")}` : ""}`).join("\n"),
   });
   const link = `${ORIGIN}/book/${cal.slug}`;
@@ -188,6 +189,7 @@ function CalendarEditor({ cal, hosts, house, act, setMsg }: { cal: Cal; hosts: H
       minNotice: f.minNotice, maxDays: f.maxDays, dailyCap: f.dailyCap || null, assignment: f.assignment, hostIds: f.hostIds, ccEmails: f.cc.split(",").map((s) => s.trim()).filter(Boolean),
       location: f.location, locationDetail: f.locationDetail, confirmationNote: f.confirmationNote, tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean), questions: parseQs(),
       createDeal: f.createDeal, dealValue: f.dealValue || null, noshowSubject: f.noshowSubject, noshowBody: f.noshowBody,
+      ...(payments?.allowed ? { payMode: f.payMode, price: f.price || null, deposit: f.deposit || null } : {}),
     }, "Calendar saved.");
   const noCalendars = f.hostIds.filter((id) => !(hosts.find((h) => h.id === id)?.connections.length));
   return (
@@ -257,6 +259,28 @@ function CalendarEditor({ cal, hosts, house, act, setMsg }: { cal: Cal; hosts: H
           </label>
           <label className="block">Note in the confirmation email<textarea rows={2} value={f.confirmationNote} onChange={(e) => setF({ ...f, confirmationNote: e.target.value })} className={field} /></label>
           <label className="block">Tags for people who book<Input value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} /></label>
+          {payments?.allowed && (
+            <div className="rounded-lg border border-[#635bff]/25 bg-[#635bff]/5 p-3 space-y-2">
+              <label className="block font-medium">Payment when they book
+                <select value={f.payMode} onChange={(e) => setF({ ...f, payMode: e.target.value as "none" | "full" | "deposit" })} className={field} disabled={!payments.connected && f.payMode === "none"}>
+                  <option value="none">No payment (free to book)</option>
+                  <option value="full">Pay the full price to book</option>
+                  <option value="deposit">Pay a deposit to book</option>
+                </select>
+              </label>
+              {f.payMode !== "none" && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="block">Price ($)<Input type="number" value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) || 0 })} /></label>
+                  {f.payMode === "deposit" && <label className="block">Deposit ($)<Input type="number" value={f.deposit} onChange={(e) => setF({ ...f, deposit: Number(e.target.value) || 0 })} /></label>}
+                </div>
+              )}
+              <p className="text-xs text-[#7a8a99]">
+                {payments.connected
+                  ? <>They pay on your own Stripe account before the time is theirs (held 30 minutes while they pay). The payment lands on the Payments page, their contact record and your Finance Center. Refunds are made in your Stripe account. A deposit&rsquo;s balance can be invoiced from <a href="/payments" className="underline">Payments &amp; Invoices</a>.</>
+                  : <>Connect your Stripe account first in <a href="/settings?tab=integrations" className="underline">Settings › Integrations</a>.</>}
+              </p>
+            </div>
+          )}
           <div className="rounded-lg border border-[#1a2b4a]/10 p-3 space-y-2">
             <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={f.createDeal} onChange={(e) => setF({ ...f, createDeal: e.target.checked })} /> Add each booking to the Pipeline as a deal</label>
             {f.createDeal && (

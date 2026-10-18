@@ -48,3 +48,13 @@ test("invoices: the amount, the plan split and the reasons an invoice can't go o
     assert.equal(planComplete(2, 3), false);
     assert.equal(planComplete(3, 3), true);
 });
+
+test("paid booking: a calendar asks for nothing, the full price or a deposit (never under $0.50)", async () => {
+    const { bookingCharge } = await import("../src/lib/booking/engine");
+    assert.equal(bookingCharge({ pay_mode: "none", price: 100, deposit: 25 }), null);
+    assert.equal(bookingCharge({ pay_mode: undefined, price: 100, deposit: null }), null);
+    assert.deepEqual(bookingCharge({ pay_mode: "full", price: 150, deposit: null }), { cents: 15000, kind: "full" });
+    assert.deepEqual(bookingCharge({ pay_mode: "deposit", price: 500, deposit: 100 }), { cents: 10000, kind: "deposit" });
+    assert.equal(bookingCharge({ pay_mode: "deposit", price: 500, deposit: null }), null);
+    assert.equal(bookingCharge({ pay_mode: "full", price: 0.25, deposit: null }), null);
+});
