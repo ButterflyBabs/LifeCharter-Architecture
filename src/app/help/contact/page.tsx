@@ -31,9 +31,13 @@ export default function ContactSupportPage() {
     priority: "normal",
     product: "lccs",
   });
-  // Opened from LC Volant's Get help link (?product=volant): start on LC Volant.
+  // Opened from an app's Get help link (?product=volant or spark): start on that app. LC Spark is parked, so it is
+  // only offered when the request starts from Spark's own Get help link.
+  const [showSpark, setShowSpark] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("product") === "volant") setFormData((f) => ({ ...f, product: "volant" }));
+    const p = new URLSearchParams(window.location.search).get("product");
+    if (p === "volant" || p === "spark") setFormData((f) => ({ ...f, product: p }));
+    if (p === "spark") setShowSpark(true);
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -279,6 +283,7 @@ export default function ContactSupportPage() {
                   >
                     <option value="lccs">Command Suite</option>
                     <option value="volant">LC Volant</option>
+                    {showSpark && <option value="spark">LC Spark</option>}
                   </select>
                 </div>
                 <div>

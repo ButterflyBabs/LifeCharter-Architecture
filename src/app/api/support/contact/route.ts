@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
     const subject = str(body.subject, 200);
     const message = str(body.message, 5000);
     const source = body.source === "travel_partner" ? "travel_partner" : "form";
-    // In the Suite: the Command Suite itself or LC Volant (LC Fledge sends its requests through /api/support/intake).
-    const product = supportProduct(body.product) === "volant" ? "volant" : "lccs";
+    // In the Suite: the Command Suite, LC Volant or LC Spark (LC Fledge sends its requests through /api/support/intake).
+    const product = ["volant", "spark"].includes(supportProduct(body.product)) ? supportProduct(body.product) : "lccs";
     if (!name || !email || !subject || !message) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
     const masterPlanId = await resolveMasterPlanId();

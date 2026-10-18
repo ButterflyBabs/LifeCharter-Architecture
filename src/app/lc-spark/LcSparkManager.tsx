@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle, Copy, Check, Plus, Trash2, AtSign, ExternalLink } from "lucide-react";
+import { MessageCircle, Copy, Check, Plus, Trash2, AtSign, ExternalLink, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -101,7 +101,7 @@ export default function LcSparkManager() {
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#c9a227] to-[#1a2b4a] flex items-center justify-center">
           <MessageCircle className="w-6 h-6 text-white" aria-hidden />
         </div>
@@ -109,6 +109,7 @@ export default function LcSparkManager() {
           <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">LC Spark</h1>
           <p className="text-[#7a8a99]">Your AI assistant for leads: answers questions in your voice on your websites and Instagram, captures name + email into Contacts, and offers your booking link.</p>
         </div>
+        <a href="/help/contact?product=spark" className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3 py-1.5 text-sm font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0]"><LifeBuoy className="h-4 w-4" aria-hidden />Get help</a>
       </div>
       {d && (
         <p className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${d.settings.enabled ? "bg-[#2E7C83]/10 text-[#1F5E63]" : "bg-[#c9a227]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>

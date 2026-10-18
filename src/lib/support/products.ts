@@ -3,6 +3,7 @@ export const SUPPORT_PRODUCTS = [
   { id: "lccs", label: "Command Suite", home: "/help/contact" },
   { id: "volant", label: "LC Volant", home: "/help/contact" },
   { id: "fledge", label: "LC Fledge", home: "https://fledge.lccommandsuite.com" },
+  { id: "spark", label: "LC Spark", home: "/help/contact" },
 ] as const;
 export type SupportProduct = (typeof SUPPORT_PRODUCTS)[number]["id"];
 
