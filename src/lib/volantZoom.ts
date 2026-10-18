@@ -187,7 +187,7 @@ export async function importZoomRecording(db: Db, planId: string, access: ZoomAc
     throw new Error(error.message);
   }
   try {
-    const audioUrl = await zoomAudioLink(db, planId, row.id as string, r.file, access.token);
+    const audioUrl = await zoomAudioLink(db, planId, row.id as string, r.file, access.token, r.uuid);
     const providerId = await submitAudioUrl(row.id as string, audioUrl.url);
     await db.from("volant_recordings").update({ provider_id: providerId, storage_path: audioUrl.storagePath, updated_at: new Date().toISOString() }).eq("id", row.id);
     return row.id as string;
@@ -224,14 +224,31 @@ export const zoomValidationToken = (plain: string) => createHmac("sha256", proce
  * which is handed on as it is (nothing passes through the Suite). If Zoom sends the file directly instead, it is
  * copied into the private recordings bucket and a private link to that copy is used (deleted after transcription).
  */
-async function zoomAudioLink(db: Db, planId: string, recId: string, file: { url: string; type: string }, token: string): Promise<{ url: string; storagePath: string | null }> {
-  const res = await fetch(file.url, { headers: { Authorization: `Bearer ${token}` }, redirect: "manual" });
+async function zoomAudioLink(db: Db, planId: string, recId: string, file: { url: string; type: string }, token: string, uuid: string): Promise<{ url: string; storagePath: string | null }> {
+  // Zoom's own route for downloading through the API: the meeting's recordings with a download pass
+  // (download_access_token, valid for hours), which is added to the file's download link.
+  const id = uuid.startsWith("/") || uuid.includes("//") ? encodeURIComponent(encodeURIComponent(uuid)) : encodeURIComponent(uuid);
+  let target = file.url;
+  let headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  const meta = await fetch(`https://api.zoom.us/v2/meetings/${id}/recordings?include_fields=download_access_token&ttl=21600`, { headers });
+  if (meta.ok) {
+    const m = (await meta.json().catch(() => ({}))) as { download_access_token?: string; recording_files?: Array<{ file_type?: string; file_size?: number; download_url?: string }> };
+    const files = (m.recording_files || []).filter((f) => f.download_url && (f.file_type === "M4A" || f.file_type === "MP4"));
+    const pick = files.find((f) => f.file_type === "M4A") || files.sort((a, b) => (a.file_size || 0) - (b.file_size || 0))[0];
+    if (pick?.download_url && m.download_access_token) {
+      target = `${pick.download_url}${pick.download_url.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(m.download_access_token)}`;
+      headers = {};
+    }
+  } else {
+    console.error("zoom meeting recordings:", meta.status, (await meta.text().catch(() => "")).slice(0, 200));
+  }
+  const res = await fetch(target, { headers, redirect: "manual" });
   if (res.status >= 300 && res.status < 400) {
     const loc = res.headers.get("location");
     if (!loc) throw new Error(`zoom-download ${res.status} without a location`);
-    return { url: new URL(loc, file.url).toString(), storagePath: null };
+    return { url: new URL(loc, target).toString(), storagePath: null };
   }
-  if (!res.ok) throw new Error(`zoom-download ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`zoom-download ${res.status}${headers.Authorization ? " (header)" : " (download pass)"}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
   const bytes = new Uint8Array(await res.arrayBuffer());
   const ext = file.type === "M4A" ? "m4a" : "mp4";
   const path = `${planId}/zoom-${recId}.${ext}`;
