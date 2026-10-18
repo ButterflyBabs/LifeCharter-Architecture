@@ -12,8 +12,10 @@ import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureAp
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go", "/sign"];
 const PUBLIC_APIS = [
+  "/api/sign/", // e-signature (task 1072): a signer's private link (the token is the key, plus an emailed code)
+  "/api/cron/sign-reminders", // secured by its own CRON_SECRET check, not a session
   "/api/bridge/", // course-platform bridge (task 1152): sales from Payhip, Kajabi, Teachable, Thinkific, Zapier/Make; the private token is the key
   "/api/sms/inbound", // Twilio: texts to an account's number (task 1151), checked by Twilio's signature
   "/api/sms/status", // Twilio: delivery updates, checked by Twilio's signature

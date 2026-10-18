@@ -97,6 +97,7 @@ import {
   UsersRound,
   Award,
   PanelsTopLeft,
+  FileSignature,
 } from "lucide-react";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
@@ -149,6 +150,7 @@ const navigationSections = [
       { id: "programs", label: "Courses & Memberships", icon: GraduationCap, href: "/programs" },
       { id: "events", label: "Events", icon: Megaphone, href: "/events" },
       { id: "landing-pages", label: "Landing Pages", icon: PanelsTopLeft, href: "/landing-pages" },
+      { id: "agreements", label: "Agreements & Proposals", icon: FileSignature, href: "/agreements" },
       { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
       { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
       { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
