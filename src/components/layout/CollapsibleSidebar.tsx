@@ -241,6 +241,7 @@ const ownerSection = {
     { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
     { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
     { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
+    { id: "client-welcome-overview", label: "Client Welcome Overview (PDF)", icon: BookOpen, href: "https://lccommandsuite.com/handouts/client-welcome-overview.pdf" },
     { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
     { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
     { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
