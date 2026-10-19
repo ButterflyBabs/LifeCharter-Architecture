@@ -1203,7 +1203,8 @@ export function CollapsibleSidebar() {
         <DndContext sensors={navSensors} collisionDetection={navCollision} autoScroll={{ threshold: { x: 0, y: 0.08 }, acceleration: 4 }} onDragStart={startNavDrag} onDragCancel={() => { navDragActive = false; navDragEndedAt = Date.now(); stopClickBlock(); }} onDragEnd={(e) => { navDragActive = false; navDragEndedAt = Date.now(); stopClickBlock(); noteDrag(e); handleNavDragEnd(e); }}>
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
-          const visibleItems = section.items.filter((item) => isCollapsed || !foldedSections[section.title] || activeItem === item.id);
+          // A closed section hides all its pages, including the one you're on (Babs, 2026-10-18).
+          const visibleItems = section.items.filter(() => isCollapsed || !foldedSections[section.title]);
           return (
           <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} onMove={(d) => moveSection(section.title, d)} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
