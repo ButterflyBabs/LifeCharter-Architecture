@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
+import { notifyOwnerOfTextingDecision } from "@/lib/smsNotify";
 import { SMS_CAP_BY_TIER, SMS_DEFAULT_CAP, consentText, DEFAULT_24H, segmentsOf, toE164, type Business } from "@/lib/sms";
 
 // Text messages (task 1151), the server side. Plain Twilio REST (no SDK) with the Suite's own account
@@ -211,7 +212,10 @@ export async function checkVerifications(db: Db): Promise<number> {
     const next = st === "TWILIO_APPROVED" ? "approved" : st === "TWILIO_REJECTED" ? "rejected" : st === "IN_REVIEW" ? "in_review" : "pending";
     const note = next === "rejected" ? String(r.data.rejection_reason || r.data.error_code || "Twilio didn't approve the details.") : null;
     await db.from("sms_accounts").update({ status: next, status_note: note, checked_at: new Date().toISOString(), ...(next === "approved" ? { approved_at: new Date().toISOString() } : {}) }).eq("master_plan_id", a.master_plan_id);
-    if (next !== a.status) changed++;
+    if (next !== a.status) {
+      changed++;
+      if (next === "approved" || next === "rejected") await notifyOwnerOfTextingDecision(db, a.master_plan_id, next, note).catch(() => {});
+    }
   }
   return changed;
 }

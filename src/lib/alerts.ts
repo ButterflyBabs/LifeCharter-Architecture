@@ -469,6 +469,18 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // Texting number: the carriers decided (approval takes 5 to 15 business days, so say so when it lands).
+  try {
+    const { data: sms } = await supabase.from("sms_accounts").select("status, status_note, approved_at, checked_at").eq("master_plan_id", masterPlanId).maybeSingle();
+    if (sms?.status === "approved" && sms.approved_at && Date.now() - new Date(sms.approved_at as string).getTime() < 14 * 86400000) {
+      out.push({ nkey: `sms-approved:${sms.approved_at}`, type: "action", title: "Your texting number is approved", body: "Open Settings > Text messages and press Send me a test, then try a booking with the text-reminder box ticked.", href: "/settings?tab=texts" });
+    } else if (sms?.status === "rejected") {
+      out.push({ nkey: `sms-rejected:${sms.checked_at}`, type: "action", title: "Your texting number needs a change", body: `${(sms.status_note as string) || "The carriers did not approve it yet."} Open Settings > Text messages to see what to change.`, href: "/settings?tab=texts" });
+    }
+  } catch {
+    /* best effort */
+  }
+
   // LinkedIn connection requests added from the inbox and not messaged yet.
   try {
     const { count } = await supabase
