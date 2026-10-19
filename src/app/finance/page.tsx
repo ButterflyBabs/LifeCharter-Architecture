@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Wallet,
   CalendarDays,
+  Landmark,
 } from "lucide-react";
 import Link from "next/link";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
@@ -30,6 +31,15 @@ interface Section {
   icon: React.ReactNode;
   tint: string;
 }
+
+// Bank & card feeds (task 1150): shown only where the page is open (Babs's account until BANK_FEEDS_OPEN_TO_ALL).
+const BANK_SECTION: Section = {
+  href: "/finance/bank-feeds",
+  title: "Bank & card feeds",
+  description: "Link a bank or card; approve new transactions into your books",
+  icon: <Landmark className="w-5 h-5 text-[#2E7C83]" />,
+  tint: "#2E7C83",
+};
 
 const SECTIONS: Section[] = [
   {
@@ -124,6 +134,11 @@ function liveLine(href: string, o: FinanceOverview | null): { text: string; warn
 
 export default function FinancePage() {
   const { overview } = useFinanceOverview();
+  const [bankFeeds, setBankFeeds] = useState(false);
+  useEffect(() => {
+    // The feeds API answers 404 where the page is not open yet, so the card only shows when it works.
+    fetch("/api/bank-feeds", { cache: "no-store" }).then((r) => setBankFeeds(r.ok)).catch(() => setBankFeeds(false));
+  }, []);
   const [health, setHealth] = useState<number | null>(null);
   const [mtd, setMtd] = useState<{ income: number; expense: number; net: number } | null>(null);
 
@@ -200,7 +215,7 @@ export default function FinancePage() {
       {/* Sections */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">Finance Sections</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SECTIONS.map((s) => (
+        {[...SECTIONS, ...(bankFeeds ? [BANK_SECTION] : [])].map((s) => (
           <Link key={s.href} href={s.href}>
             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-5">

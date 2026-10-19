@@ -20,6 +20,7 @@ const PUBLIC_APIS = [
   "/api/sms/inbound", // Twilio: texts to an account's number (task 1151), checked by Twilio's signature
   "/api/sms/status", // Twilio: delivery updates, checked by Twilio's signature
   "/api/cron/sms", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/bank-feeds", // secured by its own CRON_SECRET check, not a session
   "/api/lp/", // landing pages (task 1153): visits, sign-ups, registrations, Buy clicks, bookings, main image
   "/api/e/", // public event pages (task 1149): sign-up, calendar file, a registrant's challenge page (their private link is the key)
   "/api/cron/events", // secured by its own CRON_SECRET check, not a session
