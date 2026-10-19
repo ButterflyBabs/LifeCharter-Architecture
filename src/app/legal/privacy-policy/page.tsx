@@ -79,6 +79,22 @@ export default function PrivacyPolicyPage() {
           and revoke access at myaccount.google.com/permissions. When you disconnect, we delete the stored connection.
         </p>
 
+        <h2 className={H2}>Bank and card data (Bank &amp; card feeds)</h2>
+        <p className={P}>
+          If you choose to link a business bank account or card under Finance &rsaquo; Bank &amp; card feeds, the link is made in
+          the secure window of Stripe, our payment provider, using Stripe Financial Connections. The Suite never sees or stores
+          your bank login. With your permission we receive only transaction details (date, amount and description) and the
+          account&apos;s name, type and last four digits. We do not request balances, full account or routing numbers or account
+          ownership details, and the link is read-only: it can never move money.
+        </p>
+        <p className={P}>
+          We use these transactions only to show them to you on a review list with a suggested category. Nothing is added to your
+          books until you approve it. We do not sell this data, do not share it with third parties for their own purposes, do not
+          use it for advertising or to train AI models, and store it only in the United States. You can unlink an account at any
+          time under Finance &rsaquo; Bank &amp; card feeds: that stops the feed and deletes transactions you have not reviewed.
+          Transactions you approved stay in your Finance Center until you delete them.
+        </p>
+
         <h2 className={H2}>3. How We Share Information</h2>
         <p className={P}>We do not sell your personal information. We share information with:</p>
         <ul className="space-y-3 text-[#b8a898] leading-relaxed mb-4">
