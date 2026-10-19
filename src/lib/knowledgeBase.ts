@@ -1553,6 +1553,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["client care", "check-in", "check in", "survey", "pulse", "quarterly", "exit survey", "former client", "quiet client", "client feedback", "retention", "nps"],
   },
   {
+    id: "get-paid-in-suite",
+    category: "Finance",
+    question: "How do I get paid inside the Suite? How do I send an invoice or a payment link?",
+    answer:
+      "Go to Settings, then Integrations, then Stripe, and press Connect with Stripe. Sign in to your own Stripe account (or make one) and press Connect. Your money goes straight to your own Stripe account and then to your bank; LifeCharter never holds or processes it, and the Suite adds no fee (Stripe's own card fees apply, see stripe.com/pricing). Then open Money, then Payments & Invoices and press New invoice: pick a contact, an amount, what it is for, whether it is paid in full or split into 2 to 24 monthly payments, and when it is due. Stripe emails them a secure pay page, and you can also Copy pay link. For a product, press Create payment link on its card in Offers & Packages (paid in full, monthly, or a payment plan of a set number of payments that stops itself) and share the link anywhere or put it on a landing page. Calendars can also ask for full payment or a deposit when someone books. Each payment appears on Payments & Invoices, on the person's contact record and timeline, tags them customer, marks their open deal Won, and adds the income and Stripe's fee to Finance. To refund, open the payment in your own Stripe dashboard; the Suite updates by itself and records the refund in Finance. Your assistant can list payments and prepare an invoice or payment link for you to approve. Only the account owner or a team admin can manage payments.",
+    keywords: ["payments", "invoice", "invoices", "payment link", "get paid", "stripe", "connect stripe", "payment plan", "deposit", "paid booking", "refund", "send invoice", "accept payments", "charge", "payments and invoices"],
+  },
+  {
     id: "help-any-app",
     category: "Account & Settings",
     question: "How do I get help with LC Volant, LC Spark or LC Fledge?",
