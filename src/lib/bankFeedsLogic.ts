@@ -26,7 +26,7 @@ export interface LedgerLine {
 export const typeOf = (cents: number): "income" | "expense" => (cents < 0 ? "expense" : "income");
 
 // Words banks put on money that is only moving between the client's own accounts or being paid out by a processor.
-const TRANSFERISH = /\b(transfer|xfer|online banking|autopay|auto pay|payment thank you|thank you payment|credit card payment|card payment|payment - thank|ach pmt|epay|zelle to self)\b/i;
+const TRANSFERISH = /\b(transfer|xfer|online banking|autopay|auto pay|payment thank you|thank you payment|credit card payment|card payment|crd pmt|card pmt|payment - thank|ach pmt|epay|zelle to self|(to|from) (primary|taxes|savings|checking))\b/i;
 // A payout from a processor the Suite already counts through its own sync (Stripe sales are posted as income when they happen).
 const PROCESSOR_PAYOUT = /\b(stripe|stripe transfer|st-[a-z0-9]{6,})\b.*\b(transfer|payout)\b|\bstripe\b.*\btransfer\b|\bpaypal\b.*\btransfer\b|\bsquare\b.*\bdeposit\b/i;
 
@@ -47,8 +47,8 @@ const normalize = (s: string) => cleanVendor(s).toLowerCase();
 
 // Plain keyword rules. The first match wins. The name is a standard label; if the client already uses a similar category, theirs is used instead.
 const RULES: { test: RegExp; type?: "income" | "expense"; category: string }[] = [
-  { test: /\b(zoom|google workspace|g suite|microsoft|office 365|adobe|canva|dropbox|notion|slack|openai|anthropic|chatgpt|github|vercel|supabase|squarespace|wix|godaddy|namecheap|mailchimp|convertkit|kajabi|teachable|calendly|zapier|make\.com|lastpass|1password)\b/i, type: "expense", category: "Software" },
-  { test: /\b(facebook|meta ads|fb ads|instagram|linkedin|google ads|youtube ads|tiktok ads|advertis)/i, type: "expense", category: "Advertising" },
+  { test: /\b(zoom|google workspace|g suite|microsoft|office 365|adobe|canva|dropbox|notion|slack|openai|anthropic|chatgpt|github|vercel|supabase|squarespace|wix|godaddy|namecheap|mailchimp|convertkit|kajabi|teachable|calendly|zapier|make\.com|lastpass|1password|twilio|boldsign|descript|elevenlabs|answerthepublic|smtp|heygen|riverside|loom|zoom\.us|vimeo|assemblyai)\b/i, type: "expense", category: "Software" },
+  { test: /\b(facebook|facebk|meta ads|fb ads|instagram|linkedin|google ads|youtube ads|tiktok ads|advertis)/i, type: "expense", category: "Advertising" },
   { test: /\b(restaurant|cafe|coffee|starbucks|doordash|grubhub|ubereats|uber eats|chipotle|mcdonald|pizza|grill|bistro|diner)\b/i, type: "expense", category: "Meals" },
   { test: /\b(airlines|delta|united air|southwest|american air|hotel|marriott|hilton|airbnb|uber|lyft|rental car|hertz|avis)\b/i, type: "expense", category: "Travel" },
   { test: /\b(staples|office depot|amazon|amzn|walmart|target|costco)\b/i, type: "expense", category: "Office supplies" },
@@ -63,11 +63,25 @@ const RULES: { test: RegExp; type?: "income" | "expense"; category: string }[] =
   { test: /\b(deposit|payment from|invoice|venmo|cash app|zelle from)\b/i, type: "income", category: "Client payments" },
 ];
 
+// Other names clients commonly use for the same thing, so "Ads" or "Marketing" is chosen over a new "Advertising".
+const ALIASES: Record<string, string[]> = {
+  Advertising: ["ads", "advertising", "marketing", "promotion"],
+  Software: ["software", "tools", "apps", "technology", "ai support", "subscriptions"],
+  "Professional fees": ["professional fees", "professional services", "legal", "accounting", "contractors"],
+  "Office supplies": ["office supplies", "supplies", "office"],
+  "Phone & internet": ["phone & internet", "phone", "internet", "telecom"],
+  Meals: ["meals", "meals & entertainment", "food"],
+  Travel: ["travel", "travel & lodging"],
+};
+
 /** Picks the client's own spelling when they already have a similar category; otherwise the standard label. */
 export function pickCategory(label: string, mine: string[]): string {
   const want = label.toLowerCase();
   const exact = mine.find((c) => c.toLowerCase() === want);
   if (exact) return exact;
+  const aliases = (ALIASES[label] ?? []).map((a) => a.toLowerCase());
+  const alias = mine.find((c) => aliases.includes(c.toLowerCase()));
+  if (alias) return alias;
   const near = mine.find((c) => c.toLowerCase().includes(want) || want.includes(c.toLowerCase()));
   return near || label;
 }

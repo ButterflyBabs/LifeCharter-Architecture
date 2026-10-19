@@ -62,3 +62,11 @@ test("Stripe timestamps land on the Mountain-time day", () => {
   // 2026-10-19 02:00 UTC is still October 18 in Denver.
   assert.equal(dayOf(Date.UTC(2026, 9, 19, 2, 0, 0) / 1000), "2026-10-18");
 });
+
+test("Facebook card lines, tools and moves between a client's own accounts are recognized", () => {
+  assert.equal(suggest({ amountCents: -1500, description: "FACEBK *AEAWXDX WILMINGTON DE" }, new Map(), [], ["Ads", "Software"]).category, "Ads");
+  assert.equal(suggest({ amountCents: -3000, description: "BOLDSIGN, MORRISVILLE, NC" }, new Map(), [], ["Software"]).category, "Software");
+  assert.equal(looksLikeTransfer("TAXES TO PRIMARY"), true);
+  assert.equal(looksLikeTransfer("SPARROW CRD PMT"), true);
+  assert.equal(pickCategory("Advertising", ["Marketing"]), "Marketing");
+});
