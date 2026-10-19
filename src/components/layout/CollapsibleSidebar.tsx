@@ -109,52 +109,74 @@ import { PORTAL_OPEN_TO_ALL } from "@/lib/portalFlag";
 // same shape as that app's DAILY OPERATIONS / STRATEGIC PLANNING groups,
 // built from this app's own eleven pages rather than copying its content.
 const navigationSections = [
-  // Today's rhythm: where the day starts and runs.
+  // Today's rhythm: where the day starts and runs. Most-used first (left menu audit, approved by Babs 2026-10-18).
   {
     title: "DAILY OPERATIONS",
     color: "text-[#c9a227]",
     items: [
       { id: "executive-home", label: "Executive Home", icon: LayoutDashboard, href: "/" },
       { id: "daily-compass", label: "Daily Compass", icon: Compass, href: "/daily-compass" },
-      { id: "content-calendar", label: "Content Calendar", icon: CalendarDays, href: "/daily-compass/calendar" },
       { id: "tasks", label: "Tasks", icon: ListChecks, href: "/tasks" },
       { id: "reminders", label: "Reminders", icon: BellRing, href: "/reminders" },
       { id: "assistant-approvals", label: "Waiting for my approval", icon: ClipboardCheck, href: "/assistant-approvals" },
-      { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
-      { id: "volant", label: "LC Volant", icon: Feather, href: "/volant" },
-      { id: "time", label: "Time", icon: Timer, href: "/time" },
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
+      { id: "time", label: "Time", icon: Timer, href: "/time" },
+      { id: "volant", label: "LC Volant", icon: Feather, href: "/volant" },
+      { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
       { id: "capture", label: "Quick Capture", icon: Smartphone, href: "/capture" },
       { id: "community", label: "The Collective", icon: Users, href: collectiveHref("/community") },
-      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
-      { id: "payments", label: "Payments & Invoices", icon: Receipt, href: "/payments" },
-      { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
-      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
     ],
   },
-  // The CRM: every account, each seeing only its own people, deals, calendars and emails.
+  // Finding and closing clients: every account, each seeing only its own people, deals and calendars.
   {
     title: "CLIENTS & SALES",
     color: "text-[#2E7C83]",
     items: [
       { id: "contacts", label: "Contacts", icon: Users, href: "/contacts" },
-      { id: "tags", label: "Tag Library", icon: Tags, href: "/tags" },
       { id: "pipeline", label: "Pipeline", icon: KanbanSquare, href: "/sales/pipeline" },
-      { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
-      { id: "qualifier", label: "Prospect Qualifier", icon: UserCheck, href: "/qualifier" },
       { id: "calendars", label: "Calendars", icon: CalendarDays, href: "/calendars" },
+      { id: "dm-pipeline", label: "Outreach Pipelines", icon: MessagesSquare, href: "/dm-pipeline" },
+      { id: "offers", label: "Offers & Packages", icon: Package, href: "/sales/offers" },
+      { id: "agreements", label: "LC Plume", icon: FileSignature, href: "/agreements" },
+      { id: "qualifier", label: "Prospect Qualifier", icon: UserCheck, href: "/qualifier" },
+      { id: "tags", label: "Tag Library", icon: Tags, href: "/tags" },
+      { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
+    ],
+  },
+  // Reaching many people at once and bringing them in.
+  {
+    title: "MARKETING",
+    color: "text-[#b5654a]",
+    items: [
+      { id: "content-calendar", label: "Content Calendar", icon: CalendarDays, href: "/daily-compass/calendar" },
       { id: "sequences-manager", label: "Campaigns & Broadcasts", icon: Mail, href: "/sequences-manager" },
-      { id: "client-care", label: "Client Care", icon: HeartHandshake, href: "/client-care" },
-      { id: "client-portals", label: "Client Portals", icon: UsersRound, href: "/client-portals" },
-      { id: "programs", label: "Courses & Memberships", icon: GraduationCap, href: "/programs" },
       { id: "events", label: "Events", icon: Megaphone, href: "/events" },
       { id: "landing-pages", label: "Landing Pages", icon: PanelsTopLeft, href: "/landing-pages" },
-      { id: "agreements", label: "LC Plume", icon: FileSignature, href: "/agreements" },
-      { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
-      { id: "affiliates", label: "Affiliates", icon: Handshake, href: "/affiliates" },
-      { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
+      { id: "reviews", label: "Testimonials", icon: Star, href: "/reviews" },
+      { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
       { id: "short-links", label: "Short Links", icon: Link2, href: "/short-links" },
+      { id: "invites", label: "Invite Tracker", icon: MailCheck, href: "/invites" },
+      { id: "meta-leads", label: "Meta Lead Ads", icon: BarChart3, href: "/meta-leads" },
+    ],
+  },
+  // Serving clients after they buy.
+  {
+    title: "CLIENT DELIVERY",
+    color: "text-[#5b8fb9]",
+    items: [
+      { id: "client-portals", label: "Client Portals", icon: UsersRound, href: "/client-portals" },
+      { id: "programs", label: "Courses & Memberships", icon: GraduationCap, href: "/programs" },
+      { id: "client-care", label: "Client Care", icon: HeartHandshake, href: "/client-care" },
+    ],
+  },
+  // Money in and out.
+  {
+    title: "MONEY",
+    color: "text-[#8fb58a]",
+    items: [
+      { id: "finance", label: "Finance", icon: DollarSign, href: "/finance" },
+      { id: "payments", label: "Payments & Invoices", icon: Receipt, href: "/payments" },
     ],
   },
   // The big picture, the four plans and how the business runs, all in one place.
@@ -163,31 +185,29 @@ const navigationSections = [
     color: "text-[#7b6b8d]",
     items: [
       { id: "business-alignment", label: "Business Alignment", icon: BarChart3, href: "/business-alignment" },
-      { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
+      { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
+      { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
       { id: "progress", label: "Progress", icon: TrendingUp, href: "/progress" },
+      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
       { id: "business-plan", label: "Business Plan", icon: Briefcase, href: "/business-plan" },
       { id: "marketing-plan", label: "Marketing Plan", icon: Megaphone, href: "/marketing-plan" },
       { id: "sales", label: "Sales Plan", icon: TrendingUp, href: "/sales" },
       { id: "forecasting", label: "Forecasting", icon: LineChart, href: "/planning/forecast" },
-      { id: "goals", label: "Goal Ladder", icon: Mountain, href: "/planning/goals" },
-      { id: "planning", label: "Planning Hub", icon: Target, href: "/planning" },
-      { id: "review", label: "Weekly Review", icon: ClipboardCheck, href: "/planning/review" },
-      { id: "year-in-review", label: "Year in Review", icon: Award, href: "/year-in-review" },
-      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
-      { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
       { id: "sops", label: "Playbook & SOPs", icon: BookOpen, href: "/operations/sops" },
+      { id: "operations", label: "Operations", icon: Settings, href: "/operations" },
+      { id: "alignment-profile", label: "Alignment Profile", icon: ClipboardList, href: "/assessments" },
       { id: "compliance", label: "Legal & Compliance", icon: Scale, href: "/compliance" },
-      { id: "links-directory", label: "Links & Forms", icon: Link2, href: "/links-directory" },
+      { id: "year-in-review", label: "Year in Review", icon: Award, href: "/year-in-review" },
     ],
   },
   {
     title: "SETTINGS",
     color: "text-[#b8a898]",
     items: [
-      { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "settings", label: "Settings", icon: Settings2, href: "/settings" },
-      { id: "glossary", label: "Glossary", icon: BookOpen, href: "/glossary" },
+      { id: "ai-guide", label: "AI Assistant", icon: Sparkles, href: "/settings?tab=ai" },
       { id: "vault", label: "Logins & Passwords", icon: KeyRound, href: "/vault" },
+      { id: "segments", label: "Business Segments", icon: Boxes, href: "/segments" },
     ],
   },
   {
@@ -199,6 +219,7 @@ const navigationSections = [
       { id: "starter-guide", label: "Starter Guide", icon: BookOpen, href: STARTER_GUIDE_URL },
       { id: "welcome-overview", label: "Welcome Overview", icon: BookOpen, href: WELCOME_OVERVIEW_URL },
       { id: "website-review", label: "Website Review", icon: Globe, href: "/website-review" },
+      { id: "glossary", label: "Glossary", icon: BookOpen, href: "/glossary" },
     ],
   },
 ];
@@ -232,51 +253,86 @@ const teamSection = {
   ],
 };
 
-const ownerSection = {
-  title: "ALIGNMENT ARCHITECT",
-  color: "text-[#c9a227]",
-  items: [
-    { id: "team-huddle-aa", label: "Team Huddle (weekly call)", icon: Users, href: "/team-huddle" },
-    { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
-    { id: "exec-consultation-map", label: "Executive Consultation Road Map", icon: BookOpen, href: "https://claude.ai/artifact/VgFMEfKm37vg7XvxMbFs3o" },
-    { id: "starter-signup-map", label: "Starter Sign-Up Map", icon: BookOpen, href: "https://claude.ai/artifact/Q8YshdhqnBFX3sMwNVve2R" },
-    { id: "saving-call-note", label: "Saving a Call Note", icon: BookOpen, href: "https://claude.ai/artifact/E8i7Ws5ndduBQHui67ZrT1" },
-    { id: "google-demo-video", label: "Google Demo Video", icon: Video, href: "https://youtu.be/UmaGoM4NvJ4" },
-    { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
-    { id: "prep-documents", label: "Prep Documents (LCCS 2027 > Prep)", icon: BookOpen, href: "https://claude.ai/artifact/FmsjAZMcfyVAnsa4Xat2Dy" },
-    { id: "fb-event-copy", label: "From Hustle to Command: Facebook Event Copy", icon: BookOpen, href: "https://claude.ai/artifact/QdNU7zJng7DovSwjFrrrge" },
-    { id: "master-punch-list", label: "Master Punch List (archive)", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
-    { id: "sneak-peek-run-of-show", label: "Command Suite Short Demo", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
-    { id: "short-demo-slides", label: "Short Demo Slides", icon: Presentation, href: "https://claude.ai/artifact/CsTuHezMWhXz1DpbugffRU" },
-    { id: "masterclass-script-1008", label: "10/08 MasterClass Script", icon: BookOpen, href: "https://claude.ai/artifact/8BTWYQvfDSeFQNpWd7BF5j" },
-    { id: "masterclass-script-1022", label: "10/22 MasterClass Script (See It Clearly)", icon: BookOpen, href: "https://claude.ai/artifact/8beWZbbh6t3ko3cfZhqNsi" },
-    { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
-    { id: "demo-account", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
-    { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
-    { id: "team-briefing-90-day", label: "Team Briefing: 90-Day Strategy", icon: BookOpen, href: "/my-pages/team-briefing" },
-    { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
-    { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
-    { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
-    { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
-    { id: "client-welcome-overview", label: "Client Welcome Overview (PDF)", icon: BookOpen, href: WELCOME_OVERVIEW_URL },
-    { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
-    { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
-    { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
-    { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
-    { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
-    { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },
-    { id: "quarterly-intensive", label: "Quarterly Intensive", icon: CalendarRange, href: "/quarterly-intensive" },
-    { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
-    { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
-    { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },
-    { id: "accountability-coach", label: "Accountability Partners", icon: HeartHandshake, href: "/accountability-coach" },
-    { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
-    { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
-    { id: "pre-founder-call", label: "Pre-Founder Call", icon: PhoneCall, href: "/pre-founder-call" },
-    { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
-    { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
-  ],
+// Alignment Architect: Babs only (her email, hard-wired), shown only when /api/me says so; the pages and their APIs
+// enforce the same check. Five folding groups (left menu audit, approved 2026-10-18); the Archive starts folded.
+// Executive Consultation Map, Saving a Call Note and Team Briefing are her own pages (custom_pages, nav_section
+// alignment_architect) and are placed into a group by ARCHITECT_PAGE_GROUP below.
+const ARCHIVE_TITLE = "ARCHITECT · ARCHIVE";
+const ownerSections = [
+  {
+    title: "ALIGNMENT ARCHITECT",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "command-center", label: "Command Center", icon: Activity, href: "/command-center" },
+      { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
+      { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },
+      { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
+      { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
+      { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
+      { id: "accountability-coach", label: "Accountability Partners", icon: HeartHandshake, href: "/accountability-coach" },
+      { id: "session-checklists", label: "Session Checklists", icon: ClipboardCheck, href: "/session-checklists" },
+      { id: "support-desk", label: "Support Desk", icon: Inbox, href: "/support-desk" },
+      { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
+      { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
+      { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
+    ],
+  },
+  {
+    title: "ARCHITECT · SALES",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "sales-reference", label: "Sales Reference", icon: DollarSign, href: "/sales-reference" },
+      { id: "pre-founder-call", label: "Pre-Founder Call", icon: PhoneCall, href: "/pre-founder-call" },
+      { id: "starter-signup-map", label: "Starter Sign-Up Map", icon: BookOpen, href: "https://claude.ai/artifact/Q8YshdhqnBFX3sMwNVve2R" },
+      { id: "demo-account", label: "Demo Account (turns demo on)", icon: MonitorPlay, href: "https://lccommandsuite.com/demo" },
+      { id: "sneak-peek-run-of-show", label: "Command Suite Short Demo", icon: Presentation, href: "https://claude.ai/artifact/HpJ3wVr8gua2gskrupNrz9" },
+      { id: "short-demo-slides", label: "Short Demo Slides", icon: Presentation, href: "https://claude.ai/artifact/CsTuHezMWhXz1DpbugffRU" },
+    ],
+  },
+  {
+    title: "ARCHITECT · PROGRAMS & EVENTS",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "life-by-design", label: "Life by Design", icon: Mic, href: "/life-by-design" },
+      { id: "annual-retreat", label: "Annual In Person Retreat", icon: MapPin, href: "/annual-retreat" },
+      { id: "quarterly-intensive", label: "Quarterly Intensive", icon: CalendarRange, href: "/quarterly-intensive" },
+      { id: "masterclass-script-1022", label: "10/22 MasterClass Script (See It Clearly)", icon: BookOpen, href: "https://claude.ai/artifact/8beWZbbh6t3ko3cfZhqNsi" },
+      { id: "lifecharter-lesson-studio", label: "LifeCharter Lesson Studio", icon: BookOpen, href: "https://claude.ai/artifact/4M3MyiwRX5T4dAQsG39RhW" },
+      { id: "lessons-manager", label: "Lessons", icon: GraduationCap, href: "/lessons-manager" },
+      { id: "lifecharter-app", label: "LifeCharter App", icon: Sprout, href: "https://lifecharter.life/app" },
+    ],
+  },
+  {
+    title: "ARCHITECT · INVESTORS & LEGAL",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "investor-access", label: "Investor Access Requests", icon: UserCheck, href: "/investor-access" },
+      { id: "investor-brief-page", label: "Investor Brief (live page)", icon: Presentation, href: "/investor-brief" },
+      { id: "due-diligence-review", label: "Due Diligence Q&A (review and approve)", icon: Scale, href: "https://claude.ai/artifact/1DndhgttBrt3qxzr4EQgMh" },
+      { id: "prep-documents", label: "Prep Documents (LCCS 2027 > Prep)", icon: BookOpen, href: "https://claude.ai/artifact/FmsjAZMcfyVAnsa4Xat2Dy" },
+      { id: "attorney-review-founder-pricing", label: "Attorney Review: Founder Pricing", icon: Scale, href: "https://claude.ai/artifact/5PwmizNZMxJokEnFtNpypA" },
+      { id: "google-demo-video", label: "Google Demo Video", icon: Video, href: "https://youtu.be/UmaGoM4NvJ4" },
+    ],
+  },
+  {
+    title: "ARCHITECT · ARCHIVE",
+    color: "text-[#c9a227]",
+    items: [
+      { id: "master-punch-list", label: "Master Punch List (archive)", icon: ClipboardList, href: "https://claude.ai/artifact/63hHW1x177qZcxYjNhCn3H" },
+      { id: "masterclass-script-1008", label: "10/08 MasterClass Script", icon: BookOpen, href: "https://claude.ai/artifact/8BTWYQvfDSeFQNpWd7BF5j" },
+      { id: "fb-event-copy", label: "From Hustle to Command: Facebook Event Copy", icon: BookOpen, href: "https://claude.ai/artifact/QdNU7zJng7DovSwjFrrrge" },
+    ],
+  },
+];
+// Babs's own pages: which Architect group each sits in (anything else goes in the first group).
+const ARCHITECT_PAGE_GROUP: Record<string, string> = {
+  "executive-consultation-map": "ARCHITECT · SALES",
+  "saving-a-call-note": "ARCHITECT · SALES",
+  "team-briefing": "ARCHITECT · PROGRAMS & EVENTS",
+  "masterclass-angles": "ARCHITECT · PROGRAMS & EVENTS",
 };
+// Sections that start folded until someone opens them.
+const DEFAULT_FOLDED = [ARCHIVE_TITLE];
 
 // DEMO ACCOUNT ONLY (lc_demo cookie). The pages in the order the guided tour
 // shows them, as one section at the top, so presenting is "click the next one
@@ -309,7 +365,7 @@ function demoTourSections() {
   ];
 }
 
-const navigationItems = [...navigationSections, teamSection, ownerSection, efSection, { items: demoOnlyItems }].flatMap((s) => s.items);
+const navigationItems = [...navigationSections, teamSection, ...ownerSections, efSection, { items: demoOnlyItems }].flatMap((s) => s.items);
 
 // Help section navigation items
 const helpItems = [
@@ -628,7 +684,7 @@ export function CollapsibleSidebar() {
 
   // Each section (Daily Operations, Strategic Planning, Alignment, Systems) folds
   // up from its heading; the choice is remembered on this device. A folded
-  // section still shows the page you're on so you never lose your place.
+  // section hides all of its pages, including the one you're on.
   const [foldedSections, setFoldedSections] = useState<Record<string, boolean>>({});
   useEffect(() => {
     try {
@@ -638,9 +694,11 @@ export function CollapsibleSidebar() {
       /* keep everything open */
     }
   }, []);
+  // A section the person never opened or closed uses its default (the Architect Archive starts folded).
+  const isFolded = (title: string) => foldedSections[title] ?? DEFAULT_FOLDED.includes(title);
   const toggleSection = (title: string) =>
     setFoldedSections((prev) => {
-      const next = { ...prev, [title]: !prev[title] };
+      const next = { ...prev, [title]: !(prev[title] ?? DEFAULT_FOLDED.includes(title)) };
       try {
         localStorage.setItem("nav-folded-sections", JSON.stringify(next));
       } catch {
@@ -696,6 +754,8 @@ export function CollapsibleSidebar() {
   const [extras, setExtras] = useState<AccessExtras | null>(null);
   // Until all three assessments are finished the menu shows only Set up Suite, the assessments, Settings and support.
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
+  // Team Huddle shows only for an account with a team (a member, or someone added to the huddle by email).
+  const [hasTeam, setHasTeam] = useState(true);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -704,6 +764,7 @@ export function CollapsibleSidebar() {
         setFeatures(d?.features ?? null);
         setExtras(d?.extras ?? null);
         setAssessmentsLocked(d?.assessmentsLocked === true);
+        setHasTeam(d?.hasTeam !== false);
       })
       .catch(() => {});
   }, []);
@@ -722,7 +783,7 @@ export function CollapsibleSidebar() {
     if (href === "/demo") return extras?.demo === true;
     if (assessmentsLocked) {
       const p = href.split("?")[0];
-      return p === "/setup" || p.endsWith("/starter-guide.html") || p.endsWith(WELCOME_OVERVIEW_PATH) || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/help" || p.startsWith("/help/");
+      return p === "/setup" || p.endsWith("/starter-guide.html") || p.endsWith(WELCOME_OVERVIEW_PATH) || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/glossary" || p === "/help" || p.startsWith("/help/");
     }
     if (!features) return true;
     // A custom page can be given to a member one at a time, even with My Pages off.
@@ -751,15 +812,24 @@ export function CollapsibleSidebar() {
     };
   }, []);
   const pageItem = (p: { slug: string; title: string }) => ({ id: `page-${p.slug}`, label: p.title, icon: FileText, href: `/my-pages/${p.slug}` });
-  const architectPages = customPages.filter((p) => p.nav_section === "alignment_architect").map(pageItem);
-  const myPages = customPages.filter((p) => p.nav_section !== "alignment_architect").map(pageItem);
+  // Babs's Alignment Architect pages sit in her Architect groups; a team member she shared one with sees it under My Pages.
+  const myPages = customPages.filter((p) => !superAdmin || p.nav_section !== "alignment_architect").map(pageItem);
   const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
   const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
   // The TEAM section (Briefing + Support Desk) is only for a restricted member; Babs has both elsewhere.
   const teamExtra = !superAdmin && (extras?.restrict || extras?.demo) ? [teamSection] : [];
-  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, { ...ownerSection, items: [...ownerSection.items, ...architectPages] }, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id))) }))
+  const architectGroups = ownerSections.map((g) => ({
+    ...g,
+    items: [
+      ...g.items,
+      ...customPages
+        .filter((p) => p.nav_section === "alignment_architect" && (ARCHITECT_PAGE_GROUP[p.slug] ?? ownerSections[0].title) === g.title)
+        .map(pageItem),
+    ],
+  }));
+  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam)) }))
     .filter((s) => s.items.length > 0);
 
   // Pages can be dragged into whatever order you use most, within each
@@ -840,7 +910,25 @@ export function CollapsibleSidebar() {
   // new, or not in the saved list, goes at the end.
   // Sections that were renamed keep the place the account had saved for them.
   const RENAMED: Record<string, string> = { ALIGNMENT: "ALIGNMENT & SYSTEMS", SYSTEMS: "SETTINGS" };
-  const savedOrder = sectionOrder.map((t) => RENAMED[t] ?? t).filter((t, i, a) => a.indexOf(t) === i);
+  const savedBase = sectionOrder.map((t) => RENAMED[t] ?? t).filter((t, i, a) => a.indexOf(t) === i);
+  // Sections added after an account saved its order go right after their neighbour instead of at the very end.
+  const NEW_SECTION_AFTER: [string, string][] = [
+    ["MARKETING", "CLIENTS & SALES"],
+    ["CLIENT DELIVERY", "MARKETING"],
+    ["MONEY", "CLIENT DELIVERY"],
+    ["ARCHITECT · SALES", "ALIGNMENT ARCHITECT"],
+    ["ARCHITECT · PROGRAMS & EVENTS", "ARCHITECT · SALES"],
+    ["ARCHITECT · INVESTORS & LEGAL", "ARCHITECT · PROGRAMS & EVENTS"],
+    ["ARCHITECT · ARCHIVE", "ARCHITECT · INVESTORS & LEGAL"],
+  ];
+  const savedOrder = [...savedBase];
+  if (savedOrder.length) {
+    for (const [title, after] of NEW_SECTION_AFTER) {
+      if (savedOrder.includes(title)) continue;
+      const at = savedOrder.indexOf(after);
+      if (at !== -1) savedOrder.splice(at + 1, 0, title);
+    }
+  }
   const arranged = isDemo || !savedOrder.length
     ? sections
     : [...sections].sort((a, b) => {
@@ -849,13 +937,14 @@ export function CollapsibleSidebar() {
         return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       });
   const baseSections = arranged.map((s) => {
-    const saved = navOrder[s.title];
+    // The Architect groups start from the order Babs saved for the one Alignment Architect list.
+    const saved = navOrder[s.title] ?? (s.title.startsWith("ARCHITECT · ") ? navOrder["ALIGNMENT ARCHITECT"] : undefined);
     if (!saved) return s;
     const byId = new Map(s.items.map((i) => [i.id, i]));
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", "client-care": "sequences-manager", "client-portals": "client-care", programs: "client-portals", events: "programs", time: "volant" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", events: "sequences-manager", time: "volant", offers: "dm-pipeline", agreements: "offers", segments: "vault", glossary: "website-review" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
@@ -1089,7 +1178,7 @@ export function CollapsibleSidebar() {
   // Get active item based on current path
   const getActiveItem = () => {
     // The most specific match wins (so /sales/pipeline lights Pipeline, not Sales Plan).
-    const item = [...navigationItems, ...myPages, ...architectPages]
+    const item = [...navigationItems, ...myPages, ...customPages.filter((p) => p.nav_section === "alignment_architect").map(pageItem)]
       .filter((i) => i.href !== "/" && !i.href.includes("?") && (pathname === i.href || pathname?.startsWith(i.href + "/")))
       .sort((a, b) => b.href.length - a.href.length)[0];
     if (item) return item.id;
@@ -1204,7 +1293,7 @@ export function CollapsibleSidebar() {
         <SortableContext items={orderedSections.map((x) => `section:${x.title}`)} strategy={verticalListSortingStrategy}>
         {orderedSections.map((section, sectionIndex) => {
           // A closed section hides all its pages, including the one you're on (Babs, 2026-10-18).
-          const visibleItems = section.items.filter(() => isCollapsed || !foldedSections[section.title]);
+          const visibleItems = section.items.filter(() => isCollapsed || !isFolded(section.title));
           return (
           <SortableSection key={section.title} id={`section:${section.title}`} title={section.title} withGrip={!isCollapsed} onMove={(d) => moveSection(section.title, d)} className={sectionIndex > 0 ? (isCollapsed ? "mt-6" : "mt-8") : ""}>
             {/* Section Header */}
@@ -1213,8 +1302,8 @@ export function CollapsibleSidebar() {
               <button
                 type="button"
                 onClick={() => toggleSection(section.title)}
-                aria-expanded={!foldedSections[section.title]}
-                aria-label={`${foldedSections[section.title] ? "Expand" : "Collapse"} ${section.title}`}
+                aria-expanded={!isFolded(section.title)}
+                aria-label={`${isFolded(section.title) ? "Expand" : "Collapse"} ${section.title}`}
                 className="min-w-0 flex-1 px-4 flex items-center gap-2 rounded-md hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c9a227] py-1"
               >
                 <div className={cn("w-1.5 h-1.5 rounded-full", section.color.replace("text-", "bg-"))} />
@@ -1227,10 +1316,10 @@ export function CollapsibleSidebar() {
                   {section.title}
                 </h3>
                 <ChevronDown
-                  className={cn("ml-auto w-3.5 h-3.5 text-white/70 transition-transform duration-200", foldedSections[section.title] && "-rotate-90")}
+                  className={cn("ml-auto w-3.5 h-3.5 text-white/70 transition-transform duration-200", isFolded(section.title) && "-rotate-90")}
                 />
               </button>
-              {!isDemo && section.items.length > 2 && !foldedSections[section.title] && (
+              {!isDemo && section.items.length > 2 && !isFolded(section.title) && (
                 <button
                   type="button"
                   onClick={() => sortSectionAZ(section.title, section.items)}

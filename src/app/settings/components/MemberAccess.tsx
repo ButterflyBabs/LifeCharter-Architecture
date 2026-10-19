@@ -35,7 +35,7 @@ export default function MemberAccess({
   useEffect(() => {
     fetch("/api/custom-pages", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setPages(Array.isArray(d?.pages) ? d.pages.filter((p: { nav_section?: string }) => p.nav_section !== "alignment_architect") : []))
+      .then((d) => setPages(Array.isArray(d?.pages) ? d.pages : [])) // Alignment Architect pages too: Babs shares some (Executive Consultation Map, Team Briefing)
       .catch(() => {});
   }, []);
   const setPage = (slug: string, l: AccessLevel) => {
