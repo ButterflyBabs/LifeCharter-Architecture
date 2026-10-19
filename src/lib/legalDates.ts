@@ -9,4 +9,5 @@ export const LEGAL_PAGES = {
   "privacy-policy": { effective: "October 10, 2026", updated: "October 18, 2026", hash: "40fa3f8814e287ae" },
   "year-1-agreement": { effective: "October 1, 2026", updated: "October 14, 2026", hash: "a7e877eb84c39119" },
   "community-guidelines": { effective: "September 23, 2026", updated: "September 23, 2026", hash: "d0628f1eb5edc8aa" },
+  "text-messaging-terms": { effective: "October 19, 2026", updated: "October 19, 2026", hash: "428e89b532544a61" },
 } as const;

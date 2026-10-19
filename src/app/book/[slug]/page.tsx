@@ -253,7 +253,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               {meta?.sms && (
                 <label className="flex items-start gap-2.5 text-sm">
                   <input type="checkbox" name="sms_ok" className="mt-1 h-4 w-4 shrink-0" style={{ accentColor: th.accent }} />
-                  <span className="opacity-80">{meta.sms.consent}</span>
+                  <span className="opacity-80">{meta.sms.consent} <a href="/legal/text-messaging-terms" target="_blank" rel="noopener noreferrer" className="underline">Text Messaging Terms</a>.</span>
                 </label>
               )}
               {(meta?.questions ?? []).map((q) => (

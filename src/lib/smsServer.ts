@@ -183,6 +183,7 @@ export async function registerNumber(db: Db, planId: string, b: Business, sample
     BusinessType: b.type,
     HelpMessageSample: `${name}: for help, reply to this text or email ${b.contactEmail}. Reply STOP to opt out.`,
     PrivacyPolicyUrl: b.privacyUrl,
+    TermsAndConditionsUrl: `${APP()}/legal/text-messaging-terms`,
     AdditionalInformation: `Opt-in wording shown next to an unticked box on the booking form: "${consentText(name)}"`,
     ExternalReferenceId: planId,
   };
