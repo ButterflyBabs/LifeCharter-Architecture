@@ -33,14 +33,38 @@ const PROCESSOR_PAYOUT = /\b(stripe|stripe transfer|st-[a-z0-9]{6,})\b.*\b(trans
 export const looksLikeTransfer = (description: string) => TRANSFERISH.test(description) || PROCESSOR_PAYOUT.test(description);
 export const looksLikeProcessorPayout = (description: string) => PROCESSOR_PAYOUT.test(description);
 
-/** "AMZN Mktp US*2K4TY8 Amzn.com/bill WA" -> "Amzn Mktp Us"; strips card noise, long numbers, dates and trailing state codes. */
+// Names banks shorten or mangle, shown the way people write them.
+const KNOWN_VENDORS: [RegExp, string][] = [
+  [/\bfacebk|\bfacebook\b|\bmeta (ads|platforms)/i, "Facebook"],
+  [/\bamzn|\bamazon/i, "Amazon"],
+  [/\bgodaddy/i, "GoDaddy"],
+  [/\bgoogle\b/i, "Google"],
+  [/\bzoom/i, "Zoom"],
+  [/\bsupabase/i, "Supabase"],
+  [/\btwilio/i, "Twilio"],
+  [/\bboldsign/i, "BoldSign"],
+  [/\bdescript/i, "Descript"],
+  [/\belevenlabs/i, "ElevenLabs"],
+  [/\bxoom/i, "Xoom"],
+  [/\bsecurus/i, "Securus"],
+  [/\bvercel/i, "Vercel"],
+  [/\bopenai|\bchatgpt/i, "OpenAI"],
+  [/\banthropic|\bclaude/i, "Anthropic"],
+];
+const COUNTRY_OR_STATE = /^(usa|us|sgp|gbr|can|aus|irl|ind|mex|deu|fra|[a-z]{2})$/i;
+
+/** "AMZN Mktp US*2K4TY8 Amzn.com/bill WA" -> "Amazon"; strips card noise, codes, dates, and trailing state and country codes. */
 export function cleanVendor(description: string): string {
+  for (const [re, nice] of KNOWN_VENDORS) if (re.test(description || "")) return nice;
   let s = (description || "").replace(/[*#]/g, " ").replace(/\b(pos|debit|credit|purchase|card|checkcard|visa|mastercard|recurring|payment|pmt|ach|web id|online)\b/gi, " ");
   s = s.replace(/\b\d{2}\/\d{2}(\/\d{2,4})?\b/g, " ").replace(/\b(?=[A-Z0-9]*\d)[A-Z0-9]{8,}\b/g, " ").replace(/\b\d{3,}\b/g, " ");
   s = s.replace(/\b[a-z0-9.-]+\.(com|net|org|co|io)\b[^ ]*/gi, " ");
-  s = s.replace(/\s+[A-Z]{2}\s*$/i, " ").replace(/[^A-Za-z0-9&' .-]/g, " ").replace(/\s+/g, " ").trim();
-  const words = s.split(" ").filter(Boolean).slice(0, 3);
-  return words.map((w) => (w === w.toUpperCase() && w.length > 3 ? w[0] + w.slice(1).toLowerCase() : w)).join(" ").slice(0, 60);
+  s = s.replace(/[^A-Za-z0-9&' .,-]/g, " ").replace(/\s+/g, " ").trim();
+  // Banks write "NAME, CITY, ST , USA": keep only what is before the first comma, then drop trailing state and country codes.
+  s = s.split(",")[0].trim();
+  const words = s.split(" ").filter(Boolean);
+  while (words.length > 1 && COUNTRY_OR_STATE.test(words[words.length - 1])) words.pop();
+  return words.slice(0, 3).map((w) => (w === w.toUpperCase() && w.length > 3 ? w[0] + w.slice(1).toLowerCase() : w)).join(" ").slice(0, 60);
 }
 
 const normalize = (s: string) => cleanVendor(s).toLowerCase();

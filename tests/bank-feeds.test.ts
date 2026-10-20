@@ -8,8 +8,7 @@ test("money out is an expense, money in is income", () => {
 });
 
 test("vendor names lose card noise, codes and dates", () => {
-  assert.ok(cleanVendor("AMZN Mktp US*2K4TY8 Amzn.com/bill WA").toLowerCase().startsWith("amzn"));
-  assert.ok(!/\*|\d{3,}/.test(cleanVendor("AMZN Mktp US*2K4TY8 Amzn.com/bill WA")));
+  assert.equal(cleanVendor("AMZN Mktp US*2K4TY8 Amzn.com/bill WA"), "Amazon");
   assert.ok(!/\d{3,}/.test(cleanVendor("CHECKCARD 0412 STARBUCKS #12345 DENVER CO")));
   assert.ok(cleanVendor("CHECKCARD 0412 STARBUCKS #12345 DENVER CO").toLowerCase().includes("starbucks"));
   assert.equal(cleanVendor(""), "");
@@ -69,4 +68,11 @@ test("Facebook card lines, tools and moves between a client's own accounts are r
   assert.equal(looksLikeTransfer("TAXES TO PRIMARY"), true);
   assert.equal(looksLikeTransfer("SPARROW CRD PMT"), true);
   assert.equal(pickCategory("Advertising", ["Marketing"]), "Marketing");
+});
+
+test("vendor names read the way people write them", () => {
+  assert.equal(cleanVendor("FACEBK *TPBXXB2AX4    , 6505434800   , CA , USA"), "Facebook");
+  assert.equal(cleanVendor("SUPABASE, SINGAPORE,    , SGP"), "Supabase");
+  assert.equal(cleanVendor("XOOM.COM              , 8778151531   , CA , USA"), "Xoom");
+  assert.equal(cleanVendor("Joe's Coffee Shop DENVER CO"), "Joe's Coffee Shop");
 });
