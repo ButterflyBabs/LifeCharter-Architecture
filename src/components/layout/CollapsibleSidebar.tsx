@@ -275,6 +275,7 @@ const ownerSections = [
       { id: "view-as", label: "View as Client", icon: Eye, href: "/view-as" },
       { id: "client-journey", label: "New Client Journey", icon: UserCheck, href: "/client-journey" },
       { id: "lc-spark", label: "LC Spark", icon: MessageCircle, href: "/lc-spark" },
+      { id: "meta-app-review-kit", label: "Meta App Review Kit", icon: ClipboardCheck, href: "https://claude.ai/artifact/HgagtgZDDHEAuuRF2NqVNJ" },
     ],
   },
   {
