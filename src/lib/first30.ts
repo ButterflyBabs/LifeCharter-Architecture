@@ -69,11 +69,6 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("finance_bills").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
   },
   {
-    key: "email-sending", week: 2, dims: ["marketing","sales"], title: "Connect your own email sending (Resend)", why: "So campaigns, broadcasts and booking emails go from your own domain and count on your own account.", href: "/contacts?tab=sending",
-    // Babs's own account sends on the Suite's key, so it counts as done.
-    check: async (id, db) => (await isHousePlan(id, db)) || Boolean(await getAccountResendKey(id, db)),
-  },
-  {
     key: "weekly-review", week: 2, dims: ["leadership","sustainability"], title: "Do your first weekly review", why: "Ten minutes that set up next week.", href: "/planning/review",
     check: async (id, db) => (await count(db.from("business_reviews").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("status", "completed"))) > 0,
   },
@@ -111,12 +106,33 @@ const STEPS: Def[] = [
     check: async (id, db) => (await count(db.from("plan_sections").select("id", { count: "exact", head: true }).eq("master_plan_id", id).eq("plan_type", "marketing").not("content", "is", null))) >= 3,
   },
   {
+    key: "icp", week: 3, dims: ["marketing","sales"], title: "Create your Ideal Client Profile", why: "The Prospect Qualifier scores every prospect against it, so you spend time on the right people.", href: "/qualifier",
+    check: async (id, db) => (await count(db.from("icp_profiles").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
+  },
+  {
+    key: "outreach", week: 3, dims: ["sales","marketing"], title: "Set up your Outreach Pipeline and add your first prospects", why: "A simple board for who you have messaged and who is next.", href: "/dm-pipeline",
+    check: async (id, db) => (await count(db.from("dm_cards").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) > 0,
+  },
+  {
+    key: "content-week", week: 4, dims: ["marketing"], title: "Plan a week of content: five posts or ideas", why: "Consistency matters more than perfection.", href: "/daily-compass/calendar",
+    check: async (id, db) => (await count(db.from("social_posts").select("id", { count: "exact", head: true }).eq("master_plan_id", id))) >= 5,
+  },
+  {
+    key: "client-care", week: 4, dims: ["customer_experience","sales"], title: "Switch on Client Care", why: "Clients who feel looked after stay longer and send others your way.", href: "/client-care",
+    check: async (id, db) => (await count(db.from("sequences").select("id", { count: "exact", head: true }).eq("master_plan_id", id).like("key", "client-care-%").eq("active", true))) > 0,
+  },
+  {
     key: "goal-ladder", week: 4, dims: ["vision","leadership"], title: "Break a yearly goal into this quarter", why: "Connects the big picture to this week.", href: "/planning/goals",
     check: async (id, db) => {
       const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", id);
       const ids = ((plans ?? []) as { id: string }[]).map((p) => p.id);
       return ids.length ? (await count(db.from("client_plan_goals").select("id", { count: "exact", head: true }).in("plan_id", ids).neq("period", "year"))) > 0 : false;
     },
+  },
+  {
+    key: "email-sending", week: 4, dims: ["marketing","sales"], title: "Connect your own email sending (Resend)", why: "So campaigns, broadcasts and booking emails go from your own domain and count on your own account.", href: "/contacts?tab=sending",
+    // Babs's own account sends on the Suite's key, so it counts as done.
+    check: async (id, db) => (await isHousePlan(id, db)) || Boolean(await getAccountResendKey(id, db)),
   },
   {
     key: "pulse", week: 4, dims: ["sustainability","team"], title: "Take your first monthly Quick Pulse", why: "Starts your trend line so you can see yourself grow.", href: "/assessments/quick-pulse-checkin",
