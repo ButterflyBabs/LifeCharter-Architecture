@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileSignature, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { FileSignature, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown, Eye, X } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
 // Clients & Sales › LC Plume, agreements and proposals with e-signature (task 1072): write or upload a document, add signers, send for signature
@@ -155,6 +155,7 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
   const [signers, setSigners] = useState(others.length ? others.map((s) => ({ name: s.name, email: s.email, order: s.order_no })) : [{ name: "", email: "", order: 1 }]);
   const [fills, setFills] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(false);
   const blanks = Array.from(new Set((f.body.match(/\{\{\s*([^{}]{1,60}?)\s*\}\}/g) || []).map((m) => m.replace(/[{}]/g, "").trim())));
   const isPdf = doc.source === "upload" && /\.pdf$/i.test(doc.file_name || "");
   const payload = () => ({ action: "save", id: doc.id, ...f, signers });
@@ -273,7 +274,8 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
 
       <div className="flex flex-wrap gap-2">
         {draft && <button className={primary} disabled={busy} onClick={() => act(payload(), "Saved.")}>Save</button>}
-        {draft && <button className={primary} disabled={busy || blanks.length > 0} onClick={async () => { if (!window.confirm("Send it for signature now? The first signer gets an email right away, and the document can't be changed after it's sent.")) return; if (await act(payload())) await act({ action: "send", id: doc.id }, "Sent. The first signer has their email."); }}><Send className="h-4 w-4" />Send for signature</button>}
+        {draft && <button className={btn} disabled={busy} onClick={() => setPreview(true)}><Eye className="h-3.5 w-3.5" />Preview</button>}
+        {draft && <button className={primary} disabled={busy || blanks.length > 0} onClick={() => setPreview(true)}><Send className="h-4 w-4" />Preview and send</button>}
         {doc.status === "sent" && <button className={btn} disabled={busy} onClick={() => act({ action: "remind", id: doc.id }, "Reminder sent.")}><BellRing className="h-3.5 w-3.5" />Remind now</button>}
         {["sent", "declined", "expired"].includes(doc.status) && <button className={btn} disabled={busy} onClick={() => { const reason = window.prompt("Void this document? Its links stop working. Reason (optional):"); if (reason !== null) void act({ action: "void", id: doc.id, reason }, "Voided."); }}><Ban className="h-3.5 w-3.5" />Void</button>}
         {doc.final_path && <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "download", id: doc.id }); if (r?.url) window.location.href = String(r.url); }}><Download className="h-3.5 w-3.5" />Download signed PDF</button>}
@@ -281,6 +283,30 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
         {draft && !isPdf && <button className={btn} disabled={busy || !f.body.trim()} onClick={() => { const name = window.prompt("Save as your own template. Name:", f.title); if (name) void act({ action: "save-template", name, kind: f.kind, body: f.body }, "Saved to your templates."); }}>Save as my template</button>}
         {draft && <button className={`${btn} text-red-700`} disabled={busy} onClick={() => { if (window.confirm("Delete this draft?")) void act({ action: "delete", id: doc.id }, "Deleted.").then(() => (window.location.href = "/agreements")); }}><Trash2 className="h-3.5 w-3.5" />Delete draft</button>}
       </div>
+
+      {preview && (
+        <PreviewModal
+          title={f.title}
+          body={f.body}
+          isPdf={isPdf}
+          fileName={doc.file_name}
+          kind={f.kind}
+          amount={f.amount}
+          expiresOn={f.expiresOn}
+          message={f.message}
+          signers={signers}
+          ownerSigns={f.ownerSigns}
+          blanks={blanks}
+          busy={busy}
+          onClose={() => setPreview(false)}
+          onSend={async () => {
+            if (await act(payload())) {
+              const sent = await act({ action: "send", id: doc.id }, "Sent. The first signer has their email.");
+              if (sent) setPreview(false);
+            }
+          }}
+        />
+      )}
 
       {!draft && (
         <section className={card}>
@@ -293,6 +319,94 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
           {doc.final_hash && <p className="mt-2 break-all text-[11px] text-[#7b6b8d]">Sealed copy SHA-256: {doc.final_hash}</p>}
         </section>
       )}
+    </div>
+  );
+}
+
+const BLANK = /(\{\{\s*[^{}]{1,60}?\s*\}\})/g;
+function WithBlanks({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(BLANK).map((part, i) =>
+        /^\{\{/.test(part) ? <mark key={i} className="rounded bg-amber-200 px-1 text-amber-900">{part}</mark> : <span key={i}>{part}</span>,
+      )}
+    </>
+  );
+}
+
+/** What each signer will see, before anything is sent. Matches the signing page; blanks still empty are highlighted. */
+function PreviewModal({ title, body, isPdf, fileName, kind, amount, expiresOn, message, signers, ownerSigns, blanks, busy, onClose, onSend }: {
+  title: string; body: string; isPdf: boolean; fileName: string | null; kind: string; amount: string; expiresOn: string; message: string;
+  signers: { name: string; email: string; order: number }[]; ownerSigns: boolean; blanks: string[]; busy: boolean; onClose: () => void; onSend: () => void;
+}) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  const paras = body.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
+  const people = signers.filter((x) => x.name.trim() || x.email.trim());
+  const problems = [
+    ...(blanks.length ? [`${blanks.length} blank${blanks.length === 1 ? "" : "s"} still empty: ${blanks.join(", ")}`] : []),
+    ...(!people.length ? ["Add at least one signer."] : []),
+    ...people.filter((x) => !x.name.trim() || !/\S+@\S+\.\S+/.test(x.email)).map((x) => `Check the name and email for signer ${x.order}.`),
+    ...(!isPdf && !body.trim() ? ["The document is empty."] : []),
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview before sending">
+      <div className="w-full max-w-3xl rounded-2xl bg-[#FAF8F3] shadow-2xl dark:bg-[#12203a]">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-t-2xl border-b border-[#1a2b4a]/10 bg-[#FAF8F3] px-5 py-3 dark:bg-[#12203a]">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Preview</p>
+            <p className="text-sm text-[#5b5f73] dark:text-[#b8a898]">This is what each signer will see. Nothing has been sent.</p>
+          </div>
+          <button className={btn} onClick={onClose} aria-label="Close preview"><X className="h-3.5 w-3.5" />Close</button>
+        </div>
+        <div className="space-y-4 p-5">
+          {problems.length > 0 && (
+            <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+              <p className="font-semibold">Fix these before sending</p>
+              <ul className="mt-1 list-disc pl-5">{problems.map((x, i) => <li key={i}>{x}</li>)}</ul>
+            </div>
+          )}
+          <h2 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{title || "Untitled"}</h2>
+          {message.trim() && <p className="rounded-xl bg-white px-4 py-3 text-sm dark:bg-[#1a2b4a]/40"><span className="font-semibold">Your note in the email: </span>{message}</p>}
+          {isPdf ? (
+            <p className="rounded-2xl border border-[#E5DDCF] bg-white p-6 text-sm dark:bg-[#1a2b4a]/40">Uploaded PDF: <strong>{fileName}</strong>. The signer sees this file, and a signature page is added at the end.</p>
+          ) : (
+            <article className="space-y-3 rounded-2xl border border-[#E5DDCF] bg-white p-6 text-[15px] leading-relaxed text-[#1f2b3a] sm:p-8">
+              {paras.map((p, i) => {
+                if (!/^#{1,3}\s/.test(p)) return <p key={i} className="whitespace-pre-line"><WithBlanks text={p} /></p>;
+                const [first, ...rest] = p.split("\n");
+                return (
+                  <div key={i}>
+                    <h3 className="pt-2 text-lg font-semibold"><WithBlanks text={first.replace(/^#{1,3}\s+/, "")} /></h3>
+                    {rest.join("\n").trim() && <p className="mt-2 whitespace-pre-line"><WithBlanks text={rest.join("\n").trim()} /></p>}
+                  </div>
+                );
+              })}
+            </article>
+          )}
+          {kind === "proposal" && amount && <p className="rounded-xl bg-white px-4 py-3 text-[15px] dark:bg-[#1a2b4a]/40">Investment: <strong>${Number(amount).toLocaleString("en-US")}</strong></p>}
+          <div className="rounded-2xl border border-[#E5DDCF] bg-white p-5 text-sm dark:bg-[#1a2b4a]/40">
+            <p className="font-semibold">Signatures{expiresOn ? ` · sign by ${expiresOn}` : ""}</p>
+            <ol className="mt-2 space-y-2">
+              {people.map((x) => (
+                <li key={x.order} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-dashed border-[#1a2b4a]/20 pb-2">
+                  <span>{x.order}. <strong>{x.name || "(name missing)"}</strong> <span className="text-[#7b6b8d]">{x.email}</span></span>
+                  <span className="text-xs text-[#7b6b8d]">signature goes here</span>
+                </li>
+              ))}
+              {ownerSigns && <li className="flex flex-wrap items-baseline justify-between gap-2 pb-1"><span>{people.length + 1}. <strong>You</strong> <span className="text-[#7b6b8d]">(last, after everyone else)</span></span><span className="text-xs text-[#7b6b8d]">signature goes here</span></li>}
+            </ol>
+          </div>
+          <p className="text-xs text-[#7b6b8d]">When you send, the first signer gets an email with a private link, confirms a 6-digit code, and signs. The document can&apos;t be changed after it is sent.</p>
+        </div>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-[#1a2b4a]/10 bg-[#FAF8F3] px-5 py-3 dark:bg-[#12203a]">
+          <button className={btn} onClick={onClose}>Back to editing</button>
+          <button className={primary} disabled={busy || problems.length > 0} onClick={onSend}><Send className="h-4 w-4" />Looks right, send for signature</button>
+        </div>
+      </div>
     </div>
   );
 }
