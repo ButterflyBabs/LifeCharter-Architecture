@@ -475,7 +475,7 @@ export default function SoulAssessmentPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold">Soul Assessment</h1>
-              <p className="text-sm text-[#e8e4f0]">Core Identity & Purpose · about 60 minutes, saves as you go</p>
+              <p className="text-sm text-[#e8e4f0]">Core Identity & Purpose · about 2 to 3 hours, saves as you go</p>
             </div>
           </div>
           <div className="space-y-2">

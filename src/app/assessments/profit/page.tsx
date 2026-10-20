@@ -490,7 +490,7 @@ function ProfitAssessmentContent() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">Profit Assessment</h1>
-                <p className="text-sm text-[#e8e4f0]">Financial Health & Operations · about 45 minutes</p>
+                <p className="text-sm text-[#e8e4f0]">Financial Health & Operations · about 1 to 2 hours</p>
               </div>
             </div>
             <div className="space-y-2">
