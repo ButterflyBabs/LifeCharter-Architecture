@@ -61,9 +61,13 @@ export const parseSignedRequest = (signed: string | null): { user_id?: string | 
 export async function forgetInstagramUser(igUserId: string): Promise<void> {
   const { createServerClient } = await import("@/lib/supabase/server");
   const db = createServerClient();
+  // The account owner is removing the app: their account's Instagram conversations go with the connection.
+  const { data: owned } = await db.from("spark_settings").select("master_plan_id").eq("ig_user_id", igUserId);
   await db
     .from("spark_settings")
     .update({ ig_enabled: false, ig_user_id: null, ig_username: null, ig_access_token: null, ig_token_expires_at: null, updated_at: new Date().toISOString() })
     .eq("ig_user_id", igUserId);
+  const planIds = ((owned ?? []) as { master_plan_id: string }[]).map((r) => r.master_plan_id);
+  if (planIds.length) await db.from("spark_conversations").delete().eq("channel", "instagram").in("master_plan_id", planIds);
   await db.from("spark_conversations").delete().eq("channel", "instagram").eq("visitor_key", igUserId);
 }

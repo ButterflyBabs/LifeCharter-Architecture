@@ -114,9 +114,13 @@ export async function connectFbPage(planId: string, fbUserId: string, page: FbPa
 // and (for a Messenger sender) their LC Spark Facebook conversations.
 export async function forgetFacebookUser(fbUserId: string): Promise<void> {
   const db = createServerClient();
+  // The person who connected the Page is removing the app: their account's Facebook conversations go with the connection.
+  const { data: owned } = await db.from("spark_settings").select("master_plan_id").eq("fb_user_id", fbUserId);
   await db
     .from("spark_settings")
     .update({ fb_enabled: false, fb_page_id: null, fb_page_name: null, fb_user_id: null, fb_access_token: null, updated_at: new Date().toISOString() })
     .eq("fb_user_id", fbUserId);
+  const planIds = ((owned ?? []) as { master_plan_id: string }[]).map((r) => r.master_plan_id);
+  if (planIds.length) await db.from("spark_conversations").delete().eq("channel", "facebook").in("master_plan_id", planIds);
   await db.from("spark_conversations").delete().eq("channel", "facebook").eq("visitor_key", fbUserId);
 }

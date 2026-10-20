@@ -6,7 +6,7 @@
 // (it sets "updated" to today, Mountain time, for each page whose text changed, and refreshes the hash).
 export const LEGAL_PAGES = {
   "terms-of-sale": { effective: "October 1, 2026", updated: "October 18, 2026", hash: "9d3ce8aac446eda6" },
-  "privacy-policy": { effective: "October 10, 2026", updated: "October 19, 2026", hash: "d93de28f510027d7" },
+  "privacy-policy": { effective: "October 10, 2026", updated: "October 20, 2026", hash: "12f2bb791d032215" },
   "year-1-agreement": { effective: "October 1, 2026", updated: "October 14, 2026", hash: "a7e877eb84c39119" },
   "community-guidelines": { effective: "September 23, 2026", updated: "September 23, 2026", hash: "d0628f1eb5edc8aa" },
   "text-messaging-terms": { effective: "October 19, 2026", updated: "October 19, 2026", hash: "428e89b532544a61" },
