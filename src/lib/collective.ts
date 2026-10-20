@@ -15,7 +15,7 @@ export const SUITE_HOST = "lccommandsuite.com";
 export const COLLECTIVE_HOST_LIVE = true;
 
 // 307 while we confirm everything works; switch to 308 (permanent) once it has been verified.
-export const COLLECTIVE_FORWARD_STATUS: 307 | 308 = 307;
+export const COLLECTIVE_FORWARD_STATUS: 307 | 308 = 308;
 
 // When the old addresses started forwarding (ISO time). Web push subscriptions made before this belong to the old
 // address: they are retired on a device when that same device re-subscribes here. Set when COLLECTIVE_HOST_LIVE flips.
