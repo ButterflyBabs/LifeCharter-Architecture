@@ -8,6 +8,7 @@ import { Heart, ArrowLeft, ArrowRight, Save, CheckCircle, Shield } from "lucide-
 import Link from "next/link";
 import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { SaveNotice, saveLabel } from "@/components/assessments/SaveNotice";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 
@@ -350,7 +351,7 @@ export default function SoulAssessmentPage() {
   // Send each answer to the server as it's given (sensitive answers stay flagged
   // and are never shown to the AI), so the assistant learns as you go.
   useAssessmentRestore("soul", setAnswers);
-  useAssessmentSync("soul", answers, (id, value) => {
+  const sync = useAssessmentSync("soul", answers, (id, value) => {
     const q = allQuestions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.section, answerText: value, value, sensitive: Boolean(q.sensitive) } : null;
   });
@@ -500,9 +501,10 @@ export default function SoulAssessmentPage() {
               </span>
               <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
-                {isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
+                {saveLabel(sync, isSaving, Boolean(lastSaved))}
               </div>
             </div>
+            <SaveNotice sync={sync} />
             <div className="mt-2">
               <Progress value={sectionProgress} variant="lavender" className="h-1" />
             </div>

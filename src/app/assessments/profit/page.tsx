@@ -17,6 +17,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { SaveNotice, saveLabel } from "@/components/assessments/SaveNotice";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -285,7 +286,7 @@ function ProfitAssessmentContent() {
 
   // Send each answer to the account as it's given (same as the Brain and Soul profiles).
   useAssessmentRestore("profit_architecture", setAnswers);
-  useAssessmentSync("profit_architecture", answers, (id, value) => {
+  const sync = useAssessmentSync("profit_architecture", answers, (id, value) => {
     const q = questions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.domain, answerText: value, value } : null;
   });
@@ -549,9 +550,10 @@ function ProfitAssessmentContent() {
               </div>
               <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
-                {isSyncing ? "Syncing..." : isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
+                {isSyncing ? "Syncing..." : saveLabel(sync, isSaving, Boolean(lastSaved))}
               </div>
             </div>
+            <SaveNotice sync={sync} />
             <div className="mt-3">
               <AiFillSection
                 assessmentName="Profit"

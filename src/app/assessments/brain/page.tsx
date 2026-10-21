@@ -8,6 +8,7 @@ import { Brain, ArrowLeft, ArrowRight, Save, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { SaveNotice, saveLabel } from "@/components/assessments/SaveNotice";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
 
@@ -4620,7 +4621,7 @@ export default function BrainAssessmentPage() {
   // Send each answer to the server as it's given, so the AI assistant learns from
   // it right away — not only once the whole assessment is finished.
   useAssessmentRestore("brain", setAnswers);
-  useAssessmentSync("brain", answers, (id, value) => {
+  const sync = useAssessmentSync("brain", answers, (id, value) => {
     const q = questions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.section, answerText: value, value } : null;
   });
@@ -4793,9 +4794,10 @@ export default function BrainAssessmentPage() {
               </span>
               <div className="flex items-center gap-2 text-sm text-[#b8a898]">
                 <Save className="w-4 h-4" />
-                {isSaving ? "Saving..." : lastSaved ? "Saved" : "Not saved"}
+                {saveLabel(sync, isSaving, Boolean(lastSaved))}
               </div>
             </div>
+            <SaveNotice sync={sync} />
             <div className="mt-2">
               <Progress value={sectionProgress} variant="teal" className="h-1" />
             </div>
