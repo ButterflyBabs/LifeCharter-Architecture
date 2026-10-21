@@ -46,8 +46,9 @@ export const draftBroadcast: ActionTool = {
     const n = tags.length ? await audienceCount(tags, args.audience_match === "all" ? "all" : "any", ctx) : null;
     return {
       preview: {
-        title: `Save a broadcast DRAFT: "${str(args.subject, 200)}"`,
+        title: `Save a broadcast DRAFT: "${str(args.name, 120)}"`,
         lines: [
+          `Subject: ${str(args.subject, 200)}`,
           `Starts: ${firstLine(str(args.body, 20000))}`,
           tags.length ? `Audience: contacts tagged ${tags.join(args.audience_match === "all" ? " AND " : " or ")} (${n} people right now)` : "Audience: not chosen yet (you pick it before scheduling)",
           "Saved as a draft. Nothing is sent or scheduled. You review it in Campaigns & Broadcasts.",
@@ -75,7 +76,7 @@ export const draftBroadcast: ActionTool = {
     };
     const { data, error } = await ctx.db.from("crm_broadcasts").insert(row).select("id").single();
     if (error || !data) throw new Error("The draft didn't save.");
-    return { summary: `Saved the broadcast draft "${row.subject}". Open Campaigns & Broadcasts to review it and schedule it when you are ready.`, result: { id: data.id }, undo: { id: data.id } };
+    return { summary: `Saved the broadcast draft "${row.name}". Open Campaigns & Broadcasts to review it and schedule it when you are ready.`, result: { id: data.id }, undo: { id: data.id } };
   },
   undo: async (u, ctx) => {
     const { data: b } = await ctx.db.from("crm_broadcasts").select("status").eq("id", u.id as string).eq("master_plan_id", ctx.planId).maybeSingle();

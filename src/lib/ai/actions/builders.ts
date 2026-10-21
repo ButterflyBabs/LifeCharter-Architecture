@@ -300,7 +300,7 @@ export const updateForm: ActionTool = {
     const r = one(await pick("crm_forms", "name", str(a.find_name, 120), ctx, "id, name, fields"), "name");
     if (!r.row) return { error: r.error! };
     const lines: string[] = [];
-    if (str(a.new_name, 120)) lines.push(`New name: ${str(a.new_name, 120)}`);
+    if (str(a.new_name, 120)) lines.push(`Name: "${r.row.name}" → "${str(a.new_name, 120)}"`);
     const f = cleanFields(a.fields);
     if (Array.isArray(a.fields) && f) lines.push(`Fields become: ${f.map((x) => x.label).join(", ")}`);
     if (!lines.length) return { error: "What should change on that form?" };
@@ -339,7 +339,7 @@ export const updateBookingLink: ActionTool = {
     const r = one(await pick("booking_calendars", "name", str(a.find_name, 120), ctx, "id, name, description, duration_min, active"), "name");
     if (!r.row) return { error: r.error! };
     const lines: string[] = [];
-    if (str(a.new_name, 120)) lines.push(`New name: ${str(a.new_name, 120)}`);
+    if (str(a.new_name, 120)) lines.push(`Name: "${r.row.name}" → "${str(a.new_name, 120)}"`);
     if (str(a.description, 2000)) lines.push("New description");
     const d = Number(a.duration_minutes);
     if (Number.isFinite(d) && d >= 5 && d <= 480) lines.push(`Length: ${r.row.duration_min ?? "?"} → ${Math.round(d)} minutes`);
@@ -430,7 +430,7 @@ export const updateCustomField: ActionTool = {
     const r = one(await pick("crm_custom_fields", "label", str(a.find_label, 60), ctx, "id, label, type, options"), "label");
     if (!r.row) return { error: r.error! };
     const lines: string[] = [];
-    if (str(a.new_label, 60)) lines.push(`New name: ${str(a.new_label, 60)}`);
+    if (str(a.new_label, 60)) lines.push(`Name: "${r.row.label}" → "${str(a.new_label, 60)}"`);
     if (Array.isArray(a.options) && a.options.length) {
       if (r.row.type !== "select") return { error: "Only choice fields have choices." };
       lines.push(`Choices become: ${a.options.map((o) => str(o, 60)).filter(Boolean).join(", ")}`);
