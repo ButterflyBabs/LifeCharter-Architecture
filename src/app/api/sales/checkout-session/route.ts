@@ -30,6 +30,8 @@ import { stripe } from "@/lib/stripe";
 import { ALUMNI_PROMOTION_CODE_ID, FIRST_MONTH_FREE_COUPON_ID } from "@/lib/stripeCatalog";
 import { TIERS, TIER_NAME, isSwitched, pricesFor, type Tier, type TierPrices } from "@/lib/pricing";
 import { loadPricingSettings, todayMountain } from "@/lib/pricingServer";
+import { isSalesTestEmail } from "@/lib/salesTestCheckout";
+import { createServerClient } from "@/lib/supabase/server";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
 
@@ -77,6 +79,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
     const isAlumni = ALUMNI_OFFER_OPEN && alumni === true; // the $500 graduate credit is paused (src/lib/alumniOffer.ts)
+
+    // INTERNAL TEST SWITCH (Babs, 2026-10-21): when app_settings.sales_test_email is exactly this buyer's address, the
+    // standard checkout is 100% off for good and collects no card, so the whole Sales Reference path can be tested with
+    // one Eloise contact. The session is flagged test in its metadata. Empty except while a test is running.
+    const { data: testRow } = await createServerClient().from("app_settings").select("value").eq("key", "sales_test_email").maybeSingle();
+    const isTest = isSalesTestEmail(testRow?.value as string | null | undefined, email);
+    if (isTest && (split === true || annual === true)) {
+      return NextResponse.json({ error: "The test switch only works with the standard (combined) checkout. Choose that one." }, { status: 400 });
+    }
+    const testCoupon = isTest ? await stripe.coupons.create({ percent_off: 100, duration: "forever", name: "Internal test (100% off)" }) : null;
 
     // 50/50 plan: half of the implementation fee today, the other half 30 days later (added by the webhook once the
     // checkout completes, so it lands on the invoice that also carries the first monthly charge). The alumni credit
@@ -148,11 +160,17 @@ export async function POST(req: NextRequest) {
       // Alumni get the $500 implementation credit instead of the free month, never both (Terms of Sale 3.5).
       // Stripe checkout only accepts one `discounts` entry, so the paths are mutually exclusive here too. On the
       // 50/50 plan the credit is already taken off the total above, so only the standard path adds a discount.
-      ...(isAlumni && isSplit ? {} : { discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }] }),
+      // The internal test coupon replaces them all and, with nothing to pay, no card is collected.
+      ...(testCoupon
+        ? { discounts: [{ coupon: testCoupon.id }], payment_method_collection: "if_required" as const }
+        : isAlumni && isSplit
+          ? {}
+          : { discounts: [isAlumni ? { promotion_code: ALUMNI_PROMOTION_CODE_ID } : { coupon: FIRST_MONTH_FREE_COUPON_ID }] }),
       success_url: `${APP_URL}/checkout/thanks`,
       cancel_url: `${APP_URL}/checkout/thanks?status=cancelled`,
       metadata: {
         flow: "sales_combined_checkout",
+        ...(isTest ? { test: "true" } : {}),
         tier,
         fullName: fullName || "",
         sessionSource: sessionSource || "",
