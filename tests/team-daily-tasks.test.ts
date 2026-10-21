@@ -38,3 +38,16 @@ test("the 8 AM list sorts a member's tasks into overdue, today and soon", () => 
   assert.deepEqual(g.dueToday.map((x) => x.id).sort(), [2, 3]);
   assert.deepEqual(g.soon.map((x) => x.id), [4], "a task five days out and one with no date are left out");
 });
+
+import { TEAM_DAILY_TASKS, withFacebook } from "../src/lib/teamDailyTasks";
+
+test("Sumbal's outreach task is LinkedIn only until Monday Oct 26, then adds Facebook", () => {
+  const d = TEAM_DAILY_TASKS[0];
+  assert.equal(withFacebook("2026-10-23"), false);
+  assert.equal(withFacebook("2026-10-26"), true);
+  assert.match(d.title("Fri, Oct 23", "2026-10-23"), /LinkedIn \(/);
+  assert.doesNotMatch(d.title("Fri, Oct 23", "2026-10-23"), /Facebook/);
+  assert.doesNotMatch(d.description("2026-10-23").replace("Facebook starts Monday, October 26", ""), /Facebook/, "no Facebook step this week");
+  assert.match(d.title("Mon, Oct 26", "2026-10-26"), /DM, LinkedIn, Facebook/);
+  assert.match(d.description("2026-10-26"), /Facebook: import about 25 people/);
+});

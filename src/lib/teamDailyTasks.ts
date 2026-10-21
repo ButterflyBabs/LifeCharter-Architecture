@@ -15,11 +15,52 @@ export interface TeamDailyTask {
   createHour: number;
   /** Local hour (Mountain) it is due and checked. */
   dueHour: number;
-  title: (niceDay: string) => string;
-  description: string;
+  title: (niceDay: string, day: string) => string;
+  description: (day: string) => string;
 }
 
 export const OUTREACH_SOP_URL = "https://claude.ai/artifact/MsCsWMtkGEBrMHkVgDy6CC";
+
+/** LinkedIn only until this day (Babs, 2026-10-21: get LinkedIn solid this week, add Facebook the next). */
+export const FACEBOOK_STARTS = "2026-10-26";
+
+export const withFacebook = (day: string) => day >= FACEBOOK_STARTS;
+
+function outreachTitle(niceDay: string, day: string) {
+  return withFacebook(day)
+    ? `Work the Outreach pipelines: DM, LinkedIn, Facebook (${niceDay})`
+    : `Work the Outreach pipeline: LinkedIn (${niceDay})`;
+}
+
+function outreachDescription(day: string) {
+  const fb = withFacebook(day);
+  return [
+    fb
+      ? "Work AmiLynne's DM Outreach pipeline today (LinkedIn and Facebook; not Cold Email). Full steps: the DM Outreach SOP, Part 8 (daily routine)."
+      : "Work AmiLynne's DM Outreach pipeline today: LinkedIn only this week (Facebook starts Monday, October 26; not Cold Email). Full steps: the DM Outreach SOP, Part 8 (daily routine).",
+    "",
+    fb
+      ? "1. Text AmiLynne BEFORE you sign in to LinkedIn or Facebook if you are not already signed in."
+      : "1. Text AmiLynne BEFORE you sign in to LinkedIn if you are not already signed in.",
+    fb
+      ? "2. Replies first: LinkedIn messages and accepted connections, Facebook Messenger and Message requests, the LifeCharter Community Page inbox. Log and move each card."
+      : "2. Replies first: LinkedIn messages and accepted connections. For anyone who accepted, move the card to Connected: send the invite and send LinkedIn 2 · Invite. Log and move each card.",
+    "3. Follow-ups due: open the MasterClass Pipeline, use the follow-ups-due notice, send the follow-up, then reset each card's Follow up on date.",
+    "4. New LinkedIn people: 25 connection requests with a note (LinkedIn 1 · New connection opener). Press 'I sent it' after every one.",
+    ...(fb ? ["5. Facebook: import about 25 people with the note 'FB import DATE'. Message only people from an import AmiLynne has cleared."] : []),
+    "",
+    fb
+      ? "Tracking check before you finish: every message you sent is logged with 'I sent it'. The counters at the top of the pipeline page show today's new DMs and follow-up DMs for LinkedIn and Facebook. Every card you touched is in the right column with a true follow-up date."
+      : "Tracking check before you finish: every message you sent is logged with 'I sent it'. The LinkedIn counter at the top of the pipeline page shows today's new DMs and follow-up DMs. Every card you touched is in the right column with a true follow-up date.",
+    "",
+    fb
+      ? "Report to AmiLynne: 'Today: LinkedIn __ new, Facebook __ imported, __ cleared Facebook messaged. Follow-ups sent __. Replies __. Accepted __. Invited __. Needs you: ... Problems: ... Feedback: ...'"
+      : "Report to AmiLynne: 'Today: LinkedIn __ new. Follow-ups sent __. Replies __. Accepted __. Invited __. Needs you: ... Problems: ... Feedback: ...'",
+    "",
+    "Check this task complete when all of that is done. If it is not checked complete by 6:00 PM Mountain, AmiLynne is notified.",
+    `SOP: ${OUTREACH_SOP_URL}`,
+  ].join("\n");
+}
 
 export const TEAM_DAILY_TASKS: TeamDailyTask[] = [
   {
@@ -27,23 +68,8 @@ export const TEAM_DAILY_TASKS: TeamDailyTask[] = [
     memberEmail: "sumbal@amilynnecarroll.com",
     createHour: 7,
     dueHour: 18,
-    title: (d) => `Work the Outreach pipelines: DM, LinkedIn, Facebook (${d})`,
-    description: [
-      "Work AmiLynne's DM Outreach pipeline today (LinkedIn and Facebook; not Cold Email). Full steps: the DM Outreach SOP, Part 8 (daily routine).",
-      "",
-      "1. Text AmiLynne BEFORE you sign in to LinkedIn or Facebook if you are not already signed in.",
-      "2. Replies first: LinkedIn messages and accepted connections, Facebook Messenger and Message requests, the LifeCharter Community Page inbox. Log and move each card.",
-      "3. Follow-ups due: open the MasterClass Pipeline, use the follow-ups-due notice, send the follow-up, then reset each card's Follow up on date.",
-      "4. New LinkedIn people: 25 connection requests with a note. Press 'I sent it' after every one.",
-      "5. Facebook: import about 25 people with the note 'FB import DATE'. Message only people from an import AmiLynne has cleared.",
-      "",
-      "Tracking check before you finish: every message you sent is logged with 'I sent it'. The counters at the top of the pipeline page show today's new DMs and follow-up DMs for LinkedIn and Facebook. Every card you touched is in the right column with a true follow-up date.",
-      "",
-      "Report to AmiLynne: 'Today: LinkedIn __ new, Facebook __ imported, __ cleared Facebook messaged. Follow-ups sent __. Replies __. Accepted __. Invited __. Needs you: ... Problems: ... Feedback: ...'",
-      "",
-      "Check this task complete when all of that is done. If it is not checked complete by 6:00 PM Mountain, AmiLynne is notified.",
-      `SOP: ${OUTREACH_SOP_URL}`,
-    ].join("\n"),
+    title: outreachTitle,
+    description: outreachDescription,
   },
 ];
 

@@ -120,8 +120,8 @@ ${total ? sec("Overdue", g.overdue, true) + sec("Today", g.dueToday, false) + se
         .from("tasks")
         .insert({
           master_plan_id: planId,
-          title: def.title(niceDay(day)),
-          description: def.description,
+          title: def.title(niceDay(day), day),
+          description: def.description(day),
           status: "today",
           priority: "high",
           owner_action: false,
