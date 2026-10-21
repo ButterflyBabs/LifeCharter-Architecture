@@ -332,8 +332,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Getting Started",
     question: "Can I start an assessment on one device and finish it on another?",
     answer:
-      "Yes. Your Brain, Soul and Profit answers are saved to your account as you go, so when you open an assessment on another computer, phone or browser, the answers you already gave come back. Answers on the device you are using are kept as they are, and the saved ones fill in any questions that are still empty there. If a save ever fails, the answers you gave earlier are not erased.",
+      "Yes. Your Brain, Soul and Profit answers are saved to your account as you go, so when you open an assessment on another computer, phone or browser, the answers you already gave come back. Answers on the device you are using are kept as they are, and the saved ones fill in any questions that are still empty there. If a save ever fails, the answers you gave earlier are not erased. Next to the save icon at the top of each assessment you will see where your answers are: Saved to your account (the Suite has them), Saving, Saved on this device (only this browser has them so far) or Not saved to your account yet. If a save fails, a notice tells you so, your answers stay on the device, and the Suite keeps trying by itself (again when your internet is back, when you return to the tab, and as you close the page). Keep the page open until it says Saved to your account.",
     keywords: ["another device", "different device", "switch devices", "phone", "computer", "browser", "save progress", "lost answers", "assessment saved", "continue later", "come back"],
+  },
+  {
+    id: "st-assessment-saved-progress-bar",
+    category: "Getting Started",
+    question: "I saved my AI's answers but the progress bar did not move. Do I have to click through them?",
+    answer:
+      "No. When you press Save on the answers from your AI (for example Save 50 answers), they go into your assessment at once and are saved to your account. The progress bars now count answered questions, so they jump forward as soon as you save: the header shows how many questions you have answered out of the total, and the section bar shows that section's answers. You only need Next if you want to read or change an answer. To be sure they are safe, look beside the save icon at the top: it should say Saved to your account.",
+    keywords: ["progress bar", "bar did not move", "bar not moving", "save answers", "save 50 answers", "fill this section with my ai", "ai answers", "click through", "next button", "answered", "assessment progress", "saved to your account"],
   },
   {
     id: "st-brain-more-businesses-streams",
