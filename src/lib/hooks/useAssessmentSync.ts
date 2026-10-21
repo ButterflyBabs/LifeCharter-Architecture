@@ -67,7 +67,12 @@ export function useAssessmentSync(
     return { changed, removedIds };
   }, []);
 
-  const flush = useCallback(async () => {
+  // `unloading` = the page is being hidden or closed: only then is a keepalive request used (it must outlive the page),
+  // and only when the body is small. Browsers allow just 64 KiB of keepalive bodies in flight at once, in BYTES (an
+  // answer with curly quotes or an emoji is 2 to 4 bytes a character), so an ordinary save must never use it: a long AI
+  // answer set sent as several keepalive requests at once was refused by the browser before it left the page, silently,
+  // which is how John Carter's later answers never reached his account (2026-10-21).
+  const flush = useCallback(async (unloading = false) => {
     if (inflight.current) return;
     if (timer.current) {
       clearTimeout(timer.current);
@@ -99,32 +104,40 @@ export function useAssessmentSync(
     inflight.current = true;
     if (alive.current) setState((s) => ({ ...s, status: "saving", unsaved: changed.length + removedIds.length }));
 
-    const results = await Promise.all(
-      batches.map(async (batch, i) => {
-        const body = JSON.stringify({
-          type,
-          partial: true,
-          responses: batch,
-          // Removals ride along with the first batch only.
-          removedIds: i === 0 ? removedIds : [],
+    // One batch at a time, so a failure shows which one and the ones that succeed are kept.
+    const results: boolean[] = [];
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const body = JSON.stringify({
+        type,
+        partial: true,
+        responses: batch,
+        // Removals ride along with the first batch only.
+        removedIds: i === 0 ? removedIds : [],
+      });
+      if (batch.length === 0 && (i !== 0 || removedIds.length === 0)) {
+        results.push(true);
+        continue;
+      }
+      try {
+        const bytes = new TextEncoder().encode(body).length;
+        const r = await fetch("/api/assessments/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: unloading && bytes < 30_000,
         });
-        if (batch.length === 0 && (i !== 0 || removedIds.length === 0)) return true;
-        try {
-          const r = await fetch("/api/assessments/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body,
-            keepalive: body.length < 60_000,
-          });
-          if (!r.ok) return false;
-          for (const row of batch) synced.current[row.questionId] = row.answerText;
-          if (i === 0) for (const id of removedIds) delete synced.current[id];
-          return true;
-        } catch {
-          return false;
+        if (!r.ok) {
+          results.push(false);
+          continue;
         }
-      })
-    );
+        for (const row of batch) synced.current[row.questionId] = row.answerText;
+        if (i === 0) for (const id of removedIds) delete synced.current[id];
+        results.push(true);
+      } catch {
+        results.push(false);
+      }
+    }
     inflight.current = false;
     if (!alive.current) return;
 
@@ -160,14 +173,16 @@ export function useAssessmentSync(
   // Try again as soon as the browser is back online or the tab is shown again, and one last time as the page closes.
   useEffect(() => {
     const retry = () => void flush();
+    const closing = () => void flush(true);
     // visibilitychange fires both when the tab is shown again and when it is hidden or closing: send either way.
+    const onVisibility = () => void flush(document.visibilityState === "hidden");
     window.addEventListener("online", retry);
-    window.addEventListener("pagehide", retry);
-    document.addEventListener("visibilitychange", retry);
+    window.addEventListener("pagehide", closing);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("online", retry);
-      window.removeEventListener("pagehide", retry);
-      document.removeEventListener("visibilitychange", retry);
+      window.removeEventListener("pagehide", closing);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [flush]);
 
