@@ -8,6 +8,7 @@ import { Heart, ArrowLeft, ArrowRight, Save, CheckCircle, Shield } from "lucide-
 import Link from "next/link";
 import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { useAssessmentDraftKey } from "@/lib/hooks/useAssessmentDraftKey";
 import { SaveNotice, saveLabel } from "@/components/assessments/SaveNotice";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
@@ -334,8 +335,10 @@ export default function SoulAssessmentPage() {
   const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   // Load saved progress
+  const draftKey = useAssessmentDraftKey("soul-assessment");
   useEffect(() => {
-    const saved = localStorage.getItem("soul-assessment");
+    if (!draftKey) return;
+    const saved = localStorage.getItem(draftKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -346,7 +349,7 @@ export default function SoulAssessmentPage() {
         // Invalid saved data, start fresh
       }
     }
-  }, []);
+  }, [draftKey]);
 
   // Send each answer to the server as it's given (sensitive answers stay flagged
   // and are never shown to the AI), so the assistant learns as you go.
@@ -364,12 +367,12 @@ export default function SoulAssessmentPage() {
       currentQuestion,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem("soul-assessment", JSON.stringify(data));
+    if (draftKey) localStorage.setItem(draftKey, JSON.stringify(data));
     setTimeout(() => {
       setLastSaved(new Date());
       setIsSaving(false);
     }, 500);
-  }, [answers, currentQuestion]);
+  }, [answers, currentQuestion, draftKey]);
 
   useEffect(() => {
     const timer = setTimeout(saveProgress, 1000);

@@ -8,6 +8,7 @@ import { Brain, ArrowLeft, ArrowRight, Save, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAssessmentRestore } from "@/lib/hooks/useAssessmentRestore";
 import { useAssessmentSync } from "@/lib/hooks/useAssessmentSync";
+import { useAssessmentDraftKey } from "@/lib/hooks/useAssessmentDraftKey";
 import { SaveNotice, saveLabel } from "@/components/assessments/SaveNotice";
 import { useNextAssessment } from "@/lib/hooks/useNextAssessment";
 import { AiFillSection } from "@/components/assessment/AiFillSection";
@@ -4604,8 +4605,10 @@ export default function BrainAssessmentPage() {
   const safeIndex = Math.min(currentQuestion, visible.length - 1);
 
   // Load saved progress
+  const draftKey = useAssessmentDraftKey("brain-assessment");
   useEffect(() => {
-    const saved = localStorage.getItem("brain-assessment");
+    if (!draftKey) return;
+    const saved = localStorage.getItem(draftKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -4616,7 +4619,7 @@ export default function BrainAssessmentPage() {
         // Invalid saved data, start fresh
       }
     }
-  }, []);
+  }, [draftKey]);
 
   // Send each answer to the server as it's given, so the AI assistant learns from
   // it right away — not only once the whole assessment is finished.
@@ -4634,12 +4637,12 @@ export default function BrainAssessmentPage() {
       currentQuestion,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem("brain-assessment", JSON.stringify(data));
+    if (draftKey) localStorage.setItem(draftKey, JSON.stringify(data));
     setTimeout(() => {
       setLastSaved(new Date());
       setIsSaving(false);
     }, 500);
-  }, [answers, currentQuestion]);
+  }, [answers, currentQuestion, draftKey]);
 
   useEffect(() => {
     const timer = setTimeout(saveProgress, 1000);
