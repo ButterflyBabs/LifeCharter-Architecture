@@ -6,6 +6,7 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
 import { approvedClientTemplate } from "@/lib/email/clientTemplate";
 import { masterclassLinkForEmail } from "@/lib/affiliateStarter";
 import { renderAccountEmail, sendRendered } from "@/lib/email/accountReadyEmail";
+import { noSignInEmailReminder } from "@/lib/email/noSignInEmail";
 import { accountEvidence, evidenceReady, missingPieces, missingText } from "@/lib/accountEvidence";
 import { remindSigner } from "@/lib/starterSignup";
 
@@ -234,6 +235,7 @@ export async function completeOnboarding(body: OnboardBody, o: { presser: string
   });
   if (linkError || !linkData?.properties?.action_link) {
     console.error("generateLink failed:", linkError?.message);
+    if (isNewAccount && houseId) await alertNoSignInEmail(supabase, houseId, { name: body.fullName, email: (body.loginEmail || body.email).toLowerCase() }, "no-link");
     return { success: true, isNewAccount, contactSaved, loginUrl: null, emailed: false };
   }
 
@@ -253,7 +255,23 @@ export async function completeOnboarding(body: OnboardBody, o: { presser: string
     }
   }
 
+  // A new client whose sign-in email did not go out (standard email still a draft, or the send failed): tell Babs today.
+  if (isNewAccount && !emailed && houseId) {
+    await alertNoSignInEmail(supabase, houseId, { name: body.fullName, email: (body.loginEmail || body.email).toLowerCase() }, tpl ? "failed" : "draft");
+  }
+
   return { success: true, isNewAccount, contactSaved, loginUrl: linkData.properties.action_link, emailed, standardEmailApproved: Boolean(tpl) };
+}
+
+// A reminder for Babs (bell card and email through the Reminders job) that a new client has an account but no sign-in
+// email. Never throws: the account is already open either way.
+async function alertNoSignInEmail(db: { from: (t: string) => any }, houseId: string, who: { name: string; email: string }, why: "draft" | "failed" | "no-link") { // eslint-disable-line @typescript-eslint/no-explicit-any
+  try {
+    const r = noSignInEmailReminder(who, why, APP_URL);
+    await db.from("reminders").insert({ master_plan_id: houseId, title: r.title, notes: r.notes, remind_at: new Date().toISOString() });
+  } catch (e) {
+    console.error("[onboard-client] no-sign-in-email alert failed:", (e as Error).message);
+  }
 }
 
 /**
