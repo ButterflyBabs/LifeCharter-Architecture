@@ -438,6 +438,9 @@ export function AiFillSection(props: AiFillSectionProps) {
                     Save {selectedCount} answer{selectedCount === 1 ? "" : "s"}
                   </Button>
                 </div>
+                <p className="text-xs text-[#6b5d52]">
+                  Saving adds these answers to your assessment right away and your progress bar counts them. You do not need to click through them one by one.
+                </p>
               </div>
             )}
           </div>

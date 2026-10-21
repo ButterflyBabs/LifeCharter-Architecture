@@ -4717,13 +4717,13 @@ export default function BrainAssessmentPage() {
   };
 
   const currentQ = visible[safeIndex];
-  const progress = ((safeIndex + 1) / visible.length) * 100;
+  // The bars count ANSWERED questions (including ones filled in with the AI), not where you are standing.
+  const isAnswered = (id: string) => (answers[id] ?? "").toString().trim() !== "";
+  const answeredAll = visible.filter((q) => isAnswered(q.id)).length;
+  const progress = (answeredAll / visible.length) * 100;
   const currentSection = currentQ.section;
   const sectionQuestions = visible.filter((q) => q.section === currentSection);
-  const sectionProgress =
-    ((sectionQuestions.findIndex((q) => q.id === currentQ.id) + 1) /
-      sectionQuestions.length) *
-    100;
+  const sectionProgress = (sectionQuestions.filter((q) => isAnswered(q.id)).length / sectionQuestions.length) * 100;
 
   if (isComplete) {
     return (
@@ -4776,7 +4776,7 @@ export default function BrainAssessmentPage() {
             <div className="flex justify-between text-sm">
               <span>Overall Progress</span>
               <span>
-                {safeIndex + 1} of {visible.length}
+                {answeredAll} of {visible.length} answered
               </span>
             </div>
             <Progress value={progress} variant="teal" />
@@ -4813,7 +4813,7 @@ export default function BrainAssessmentPage() {
                   setAnswers((prev) => ({ ...prev, ...updates }));
                   setCurrentQuestion(visible.findIndex((q) => q.section === currentSection));
                   setAiNotice(
-                    `${Object.keys(updates).length} answers from your AI were saved to this section. Step through with Next to read each one and make any final edits.`
+                    `${Object.keys(updates).length} answers from your AI were saved to your assessment. You do not need to click through them: your progress bar already counts them. Use Next if you would like to read or edit any.`
                   );
                 }}
               />

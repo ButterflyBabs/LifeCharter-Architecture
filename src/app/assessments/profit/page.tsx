@@ -430,7 +430,9 @@ function ProfitAssessmentContent() {
   };
 
   const currentQ = questions[currentQuestion];
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  // The bar counts ANSWERED questions, not where you are standing.
+  const answeredAll = questions.filter((q) => (answers[q.id] ?? "").toString().trim() !== "").length;
+  const progress = (answeredAll / questions.length) * 100;
   const currentDomainIndex = domains.findIndex((d) => d.id === currentQ.domain);
   const currentDomain = domains[currentDomainIndex];
 
@@ -500,7 +502,7 @@ function ProfitAssessmentContent() {
                   Domain {currentDomainIndex + 1} of {domains.length}: {currentDomain.name}
                 </span>
                 <span>
-                  Question {currentQuestion + 1} of {questions.length}
+                  {answeredAll} of {questions.length} answered · on question {currentQuestion + 1}
                 </span>
               </div>
               <Progress value={progress} variant="gold" />
@@ -573,7 +575,7 @@ function ProfitAssessmentContent() {
                   setAnswers((prev) => ({ ...prev, ...updates }));
                   setCurrentQuestion(questions.findIndex((q) => q.domain === currentQ.domain));
                   setAiNotice(
-                    `${Object.keys(updates).length} answers from your AI were saved to ${currentDomain.name}. Step through with Next to check each rating.`
+                    `${Object.keys(updates).length} answers from your AI are saved to ${currentDomain.name}. You do not need to click through them: your progress bar already counts them. Use Next if you would like to check any rating.`
                   );
                 }}
               />
