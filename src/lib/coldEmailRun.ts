@@ -100,6 +100,7 @@ async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: stri
 async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, now: Date, replyTo: string) {
   const out = { sent: 0, failed: 0, waiting: 0, skipped: "" };
   if (!s.board_id) return out;
+  if (s.started_on && localParts(now, s.tz).ymd < s.started_on) return { ...out, skipped: "before the start date" };
   if (!inSendWindow(now, s.tz, s.window_start, s.window_end, s.weekdays_only)) return { ...out, skipped: "outside the send window" };
   const steps = s.steps && s.steps.length ? s.steps : DEFAULT_STEPS;
   const sendable = stages.filter((x) => SENDABLE.includes(x.key ?? ""));
