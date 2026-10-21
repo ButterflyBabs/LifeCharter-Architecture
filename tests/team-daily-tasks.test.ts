@@ -28,3 +28,13 @@ test("DM counts split new from follow-up per platform, and always show LinkedIn 
   assert.equal(countsLine(t), "LinkedIn 2 new, 1 follow-up. Facebook 0 new, 1 follow-up.");
   assert.equal(countsLine({}), "LinkedIn 0 new, 0 follow-up. Facebook 0 new, 0 follow-up.");
 });
+
+import { groupDigest } from "../src/lib/teamDailyTasks";
+
+test("the 8 AM list sorts a member's tasks into overdue, today and soon", () => {
+  const t = (id: number, day: string | null, today = false) => ({ id, title: `t${id}`, day, time: null, today });
+  const g = groupDigest([t(1, "2026-10-20"), t(2, "2026-10-21"), t(3, null, true), t(4, "2026-10-23"), t(5, "2026-10-30"), t(6, null)], "2026-10-21");
+  assert.deepEqual(g.overdue.map((x) => x.id), [1]);
+  assert.deepEqual(g.dueToday.map((x) => x.id).sort(), [2, 3]);
+  assert.deepEqual(g.soon.map((x) => x.id), [4], "a task five days out and one with no date are left out");
+});

@@ -5,6 +5,9 @@
 
 export const TEAM_TZ = "America/Denver";
 
+/** Local hour (Mountain) the member's "your tasks today" email and in-app reminder go out. */
+export const DIGEST_HOUR = 8;
+
 export interface TeamDailyTask {
   key: string;
   memberEmail: string;
@@ -80,4 +83,25 @@ const PLATFORM_NAME: Record<string, string> = { LI: "LinkedIn", FB: "Facebook", 
 export function countsLine(t: Record<string, DmCount>): string {
   const keys = Array.from(new Set(["LI", "FB", ...Object.keys(t)]));
   return keys.map((k) => `${PLATFORM_NAME[k] ?? k} ${t[k]?.newDms ?? 0} new, ${t[k]?.followUps ?? 0} follow-up`).join(". ") + ".";
+}
+
+export interface DigestTask {
+  id: number;
+  title: string;
+  /** Due day in Mountain time (YYYY-MM-DD), or null when the task has no date. */
+  day: string | null;
+  time: string | null;
+  today: boolean;
+}
+
+/** Sort a member's open tasks into overdue, due today (including ones set for today), and the next three days. */
+export function groupDigest(tasks: DigestTask[], today: string): { overdue: DigestTask[]; dueToday: DigestTask[]; soon: DigestTask[] } {
+  const horizon = new Date(`${today}T12:00:00Z`);
+  horizon.setUTCDate(horizon.getUTCDate() + 3);
+  const last = horizon.toISOString().slice(0, 10);
+  const byDay = (a: DigestTask, b: DigestTask) => (a.day ?? "9999").localeCompare(b.day ?? "9999") || a.title.localeCompare(b.title);
+  const overdue = tasks.filter((t) => t.day && t.day < today).sort(byDay);
+  const dueToday = tasks.filter((t) => (t.day === today) || (!t.day && t.today) || (t.day && t.day > today && t.today)).sort(byDay);
+  const soon = tasks.filter((t) => t.day && t.day > today && t.day <= last && !t.today).sort(byDay);
+  return { overdue, dueToday, soon };
 }

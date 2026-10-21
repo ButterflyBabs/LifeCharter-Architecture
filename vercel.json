@@ -170,7 +170,7 @@
     },
     {
       "path": "/api/cron/team-daily-tasks",
-      "schedule": "0,30 13,14 * * *"
+      "schedule": "0,30 13,14,15 * * *"
     },
     {
       "path": "/api/cron/team-daily-tasks",
