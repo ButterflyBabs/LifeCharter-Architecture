@@ -783,13 +783,14 @@ export async function sendReply(
 // Compose and send a brand-new email (not a reply — no thread, subject as-is).
 export async function sendEmail(
   accessToken: string,
-  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
-): Promise<void> {
+  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[]; extraHeaders?: string[] }
+): Promise<{ id: string; threadId: string }> {
   const raw = buildRawMessage({
     to: opts.to,
     subject: opts.subject,
     body: opts.body,
     attachments: opts.attachments,
+    extraHeaders: opts.extraHeaders,
   });
   const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
@@ -797,6 +798,8 @@ export async function sendEmail(
     body: JSON.stringify({ raw }),
   });
   if (!r.ok) throw new Error(`gmail send ${r.status} ${await r.text()}`);
+  const d = (await r.json().catch(() => ({}))) as { id?: string; threadId?: string };
+  return { id: d.id ?? "", threadId: d.threadId ?? "" };
 }
 
 // Rough HTML → text, for quoting an html-only message into a plain-text forward.

@@ -8,8 +8,11 @@ export default function UnsubscribePage() {
   const [support, setSupport] = useState<string | null>(null);
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("t") || "";
-    fetch("/api/unsubscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }) })
+    const q = new URLSearchParams(window.location.search);
+    const t = q.get("t") || "";
+    const c = q.get("c") || "";
+    const call = c ? fetch(`/api/cold-unsubscribe?c=${encodeURIComponent(c)}`, { method: "POST" }) : fetch("/api/unsubscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }) });
+    call
       .then(async (r) => {
         const d = await r.json().catch(() => ({}));
         setSupport(typeof d.support === "string" ? d.support : null);

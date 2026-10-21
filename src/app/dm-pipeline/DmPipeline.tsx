@@ -288,6 +288,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
 
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
       {purpose === "outreach" && <OutreachOverview refreshKey={`${board?.id ?? ""}:${cards?.length ?? 0}`} />}
+      {purpose === "outreach" && stages?.some((st) => st.key === "followed_up" && /^Emails 2 and 3/.test(st.name)) && <ColdEmailSender boardId={board?.id ?? null} />}
       {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} boardName={board?.name ?? ""} onAdded={() => void load(board?.id)} />}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -915,6 +916,132 @@ function OutreachOverview({ refreshKey }: { refreshKey: string }) {
           <p className={TXT_CLS}>Where everyone is right now, across all your pipelines. &ldquo;On the list&rdquo; is everyone; the other columns are the people sitting at that point today.</p>
           {table([...d.channels.map((c) => ({ label: c.channel, n: c })), { label: "All channels", n: d.total, bold: true }], "By channel")}
           {d.boards.length > 1 && table(d.boards.map((b) => ({ label: b.name, n: b })), "By pipeline")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+type SenderRow = { id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; last_error: string | null; scanned_at: string | null; sentToday: number; todayCap: number };
+type ColdData = { boardId: string | null; globalOn: boolean; enabled: boolean; steps: { day: number; subject: string; body: string }[]; windowStart: number; windowEnd: number; weekdaysOnly: boolean; footer: string; startedOn: string | null; senders: SenderRow[]; connections: { accountKey: string; email: string | null; canReadMail: boolean }[]; sentTotal: number };
+
+function ColdEmailSender({ boardId }: { boardId: string | null }) {
+  const [d, setD] = useState<ColdData | null>(null);
+  const [open, setOpen] = useState(false);
+  const [steps, setSteps] = useState<ColdData["steps"]>([]);
+  const [foot, setFoot] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function load() {
+    const r = await fetch("/api/cold-email", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) return;
+    const x = (await r.json()) as ColdData;
+    setD(x);
+    setSteps(x.steps);
+    setFoot(x.footer);
+  }
+  useEffect(() => {
+    void load();
+  }, [boardId]);
+  async function act(body: Record<string, unknown>, ok?: string) {
+    setBusy(true);
+    setNote("");
+    const r = await fetch("/api/cold-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const x = r ? await r.json().catch(() => ({})) : {};
+    setBusy(false);
+    if (!r || !r.ok) setNote(x.error || "That did not work. Please try again.");
+    else setNote(ok ?? (x.to ? `Test sent to ${x.to}.` : "Saved."));
+    await load();
+  }
+  if (!d) return null;
+  const free = d.connections.filter((c) => !d.senders.some((s) => s.account_key === c.accountKey));
+  return (
+    <div className={CARD_CLS + " mb-4"}>
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between text-left">
+        <span className={HEAD_CLS}>
+          Cold email sender{" "}
+          <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${d.enabled && d.globalOn ? "bg-[#2E7C83]/15 text-[#1F5E63]" : "bg-[#1a2b4a]/10 text-[#5a6472]"}`}>{d.enabled && d.globalOn ? "On" : "Off"}</span>
+        </span>
+        <span className="text-xs font-medium text-[#2E7C83]">{open ? "Hide" : "Set up"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-4">
+          <p className={TXT_CLS}>
+            Sends the three emails from your own Google mailboxes, never from the Suite&rsquo;s email. Each mailbox starts at 5 a day and grows to its cap over two weeks, only on weekdays inside the send window. A reply, a request to stop or a bounce stops the series
+            for that person and moves their card. Stop requests and bounces are marked Do Not Contact. It stays off until you turn it on.
+          </p>
+          <div>
+            <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Sending mailboxes</p>
+            {d.senders.length === 0 && <p className={TXT_CLS}>None yet. Connect a Google mailbox under Settings &gt; Integrations, then add it here.</p>}
+            {d.senders.map((s) => (
+              <div key={s.id} className="mt-2 flex flex-wrap items-center gap-3 rounded-lg border border-[#1a2b4a]/10 px-3 py-2 text-sm">
+                <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{s.email ?? s.account_key}</span>
+                <span className="tabular-nums text-[#5a6472]">{s.sentToday} of {s.todayCap} today</span>
+                <label className="text-xs text-[#5a6472]">
+                  Daily cap{" "}
+                  <input type="number" min={1} max={100} defaultValue={s.daily_cap} onBlur={(e) => void act({ action: "update-sender", id: s.id, dailyCap: Number(e.target.value) })} className="ml-1 w-16 rounded border border-[#1a2b4a]/20 px-1 py-0.5 text-sm" />
+                </label>
+                <button onClick={() => void act({ action: "update-sender", id: s.id, paused: !s.paused })} className="text-xs font-medium text-[#2E7C83] hover:underline">
+                  {s.paused ? "Resume" : "Pause"}
+                </button>
+                <button onClick={() => void act({ action: "remove-sender", id: s.id })} className="text-xs font-medium text-[#A4523C] hover:underline">
+                  Remove
+                </button>
+                {s.last_error && <span className="w-full text-xs text-[#A4523C]">{s.last_error}</span>}
+              </div>
+            ))}
+            {free.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {free.map((c) => (
+                  <button key={c.accountKey} onClick={() => void act({ action: "add-sender", accountKey: c.accountKey }, `${c.email ?? "Mailbox"} added.${c.canReadMail ? "" : " It cannot read replies yet: reconnect it and allow reading mail."}`)} className="rounded-full border border-dashed border-[#2E7C83]/50 px-3 py-1 text-xs text-[#2E7C83]">
+                    + Add {c.email ?? c.accountKey}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="space-y-3">
+            {steps.map((st, i) => (
+              <div key={i} className="rounded-lg border border-[#1a2b4a]/10 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">
+                  Email {i + 1}
+                  {i === 0 ? " (day 0)" : ""}
+                </p>
+                {i > 0 && (
+                  <label className="mt-1 block text-xs text-[#5a6472]">
+                    Sent this many days after Email 1
+                    <input type="number" min={1} max={60} value={st.day} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, day: Number(e.target.value) } : x)))} className="ml-2 w-16 rounded border border-[#1a2b4a]/20 px-1 py-0.5 text-sm" />
+                  </label>
+                )}
+                <Input value={st.subject} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, subject: e.target.value } : x)))} aria-label={`Email ${i + 1} subject`} />
+                <textarea rows={9} value={st.body} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))} aria-label={`Email ${i + 1} message`} className="mt-2 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" />
+                <button onClick={() => void act({ action: "test", step: i })} disabled={busy} className="mt-1 text-xs font-medium text-[#2E7C83] hover:underline">
+                  Send me a test of this email
+                </button>
+              </div>
+            ))}
+            <p className="text-xs text-[#7a8a99]">Merge fields: {"{{first_name}} {{at_company}} {{personal_link}} {{next_session_date}} {{booking_link}}"}. The footer and the unsubscribe line are added to every email.</p>
+            <label className="block text-xs font-medium text-[#5a6472]">
+              Footer (your postal address)
+              <Input value={foot} onChange={(e) => setFoot(e.target.value)} />
+            </label>
+            <Button onClick={() => void act({ action: "save", steps, footer: foot })} disabled={busy}>
+              Save the emails
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 border-t border-[#1a2b4a]/10 pt-3">
+            <Button onClick={() => void act({ action: "toggle", enabled: !d.enabled }, d.enabled ? "Switched off. Nothing more will be sent." : "Switched on. The first emails go out inside the send window.")} disabled={busy}>
+              {d.enabled ? "Turn the sender off" : "Turn the sender on"}
+            </Button>
+            <span className="text-xs text-[#7a8a99]">{d.sentTotal} sent so far{d.startedOn ? ` · started ${d.startedOn}` : ""}</span>
+            {d.enabled && !d.globalOn && <span className="text-xs text-[#A4523C]">The Suite-wide cold email switch is off, so nothing is sent yet.</span>}
+          </div>
+          {note && (
+            <p className="text-sm text-[#1F5E63]" role="status">
+              {note}
+            </p>
+          )}
         </div>
       )}
     </div>
