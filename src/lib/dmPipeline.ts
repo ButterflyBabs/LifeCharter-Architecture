@@ -292,26 +292,36 @@ export async function createCard(
   input: { name: string; handle?: string | null; profileUrl?: string | null; email?: string | null; platform: string | null; contactId?: string | null; scriptId?: string | null; scriptTitle?: string | null; notes?: string | null }
 ) {
   const now = new Date().toISOString();
-  const { data: card, error } = await db
-    .from("dm_cards")
-    .insert({
-      master_plan_id: planId,
-      board_id: board.id,
-      stage_id: stage.id,
-      contact_id: input.contactId ?? null,
-      name: input.name,
-      handle: input.handle ?? null,
-      profile_url: input.profileUrl ?? null,
-      email: input.email ?? null,
-      platform: input.platform,
-      script_id: input.scriptId ?? null,
-      script_title: input.scriptTitle ?? null,
-      notes: input.notes ?? null,
-      last_contacted_at: stage.key === "sent" || stage.key === "followed_up" ? now : null,
-      stage_changed_at: now,
-    })
-    .select("*")
-    .single();
+  // Every card gets its own registration link (lccommandsuite.com/m/<code>), so the invite scripts can fill it in and a
+  // sign-up moves the card to Registered. A taken code (unique clash) just draws another.
+  const newCode = () => Array.from({ length: 7 }, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 31)]).join("");
+  let card: Record<string, unknown> | null = null;
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 3 && !card; attempt++) {
+    const r = await db
+      .from("dm_cards")
+      .insert({
+        master_plan_id: planId,
+        board_id: board.id,
+        stage_id: stage.id,
+        contact_id: input.contactId ?? null,
+        name: input.name,
+        handle: input.handle ?? null,
+        profile_url: input.profileUrl ?? null,
+        email: input.email ?? null,
+        platform: input.platform,
+        script_id: input.scriptId ?? null,
+        script_title: input.scriptTitle ?? null,
+        notes: input.notes ?? null,
+        link_code: newCode(),
+        last_contacted_at: stage.key === "sent" || stage.key === "followed_up" ? now : null,
+        stage_changed_at: now,
+      })
+      .select("*")
+      .single();
+    card = (r.data as Record<string, unknown> | null) ?? null;
+    error = r.error;
+  }
   if (error || !card) return { error: error?.message ?? "Couldn't add them." };
   const follow = await setFollowUp(db, planId, card as Card, stage, board.name, tz);
   const extra: Record<string, unknown> = { ...follow };
