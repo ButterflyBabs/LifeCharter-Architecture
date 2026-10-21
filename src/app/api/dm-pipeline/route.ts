@@ -5,7 +5,8 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, type Board } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board } from "@/lib/dmPipeline";
+import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { zonedToUtcISO } from "@/lib/tz";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
     const name = str(b.name, 80);
     if (!name) return NextResponse.json({ error: "Name the pipeline." }, { status: 400 });
     const tag = slugTag(str(b.tag, 40) || name.replace(/pipeline/i, ""), 30) || null;
-    const board = await createBoard(db, a.planId, name, tag, purpose === "affiliate" ? "affiliate" : b.template === "simple" ? "simple" : "dm", purpose);
+    const board = await createBoard(db, a.planId, name, tag, purpose === "affiliate" ? "affiliate" : b.template === "simple" ? "simple" : b.template === "coldemail" ? "coldemail" : "dm", purpose);
     return board ? NextResponse.json({ board }) : NextResponse.json({ error: "Couldn't create it." }, { status: 500 });
   }
   if (b.action === "board-update") {
@@ -281,6 +282,117 @@ export async function POST(request: Request) {
       seenName.add(nk);
     }
     return NextResponse.json({ added, duplicates, skipped, stage: stage.name, boardId: board.id });
+  }
+
+  // Upload a spreadsheet (.csv) of people with their email addresses: one card each in the pipeline's first stage, with a personal
+  // MasterClass link. Nobody becomes a marketing contact from an upload; a person already in Contacts is linked, and anyone marked
+  // Do Not Contact or unsubscribed is left out. At most 2,000 a file.
+  if (b.action === "bulk-add-people") {
+    const board = boardOf(b.boardId) ?? boards[0];
+    if (!board) return NextResponse.json({ error: "Create a pipeline first." }, { status: 400 });
+    const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : "Email";
+    const { rows, invalid, unreadable } = mapPeople(parseCsv(typeof b.csv === "string" ? b.csv.slice(0, 4_000_000) : ""), 2000);
+    if (unreadable || !rows.length) return NextResponse.json({ error: "No people found. The first row should name the columns, for example First name, Last name, Email.", invalid }, { status: 400 });
+    const stages = await boardStages(db, a.planId, board.id);
+    const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
+    if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
+    const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+    const { data: existing } = await db.from("dm_cards").select("email, profile_url").eq("board_id", board.id).limit(20000);
+    const haveEmail = new Set<string>();
+    const haveUrl = new Set<string>();
+    for (const c of (existing ?? []) as { email: string | null; profile_url: string | null }[]) {
+      if (c.email) haveEmail.add(c.email.toLowerCase());
+      if (c.profile_url) haveUrl.add(norm(c.profile_url));
+    }
+    const contactBy = new Map<string, { id: string; stop: boolean }>();
+    const emails = rows.map((r) => r.email).filter(Boolean) as string[];
+    for (let i = 0; i < emails.length; i += 200) {
+      const { data: cs } = await db.from("seq_contacts").select("id, email, tags, unsubscribed_at").eq("master_plan_id", a.planId).in("email", emails.slice(i, i + 200));
+      for (const c of (cs ?? []) as { id: string; email: string; tags: string[] | null; unsubscribed_at: string | null }[]) contactBy.set(c.email.toLowerCase(), { id: c.id, stop: Boolean(c.unsubscribed_at) || (c.tags ?? []).includes("do-not-contact") });
+    }
+    const now = new Date().toISOString();
+    const code = () => Array.from({ length: 7 }, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 31)]).join("");
+    let duplicates = 0;
+    let stopped = 0;
+    const toAdd: Record<string, unknown>[] = [];
+    const linked: string[] = [];
+    for (const r of rows) {
+      const u = r.profileUrl ? norm(r.profileUrl) : "";
+      if ((r.email && haveEmail.has(r.email)) || (u && haveUrl.has(u))) {
+        duplicates++;
+        continue;
+      }
+      const known = r.email ? contactBy.get(r.email) : undefined;
+      if (known?.stop) {
+        stopped++;
+        continue;
+      }
+      if (r.email) haveEmail.add(r.email);
+      if (u) haveUrl.add(u);
+      if (known) linked.push(known.id);
+      toAdd.push({ master_plan_id: a.planId, board_id: board.id, stage_id: stage.id, contact_id: known?.id ?? null, name: r.name, email: r.email, profile_url: r.profileUrl, platform, notes: r.notes, link_code: code(), stage_changed_at: now });
+    }
+    let added = 0;
+    for (let i = 0; i < toAdd.length; i += 200) {
+      let chunk = toAdd.slice(i, i + 200);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error } = await db.from("dm_cards").insert(chunk);
+        if (!error) {
+          added += chunk.length;
+          break;
+        }
+        chunk = chunk.map((c) => ({ ...c, link_code: code() }));
+      }
+    }
+    for (const id of Array.from(new Set(linked))) await retagContact(db, a.planId, id, [board.tag, stage.tag, platformTag(platform)], []);
+    return NextResponse.json({ added, duplicates, stopped, invalid: invalid.slice(0, 20), invalidCount: invalid.length, stage: stage.name, boardId: board.id });
+  }
+
+  // Update from the cold-email tool: paste (or upload) the addresses that were emailed, replied, asked to stop or bounced. Their cards
+  // move on every pipeline they are on, forward only; anyone who asked to stop (or bounced) is marked Do Not Contact.
+  if (b.action === "email-status") {
+    const status = str(b.status, 12);
+    const TARGET: Record<string, string> = { emailed1: "sent", emailed2: "followed_up", replied: "conversation", stop: "not_now", bounced: "not_now" };
+    if (!TARGET[status]) return NextResponse.json({ error: "Choose what happened to these addresses." }, { status: 400 });
+    const found = (str(b.text, 400000).toLowerCase().match(/[^\s,;:"'<>()[\]]+@[^\s,;:"'<>()[\]]+\.[a-z]{2,}/g) ?? []).filter((e) => EMAIL_RE.test(e));
+    const list = Array.from(new Set(found)).slice(0, 5000);
+    if (!list.length) return NextResponse.json({ error: "No email addresses found. Paste them one per line, or a column from your spreadsheet." }, { status: 400 });
+    const stagesByBoard = new Map<string, Awaited<ReturnType<typeof boardStages>>>();
+    for (const bd of boards) stagesByBoard.set(bd.id, await boardStages(db, a.planId, bd.id));
+    const stageById = new Map<string, { key: string | null; kind: string }>();
+    stagesByBoard.forEach((ss) => ss.forEach((st) => stageById.set(st.id, { key: st.key, kind: st.kind })));
+    let moved = 0;
+    let notFound = 0;
+    let alreadyFurther = 0;
+    const stopNames = new Map<string, string | null>();
+    for (let i = 0; i < list.length; i += 200) {
+      const part = list.slice(i, i + 200);
+      const { data: cards } = await db.from("dm_cards").select("id, board_id, stage_id, name, email").eq("master_plan_id", a.planId).in("email", part).in("board_id", boards.map((x) => x.id));
+      const hit = new Set<string>();
+      for (const c of (cards ?? []) as { id: string; board_id: string; stage_id: string; name: string; email: string }[]) {
+        hit.add(c.email.toLowerCase());
+        const cur = stageById.get(c.stage_id);
+        const target = (stagesByBoard.get(c.board_id) ?? []).find((s) => s.key === TARGET[status]);
+        if (!target || !cur) continue;
+        const isStop = status === "stop" || status === "bounced";
+        if (isStop ? cur.kind === "closed" : !movesForward(cur.key, cur.kind, TARGET[status])) {
+          alreadyFurther++;
+          continue;
+        }
+        const bd = boards.find((x) => x.id === c.board_id);
+        if (await moveCard(db, a.planId, c.id, target, bd?.name ?? "Pipeline", tz)) moved++;
+        if (isStop) stopNames.set(c.email.toLowerCase(), c.name);
+      }
+      list.slice(i, i + 200).forEach((e) => {
+        if (!hit.has(e)) {
+          notFound++;
+          if (status === "stop" || status === "bounced") stopNames.set(e, null);
+        }
+      });
+    }
+    // Asked to stop: Do Not Contact even if they were never on a card.
+    if (status === "stop") for (const [email, name] of Array.from(stopNames.entries())) await markDoNotContact(db, a.planId, email, name);
+    return NextResponse.json({ moved, notFound, alreadyFurther, total: list.length });
   }
 
   if (b.action === "dm-limit") {

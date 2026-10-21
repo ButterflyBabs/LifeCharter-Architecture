@@ -9,6 +9,7 @@ import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupIn
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
+import { EMAIL_LIST_TEMPLATE_CSV, mapPeople, parseCsv } from "@/lib/dmEmailList";
 
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
 export type Stage = { id: string; boardId: string; key: string | null; name: string; tag: string | null; followUpDays: number | null; kind: "open" | "booked" | "closed"; sortOrder: number };
@@ -286,7 +287,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       )}
 
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
-      {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} onAdded={() => void load(board?.id)} />}
+      {purpose === "outreach" && <OutreachOverview refreshKey={`${board?.id ?? ""}:${cards?.length ?? 0}`} />}
+      {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} boardName={board?.name ?? ""} onAdded={() => void load(board?.id)} />}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
@@ -568,7 +570,7 @@ const clock = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric
 // "LinkedIn 3 / 25": DMs sent on each platform in the last 24 hours against the daily limit you set.
 // Two quick ways to get people onto the board: LinkedIn connection requests read from the inbox (Microsoft 365), and a
 // browser button that sends whoever's profile you are looking at to the Add card window. Nothing here touches LinkedIn.
-function AddFaster({ onAdded, boardId }: { onAdded: () => void; boardId: string | null }) {
+function AddFaster({ onAdded, boardId, boardName }: { onAdded: () => void; boardId: string | null; boardName: string }) {
   // Paste a list: one person per line.
   const [listText, setListText] = useState("");
   const [listPlatform, setListPlatform] = useState("FB");
@@ -660,6 +662,8 @@ function AddFaster({ onAdded, boardId }: { onAdded: () => void; boardId: string 
             </div>
             <p className="mt-2 text-xs text-[#7a8a99]">If dragging does not work: add any bookmark, edit it, and paste the copied code into its address field. Some browsers need the bookmarks bar shown first. You click it yourself, so nothing runs in the background and LinkedIn&rsquo;s rules are respected.</p>
           </div>
+          <UploadList boardId={boardId} boardName={boardName} onAdded={onAdded} />
+          <EmailStatus onDone={onAdded} boardId={boardId} />
           <div className="rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30 md:col-span-2">
             <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Paste a list</p>
             <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]">One person per line: their name, then (if you have them) their profile link and a line about them. Paste straight from a spreadsheet or type it. They land in the first stage of this pipeline. Up to 100 at a time; anyone already on this board is skipped.</p>
@@ -700,6 +704,217 @@ function AddFaster({ onAdded, boardId }: { onAdded: () => void; boardId: string 
               </p>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+const CARD_CLS = "rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30";
+const TXT_CLS = "text-sm text-[#5a6472] dark:text-[#b8c2cf]";
+const HEAD_CLS = "font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]";
+
+function saveText(text: string, name: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function UploadList({ boardId, boardName, onAdded }: { boardId: string | null; boardName: string; onAdded: () => void }) {
+  const [csv, setCsv] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [platform, setPlatform] = useState("Email");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const preview = csv ? mapPeople(parseCsv(csv)) : null;
+  async function pick(f: File | undefined) {
+    setNote("");
+    if (!f) return;
+    if (f.size > 4_000_000) return setNote("That file is too large. Keep it under 4 MB (about 2,000 people) and upload the rest in a second file.");
+    setFileName(f.name);
+    setCsv(await f.text());
+  }
+  async function add() {
+    if (!csv || busy) return;
+    setBusy(true);
+    setNote("");
+    const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "bulk-add-people", boardId, platform, csv }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    setBusy(false);
+    if (!r || !r.ok) return setNote(d.error || "Couldn't add them. Please try again.");
+    setNote(`Added ${d.added} ${d.added === 1 ? "person" : "people"} to ${d.stage}.${d.duplicates ? ` ${d.duplicates} already on this pipeline.` : ""}${d.stopped ? ` ${d.stopped} left out (unsubscribed or Do Not Contact).` : ""}${d.invalidCount ? ` ${d.invalidCount} row${d.invalidCount === 1 ? "" : "s"} could not be read.` : ""}`);
+    if (d.added) {
+      setCsv("");
+      setFileName("");
+      onAdded();
+    }
+  }
+  return (
+    <div className={CARD_CLS + " md:col-span-2"}>
+      <p className={HEAD_CLS}>Upload a list (.csv)</p>
+      <p className={`mt-1 ${TXT_CLS}`}>
+        A spreadsheet with a header row: First name, Last name, Email, Company, Title, Location, Profile link (any of them; a name plus an email or a profile link is enough). Each person becomes a card in the first stage of the pipeline you have open
+        {boardName ? <> (<b>{boardName}</b>)</> : null}, with their own personal MasterClass link. Nobody is added to your marketing contacts by an upload, and anyone unsubscribed or marked Do Not Contact is left out.
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">
+          Spreadsheet
+          <input type="file" accept=".csv,.tsv,.txt,text/csv" onChange={(e) => void pick(e.target.files?.[0])} className="mt-1 block text-sm" />
+        </label>
+        <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">
+          Reached by
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="mt-1 block rounded-lg border border-[#1a2b4a]/20 bg-white px-2 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]">
+            {PLATFORMS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button onClick={() => void add()} disabled={busy || !preview || !preview.rows.length}>
+          {busy ? "Adding…" : preview && preview.rows.length ? `Add ${preview.rows.length} ${preview.rows.length === 1 ? "person" : "people"}` : "Add to this pipeline"}
+        </Button>
+      </div>
+      {preview && (
+        <p className="mt-2 text-xs text-[#7a8a99]">
+          {fileName}: {preview.rows.length} people found ({preview.rows.filter((r) => r.email).length} with an email){preview.invalid.length ? `, ${preview.invalid.length} row${preview.invalid.length === 1 ? "" : "s"} will be skipped (${preview.invalid.slice(0, 2).join("; ")}${preview.invalid.length > 2 ? "; ..." : ""})` : ""}.
+        </p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#7a8a99]">
+        <button type="button" onClick={() => saveText(EMAIL_LIST_TEMPLATE_CSV, "outreach-email-list-template.csv")} className="font-medium text-[#2E7C83] hover:underline">
+          Download the template (.csv)
+        </button>
+        {boardId && (
+          <a href={`/api/dm-pipeline/export?kind=list&board=${boardId}`} className="font-medium text-[#2E7C83] hover:underline">
+            Download this pipeline with personal links (.csv)
+          </a>
+        )}
+        <a href="/api/dm-pipeline/export?kind=suppression" className="font-medium text-[#2E7C83] hover:underline">
+          Download the do-not-email list (.csv)
+        </a>
+      </div>
+      {note && (
+        <p className="mt-2 text-sm text-[#1F5E63]" role="status">
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EmailStatus({ boardId, onDone }: { boardId: string | null; onDone: () => void }) {
+  const [status, setStatus] = useState("emailed1");
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  async function go() {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    setNote("");
+    const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "email-status", boardId, status, text }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    setBusy(false);
+    if (!r || !r.ok) return setNote(d.error || "Couldn't update them. Please try again.");
+    setNote(`Moved ${d.moved} card${d.moved === 1 ? "" : "s"}.${d.alreadyFurther ? ` ${d.alreadyFurther} already further along.` : ""}${d.notFound ? ` ${d.notFound} address${d.notFound === 1 ? "" : "es"} not on any pipeline.` : ""}${status === "stop" ? " Anyone who asked to stop is now marked Do Not Contact." : ""}`);
+    if (d.moved) {
+      setText("");
+      onDone();
+    }
+  }
+  return (
+    <div className={CARD_CLS + " md:col-span-2"}>
+      <p className={HEAD_CLS}>Update from your cold-email tool</p>
+      <p className={`mt-1 ${TXT_CLS}`}>
+        Your cold-email tool sends the emails; this keeps every pipeline up to date. Paste the addresses (one per line, or a column from a spreadsheet), say what happened, and their cards move on every pipeline they are on. Cards only move forward. Choose
+        &ldquo;Asked to stop&rdquo; and they are marked Do Not Contact too, so the Suite never emails them either.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} aria-label="Email addresses" placeholder={"jane@example.com\nsam@example.org"} className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" />
+        <div className="flex flex-col gap-2 sm:w-52">
+          <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">
+            What happened
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-2 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]">
+              <option value="emailed1">Email 1 sent</option>
+              <option value="emailed2">Emails 2 and 3 sent</option>
+              <option value="replied">They replied</option>
+              <option value="stop">Asked to stop</option>
+              <option value="bounced">Bounced (bad address)</option>
+            </select>
+          </label>
+          <Button onClick={() => void go()} disabled={busy || !text.trim()}>
+            {busy ? "Updating…" : "Update their cards"}
+          </Button>
+        </div>
+      </div>
+      {note && (
+        <p className="mt-2 text-sm text-[#1F5E63]" role="status">
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+type OverviewData = { columns: { id: string; label: string }[]; channels: ({ channel: string } & Record<string, number>)[]; boards: ({ boardId: string; name: string } & Record<string, number>)[]; total: Record<string, number> | null };
+function OutreachOverview({ refreshKey }: { refreshKey: string }) {
+  const [open, setOpen] = useState(true);
+  const [d, setD] = useState<OverviewData | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/dm-pipeline/overview", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => live && setD(x))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [refreshKey]);
+  if (!d || !d.total || !d.total.added) return null;
+  const cols = d.columns;
+  const th = "px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-[#7a8a99] whitespace-nowrap";
+  const td = "px-2 py-2 tabular-nums text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
+  const table = (rows: { label: string; n: Record<string, number>; bold?: boolean }[], first: string) => (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] border-collapse">
+        <thead>
+          <tr className="border-b border-[#1a2b4a]/10">
+            <th className={th}>{first}</th>
+            {cols.map((c) => (
+              <th key={c.id} className={th}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label} className={`border-b border-[#1a2b4a]/5 ${r.bold ? "font-semibold" : ""}`}>
+              <td className={td + " whitespace-nowrap"}>{r.label}</td>
+              {cols.map((c) => (
+                <td key={c.id} className={td}>
+                  {r.n[c.id] ?? 0}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+  return (
+    <div className="mb-4 rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/30">
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between text-left">
+        <span className={HEAD_CLS}>All outreach, every pipeline</span>
+        <span className="text-xs font-medium text-[#2E7C83]">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-4">
+          <p className={TXT_CLS}>Where everyone is right now, across all your pipelines. &ldquo;On the list&rdquo; is everyone; the other columns are the people sitting at that point today.</p>
+          {table([...d.channels.map((c) => ({ label: c.channel, n: c })), { label: "All channels", n: d.total, bold: true }], "By channel")}
+          {d.boards.length > 1 && table(d.boards.map((b) => ({ label: b.name, n: b })), "By pipeline")}
         </div>
       )}
     </div>
@@ -1074,7 +1289,7 @@ function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: 
 function NewBoard({ onClose, onCreated, post }: { onClose: () => void; onCreated: (b: Board) => void; post: Post }) {
   const [name, setName] = useState("");
   const [tag, setTag] = useState("");
-  const [template, setTemplate] = useState<"dm" | "simple">("dm");
+  const [template, setTemplate] = useState<"dm" | "simple" | "coldemail">("dm");
   const [busy, setBusy] = useState(false);
   const autoTag = name.toLowerCase().replace(/pipeline/i, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
   return (
@@ -1088,9 +1303,10 @@ function NewBoard({ onClose, onCreated, post }: { onClose: () => void; onCreated
         </label>
         <div>
           <p className="mb-1.5 text-xs font-medium text-[#5a6472]">Start with</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             {([
               ["dm", "DM outreach stages", "To reach out, Sent, Followed up, In conversation, Invited, Booked, Nurture, Not now"],
+              ["coldemail", "Cold email stages", "To email, Email 1 sent, Emails 2 and 3 sent, Replied, Invited, Registered, Attended, Booked, Client, Asked to stop"],
               ["simple", "Three simple stages", "New, In progress, Done. Add your own after."],
             ] as const).map(([id, title, sub]) => (
               <button key={id} type="button" aria-pressed={template === id} onClick={() => setTemplate(id)} className={`rounded-xl border p-3 text-left ${template === id ? "border-[#2E7C83] bg-[#2E7C83]/5" : "border-[#1a2b4a]/15"}`}>

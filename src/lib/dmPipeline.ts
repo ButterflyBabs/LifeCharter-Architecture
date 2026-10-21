@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { zonedToUtcISO } from "@/lib/tz";
 import { nowParts } from "@/lib/finance/period";
 import { ensureStages } from "@/lib/sales/pipeline";
-import { logEvent } from "@/lib/crm";
+import { logEvent, upsertContact } from "@/lib/crm";
 import { uniqueCode } from "@/lib/affiliates";
 
 // Outreach pipelines: each account can have many boards (the DM pipeline is one).
@@ -53,7 +53,23 @@ const AFFILIATE_TEMPLATE: typeof DM_TEMPLATE = [
   { key: "affiliate_active", name: "Active affiliate", slug: "active", followUpDays: null, kind: "closed" },
   { key: "not_now", name: "Not now", slug: "not-now", followUpDays: null, kind: "closed" },
 ];
-export const TEMPLATES = { dm: DM_TEMPLATE, simple: SIMPLE_TEMPLATE, affiliate: AFFILIATE_TEMPLATE };
+// Cold email runs from a separate sender (never the Suite's own email). Follow-up dates are left off the waiting stages so a
+// big upload does not make a task for every person; a reply makes one, because a reply is a real person waiting.
+const COLD_EMAIL_TEMPLATE: typeof DM_TEMPLATE = [
+  { key: "to_reach", name: "To email", slug: "to-email", followUpDays: null, kind: "open" },
+  { key: "sent", name: "Email 1 sent", slug: "email-1-sent", followUpDays: null, kind: "open" },
+  { key: "followed_up", name: "Emails 2 and 3 sent (no reply yet)", slug: "emails-2-3-sent", followUpDays: null, kind: "open" },
+  { key: "conversation", name: "Replied", slug: "replied", followUpDays: 1, kind: "open" },
+  { key: "invited", name: "Invited", slug: "invited", followUpDays: 2, kind: "open" },
+  { key: "registered", name: "Registered", slug: "registered", followUpDays: null, kind: "open" },
+  { key: "attended", name: "Attended", slug: "attended", followUpDays: 1, kind: "open" },
+  { key: "no_show", name: "No-show", slug: "no-show", followUpDays: 1, kind: "open" },
+  { key: "booked", name: "Consultation booked", slug: "booked", followUpDays: null, kind: "booked" },
+  { key: "client", name: "Client", slug: "client", followUpDays: null, kind: "closed" },
+  { key: "nurture", name: "Nurture", slug: "nurture", followUpDays: 30, kind: "open" },
+  { key: "not_now", name: "Asked to stop or bounced", slug: "stopped", followUpDays: null, kind: "closed" },
+];
+export const TEMPLATES = { dm: DM_TEMPLATE, simple: SIMPLE_TEMPLATE, affiliate: AFFILIATE_TEMPLATE, coldemail: COLD_EMAIL_TEMPLATE };
 export type Purpose = "outreach" | "affiliate";
 
 export const slugTag = (s: string, n = 40) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, n).replace(/-$/, "");
@@ -221,6 +237,13 @@ export async function moveCard(db: Db, planId: string, cardId: string, stage: Dm
   return saved;
 }
 
+// True when a card sitting in stage (curKey, curKind) may be moved forward to toKey: only forward, never out of a closed stage.
+export function movesForward(curKey: string | null | undefined, curKind: string | null | undefined, toKey: string): boolean {
+  if (curKind === "closed") return false;
+  const rank = curKind === "booked" ? AUTO_RANK.booked : AUTO_RANK[curKey ?? ""] ?? 0;
+  return (AUTO_RANK[toKey] ?? 0) > rank;
+}
+
 // Cards that move by themselves. When the Suite sees something happen to a person (they registered,
 // attended, did not show, booked a consultation), every card of theirs on a board that has a stage
 // with that key moves there, exactly as if it had been dragged: follow-up, tags and timeline included.
@@ -300,4 +323,17 @@ export async function createCard(
     await logEvent(planId, input.contactId, "manual", `${board.name}: added to ${stage.name}${input.scriptTitle ? ` · script: ${input.scriptTitle}` : ""}`, { dm_card: card.id }, db as never).catch(() => {});
   }
   return { card: saved ?? card };
+}
+
+// Someone asked to stop (or their address bounced): the same three steps as a hand-made Do Not Contact. They get a contact
+// record if they had none, so every campaign and broadcast refuses them from now on.
+export async function markDoNotContact(db: Db, planId: string, email: string, name: string | null): Promise<void> {
+  const parts = (name ?? "").trim().split(/\s+/);
+  const made = await upsertContact({ masterPlanId: planId, email, firstName: parts[0] || null, lastName: parts.slice(1).join(" ") || null, source: "cold-email-stop", tags: ["do-not-contact"] }, db).catch(() => null);
+  if (!made) return;
+  const now = new Date().toISOString();
+  await db.from("seq_contacts").update({ unsubscribed_at: now, tag_source: "manual", updated_at: now }).eq("id", made.id).eq("master_plan_id", planId).is("unsubscribed_at", null);
+  const { data: seqs } = await db.from("sequences").select("id").eq("master_plan_id", planId);
+  const ids = ((seqs ?? []) as { id: string }[]).map((x) => x.id);
+  if (ids.length) await db.from("sequence_enrollments").update({ status: "stopped" }).eq("contact_id", made.id).in("sequence_id", ids).in("status", ["active", "paused"]);
 }
