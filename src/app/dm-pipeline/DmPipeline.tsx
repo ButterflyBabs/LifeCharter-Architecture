@@ -968,8 +968,8 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
       {open && (
         <div className="mt-3 space-y-4">
           <p className={TXT_CLS}>
-            Sends the three emails from your own Google mailboxes, never from the Suite&rsquo;s email. Each mailbox starts at 5 a day and grows to its cap over two weeks, only on weekdays inside the send window. A reply, a request to stop or a bounce stops the series
-            for that person and moves their card. Stop requests and bounces are marked Do Not Contact. It stays off until you turn it on.
+            Sends the three emails from your own Google mailboxes, never from the Suite&rsquo;s email. Each mailbox starts at 5 a day and grows to its cap over two weeks, only on weekdays inside the send window. Replies go to your own inbox (every email carries your main address as its reply address); the Suite reads them there through your connected Microsoft 365 inbox, stops the series for that person and moves their card. A request to stop is marked Do Not Contact too. The Suite cannot read the sending mailboxes, so
+            bounces are not seen automatically: paste bounced addresses under Update from your cold-email tool. It stays off until you turn it on.
           </p>
           <div>
             <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Sending mailboxes</p>

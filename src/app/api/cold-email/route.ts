@@ -151,7 +151,7 @@ export async function POST(request: Request) {
       to,
       subject: "[TEST] " + render(steps[n].subject, vars),
       body: render(steps[n].body, vars) + footer((s?.footer as string) || DEFAULT_FOOTER, "https://lccommandsuite.com/unsubscribe?c=example"),
-      extraHeaders: sender.email ? listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", sender.email) : [],
+      extraHeaders: [...listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", to), `Reply-To: ${to}`],
     }).catch((e) => {
       throw new Error(String(e));
     });

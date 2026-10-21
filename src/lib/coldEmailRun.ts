@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import * as google from "@/lib/google";
+import * as microsoft from "@/lib/microsoft";
 import { boardStages, moveCard, markDoNotContact, movesForward, type DmStage } from "@/lib/dmPipeline";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, varsFor, type ColdStep } from "@/lib/coldEmail";
@@ -33,28 +34,30 @@ async function nextSessionLabel(): Promise<string> {
 }
 
 // ── Replies, stop requests and bounces ─────────────────────────────────────────────────────────────────────────────
-async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string) {
+// Replies come to the account owner's own inbox (the Reply-To on every cold email), which the Suite already reads through the
+// connected Microsoft 365 account. Google restricts reading Gmail, so the sending mailboxes are never read.
+async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, ownEmail: string) {
   const out = { replies: 0, stops: 0, bounces: 0 };
-  if (!s.board_id) return out;
+  if (!s.board_id || !senders.length) return out;
   const byKey = new Map(stages.map((x) => [x.key, x]));
   const stageById = new Map(stages.map((x) => [x.id, x]));
-  for (const sender of senders) {
-    const token = await google.getValidAccessToken({ ownerId, accountKey: sender.account_key });
-    if (!token) {
-      await db.from("cold_email_senders").update({ last_error: "Not connected. Reconnect this mailbox in Settings > Integrations." }).eq("id", sender.id);
-      continue;
-    }
-    let msgs: Awaited<ReturnType<typeof google.searchInbox>> = [];
+  const msToken = await microsoft.getValidAccessToken({ ownerId });
+  if (!msToken) {
+    for (const sd of senders) await db.from("cold_email_senders").update({ last_error: "Replies cannot be seen: connect your Microsoft 365 inbox (Settings > Integrations) so the Suite can read replies sent to your own address." }).eq("id", sd.id);
+    return out;
+  }
+  for (const sender of [senders[0]]) {
+    let msgs: Awaited<ReturnType<typeof microsoft.fetchInbox>> = [];
     try {
-      msgs = await google.searchInbox(token, "in:inbox newer_than:4d", 60);
+      msgs = await microsoft.fetchInbox(msToken, 80);
     } catch {
-      await db.from("cold_email_senders").update({ last_error: "The Suite cannot read this mailbox, so replies are not seen. Reconnect it and allow reading mail." }).eq("id", sender.id);
+      await db.from("cold_email_senders").update({ last_error: "The Suite could not read your inbox just now. It will try again." }).eq("id", sender.id);
       continue;
     }
     const { data: seenRows } = await db.from("cold_email_seen").select("message_id").eq("sender_id", sender.id).in("message_id", msgs.map((m) => m.id));
     const seen = new Set(((seenRows ?? []) as { message_id: string }[]).map((r) => r.message_id));
-    const fresh = msgs.filter((m) => !seen.has(m.id) && m.fromEmail.toLowerCase() !== (sender.email ?? "").toLowerCase());
-    const classified = fresh.map((m) => ({ m, c: classifyMessage({ fromEmail: m.fromEmail, subject: m.subject, preview: m.preview }, sender.email ?? "") }));
+    const fresh = msgs.filter((m) => !seen.has(m.id) && m.fromEmail.toLowerCase() !== ownEmail.toLowerCase());
+    const classified = fresh.map((m) => ({ m, c: classifyMessage({ fromEmail: m.fromEmail, subject: m.subject, preview: m.preview }, ownEmail) }));
     const emails = new Set<string>();
     for (const { m, c } of classified) {
       if (c.kind === "bounce") c.addresses.forEach((a) => emails.add(a));
@@ -88,13 +91,13 @@ async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: stri
       }
       await db.from("cold_email_seen").upsert({ sender_id: sender.id, message_id: m.id, kind, card_id: cardId }, { onConflict: "sender_id,message_id" });
     }
-    await db.from("cold_email_senders").update({ scanned_at: new Date().toISOString(), last_error: null }).eq("id", sender.id);
+    await db.from("cold_email_senders").update({ scanned_at: new Date().toISOString() }).eq("master_plan_id", s.master_plan_id);
   }
   return out;
 }
 
 // ── Sends ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, now: Date) {
+async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, now: Date, replyTo: string) {
   const out = { sent: 0, failed: 0, waiting: 0, skipped: "" };
   if (!s.board_id) return out;
   if (!inSendWindow(now, s.tz, s.window_start, s.window_end, s.weekdays_only)) return { ...out, skipped: "outside the send window" };
@@ -170,7 +173,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     const subject = render(steps[step].subject, vars);
     const body = render(steps[step].body, vars) + footer(s.footer || DEFAULT_FOOTER, `${SITE}/unsubscribe?c=${linkCode}`);
     try {
-      const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, sender.email) });
+      const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: [...listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, replyTo), `Reply-To: ${replyTo}`] });
       await db.from("cold_email_sends").update({ status: "sent", subject, message_id: r.id, thread_id: r.threadId, sent_at: new Date().toISOString() }).eq("card_id", card.id).eq("step", step);
       await db.from("cold_email_senders").update({ fail_count: 0, last_error: null }).eq("id", sender.id);
       const to = stageByKey.get(step === 0 ? "sent" : "followed_up");
@@ -197,16 +200,17 @@ export async function runColdEmail(now = new Date()) {
   const { data: all } = await db.from("cold_email_settings").select("*").eq("enabled", true);
   const results: Record<string, unknown>[] = [];
   for (const row of (all ?? []) as Settings[]) {
-    const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", row.master_plan_id).maybeSingle();
+    const { data: plan } = await db.from("client_master_plans").select("user_id, client_email").eq("id", row.master_plan_id).maybeSingle();
     const ownerId = plan?.user_id as string | undefined;
-    if (!ownerId || !row.board_id) continue;
+    const replyTo = ((plan?.client_email as string | null) ?? "").toLowerCase();
+    if (!ownerId || !row.board_id || !replyTo) continue;
     const { data: sd } = await db.from("cold_email_senders").select("*").eq("master_plan_id", row.master_plan_id).eq("paused", false);
     const senders = (sd ?? []) as Sender[];
     const { data: board } = await db.from("pipeline_boards").select("name").eq("id", row.board_id).maybeSingle();
     const stages = await boardStages(db, row.master_plan_id, row.board_id);
     const boardName = (board?.name as string) || "Cold Email";
-    const scan = await scanReplies(db, row, senders, ownerId, stages, boardName);
-    const send = await sendDue(db, row, senders, ownerId, stages, boardName, now);
+    const scan = await scanReplies(db, row, senders, ownerId, stages, boardName, replyTo);
+    const send = await sendDue(db, row, senders, ownerId, stages, boardName, now, replyTo);
     results.push({ plan: row.master_plan_id, scan, send });
   }
   return { results };
