@@ -933,6 +933,16 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
   const [foot, setFoot] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState<number | null>(null);
+  const [testNote, setTestNote] = useState<{ i: number; ok: boolean; text: string } | null>(null);
+  async function sendTest(i: number) {
+    setTesting(i);
+    setTestNote(null);
+    const r = await fetch("/api/cold-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test", step: i }) }).catch(() => null);
+    const x = r ? await r.json().catch(() => ({})) : {};
+    setTesting(null);
+    setTestNote(r && r.ok ? { i, ok: true, text: `Test sent to ${x.to}. It can take a minute to arrive. Check junk too.` } : { i, ok: false, text: x.error || "The test did not send. Please try again." });
+  }
   async function load() {
     const r = await fetch("/api/cold-email", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) return;
@@ -971,6 +981,11 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
             Sends the three emails from your own Google mailboxes, never from the Suite&rsquo;s email. Each mailbox starts at 5 a day and grows to its cap over two weeks, only on weekdays inside the send window. Replies go to your own inbox (every email carries your main address as its reply address); the Suite reads them there through your connected Microsoft 365 inbox, stops the series for that person and moves their card. A request to stop is marked Do Not Contact too. The Suite cannot read the sending mailboxes, so
             bounces are not seen automatically: paste bounced addresses under Update from your cold-email tool. It stays off until you turn it on.
           </p>
+          {note && (
+            <p className="rounded-lg bg-[#2E7C83]/10 px-3 py-2 text-sm text-[#1F5E63]" role="status">
+              {note}
+            </p>
+          )}
           <div>
             <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Sending mailboxes</p>
             {d.senders.length === 0 && <p className={TXT_CLS}>None yet. Connect a Google mailbox under Settings &gt; Integrations, then add it here.</p>}
@@ -1016,9 +1031,15 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
                 )}
                 <Input value={st.subject} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, subject: e.target.value } : x)))} aria-label={`Email ${i + 1} subject`} />
                 <textarea rows={9} value={st.body} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))} aria-label={`Email ${i + 1} message`} className="mt-2 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" />
-                <button onClick={() => void act({ action: "test", step: i })} disabled={busy} className="mt-1 text-xs font-medium text-[#2E7C83] hover:underline">
-                  Send me a test of this email
+                <button onClick={() => void sendTest(i)} disabled={busy || testing !== null} className="mt-1 text-xs font-medium text-[#2E7C83] hover:underline disabled:opacity-60">
+                  {testing === i ? "Sending the test…" : "Send me a test of this email"}
                 </button>
+                {testNote && testNote.i === i && (
+                  <p className={`mt-1 text-sm font-medium ${testNote.ok ? "text-[#1F5E63]" : "text-[#A4523C]"}`} role="status">
+                    {testNote.ok ? "✓ " : ""}
+                    {testNote.text}
+                  </p>
+                )}
               </div>
             ))}
             <p className="text-xs text-[#7a8a99]">Merge fields: {"{{first_name}} {{at_company}} {{personal_link}} {{next_session_date}} {{booking_link}}"}. The footer and the unsubscribe line are added to every email.</p>
