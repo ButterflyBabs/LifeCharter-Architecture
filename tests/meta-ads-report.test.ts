@@ -131,3 +131,14 @@ test("a file without dates asks for them, and a file from the wrong tab is expla
   const campaigns = '"Campaign name","Results","Amount spent (USD)"\n"C","3","12.50"';
   assert.match(parseAdsExport(campaigns).problems[0], /Ad name/);
 });
+
+test("the budget against the goal says how far short or how far ahead", () => {
+  const g: Goals = { ...EMPTY_GOALS, goalLeads: 30, goalBy: "2026-11-04", dailyBudget: 16, answers: { quality: "early", worthIt: "yes" } };
+  const r = buildReport({ rows, goals: g })!;
+  const gd = guidance(g, r);
+  const budget = gd.find((x) => x.title === "Your daily budget and your goal")!;
+  assert.match(budget.text, /19 more sign-ups in 14 days/);
+  assert.match(budget.text, /Your \$16\.00 a day would bring about/);
+  assert.ok(gd.some((x) => x.title === "Who is signing up"));
+  assert.ok(gd.some((x) => x.title === "Your answer and the numbers agree"));
+});

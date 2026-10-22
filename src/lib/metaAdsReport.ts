@@ -347,6 +347,19 @@ export function guidance(goals: Goals, report: Report | null): Guidance[] {
       out.push({ title: "Your sign-up goal", text: `${report.totals.leads} of ${goals.goalLeads} so far with ${left} days left. At your current pace you would add about ${Math.round(pace)}, ${pace >= needed ? "enough to reach it." : `${Math.round(needed - pace)} short.`}${cost ? ` Reaching it at today's cost per lead would take about ${money(cost)} more.` : ""}` });
     }
   }
+  if (report && goals.goalLeads && goals.goalBy && goals.dailyBudget && report.totals.cpl) {
+    const left = Math.max(0, daysBetween(report.periodEnd, goals.goalBy) - 1);
+    const needed = Math.max(0, goals.goalLeads - report.totals.leads);
+    if (left > 0 && needed > 0) {
+      const spendNeeded = needed * report.totals.cpl;
+      const atBudget = (goals.dailyBudget * left) / report.totals.cpl;
+      out.push({
+        title: "Your daily budget and your goal",
+        text: `You need about ${needed} more sign-ups in ${left} days, which is roughly ${money(spendNeeded)} at today's cost per lead (${money(spendNeeded / left)} a day). Your ${money(goals.dailyBudget)} a day would bring about ${Math.round(atBudget)}, ${atBudget >= needed ? "enough to get there." : `${Math.round(needed - atBudget)} short, so the goal needs a higher daily budget, a lower cost per lead, or more time.`}${report.projections.dailySpend + 0.5 < goals.dailyBudget ? ` You are actually spending about ${money(report.projections.dailySpend)} a day, so the budget is not being used yet: check that your ads are delivering.` : ""}`,
+      });
+    }
+  }
+  if (a.quality === "early") out.push({ title: "Who is signing up", text: "It is too early to tell. After your next live event, look at who actually showed up and who booked, and answer this question again." });
   if (a.quality === "wrong") out.push({ title: "Wrong people are signing up", text: "More money will not fix this. Change the first line and the picture so they speak to the person you want, and tighten the audience. Judge ads by who shows up, not by the cheapest lead." });
   if (a.quality === "mixed") out.push({ title: "A mixed audience", text: "Look at who showed up and who became a client, then write the next ad to that person." });
   if (a.followUp === "no" || a.followUp === "some") out.push({ title: "Follow up faster", text: "Contact every new sign-up within a day (a welcome message the same day is best). This usually raises results more than any change to the ad." });
@@ -357,6 +370,7 @@ export function guidance(goals: Goals, report: Report | null): Guidance[] {
   }
   if (a.worthIt === "no") out.push({ title: "Your own answer", text: "You said you would not be glad to spend another month like this one. Pause the campaign and fix the weakest link first (message, offer or follow-up) before spending more." });
   if (a.worthIt === "unsure") out.push({ title: "Your own answer", text: "You are not sure. Set a clear test: change one thing, run another week, and decide on the numbers." });
+  if (a.worthIt === "yes" && report && report.campaign.verdict !== "pause") out.push({ title: "Your answer and the numbers agree", text: "You would be glad to spend another month like this, and the numbers do not argue with that. Keep going, fix the weakest ads, and check back next week." });
   if (a.worthIt === "yes" && report && report.campaign.verdict === "pause") out.push({ title: "Your answer and the numbers disagree", text: "You would be glad to continue, but this week's numbers say pause. Fix the weak ads first, then keep spending." });
   return out;
 }

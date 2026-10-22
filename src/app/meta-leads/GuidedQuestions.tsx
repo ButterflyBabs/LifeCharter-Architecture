@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { QUESTIONS, suggestedTargetCpl, breakEvenCpl, type Goals } from "@/lib/metaAdsReport";
+import { QUESTIONS, suggestedTargetCpl, breakEvenCpl, type Goals, type Guidance } from "@/lib/metaAdsReport";
 
 const FIELD_OF: Record<string, keyof Goals> = { goalLeads: "goalLeads", goalBy: "goalBy", customerValue: "customerValue", targetCpl: "targetCpl", dailyBudget: "dailyBudget", monthlyLimit: "monthlyLimit" };
 
@@ -17,7 +17,7 @@ function initial(goals: Goals): Record<string, string> {
 
 // A short guided set of questions. The answers set the owner's own yardstick (what a lead is worth), which the weekly report then uses
 // for every verdict, and they feed the "What your answers say" notes.
-export default function GuidedQuestions({ goals, adNames }: { goals: Goals; adNames: string[] }) {
+export default function GuidedQuestions({ goals, adNames, guidance }: { goals: Goals; adNames: string[]; guidance: Guidance[] }) {
   const router = useRouter();
   const [i, setI] = useState(0);
   const [a, setA] = useState<Record<string, string>>(() => initial(goals));
@@ -106,8 +106,22 @@ export default function GuidedQuestions({ goals, adNames }: { goals: Goals; adNa
           <button disabled={busy} onClick={() => void save()} className="rounded-lg bg-[#c9a227] px-4 py-2 text-sm font-semibold text-[#1a2b4a] disabled:opacity-50">Save and see my next steps</button>
         )}
         {i < QUESTIONS.length - 1 && <button disabled={busy} onClick={() => void save()} className="text-sm underline text-[#1a2b4a] dark:text-[#F8F5F0]">Save what I have</button>}
-        {msg && <span className={`text-sm ${msg.ok ? "text-[#1a2b4a] dark:text-[#F8F5F0]" : "text-[#A4523C]"}`}>{msg.text}</span>}
+        {msg && <span role="status" className={`text-sm ${msg.ok ? "text-[#1a2b4a] dark:text-[#F8F5F0]" : "text-[#A4523C]"}`}>{msg.text}</span>}
       </div>
+      {guidance.length > 0 && (
+        <div className="mt-6 border-t border-[#1a2b4a]/10 pt-4">
+          <h4 className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Your next steps, from your answers</h4>
+          <div className="mt-2 grid gap-3 md:grid-cols-2">
+            {guidance.map((g) => (
+              <div key={g.title} className="rounded-lg bg-[#1a2b4a]/5 p-3">
+                <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{g.title}</p>
+                <p className="mt-1 text-sm text-[#5a6472] dark:text-[#b8c2cf]">{g.text}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-[#7a8a99]">Your answers also set the yardstick every ad is judged against in the report above.</p>
+        </div>
+      )}
     </div>
   );
 }
