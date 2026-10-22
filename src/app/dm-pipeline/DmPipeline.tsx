@@ -297,35 +297,6 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       )}
 
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
-      {purpose === "outreach" && <OutreachOverview refreshKey={`${board?.id ?? ""}:${cards?.length ?? 0}`} />}
-      {purpose === "outreach" && stages?.some((st) => st.key === "followed_up" && /^Emails 2 and 3/.test(st.name)) && <ColdEmailSender boardId={board?.id ?? null} />}
-      {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} boardName={board?.name ?? ""} onAdded={() => void load(board?.id)} />}
-
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setFilter(p.id)}
-            aria-pressed={filter === p.id}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium border ${filter === p.id ? "bg-[#1a2b4a] text-white border-[#1a2b4a]" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
-          >
-            {p.label}
-            {cards ? <span className="ml-1.5 tabular-nums opacity-70">{p.id === "All" ? cards.length : cards.filter((c) => c.platform === p.id).length}</span> : null}
-          </button>
-        ))}
-        {board?.tag && (
-          <span className="inline-flex items-center gap-1 text-xs text-[#7a8a99]"><Tag className="w-3.5 h-3.5" /> Everyone here is tagged <strong className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{board.tag}</strong></span>
-        )}
-        {dueCount > 0 && (
-          <button type="button" onClick={() => { setDueOpen((o) => !o); document.getElementById("due-now")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-expanded={dueOpen} className="inline-flex items-center gap-1 rounded-full bg-[#C76F56]/10 px-3 py-1.5 text-xs font-medium text-[#A4523C] hover:bg-[#C76F56]/20">
-            <AlertCircle className="w-3.5 h-3.5" /> {dueCount} follow-up{dueCount === 1 ? "" : "s"} due · {dueOpen ? "hide the list" : "show the list"}
-          </button>
-        )}
-        <Link href="/daily-compass/scripts" className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#2E7C83]/40 px-3 py-1.5 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
-          <FileText className="w-3.5 h-3.5" /> DM scripts &amp; templates
-        </Link>
-      </div>
-
       {dueCount > 0 && dueOpen && (
         <section id="due-now" aria-label="Follow-ups due now" className="mb-5 rounded-2xl border border-[#C76F56]/40 bg-[#C76F56]/5 p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -366,6 +337,35 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           </ul>
         </section>
       )}
+
+      {purpose === "outreach" && <OutreachOverview refreshKey={`${board?.id ?? ""}:${cards?.length ?? 0}`} />}
+      {purpose === "outreach" && stages?.some((st) => st.key === "followed_up" && /^Emails 2 and 3/.test(st.name)) && <ColdEmailSender boardId={board?.id ?? null} />}
+      {purpose === "outreach" && <AddFaster boardId={board?.id ?? null} boardName={board?.name ?? ""} onAdded={() => void load(board?.id)} />}
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {[{ id: "All", label: "All" }, ...PLATFORMS].map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setFilter(p.id)}
+            aria-pressed={filter === p.id}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium border ${filter === p.id ? "bg-[#1a2b4a] text-white border-[#1a2b4a]" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}
+          >
+            {p.label}
+            {cards ? <span className="ml-1.5 tabular-nums opacity-70">{p.id === "All" ? cards.length : cards.filter((c) => c.platform === p.id).length}</span> : null}
+          </button>
+        ))}
+        {board?.tag && (
+          <span className="inline-flex items-center gap-1 text-xs text-[#7a8a99]"><Tag className="w-3.5 h-3.5" /> Everyone here is tagged <strong className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{board.tag}</strong></span>
+        )}
+        {dueCount > 0 && (
+          <button type="button" onClick={() => { setDueOpen((o) => !o); document.getElementById("due-now")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-expanded={dueOpen} className="inline-flex items-center gap-1 rounded-full bg-[#C76F56]/10 px-3 py-1.5 text-xs font-medium text-[#A4523C] hover:bg-[#C76F56]/20">
+            <AlertCircle className="w-3.5 h-3.5" /> {dueCount} follow-up{dueCount === 1 ? "" : "s"} due · {dueOpen ? "hide the list" : "show the list"}
+          </button>
+        )}
+        <Link href="/daily-compass/scripts" className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#2E7C83]/40 px-3 py-1.5 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
+          <FileText className="w-3.5 h-3.5" /> DM scripts &amp; templates
+        </Link>
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
