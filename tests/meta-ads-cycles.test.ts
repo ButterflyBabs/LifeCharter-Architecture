@@ -72,3 +72,10 @@ test("the report says 0 of 30 for the Nov 5 event after the Oct 22 count closes,
   assert.match(g.title, /November 5/);
   assert.match(g.text, /^0 of 30 sign-ups so far/);
 });
+
+test("events that closed before any ads or sign-ups are left out of the list", () => {
+  const c = buildCycles(setup, signups, spend, new Date("2026-10-22T23:00:00Z"));
+  assert.deepEqual(c.map((x) => x.eventDate), ["2026-10-22"]);
+  const d = buildCycles(setup, signups, spend, new Date("2026-11-20T18:00:00Z"));
+  assert.deepEqual(d.map((x) => x.eventDate), ["2026-11-19", "2026-11-05", "2026-10-22"]);
+});

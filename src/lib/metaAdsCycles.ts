@@ -76,7 +76,11 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export function buildCycles(setup: CycleSetup, signupTimes: Date[], spendRows: SpendRow[], now: Date, back = 3): Cycle[] {
   const cur = currentIndex(setup, now);
   const out: Cycle[] = [];
+  // Events that closed before the ads (or any sign-ups) began are left out: a count of zero for them means nothing.
+  const dataDays = [...signupTimes.map((x) => dayInTz(x, TZ)), ...spendRows.map((r) => r.periodStart)].sort();
+  const firstData = dataDays[0] ?? "0000-00-00";
   for (let k = cur; k >= cur - back; k--) {
+    if (k !== cur && addDays(setup.anchor, k * setup.days) < firstData) break;
     const start = boundary(setup, k - 1);
     const end = boundary(setup, k);
     const eventDate = addDays(setup.anchor, k * setup.days);
