@@ -389,6 +389,7 @@ export default function ContactRecord({
   const [fields, setFields] = useState<CustomField[]>([]);
   const [attended, setAttended] = useState<HistoryItem[]>([]);
   const [purchases, setPurchases] = useState<HistoryItem[]>([]);
+  const [agreements, setAgreements] = useState<{ id: string; title: string; kind: string; status: string; sentAt: string | null; completedAt: string | null; hasSigned: boolean }[]>([]);
   const [pipelines, setPipelines] = useState<{ id: string; board: string; stage: string; followUpOn: string | null }[]>([]);
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
@@ -411,6 +412,7 @@ export default function ContactRecord({
     setPipelines(d.pipelines ?? []);
     setAttended(d.attended ?? []);
     setPurchases(d.purchases ?? []);
+    setAgreements(d.agreements ?? []);
   }, [id]);
   useEffect(() => {
     fetch("/api/sequences", { cache: "no-store" })
@@ -634,6 +636,34 @@ export default function ContactRecord({
           <HistorySection kind="attended" title="Calls attended" items={attended} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
           <HistorySection kind="purchase" title="Purchases" items={purchases} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
         </div>
+
+        {agreements.length > 0 && (
+          <div>
+            <p className={heading}>Agreements ({agreements.length})</p>
+            <ul className="space-y-1.5">
+              {agreements.map((g) => (
+                <li key={g.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-[#1a2b4a]/10 px-3 py-2 text-sm dark:border-white/10">
+                  <span className="min-w-0">
+                    <a href={`/agreements?doc=${g.id}`} className="font-medium text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{g.title}</a>
+                    <span className="ml-2 text-xs text-[#7a8a99]">{g.status === "completed" ? `Signed ${g.completedAt ? new Date(g.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}` : g.status === "sent" ? "Out for signature" : g.status === "declined" ? "Declined" : g.status === "expired" ? "Expired" : "Draft"}</span>
+                  </span>
+                  {g.hasSigned && (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-[#2E7C83] hover:underline"
+                      onClick={async () => {
+                        const r = await fetch("/api/agreements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "download", id: g.id }) }).then((x) => x.json()).catch(() => ({}));
+                        if (r?.url) window.location.href = String(r.url);
+                      }}
+                    >
+                      Download signed PDF
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {pipelines.length > 0 && (
           <div>

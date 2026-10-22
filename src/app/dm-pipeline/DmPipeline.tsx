@@ -360,7 +360,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       {!cards ? (
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6">
+        <div className="-mx-4 max-h-[78vh] overflow-auto px-4 pb-4 sm:-mx-6 sm:px-6">
           <div className="flex min-w-max gap-3">
             {stages.filter((s) => !stageFilter || s.id === stageFilter).map((s) => {
               const col = visible.filter((c) => c.stage_id === s.id);
@@ -372,7 +372,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                   onDrop={(e) => { e.preventDefault(); if (dragId) void move(dragId, s.id); setDragId(null); }}
                   className={`flex w-64 shrink-0 flex-col rounded-2xl border p-3 ${s.kind === "booked" ? "border-green-500/30 bg-green-500/5" : s.kind === "closed" ? "border-[#7b6b8d]/20 bg-[#7b6b8d]/5" : "border-[#1a2b4a]/10 bg-[#1a2b4a]/[0.03] dark:border-white/10 dark:bg-white/5"}`}
                 >
-                  <div className="mb-3 px-1">
+                  <div className="sticky top-0 z-10 -mx-1 -mt-1 mb-3 rounded-xl bg-[#f3efe8] px-2 pb-2 pt-1 shadow-[0_6px_6px_-6px_rgba(26,43,74,0.25)] dark:bg-[#15233d]">
                     <div className="flex items-baseline justify-between gap-2">
                       <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.name}</h2>
                       <span className="text-xs text-[#7b6b8d]">{col.length}</span>

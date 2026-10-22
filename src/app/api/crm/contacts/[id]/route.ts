@@ -40,8 +40,14 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     name: (e.sequences as unknown as { name: string } | null)?.name ?? "",
     sent: ((e.sequence_sends as { status: string }[] | null) ?? []).filter((s) => s.status === "sent").length,
   }));
+  // Every agreement tied to this person: linked by contact, or signed with their email.
+  const email = String(contact.email || "").toLowerCase();
+  const { data: bySigner } = email ? await db.from("sign_signers").select("document_id").eq("email", email).eq("is_owner", false) : { data: [] };
+  const docIds = ((bySigner ?? []) as { document_id: string }[]).map((r) => r.document_id);
+  const { data: agreementRows } = await db.from("sign_documents").select("id, title, kind, status, sent_at, completed_at, final_path").eq("master_plan_id", a.planId).or([`contact_id.eq.${contact.id}`, docIds.length ? `id.in.(${docIds.join(",")})` : ""].filter(Boolean).join(",")).order("created_at", { ascending: false });
+  const agreements = (agreementRows ?? []).filter((d) => d.status !== "voided").map((d) => ({ id: d.id, title: d.title, kind: d.kind, status: d.status, sentAt: d.sent_at, completedAt: d.completed_at, hasSigned: !!d.final_path }));
   const { attended, purchases } = await history(db, a.planId, a.house, contact as { id: string; email: string }, (events ?? []) as { id: string; kind: string; title: string; detail: Record<string, unknown>; created_at: string }[]);
-  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases });
+  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases, agreements });
 }
 
 type Item = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; source: string; recordId?: string };

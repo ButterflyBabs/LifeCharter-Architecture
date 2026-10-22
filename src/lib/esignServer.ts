@@ -93,6 +93,18 @@ async function inviteRound(db: Db, doc: Doc, signers: Signer[]): Promise<number>
   return sent;
 }
 
+/** Tie a document to the contact record of whoever is signing it (matched by email), so it shows up on their record. */
+export async function linkContact(db: Db, doc: Doc, signers: Signer[]): Promise<Doc> {
+  if (doc.contact_id) return doc;
+  const emails = signers.filter((s) => !s.is_owner).map((s) => s.email.toLowerCase()).filter(Boolean);
+  if (!emails.length) return doc;
+  const { data } = await db.from("seq_contacts").select("id").eq("master_plan_id", doc.master_plan_id).in("email", emails).limit(1);
+  const id = (data?.[0]?.id as string | undefined) ?? null;
+  if (!id) return doc;
+  await db.from("sign_documents").update({ contact_id: id }).eq("id", doc.id);
+  return { ...doc, contact_id: id };
+}
+
 export async function sendDocument(db: Db, doc: Doc, signers: Signer[]): Promise<{ ok: true; sent: number } | { ok: false; error: string }> {
   if (doc.status !== "draft") return { ok: false, error: "It has already been sent." };
   if (!signers.length) return { ok: false, error: "Add at least one signer." };
@@ -105,6 +117,7 @@ export async function sendDocument(db: Db, doc: Doc, signers: Signer[]): Promise
     if (!f) return { ok: false, error: "The uploaded file couldn't be read. Please upload it again." };
     originalHash = sha256(Buffer.from(await f.arrayBuffer()));
   }
+  doc = await linkContact(db, doc, signers);
   await db.from("sign_documents").update({ status: "sent", sent_at: new Date().toISOString(), original_hash: originalHash, updated_at: new Date().toISOString() }).eq("id", doc.id);
   await audit(db, doc.id, "Document sent", { detail: `SHA-256 ${originalHash}` });
   const sent = await inviteRound(db, { ...doc, status: "sent" }, signers);
@@ -226,8 +239,10 @@ export async function declineDocument(db: Db, doc: Doc, s: Signer, reason: strin
 
 /** Everyone signed: seal the PDF (document + signature page + certificate), store it and its hash, email copies. */
 export async function completeDocument(db: Db, docId: string): Promise<string> {
-  const { doc, signers } = await loadDoc(db, docId);
-  if (!doc || doc.final_path) return "already sealed";
+  const loaded = await loadDoc(db, docId);
+  const { signers } = loaded;
+  if (!loaded.doc || loaded.doc.final_path) return "already sealed";
+  const doc = await linkContact(db, loaded.doc, signers);
   const now = new Date().toISOString();
   await audit(db, doc.id, "Completed: everyone signed");
   const [{ data: evs }, brand] = await Promise.all([db.from("sign_events").select("event, signer_id, ip, at").eq("document_id", doc.id).order("at"), brandFor(db, doc.master_plan_id)]);
