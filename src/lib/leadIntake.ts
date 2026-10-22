@@ -60,13 +60,14 @@ export function flattenLead(b: Record<string, unknown>): Record<string, string> 
   return out;
 }
 
-const SKIP = new Set(["email", "email_address", "emailaddress", "work_email", "full_name", "name", "first_name", "firstname", "last_name", "lastname", "ad_name", "ad", "form_name", "form", "phone_number"]);
+const SKIP = new Set(["email", "email_address", "emailaddress", "work_email", "full_name", "name", "first_name", "firstname", "last_name", "lastname", "ad_name", "ad", "ad_id", "form_name", "form", "phone_number"]);
 
 export interface ParsedLead {
   email: string;
   first: string;
   last: string;
   ad: string;
+  adId: string;
   form: string;
   phone: string;
   answers: Record<string, string>;
@@ -83,6 +84,7 @@ export function parseLead(raw: Record<string, unknown>): ParsedLead {
     first,
     last,
     ad: f.ad_name || f.ad || "",
+    adId: f.ad_id || "",
     form: f.form_name || f.form || "",
     phone: f.phone_number || f.phone || "",
     answers: Object.fromEntries(Object.entries(f).filter(([k]) => !SKIP.has(k))),

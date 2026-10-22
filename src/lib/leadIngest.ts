@@ -32,16 +32,19 @@ export async function ingestLead(request: Request, sourceKey: LeadSource): Promi
   const lead = parseLead(raw);
   const bad = validLead(lead);
   if (bad) return NextResponse.json({ error: bad }, { status: 400 });
-  const { email, first, last, ad, form, answers } = lead;
+  const { email, first, last, form, answers, adId } = lead;
+  // Facebook sends the Ad ID, not the ad's name: the name comes from the account's own list of ad IDs.
+  let ad = lead.ad;
+  if (!ad && adId) ad = ((await db.from("meta_ad_names").select("ad_name").eq("master_plan_id", plan).eq("ad_id", adId).maybeSingle()).data?.ad_name as string | undefined) || "";
   const origin = ad || form; // the ad (Meta) or the form (LinkedIn) the person came from
 
   if (isTestLead(email)) {
-    if (!dry) await db.from("meta_leads").insert({ master_plan_id: plan, source: src.source, email, name: `${first} ${last}`.trim(), ad_name: ad || null, form_name: form || null, answers, status: "test", detail: "Test lead, ignored" });
+    if (!dry) await db.from("meta_leads").insert({ master_plan_id: plan, source: src.source, email, name: `${first} ${last}`.trim(), ad_name: ad || null, ad_id: adId || null, form_name: form || null, answers, status: "test", detail: "Test lead, ignored" });
     return NextResponse.json({ ok: true, test: true });
   }
   if (dry) return NextResponse.json({ ok: true, dry: true, source: src.source, email, first, last, ad, form, answers });
 
-  const { data: log } = await db.from("meta_leads").insert({ master_plan_id: plan, source: src.source, email, name: `${first} ${last}`.trim(), ad_name: ad || null, form_name: form || null, answers, status: "received" }).select("id").single();
+  const { data: log } = await db.from("meta_leads").insert({ master_plan_id: plan, source: src.source, email, name: `${first} ${last}`.trim(), ad_name: ad || null, ad_id: adId || null, form_name: form || null, answers, status: "received" }).select("id").single();
   const setStatus = (status: string, detail?: string) => (log ? db.from("meta_leads").update({ status, detail: detail ?? null }).eq("id", log.id as string) : Promise.resolve());
 
   // 1. Contact, with where they came from.
