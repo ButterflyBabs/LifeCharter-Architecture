@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
 import { brandFor as portalBrand, PORTAL_BUCKET } from "@/lib/portal";
 import { isHousePlan } from "@/lib/housePlan";
-import { logEvent, upsertContact } from "@/lib/crm";
+import { logEvent } from "@/lib/crm";
 import { CODE_MAX_TRIES, CODE_MINUTES, allSigned, consentText, currentRound, hashCode, newCode, newToken, sha256 } from "@/lib/esign";
 import { sealPdf } from "@/lib/esignPdf";
 
@@ -93,21 +93,16 @@ async function inviteRound(db: Db, doc: Doc, signers: Signer[]): Promise<number>
   return sent;
 }
 
-/**
- * Tie a document to the contact record of whoever is signing it, so it shows on their record. Matched by email; a signer
- * who isn't in Contacts yet is added. People signing an independent contractor agreement are tagged LifeCharter-Team.
- */
+/** Tie a document to the contact record of whoever is signing it (matched by email), so it shows on their record. */
 export async function linkContact(db: Db, doc: Doc, signers: Signer[]): Promise<Doc> {
-  const team = /contractor/i.test(doc.title);
-  let contactId = doc.contact_id;
-  for (const s of signers.filter((x) => !x.is_owner)) {
-    const [first, ...rest] = s.name.trim().split(/\s+/);
-    const c = await upsertContact({ masterPlanId: doc.master_plan_id, email: s.email, firstName: first || null, lastName: rest.join(" ") || null, source: "LC Plume", tags: team ? ["LifeCharter-Team"] : [] }, db).catch(() => null);
-    if (c && !contactId) contactId = c.id;
-  }
-  if (!contactId || contactId === doc.contact_id) return doc;
-  await db.from("sign_documents").update({ contact_id: contactId }).eq("id", doc.id);
-  return { ...doc, contact_id: contactId };
+  if (doc.contact_id) return doc;
+  const emails = signers.filter((s) => !s.is_owner).map((s) => s.email.toLowerCase()).filter(Boolean);
+  if (!emails.length) return doc;
+  const { data } = await db.from("seq_contacts").select("id").eq("master_plan_id", doc.master_plan_id).in("email", emails).limit(1);
+  const id = (data?.[0]?.id as string | undefined) ?? null;
+  if (!id) return doc;
+  await db.from("sign_documents").update({ contact_id: id }).eq("id", doc.id);
+  return { ...doc, contact_id: id };
 }
 
 export async function sendDocument(db: Db, doc: Doc, signers: Signer[]): Promise<{ ok: true; sent: number } | { ok: false; error: string }> {
