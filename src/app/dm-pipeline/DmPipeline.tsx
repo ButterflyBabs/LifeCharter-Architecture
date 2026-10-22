@@ -242,7 +242,17 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, purpose, board?.id]);
-  const dueCount = visible.filter((c) => c.follow_up_on && today && c.follow_up_on <= today).length;
+  const dueCards = visible.filter((c) => c.follow_up_on && today && c.follow_up_on <= today).sort((x, y) => (x.follow_up_on ?? "").localeCompare(y.follow_up_on ?? ""));
+  const dueCount = dueCards.length;
+  const [dueOpen, setDueOpen] = useState(true);
+  const plusDays = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+  async function snooze(cardId: string, day: string) {
+    const d = (await post({ action: "update", cardId, followUpOn: day })) as { card?: Card } | null;
+    if (d?.card) {
+      setCards((cs) => (cs ?? []).map((c) => (c.id === cardId ? { ...c, ...d.card } : c)));
+      setMsg(`Follow-up moved to ${shortDate(day)}.`);
+    }
+  }
   const open = cards?.find((c) => c.id === openId) ?? null;
 
   return (
@@ -307,14 +317,55 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           <span className="inline-flex items-center gap-1 text-xs text-[#7a8a99]"><Tag className="w-3.5 h-3.5" /> Everyone here is tagged <strong className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{board.tag}</strong></span>
         )}
         {dueCount > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#C76F56]/10 px-3 py-1.5 text-xs font-medium text-[#A4523C]">
-            <AlertCircle className="w-3.5 h-3.5" /> {dueCount} follow-up{dueCount === 1 ? "" : "s"} due
-          </span>
+          <button type="button" onClick={() => { setDueOpen((o) => !o); document.getElementById("due-now")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-expanded={dueOpen} className="inline-flex items-center gap-1 rounded-full bg-[#C76F56]/10 px-3 py-1.5 text-xs font-medium text-[#A4523C] hover:bg-[#C76F56]/20">
+            <AlertCircle className="w-3.5 h-3.5" /> {dueCount} follow-up{dueCount === 1 ? "" : "s"} due · {dueOpen ? "hide the list" : "show the list"}
+          </button>
         )}
         <Link href="/daily-compass/scripts" className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#2E7C83]/40 px-3 py-1.5 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
           <FileText className="w-3.5 h-3.5" /> DM scripts &amp; templates
         </Link>
       </div>
+
+      {dueCount > 0 && dueOpen && (
+        <section id="due-now" aria-label="Follow-ups due now" className="mb-5 rounded-2xl border border-[#C76F56]/40 bg-[#C76F56]/5 p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Due now ({dueCount})</h2>
+            <button type="button" onClick={() => setDueOpen(false)} className="text-xs font-medium text-[#2E7C83] hover:underline">Hide</button>
+          </div>
+          <ul className="divide-y divide-[#1a2b4a]/10">
+            {dueCards.map((c) => {
+              const st = stages.find((x) => x.id === c.stage_id);
+              const days = Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${c.follow_up_on}T12:00:00Z`)) / 86_400_000);
+              const p = plat(c.platform);
+              const waiting = st?.key === "connect_sent";
+              const connected = stages.find((x) => x.key === "connected");
+              return (
+                <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
+                  <div className="min-w-[200px] flex-1">
+                    <button type="button" onClick={() => setOpenId(c.id)} className="text-left font-semibold text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{c.name}</button>
+                    <p className="text-xs text-[#7b6b8d]">
+                      {p ? `${p.label} · ` : ""}{st?.name ?? ""} · <span className={days > 0 ? "font-semibold text-[#A4523C]" : "font-semibold text-[#8a6a15]"}>{days > 0 ? `${days} day${days === 1 ? "" : "s"} overdue` : "due today"}</span>
+                    </p>
+                  </div>
+                  {c.profile_url && (
+                    <a href={c.profile_url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1 rounded-md border border-[#2E7C83]/40 px-3 text-xs font-medium text-[#2E7C83] hover:bg-[#2E7C83]/5">
+                      Open profile <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {waiting ? (
+                    <div className="flex flex-wrap gap-2">
+                      {connected && <Button size="sm" variant="outline" onClick={() => void move(c.id, connected.id)}>They accepted: move to Connected</Button>}
+                      <Button size="sm" variant="outline" onClick={() => void snooze(c.id, plusDays(today, 7))}>Not yet: check again in 7 days</Button>
+                    </div>
+                  ) : (
+                    <div className="w-60 max-w-full"><DmSentPick card={c} scripts={scripts} onPick={(sid) => openSend(c.id, sid)} /></div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
