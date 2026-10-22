@@ -29,7 +29,7 @@ export type Goals = {
 export const EMPTY_GOALS: Goals = { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, answers: {} };
 
 // What happened to the people the ads brought in, counted from the Suite's own contacts.
-export type Outcomes = { registered: number; attended: number; booked: number; sold: number; suiteLeads: number };
+export type Outcomes = { registered: number; attended: number; booked: number; sold: number; suiteLeads: number; named?: number };
 
 export type Verdict = "scale" | "continue" | "watch" | "pause" | "stop";
 
@@ -284,6 +284,7 @@ export function buildReport(input: {
   if (o && totals.leads > 0) {
     if (o.suiteLeads < totals.leads) checks.push(`Meta counted ${totals.leads} leads but the Suite received ${o.suiteLeads}. ${totals.leads - o.suiteLeads} did not arrive: check your Make scenario, or add them from the Leads Center file.`);
     else checks.push(`Every lead Meta counted (${totals.leads}) arrived in the Suite.`);
+    if (o.suiteLeads > 0 && o.named === 0) checks.push("Your leads arrive without the ad's name, so the Suite cannot tell which ad each person came from. In your Make scenario add the field ad_name and choose Ad name from the list (step 5 of the Make instructions below). Then each ad's sign-ups, show-ups and clients can be counted.");
   }
   const topFreq = ads.filter((a) => a.frequency != null && a.frequency >= 3).map((a) => a.adName);
   if (topFreq.length) checks.push(`${topFreq.join(", ")}: people are seeing it 3 or more times. Plan a fresh version.`);

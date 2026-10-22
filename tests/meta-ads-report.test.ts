@@ -91,6 +91,8 @@ test("the funnel and the capture check use the Suite's own counts", () => {
   assert.equal(r.funnel![3].costEach, 112.76);
   assert.equal(r.funnel![4].costEach, null);
   assert.match(r.checks.join(" "), /Meta counted 11 leads but the Suite received 10/);
+  const unnamed = buildReport({ rows, outcomes: { registered: 11, attended: 0, booked: 0, sold: 0, suiteLeads: 11, named: 0 } })!;
+  assert.match(unnamed.checks.join(" "), /arrive without the ad's name/);
 });
 
 test("guidance reacts to the answers", () => {

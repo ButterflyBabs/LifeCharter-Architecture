@@ -47,19 +47,21 @@ const soldTag = (t: string) => ["lccs-paying-client", "command-suite-customer", 
 export async function loadOutcomes(db: Db, planId: string, start: string, end: string): Promise<Outcomes> {
   const { data: leads } = await db
     .from("meta_leads")
-    .select("email, status")
+    .select("email, status, ad_name")
     .eq("master_plan_id", planId)
     .or("source.is.null,source.neq.linkedin")
     .gte("created_at", zonedToUtcISO(start, "00:00", "America/Denver"))
     .lte("created_at", zonedToUtcISO(end, "23:59", "America/Denver"))
     .not("status", "in", "(test,failed)")
     .limit(5000);
-  const emails = Array.from(new Set(((leads ?? []) as { email: string | null }[]).map((l) => (l.email || "").toLowerCase()).filter(Boolean)));
-  if (!emails.length) return { registered: 0, attended: 0, booked: 0, sold: 0, suiteLeads: 0 };
+  const got = (leads ?? []) as { email: string | null; ad_name: string | null }[];
+  const emails = Array.from(new Set(got.map((l) => (l.email || "").toLowerCase()).filter(Boolean)));
+  const named = got.filter((l) => (l.ad_name || "").trim()).length;
+  if (!emails.length) return { registered: 0, attended: 0, booked: 0, sold: 0, suiteLeads: 0, named: 0 };
   const { data: contacts } = await db.from("seq_contacts").select("email, tags").eq("master_plan_id", planId).in("email", emails);
   const people = (contacts ?? []) as { email: string; tags: string[] | null }[];
   const has = (f: (t: string) => boolean) => people.filter((p) => (p.tags ?? []).some(f)).length;
-  return { suiteLeads: emails.length, registered: people.length, attended: has(attendedTag), booked: has(bookedTag), sold: has(soldTag) };
+  return { suiteLeads: emails.length, named, registered: people.length, attended: has(attendedTag), booked: has(bookedTag), sold: has(soldTag) };
 }
 
 export type ReportBundle = { report: Report; guidance: Guidance[]; goals: Goals; ageDays: number };
