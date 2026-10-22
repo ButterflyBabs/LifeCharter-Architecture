@@ -12,7 +12,7 @@ export const listAgreements: ActionTool = {
   name: "list_agreements",
   kind: "read",
   apiPath: "/api/agreements",
-  description: "List the client's agreements and proposals (LC Plume) with status and who has or hasn't signed yet, and the starter and saved templates. Use for 'has Ann signed?', 'what's waiting for signatures', and before drafting one.",
+  description: "List the client's agreements and proposals (LC Plume) with status and who has or hasn't signed yet, and the starter and saved templates. To resend one or sign it themselves, point them to its Resend / Sign now buttons on the LC Plume list (you cannot send or sign for them). Use for 'has Ann signed?', 'what's waiting for signatures', and before drafting one.",
   parameters: { type: "object", properties: {} },
   read: async (_a, ctx) => {
     const [{ data: docs }, { data: tpls }] = await Promise.all([
