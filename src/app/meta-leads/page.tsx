@@ -8,6 +8,10 @@ import { ensureBoards } from "@/lib/dmPipeline";
 import CopyField from "./CopyField";
 import UploadLeads from "./UploadLeads";
 import PipelinePicker from "./PipelinePicker";
+import WeeklyReport from "./WeeklyReport";
+import GuidedQuestions from "./GuidedQuestions";
+import UploadAdsExport from "./UploadAdsExport";
+import { loadReport } from "@/lib/metaAdsServer";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +31,7 @@ export default async function MetaLeadsPage() {
   }
   const boards = house || demo ? [] : await ensureBoards(db, plan, "outreach");
   const { data: leads } = await db.from("meta_leads").select("id, email, name, ad_name, form_name, source, status, detail, created_at").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(30);
+  const bundle = demo ? null : await loadReport(db, plan).catch(() => null);
   const url = `https://lccommandsuite.com/api/meta-leads?k=${(set?.secret as string) ?? "(your private address appears here once you sign in)"}`;
   const liUrl = url.replace("/api/meta-leads", "/api/linkedin-leads");
   const day = (s: string) => new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Denver" });
@@ -36,6 +41,20 @@ export default async function MetaLeadsPage() {
       <p className="mt-2 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
         Each person who fills in one of your Facebook or Instagram lead forms is sent to the private address below. The Suite saves them as a contact tagged lead-meta-ad and the ad&apos;s own tag{house ? ", registers them on the MasterClass Zoom meeting and puts a card in Registered on the MasterClass Pipeline" : ", and adds a card to the pipeline you choose"}. Keep the address private: anyone who has it can add contacts to your account.
       </p>
+      {!demo && (
+        <section aria-labelledby="weekly-report">
+          <h2 id="weekly-report" className="mt-8 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Weekly report</h2>
+          <p className="mt-1 max-w-2xl text-sm text-[#5a6472] dark:text-[#b8c2cf]">
+            How each ad is doing, what to keep, pause or stop and why, what it costs per lead, and what the same spending would bring in a week, a month and a quarter. It is rebuilt every time you add an export, and every Monday you get a reminder.
+          </p>
+          {bundle ? <WeeklyReport report={bundle.report} guidance={bundle.guidance} ageDays={bundle.ageDays} /> : <p className="mt-3 rounded-lg bg-[#1a2b4a]/5 p-3 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">No report yet. Add an export from Ads Manager below and it appears here.</p>}
+          <h3 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add this week&apos;s numbers</h3>
+          <UploadAdsExport />
+          <h3 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Guided questions: decide your next step</h3>
+          <GuidedQuestions goals={bundle?.goals ?? { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, answers: {} }} adNames={bundle?.report.ads.map((a) => a.adName) ?? []} />
+        </section>
+      )}
+      <h2 className="mt-10 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Lead capture</h2>
       <h2 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Latest leads</h2>
       {!leads?.length ? (
         <p className="mt-2 text-sm text-[#7a8a99]">None yet. They appear here as soon as a lead form is submitted.</p>
