@@ -130,6 +130,13 @@ export default function Agreements() {
                       <span className="flex items-center justify-between gap-2"><span className="truncate font-semibold">{x.title}</span><span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${x.needsMe ? "bg-[#c9a227]/25 text-[#6b5410]" : TONE[x.status] ?? ""}`}>{x.needsMe ? "Needs your signature" : STATUS[x.status] ?? x.status}</span></span>
                       <span className="block text-xs text-[#7b6b8d]">{x.kind === "proposal" ? "Proposal" : "Agreement"} · {x.signers.filter((s) => s.status === "signed").length} of {x.signers.length} signed</span>
                     </button>
+                    {(x.needsMe || x.status === "sent" || x.status === "completed") && (
+                      <div className="flex flex-wrap gap-2 px-4 pb-3">
+                        {x.needsMe && <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "sign-now", id: x.id }); if (r?.url) window.location.href = String(r.url); }}><PenLine className="h-3.5 w-3.5" />Sign now</button>}
+                        {x.status === "sent" && <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "resend", id: x.id }); if (r) setMsg({ ok: true, text: `Sent again to ${((r.to as string[]) ?? []).join(", ") || "everyone waiting"}.` }); }}><Send className="h-3.5 w-3.5" />Resend</button>}
+                        {x.status === "completed" && <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "resend", id: x.id }); if (r) setMsg({ ok: true, text: `The signed copy was emailed to ${((r.to as string[]) ?? []).join(", ") || "everyone who signed"}.` }); }}><Send className="h-3.5 w-3.5" />Email signed copy</button>}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
