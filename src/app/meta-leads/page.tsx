@@ -31,7 +31,7 @@ export default async function MetaLeadsPage() {
     set = { secret, board_id: null };
   }
   const boards = house || demo ? [] : await ensureBoards(db, plan, "outreach");
-  const { data: leads } = await db.from("meta_leads").select("id, email, name, ad_name, form_name, source, status, detail, created_at").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(30);
+  const { data: leads } = await db.from("meta_leads").select("id, email, name, ad_name, ad_id, form_name, source, status, detail, created_at").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(30);
   const bundle = demo ? null : await loadReport(db, plan).catch(() => null);
   const url = `https://lccommandsuite.com/api/meta-leads?k=${(set?.secret as string) ?? "(your private address appears here once you sign in)"}`;
   const liUrl = url.replace("/api/meta-leads", "/api/linkedin-leads");
@@ -70,7 +70,7 @@ export default async function MetaLeadsPage() {
                   <td className="p-3">{(l.name as string) || ""}</td>
                   <td className="p-3">{(l.email as string) || ""}</td>
                   <td className="p-3">{l.source === "linkedin" ? "LinkedIn" : "Meta"}</td>
-                  <td className="p-3">{(l.ad_name as string) || (l.form_name as string) || ""}</td>
+                  <td className="p-3">{(l.ad_name as string) || (l.form_name as string) || (l.ad_id ? `Ad ${l.ad_id}` : "")}</td>
                   <td className={`p-3 ${l.status === "failed" ? "text-[#A4523C] font-medium" : ""}`}>{l.status as string}{l.detail ? `: ${l.detail as string}` : ""}</td>
                 </tr>
               ))}
@@ -95,7 +95,7 @@ export default async function MetaLeadsPage() {
         <li>Click the big <b>+</b>, search <b>Facebook Lead Ads</b> and pick <b>New Lead</b> (the instant one). Click <b>Add</b> to connect your Facebook account, allow every permission it asks for, then choose your <b>Page</b> and your <b>lead form</b>. Click OK.</li>
         <li>Click the small <b>+</b> on the right of that circle, search <b>HTTP</b> and pick <b>Make a request</b>.</li>
         <li>In <b>URL</b>, paste your address from above. Set <b>Method</b> to <b>POST</b> and <b>Body type</b> to <b>Application/x-www-form-urlencoded</b>.</li>
-        <li>Under <b>Fields</b> click <b>Add item</b> three times. Type each name exactly: <b>email</b>, <b>full_name</b> and <b>ad_name</b>. For each <b>Value</b>, click inside the box and choose the matching item from the list that opens: Email, Full name and Ad name. Each must appear as a small coloured tag, not plain typed words. Any other question on your form can be added the same way, with a name of your choice. It shows on the person&apos;s card.</li>
+        <li>Under <b>Fields</b> click <b>Add item</b> three times. Type each name exactly: <b>email</b>, <b>full_name</b> and <b>ad_id</b>. For each <b>Value</b>, click inside the box and choose the matching item from the list that opens: Email, Full name and Ad ID (Facebook sends the ad&apos;s number, not its name). Each must appear as a small coloured tag, not plain typed words. Any other question on your form can be added the same way, with a name of your choice. It shows on the person&apos;s card.</li>
         <li>Click <b>Save</b>, then <b>Run once</b>. In Meta&apos;s <a className="underline" href="https://developers.facebook.com/tools/lead-ads-testing" target="_blank" rel="noreferrer">Lead Ads Testing Tool</a> choose your Page and form and click <b>Create lead</b> (delete an old test lead first). Make turns both circles green. Meta&apos;s test leads are logged below with the status <b>test</b> and are never added to your contacts, so you can test as often as you like.</li>
         <li>Turn the scenario on with the switch at the bottom left, so it reads <b>Active</b>. From then on every real lead appears in Latest leads below within seconds.</li>
       </ol>
