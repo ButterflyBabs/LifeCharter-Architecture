@@ -41,7 +41,11 @@ export async function GET(request: Request) {
   // "Needs your signature": the document is out and it is the owner's turn.
   const needsMe = (docId: string, status: string) => status === "sent" && currentRound(byDoc.get(docId) ?? []).some((s) => s.is_owner && (s.status === "sent" || s.status === "viewed"));
   return NextResponse.json(
-    { docs: ((docs ?? []) as { id: string; status: string }[]).map((d) => ({ ...d, signers: (byDoc.get(d.id) ?? []).map((s) => ({ name: s.name, status: s.status })), needsMe: needsMe(d.id, d.status) })), templates: ((tpls ?? []) as { master_plan_id: string | null }[]).map((t) => ({ ...t, starter: !t.master_plan_id })), offers: offers ?? [] },
+    {
+      // Voided agreements sit at the bottom; everything else is alphabetical by title so one is easy to find.
+      docs: ((docs ?? []) as { id: string; title: string; status: string; updated_at: string }[])
+        .map((d) => ({ ...d, signers: (byDoc.get(d.id) ?? []).map((s) => ({ name: s.name, status: s.status })), needsMe: needsMe(d.id, d.status) }))
+        .sort((x, y) => Number(x.status === "voided") - Number(y.status === "voided") || x.title.localeCompare(y.title, undefined, { sensitivity: "base", numeric: true }) || y.updated_at.localeCompare(x.updated_at)), templates: ((tpls ?? []) as { master_plan_id: string | null }[]).map((t) => ({ ...t, starter: !t.master_plan_id })), offers: offers ?? [] },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
