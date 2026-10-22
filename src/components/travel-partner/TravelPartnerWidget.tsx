@@ -244,6 +244,22 @@ export default function TravelPartnerWidget() {
     if (savedPos) setPos(JSON.parse(savedPos));
   }, []);
 
+  // A saved spot can fall off the screen (smaller window, other monitor, zoom): pull the pill
+  // or the open panel back inside the window.
+  useEffect(() => {
+    if (!pos) return;
+    const fit = () => {
+      const r = widgetRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const x = Math.max(8, Math.min(pos.x, window.innerWidth - r.width - 8));
+      const y = Math.max(8, Math.min(pos.y, window.innerHeight - r.height - 8));
+      if (x !== pos.x || y !== pos.y) setPos({ x, y });
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [pos, isOpen]);
+
   // Global mouse handlers for dragging
   useEffect(() => {
     if (!dragging) return;
