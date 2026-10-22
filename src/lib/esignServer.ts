@@ -1,3 +1,4 @@
+import { createHmac } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
 import { brandFor as portalBrand, PORTAL_BUCKET } from "@/lib/portal";
@@ -13,6 +14,13 @@ import { sealPdf } from "@/lib/esignPdf";
 type Db = ReturnType<typeof createServerClient>;
 const APP = () => (process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com").replace(/\/$/, "");
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// The "identity confirmed" cookie for a signer's browser (set when the emailed code is confirmed, or when the signed-in
+// account owner signs from the LC Plume dashboard). The signing page checks it with the same secret.
+const signSecret = () => process.env.SIGN_SECRET || process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "dev";
+export const signCookieName = (signerId: string) => `sv_${signerId.replace(/-/g, "").slice(0, 16)}`;
+export const signCookieMac = (signerId: string, verifiedAt: string) => createHmac("sha256", signSecret()).update(`${signerId}|${verifiedAt}`).digest("base64url");
 
 /** The name signers see. Babs's own account signs as "LifeCharter Command Suite" (her choice, 2026-10-18). */
 export async function brandFor(db: Db, planId: string): Promise<{ name: string; logo: string | null }> {
@@ -61,6 +69,16 @@ export async function loadDoc(db: Db, id: string) {
   return { doc: d as Doc | null, signers: (s ?? []) as Signer[] };
 }
 
+async function inviteMail(db: Db, doc: Doc, s: { name: string; email: string }, token: string, brandName: string): Promise<boolean> {
+  return signMail(db, doc.master_plan_id, {
+    to: s.email,
+    subject: `Please sign: ${doc.title}`,
+    heading: `${brandName} sent you ${doc.kind === "proposal" ? "a proposal" : "a document"} to sign`,
+    lines: [`Hi ${esc(s.name.split(" ")[0])},`, `Please review and sign <strong>${esc(doc.title)}</strong>.`, doc.message ? esc(doc.message).replace(/\n/g, "<br>") : "", "When you open it, we'll email you a 6-digit code to confirm it's you.", doc.expires_on ? `Please sign by ${new Date(`${doc.expires_on}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.` : ""],
+    button: { label: "Review and sign", url: signerUrl(token) },
+  });
+}
+
 /** Invite whoever signs next (a fresh private link each time, so an old link from a void or resend stops working). */
 async function inviteRound(db: Db, doc: Doc, signers: Signer[]): Promise<number> {
   const brand = await brandFor(db, doc.master_plan_id);
@@ -68,13 +86,7 @@ async function inviteRound(db: Db, doc: Doc, signers: Signer[]): Promise<number>
   for (const s of currentRound(signers).filter((x) => x.status === "waiting")) {
     const { token, hash } = newToken();
     await db.from("sign_signers").update({ token, token_hash: hash, status: "sent" }).eq("id", s.id);
-    const ok = await signMail(db, doc.master_plan_id, {
-      to: s.email,
-      subject: `Please sign: ${doc.title}`,
-      heading: `${brand.name} sent you ${doc.kind === "proposal" ? "a proposal" : "a document"} to sign`,
-      lines: [`Hi ${esc(s.name.split(" ")[0])},`, `Please review and sign <strong>${esc(doc.title)}</strong>.`, doc.message ? esc(doc.message).replace(/\n/g, "<br>") : "", "When you open it, we'll email you a 6-digit code to confirm it's you.", doc.expires_on ? `Please sign by ${new Date(`${doc.expires_on}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.` : ""],
-      button: { label: "Review and sign", url: signerUrl(token) },
-    });
+    const ok = await inviteMail(db, doc, s, token, brand.name);
     await audit(db, doc.id, ok ? "Sent for signature" : "Sending failed", { signerId: s.id, detail: s.email });
     if (ok) sent++;
   }
@@ -98,6 +110,66 @@ export async function sendDocument(db: Db, doc: Doc, signers: Signer[]): Promise
   const sent = await inviteRound(db, { ...doc, status: "sent" }, signers);
   if (doc.contact_id) await logEvent(doc.master_plan_id, doc.contact_id, "note", `Sent for signature: ${doc.title}`, { esign: doc.id }, db).catch(() => null);
   return { ok: true, sent };
+}
+
+/**
+ * Send a document again, any time. Out for signature: a fresh private link goes to whoever is waiting (the old link stops
+ * working), optionally to a corrected email address for that one signer. Signed: the signed copy is emailed again.
+ */
+export async function resendDocument(db: Db, doc: Doc, signers: Signer[], opts: { signerId?: string | null; email?: string | null }): Promise<{ ok: true; sent: number; to: string[] } | { ok: false; error: string }> {
+  const email = String(opts.email || "").trim().toLowerCase();
+  if (email && !EMAIL_RE.test(email)) return { ok: false, error: "That email address doesn't look right." };
+  const brand = await brandFor(db, doc.master_plan_id);
+  if (doc.status === "completed") {
+    if (!doc.final_path) return { ok: false, error: "There's no signed copy to send yet." };
+    const { data: f } = await db.storage.from(PORTAL_BUCKET).download(doc.final_path);
+    if (!f) return { ok: false, error: "The signed copy couldn't be read." };
+    const bytes = Buffer.from(await f.arrayBuffer());
+    const fileName = `${doc.title.replace(/[^A-Za-z0-9 _-]+/g, "").trim().slice(0, 80) || "signed"} (signed).pdf`;
+    const pick = opts.signerId ? signers.filter((s) => s.id === opts.signerId) : signers;
+    const to = email ? [email] : Array.from(new Set(pick.map((s) => s.email.toLowerCase())));
+    let sent = 0;
+    for (const addr of to) {
+      const ok = await signMail(db, doc.master_plan_id, { to: addr, subject: `Signed: ${doc.title}`, heading: "Your signed copy", lines: [`Here is the signed copy of <strong>${esc(doc.title)}</strong> from ${esc(brand.name)}, with its certificate of completion attached.`], attachments: [{ filename: fileName, content: bytes.toString("base64") }] });
+      await audit(db, doc.id, ok ? "Signed copy resent" : "Resending the signed copy failed", { detail: addr });
+      if (ok) sent++;
+    }
+    return sent ? { ok: true, sent, to } : { ok: false, error: "The email couldn't be sent. Please try again in a minute." };
+  }
+  if (doc.status !== "sent") return { ok: false, error: "Only a document that is out for signature, or signed, can be resent." };
+  const waiting = signers.filter((s) => (opts.signerId ? s.id === opts.signerId : currentRound(signers).some((r) => r.id === s.id)) && (s.status === "sent" || s.status === "viewed"));
+  if (!waiting.length) return { ok: false, error: "Nobody is waiting to sign this right now." };
+  if (email && waiting.length > 1) return { ok: false, error: "Choose which signer to send it to." };
+  const to: string[] = [];
+  let sent = 0;
+  for (const s of waiting) {
+    const { token, hash } = newToken();
+    const addr = email || s.email;
+    await db.from("sign_signers").update({ email: addr, token, token_hash: hash, status: "sent", code_hash: null, code_expires_at: null, code_attempts: 0, verified_at: null }).eq("id", s.id);
+    if (email && email !== s.email.toLowerCase()) await audit(db, doc.id, "Signer's email changed", { signerId: s.id, detail: `${s.email} to ${email}` });
+    const ok = await inviteMail(db, doc, { name: s.name, email: addr }, token, brand.name);
+    await audit(db, doc.id, ok ? "Sent again" : "Sending again failed", { signerId: s.id, detail: addr });
+    if (ok) { sent++; to.push(addr); }
+  }
+  return sent ? { ok: true, sent, to } : { ok: false, error: "The email couldn't be sent. Please try again in a minute." };
+}
+
+/**
+ * The account owner signs from the LC Plume dashboard without hunting for the email. The owner is already signed in to the
+ * Suite as the address that signs, so that stands in for the emailed code. Returns the private signing page and the
+ * cookie that tells it the identity is confirmed.
+ */
+export async function ownerSignNow(db: Db, doc: Doc, signers: Signer[], userEmail: string | null): Promise<{ ok: true; url: string; cookie: { name: string; value: string } } | { ok: false; error: string }> {
+  if (doc.status !== "sent") return { ok: false, error: "This document isn't open for signing." };
+  const me = currentRound(signers).find((s) => s.is_owner && (s.status === "sent" || s.status === "viewed" || s.status === "waiting"));
+  if (!me) return { ok: false, error: "It isn't your turn to sign yet." };
+  if (!userEmail || userEmail.toLowerCase() !== me.email.toLowerCase()) return { ok: false, error: `Only ${me.email} can sign this from the dashboard. Sign in as that address.` };
+  const { token, hash } = newToken();
+  await db.from("sign_signers").update({ token, token_hash: hash, status: "viewed", verified_at: new Date().toISOString(), code_hash: null, code_expires_at: null, code_attempts: 0 }).eq("id", me.id);
+  // The signing page compares the cookie with the stored timestamp exactly as the database returns it.
+  const { data: fresh } = await db.from("sign_signers").select("verified_at").eq("id", me.id).maybeSingle();
+  await audit(db, doc.id, "Identity confirmed: signed in to the Suite as the signer", { signerId: me.id, detail: me.email });
+  return { ok: true, url: signerUrl(token), cookie: { name: signCookieName(me.id), value: signCookieMac(me.id, String(fresh?.verified_at)) } };
 }
 
 export async function signerByToken(db: Db, token: string): Promise<{ doc: Doc; signer: Signer; signers: Signer[] } | null> {

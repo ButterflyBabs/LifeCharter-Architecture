@@ -3,7 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { PORTAL_BUCKET } from "@/lib/portal";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
-import { DOC_COLUMNS, SIGNER_COLUMNS, audit, brandFor, loadDoc, sendDocument, signMail, signerUrl, voidDocument, type Doc } from "@/lib/esignServer";
+import { DOC_COLUMNS, SIGNER_COLUMNS, audit, brandFor, loadDoc, ownerSignNow, resendDocument, sendDocument, signMail, signerUrl, voidDocument, type Doc } from "@/lib/esignServer";
+import { currentRound } from "@/lib/esign";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -11,7 +12,7 @@ export const maxDuration = 60;
 // Clients & Sales › LC Plume (task 1072), the owner's side.
 //   GET            -> documents with signer progress, templates (starter + own), offers
 //   GET ?id=<doc>  -> one document with its signers and audit trail
-//   POST { action: "create" | "save" | "send" | "remind" | "void" | "duplicate" | "delete" | "download" | "save-template" | "delete-template", ... }
+//   POST { action: "create" | "save" | "send" | "resend" | "sign-now" | "remind" | "void" | "duplicate" | "delete" | "download" | "save-template" | "delete-template", ... }
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const uuid = (v: unknown) => (typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v) ? v : null);
@@ -30,14 +31,17 @@ export async function GET(request: Request) {
   }
   const [{ data: docs }, { data: signers }, { data: tpls }, { data: offers }] = await Promise.all([
     db.from("sign_documents").select("id, title, kind, status, source, contact_id, sent_at, completed_at, created_at, updated_at").eq("master_plan_id", a.planId).order("updated_at", { ascending: false }).limit(300),
-    db.from("sign_signers").select("document_id, name, status, sign_documents!inner(master_plan_id)").eq("sign_documents.master_plan_id", a.planId),
+    db.from("sign_signers").select("document_id, name, status, order_no, is_owner, sign_documents!inner(master_plan_id)").eq("sign_documents.master_plan_id", a.planId),
     db.from("sign_templates").select("id, key, name, kind, review_note, master_plan_id, updated_at").or(`master_plan_id.is.null,master_plan_id.eq.${a.planId}`).order("name"),
     db.from("sales_offers").select("id, name, price").eq("master_plan_id", a.planId).order("sort_order"),
   ]);
-  const byDoc = new Map<string, { name: string; status: string }[]>();
-  for (const s of (signers ?? []) as { document_id: string; name: string; status: string }[]) byDoc.set(s.document_id, [...(byDoc.get(s.document_id) ?? []), { name: s.name, status: s.status }]);
+  type Sg = { document_id: string; name: string; status: string; order_no: number; is_owner: boolean };
+  const byDoc = new Map<string, Sg[]>();
+  for (const s of (signers ?? []) as Sg[]) byDoc.set(s.document_id, [...(byDoc.get(s.document_id) ?? []), s]);
+  // "Needs your signature": the document is out and it is the owner's turn.
+  const needsMe = (docId: string, status: string) => status === "sent" && currentRound(byDoc.get(docId) ?? []).some((s) => s.is_owner && (s.status === "sent" || s.status === "viewed"));
   return NextResponse.json(
-    { docs: ((docs ?? []) as { id: string }[]).map((d) => ({ ...d, signers: byDoc.get(d.id) ?? [] })), templates: ((tpls ?? []) as { master_plan_id: string | null }[]).map((t) => ({ ...t, starter: !t.master_plan_id })), offers: offers ?? [] },
+    { docs: ((docs ?? []) as { id: string; status: string }[]).map((d) => ({ ...d, signers: (byDoc.get(d.id) ?? []).map((s) => ({ name: s.name, status: s.status })), needsMe: needsMe(d.id, d.status) })), templates: ((tpls ?? []) as { master_plan_id: string | null }[]).map((t) => ({ ...t, starter: !t.master_plan_id })), offers: offers ?? [] },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
@@ -136,6 +140,19 @@ export async function POST(request: Request) {
     const { signers } = await loadDoc(db, doc.id);
     const r = await sendDocument(db, doc, signers);
     return r.ok ? NextResponse.json({ ok: true, sent: r.sent }) : NextResponse.json({ error: r.error }, { status: 400 });
+  }
+  if (action === "resend") {
+    const { signers } = await loadDoc(db, doc.id);
+    const r = await resendDocument(db, doc, signers, { signerId: uuid(b.signerId), email: str(b.email, 160) });
+    return r.ok ? NextResponse.json({ ok: true, sent: r.sent, to: r.to }) : NextResponse.json({ error: r.error }, { status: 400 });
+  }
+  if (action === "sign-now") {
+    const { signers } = await loadDoc(db, doc.id);
+    const r = await ownerSignNow(db, doc, signers, a.userEmail);
+    if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
+    const res = NextResponse.json({ ok: true, url: r.url });
+    res.cookies.set(r.cookie.name, r.cookie.value, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 6 });
+    return res;
   }
   if (action === "remind") {
     if (doc.status !== "sent") return NextResponse.json({ error: "Only a document out for signature can be reminded." }, { status: 409 });

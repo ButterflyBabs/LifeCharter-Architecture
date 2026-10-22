@@ -1,10 +1,10 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 import { PORTAL_BUCKET } from "@/lib/portal";
 import { SIGN_AGREE, consentText, currentRound, validDrawnSignature, validTypedSignature } from "@/lib/esign";
-import { audit, brandFor, declineDocument, sendCode, signDocument, signerByToken, verifyCode } from "@/lib/esignServer";
+import { audit, brandFor, declineDocument, sendCode, signCookieMac, signCookieName, signDocument, signerByToken, verifyCode } from "@/lib/esignServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -15,9 +15,8 @@ export const maxDuration = 60;
 //   POST { action: "verify", code }      -> confirm it (sets a cookie for this browser)
 //   POST { action: "sign", consent: true, type, text | image }
 //   POST { action: "decline", reason }
-const secret = () => process.env.SIGN_SECRET || process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "dev";
-const cookieName = (id: string) => `sv_${id.replace(/-/g, "").slice(0, 16)}`;
-const mac = (signerId: string, verifiedAt: string) => createHmac("sha256", secret()).update(`${signerId}|${verifiedAt}`).digest("base64url");
+const cookieName = signCookieName;
+const mac = signCookieMac;
 function verifiedHere(signerId: string, verifiedAt: string | null): boolean {
   if (!verifiedAt) return false;
   const c = cookies().get(cookieName(signerId))?.value || "";

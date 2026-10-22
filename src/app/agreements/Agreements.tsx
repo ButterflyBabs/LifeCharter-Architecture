@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileSignature, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown, Eye, X } from "lucide-react";
+import { FileSignature, PenLine, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown, Eye, X } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
 // Clients & Sales › LC Plume, agreements and proposals with e-signature (task 1072): write or upload a document, add signers, send for signature
 // (emailed link + 6-digit code), follow every step, and download the sealed copy with its certificate of completion.
 
-type Row = { id: string; title: string; kind: string; status: string; source: string; sent_at: string | null; completed_at: string | null; updated_at: string; signers: { name: string; status: string }[] };
+type Row = { id: string; title: string; kind: string; status: string; source: string; sent_at: string | null; completed_at: string | null; updated_at: string; signers: { name: string; status: string }[]; needsMe?: boolean };
 type Tpl = { id: string; name: string; kind: string; review_note: string | null; starter: boolean };
 type Signer = { id: string; order_no: number; name: string; email: string; is_owner: boolean; status: string; signed_at: string | null; decline_reason: string | null };
 type Detail = {
@@ -127,7 +127,7 @@ export default function Agreements() {
                 {list.docs.map((x) => (
                   <li key={x.id}>
                     <button onClick={() => setSel(x.id)} className={`block w-full px-4 py-3 text-left hover:bg-[#1a2b4a]/5 ${sel === x.id ? "bg-[#c9a227]/10" : ""}`}>
-                      <span className="flex items-center justify-between gap-2"><span className="truncate font-semibold">{x.title}</span><span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${TONE[x.status] ?? ""}`}>{STATUS[x.status] ?? x.status}</span></span>
+                      <span className="flex items-center justify-between gap-2"><span className="truncate font-semibold">{x.title}</span><span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${x.needsMe ? "bg-[#c9a227]/25 text-[#6b5410]" : TONE[x.status] ?? ""}`}>{x.needsMe ? "Needs your signature" : STATUS[x.status] ?? x.status}</span></span>
                       <span className="block text-xs text-[#7b6b8d]">{x.kind === "proposal" ? "Proposal" : "Agreement"} · {x.signers.filter((s) => s.status === "signed").length} of {x.signers.length} signed</span>
                     </button>
                   </li>
@@ -150,6 +150,8 @@ export default function Agreements() {
 function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: { id: string; name: string; price: number | null }[]; act: (b: Record<string, unknown>, ok?: string) => Promise<Record<string, unknown> | null>; busy: boolean; reload: () => Promise<void>; setMsg: (m: { ok: boolean; text: string } | null) => void }) {
   const doc = d.doc;
   const draft = doc.status === "draft";
+  const [fixFor, setFixFor] = useState<string | null>(null);
+  const [fixEmail, setFixEmail] = useState("");
   const others = d.signers.filter((s) => !s.is_owner);
   const [f, setF] = useState({ title: doc.title, kind: doc.kind, body: doc.body ?? "", message: doc.message ?? "", expiresOn: doc.expires_on ?? "", amount: doc.amount ? String(doc.amount) : "", offerId: doc.offer_id ?? "", ownerSigns: doc.owner_signs });
   const [signers, setSigners] = useState(others.length ? others.map((s) => ({ name: s.name, email: s.email, order: s.order_no })) : [{ name: "", email: "", order: 1 }]);
@@ -264,10 +266,32 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
             <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.ownerSigns} onChange={(e) => setF({ ...f, ownerSigns: e.target.checked })} />I sign too (last, after everyone else)</label>
           </>
         ) : (
-          <ul className="space-y-1 text-sm">
-            {d.signers.map((s) => (
-              <li key={s.id}>{s.order_no}. <strong>{s.name}</strong> ({s.email}){s.is_owner ? " · you" : ""} · {s.status === "signed" ? `signed ${s.signed_at ? when(s.signed_at) : ""}` : s.status === "declined" ? `declined${s.decline_reason ? `: ${s.decline_reason}` : ""}` : s.status === "viewed" ? "opened it" : s.status === "sent" ? "emailed" : "waiting their turn"}</li>
-            ))}
+          <ul className="space-y-2 text-sm">
+            {d.signers.map((s) => {
+              const waiting = doc.status === "sent" && (s.status === "sent" || s.status === "viewed");
+              return (
+                <li key={s.id}>
+                  <div>{s.order_no}. <strong>{s.name}</strong> ({s.email}){s.is_owner ? " · you" : ""} · {s.status === "signed" ? `signed ${s.signed_at ? when(s.signed_at) : ""}` : s.status === "declined" ? `declined${s.decline_reason ? `: ${s.decline_reason}` : ""}` : s.status === "viewed" ? "opened it" : s.status === "sent" ? "emailed" : "waiting their turn"}</div>
+                  {waiting && s.is_owner && (
+                    <div className="mt-1"><button className={primary} disabled={busy} onClick={async () => { const r = await act({ action: "sign-now", id: doc.id }); if (r?.url) window.location.href = String(r.url); }}><PenLine className="h-4 w-4" />Sign now</button> <span className="text-xs text-[#7b6b8d]">No need to find the email: you are signed in.</span></div>
+                  )}
+                  {waiting && !s.is_owner && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <button className={btn} disabled={busy} onClick={() => act({ action: "resend", id: doc.id, signerId: s.id }, `Sent again to ${s.email}.`)}><Send className="h-3.5 w-3.5" />Resend</button>
+                      {fixFor === s.id ? (
+                        <>
+                          <input type="email" aria-label={`New email for ${s.name}`} className={`${input} max-w-xs`} placeholder="Their correct email" value={fixEmail} onChange={(e) => setFixEmail(e.target.value)} />
+                          <button className={primary} disabled={busy || !fixEmail.trim()} onClick={async () => { const r = await act({ action: "resend", id: doc.id, signerId: s.id, email: fixEmail }, `Sent to ${fixEmail.trim()}. The old link stops working.`); if (r) { setFixFor(null); setFixEmail(""); } }}>Send to this email</button>
+                          <button className={btn} onClick={() => { setFixFor(null); setFixEmail(""); }}>Cancel</button>
+                        </>
+                      ) : (
+                        <button className={btn} disabled={busy} onClick={() => { setFixFor(s.id); setFixEmail(""); }}>Send to a different email</button>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -279,6 +303,7 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
         {doc.status === "sent" && <button className={btn} disabled={busy} onClick={() => act({ action: "remind", id: doc.id }, "Reminder sent.")}><BellRing className="h-3.5 w-3.5" />Remind now</button>}
         {["sent", "declined", "expired"].includes(doc.status) && <button className={btn} disabled={busy} onClick={() => { const reason = window.prompt("Void this document? Its links stop working. Reason (optional):"); if (reason !== null) void act({ action: "void", id: doc.id, reason }, "Voided."); }}><Ban className="h-3.5 w-3.5" />Void</button>}
         {doc.final_path && <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "download", id: doc.id }); if (r?.url) window.location.href = String(r.url); }}><Download className="h-3.5 w-3.5" />Download signed PDF</button>}
+        {doc.status === "completed" && doc.final_path && <button className={btn} disabled={busy} onClick={() => act({ action: "resend", id: doc.id }, "The signed copy was emailed to everyone who signed.")}><Send className="h-3.5 w-3.5" />Email the signed copy again</button>}
         <button className={btn} disabled={busy} onClick={async () => { const r = await act({ action: "duplicate", id: doc.id }, "Copied as a new draft."); if (r?.id) window.location.href = `/agreements?doc=${r.id}`; }}><Copy className="h-3.5 w-3.5" />Make a copy</button>
         {draft && !isPdf && <button className={btn} disabled={busy || !f.body.trim()} onClick={() => { const name = window.prompt("Save as your own template. Name:", f.title); if (name) void act({ action: "save-template", name, kind: f.kind, body: f.body }, "Saved to your templates."); }}>Save as my template</button>}
         {draft && <button className={`${btn} text-red-700`} disabled={busy} onClick={() => { if (window.confirm("Delete this draft?")) void act({ action: "delete", id: doc.id }, "Deleted.").then(() => (window.location.href = "/agreements")); }}><Trash2 className="h-3.5 w-3.5" />Delete draft</button>}
