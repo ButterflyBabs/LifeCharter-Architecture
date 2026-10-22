@@ -1180,6 +1180,9 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const [moveTo, setMoveTo] = useState(suggested && cur && suggested.sortOrder > cur.sortOrder ? suggested.id : "");
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  // A LinkedIn message can only go to someone who accepted the connection request. From "Connect request sent: waiting" the person must confirm they did.
+  const needsAccepted = card.platform === "LI" && cur?.key === "connect_sent" && !/new connection opener/i.test(script.title);
+  const [accepted, setAccepted] = useState(false);
   const left = Array.from(new Set(text.match(/\[[^\]]+\]/g) ?? []));
   const short = script.title.replace(/^MasterClass DM · /, "");
   // The assistant rewrites this one message for this one person; they read it before they copy it.
@@ -1275,9 +1278,15 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
               {stages.filter((s) => s.id !== card.stage_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
+          {needsAccepted && (
+            <label className="flex items-start gap-2 rounded-lg bg-[#C76F56]/10 px-3 py-2 text-xs text-[#7a3b28] dark:text-[#f0b8a6]">
+              <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5" />
+              <span><strong>{firstNameOf(card.name)} is still in &ldquo;Connect request sent: waiting.&rdquo;</strong> Tick this only after you have checked LinkedIn and they have accepted your request. If not, close this and leave them where they are.</span>
+            </label>
+          )}
           <div className="flex gap-2">
             <Button
-              disabled={busy}
+              disabled={busy || (needsAccepted && !accepted)}
               onClick={async () => {
                 setBusy(true);
                 const r = (await post({ action: "dm-sent", cardId: card.id, scriptId: script.id, scriptTitle: script.title, stageId: moveTo || undefined })) as { card?: Card; dmUsage?: Record<string, DmUse> } | null;
