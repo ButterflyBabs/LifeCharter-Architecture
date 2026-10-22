@@ -44,3 +44,6 @@ create table if not exists public.meta_ad_reports (
 alter table public.meta_ad_stats enable row level security;
 alter table public.meta_ad_goals enable row level security;
 alter table public.meta_ad_reports enable row level security;
+
+-- Events that repeat (every 14 days): the sign-up count starts again at zero after each one.
+alter table public.meta_ad_goals add column if not exists event_anchor date, add column if not exists cycle_days integer, add column if not exists cycle_hour integer;

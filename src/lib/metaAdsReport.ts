@@ -1,3 +1,5 @@
+import { buildCycles, buildMonths, type Cycle, type CycleSetup, type Month } from "@/lib/metaAdsCycles";
+
 // The weekly Meta Ads report. Pure functions only: the rows come from the file exported from Ads Manager (meta_ad_stats),
 // the goals from the guided questions (meta_ad_goals) and the outcomes from the Suite's own contacts. Every verdict
 // carries its reason in plain words so the owner can disagree with it.
@@ -20,13 +22,21 @@ export type Goals = {
   targetCpl: number | null;
   dailyBudget: number | null;
   customerValue: number | null;
-  goalLeads: number | null;
-  goalBy: string | null;
+  goalLeads: number | null; // sign-ups wanted for each event
+  goalBy: string | null; // older answer; the event date below replaces it
   monthlyLimit: number | null;
+  eventAnchor: string | null; // date of any one event, e.g. 2026-10-22
+  cycleDays: number | null; // days between events, e.g. 14 (null or 0 = not tied to events)
+  cycleHour: number | null; // hour the count starts again on event day, Mountain time (default 19)
   answers: Record<string, string>;
 };
 
-export const EMPTY_GOALS: Goals = { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, answers: {} };
+export const EMPTY_GOALS: Goals = { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, eventAnchor: null, cycleDays: null, cycleHour: null, answers: {} };
+
+export function cycleSetup(g: Goals): CycleSetup | null {
+  if (!g.eventAnchor || !g.cycleDays || g.cycleDays < 1) return null;
+  return { anchor: g.eventAnchor, days: g.cycleDays, hour: g.cycleHour ?? 19, goal: g.goalLeads };
+}
 
 // What happened to the people the ads brought in, counted from the Suite's own contacts.
 export type Outcomes = { registered: number; attended: number; booked: number; sold: number; suiteLeads: number; named?: number };
@@ -68,6 +78,8 @@ export type Report = {
   projections: { dailySpend: number; cpl: number | null; rows: Projection[]; limitNote: string | null };
   funnel: { stage: string; count: number; costEach: number | null }[] | null;
   checks: string[]; // things to look at that are not about a single ad
+  cycles: Cycle[]; // the open event cycle first, then the ones before it
+  months: Month[]; // running totals for each calendar month
 };
 
 const round = (n: number, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
@@ -172,6 +184,9 @@ export function buildReport(input: {
   priorRows?: AdRow[]; // the period before it, if there is one
   goals?: Goals;
   outcomes?: Outcomes | null;
+  signups?: Date[]; // when each sign-up arrived, from the Suite's own lead log
+  allRows?: AdRow[]; // every period on file, to count spend by event cycle and month
+  now?: Date;
 }): Report | null {
   const rows = input.rows;
   if (!rows.length) return null;
@@ -294,14 +309,21 @@ export function buildReport(input: {
   }
   if (!goals.targetCpl) checks.push("Set your target cost per lead (guided question 5) so every verdict compares with your own number.");
 
-  return { periodStart, periodEnd, days, totals, prior, ads, target: targetInfo, campaign: { verdict: cverdict, headline: cheadline, why: cwhy }, projections: { dailySpend, cpl, rows: rows2, limitNote }, funnel, checks };
+  const setup = cycleSetup(goals);
+  const when = input.now ?? new Date();
+  const spendRows = (input.allRows ?? rows).map((r) => ({ periodStart: r.periodStart, periodEnd: r.periodEnd, spend: r.spend }));
+  const cycles = setup ? buildCycles(setup, input.signups ?? [], spendRows, when) : [];
+  const months = buildMonths(setup ?? { anchor: "2026-01-01", days: 14, hour: 19, goal: null }, input.signups ?? [], spendRows, when).map((m) => (setup ? m : { ...m, events: [], goal: null }));
+  if (!setup && goals.goalLeads) checks.push("Tell me the date of your next event and how often you hold it (guided questions) so the sign-up goal is counted for each event, starting again at zero after each one.");
+
+  return { periodStart, periodEnd, days, totals, prior, ads, target: targetInfo, campaign: { verdict: cverdict, headline: cheadline, why: cwhy }, projections: { dailySpend, cpl, rows: rows2, limitNote }, funnel, checks, cycles, months };
 }
 
 // ---------------------------------------------------------------- guided questions
 
 export type Question = {
   id: string;
-  field?: "customerValue" | "goalLeads" | "goalBy" | "targetCpl" | "dailyBudget" | "monthlyLimit";
+  field?: "customerValue" | "goalLeads" | "eventAnchor" | "cycleDays" | "targetCpl" | "dailyBudget" | "monthlyLimit";
   kind: "choice" | "money" | "number" | "date" | "ad";
   text: string;
   why: string;
@@ -311,8 +333,10 @@ export type Question = {
 export const QUESTIONS: Question[] = [
   { id: "purpose", kind: "choice", text: "What do you want these ads to do?", why: "The right number to watch depends on the job. Sign-ups for an event are judged differently from calls booked or things sold.",
     choices: [{ value: "event", label: "Fill a live event (registrations)" }, { value: "calls", label: "Book calls or consultations" }, { value: "sales", label: "Sell something directly" }, { value: "list", label: "Grow my email list" }] },
-  { id: "goalLeads", field: "goalLeads", kind: "number", text: "How many sign-ups do you want from the ads?", why: "A goal turns the report into a pace check: are you on track or not?" },
-  { id: "goalBy", field: "goalBy", kind: "date", text: "By what date?", why: "The deadline decides how fast you need to go, and how much you can afford to wait for a slow ad." },
+  { id: "goalLeads", field: "goalLeads", kind: "number", text: "How many sign-ups do you want for each event?", why: "A goal turns the report into a pace check: are you on track for this event or not? The count starts again at zero after each event." },
+  { id: "eventDate", field: "eventAnchor", kind: "date", text: "What is the date of your next event, or the most recent one?", why: "Any one date of the event is enough. The report counts sign-ups for each event separately, and starts a fresh count when the event ends." },
+  { id: "cycleDays", field: "cycleDays", kind: "choice", text: "How often do you hold it?", why: "This decides how long each count runs before it starts again.",
+    choices: [{ value: "7", label: "Every week" }, { value: "14", label: "Every other week" }, { value: "28", label: "Every four weeks" }, { value: "0", label: "It is not tied to an event" }] },
   { id: "customerValue", field: "customerValue", kind: "money", text: "What is one new client worth to you in their first year? (dollars)", why: "This sets how much you can afford to pay to find one." },
   { id: "closeRate", kind: "number", text: "Out of 100 people who sign up, about how many become paying clients?", why: "If you are not sure, leave it blank and the report will use your real numbers once you have them. Most owners guess 1 to 5." },
   { id: "targetCpl", field: "targetCpl", kind: "money", text: "What is the most you would pay for one sign-up? (dollars)", why: "This is your yardstick. Every ad is judged against it. The suggestion below is half of your break-even, so each client earns back about twice what was spent." },
@@ -335,29 +359,25 @@ export function guidance(goals: Goals, report: Report | null): Guidance[] {
   const a = goals.answers;
   const be = breakEvenCpl(goals);
   if (be) out.push({ title: "Your break-even", text: `One client is worth ${money(goals.customerValue ?? 0)} and about ${a.closeRate} in 100 sign-ups become clients, so a sign-up is worth up to ${money(be)} to you. Paying less than that makes money; the suggested target is ${money(be / 2)}.` });
-  if (report && goals.goalLeads && goals.goalBy) {
-    const left = Math.max(0, daysBetween(report.periodEnd, goals.goalBy) - 1);
-    const perDay = report.totals.leads / report.days;
-    const needed = Math.max(0, goals.goalLeads - report.totals.leads);
-    if (needed === 0) out.push({ title: "Your sign-up goal", text: `You have reached your goal of ${goals.goalLeads}. Decide whether to keep going or to stop spending here.` });
-    else if (left <= 0) out.push({ title: "Your sign-up goal", text: `The date has passed and you are at ${report.totals.leads} of ${goals.goalLeads}.` });
-    else {
-      const pace = perDay * left;
-      const cost = report.totals.cpl ? needed * report.totals.cpl : null;
-      out.push({ title: "Your sign-up goal", text: `${report.totals.leads} of ${goals.goalLeads} so far with ${left} days left. At your current pace you would add about ${Math.round(pace)}, ${pace >= needed ? "enough to reach it." : `${Math.round(needed - pace)} short.`}${cost ? ` Reaching it at today's cost per lead would take about ${money(cost)} more.` : ""}` });
-    }
-  }
-  if (report && goals.goalLeads && goals.goalBy && goals.dailyBudget && report.totals.cpl) {
-    const left = Math.max(0, daysBetween(report.periodEnd, goals.goalBy) - 1);
-    const needed = Math.max(0, goals.goalLeads - report.totals.leads);
-    if (left > 0 && needed > 0) {
-      const spendNeeded = needed * report.totals.cpl;
-      const atBudget = (goals.dailyBudget * left) / report.totals.cpl;
+  const cur = report?.cycles.find((c) => c.current);
+  if (report && cur && goals.goalLeads) {
+    const goal = goals.goalLeads;
+    const eventNice = new Date(`${cur.eventDate}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+    const pace = cur.projected ?? 0;
+    const to = cur.signups >= goal ? "You have reached your goal for this event." : `At this pace you would reach about ${Math.round(pace)} by the event, ${pace >= goal ? "enough to get there." : `${Math.round(goal - pace)} short.`}`;
+    out.push({ title: `Your goal for the ${eventNice} event`, text: `${cur.signups} of ${goal} sign-ups so far, on day ${cur.dayNumber} of ${cur.daysTotal} with ${cur.daysLeft} day${cur.daysLeft === 1 ? "" : "s"} left. ${to} The count starts again at zero when the event ends.` });
+    const needed = Math.max(0, goal - cur.signups);
+    const cpl = report.totals.cpl;
+    if (goals.dailyBudget && cpl && cur.daysLeft > 0 && needed > 0) {
+      const spendNeeded = needed * cpl;
+      const atBudget = (goals.dailyBudget * cur.daysLeft) / cpl;
       out.push({
-        title: "Your daily budget and your goal",
-        text: `You need about ${needed} more sign-ups in ${left} days, which is roughly ${money(spendNeeded)} at today's cost per lead (${money(spendNeeded / left)} a day). Your ${money(goals.dailyBudget)} a day would bring about ${Math.round(atBudget)}, ${atBudget >= needed ? "enough to get there." : `${Math.round(needed - atBudget)} short, so the goal needs a higher daily budget, a lower cost per lead, or more time.`}${report.projections.dailySpend + 0.5 < goals.dailyBudget ? ` You are actually spending about ${money(report.projections.dailySpend)} a day, so the budget is not being used yet: check that your ads are delivering.` : ""}`,
+        title: "Your daily budget and this event",
+        text: `You need about ${needed} more sign-ups in ${cur.daysLeft} days, roughly ${money(spendNeeded)} at today's cost per lead (${money(spendNeeded / cur.daysLeft)} a day). Your ${money(goals.dailyBudget)} a day would bring about ${Math.round(atBudget)}, ${atBudget >= needed ? "enough to get there." : `${Math.round(needed - atBudget)} short, so the goal needs a higher daily budget, a lower cost per lead, or more time.`}${report.projections.dailySpend + 0.5 < goals.dailyBudget ? ` You are actually spending about ${money(report.projections.dailySpend)} a day, so the budget is not being used fully: check that your ads are delivering.` : ""}`,
       });
     }
+  } else if (goals.goalLeads && !cur) {
+    out.push({ title: "Your sign-up goal", text: `You want ${goals.goalLeads} sign-ups for each event. Tell me the date of your event and how often you hold it so I can count each event on its own.` });
   }
   if (a.quality === "early") out.push({ title: "Who is signing up", text: "It is too early to tell. After your next live event, look at who actually showed up and who booked, and answer this question again." });
   if (a.quality === "wrong") out.push({ title: "Wrong people are signing up", text: "More money will not fix this. Change the first line and the picture so they speak to the person you want, and tighten the audience. Judge ads by who shows up, not by the cheapest lead." });

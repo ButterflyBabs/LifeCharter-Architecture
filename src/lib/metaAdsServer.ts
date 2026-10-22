@@ -24,7 +24,7 @@ const toRow = (r: StatRow): AdRow => ({
 });
 
 export async function loadGoals(db: Db, planId: string): Promise<Goals> {
-  const { data } = await db.from("meta_ad_goals").select("target_cpl, daily_budget, customer_value, goal_leads, goal_by, monthly_limit, answers").eq("master_plan_id", planId).maybeSingle();
+  const { data } = await db.from("meta_ad_goals").select("target_cpl, daily_budget, customer_value, goal_leads, goal_by, monthly_limit, event_anchor, cycle_days, cycle_hour, answers").eq("master_plan_id", planId).maybeSingle();
   if (!data) return EMPTY_GOALS;
   const n = (v: unknown) => (v == null ? null : Number(v));
   return {
@@ -34,6 +34,9 @@ export async function loadGoals(db: Db, planId: string): Promise<Goals> {
     goalLeads: n(data.goal_leads),
     goalBy: (data.goal_by as string) ?? null,
     monthlyLimit: n(data.monthly_limit),
+    eventAnchor: (data.event_anchor as string) ?? null,
+    cycleDays: n(data.cycle_days),
+    cycleHour: n(data.cycle_hour),
     answers: (data.answers as Record<string, string>) ?? {},
   };
 }
@@ -64,6 +67,12 @@ export async function loadOutcomes(db: Db, planId: string, start: string, end: s
   return { suiteLeads: emails.length, named, registered: people.length, attended: has(attendedTag), booked: has(bookedTag), sold: has(soldTag) };
 }
 
+/** When each Meta lead reached the Suite (test and failed ones left out), for counting sign-ups by event. */
+export async function loadSignupTimes(db: Db, planId: string): Promise<Date[]> {
+  const { data } = await db.from("meta_leads").select("created_at, status").eq("master_plan_id", planId).or("source.is.null,source.neq.linkedin").not("status", "in", "(test,failed)").order("created_at", { ascending: false }).limit(5000);
+  return ((data ?? []) as { created_at: string }[]).map((r) => new Date(r.created_at));
+}
+
 export type ReportBundle = { report: Report; guidance: Guidance[]; goals: Goals; ageDays: number };
 
 /** The newest report this account has, built from the newest uploaded period and the one before it. */
@@ -79,7 +88,8 @@ export async function loadReport(db: Db, planId: string, today = new Date()): Pr
   const priorRows = priorEnd ? prior.filter((r) => r.periodEnd === priorEnd) : [];
   const goals = await loadGoals(db, planId);
   const outcomes = await loadOutcomes(db, planId, start, latestEnd);
-  const report = buildReport({ rows: latest, priorRows, goals, outcomes });
+  const signups = await loadSignupTimes(db, planId);
+  const report = buildReport({ rows: latest, priorRows, goals, outcomes, signups, allRows: all, now: today });
   if (!report) return null;
   const ageDays = Math.max(0, Math.floor((today.getTime() - Date.parse(`${latestEnd}T23:59:59Z`)) / 86_400_000));
   return { report, guidance: guidance(goals, report), goals, ageDays };

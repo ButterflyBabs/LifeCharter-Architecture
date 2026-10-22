@@ -133,11 +133,12 @@ test("a file without dates asks for them, and a file from the wrong tab is expla
 });
 
 test("the budget against the goal says how far short or how far ahead", () => {
-  const g: Goals = { ...EMPTY_GOALS, goalLeads: 30, goalBy: "2026-11-04", dailyBudget: 16, answers: { quality: "early", worthIt: "yes" } };
-  const r = buildReport({ rows, goals: g })!;
+  const g: Goals = { ...EMPTY_GOALS, goalLeads: 30, eventAnchor: "2026-10-22", cycleDays: 14, cycleHour: 19, dailyBudget: 16, answers: { quality: "early", worthIt: "yes" } };
+  const sign = Array.from({ length: 11 }, (_, i) => new Date(`2026-10-${String(10 + i).padStart(2, "0")}T18:00:00Z`));
+  const r = buildReport({ rows, goals: g, signups: sign, now: new Date("2026-10-22T14:00:00Z") })!;
   const gd = guidance(g, r);
-  const budget = gd.find((x) => x.title === "Your daily budget and your goal")!;
-  assert.match(budget.text, /19 more sign-ups in 14 days/);
+  const budget = gd.find((x) => x.title === "Your daily budget and this event")!;
+  assert.match(budget.text, /19 more sign-ups in 1 day/);
   assert.match(budget.text, /Your \$16\.00 a day would bring about/);
   assert.ok(gd.some((x) => x.title === "Who is signing up"));
   assert.ok(gd.some((x) => x.title === "Your answer and the numbers agree"));

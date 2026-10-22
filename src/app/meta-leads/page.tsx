@@ -12,6 +12,7 @@ import WeeklyReport from "./WeeklyReport";
 import GuidedQuestions from "./GuidedQuestions";
 import UploadAdsExport from "./UploadAdsExport";
 import { loadReport } from "@/lib/metaAdsServer";
+import { EMPTY_GOALS } from "@/lib/metaAdsReport";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function MetaLeadsPage() {
           <h3 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Add this week&apos;s numbers</h3>
           <UploadAdsExport />
           <h3 className="mt-6 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Guided questions: decide your next step</h3>
-          <GuidedQuestions goals={bundle?.goals ?? { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, answers: {} }} adNames={bundle?.report.ads.map((a) => a.adName) ?? []} guidance={bundle?.guidance ?? []} />
+          <GuidedQuestions goals={bundle?.goals ?? EMPTY_GOALS} adNames={bundle?.report.ads.map((a) => a.adName) ?? []} guidance={bundle?.guidance ?? []} />
         </section>
       )}
       <h2 className="mt-10 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Lead capture</h2>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { QUESTIONS, suggestedTargetCpl, breakEvenCpl, type Goals, type Guidance } from "@/lib/metaAdsReport";
 
-const FIELD_OF: Record<string, keyof Goals> = { goalLeads: "goalLeads", goalBy: "goalBy", customerValue: "customerValue", targetCpl: "targetCpl", dailyBudget: "dailyBudget", monthlyLimit: "monthlyLimit" };
+const FIELD_OF: Record<string, keyof Goals> = { goalLeads: "goalLeads", eventDate: "eventAnchor", cycleDays: "cycleDays", customerValue: "customerValue", targetCpl: "targetCpl", dailyBudget: "dailyBudget", monthlyLimit: "monthlyLimit" };
 
 function initial(goals: Goals): Record<string, string> {
   const out: Record<string, string> = { ...goals.answers };
