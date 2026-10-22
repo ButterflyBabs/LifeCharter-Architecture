@@ -244,21 +244,22 @@ export default function TravelPartnerWidget() {
     if (savedPos) setPos(JSON.parse(savedPos));
   }, []);
 
-  // A saved spot can fall off the screen (smaller window, other monitor, zoom): pull the pill
-  // or the open panel back inside the window.
+  // A saved spot can fall off the screen (smaller window, other monitor, zoom): when it does,
+  // drop it so the pill goes back to its usual place at the bottom right.
   useEffect(() => {
-    if (!pos) return;
+    if (!pos || dragging) return;
     const fit = () => {
       const r = widgetRef.current?.getBoundingClientRect();
       if (!r) return;
-      const x = Math.max(8, Math.min(pos.x, window.innerWidth - r.width - 8));
-      const y = Math.max(8, Math.min(pos.y, window.innerHeight - r.height - 8));
-      if (x !== pos.x || y !== pos.y) setPos({ x, y });
+      if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) {
+        setPos(null);
+        localStorage.removeItem("travelPartnerPos");
+      }
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, [pos, isOpen]);
+  }, [pos, isOpen, dragging]);
 
   // Global mouse handlers for dragging
   useEffect(() => {
@@ -389,7 +390,7 @@ export default function TravelPartnerWidget() {
       <div
         ref={widgetRef}
         style={getStyle()}
-        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
+        className="flex w-max items-center gap-2 whitespace-nowrap px-4 py-3 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
         onMouseDown={startDrag}
         onClick={() => {
           // Only open if user didn't drag
