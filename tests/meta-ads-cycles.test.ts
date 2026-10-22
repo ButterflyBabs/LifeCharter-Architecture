@@ -77,5 +77,5 @@ test("events that closed before any ads or sign-ups are left out of the list", (
   const c = buildCycles(setup, signups, spend, new Date("2026-10-22T23:00:00Z"));
   assert.deepEqual(c.map((x) => x.eventDate), ["2026-10-22"]);
   const d = buildCycles(setup, signups, spend, new Date("2026-11-20T18:00:00Z"));
-  assert.deepEqual(d.map((x) => x.eventDate), ["2026-11-19", "2026-11-05", "2026-10-22"]);
+  assert.deepEqual(d.map((x) => x.eventDate), ["2026-12-03", "2026-11-19", "2026-11-05", "2026-10-22"]); // Dec 3 is the open count after the Nov 19 event
 });
