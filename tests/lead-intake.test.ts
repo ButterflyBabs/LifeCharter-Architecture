@@ -54,3 +54,10 @@ test("Meta's dummy test leads are ignored", () => {
   assert.equal(isTestLead("dummy@x.com"), true);
   assert.equal(isTestLead("real@person.com"), false);
 });
+
+test("parseLead keeps the Ad ID Facebook sends and does not treat it as a form answer", () => {
+  const p = parseLead({ email: "a@b.co", full_name: "Ann Lee", ad_id: "52516325862848", ad_name: "" });
+  assert.equal(p.adId, "52516325862848");
+  assert.equal(p.ad, "");
+  assert.deepEqual(p.answers, {});
+});
