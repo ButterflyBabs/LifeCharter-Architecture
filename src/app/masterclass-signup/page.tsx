@@ -38,6 +38,7 @@ export default async function MasterclassSignupPage() {
       <h1 className="mt-2 text-3xl font-bold leading-tight text-[#1a2b4a] dark:text-[#F8F5F0]">The Command Shift MasterClass: From Hustle to Command</h1>
       <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend. Live on Zoom{soon} at noon Mountain.</p>
       <p className="mt-4 rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{next ? "Next session: " : ""}{when}</p>
+      <p className="mt-3 text-sm font-semibold text-[#8a6a15] dark:text-[#d9b95a]">Join live and get a free 2027 digital planner for founders.</p>
       <SignupForm />
       <p className="mt-6 text-sm text-[#5a6472] dark:text-[#b8c2cf]">
         Want to see what we&apos;ll cover first? <a className="font-semibold text-[#2E7C83] underline" href={LANDING}>Read about the MasterClass</a>.
