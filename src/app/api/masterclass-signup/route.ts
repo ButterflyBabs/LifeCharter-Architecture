@@ -11,6 +11,7 @@ import { advanceCards } from "@/lib/dmPipeline";
 import { logEvent } from "@/lib/crm";
 import { browserContext, metaEventId, sendMetaEvent } from "@/lib/metaCapi";
 import { attributionFor } from "@/lib/signupAttribution";
+import { toE164 } from "@/lib/sms";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,9 @@ export async function POST(request: Request) {
   const firstName = str(b.firstName, 80);
   const lastName = str(b.lastName, 80);
   const email = str(b.email, 200).toLowerCase();
+  // Texts only with a valid US/Canada mobile AND the ticked consent box (the exact wording is on the form).
+  const phone = toE164(str(b.phone, 40));
+  const smsOk = b.smsOk === true && !!phone;
   if (!firstName) return NextResponse.json({ error: "Please add your first name." }, { status: 400 });
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   if (!isZoomConfigured()) return NextResponse.json({ error: "Registration is unavailable right now. Please try again shortly." }, { status: 503 });
@@ -48,7 +52,11 @@ export async function POST(request: Request) {
     const db = createServerClient();
     const plan = await ownerMasterPlanId();
     if (plan) {
-      const c = await upsertContact({ masterPlanId: plan, email, firstName, lastName: lastName || null, source: "masterclass-signup", tags: attr.tags }, db);
+      const c = await upsertContact({ masterPlanId: plan, email, firstName, lastName: lastName || null, phone: smsOk ? phone : null, source: "masterclass-signup", tags: attr.tags }, db);
+      if (c && smsOk) {
+        await db.from("seq_contacts").update({ sms_consent_at: new Date().toISOString(), sms_opted_out_at: null }).eq("id", c.id);
+        await logEvent(plan, c.id, "form", "Agreed to MasterClass reminder texts (up to 5 per event)", { phone }, db).catch(() => {});
+      }
       if (c) await logEvent(plan, c.id, "form", `Registered for the MasterClass (${attr.summary})`, { attribution: attr.detail }, db).catch(() => {});
       const code = str(b._ref, 60) || cookies().get(AFF_COOKIE)?.value || "";
       if (c && code) {

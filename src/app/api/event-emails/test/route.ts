@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const b = (await request.json().catch(() => ({}))) as { event_key?: unknown; kind?: unknown };
   const ev = b.event_key;
   const kind = b.kind;
-  if (!isEventKey(ev) || !isEmailKind(kind)) return NextResponse.json({ error: "Pick an event (masterclass / incubator / founders-half-hour) and a kind (confirm / day_before / hour_before)." }, { status: 400 });
+  if (!isEventKey(ev) || !isEmailKind(kind)) return NextResponse.json({ error: "Pick an event (masterclass / incubator / founders-half-hour) and a kind (confirm / day_before / workbook / hour_before / ten_min / live_now)." }, { status: 400 });
   const db = createServerClient();
   const tpl = (await eventTemplates(db, ev)).find((t) => t.kind === kind);
   if (!tpl) return NextResponse.json({ error: "That template doesn't exist yet." }, { status: 404 });
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const { data: me } = plan ? await db.from("seq_contacts").select("id").eq("master_plan_id", plan).eq("email", ALIGNMENT_ARCHITECT_EMAIL).maybeSingle() : { data: null };
   const contactId = (me?.id as string) || "00000000-0000-0000-0000-000000000000";
 
-  const mail = renderEventEmail({ event: ev, template: tpl, occurrenceStart: start, joinUrl: "https://zoom.us/j/test", contact: { id: contactId, first_name: "Babs" } });
+  const mail = renderEventEmail({ kind, event: ev, template: tpl, occurrenceStart: start, joinUrl: "https://zoom.us/j/test", contact: { id: contactId, first_name: "Babs" } });
   const r = await sendRendered(EVENT_SENDERS[ev], ALIGNMENT_ARCHITECT_EMAIL, contactId, { ...mail, subject: `[Test] ${mail.subject}` });
   if (!r.ok) return NextResponse.json({ error: r.error || "Couldn't send the test." }, { status: 502 });
   return NextResponse.json({ ok: true, to: ALIGNMENT_ARCHITECT_EMAIL, subject: `[Test] ${mail.subject}`, occurrence: start });

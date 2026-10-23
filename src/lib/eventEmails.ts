@@ -2,6 +2,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { renderStep } from "@/lib/sequences/render";
 import { sendRendered } from "@/lib/sequences/engine";
 import { logEvent } from "@/lib/crm";
+import { personalLink } from "@/lib/shortLinks";
+import { sendSms, smsAccount } from "@/lib/smsServer";
+import { dueTextKinds, textBody, textable } from "@/lib/eventTexts";
 import type { ZoomOccurrence, ZoomRegistrant, ZoomSchedule } from "@/lib/zoom";
 
 // The Suite's own confirmation + reminder emails for the two Zoom events,
@@ -21,7 +24,7 @@ type Db = ReturnType<typeof createServerClient>;
 
 export const EVENT_KEYS = ["masterclass", "incubator", "founders-half-hour"] as const;
 export type EventKey = (typeof EVENT_KEYS)[number];
-export const EMAIL_KINDS = ["confirm", "day_before", "hour_before"] as const;
+export const EMAIL_KINDS = ["confirm", "day_before", "workbook", "hour_before", "ten_min", "live_now"] as const;
 export type EmailKind = (typeof EMAIL_KINDS)[number];
 
 export const EVENT_SENDERS: Record<EventKey, { from_name: string; from_email: string; reply_to: string; brand: string; title: string }> = {
@@ -30,7 +33,8 @@ export const EVENT_SENDERS: Record<EventKey, { from_name: string; from_email: st
   "founders-half-hour": { from_name: "AmiLynne Carroll", from_email: "hello@lccommandsuite.com", reply_to: "support@lccommandsuite.com", brand: "Founder's Half Hour", title: "Founder's Half Hour" },
 };
 
-const KIND_LABEL: Record<EmailKind, string> = { confirm: "confirmation", day_before: "day-before reminder", hour_before: "hour-before reminder" };
+const KIND_LABEL: Record<EmailKind, string> = { confirm: "confirmation", day_before: "day-before reminder", workbook: "workbook email", hour_before: "hour-before reminder", ten_min: "10-minute reminder", live_now: "live-now email" };
+export const WORKBOOK_URL = "https://landingpage.lccommandsuite.com/masterclass-workbook.pdf";
 
 export const isEventKey = (k: unknown): k is EventKey => typeof k === "string" && (EVENT_KEYS as readonly string[]).includes(k);
 export const isEmailKind = (k: unknown): k is EmailKind => typeof k === "string" && (EMAIL_KINDS as readonly string[]).includes(k);
@@ -103,7 +107,7 @@ export function formatEventDateTime(startIso: string): string {
 // Fills the event-only field; renderStep then fills {{first_name}} / {{greeting}}.
 const fillEvent = (s: string | null | undefined, when: string) => (s ?? "").replace(/\{\{\s*event_date_time\s*\}\}/gi, when);
 
-export function renderEventEmail(o: { event: EventKey; template: Pick<EventTemplate, "subject" | "preview" | "body" | "button_label">; occurrenceStart: string; joinUrl: string; contact: { id: string; first_name: string | null } }) {
+export function renderEventEmail(o: { kind?: EmailKind; event: EventKey; template: Pick<EventTemplate, "subject" | "preview" | "body" | "button_label">; occurrenceStart: string; joinUrl: string; contact: { id: string; first_name: string | null } }) {
   const when = formatEventDateTime(o.occurrenceStart);
   const t = o.template;
   return renderStep({
@@ -112,7 +116,8 @@ export function renderEventEmail(o: { event: EventKey; template: Pick<EventTempl
     preview: fillEvent(t.preview, when),
     body: fillEvent(t.body, when),
     buttonLabel: t.button_label ? fillEvent(t.button_label, when) : null,
-    buttonUrl: o.joinUrl || null,
+    // The workbook email's button is the workbook; every other button is the registrant's own Zoom link.
+    buttonUrl: o.kind === "workbook" ? WORKBOOK_URL : o.joinUrl || null,
     contact: o.contact,
   });
 }
@@ -137,7 +142,10 @@ export function dueKinds(startIso: string, now = new Date()): EmailKind[] {
   const t = now.getTime();
   const out: EmailKind[] = ["confirm"];
   if (t >= start - 24 * H && t < start - 2 * H) out.push("day_before");
+  if (t >= start - 3 * H && t < start - 2 * H) out.push("workbook"); // about 3 hours before (9 AM for a noon class)
   if (t >= start - 60 * M && t < start + 10 * M) out.push("hour_before");
+  if (t >= start - 12 * M && t < start - 4 * M) out.push("ten_min");
+  if (t >= start && t < start + 9 * M) out.push("live_now");
   return out;
 }
 
@@ -167,6 +175,7 @@ export interface SendSummary {
   sent: Partial<Record<EmailKind, number>>;
   skipped: number;
   failed: number;
+  texts?: { sent: number; failed: number };
   note?: string;
 }
 
@@ -183,7 +192,7 @@ export async function sendDueEventEmails(o: {
 }): Promise<SendSummary> {
   const { db, event } = o;
   const now = o.now ?? new Date();
-  const summary: SendSummary = { eligible: 0, sent: {}, skipped: 0, failed: 0 };
+  const summary: SendSummary = { eligible: 0, sent: {}, skipped: 0, failed: 0, texts: { sent: 0, failed: 0 } };
   if (!o.housePlan) return { ...summary, note: "no house account" };
   const live = new Map(o.templates.filter((t) => t.active).map((t) => [t.kind, t]));
   if (!live.size || !o.registrants.length) return summary;
@@ -208,10 +217,10 @@ export async function sendDueEventEmails(o: {
 
   const emails = Array.from(new Set(mine.map((r) => r.email.trim().toLowerCase())));
   const [{ data: contacts }, { data: prior }] = await Promise.all([
-    db.from("seq_contacts").select("id, email, first_name, unsubscribed_at").eq("master_plan_id", o.housePlan).in("email", emails),
+    db.from("seq_contacts").select("id, email, first_name, unsubscribed_at, phone, sms_consent_at, sms_opted_out_at").eq("master_plan_id", o.housePlan).in("email", emails),
     db.from("event_email_sends").select("zoom_registrant_id, kind, occurrence_start, status, sent_at").eq("event_key", event).in("zoom_registrant_id", mine.map((r) => r.zoom_registrant_id)),
   ]);
-  const contactByEmail = new Map(((contacts ?? []) as { id: string; email: string; first_name: string | null; unsubscribed_at: string | null }[]).map((c) => [c.email.toLowerCase(), c]));
+  const contactByEmail = new Map(((contacts ?? []) as { id: string; email: string; first_name: string | null; unsubscribed_at: string | null; phone: string | null; sms_consent_at: string | null; sms_opted_out_at: string | null }[]).map((c) => [c.email.toLowerCase(), c]));
   const priorRows = (prior ?? []) as { zoom_registrant_id: string; kind: EmailKind; occurrence_start: string | null; status: string; sent_at: string | null }[];
   const sameTime = (a: string | null, b: string | null) => (a && b ? new Date(a).getTime() === new Date(b).getTime() : a === b);
   const done = (id: string, kind: EmailKind, occ: string | null) => priorRows.some((p) => p.zoom_registrant_id === id && p.kind === kind && sameTime(p.occurrence_start, occ));
@@ -219,6 +228,7 @@ export async function sendDueEventEmails(o: {
   for (const p of priorRows) if (p.kind === "confirm" && p.status === "sent" && p.sent_at) confirmSentAt.set(p.zoom_registrant_id, new Date(p.sent_at).getTime());
 
   const sender = EVENT_SENDERS[event];
+  const smsOn = event === "masterclass" && (await smsAccount(db, o.housePlan))?.status === "approved";
   for (const row of mine) {
     const reg = byId.get(row.zoom_registrant_id);
     const contact = contactByEmail.get(row.email.trim().toLowerCase());
@@ -240,9 +250,13 @@ export async function sendDueEventEmails(o: {
         ? "unsubscribed"
         : kind === "day_before" && confirmedAgo < 6 * H
           ? "confirmation sent within 6 hours"
-          : kind === "hour_before" && confirmedAgo < 20 * M
-            ? "confirmation sent within 20 minutes"
-            : null;
+          : kind === "workbook" && confirmedAgo < 3 * H
+            ? "confirmation (with the workbook link) sent within 3 hours"
+            : kind === "hour_before" && confirmedAgo < 20 * M
+              ? "confirmation sent within 20 minutes"
+              : kind === "ten_min" && confirmedAgo < 8 * M
+                ? "confirmation sent within 8 minutes"
+                : null;
       if (skipReason) {
         if (await claim(db, { ...base, status: "skipped", error: skipReason })) summary.skipped++;
         continue;
@@ -250,7 +264,7 @@ export async function sendDueEventEmails(o: {
 
       const id = await claim(db, { ...base, status: "claimed" });
       if (!id) continue; // another run has it
-      const mail = renderEventEmail({ event, template: tpl, occurrenceStart: occ.start, joinUrl: reg.joinUrl, contact: { id: contact.id, first_name: contact.first_name || reg.firstName || null } });
+      const mail = renderEventEmail({ kind, event, template: tpl, occurrenceStart: occ.start, joinUrl: reg.joinUrl, contact: { id: contact.id, first_name: contact.first_name || reg.firstName || null } });
       const r = await sendRendered(sender, contact.email, contact.id, mail);
       const sentAt = new Date().toISOString();
       await db
@@ -263,6 +277,20 @@ export async function sendDueEventEmails(o: {
         await logEvent(o.housePlan, contact.id, "email", `${sender.title} ${KIND_LABEL[kind]}: “${mail.subject}”`, { event, kind, occurrence: occ.start, resendId: r.id ?? null }, db).catch(() => {});
       } else {
         summary.failed++;
+      }
+    }
+
+    // Class-day texts (MasterClass only): only people who ticked "text me", once the account's number is approved.
+    if (smsOn) {
+      const to = textable(contact);
+      for (const kind of to && !contact.unsubscribed_at ? dueTextKinds(occ.start, now) : []) {
+        const { error: claimErr } = await db.from("event_sms_sends").insert({ zoom_registrant_id: reg.id, event_key: event, kind, occurrence_start: occ.start, contact_id: contact.id, status: "claimed" });
+        if (claimErr) continue; // already texted (or another run has it)
+        const link = kind === "workbook" ? await personalLink(db, o.housePlan, { contactId: contact.id, purpose: "workbook", url: WORKBOOK_URL, title: "Workbook (class-day text)" }) : await personalLink(db, o.housePlan, { contactId: contact.id, purpose: "join", url: reg.joinUrl, title: "Join (class-day text)" });
+        const r = await sendSms(db, o.housePlan, { to: to!, body: textBody(kind, { startIso: occ.start, link }), kind: "reminder", contactId: contact.id });
+        await db.from("event_sms_sends").update(r.ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: r.error.slice(0, 300) }).eq("zoom_registrant_id", reg.id).eq("kind", kind).eq("occurrence_start", occ.start);
+        if (r.ok) summary.texts!.sent++;
+        else summary.texts!.failed++;
       }
     }
   }

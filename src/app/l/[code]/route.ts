@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { slugCode } from "@/lib/shortLinks";
+import { logEvent } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { code: string
   const db = createServerClient();
   const code = slugCode(params.code);
   const { data: link } = code
-    ? await db.from("short_links").select("id, master_plan_id, destination_url, active").eq("code", code).maybeSingle()
+    ? await db.from("short_links").select("id, master_plan_id, destination_url, active, contact_id, purpose").eq("code", code).maybeSingle()
     : { data: null };
   if (!link || !link.active) return new NextResponse("Not found.", { status: 404 });
 
@@ -25,6 +26,16 @@ export async function GET(request: Request, { params }: { params: { code: string
       .from("short_link_clicks")
       .insert({ short_link_id: link.id, master_plan_id: link.master_plan_id, referrer: (request.headers.get("referer") || "").slice(0, 300) || null });
     await db.rpc("increment_short_link_clicks", { p_id: link.id });
+    // A personal link (class-day text): tag who clicked, once.
+    if (link.contact_id && (link.purpose === "join" || link.purpose === "workbook")) {
+      const tag = link.purpose === "join" ? "clicked-join-live" : "clicked-workbook";
+      const { data: c } = await db.from("seq_contacts").select("tags").eq("id", link.contact_id).maybeSingle();
+      const tags = ((c?.tags as string[] | null) ?? []);
+      if (c && !tags.includes(tag)) {
+        await db.from("seq_contacts").update({ tags: [...tags, tag] }).eq("id", link.contact_id);
+        await logEvent(link.master_plan_id as string, link.contact_id as string, "tag", link.purpose === "join" ? "Clicked their join link (class-day text)" : "Clicked their workbook link (class-day text)", { code }, db);
+      }
+    }
   } catch {
     /* never block the redirect on the click log */
   }

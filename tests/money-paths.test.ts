@@ -6,6 +6,7 @@ import { isUpgrade, planOfSubscription, PLAN_RANK } from "../src/lib/planUpgrade
 import { addMonths, trialEndTag, trialEndFor } from "../src/lib/preFounderTrial";
 import { offerRow } from "../src/lib/sales/offers";
 import { dueKinds, formatEventDateTime } from "../src/lib/eventEmails";
+import { classTimeMT, dueTextKinds, textBody, textable } from "../src/lib/eventTexts";
 import { sessionTag, scheduledSession } from "../src/lib/masterclass/followUp";
 import { textToBlocks } from "../src/lib/plans/export/model";
 
@@ -79,6 +80,29 @@ test("event emails: confirmation always due; day-before 24h to 2h; hour-before 6
   assert.deepEqual(at("2026-10-15T22:15:00Z"), ["confirm", "hour_before"]);
   assert.deepEqual(at("2026-10-16T00:00:00Z"), ["confirm"]); // an hour after the start
   assert.match(formatEventDateTime(start), /5:00 pm MT \/ 7:00 pm ET/);
+});
+
+test("class-day emails and texts: workbook 3h before, 10 minutes, live; texts need consent", () => {
+  const start = "2026-10-28T18:00:00Z"; // noon MDT
+  const em = (iso: string) => dueKinds(start, new Date(iso));
+  assert.deepEqual(em("2026-10-28T15:30:00Z"), ["confirm", "day_before", "workbook"]);
+  assert.deepEqual(em("2026-10-28T17:52:00Z"), ["confirm", "hour_before", "ten_min"]);
+  assert.deepEqual(em("2026-10-28T18:03:00Z"), ["confirm", "hour_before", "live_now"]);
+  const tx = (iso: string) => dueTextKinds(start, new Date(iso));
+  assert.deepEqual(tx("2026-10-28T15:30:00Z"), ["workbook"]);
+  assert.deepEqual(tx("2026-10-28T17:00:00Z"), ["hour_before"]);
+  assert.deepEqual(tx("2026-10-28T17:30:00Z"), []); // between the hour and the 10-minute text
+  assert.deepEqual(tx("2026-10-28T17:52:00Z"), ["ten_min"]);
+  assert.deepEqual(tx("2026-10-28T18:02:00Z"), ["live_now"]);
+  assert.equal(classTimeMT(start), "noon MT");
+  assert.equal(classTimeMT("2026-10-28T20:30:00Z"), "2:30 PM MT");
+  assert.match(textBody("hour_before", { startIso: start, link: "https://lccommandsuite.com/l/abc234" }), /^LifeCharter: your MasterClass starts at noon MT, in about an hour\. Join here: https:\/\/lccommandsuite\.com\/l\/abc234 Reply STOP to opt out\.$/);
+  assert.ok(textBody("workbook", { startIso: start, link: "x" }).length < 160 + 40);
+  const ok = { phone: "(303) 555-0123", sms_consent_at: "2026-10-20T00:00:00Z", sms_opted_out_at: null };
+  assert.equal(textable(ok), "+13035550123");
+  assert.equal(textable({ ...ok, sms_consent_at: null }), null); // never ticked "text me"
+  assert.equal(textable({ ...ok, sms_opted_out_at: "2026-10-21T00:00:00Z" }), null); // replied STOP
+  assert.equal(textable({ ...ok, phone: "12" }), null);
 });
 
 test("session tags use Mountain-time dates and the event prefix", () => {

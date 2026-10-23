@@ -11,7 +11,7 @@ import { logEvent } from "@/lib/crm";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const KIND_LABEL = { confirm: "confirmation", day_before: "day-before reminder", hour_before: "hour-before reminder" } as const;
+const KIND_LABEL = { confirm: "confirmation", day_before: "day-before reminder", workbook: "workbook email", hour_before: "hour-before reminder", ten_min: "10-minute reminder", live_now: "live-now email" } as const;
 
 // Owner-only: POST { event_key, kind, email } sends that one event email (confirmation, day-before or hour-before)
 // to one registrant right now, with their own Zoom join link and their session's date and time. It is a one-off:
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   }
   if (!start) return NextResponse.json({ error: "Couldn't find the session's date from Zoom just now. Please try again in a minute." }, { status: 502 });
 
-  const mail = renderEventEmail({ event: ev, template: tpl, occurrenceStart: start, joinUrl: reg.join_url as string, contact: { id: contact.id as string, first_name: (contact.first_name as string | null) ?? null } });
+  const mail = renderEventEmail({ kind, event: ev, template: tpl, occurrenceStart: start, joinUrl: reg.join_url as string, contact: { id: contact.id as string, first_name: (contact.first_name as string | null) ?? null } });
   const r = await sendRendered(EVENT_SENDERS[ev], email, contact.id as string, mail);
   if (!r.ok) return NextResponse.json({ error: r.error || "Couldn't send." }, { status: 502 });
   await logEvent(plan, contact.id as string, "email", `${EVENT_SENDERS[ev].title} ${KIND_LABEL[kind]} resent: “${mail.subject}”`, { event: ev, kind, occurrence: start, resend: true }, db).catch(() => {});

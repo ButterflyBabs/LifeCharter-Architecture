@@ -8,8 +8,8 @@ type Tpl = { event_key: string; kind: string; subject: string; active: boolean }
 type Ev = { event_key: string; templates: Tpl[]; live?: boolean };
 
 const EVENT_NAME: Record<string, string> = { masterclass: "Command Shift MasterClass", incubator: "LifeCharter Incubator", "founders-half-hour": "Founder's Half Hour" };
-const KIND_NAME: Record<string, string> = { confirm: "Confirmation (right after they register)", day_before: "Reminder (the day before)", hour_before: "Reminder (one hour before)" };
-const KINDS = ["confirm", "day_before", "hour_before"];
+const KIND_NAME: Record<string, string> = { confirm: "Confirmation (right after they register)", day_before: "Reminder (the day before)", workbook: "Workbook email (about 3 hours before)", hour_before: "Reminder (one hour before)", ten_min: "Reminder (10 minutes before)", live_now: "We are live (class start)" };
+const KINDS = ["confirm", "day_before", "workbook", "hour_before", "ten_min", "live_now"];
 
 // The confirmation and reminder emails for the Zoom events (MasterClass, Incubator). They live here with
 // the other emails, but they are sent by their own engine: each goes out on the event's clock (right

@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/tracking";
 const box = "w-full rounded-lg border border-[#1a2b4a]/25 bg-white px-3 py-2.5 text-base text-[#1a2b4a] dark:bg-[#1a2b4a]/40 dark:text-[#F8F5F0]";
 
 export default function SignupForm() {
-  const [f, setF] = useState({ firstName: "", lastName: "", email: "", _hp: "" });
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", smsOk: false, _hp: "" });
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [err, setErr] = useState("");
 
@@ -53,6 +53,13 @@ export default function SignupForm() {
         <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Last name<input className={box} value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} autoComplete="family-name" /></label>
       </div>
       <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Email<input type="email" className={box} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} autoComplete="email" required /></label>
+      <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Mobile number <span className="font-normal text-[#5a6472] dark:text-[#b8c2cf]">(optional, US or Canada)</span><input type="tel" inputMode="tel" className={box} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} autoComplete="tel" /></label>
+      {f.phone.trim() && (
+        <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+          <input type="checkbox" className="mt-1 h-4 w-4" checked={f.smsOk} onChange={(e) => setF({ ...f, smsOk: e.target.checked })} />
+          <span>Yes, text me my reminders for this MasterClass: up to 5 texts per event, from LifeCharter. Message and data rates may apply. Reply STOP to opt out.</span>
+        </label>
+      )}
       <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" value={f._hp} onChange={(e) => setF({ ...f, _hp: e.target.value })} name="website" />
       {err && <p role="alert" className="text-sm text-[#8a2f2f]">{err}</p>}
       <button disabled={state === "busy"} className="w-full rounded-full bg-[#1a2b4a] px-5 py-3 text-base font-semibold text-[#F8F5F0] disabled:opacity-60 dark:bg-[#c9a227] dark:text-[#1a2b4a]">{state === "busy" ? "Saving your seat…" : "Save my seat"}</button>

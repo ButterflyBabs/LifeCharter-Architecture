@@ -57,3 +57,15 @@ export function normalizeDestination(raw: string): string | null {
     return null;
   }
 }
+
+// One short link per person per purpose ("join" the Zoom class, "workbook"), so a click can be tied to the contact
+// (tagged clicked-join-live / clicked-workbook by the /l/<code> redirect). Reuses the link if it already exists.
+export async function personalLink(db: Db, planId: string, o: { contactId: string; purpose: "join" | "workbook"; url: string; title?: string }): Promise<string> {
+  const { data: have } = await db.from("short_links").select("code").eq("master_plan_id", planId).eq("contact_id", o.contactId).eq("purpose", o.purpose).eq("destination_url", o.url).maybeSingle();
+  const base = process.env.NEXT_PUBLIC_APP_URL || "https://lccommandsuite.com";
+  if (have?.code) return `${base}/l/${have.code}`;
+  const code = await uniqueShortCode(db);
+  const { error } = await db.from("short_links").insert({ master_plan_id: planId, code, destination_url: o.url, title: o.title ?? null, contact_id: o.contactId, purpose: o.purpose });
+  if (error) return o.url; // never block a reminder on the shortener: send the full link
+  return `${base}/l/${code}`;
+}
