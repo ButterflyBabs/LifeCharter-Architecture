@@ -24,12 +24,19 @@ export default async function MasterclassSignupPage() {
     ? new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/Denver" }).format(new Date(next)) +
       " at " +
       new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Denver", timeZoneName: "short" }).format(new Date(next))
-    : "Every Wednesday at 12:00 PM Mountain Time";
+    : "Wednesday at 12:00 PM Mountain Time";
+  const soon = (() => {
+    if (!next) return "";
+    const day = (ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date(ms));
+    const days = Math.round((Date.parse(day(new Date(next).getTime())) - Date.parse(day(Date.now()))) / 86_400_000);
+    if (days <= 0) return " today";
+    return days <= 6 ? " this Wednesday" : "";
+  })();
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
       <p className="text-xs font-semibold uppercase tracking-widest text-[#a8812b]">Free live MasterClass · 60 minutes</p>
       <h1 className="mt-2 text-3xl font-bold leading-tight text-[#1a2b4a] dark:text-[#F8F5F0]">The Command Shift MasterClass: From Hustle to Command</h1>
-      <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend. Live on Zoom every Wednesday at noon Mountain.</p>
+      <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend. Live on Zoom{soon} at noon Mountain.</p>
       <p className="mt-4 rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{next ? "Next session: " : ""}{when}</p>
       <SignupForm />
       <p className="mt-6 text-sm text-[#5a6472] dark:text-[#b8c2cf]">
