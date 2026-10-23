@@ -15,9 +15,9 @@ const base = (over: Partial<FunnelInput>): FunnelInput => ({
   ...over,
 });
 
-test("Oct 8 is held, Oct 22 is next, Nov 5 is upcoming", () => {
+test("Oct 8 is held, Oct 22 is next, Oct 28 (the first Wednesday at noon) is upcoming", () => {
   const s = computeFunnel(base({}));
-  assert.deepEqual(s.map((x) => [x.date, x.state]), [["2026-10-08", "held"], ["2026-10-22", "next"], ["2026-11-05", "upcoming"]]);
+  assert.deepEqual(s.map((x) => [x.date, x.state]), [["2026-10-08", "held"], ["2026-10-22", "next"], ["2026-10-28", "upcoming"]]);
 });
 
 test("registrations since the previous session go to the next session; test addresses are ignored", () => {
@@ -74,7 +74,7 @@ test("registrations by event: grouped by session, newest first, returning people
   });
   const sessions = computeFunnel(input);
   const ev = registrationsByEvent(input, sessions, new Map([["john@x.com", { name: "John", tags: ["from-linkedin"] }]]));
-  assert.deepEqual(ev.map((e) => e.date), ["2026-11-05", "2026-10-22", "2026-10-08"]);
+  assert.deepEqual(ev.map((e) => e.date), ["2026-10-28", "2026-10-22", "2026-10-08"]);
   const oct22 = ev.find((e) => e.date === "2026-10-22")!;
   assert.equal(oct22.rows.length, 2);
   assert.equal(oct22.rows.find((r) => r.email === "john@x.com")!.returning, true);
@@ -95,4 +95,15 @@ test("registration form answers are kept by label and blanks are dropped", () =>
     custom_questions: [{ title: "What do you most want help with?", value: "Hiring" }, { title: "Empty", value: " " }],
   });
   assert.deepEqual(d, { Phone: "555 111 2222", Organization: "Acme", Country: "US", "What do you most want help with?": "Hiring" });
+});
+
+test("the weekly run starts at noon Mountain, skips Nov 25, Dec 23 and Dec 30, and the old dates stay at 5pm", async () => {
+  const { startMT } = await import("../src/lib/masterclass/results");
+  assert.equal(startMT("2026-10-22").toISOString(), "2026-10-22T23:00:00.000Z"); // Thursday 5pm MDT
+  assert.equal(startMT("2026-10-28").toISOString(), "2026-10-28T18:00:00.000Z"); // Wednesday noon MDT
+  assert.equal(startMT("2026-11-04").toISOString(), "2026-11-04T19:00:00.000Z"); // Wednesday noon MST
+  const s = computeFunnel(base({ now: new Date("2026-11-18T22:00:00Z") }));
+  const dates = s.map((x) => x.date);
+  assert.ok(dates.includes("2026-11-18"));
+  assert.ok(!dates.includes("2026-11-25"));
 });

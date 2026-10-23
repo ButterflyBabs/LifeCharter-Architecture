@@ -5,7 +5,7 @@ import SignupForm from "./SignupForm";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Save your seat: The Command Shift MasterClass",
-  description: "Free live MasterClass with AmiLynne 'Babs' Carroll: From Hustle to Command. 90 minutes, online.",
+  description: "Free live MasterClass with AmiLynne 'Babs' Carroll: From Hustle to Command. 60 minutes, online.",
 };
 
 const LANDING = "https://start.lccommandsuite.com/masterclass";
@@ -24,10 +24,10 @@ export default async function MasterclassSignupPage() {
     ? new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/Denver" }).format(new Date(next)) +
       " at " +
       new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Denver", timeZoneName: "short" }).format(new Date(next))
-    : "Every other Thursday at 5:00 PM Mountain Time";
+    : "Every Wednesday at 12:00 PM Mountain Time";
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
-      <p className="text-xs font-semibold uppercase tracking-widest text-[#a8812b]">Free live MasterClass · 90 minutes</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#a8812b]">Free live MasterClass · 60 minutes</p>
       <h1 className="mt-2 text-3xl font-bold leading-tight text-[#1a2b4a] dark:text-[#F8F5F0]">The Command Shift MasterClass: From Hustle to Command</h1>
       <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend, and a replay goes to everyone who registers.</p>
       <p className="mt-4 rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{next ? "Next session: " : ""}{when}</p>

@@ -3,12 +3,13 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
 
 // MasterClass performance: one funnel per session, and the series event to event (Babs approved 2026-09-27;
 // funnel per session asked for 2026-10-11).
-// Sessions: every other Thursday at 5pm MT, starting Oct 8, 2026 (Babs, 2026-10-05; none ran before
-// that). Add a date to SKIP if a session is cancelled.
+// Sessions: every other Thursday at 5pm MT from Oct 8, 2026 (Babs, 2026-10-05), then WEEKLY on Wednesdays at noon MT,
+// 60 minutes, from Oct 28, 2026 (soft open) and Nov 4 (first public class) (Babs, 2026-10-23). Add a date to SKIP if a
+// session is cancelled.
 const FIRST_SESSION = "2026-10-08";
-const LAST_SESSION = "2027-12-30";
-const EVERY_DAYS = 14;
-const SKIP: string[] = [];
+const WEEKLY_FROM = "2026-10-28"; // the first Wednesday-noon class; earlier dates stay on the old Thursday 5pm schedule
+const LAST_SESSION = "2027-12-29";
+const SKIP: string[] = ["2026-11-25", "2026-12-23", "2026-12-30"]; // Thanksgiving week and the two holiday weeks
 const CREDIT_DAYS = 14; // a booking or sale counts for the most recent session within this many days (the follow-up series runs two weeks)
 const UPCOMING_SHOWN = 2; // how many sessions ahead are tracked as they fill
 export const REGISTRATION_GOAL = 120; // her goal per session: 80 in the room at about two in three attendance, two sessions a month (2026-10-11; was 30, then 60)
@@ -28,14 +29,25 @@ export function addDays(iso: string, n: number) {
 function todayMT(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(now);
 }
-/** 5:00pm Mountain on a date, as a UTC instant (handles daylight saving). */
-export function fivePmMT(date: string) {
+/** When a session starts in Mountain time, as a UTC instant (handles daylight saving): 5:00pm before the weekly run, noon from it. */
+export function startMT(date: string) {
+  const want = date >= WEEKLY_FROM ? 12 : 17;
   for (const offset of [6, 7]) {
-    const guess = new Date(`${date}T${String(17 + offset).padStart(2, "0")}:00:00Z`);
+    const guess = new Date(`${date}T${String(want + offset).padStart(2, "0")}:00:00Z`);
     const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", hour: "numeric", hour12: false }).format(guess)) % 24;
-    if (hour === 17) return guess;
+    if (hour === want) return guess;
   }
-  return new Date(`${date}T23:00:00Z`);
+  return new Date(`${date}T${String(want + 6).padStart(2, "0")}:00:00Z`);
+}
+/** Kept under its old name for callers that still use it. */
+export const fivePmMT = startMT;
+
+/** Every session date in order: every other Thursday up to the weekly run, then every Wednesday. */
+function sessionDates(): string[] {
+  const out: string[] = [];
+  for (let d = FIRST_SESSION; d < WEEKLY_FROM; d = addDays(d, 14)) out.push(d);
+  for (let d = WEEKLY_FROM; d <= LAST_SESSION; d = addDays(d, 7)) out.push(d);
+  return out.filter((d) => !SKIP.includes(d));
 }
 
 export interface FunnelInput {
@@ -81,10 +93,9 @@ export function computeFunnel(inp: FunnelInput): SessionRow[] {
   const today = todayMT(inp.now);
   const held: string[] = [];
   const ahead: string[] = [];
-  for (let d = FIRST_SESSION; d <= LAST_SESSION; d = addDays(d, EVERY_DAYS)) {
-    if (SKIP.includes(d)) continue;
+  for (const d of sessionDates()) {
     // A session counts as held two hours after it starts.
-    if (fivePmMT(d).getTime() + 2 * 3600_000 <= inp.now.getTime()) held.push(d);
+    if (startMT(d).getTime() + 2 * 3600_000 <= inp.now.getTime()) held.push(d);
     else if (ahead.length < UPCOMING_SHOWN) ahead.push(d);
     else break;
   }
@@ -97,10 +108,10 @@ export function computeFunnel(inp: FunnelInput): SessionRow[] {
   const spends = inp.adSpend.filter((s) => s.occurred_on >= ADS_START);
 
   return dates.map((date, idx) => {
-    const start = fivePmMT(date).getTime();
+    const start = startMT(date).getTime();
     const prevDate = idx > 0 ? dates[idx - 1] : null;
-    const prevStart = prevDate ? fivePmMT(prevDate).getTime() : 0;
-    const nextStart = idx < dates.length - 1 ? fivePmMT(dates[idx + 1]).getTime() : Infinity;
+    const prevStart = prevDate ? startMT(prevDate).getTime() : 0;
+    const nextStart = idx < dates.length - 1 ? startMT(dates[idx + 1]).getTime() : Infinity;
     const creditEnd = Math.min(start + CREDIT_DAYS * 86400_000, nextStart);
     const inCredit = (iso: string) => {
       const t = new Date(iso).getTime();
@@ -194,8 +205,8 @@ export function registrationsByEvent(
   const registrants = inp.registrants.filter((r) => !TEST_EMAIL.test(r.email));
   const seenBefore = new Set<string>();
   const out: EventRegistrations[] = sessions.map((sess, idx) => {
-    const start = fivePmMT(sess.date).getTime();
-    const prevStart = idx > 0 ? fivePmMT(sessions[idx - 1].date).getTime() : 0;
+    const start = startMT(sess.date).getTime();
+    const prevStart = idx > 0 ? startMT(sessions[idx - 1].date).getTime() : 0;
     const came = new Set(inp.attendance.filter((a) => a.session_date === sess.date).map((a) => a.email.toLowerCase()));
     const rows: RegistrationRow[] = registrants
       .filter((r) => {
