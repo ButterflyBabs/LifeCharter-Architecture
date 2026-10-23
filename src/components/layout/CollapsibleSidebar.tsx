@@ -330,7 +330,7 @@ const ARCHITECT_PAGE_GROUP: Record<string, string> = {
   "executive-consultation-map": "ARCHITECT · SALES",
   "saving-a-call-note": "ARCHITECT · SALES",
   "team-briefing": "ARCHITECT · PROGRAMS & EVENTS",
-  "masterclass-angles": "ARCHITECT · PROGRAMS & EVENTS",
+  "masterclass-lenses": "ARCHITECT · PROGRAMS & EVENTS",
 };
 // Sections that start folded until someone opens them.
 const DEFAULT_FOLDED = [ARCHIVE_TITLE];
