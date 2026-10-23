@@ -29,7 +29,7 @@ export default async function MasterclassSignupPage() {
     <main className="mx-auto max-w-xl px-4 py-12">
       <p className="text-xs font-semibold uppercase tracking-widest text-[#a8812b]">Free live MasterClass · 60 minutes</p>
       <h1 className="mt-2 text-3xl font-bold leading-tight text-[#1a2b4a] dark:text-[#F8F5F0]">The Command Shift MasterClass: From Hustle to Command</h1>
-      <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend, and a replay goes to everyone who registers.</p>
+      <p className="mt-3 text-[#1a2b4a] dark:text-[#F8F5F0]">Taught live by AmiLynne &lsquo;Babs&rsquo; Carroll, Alignment Architect. Free to attend. Live on Zoom every Wednesday at noon Mountain.</p>
       <p className="mt-4 rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{next ? "Next session: " : ""}{when}</p>
       <SignupForm />
       <p className="mt-6 text-sm text-[#5a6472] dark:text-[#b8c2cf]">

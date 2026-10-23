@@ -56,7 +56,7 @@ export default function SignupForm() {
       <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" value={f._hp} onChange={(e) => setF({ ...f, _hp: e.target.value })} name="website" />
       {err && <p role="alert" className="text-sm text-[#8a2f2f]">{err}</p>}
       <button disabled={state === "busy"} className="w-full rounded-full bg-[#1a2b4a] px-5 py-3 text-base font-semibold text-[#F8F5F0] disabled:opacity-60 dark:bg-[#c9a227] dark:text-[#1a2b4a]">{state === "busy" ? "Saving your seat…" : "Save my seat"}</button>
-      <p className="text-xs text-[#5a6472] dark:text-[#b8c2cf]">Free. We&apos;ll email you your link, reminders and the replay.</p>
+      <p className="text-xs text-[#5a6472] dark:text-[#b8c2cf]">Free. We&apos;ll email you your link and reminders.</p>
     </form>
   );
 }
