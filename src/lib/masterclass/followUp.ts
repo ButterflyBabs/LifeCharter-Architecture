@@ -248,15 +248,19 @@ export interface ReplaySession {
   waiting: number;
   replayUrl: string | null;
   releasedAt: string | null;
+  /** The Vimeo copy found automatically (not yet released). */
+  foundUrl: string | null;
+  foundAt: string | null;
 }
 export async function replaySessions(db: Db = createServerClient()): Promise<ReplaySession[]> {
   const since = new Date(Date.now() - 35 * 86400_000).toISOString().slice(0, 10);
-  const [{ data: rows }, { data: rels }] = await Promise.all([
+  const [{ data: rows }, { data: rels }, { data: found }] = await Promise.all([
     db.from("masterclass_followups").select("session_date, outcome, enrolled_at, event_key").gte("session_date", since),
     db.from("masterclass_replays").select("session_date, replay_url, released_at, event_key").gte("session_date", since),
+    db.from("masterclass_replay_links").select("session_date, url, found_at, event_key").gte("session_date", since),
   ]);
   const by = new Map<string, ReplaySession>();
-  const get = (d: string, e: string) => by.get(d) ?? by.set(d, { event: isFollowEvent(e) ? e : "masterclass", date: d, attended: 0, noShows: 0, waiting: 0, replayUrl: null, releasedAt: null }).get(d)!;
+  const get = (d: string, e: string) => by.get(d) ?? by.set(d, { event: isFollowEvent(e) ? e : "masterclass", date: d, attended: 0, noShows: 0, waiting: 0, replayUrl: null, releasedAt: null, foundUrl: null, foundAt: null }).get(d)!;
   for (const r of (rows ?? []) as { session_date: string; outcome: string; enrolled_at: string | null; event_key: string }[]) {
     const s = get(r.session_date, r.event_key);
     if (r.outcome === "attended") s.attended++;
@@ -264,5 +268,6 @@ export async function replaySessions(db: Db = createServerClient()): Promise<Rep
     if (!r.enrolled_at) s.waiting++;
   }
   for (const r of (rels ?? []) as { session_date: string; replay_url: string; released_at: string; event_key: string }[]) Object.assign(get(r.session_date, r.event_key), { replayUrl: r.replay_url, releasedAt: r.released_at });
+  for (const r of (found ?? []) as { session_date: string; url: string; found_at: string; event_key: string }[]) Object.assign(get(r.session_date, r.event_key), { foundUrl: r.url, foundAt: r.found_at });
   return Array.from(by.values()).sort((a, b) => b.date.localeCompare(a.date));
 }

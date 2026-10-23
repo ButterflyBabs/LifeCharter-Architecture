@@ -13,10 +13,10 @@ import { sessionsBetween } from "@/lib/community/events";
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 const meetingIdOf = (joinUrl: string | null) => joinUrl?.match(/zoom\.us\/(?:j|w|s)\/(\d{9,12})/)?.[1] ?? null;
 
-interface VimeoVideo { uri: string; name: string; created_time: string; link: string; status: string }
+export interface VimeoVideo { uri: string; name: string; created_time: string; link: string; status: string }
 
 // The account's newest Vimeo videos (the Zoom imports among them).
-async function recentVimeoVideos(token: string): Promise<VimeoVideo[]> {
+export async function recentVimeoVideos(token: string): Promise<VimeoVideo[]> {
   const res = await fetch("https://api.vimeo.com/me/videos?per_page=100&sort=date&direction=desc&fields=uri,name,created_time,link,status", {
     headers: { Authorization: `bearer ${token}`, Accept: "application/vnd.vimeo.*+json;version=3.4" },
     cache: "no-store",
@@ -29,7 +29,7 @@ const words = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 // The Vimeo copy of one Zoom recording: imported after the call began (within two days)
 // and named after the meeting. The closest in time wins.
-function vimeoCopy(videos: VimeoVideo[], topic: string, beganMs: number): VimeoVideo | undefined {
+export function vimeoCopy(videos: VimeoVideo[], topic: string, beganMs: number): VimeoVideo | undefined {
   const t = words(topic);
   return videos
     .filter((v) => {
