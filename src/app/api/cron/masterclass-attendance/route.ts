@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { incubatorMeetingId, isZoomConfigured, listMasterclassPastInstances, listPastParticipants, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 import { ownerMasterPlanId } from "@/lib/housePlan";
-import { enrollPending, scheduledSession, tagSession, type FollowEvent } from "@/lib/masterclass/followUp";
+import { enrollPending, scheduledSession, startFollowUps, tagSession, type FollowEvent } from "@/lib/masterclass/followUp";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
  * dial-in, guests) are counted under their name so the show rate stays honest.
  *
  * Then the follow-up (src/lib/masterclass/followUp.ts): each scheduled session's registrants are
- * tagged attended or no-show in Contacts, and, once Babs has released that session's replay, the
- * replay and follow-up campaigns start for anyone not yet started.
+ * tagged attended or no-show in Contacts. MasterClass follow-up emails then start by themselves
+ * (from 28 Oct 2026); the Incubator's campaigns start once Babs has released its replay.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -97,7 +97,8 @@ export async function GET(request: Request) {
         if (!housePlan || !match || seen.has(match.occurrence.start)) continue;
         seen.add(match.occurrence.start);
         const tagged = await tagSession(supabase, housePlan, match.occurrence, match.previous, new Date(), ev.key);
-        const started = tagged.skipped ? { started: 0 } : await enrollPending(supabase, housePlan, tagged.session, new Date(), ev.key);
+        // MasterClass: the follow-up emails start by themselves (startFollowUps); the Incubator still waits for its replay release.
+        const started = tagged.skipped ? { started: 0 } : ev.key === "masterclass" ? await startFollowUps(supabase, housePlan, tagged.session, new Date(), ev.key) : await enrollPending(supabase, housePlan, tagged.session, new Date(), ev.key);
         followUp.push({ event: ev.key, ...tagged, ...started });
       }
     } catch (err) {

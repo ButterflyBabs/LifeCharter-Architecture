@@ -64,6 +64,8 @@ export interface EnrolInput {
   source?: string;
   sourceRef?: string | null;
   tags?: string[];
+  /** Day the sequence counts from (YYYY-MM-DD, the contact's local day). Default: today. */
+  startDate?: string;
 }
 
 // Adds (or updates) the contact and enrols them. Unsubscribed contacts are never
@@ -88,7 +90,7 @@ export async function enrolContact(i: EnrolInput): Promise<{ enrollmentId: strin
   const { data: enr, error: enrErr } = await db
     .from("sequence_enrollments")
     .upsert(
-      { sequence_id: seq.id, contact_id: contactId, start_date: localNow(tz).date, source: i.source || null, source_ref: i.sourceRef || null, status: "active" },
+      { sequence_id: seq.id, contact_id: contactId, start_date: i.startDate && /^\d{4}-\d{2}-\d{2}$/.test(i.startDate) ? i.startDate : localNow(tz).date, source: i.source || null, source_ref: i.sourceRef || null, status: "active" },
       { onConflict: "sequence_id,contact_id", ignoreDuplicates: true }
     )
     .select("id");

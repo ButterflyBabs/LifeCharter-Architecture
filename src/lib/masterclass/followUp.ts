@@ -163,6 +163,29 @@ export async function enrollPending(db: Db, housePlan: string, session: string, 
   return { started };
 }
 
+// MasterClass only, from this session on: the follow-up emails start by themselves (no replay, no button).
+// The attended set goes to people who came, the missed set to registrants who did not. Both count their days
+// from the session date, so Thursday 8 AM is day 1 even when Zoom's attendance report lands a day late.
+// Stops picking up people 3 days after the session (the set ends before the next class).
+const AUTO_FOLLOW_FROM = "2026-10-28";
+const AUTO_WINDOW_DAYS = 3;
+export async function startFollowUps(db: Db, housePlan: string, session: string, now = new Date(), event: FollowEvent = "masterclass"): Promise<{ started: number; note?: string }> {
+  if (event !== "masterclass") return { started: 0, note: "automatic start is MasterClass only" };
+  if (session < AUTO_FOLLOW_FROM) return { started: 0, note: "before automatic follow-up began" };
+  if (now.getTime() - new Date(`${session}T12:00:00Z`).getTime() > AUTO_WINDOW_DAYS * 86400_000) return { started: 0, note: "start window closed" };
+  const cfg = EVENTS[event];
+  const { data: rows } = await db.from("masterclass_followups").select("email, outcome").eq("session_date", session).eq("event_key", event).is("enrolled_at", null);
+  let started = 0;
+  for (const r of (rows ?? []) as { email: string; outcome: string }[]) {
+    // Claim first, so two runs can never start the same person twice.
+    const { data: claim } = await db.from("masterclass_followups").update({ enrolled_at: now.toISOString() }).eq("session_date", session).eq("email", r.email).is("enrolled_at", null).select("email");
+    if (!claim?.length) continue;
+    await enrolContact({ masterPlanId: housePlan, email: r.email, source: event, sourceRef: session, startDate: session, sequenceKey: r.outcome === "attended" ? cfg.seqFollowUp : cfg.seqFollowUpMissed }).catch((e) => console.error("[masterclass-follow-up] auto enrol:", e));
+    started++;
+  }
+  return { started };
+}
+
 // Step 2a. Babs releases the replay for a session: the link goes into every "replay" button (and
 // any place the old link sat in the wording), then the campaigns start.
 export async function releaseReplay(db: Db, housePlan: string, session: string, url: string, event: FollowEvent = "masterclass"): Promise<{ ok: true; started: number } | { ok: false; error: string }> {
