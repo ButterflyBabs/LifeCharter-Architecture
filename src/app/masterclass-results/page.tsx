@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { houseFeatureLevel } from "@/lib/authz";
-import { ADS_START, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type EventRegistrations, type SessionRow } from "@/lib/masterclass/results";
+import { ADS_START, ATTENDANCE_GOAL, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type EventRegistrations, type SessionRow } from "@/lib/masterclass/results";
 import Link from "next/link";
 import ReplayRelease from "./ReplayRelease";
 
@@ -94,7 +94,7 @@ export default async function MasterclassResultsPage({ searchParams }: { searchP
 
       <section>
         <h2 className={`text-xl font-semibold ${ink}`}>Filling now</h2>
-        <p className={`mt-1 text-sm ${faint}`}>New registrations for the next sessions, against your goal of {REGISTRATION_GOAL} each.</p>
+        <p className={`mt-1 text-sm ${faint}`}>New registrations for the next sessions, against your goal of {REGISTRATION_GOAL} registrations and {ATTENDANCE_GOAL} in the room each week.</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {filling.map((s) => {
             const pctDone = Math.min(100, Math.round((s.newRegistrations / s.goal) * 100));

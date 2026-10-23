@@ -12,7 +12,8 @@ const LAST_SESSION = "2027-12-29";
 const SKIP: string[] = ["2026-11-25", "2026-12-23", "2026-12-30"]; // Thanksgiving week and the two holiday weeks
 const CREDIT_DAYS = 14; // a booking or sale counts for the most recent session within this many days (the follow-up series runs two weeks)
 const UPCOMING_SHOWN = 2; // how many sessions ahead are tracked as they fill
-export const REGISTRATION_GOAL = 120; // her goal per session: 80 in the room at about two in three attendance, two sessions a month (2026-10-11; was 30, then 60)
+export const REGISTRATION_GOAL = 50; // her goal per weekly class: 50 registrations and 25 in the room (2026-10-23; was 120 for two sessions a month)
+export const ATTENDANCE_GOAL = 25;
 export const ADS_START = "2026-10-10"; // paid ads began here (Babs, 2026-10-11); earlier spend is not counted
 const AD_CATEGORY = /^(ads?|ad spend|advertising|paid (ads|social|media)|meta ads|facebook ads)\b/i;
 
