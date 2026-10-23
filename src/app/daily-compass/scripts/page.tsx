@@ -47,6 +47,7 @@ interface Script {
   lastUsed: string | null;
   source: string;
   platforms: string[];
+  status?: "draft" | "approved";
 }
 
 // Fields worth remembering between scripts (about you, not about a prospect).
@@ -117,6 +118,8 @@ export default function ScriptsPage() {
   const [cat, setCat] = useState<string>("All");
   const [plat, setPlat] = useState<string>("All");
   const [favOnly, setFavOnly] = useState(false);
+  const [stat, setStat] = useState<"all" | "approved" | "draft">("all");
+  const [approving, setApproving] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [tab, setTab] = useState<"mine" | "library">("mine");
@@ -169,8 +172,12 @@ export default function ScriptsPage() {
   const isLib = tab === "library";
   const pool = isLib ? libraryAsScripts : scripts;
 
+  const draftCount = scripts.filter((s) => s.status === "draft").length;
+  const approvedCount = scripts.length - draftCount;
   const filtered = pool.filter((s) => {
     if (!isLib && favOnly && !s.isFavorite) return false;
+    if (!isLib && stat === "draft" && s.status !== "draft") return false;
+    if (!isLib && stat === "approved" && s.status === "draft") return false;
     if (cat !== "All" && s.category !== cat) return false;
     if (plat !== "All" && !(s.platforms ?? []).includes(plat)) return false;
     if (!search.trim()) return true;
@@ -182,6 +189,18 @@ export default function ScriptsPage() {
       (s.platforms ?? []).some((p) => p.toLowerCase() === q || (PLATFORM_LABEL[p] || "").toLowerCase().includes(q))
     );
   });
+
+  // Approving a draft makes it the real script (it replaces the original of the same name, keeping its stars and use count).
+  const approve = async (s: Script | null) => {
+    setApproving(s ? s.id : "all");
+    try {
+      const shownDrafts = filtered.filter((x) => x.status === "draft").map((x) => x.id);
+      await fetch("/api/scripts", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s ? { id: s.id, action: "approve" } : { action: "approve-all", ids: shownDrafts }) });
+      await load();
+    } finally {
+      setApproving(null);
+    }
+  };
 
   const copy = async (s: Script) => {
     try {
@@ -521,6 +540,24 @@ export default function ScriptsPage() {
         >
           <Star className="w-3.5 h-3.5" /> Favorites{favCount ? ` (${favCount})` : ""}
         </button>}
+        {!isLib && draftCount > 0 && (
+          <span className="inline-flex items-center gap-1" role="group" aria-label="Filter by status">
+            {([["all", `All (${scripts.length})`], ["approved", `Approved (${approvedCount})`], ["draft", `Drafts to review (${draftCount})`]] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setStat(k)}
+                aria-pressed={stat === k}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
+                  stat === k
+                    ? k === "draft" ? "bg-[#b4730b] text-white border-[#b4730b]" : "bg-[#1a2b4a] text-white border-[#1a2b4a]"
+                    : k === "draft" ? "border-[#b4730b]/60 text-[#8a5608] bg-[#b4730b]/10" : "border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+        )}
         {["All", ...SCRIPT_CATEGORIES].map((c) => (
           <button
             key={c}
@@ -553,6 +590,16 @@ export default function ScriptsPage() {
         ))}
       </div>
 
+      {!isLib && draftCount > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b4730b]/40 bg-[#b4730b]/10 px-4 py-3 text-sm text-[#5c3a05] dark:text-[#f1d9a8]">
+          <p><strong>{draftCount} draft{draftCount === 1 ? "" : "s"} waiting for your approval.</strong> Drafts are not offered when you send DMs. Approve one to replace the original of the same name. To approve several, choose Drafts to review, narrow the list (search or category), then approve the ones shown.</p>
+          <div className="flex gap-2">
+            {stat !== "draft" && <button onClick={() => setStat("draft")} className="rounded-lg border border-[#b4730b]/50 px-3 py-1.5 text-xs font-semibold">Show only drafts</button>}
+            {stat === "draft" && filtered.some((x) => x.status === "draft") && <button onClick={() => approve(null)} disabled={approving === "all"} className="rounded-lg bg-[#b4730b] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60">{approving === "all" ? "Approving…" : `Approve the ${filtered.filter((x) => x.status === "draft").length} shown`}</button>}
+          </div>
+        </div>
+      )}
+
       {!isLib && !loaded ? (
         <p className="text-sm text-[#b8a898]">Loading…</p>
       ) : filtered.length === 0 ? (
@@ -565,12 +612,15 @@ export default function ScriptsPage() {
         </p>
       ) : (
         <div className="space-y-3">
-          {filtered.map((s) => (
-            <Card key={s.id}>
+          {[...filtered].sort((a, b) => (a.status === "draft" ? 0 : 1) - (b.status === "draft" ? 0 : 1)).map((s) => (
+            <Card key={s.id} className={!isLib && s.status === "draft" ? "border-2 border-[#b4730b]/60 bg-[#b4730b]/[0.04]" : undefined}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {!isLib && (s.status === "draft"
+                        ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#b4730b] text-white uppercase tracking-wide">Draft · not approved</span>
+                        : <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#2c6b3f]/15 text-[#2c6b3f]">Approved</span>)}
                       <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</h3>
                       <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#2E7C83]/10 text-[#2E7C83]">
                         {CHANNEL_ICON[s.channel] || CHANNEL_ICON.sales}
@@ -657,6 +707,15 @@ export default function ScriptsPage() {
                     </button>
                   ) : (
                     <>
+                      {s.status === "draft" && (
+                        <button
+                          onClick={() => approve(s)}
+                          disabled={approving === s.id}
+                          className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#2c6b3f] text-white hover:bg-[#245733] disabled:opacity-60"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" /> {approving === s.id ? "Approving…" : "Approve"}
+                        </button>
+                      )}
                       <button
                         onClick={() => openEdit(s)}
                         className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#1a2b4a]/15 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"

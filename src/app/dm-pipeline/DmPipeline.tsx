@@ -145,7 +145,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       /* none */
     }
     void load(last);
-    fetch("/api/scripts", { cache: "no-store" })
+    fetch("/api/scripts?status=approved", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setScripts(((d.items ?? []) as ScriptLite[]).filter((s) => s.channel === "dm" || (s.platforms ?? []).some((p) => ["DM", "IG", "FB", "LI", "WA", "Email", "TXT"].includes(p)))))
       .catch(() => {});

@@ -18,7 +18,7 @@ export default function SendWindow() {
       if (params.get("board")) q.set("board", params.get("board")!);
       const [d, sc] = await Promise.all([
         fetch(`/api/dm-pipeline?${q}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-        fetch("/api/scripts", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
+        fetch("/api/scripts?status=approved", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
       ]);
       const card = ((d.cards ?? []) as Card[]).find((c) => c.id === params.get("card"));
       let script = ((sc.items ?? []) as ScriptLite[]).find((s) => s.id === params.get("script"));

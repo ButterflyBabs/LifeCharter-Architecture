@@ -23,6 +23,7 @@ interface Row {
   last_used: string | null;
   source: string | null;
   platforms: string[] | null;
+  status: string | null;
 }
 
 function shape(r: Row) {
@@ -40,25 +41,25 @@ function shape(r: Row) {
     lastUsed: r.last_used,
     source: r.source || "manual",
     platforms: r.platforms ?? [],
+    status: (r.status === "draft" ? "draft" : "approved") as "draft" | "approved",
   };
 }
 
 // GET — this client's own saved scripts & templates (the shared starter library
 // is browsed separately and copied in with POST).
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ items: [] });
 
   const sel =
-    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms";
+    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms, status";
 
-  const { data } = await supabase
-    .from("scripts_templates")
-    .select(sel)
-    .eq("master_plan_id", masterPlanId)
-    .order("is_favorite", { ascending: false })
-    .order("created_at", { ascending: true });
+  // ?status=approved is what the DM screens use, so a draft is never offered for sending.
+  const only = new URL(request.url).searchParams.get("status");
+  let query = supabase.from("scripts_templates").select(sel).eq("master_plan_id", masterPlanId);
+  if (only === "approved" || only === "draft") query = query.eq("status", only);
+  const { data } = await query.order("is_favorite", { ascending: false }).order("created_at", { ascending: true });
 
   const rows = (data || []) as Row[];
 
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
   if (!title || !content) return NextResponse.json({ error: "Title and content are required." }, { status: 400 });
 
   const sel =
-    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms";
+    "id, title, description, item_type, category, channel, content, tags, is_favorite, usage_count, last_used, source, platforms, status";
   const { data, error } = await supabase
     .from("scripts_templates")
     .insert({
@@ -112,9 +113,40 @@ export async function PATCH(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
   const body = await request.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id : "";
-  if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+  if (!id && body.action !== "approve-all") return NextResponse.json({ error: "Missing id." }, { status: 400 });
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  // Approve a draft. A "DRAFT · Name" that replaces an approved "Name" updates that one (keeping its stars and use
+  // count) and the draft is removed; otherwise the draft itself becomes approved under its plain name.
+  if (body.action === "approve" || body.action === "approve-all") {
+    if (!masterPlanId) return NextResponse.json({ error: "No workspace." }, { status: 400 });
+    const ids: string[] = body.action === "approve-all" ? [] : [id];
+    if (body.action === "approve-all") {
+      // Only the drafts the person was looking at (their ids), never every draft in the account.
+      const want = Array.isArray(body.ids) ? body.ids.filter((x: unknown): x is string => typeof x === "string").slice(0, 100) : [];
+      if (want.length) {
+        const { data: all } = await supabase.from("scripts_templates").select("id").eq("master_plan_id", masterPlanId).eq("status", "draft").in("id", want);
+        for (const r of (all ?? []) as { id: string }[]) ids.push(r.id);
+      }
+    }
+    let approved = 0;
+    for (const did of ids) {
+      const { data: d } = await supabase.from("scripts_templates").select("id, title, content, channel, platforms, tags, category, item_type").eq("id", did).eq("master_plan_id", masterPlanId).eq("status", "draft").maybeSingle();
+      if (!d) continue;
+      const base = String(d.title).replace(/^DRAFT\s*·\s*/i, "");
+      const { data: orig } = await supabase.from("scripts_templates").select("id").eq("master_plan_id", masterPlanId).eq("title", base).eq("status", "approved").maybeSingle();
+      if (orig?.id) {
+        await supabase.from("scripts_templates").update({ content: d.content, channel: d.channel, platforms: d.platforms, tags: d.tags, category: d.category, item_type: d.item_type, updated_at: new Date().toISOString() }).eq("id", orig.id);
+        await supabase.from("scripts_templates").delete().eq("id", d.id);
+      } else {
+        await supabase.from("scripts_templates").update({ title: base, status: "approved", description: "", updated_at: new Date().toISOString() }).eq("id", d.id);
+      }
+      approved++;
+    }
+    await logActivity({ masterPlanId, action: "updated", entityType: "script", entityId: id || undefined, summary: `Approved ${approved} draft script${approved === 1 ? "" : "s"}` });
+    return NextResponse.json({ ok: true, approved });
+  }
 
   if (body.action === "use") {
     // Bump usage count + last used.
