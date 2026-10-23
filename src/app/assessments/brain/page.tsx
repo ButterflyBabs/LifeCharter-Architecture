@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
@@ -4623,7 +4623,15 @@ export default function BrainAssessmentPage() {
 
   // Send each answer to the server as it's given, so the AI assistant learns from
   // it right away — not only once the whole assessment is finished.
-  useAssessmentRestore("brain", setAnswers);
+  // On a device with no saved position, open at the first question still unanswered (not question 1).
+  const answersNow = useRef(answers);
+  answersNow.current = answers;
+  useAssessmentRestore("brain", setAnswers, (fromServer) => {
+    const merged = { ...fromServer, ...answersNow.current };
+    const seen = questions.filter((q) => !q.showIf || q.showIf(merged));
+    const first = seen.findIndex((q) => (merged[q.id] ?? "").toString().trim() === "");
+    setCurrentQuestion((cur) => (cur > 0 ? cur : first === -1 ? 0 : first));
+  });
   const sync = useAssessmentSync("brain", answers, (id, value) => {
     const q = questions.find((x) => x.id === id);
     return q ? { questionId: id, questionText: q.text, section: q.section, answerText: value, value } : null;
@@ -4955,29 +4963,41 @@ export default function BrainAssessmentPage() {
             const sectionQs = visible.filter((q) => q.section === section);
             const answeredQs = sectionQs.filter((q) => answers[q.id]).length;
             const isCurrent = section === currentSection;
+            // Jump to the first question still unanswered in this section (or its first question).
+            const jump = () => {
+              const open = visible.findIndex((q) => q.section === section && !isAnswered(q.id));
+              const idx = open !== -1 ? open : visible.findIndex((q) => q.section === section);
+              if (idx !== -1) {
+                setCurrentQuestion(idx);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            };
             return (
-              <div
+              <button
+                type="button"
+                onClick={jump}
+                aria-label={`Go to ${section}`}
                 key={section}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-4 rounded-xl border-2 text-left transition-all hover:border-[#4a9b9b] ${
                   isCurrent
                     ? "border-[#4a9b9b] bg-[#4a9b9b]/5"
                     : "border-[#c9a227]/20"
                 }`}
               >
-                <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <span className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
                   {section}
-                </p>
-                <p className="text-xs text-[#b8a898] mt-1">
+                </span>
+                <span className="block text-xs text-[#b8a898] mt-1">
                   {answeredQs} of {sectionQs.length} answered
-                </p>
-                <div className="mt-2">
+                </span>
+                <span className="mt-2 block">
                   <Progress
                     value={(answeredQs / sectionQs.length) * 100}
                     variant="teal"
                     className="h-1"
                   />
-                </div>
-              </div>
+                </span>
+              </button>
             );
           })}
         </div>

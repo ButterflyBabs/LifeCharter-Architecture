@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // Brings an assessment's saved answers back from the account when the page opens, so a client can start on
 // one device and finish on another (or after clearing the browser). The answers on this device win: server
 // answers only fill questions that are still empty here. The page's own autosave then keeps both in step.
 export function useAssessmentRestore(
   type: "brain" | "soul" | "profit_architecture",
-  setAnswers: (update: (prev: Record<string, string>) => Record<string, string>) => void
+  setAnswers: (update: (prev: Record<string, string>) => Record<string, string>) => void,
+  // Called once the account's answers are in, so the page can put the client where they left off.
+  onRestored?: (fromServer: Record<string, string>) => void
 ) {
+  const restored = useRef(onRestored);
+  restored.current = onRestored;
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/assessments/save?type=${type}`, { cache: "no-store" })
@@ -29,6 +33,7 @@ export function useAssessmentRestore(
           }
           return changed ? next : prev;
         });
+        restored.current?.(fromServer);
       })
       .catch(() => {});
     return () => {
