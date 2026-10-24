@@ -34,6 +34,8 @@ export interface BroadcastRow {
   skip_prior_template: boolean;
   offer?: string | null; // the section it sits under in Campaigns & Broadcasts
   skip_tags?: string[] | null; // leave out anyone carrying any of these tags
+  once_group?: string | null; // broadcasts sent in weekly sets: one set per person, ever
+  once_set?: string | null; // which set this broadcast belongs to (e.g. the class date)
   skip_active_sequences?: string[] | null; // campaign keys: leave out anyone still receiving one of these
   variables: Record<string, string>;
   status: "draft" | "scheduled" | "sending" | "sent" | "canceled";
@@ -81,9 +83,21 @@ async function inActiveCampaigns(db: Db, planId: string, keys: string[]): Promis
 // Everyone this broadcast would reach right now (not unsubscribed, and not still in a campaign it skips).
 export async function listRecipients(
   db: Db,
-  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key" | "skip_active_sequences" | "skip_tags">
+  b: Pick<BroadcastRow, "id" | "master_plan_id" | "tags" | "contact_ids" | "tag_match" | "skip_prior_template" | "template_key" | "skip_active_sequences" | "skip_tags" | "once_group" | "once_set">
 ): Promise<{ id: string; email: string }[]> {
   const busy = await inActiveCampaigns(db, b.master_plan_id, b.skip_active_sequences ?? []);
+  // Anyone already sent (or queued for) a different set in this group has had their one set.
+  if (b.once_group) {
+    const { data: others } = await db.from("crm_broadcasts").select("id").eq("master_plan_id", b.master_plan_id).eq("once_group", b.once_group).neq("once_set", b.once_set ?? "").neq("id", b.id);
+    const ids = ((others ?? []) as { id: string }[]).map((x) => x.id);
+    for (let i = 0; i < ids.length; i += 100) {
+      for (let from = 0; ; from += 1000) {
+        const { data } = await db.from("crm_broadcast_sends").select("contact_id").in("broadcast_id", ids.slice(i, i + 100)).in("status", ["queued", "claimed", "sent"]).range(from, from + 999);
+        for (const r of (data ?? []) as { contact_id: string }[]) busy.add(r.contact_id);
+        if (!data || data.length < 1000) break;
+      }
+    }
+  }
   const skipTags = (b.skip_tags ?? []).filter(Boolean);
   if (skipTags.length) {
     for (let from = 0; ; from += 1000) {
