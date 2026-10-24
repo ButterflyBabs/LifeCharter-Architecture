@@ -62,7 +62,7 @@ export default async function MasterclassResultsPage({ searchParams }: { searchP
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Private · only you can see this</p>
         <h1 className={`mt-2 text-3xl font-semibold ${ink}`}>MasterClass results</h1>
         <p className={`mt-2 max-w-3xl text-[15px] ${faint}`}>
-          Every other Thursday from October 8. One funnel for each session, from the first click to the close, with the series totals underneath. Bookings and sales are credited to the most recent session for the two weeks until the next one.
+          Every Wednesday at noon MT from October 28 (every other Thursday from October 8 before that). One funnel for each session, from the first click to the close, with the series totals underneath. Bookings and sales are credited to the most recent session for the two weeks until the next one.
         </p>
       </header>
 

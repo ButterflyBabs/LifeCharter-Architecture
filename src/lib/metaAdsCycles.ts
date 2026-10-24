@@ -1,6 +1,6 @@
 import { dayInTz, zonedToUtcISO } from "@/lib/tz";
 
-// Events that repeat (a MasterClass every other Thursday) start their sign-up count fresh after each one. A cycle runs from
+// Events that repeat (a weekly MasterClass) start their sign-up count fresh after each one. A cycle runs from
 // the end of the last event to the end of the next: the count for "the Nov 5 event" starts at 0 at 7:00 PM Mountain on Oct 22
 // and closes at 7:00 PM Mountain on Nov 5. Sign-ups are counted by the minute they arrived; spend is counted by day.
 

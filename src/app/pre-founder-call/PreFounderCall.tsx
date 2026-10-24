@@ -330,7 +330,7 @@ export default function PreFounderCall() {
               </div>
             )}
             {draft.interest === "maybe" && <p className={`${say} mt-3`}>&ldquo;That&apos;s fair. What would you want to be true to say yes? When should I check back with you?&rdquo;</p>}
-            {draft.interest === "not-now" && <p className={`${say} mt-3`}>&ldquo;No pressure at all. Can I keep you on my list? And I&apos;d love you to come to the free MasterClass on Thursday, October 8 at 5pm Mountain.&rdquo;</p>}
+            {draft.interest === "not-now" && <p className={`${say} mt-3`}>&ldquo;No pressure at all. Can I keep you on my list? And I&apos;d love you to come to the free MasterClass this Wednesday at noon Mountain.&rdquo;</p>}
             {draft.interest === "not-a-fit" && <p className={`${say} mt-3`}>&ldquo;Thank you for telling me honestly. That helps me more than a polite yes. Is there anyone who comes to mind who it might fit?&rdquo;</p>}
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>{area("nextStep", "Agreed next step", 2, "Login goes out today / check back Oct 9...")}</div>
@@ -343,7 +343,7 @@ export default function PreFounderCall() {
 
           <section id="pf-share" className={card}>
             <h2 className="mb-3 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Who else, and the affiliate program <span className="text-xs font-normal text-[#7a8a99]">23:00 to 25:00</span></h2>
-            <p className={say}>&ldquo;Who comes to mind who&apos;s a business owner stuck being their own bottleneck? Send them to the free MasterClass, Thursday, October 8 at 5pm Mountain. And if someone you refer signs up with the Command Suite, you earn 10% commission through our affiliate program. Want me to set you up?&rdquo;</p>
+            <p className={say}>&ldquo;Who comes to mind who&apos;s a business owner stuck being their own bottleneck? Send them to the free MasterClass, this Wednesday at noon Mountain. And if someone you refer signs up with the Command Suite, you earn 10% commission through our affiliate program. Want me to set you up?&rdquo;</p>
             <label className="mt-3 flex items-center gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]"><input type="checkbox" checked={draft.affiliate} onChange={(e) => setDraft((d) => ({ ...d, affiliate: e.target.checked }))} /> They want the affiliate link</label>
             <div className="mt-3">{area("referrals", "People who came to mind", 2)}</div>
           </section>

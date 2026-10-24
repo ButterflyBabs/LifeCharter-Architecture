@@ -118,3 +118,9 @@ test("printable plan text becomes paragraphs, bullets and headings", () => {
   const b = textToBlocks("Our promise:\n\nWe help founders.\n\n- One\n- Two");
   assert.deepEqual(b.map((x) => x.t), ["h3", "p", "bullets"]);
 });
+
+test("weekly Wednesday-noon sessions get the same date tags as before", () => {
+  assert.equal(sessionTag("2026-10-28T18:00:00Z", "attended", "masterclass"), "lcmc-oct-28-attended");
+  assert.equal(sessionTag("2026-11-04T19:00:00Z", "registered", "masterclass"), "lcmc-nov-4-registered");
+  assert.equal(sessionTag("2026-12-16T19:00:00Z", "no-show", "masterclass"), "lcmc-dec-16-no-show");
+});
