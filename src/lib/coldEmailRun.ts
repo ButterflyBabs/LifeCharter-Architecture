@@ -23,13 +23,13 @@ const code7 = () => Array.from({ length: 7 }, () => "abcdefghjkmnpqrstuvwxyz2345
 
 async function nextSessionLabel(): Promise<string> {
   try {
-    if (!isZoomConfigured()) return "this Thursday";
+    if (!isZoomConfigured()) return "this Wednesday";
     const sch = await meetingSchedule(masterclassMeetingId());
     const o = sch.occurrences.find((x) => new Date(x.start).getTime() > Date.now() + 24 * 3600_000);
-    if (!o) return "this Thursday";
+    if (!o) return "this Wednesday";
     return new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", weekday: "long", month: "long", day: "numeric" }).format(new Date(o.start));
   } catch {
-    return "this Thursday";
+    return "this Wednesday";
   }
 }
 

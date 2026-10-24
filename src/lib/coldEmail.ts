@@ -17,7 +17,7 @@ I'm AmiLynne Carroll. I help founders and coaches get their business out of a do
 
 What is the one thing in your business that still runs through you and nobody else?
 
-I ask because I teach a free, live, 90-minute session called From Hustle to Command. In it you map exactly that: where your business leans on you most, and a seven-day plan to start changing it. You build it in the room, on one of your own real business issues. If the time does not work, there is a replay.
+I ask because I teach a free, live, 60-minute session called From Hustle to Command. In it you map exactly that: where your business leans on you most, and a seven-day plan to start changing it. You build it in the room, on one of your own real business issues. The next one is {{next_session_date}} at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders.
 
 If that sounds useful, you can save a seat here: {{personal_link}}
 
@@ -37,7 +37,7 @@ One short follow-up, then I will leave you be.
 
 The pattern I hear most from founders and coaches is that the business is moving, but every decision, follow-up and detail still lands on one person. In the free session we name that pattern and map one real bottleneck, so you can see exactly where it gets stuck and what to do first.
 
-The next session is {{next_session_date}} at 5:00pm Mountain. You can save a seat here: {{personal_link}}
+The next session is {{next_session_date}} at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders. You can save a seat here: {{personal_link}}
 
 If this is not for you, reply "no thanks".
 
@@ -55,7 +55,7 @@ This is my last note. If now is not the time, that is completely fine.
 
 Two easy ways to take a next step if you want one:
 
-1. Join the free session, From Hustle to Command: {{personal_link}}
+1. Join the free session, From Hustle to Command (everyone who joins live gets a free 2027 digital planner for founders): {{personal_link}}
 2. If you would rather talk it through one to one, book a 30-minute conversation with my colleague Marcello: {{booking_link}}
 
 Either way, I am glad our paths crossed. Reply "no thanks" if you would rather not hear from me again.
