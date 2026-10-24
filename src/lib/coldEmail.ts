@@ -56,7 +56,7 @@ This is my last note. If now is not the time, that is completely fine.
 Two easy ways to take a next step if you want one:
 
 1. Join the free session, From Hustle to Command (everyone who joins live gets a free 2027 digital planner for founders): {{personal_link}}
-2. If you would rather talk it through one to one, book a 30-minute conversation with my colleague Marcello: {{booking_link}}
+2. If you would rather talk it through one to one, book a conversation with my colleague Marcello: {{booking_link}}
 
 Either way, I am glad our paths crossed. Reply "no thanks" if you would rather not hear from me again.
 
