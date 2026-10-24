@@ -174,8 +174,13 @@ export function renderBroadcast(b: BroadcastRow, contact: { id: string; first_na
     buttonUrl: b.button_url ? fillSlots(b.button_url, v) : null,
     contact,
     footer,
+    list: isNewsletter(b) ? "newsletter" : undefined,
   });
 }
+
+// A broadcast to the Head Up, Wings Out list: its Unsubscribe link leaves the newsletter only.
+export const NEWSLETTER_TAG = "headup-wingsout";
+export const isNewsletter = (b: Pick<BroadcastRow, "tags">) => (b.tags ?? []).includes(NEWSLETTER_TAG);
 
 // Snapshot recipients (idempotent: the unique key keeps a re-run from doubling).
 async function queue(db: Db, b: BroadcastRow) {
@@ -288,7 +293,7 @@ export async function processBroadcast(db: Db, id: string, deadline: number): Pr
       if (wait > 0) await sleep(wait);
       last = Date.now();
       const mail = renderBroadcast(b, { id: r.contact_id, first_name: r.seq_contacts.first_name }, "", who.house ? undefined : who.footer);
-      const res = await sendRendered(who.house ? b : clientFrom(who), r.email, r.contact_id, mail, who.house ? undefined : who.resendKey).catch((e) => ({ ok: false, error: String(e), status: 0 }) as { ok: boolean; id?: string; error?: string; status?: number });
+      const res = await sendRendered(who.house ? b : clientFrom(who), r.email, r.contact_id, mail, who.house ? undefined : who.resendKey, isNewsletter(b) ? "newsletter" : undefined).catch((e) => ({ ok: false, error: String(e), status: 0 }) as { ok: boolean; id?: string; error?: string; status?: number });
       if (!res.ok && res.status === 429) {
         // Rate-limited: Resend didn't take it, so it's safe to put back and slow down.
         await db.from("crm_broadcast_sends").update({ status: "queued", claimed_at: null }).eq("id", r.id);

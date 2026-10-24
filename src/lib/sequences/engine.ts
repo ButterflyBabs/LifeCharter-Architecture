@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { renderStep, unsubscribeApiUrl } from "@/lib/sequences/render";
+import { renderStep, unsubscribeApiUrl, type UnsubscribeList } from "@/lib/sequences/render";
 import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 import { senderCache, type AccountSender } from "@/lib/email/accountSender";
 
@@ -166,7 +166,8 @@ export async function sendRendered(
   contactId: string,
   mail: { subject: string; html: string; text: string },
   // A client account sends through its OWN Resend key; Babs's account (and the Suite's own mail) use the Suite's.
-  accountKey?: string
+  accountKey?: string,
+  list?: UnsubscribeList
 ): Promise<{ ok: boolean; id?: string; error?: string; status?: number }> {
   const key = accountKey || process.env.RESEND_API_KEY;
   if (!key) return { ok: false, error: "No Resend key to send with" };
@@ -180,7 +181,7 @@ export async function sendRendered(
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
-      headers: { "List-Unsubscribe": `<${unsubscribeApiUrl(contactId)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+      headers: { "List-Unsubscribe": `<${unsubscribeApiUrl(contactId, list)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
     }),
   });
   const out = await res.json().catch(() => ({}));

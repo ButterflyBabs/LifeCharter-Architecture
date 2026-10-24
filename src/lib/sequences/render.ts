@@ -22,8 +22,11 @@ export function readUnsubscribeToken(token: string): string | null {
   const b = Buffer.from(sign(id));
   return a.length === b.length && timingSafeEqual(a, b) ? id : null;
 }
-export const unsubscribeUrl = (contactId: string) => `${APP_URL}/unsubscribe?t=${encodeURIComponent(unsubscribeToken(contactId))}`;
-export const unsubscribeApiUrl = (contactId: string) => `${APP_URL}/api/unsubscribe?t=${encodeURIComponent(unsubscribeToken(contactId))}`;
+// list = "newsletter": leaves only the Head Up, Wings Out newsletter and keeps every other email coming.
+export type UnsubscribeList = "newsletter";
+const listPart = (list?: UnsubscribeList) => (list ? `&list=${list}` : "");
+export const unsubscribeUrl = (contactId: string, list?: UnsubscribeList) => `${APP_URL}/unsubscribe?t=${encodeURIComponent(unsubscribeToken(contactId))}${listPart(list)}`;
+export const unsubscribeApiUrl = (contactId: string, list?: UnsubscribeList) => `${APP_URL}/api/unsubscribe?t=${encodeURIComponent(unsubscribeToken(contactId))}${listPart(list)}`;
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 // [label](https://…) becomes a named link; bare https:// links are linked as they are.
@@ -67,6 +70,8 @@ export interface RenderInput {
   // A client account's own sign-off, support email and address. Omitted for
   // Babs's account, whose sign-off and footer below stay exactly as they are.
   footer?: EmailFooter;
+  // Newsletter emails: the main Unsubscribe link leaves the newsletter only.
+  list?: UnsubscribeList;
 }
 
 export function renderStep(r: RenderInput) {
@@ -74,7 +79,8 @@ export function renderStep(r: RenderInput) {
   const fill = (s: string) => s.replace(/\{\{\s*first_name\s*\}\}/gi, first || "friend").replace(/\{\{\s*greeting\s*\}\}/gi, first ? `Hi ${first},` : "Hi there,");
   const subject = fill(r.subject);
   const body = fill(r.body);
-  const unsub = unsubscribeUrl(r.contact.id);
+  const unsub = unsubscribeUrl(r.contact.id, r.list);
+  const unsubAll = r.list ? unsubscribeUrl(r.contact.id) : "";
   const button = r.buttonLabel && r.buttonUrl ? { label: fill(r.buttonLabel), url: r.buttonUrl } : null;
   const f = r.footer;
   // When the email itself already closes with "Head up - Wings out" (typed above a fuller signature),
@@ -95,9 +101,9 @@ export function renderStep(r: RenderInput) {
   <tr><td style="font-family:Arial,sans-serif;font-size:11.5px;line-height:1.6;color:#8A8F99;padding-top:24px;border-top:1px solid #F0E8DA">
     Questions? Just reply${support ? `, or write to ${esc(support)}` : ""}.<br>
     ${esc(address)}<br>
-    <a href="${unsub}" style="color:#8A8F99">Unsubscribe</a> from these emails.
+    ${r.list ? `<a href="${unsub}" style="color:#8A8F99">Unsubscribe from this newsletter</a> (you will still get class and account emails), or <a href="${unsubAll}" style="color:#8A8F99">stop all emails</a>.` : `<a href="${unsub}" style="color:#8A8F99">Unsubscribe</a> from these emails.`}
   </td></tr>
 </table></td></tr></table></body></html>`;
-  const text = `${body.replace(MD_LINK, "$1: $2")}${button ? `\n\n${button.label}: ${button.url}` : ""}${signText ? `\n\n${signText}` : ""}\n\n—\nQuestions? Reply${support ? `, or write to ${support}` : ""}.\n${address}\nUnsubscribe: ${unsub}`;
+  const text = `${body.replace(MD_LINK, "$1: $2")}${button ? `\n\n${button.label}: ${button.url}` : ""}${signText ? `\n\n${signText}` : ""}\n\n—\nQuestions? Reply${support ? `, or write to ${support}` : ""}.\n${address}\n${r.list ? `Unsubscribe from this newsletter only (you will still get class and account emails): ${unsub}\nStop all emails: ${unsubAll}` : `Unsubscribe: ${unsub}`}`;
   return { subject, html, text };
 }
