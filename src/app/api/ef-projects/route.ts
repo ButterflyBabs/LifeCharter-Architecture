@@ -15,11 +15,39 @@ async function gate() {
   return { planId } as const;
 }
 const SELECT = "id, name, goal, status, due_date, sort_order, created_at, parent_id";
+const PALETTE = ["#2E7C83", "#c9a227", "#7b6b8d", "#c9855e", "#4a9b9b", "#8fb58a"];
 const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
-export async function GET() {
+export async function GET(request: Request) {
   const g = await gate();
   if ("error" in g) return g.error;
+  // ?overview=1: the project cards (progress, next task, milestones ahead), the same shape as /api/projects.
+  if (new URL(request.url).searchParams.get("overview")) {
+    const db = createServerClient();
+    const [{ data: projects }, { data: tasks }, { data: ms }] = await Promise.all([
+      db.from("ef_projects").select("id, name, goal, status, start_date, due_date, color, parent_id, sort_order, created_at").eq("master_plan_id", g.planId).order("sort_order").order("created_at").limit(300),
+      db.from("ef_tasks").select("project_id, status, due_date, title").eq("master_plan_id", g.planId).not("project_id", "is", null).limit(3000),
+      db.from("ef_milestones").select("project_id, done").eq("master_plan_id", g.planId).limit(2000),
+    ]);
+    const by = new Map<string, { total: number; done: number; next: { title: string; day: string } | null }>();
+    for (const t of (tasks ?? []) as { project_id: string; status: string; due_date: string | null; title: string }[]) {
+      const e = by.get(t.project_id) ?? { total: 0, done: 0, next: null };
+      e.total++;
+      if (t.status === "done") e.done++;
+      else if (t.due_date && (!e.next || t.due_date < e.next.day)) e.next = { title: t.title, day: t.due_date };
+      by.set(t.project_id, e);
+    }
+    const open = new Map<string, number>();
+    for (const m of (ms ?? []) as { project_id: string; done: boolean }[]) if (!m.done) open.set(m.project_id, (open.get(m.project_id) ?? 0) + 1);
+    const rows = (projects ?? []) as { id: string; name: string; goal: string | null; status: string; start_date: string | null; due_date: string | null; color: string | null; parent_id: string | null }[];
+    const nameOf = new Map(rows.map((r) => [r.id, r.name]));
+    return NextResponse.json({
+      projects: rows.map((r) => {
+        const st = by.get(r.id) ?? { total: 0, done: 0, next: null };
+        return { id: r.id, name: r.name, goal: r.goal, status: r.status, startDate: r.start_date, dueDate: r.due_date, color: r.color, parentId: r.parent_id, parentName: r.parent_id ? nameOf.get(r.parent_id) ?? null : null, tasks: st.total, done: st.done, next: st.next, openMilestones: open.get(r.id) ?? 0 };
+      }),
+    });
+  }
   const { data } = await createServerClient().from("ef_projects").select(SELECT).eq("master_plan_id", g.planId).order("sort_order").order("created_at").limit(200);
   return NextResponse.json({ projects: data ?? [] });
 }
@@ -32,6 +60,7 @@ export async function POST(request: Request) {
   const name = typeof b.name === "string" ? b.name.trim().slice(0, 120) : "";
   if (!name) return NextResponse.json({ error: "Name the project." }, { status: 400 });
   const db = createServerClient();
+  const { count } = await db.from("ef_projects").select("id", { count: "exact", head: true }).eq("master_plan_id", g.planId);
   let parentId: string | null = null;
   if (typeof b.parentId === "string" && b.parentId) {
     // One level only: the parent must itself be a top-level project of this account.
@@ -40,7 +69,7 @@ export async function POST(request: Request) {
   }
   const { data, error } = await db
     .from("ef_projects")
-    .insert({ master_plan_id: g.planId, parent_id: parentId, name, goal: typeof b.goal === "string" && b.goal.trim() ? b.goal.trim().slice(0, 2000) : null, due_date: isDay(b.dueDate) ? b.dueDate : null })
+    .insert({ master_plan_id: g.planId, parent_id: parentId, color: PALETTE[(count ?? 0) % PALETTE.length], start_date: isDay(b.startDate) ? b.startDate : null, name, goal: typeof b.goal === "string" && b.goal.trim() ? b.goal.trim().slice(0, 2000) : null, due_date: isDay(b.dueDate) ? b.dueDate : null })
     .select(SELECT)
     .single();
   if (error) return NextResponse.json({ error: "Couldn't add it." }, { status: 500 });
@@ -63,7 +92,7 @@ export async function PATCH(request: Request) {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim().slice(0, 120);
   if (typeof b.goal === "string") patch.goal = b.goal.trim().slice(0, 2000) || null;
-  if (b.status === "active" || b.status === "done") patch.status = b.status;
+  if (typeof b.status === "string" && ["planning", "active", "on_hold", "done"].includes(b.status)) patch.status = b.status;
   if (b.dueDate === null || b.dueDate === "") patch.due_date = null;
   else if (isDay(b.dueDate)) patch.due_date = b.dueDate;
   if (b.parentId === null || b.parentId === "") patch.parent_id = null;

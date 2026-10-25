@@ -8,7 +8,8 @@ const FIELD = "w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 t
 const LABEL = "mb-1 block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
 const CARD = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 dark:bg-[#1a2b4a]/20";
 
-export default function ProjectDetails({ data, api, onChanged, onDeleted }: { data: PData; api: string; onChanged: () => Promise<void>; onDeleted: () => void }) {
+// solo: a private workspace with no team or sharing (Embraced;Fully), so the owner picker and the sharing card are left out.
+export default function ProjectDetails({ data, api, onChanged, onDeleted, solo = false }: { data: PData; api: string; onChanged: () => Promise<void>; onDeleted: () => void; solo?: boolean }) {
   const p = data.project;
   const [f, setF] = useState({ name: p.name, goal: p.goal, status: p.status, startDate: p.startDate ?? "", dueDate: p.dueDate ?? "", ownerMemberId: p.ownerMemberId ?? "", notes: p.notes });
   const [saved, setSaved] = useState("");
@@ -72,6 +73,7 @@ export default function ProjectDetails({ data, api, onChanged, onDeleted }: { da
               {Object.entries(PROJECT_STATUS_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </div>
+          {!solo && (
           <div>
             <label className={LABEL} htmlFor="pd-owner">Owner</label>
             <select id="pd-owner" className={FIELD} value={f.ownerMemberId} onChange={(e) => setF({ ...f, ownerMemberId: e.target.value })}>
@@ -79,6 +81,7 @@ export default function ProjectDetails({ data, api, onChanged, onDeleted }: { da
               {data.team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
+          )}
           <div>
             <label className={LABEL} htmlFor="pd-start">Starts</label>
             <input id="pd-start" type="date" className={FIELD} value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />
@@ -150,6 +153,7 @@ export default function ProjectDetails({ data, api, onChanged, onDeleted }: { da
         </form>
       </section>
 
+      {!solo && (
       <section className={CARD}>
         <h3 className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Share with a client or contractor</h3>
         <p className="mb-3 text-xs text-[#7a8a99]">
@@ -186,6 +190,7 @@ export default function ProjectDetails({ data, api, onChanged, onDeleted }: { da
           <button className="inline-flex items-center gap-1 rounded-lg border border-[#2E7C83] px-3 py-2 text-sm font-medium text-[#2E7C83]"><Plus className="h-4 w-4" /> Create link</button>
         </form>
       </section>
+      )}
 
       <section className={CARD}>
         <h3 className="mb-2 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Delete this project</h3>

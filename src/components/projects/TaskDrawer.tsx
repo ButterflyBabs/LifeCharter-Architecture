@@ -8,7 +8,8 @@ const FIELD = "w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 t
 const LABEL = "mb-1 block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
 
 // Edit one card. Nothing saves until Save is pressed.
-export default function TaskDrawer({ task, data, onClose, onSave, onDelete }: { task: PTask; data: PData; onClose: () => void; onSave: (id: number, patch: Record<string, unknown>) => Promise<void>; onDelete: (id: number) => Promise<void> }) {
+// solo: a private workspace with no team, guests or sharing (Embraced;Fully), so the assignee and sharing fields are left out.
+export default function TaskDrawer({ task, data, onClose, onSave, onDelete, solo = false }: { task: PTask; data: PData; onClose: () => void; onSave: (id: number, patch: Record<string, unknown>) => Promise<void>; onDelete: (id: number) => Promise<void>; solo?: boolean }) {
   const [f, setF] = useState(task);
   const [saving, setSaving] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -70,6 +71,7 @@ export default function TaskDrawer({ task, data, onClose, onSave, onDelete }: { 
               <input id="pt-due" type="date" className={FIELD} value={f.dueDay ?? ""} onChange={(e) => setF({ ...f, dueDay: e.target.value || null })} />
             </div>
           </div>
+          {!solo && (<>
           <div>
             <label className={LABEL} htmlFor="pt-who">Assigned to</label>
             <select
@@ -90,6 +92,7 @@ export default function TaskDrawer({ task, data, onClose, onSave, onDelete }: { 
             <input type="checkbox" className="mt-1" checked={f.shared} onChange={(e) => setF({ ...f, shared: e.target.checked })} />
             <span>Show this task to the clients and contractors this project is shared with</span>
           </label>
+          </>)}
         </div>
         <div className="mt-5 flex items-center gap-2">
           <button onClick={save} disabled={saving || !f.title.trim()} className="rounded-lg bg-[#1a2b4a] px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Saving…" : "Save"}</button>

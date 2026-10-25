@@ -7,7 +7,7 @@ import { dayInTz } from "@/lib/tz";
 
 // Embraced;Fully projects: every project with where it stands. Babs only; its own tables, never shown elsewhere.
 
-interface Project { id: string; name: string; goal: string | null; status: "active" | "done"; due_date: string | null; parent_id: string | null }
+interface Project { id: string; name: string; goal: string | null; status: string; due_date: string | null; parent_id: string | null }
 interface Task { id: string; project_id: string | null; status: string; due_date: string | null }
 interface Milestone { id: string; project_id: string; title: string; due_date: string | null; done: boolean }
 
@@ -56,7 +56,7 @@ export default function EfProjects() {
 
   const today = dayInTz(new Date(), tz);
   const pretty = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
-  const shown = (projects ?? []).filter((p) => !p.parent_id && (showDone ? true : p.status === "active"));
+  const shown = (projects ?? []).filter((p) => !p.parent_id && (showDone ? true : p.status !== "done"));
   // Drag a card to a new place (or use the arrows): the order is saved for next time.
   const reorder = async (fromId: string, toId: string | null, dir?: -1 | 1) => {
     const order = shown.map((p) => p.id);
@@ -157,7 +157,7 @@ export default function EfProjects() {
               <Link href={`/ef-projects/${p.id}`} className="block rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 pr-20 shadow-sm transition hover:shadow-md dark:bg-[#1A1A2E]">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-serif text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</h2>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${p.status === "done" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#E6EFF6] text-[#2B5F8A]"}`}>{p.status === "done" ? "Finished" : "Active"}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${p.status === "done" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#E6EFF6] text-[#2B5F8A]"}`}>{p.status === "done" ? "Finished" : p.status === "planning" ? "Planning" : p.status === "on_hold" ? "On hold" : "Active"}</span>
                 </div>
                 {p.goal && <p className="mt-1 text-sm text-[#5d6b7a] dark:text-[#b8c2cf] line-clamp-2">{p.goal}</p>}
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1a2b4a]/10" aria-label={`${pct}% of tasks done`}>
