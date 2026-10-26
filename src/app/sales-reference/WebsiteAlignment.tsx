@@ -50,7 +50,7 @@ export function WebsiteAlignment() {
       <h2 className="text-2xl font-semibold text-[#F8F5F0]">Website Alignment</h2>
       <p className="mt-2 max-w-3xl text-sm text-[#b8a898]">
         <strong className="text-[#F3EEE4]">Every client gets a free Website Alignment Review</strong>: their site measured against the
-        positioning, brand voice and offer they write in Command Suite, with the five changes that matter most, within 14 days.
+        positioning, brand voice and offer they write in Command Suite, with the five changes that matter most, within 14 days. Starter includes 1 website, Growth 2 and VIP 5.
         If their site needs rebuilding, founding clients (enrolling by Dec 17) get the <strong className="text-[#F3EEE4]">Website Build</strong>:
         up to 5 pages, live within 30 days, <strong className="text-[#F3EEE4]">$1,997</strong> (about $3,997 after the season). Only 5 Builds a month.
       </p>

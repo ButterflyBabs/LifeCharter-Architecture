@@ -5,6 +5,9 @@ import { ReviewText } from "@/components/website/ReviewText";
 
 type Client = {
   masterPlanId: string;
+  siteId: string;
+  siteNumber: number;
+  siteCount: number;
   name: string | null;
   email: string | null;
   enrolledAt: string;
@@ -35,21 +38,22 @@ export default function WebsiteReviewsPage() {
     load();
   }, []);
 
+  const keyOf = (c: Client) => c.siteId || `${c.masterPlanId}:${c.website}`;
   async function save(c: Client, publish: boolean) {
     if (publish && !confirm(`Publish this Review to ${c.name || c.email} and email them that it's ready?`)) return;
-    setBusy(c.masterPlanId);
+    setBusy(keyOf(c));
     try {
       const res = await fetch("/api/website-reviews", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ masterPlanId: c.masterPlanId, content: draft[c.masterPlanId] ?? c.review?.content ?? "", publish }),
+        body: JSON.stringify({ masterPlanId: c.masterPlanId, siteId: c.siteId || undefined, content: draft[keyOf(c)] ?? c.review?.content ?? "", publish }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Couldn't save.");
-      setMsg((m) => ({ ...m, [c.masterPlanId]: publish ? (d.emailed ? "Published and emailed." : "Published. The email didn't send; let them know yourself.") : "Saved." }));
+      setMsg((m) => ({ ...m, [keyOf(c)]: publish ? (d.emailed ? "Published and emailed." : "Published. The email didn't send; let them know yourself.") : "Saved." }));
       await load();
     } catch (e) {
-      setMsg((m) => ({ ...m, [c.masterPlanId]: (e as Error).message }));
+      setMsg((m) => ({ ...m, [keyOf(c)]: (e as Error).message }));
     } finally {
       setBusy(null);
     }
@@ -67,7 +71,7 @@ export default function WebsiteReviewsPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Private · only you can see this</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Website Alignment Reviews</h1>
         <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">
-          Each client&rsquo;s Review is due 14 days after they enroll. Claude writes it; paste it in, check the preview, and Publish. Publishing puts it in their account and emails them.
+          Each client&rsquo;s Review is due 14 days after they enroll (14 days after they add it, for a second or later website). A client can have several: Starter 1, Growth 2, VIP 5. Claude writes it; paste it in, check the preview, and Publish. Publishing puts it in their account and emails them.
         </p>
       </header>
 
@@ -78,13 +82,14 @@ export default function WebsiteReviewsPage() {
       ) : (
         list.map((c) => {
           const s = state(c);
-          const text = draft[c.masterPlanId] ?? c.review?.content ?? "";
+          const k = keyOf(c);
+          const text = draft[k] ?? c.review?.content ?? "";
           const late = s !== "Delivered" && new Date(c.due) < new Date();
           return (
-            <section key={c.masterPlanId} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
+            <section key={k} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name || c.email}</h2>
+                  <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name || c.email}{c.siteCount > 1 && <span className="ml-2 text-sm font-normal text-[#7b6b8d]">website {c.siteNumber} of {c.siteCount}</span>}</h2>
                   <p className="text-sm text-[#5b5f73] dark:text-[#b8a898]">
                     {c.website ? (
                       <a className="text-[#2E7C83] underline" href={/^https?:\/\//.test(c.website) ? c.website : `https://${c.website}`} target="_blank" rel="noreferrer">{c.website}</a>
@@ -98,32 +103,32 @@ export default function WebsiteReviewsPage() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${s === "Delivered" ? "bg-green-500/10 text-[#2f7d55]" : s === "To write" ? "bg-[#c9a227]/15 text-[#8a6a15]" : "bg-[#7b6b8d]/10 text-[#7b6b8d]"}`}>
                     {s}{s === "Delivered" && c.review?.published_at ? ` ${fmt(c.review.published_at)}` : ""}
                   </span>
-                  <button onClick={() => setOpen(open === c.masterPlanId ? null : c.masterPlanId)} className="text-sm font-medium text-[#2E7C83] hover:underline">
-                    {open === c.masterPlanId ? "Close" : c.review ? "Open" : "Write"}
+                  <button onClick={() => setOpen(open === k ? null : k)} className="text-sm font-medium text-[#2E7C83] hover:underline">
+                    {open === k ? "Close" : c.review ? "Open" : "Write"}
                   </button>
                 </div>
               </div>
 
-              {open === c.masterPlanId && (
+              {open === k && (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   <div>
                     <textarea
                       value={text}
-                      onChange={(e) => setDraft((d) => ({ ...d, [c.masterPlanId]: e.target.value }))}
+                      onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
                       rows={22}
                       placeholder={"## What's working\n\n...\n\n## The five changes that matter most\n\n1. ...\n\nUse ## for headings, - for bullets, **bold**."}
                       className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white p-3 font-mono text-[13px] text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]"
                     />
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <button disabled={busy === c.masterPlanId || !text.trim()} onClick={() => save(c, false)} className="rounded-lg border border-[#1a2b4a]/20 px-4 py-2 text-sm font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 disabled:opacity-50 dark:text-[#F8F5F0]">
+                      <button disabled={busy === k || !text.trim()} onClick={() => save(c, false)} className="rounded-lg border border-[#1a2b4a]/20 px-4 py-2 text-sm font-medium text-[#1a2b4a] hover:bg-[#1a2b4a]/5 disabled:opacity-50 dark:text-[#F8F5F0]">
                         {s === "Delivered" ? "Save changes" : "Save draft"}
                       </button>
                       {s !== "Delivered" && (
-                        <button disabled={busy === c.masterPlanId || !text.trim()} onClick={() => save(c, true)} className="rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+                        <button disabled={busy === k || !text.trim()} onClick={() => save(c, true)} className="rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
                           Publish &amp; email client
                         </button>
                       )}
-                      {msg[c.masterPlanId] && <span className="text-xs text-[#7b6b8d]">{msg[c.masterPlanId]}</span>}
+                      {msg[k] && <span className="text-xs text-[#7b6b8d]">{msg[k]}</span>}
                     </div>
                   </div>
                   <div className="rounded-xl border border-[#1a2b4a]/10 p-4 dark:border-white/10">

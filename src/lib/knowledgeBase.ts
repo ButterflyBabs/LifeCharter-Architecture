@@ -1170,7 +1170,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Growth & Reviews",
     question: "What is the Website Alignment Review?",
     answer:
-      "Every Command Suite client gets a Website Alignment Review, included. Add your website address in Set up Suite or on the Website Review page (Getting Started → Website Review), and within 14 days of joining we read your site against the positioning, voice and offer you build in the Suite and give you the five changes that matter most. You'll get an email when it's ready, and it stays on your Website Review page. If your site needs rebuilding, ask about the Website Build.",
+      "Every Command Suite client gets a Website Alignment Review, included, for one website on Starter, two on Growth and five on VIP. Add your website address in Set up Suite or on the Website Review page (Getting Started → Website Review); to add another, use Add another website on that page. Within 14 days of joining we read each site against the positioning, voice and offer you build in the Suite and give you the five changes that matter most. You'll get an email when each one is ready, and it stays on your Website Review page. A website whose Review has not been delivered yet can be taken off your list to free up a place. If your site needs rebuilding, ask about the Website Build.",
     keywords: ["website review", "website alignment", "website", "site", "review", "five changes", "website build"],
   },
   {

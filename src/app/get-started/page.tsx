@@ -128,7 +128,7 @@ export default async function GetStartedPage({
           <h2 className="mt-2 text-2xl font-semibold text-[#F8F5F0]">Website Alignment Review</h2>
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-[#b8a898]">
             Within 14 days of joining, we read your website against the positioning, voice and offer you build in the
-            Suite, and give you the five changes that matter most. It&rsquo;s yours to keep and act on.
+            Suite, and give you the five changes that matter most. It&rsquo;s yours to keep and act on. Starter includes one website, Growth two and VIP five.
           </p>
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-[#b8a898]">
             Want it done for you? The <span className="text-[#F8F5F0]">Website Alignment Build</span> rewrites and rebuilds up to
