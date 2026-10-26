@@ -9,7 +9,10 @@ export const WEBSITE_REVIEW_DEFAULT_CAP = 1; // no active plan found: the Starte
 
 export async function websiteReviewCap(db: Db, planId: string): Promise<number> {
   if (await isHousePlan(planId, db)) return WEBSITE_REVIEW_CAP_BY_TIER.vip;
-  const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", planId).maybeSingle();
+  const { data: plan } = await db.from("client_master_plans").select("user_id, metadata").eq("id", planId).maybeSingle();
+  // An account with no subscription row (a Pre-Founder beta tester) can carry its tier's number in metadata.website_reviews.
+  const own = (plan?.metadata as Record<string, unknown> | null)?.website_reviews;
+  if (typeof own === "number" && own >= 0) return own;
   if (!plan?.user_id) return WEBSITE_REVIEW_DEFAULT_CAP;
   const { data: sub } = await db.from("subscriptions").select("plan_id").eq("user_id", plan.user_id).eq("status", "active").order("created_at", { ascending: false }).limit(1).maybeSingle();
   const tier = String(sub?.plan_id || "");
