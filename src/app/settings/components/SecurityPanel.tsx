@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Shield, AlertCircle, CheckCircle, LogOut } from "lucide-react";
+import { Shield, AlertCircle, CheckCircle, LogOut, Copy, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // Real two-factor auth (TOTP via Supabase MFA) + a functional "sign out other
@@ -12,7 +12,8 @@ export default function SecurityPanel() {
   const supabase = createClient();
 
   const [factorId, setFactorId] = useState<string | null>(null); // verified TOTP factor, if any
-  const [enrolling, setEnrolling] = useState<{ factorId: string; qr: string; secret: string } | null>(null);
+  const [enrolling, setEnrolling] = useState<{ factorId: string; qr: string; secret: string; uri: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -44,7 +45,7 @@ export default function SecurityPanel() {
       if (error || !data) {
         setMsg({ ok: false, text: error?.message ?? "Couldn't start 2FA setup." });
       } else {
-        setEnrolling({ factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
+        setEnrolling({ factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret, uri: data.totp.uri });
       }
     } catch (e) {
       setMsg({ ok: false, text: errText(e) });
@@ -149,16 +150,57 @@ export default function SecurityPanel() {
         ) : enrolling ? (
           <div className="p-4 rounded-lg border border-[#1a2b4a]/10 space-y-3">
             <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
-              Scan this with an authenticator app (Google Authenticator, 1Password, Authy), then enter the
-              6-digit code to confirm.
+              Add this account to your authenticator app (Google Authenticator, 1Password, Authy), then enter the
+              6-digit code it shows to confirm. Use whichever of the three ways below suits your app.
             </p>
-            <div
-              className="w-40 h-40 bg-white rounded-lg p-2 mx-auto [&_svg]:w-full [&_svg]:h-full"
-              dangerouslySetInnerHTML={{ __html: enrolling.qr }}
-            />
-            <p className="text-center text-xs text-[#b8a898] break-all">
-              Can&apos;t scan? Enter this key: <span className="font-mono">{enrolling.secret}</span>
-            </p>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#b8a898]">1. Scan the code</p>
+              {/* The code is shown as a picture of its own fixed size, so nothing can overlap the key below it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={enrolling.qr.startsWith("data:") ? enrolling.qr : `data:image/svg+xml;utf-8,${encodeURIComponent(enrolling.qr)}`}
+                alt="QR code to scan with your authenticator app"
+                width={192}
+                height={192}
+                className="mx-auto block h-48 w-48 rounded-lg bg-white p-2"
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#b8a898]">2. Or copy the setup key</p>
+              <p className="mb-2 text-xs text-[#b8a898]">In your app, choose to add a code by hand or paste a setup key, and paste this in.</p>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={enrolling.secret}
+                  aria-label="Setup key"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="min-w-0 flex-1 rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 font-mono text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(enrolling.secret);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      /* the key is selected when the box is clicked, so it can be copied by hand */
+                    }
+                  }}
+                >
+                  {copied ? <><Check className="mr-1 h-4 w-4" /> Copied</> : <><Copy className="mr-1 h-4 w-4" /> Copy</>}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#b8a898]">3. Or open it in your app</p>
+              <p className="text-xs text-[#b8a898]">
+                On the same phone or computer as your authenticator app,{" "}
+                <a href={enrolling.uri} className="font-medium text-[#2E7C83] underline">tap here to open it in your app</a>.
+              </p>
+            </div>
             <Input
               type="text"
               inputMode="numeric"
