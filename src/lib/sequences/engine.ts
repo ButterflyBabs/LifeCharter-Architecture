@@ -161,7 +161,7 @@ interface SeqRow {
 }
 
 export async function sendRendered(
-  seq: Pick<SeqRow, "from_name" | "from_email" | "reply_to">,
+  seq: Pick<SeqRow, "from_name" | "from_email" | "reply_to"> & { bcc?: string[] },
   to: string,
   contactId: string,
   mail: { subject: string; html: string; text: string },
@@ -177,7 +177,9 @@ export async function sendRendered(
     body: JSON.stringify({
       from: `${seq.from_name} <${seq.from_email}>`,
       to,
-      reply_to: seq.reply_to,
+      // Several reply addresses can be stored comma-separated; Resend takes an array for more than one.
+      reply_to: seq.reply_to.includes(",") ? seq.reply_to.split(",").map((x) => x.trim()).filter(Boolean) : seq.reply_to,
+      ...(seq.bcc?.length ? { bcc: seq.bcc.filter((x) => x.toLowerCase() !== to.toLowerCase()) } : {}),
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
@@ -206,7 +208,7 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
     .maybeSingle();
   if (!enr || enr.status !== "active") return 0;
   const [{ data: seq }, { data: contact }, { data: steps }, { data: sent }] = await Promise.all([
-    db.from("sequences").select("id, master_plan_id, name, brand, from_name, from_email, reply_to, send_hour, active, skip_tags").eq("id", enr.sequence_id).maybeSingle(),
+    db.from("sequences").select("id, key, master_plan_id, name, brand, from_name, from_email, reply_to, send_hour, active, skip_tags").eq("id", enr.sequence_id).maybeSingle(),
     db.from("seq_contacts").select("id, email, first_name, timezone, unsubscribed_at, tags").eq("id", enr.contact_id).maybeSingle(),
     db.from("sequence_steps").select("id, position, day_offset, subject, preview, body, button_label, button_url").eq("sequence_id", enr.sequence_id).order("position"),
     db.from("sequence_sends").select("step_id").eq("enrollment_id", enr.id),
@@ -246,7 +248,9 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
       .select("id");
     if (!claim?.length) continue; // another run already has it
     const mail = renderStep({ brand: s.brand, subject: st.subject, preview: st.preview, body: st.body, buttonLabel: st.button_label, buttonUrl: st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null }, footer: who.house ? undefined : who.footer });
-    const r = await sendRendered(who.house ? s : clientFrom(who), contact.email as string, contact.id as string, mail, who.house ? undefined : who.resendKey);
+    // Call to Close consultant campaigns are always copied to Babs (hidden copy).
+    const copy = who.house && String((seq as { key?: string } | null)?.key ?? "").startsWith("c2c-") ? ["amilynne@amilynnecarroll.com"] : undefined;
+    const r = await sendRendered(who.house ? { ...s, bcc: copy } : clientFrom(who), contact.email as string, contact.id as string, mail, who.house ? undefined : who.resendKey);
     await db
       .from("sequence_sends")
       .update(r.ok ? { status: "sent", resend_id: r.id ?? null, sent_at: new Date().toISOString() } : { status: "failed", error: (r.error || "").slice(0, 500) })
