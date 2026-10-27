@@ -183,7 +183,7 @@ export async function resolveActor(): Promise<Actor> {
 export async function houseFeatureLevel(feature: string): Promise<"none" | "view" | "edit"> {
   if (await isAlignmentArchitect()) return "edit";
   const actor = await resolveActor();
-  if (actor.kind !== "member" || !actor.workspaceId || actor.role === "sales") return "none";
+  if (actor.kind !== "member" || !actor.workspaceId || actor.role === "sales" || actor.role === "consultant") return "none";
   const feats = (actor.permissions as { features?: Record<string, string> }).features;
   const level = feats?.[feature];
   if (level !== "view" && level !== "edit") return "none";

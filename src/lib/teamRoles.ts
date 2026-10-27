@@ -13,7 +13,18 @@
 
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 
-export type TeamRole = "admin" | "editor" | "viewer" | "sales";
+//   consultant — a Call to Close consultant (Mide): ONE page, /call-to-close (their own pipeline, calendar, contacts and
+//            sales resources) and the few APIs behind it. Nothing else in the Suite opens, by default.
+export type TeamRole = "admin" | "editor" | "viewer" | "sales" | "consultant";
+
+export const CONSULTANT_PAGES = ["/call-to-close"];
+export const CONSULTANT_APIS = [
+  "/api/c2c", // their own pipeline board, cards and contacts (the route only ever reaches the board that carries their email)
+  "/api/sales/my-calendar", // their own calls and hours
+  "/api/sales/checkout-session", // the Stripe checkout for the plan a prospect chooses (credited to them)
+  "/api/sales/send-agreement", // the Year-1 agreement for signature (LC Plume)
+  "/api/account/switch",
+];
 
 export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
 export const SALES_APIS = [
@@ -54,6 +65,7 @@ export function memberApiAccess(role: string | null, path: string, method: strin
   const reading = method === "GET" || method === "HEAD";
 
   if (r === "sales") return under(path, SALES_APIS) ? ok : no("Your role only includes the sales page.");
+  if (r === "consultant") return under(path, CONSULTANT_APIS) ? ok : no("Your role only includes your Call to Close page.");
 
   if (under(path, BILLING_APIS)) return no("Only the account owner can manage billing.");
   if (under(path, CONNECTION_APIS)) {
@@ -76,6 +88,7 @@ export function memberApiAccess(role: string | null, path: string, method: strin
 /** Page check for an invited team member. Returns where to send them instead, or null to allow. */
 export function memberPageRedirect(role: string | null, path: string): string | null {
   if (role === "sales") return under(path, SALES_PAGES) ? null : "/sales-reference";
+  if (role === "consultant") return under(path, CONSULTANT_PAGES) ? null : "/call-to-close";
   return null; // other roles see pages; what they can do there is enforced on the API above
 }
 

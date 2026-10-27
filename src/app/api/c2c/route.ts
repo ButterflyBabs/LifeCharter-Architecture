@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect, sessionUser } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
-import { BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
+import { BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
 import { setBookingOutcome } from "@/lib/booking/engine";
 
 export const dynamic = "force-dynamic";
@@ -26,19 +26,25 @@ async function mine(request: Request) {
   if (!planId) return { error: NextResponse.json({ error: "No house account." }, { status: 500 }) } as const;
   const board = (await consultantBoards(db, planId, email))[0];
   if (!board) return { error: NextResponse.json({ error: "not found" }, { status: 404 }) } as const;
-  return { db, planId, board } as const;
+  return { db, planId, board, asEmail: email } as const;
 }
 
 export async function GET(request: Request) {
   const r = await mine(request);
   if ("error" in r) return r.error;
-  const { db, planId, board } = r;
+  const { db, planId, board, asEmail } = r;
   const [stages, { data: cards }] = await Promise.all([
     c2cStages(db, planId, board.id),
     db.from("dm_cards").select(CARD_COLS).eq("master_plan_id", planId).eq("board_id", board.id).order("sort_order").order("created_at", { ascending: false }).limit(1000),
   ]);
   const key = consultantKey(board.name);
+  // Their own affiliate code (every enrollment through their pipeline is credited to it) and their shareable link.
+  const { data: aff } = await db.from("affiliates").select("code").eq("master_plan_id", planId).ilike("email", asEmail).eq("status", "active").maybeSingle();
+  const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
   return NextResponse.json({
+    affiliateCode: (aff?.code as string) ?? null,
+    shareLink: aff?.code ? `${app}/r/${aff.code}` : null,
+    bookingLink: `${app}/book/discovery-call-${key}`,
     consultant: board.name.replace(BOARD_PREFIX, ""),
     board: { id: board.id, name: board.name },
     stages: stages.map((s) => ({ id: s.id, key: s.key, name: s.name, kind: s.kind })),
@@ -62,6 +68,13 @@ export async function POST(request: Request) {
     case "add": {
       const res = await addProspect(db, planId, board, TZ, b);
       return "error" in res ? NextResponse.json({ error: res.error }, { status: 400 }) : NextResponse.json({ card: res.card });
+    }
+    case "import": {
+      // Their leads, loaded from a spreadsheet: cards on their own board only. No CRM contact is made until a call is booked.
+      const rows = Array.isArray(b.rows) ? (b.rows as Record<string, unknown>[]).slice(0, 500) : [];
+      if (!rows.length) return NextResponse.json({ error: "No rows to add." }, { status: 400 });
+      const res = await importProspects(db, planId, board, TZ, rows);
+      return NextResponse.json(res);
     }
     case "update": {
       const card = await own();

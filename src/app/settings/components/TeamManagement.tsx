@@ -31,7 +31,7 @@ import TeamActivity from "./TeamActivity";
 import MemberAiCap from "./MemberAiCap";
 import type { AccessExtras, FeatureMap } from "@/lib/teamRoles";
 
-type Role = "admin" | "editor" | "viewer" | "sales";
+type Role = "admin" | "editor" | "viewer" | "sales" | "consultant";
 
 interface TeamMember {
   id: string;
@@ -68,6 +68,7 @@ const roleLabels: Record<Role, string> = {
   editor: "Editor",
   viewer: "Viewer",
   sales: "Sales (restricted)",
+  consultant: "Call to Close consultant (restricted)",
 };
 
 const roleDescriptions: Record<string, string> = {
@@ -76,6 +77,7 @@ const roleDescriptions: Record<string, string> = {
   editor: "Works on the business: tasks, plans, content, finance and sales activity. No team, settings, billing or inbox",
   viewer: "Sees what an Editor sees, but can't change anything",
   sales: "The sales page only, with its contacts. No dashboard or client data",
+  consultant: "One page: their own pipeline, contacts, calendar and sales resources. Nothing else in the Suite",
 };
 
 export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: TeamManagementProps) {
@@ -459,7 +461,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                 Role
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {(canGrantSales ? (["admin", "editor", "viewer", "sales"] as const) : (["admin", "editor", "viewer"] as const)).map((role) => (
+                {(canGrantSales ? (["admin", "editor", "viewer", "sales", "consultant"] as const) : (["admin", "editor", "viewer"] as const)).map((role) => (
                   <button
                     key={role}
                     onClick={() => setNewMember({ ...newMember, role })}
@@ -594,9 +596,10 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>
                       {(canGrantSales || member.role === "sales") && <option value="sales">Sales (restricted)</option>}
+                    {(canGrantSales || member.role === "consultant") && <option value="consultant">Call to Close consultant (restricted)</option>}
                     </select>
 
-                    {member.role !== "admin" && member.role !== "sales" && (
+                    {member.role !== "admin" && member.role !== "sales" && member.role !== "consultant" && (
                       <Button variant={accessOpen === member.id ? "primary" : "outline"} size="sm" disabled={isBusy} onClick={() => setAccessOpen(accessOpen === member.id ? null : member.id)} title="Add or remove what they can reach">
                         <Pencil className="w-4 h-4" />
                         <span className="ml-2">{accessOpen === member.id ? "Close" : "Edit access"}</span>
@@ -633,7 +636,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
 
                 <MemberAccessSummary role={member.role} roleText={roleDescriptions[member.role] ?? ""} access={member.access ?? null} pageTitles={pageTitles} showHouse={isArchitect} />
 
-                {member.role !== "sales" && (
+                {member.role !== "sales" && member.role !== "consultant" && (
                   <MemberAiCap
                     used={member.aiUsedThisMonth ?? 0}
                     cap={member.aiMonthlyCap ?? null}

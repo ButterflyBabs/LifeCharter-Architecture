@@ -8,7 +8,7 @@ import { usageMonth } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
 
-const ROLES = ["admin", "editor", "viewer", "sales"] as const;
+const ROLES = ["admin", "editor", "viewer", "sales", "consultant"] as const;
 type Role = (typeof ROLES)[number];
 
 type MemberRow = {
@@ -78,7 +78,7 @@ export async function PATCH(
   if (typeof body.name === "string") update.name = body.name.trim();
   if (typeof body.role === "string" && ROLES.includes(body.role as Role)) {
     // Sales opens the owner's own sales page and contacts, so only the owner (super admin) may grant it.
-    if (body.role === "sales" && !(await isSuperAdmin())) {
+    if ((body.role === "sales" || body.role === "consultant") && !(await isSuperAdmin())) {
       return NextResponse.json({ error: "The Sales role isn't available for this account. Choose Admin, Editor or Viewer." }, { status: 400 });
     }
     update.role = body.role;

@@ -57,7 +57,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     }
 
-    const { tier, email, fullName, sessionSource, alumni, split, annual } = await req.json();
+    const { tier, email, fullName, sessionSource, alumni, split, annual, affiliate: affiliateBody } = await req.json();
+    // A Call to Close consultant sells from their own pipeline: their affiliate code rides in the body (this route is house-team only).
+    const affiliateCode = (typeof affiliateBody === "string" && /^[a-z0-9-]{1,40}$/i.test(affiliateBody) ? affiliateBody : "") || cookies().get(AFF_COOKIE)?.value || "";
     if (!TIERS.includes(tier as Tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
@@ -128,7 +130,7 @@ export async function POST(req: NextRequest) {
           fullName: fullName || "",
           sessionSource: sessionSource || "",
           alumni: isAlumni ? "true" : "false",
-          affiliate: cookies().get(AFF_COOKIE)?.value || "",
+          affiliate: affiliateCode,
           implPlan: "annual",
           // What counts as the implementation part for implementation-only affiliate links.
           implCents: String(Math.max(0, prices.implementationCents - (isAlumni ? ALUMNI_CREDIT_CENTS : 0))),
@@ -175,7 +177,7 @@ export async function POST(req: NextRequest) {
         fullName: fullName || "",
         sessionSource: sessionSource || "",
         alumni: isAlumni ? "true" : "false",
-        affiliate: cookies().get(AFF_COOKIE)?.value || "",
+        affiliate: affiliateCode,
         ...(isSplit ? { implPlan: "split", implSecondHalfCents: String(secondHalf) } : {}),
       },
     });

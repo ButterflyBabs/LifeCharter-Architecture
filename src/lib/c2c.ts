@@ -239,3 +239,40 @@ export async function c2cOnOutcome(db: Db, planId: string, bookingId: string, ou
   const target = stageByKey(stages, outcome === "attended" ? "c2c_attended" : "c2c_no_show");
   if (target && target.id !== card.stage_id) await moveCard(db, planId, card.id as string, target, board.name as string, tz);
 }
+
+/** A list of leads for a consultant: a card each (skipping anyone already on the board by email, or with no name). */
+export async function importProspects(db: Db, planId: string, board: Board, tz: string, rows: Record<string, unknown>[]): Promise<{ added: number; skipped: number; errors: string[] }> {
+  const stages = await c2cStages(db, planId, board.id);
+  const first = stageByKey(stages, "c2c_new") ?? stages[0];
+  if (!first) return { added: 0, skipped: rows.length, errors: ["This pipeline has no stages yet."] };
+  const { data: have } = await db.from("dm_cards").select("email").eq("master_plan_id", planId).eq("board_id", board.id).not("email", "is", null);
+  const seen = new Set(((have ?? []) as { email: string }[]).map((r) => r.email.toLowerCase()));
+  const tag = leadTag(consultantKey(board.name), tz);
+  let added = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const { patch, error } = cardFields(row);
+    const email = (patch.email as string | null) ?? null;
+    if (error || !patch.name) {
+      skipped++;
+      if (errors.length < 5) errors.push(`Row ${i + 1}: ${error || "no name"}`);
+      continue;
+    }
+    if (email && seen.has(email)) {
+      skipped++;
+      continue;
+    }
+    const made = await createCard(db, planId, board, first, tz, { name: String(patch.name), email, platform: null, notes: (patch.notes as string | null) ?? null });
+    if ("error" in made && made.error) {
+      skipped++;
+      continue;
+    }
+    const id = (made as { card: { id: string } }).card.id;
+    await db.from("dm_cards").update({ ...patch, lead_tag: tag, card_tags: [tag] }).eq("id", id).eq("master_plan_id", planId);
+    if (email) seen.add(email);
+    added++;
+  }
+  return { added, skipped, errors };
+}

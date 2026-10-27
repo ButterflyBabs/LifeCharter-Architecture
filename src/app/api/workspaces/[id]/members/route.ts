@@ -9,7 +9,7 @@ import { withinStandingLimit } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
-const ROLES = ["admin", "editor", "viewer", "sales"] as const;
+const ROLES = ["admin", "editor", "viewer", "sales", "consultant"] as const;
 type Role = (typeof ROLES)[number];
 
 type MemberRow = {
@@ -96,7 +96,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const role: Role = ROLES.includes(body.role as Role) ? (body.role as Role) : "editor";
   // Sales opens the owner's own sales page and contacts, so only the owner (super admin) may grant it.
-  if (role === "sales" && !(await isSuperAdmin())) {
+  if ((role === "sales" || role === "consultant") && !(await isSuperAdmin())) {
     return NextResponse.json({ error: "The Sales role isn't available for this account. Choose Admin, Editor or Viewer." }, { status: 400 });
   }
   const name =

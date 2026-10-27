@@ -4,7 +4,7 @@ import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { COLLECTIVE_FORWARD_STATUS, COLLECTIVE_HOST, COLLECTIVE_HOST_LIVE, SUITE_HOST, collectiveHostAllows, isCollectiveHost, isLegacyCollectivePath, isSuiteProductionHost } from "@/lib/collective";
-import { SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
+import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
 // window: until you set AUTH_ENABLED=true (after creating your Supabase user),
@@ -105,6 +105,7 @@ const PUBLIC_APIS = [
 // scoped to the sales page and its own APIs — built for Marcello, who runs the
 // sales-reference form but shouldn't see client data, the dashboard, or anything else.
 const SALES_ROLE = "sales";
+const CONSULTANT_ROLE = "consultant"; // a Call to Close consultant: one page (/call-to-close), see teamRoles.ts
 
 // The owner's own sales page and the APIs behind it read the owner's own Suite CRM
 // contacts. Only the owner (super admin) and the owner's own team may
@@ -449,10 +450,11 @@ export async function middleware(request: NextRequest) {
     memberExtras = info.extras;
     isHouseMember = info.isMember && (await isHouseWorkspace(info.workspaceId));
     // Sales outside the owner's own workspace falls back to view-only.
-    if (memberRole === SALES_ROLE && !isHouseMember) memberRole = "viewer";
+    if ((memberRole === SALES_ROLE || memberRole === CONSULTANT_ROLE) && !isHouseMember) memberRole = "viewer";
   }
   if (user && !authed && ownsAccount) authed = true; // asked for the team account but not a member: their own
   const isSalesOnly = authed && isTeamMember && memberRole === SALES_ROLE;
+  const isConsultant = authed && isTeamMember && memberRole === CONSULTANT_ROLE;
   let isCommunityOnly = false;
   if (user && !authed && (await isCommunityMember(user.id))) {
     authed = true;
@@ -541,6 +543,9 @@ export async function middleware(request: NextRequest) {
     if (isSalesOnly && !SALES_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
+    if (isConsultant && !CONSULTANT_APIS.some((p) => path === p || path.startsWith(p + "/"))) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     if (isTeamMember) {
       const roleVerdict = memberApiAccess(memberRole, path, request.method, memberFeatures);
       let verdict = roleVerdict.allow ? featureApiAccess(memberFeatures, path, request.method, memberExtras) : roleVerdict;
@@ -607,6 +612,9 @@ export async function middleware(request: NextRequest) {
   }
   if (isSalesOnly && !SALES_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
     return NextResponse.redirect(new URL("/sales-reference", request.url));
+  }
+  if (isConsultant && !CONSULTANT_PAGES.some((p) => path === p || path.startsWith(p + "/"))) {
+    return NextResponse.redirect(new URL("/call-to-close", request.url));
   }
   if (isTeamMember) {
     const dest = memberPageRedirect(memberRole, path) ?? (demoMember && isDemo ? null : featurePageRedirect(memberFeatures, path, memberExtras) ?? restrictedPageRedirect(memberFeatures, memberExtras, path));
