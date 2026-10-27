@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCard, moveCard, retagContact, shapeStage, slugTag, type Board, type DmStage } from "@/lib/dmPipeline";
 import { logEvent } from "@/lib/crm";
+import { enrolContact } from "@/lib/sequences/engine";
 import { nowParts } from "@/lib/finance/period";
 
 // Call to Close consultants (Mide first). A consultant has their OWN pipeline board in the house account's Outreach
@@ -31,6 +32,27 @@ export const leadTag = (key: string, tz = "America/Denver", now: Date = new Date
 export const discoveryTag = (key: string) => `c2c-${key}-discovery`;
 export const followupTag = (key: string) => `c2c-${key}-followup`;
 export const closeTag = (key: string, tier: C2cTier, ymd: string) => `c2c-${key}-${tier}-${ymd}`;
+
+// The 5-email no-show follow-up (campaign key c2c-<name>-no-show), signed by the consultant, with their booking link. It starts
+// by itself for THEIR no-shows only (a call booked on their calendar that was missed) and stops when the person rebooks, closes,
+// or is moved on. It only runs while the campaign is switched on in Campaigns & Broadcasts.
+export const noShowKey = (key: string) => `c2c-${key}-no-show`;
+
+export async function startNoShowSeries(db: Db, planId: string, key: string, contactId: string | null): Promise<void> {
+  if (!contactId) return;
+  const { data: seq } = await db.from("sequences").select("id, active").eq("master_plan_id", planId).eq("key", noShowKey(key)).maybeSingle();
+  if (!seq?.active) return;
+  const { data: c } = await db.from("seq_contacts").select("email, first_name, last_name").eq("id", contactId).eq("master_plan_id", planId).maybeSingle();
+  if (!c?.email) return;
+  await enrolContact({ masterPlanId: planId, sequenceKey: noShowKey(key), email: c.email as string, firstName: (c.first_name as string) ?? null, lastName: (c.last_name as string) ?? null, source: "c2c:no-show" }).catch((e) => console.error("c2c no-show series:", e));
+}
+
+export async function stopNoShowSeries(db: Db, planId: string, key: string, contactId: string | null): Promise<void> {
+  if (!contactId) return;
+  const { data: seq } = await db.from("sequences").select("id").eq("master_plan_id", planId).eq("key", noShowKey(key)).maybeSingle();
+  if (!seq) return;
+  await db.from("sequence_enrollments").update({ status: "stopped" }).eq("sequence_id", seq.id).eq("contact_id", contactId).eq("status", "active");
+}
 
 /** The boards that belong to one consultant (matched by sign-in email). */
 export async function consultantBoards(db: Db, planId: string, email: string): Promise<(Board & { name: string })[]> {
@@ -155,6 +177,9 @@ export async function moveProspect(db: Db, planId: string, board: Board, cardId:
   if (stage.key === "c2c_followup") {
     await db.from("dm_cards").update({ card_tags: union(saved.card_tags as string[], [followupTag(key)]) }).eq("id", cardId).eq("master_plan_id", planId);
   }
+  const contactId = (saved.contact_id as string | null) ?? null;
+  if (stage.key === "c2c_no_show") await startNoShowSeries(db, planId, key, contactId);
+  else if (["c2c_booked", "c2c_attended", "c2c_followup", "c2c_not_now"].includes(stage.key ?? "")) await stopNoShowSeries(db, planId, key, contactId);
   const { data } = await db.from("dm_cards").select(CARD_COLS).eq("id", cardId).single();
   return shapeCard(data as Record<string, unknown>);
 }
@@ -173,6 +198,7 @@ export async function closeProspect(db: Db, planId: string, board: Board, cardId
   await moveCard(db, planId, cardId, stage, board.name, tz);
   await db.from("dm_cards").update({ closed_tier: tier, closed_on: ymd, card_tags: union(card.card_tags as string[], [tag]), updated_at: new Date().toISOString() }).eq("id", cardId).eq("master_plan_id", planId);
   await retagContact(db, planId, (card.contact_id as string | null) ?? null, [tag], []);
+  await stopNoShowSeries(db, planId, consultantKey(board.name), (card.contact_id as string | null) ?? null);
   if (card.contact_id) await logEvent(planId, card.contact_id as string, "manual", `${board.name}: closed, enrolled in ${TIER_LABEL[tier as C2cTier]}`, { dm_card: cardId }, db as never).catch(() => {});
   const { data } = await db.from("dm_cards").select(CARD_COLS).eq("id", cardId).single();
   return shapeCard(data as Record<string, unknown>);
@@ -224,11 +250,13 @@ export async function c2cOnBooking(
     .eq("master_plan_id", planId);
   // The contact now exists, so the tags that were only on the card go on it too.
   await retagContact(db, planId, i.contactId, [tag, discoveryTag(key)], []);
+  // They rebooked: the no-show emails stop.
+  await stopNoShowSeries(db, planId, key, i.contactId ?? (card.contact_id as string | null) ?? null);
 }
 
 /** Zoom or the host marked a booked call attended or missed: the card follows (unless it has moved on to follow-up or closed). */
 export async function c2cOnOutcome(db: Db, planId: string, bookingId: string, outcome: "attended" | "no_show", tz = "America/Denver"): Promise<void> {
-  const { data: card } = await db.from("dm_cards").select("id, board_id, stage_id").eq("master_plan_id", planId).eq("discovery_booking_id", bookingId).maybeSingle();
+  const { data: card } = await db.from("dm_cards").select("id, board_id, stage_id, contact_id").eq("master_plan_id", planId).eq("discovery_booking_id", bookingId).maybeSingle();
   if (!card) return;
   const { data: board } = await db.from("pipeline_boards").select("id, name, tag, sort_order").eq("id", card.board_id).maybeSingle();
   if (!board) return;
@@ -238,6 +266,8 @@ export async function c2cOnOutcome(db: Db, planId: string, bookingId: string, ou
   if (cur && ["c2c_followup", "c2c_closed", "c2c_not_now"].includes(cur.key ?? "")) return;
   const target = stageByKey(stages, outcome === "attended" ? "c2c_attended" : "c2c_no_show");
   if (target && target.id !== card.stage_id) await moveCard(db, planId, card.id as string, target, board.name as string, tz);
+  // A missed discovery call starts that consultant's 5-email follow-up (only theirs: it is keyed to their board).
+  if (outcome === "no_show") await startNoShowSeries(db, planId, consultantKey(board.name as string), (card.contact_id as string | null) ?? null);
 }
 
 /** A list of leads for a consultant: a card each (skipping anyone already on the board by email, or with no name). */

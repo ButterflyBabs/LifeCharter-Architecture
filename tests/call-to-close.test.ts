@@ -50,3 +50,9 @@ test("a Call to Close consultant reaches one page and a few APIs, nothing else",
   assert.equal(memberPageRedirect("consultant", "/settings"), null);
   assert.ok(hiddenSettingsTabs("consultant").includes("billing") && !hiddenSettingsTabs("consultant").includes("security") && !hiddenSettingsTabs("consultant").includes("profile"));
 });
+
+import { noShowKey } from "../src/lib/c2c";
+test("the no-show campaign is keyed to the consultant, so it only ever follows their own no-shows", () => {
+  assert.equal(noShowKey("mide"), "c2c-mide-no-show");
+  assert.notEqual(noShowKey("mide"), noShowKey("other"));
+});
