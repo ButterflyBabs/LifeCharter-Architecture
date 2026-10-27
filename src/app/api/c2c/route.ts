@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect, sessionUser, viewedMember } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
-import { BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
+import { seriesFor, BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
 import { setBookingOutcome } from "@/lib/booking/engine";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +40,7 @@ export async function GET(request: Request) {
     db.from("dm_cards").select(CARD_COLS).eq("master_plan_id", planId).eq("board_id", board.id).order("sort_order").order("created_at", { ascending: false }).limit(1000),
   ]);
   const key = consultantKey(board.name);
+  const series = await seriesFor(db, planId, key, (cards ?? []) as { contact_id?: unknown }[]);
   // Their own affiliate code (every enrollment through their pipeline is credited to it) and their shareable link.
   const { data: aff } = await db.from("affiliates").select("code").eq("master_plan_id", planId).ilike("email", asEmail).eq("status", "active").maybeSingle();
   const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
     consultant: board.name.replace(BOARD_PREFIX, ""),
     board: { id: board.id, name: board.name },
     stages: stages.map((s) => ({ id: s.id, key: s.key, name: s.name, kind: s.kind })),
-    cards: ((cards ?? []) as Record<string, unknown>[]).map(shapeCard),
+    cards: ((cards ?? []) as Record<string, unknown>[]).map((c) => ({ ...shapeCard(c), series: series.get(c.contact_id as string) ?? null })),
     tags: { lead: leadTag(key, TZ), discovery: discoveryTag(key), followup: followupTag(key) },
     tiers: C2C_TIERS.map((t) => ({ id: t, label: TIER_LABEL[t] })),
   });

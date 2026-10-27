@@ -11,7 +11,12 @@ interface Card {
   id: string; stageId: string; name: string; businessName: string; email: string; phone: string; linkedin: string; facebook: string; instagram: string;
   leadTag: string; discoveryAt: string | null; outcome: "attended" | "no_show" | null; followupAt: string | null; closedTier: string; closedOn: string | null;
   tags: string[]; inCrm: boolean; notes: string;
+  series: { sent: number; total: number; status: string; nextOn: string | null } | null;
 }
+const seriesLabel = (x: NonNullable<Card["series"]>) =>
+  x.status === "completed" ? `Follow-up emails: all ${x.total} sent`
+  : x.status === "active" ? `Follow-up email ${Math.min(x.sent + 1, x.total)} of ${x.total}${x.nextOn ? ` · next ${new Date(`${x.nextOn}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}`
+  : `Follow-up emails ${x.status} · ${x.sent} of ${x.total} sent`;
 interface Data {
   consultant: string; board: { id: string; name: string }; stages: Stage[]; cards: Card[];
   tags: { lead: string; discovery: string; followup: string }; tiers: { id: string; label: string }[];
@@ -106,6 +111,7 @@ export default function CallToClose({ as }: { as: string | null }) {
                         <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.name}</p>
                         {c.businessName && <p className="text-xs text-[#7a8a99]">{c.businessName}</p>}
                         {c.discoveryAt && <p className="mt-1 text-xs text-[#2E7C83]">Call: {when(c.discoveryAt)}</p>}
+                        {c.series && <p className="mt-1 text-[11px] font-medium text-[#B0342C]">{seriesLabel(c.series)}</p>}
                         <div className="mt-1 flex flex-wrap gap-1">
                           {c.outcome && <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${c.outcome === "attended" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#FBECEA] text-[#B0342C]"}`}>{c.outcome === "attended" ? "Attended" : "No-show"}</span>}
                           {c.closedTier && <span className="rounded-full bg-[#c9a227]/20 px-2 py-0.5 text-[10px] font-medium text-[#7a5d00]">Closed · {c.closedTier}</span>}
@@ -269,6 +275,7 @@ function Drawer({ card, data, stageName, onClose, post }: { card: Card; data: Da
           <p><b>Stage:</b> {stageName.get(card.stageId)} {card.inCrm ? "· in the CRM" : "· not in the CRM yet (until they book a call)"}</p>
           {card.leadTag && <p><b>Lead source:</b> {card.leadTag}</p>}
           <p><b>Discovery call:</b> {card.discoveryAt ? when(card.discoveryAt) : "not booked"}{card.outcome ? ` · ${card.outcome === "attended" ? "attended" : "no-show"}` : ""}</p>
+          {card.series && <p><b>No-show emails:</b> {seriesLabel(card.series)}</p>}
           {card.closedTier && <p><b>Closed:</b> {card.closedTier}{card.closedOn ? ` on ${card.closedOn}` : ""}</p>}
           {card.tags.length > 0 && <p className="flex flex-wrap gap-1"><b>Tags:</b> {card.tags.map((t) => <span key={t} className="rounded-full bg-white px-2 py-0.5 dark:bg-[#1a2b4a]/40">{t}</span>)}</p>}
         </div>

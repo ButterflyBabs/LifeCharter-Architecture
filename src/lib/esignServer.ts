@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { BABS_COPY, involvesCopied, replyWithBabs } from "@/lib/teamCopy";
 import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
 import { brandFor as portalBrand, PORTAL_BUCKET } from "@/lib/portal";
@@ -40,7 +41,7 @@ export async function audit(db: Db, documentId: string, event: string, extra: { 
 export const signerUrl = (token: string) => `${APP()}/sign/${token}`;
 
 /** Send one signing email: the account's own address when it has one, else the Suite's. */
-export async function signMail(db: Db, planId: string, m: { to: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string }; attachments?: { filename: string; content: string }[] }): Promise<boolean> {
+export async function signMail(db: Db, planId: string, m: { docId?: string; to: string; subject: string; heading: string; lines: string[]; button?: { label: string; url: string }; attachments?: { filename: string; content: string }[] }): Promise<boolean> {
   const who = await accountSender(planId, { marketing: false }, db).catch(() => null);
   const brand = await brandFor(db, planId);
   const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", planId).maybeSingle();
@@ -50,13 +51,19 @@ export async function signMail(db: Db, planId: string, m: { to: string; subject:
   if (!key) return false;
   const from = useOwn ? `${(who as { fromName: string }).fromName.replace(/[<>"]/g, "")} <${(who as { fromEmail: string }).fromEmail}>` : who && who.ok && who.house ? `${brand.name.replace(/[<>"]/g, "")} <signatures@lccommandsuite.com>` : `${brand.name.replace(/[<>"]/g, "")} via LifeCharter Command Suite <signatures@lccommandsuite.com>`;
   const replyTo = useOwn ? (who as { replyTo: string }).replyTo : owner || undefined;
+  // Agreements sent by Mide or Marcello are always copied to Babs (never the one-time signing code).
+  let copyBabs = false;
+  if (m.docId && m.heading !== "Your signing code" && m.to.toLowerCase() !== BABS_COPY) {
+    const { data: d } = await db.from("sign_documents").select("created_by").eq("id", m.docId).maybeSingle();
+    copyBabs = involvesCopied(d?.created_by as string | null);
+  }
   const body = m.lines.filter(Boolean).map((l) => `<p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#2E3A46">${l}</p>`).join("");
   const button = m.button ? `<p style="margin:18px 0 6px"><a href="${m.button.url}" style="display:inline-block;background:#2E7C83;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;font-size:14px;padding:11px 22px;border-radius:999px">${esc(m.button.label)}</a></p>` : "";
   const html = `<!doctype html><html><body style="margin:0;background:#FBF8F1"><table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F1;padding:28px 12px"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:18px;padding:28px;border:1px solid #EADFCF"><tr><td><h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:22px;color:#0F5B63">${esc(m.heading)}</h1>${body}${button}<p style="margin:18px 0 0;font-family:Arial,sans-serif;font-size:11px;color:#9aa3ad">Sent for ${esc(brand.name)} through the LifeCharter Command Suite. Questions? Reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: m.to, reply_to: replyTo, subject: m.subject, html, ...(m.attachments ? { attachments: m.attachments } : {}) }),
+    body: JSON.stringify({ from, to: m.to, reply_to: replyWithBabs(replyTo, copyBabs), ...(copyBabs ? { bcc: [BABS_COPY] } : {}), subject: m.subject, html, ...(m.attachments ? { attachments: m.attachments } : {}) }),
   }).catch(() => null);
   return Boolean(r?.ok);
 }
@@ -70,7 +77,7 @@ export async function loadDoc(db: Db, id: string) {
 }
 
 async function inviteMail(db: Db, doc: Doc, s: { name: string; email: string }, token: string, brandName: string): Promise<boolean> {
-  return signMail(db, doc.master_plan_id, {
+  return signMail(db, doc.master_plan_id, { docId: doc.id,
     to: s.email,
     subject: `Please sign: ${doc.title}`,
     heading: `${brandName} sent you ${doc.kind === "proposal" ? "a proposal" : "a document"} to sign`,
@@ -143,7 +150,7 @@ export async function resendDocument(db: Db, doc: Doc, signers: Signer[], opts: 
     const to = email ? [email] : Array.from(new Set(pick.map((s) => s.email.toLowerCase())));
     let sent = 0;
     for (const addr of to) {
-      const ok = await signMail(db, doc.master_plan_id, { to: addr, subject: `Signed: ${doc.title}`, heading: "Your signed copy", lines: [`Here is the signed copy of <strong>${esc(doc.title)}</strong> from ${esc(brand.name)}, with its certificate of completion attached.`], attachments: [{ filename: fileName, content: bytes.toString("base64") }] });
+      const ok = await signMail(db, doc.master_plan_id, { docId: doc.id, to: addr, subject: `Signed: ${doc.title}`, heading: "Your signed copy", lines: [`Here is the signed copy of <strong>${esc(doc.title)}</strong> from ${esc(brand.name)}, with its certificate of completion attached.`], attachments: [{ filename: fileName, content: bytes.toString("base64") }] });
       await audit(db, doc.id, ok ? "Signed copy resent" : "Resending the signed copy failed", { detail: addr });
       if (ok) sent++;
     }
@@ -199,7 +206,7 @@ export async function sendCode(db: Db, doc: Doc, s: Signer, ip: string | null, u
   const { code, hash } = newCode(s.id);
   await db.from("sign_signers").update({ code_hash: hash, code_expires_at: new Date(Date.now() + CODE_MINUTES * 60_000).toISOString(), code_attempts: 0 }).eq("id", s.id);
   const brand = await brandFor(db, doc.master_plan_id);
-  const ok = await signMail(db, doc.master_plan_id, { to: s.email, subject: `Your code to sign: ${code}`, heading: "Your signing code", lines: [`Your code to open <strong>${esc(doc.title)}</strong> from ${esc(brand.name)} is:`, `<span style="font-size:28px;letter-spacing:6px;font-weight:bold">${code}</span>`, `It works for ${CODE_MINUTES} minutes. If you didn't ask for it, you can ignore this email.`] });
+  const ok = await signMail(db, doc.master_plan_id, { docId: doc.id, to: s.email, subject: `Your code to sign: ${code}`, heading: "Your signing code", lines: [`Your code to open <strong>${esc(doc.title)}</strong> from ${esc(brand.name)} is:`, `<span style="font-size:28px;letter-spacing:6px;font-weight:bold">${code}</span>`, `It works for ${CODE_MINUTES} minutes. If you didn't ask for it, you can ignore this email.`] });
   await audit(db, doc.id, "Code emailed", { signerId: s.id, ip, ua });
   return ok;
 }
@@ -234,7 +241,7 @@ export async function declineDocument(db: Db, doc: Doc, s: Signer, reason: strin
   await db.from("sign_documents").update({ status: "declined", updated_at: new Date().toISOString() }).eq("id", doc.id);
   await audit(db, doc.id, "Declined", { signerId: s.id, ip, ua, detail: reason.slice(0, 500) || null });
   const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", doc.master_plan_id).maybeSingle();
-  if (plan?.client_email) await signMail(db, doc.master_plan_id, { to: String(plan.client_email), subject: `Declined: ${doc.title}`, heading: `${s.name} declined to sign`, lines: [`<strong>${esc(s.name)}</strong> declined <strong>${esc(doc.title)}</strong>.`, reason ? `Their reason: ${esc(reason)}` : "They didn't give a reason."], button: { label: "Open Agreements", url: `${APP()}/agreements?doc=${doc.id}` } });
+  if (plan?.client_email) await signMail(db, doc.master_plan_id, { docId: doc.id, to: String(plan.client_email), subject: `Declined: ${doc.title}`, heading: `${s.name} declined to sign`, lines: [`<strong>${esc(s.name)}</strong> declined <strong>${esc(doc.title)}</strong>.`, reason ? `Their reason: ${esc(reason)}` : "They didn't give a reason."], button: { label: "Open Agreements", url: `${APP()}/agreements?doc=${doc.id}` } });
 }
 
 /** Everyone signed: seal the PDF (document + signature page + certificate), store it and its hash, email copies. */
@@ -272,7 +279,7 @@ export async function completeDocument(db: Db, docId: string): Promise<string> {
   const attachment = [{ filename: fileName, content: Buffer.from(bytes).toString("base64") }];
   const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", doc.master_plan_id).maybeSingle();
   const to = Array.from(new Set([...signers.map((s) => s.email.toLowerCase()), String(plan?.client_email || "").toLowerCase()].filter(Boolean)));
-  for (const email of to) await signMail(db, doc.master_plan_id, { to: email, subject: `Signed: ${doc.title}`, heading: "Everyone has signed", lines: [`<strong>${esc(doc.title)}</strong> is signed by everyone. Your copy is attached, with a certificate of completion.`, "Keep it for your records."], attachments: attachment });
+  for (const email of to) await signMail(db, doc.master_plan_id, { docId: doc.id, to: email, subject: `Signed: ${doc.title}`, heading: "Everyone has signed", lines: [`<strong>${esc(doc.title)}</strong> is signed by everyone. Your copy is attached, with a certificate of completion.`, "Keep it for your records."], attachments: attachment });
   await audit(db, doc.id, "Signed copy emailed to everyone", { detail: `SHA-256 ${finalHash}` });
   if (doc.contact_id) await logEvent(doc.master_plan_id, doc.contact_id, "note", `Signed by everyone: ${doc.title}`, { esign: doc.id }, db).catch(() => null);
   return "completed";
@@ -307,7 +314,7 @@ export async function runSignReminders(db: Db): Promise<{ reminded: number; expi
       if (!token) continue;
       await db.from("sign_signers").update({ last_reminded_at: new Date().toISOString() }).eq("id", s.id);
       const brand = await brandFor(db, doc.master_plan_id);
-      const ok = await signMail(db, doc.master_plan_id, { to: s.email, subject: `Reminder: please sign ${doc.title}`, heading: "A gentle reminder", lines: [`Hi ${esc(s.name.split(" ")[0])}, ${esc(brand.name)} is waiting on your signature for <strong>${esc(doc.title)}</strong>.`], button: { label: "Review and sign", url: signerUrl(token) } });
+      const ok = await signMail(db, doc.master_plan_id, { docId: doc.id, to: s.email, subject: `Reminder: please sign ${doc.title}`, heading: "A gentle reminder", lines: [`Hi ${esc(s.name.split(" ")[0])}, ${esc(brand.name)} is waiting on your signature for <strong>${esc(doc.title)}</strong>.`], button: { label: "Review and sign", url: signerUrl(token) } });
       await audit(db, doc.id, ok ? "Reminder sent" : "Reminder failed", { signerId: s.id });
       if (ok) reminded++;
     }

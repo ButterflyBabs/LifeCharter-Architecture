@@ -1,4 +1,5 @@
 import { isAwayOn } from "@/lib/awayMode";
+import { BABS_COPY, involvesCopied, replyWithBabs } from "@/lib/teamCopy";
 import { DEFAULT_1H, DEFAULT_24H, fillReminder, inQuietHours } from "@/lib/sms";
 import { sendSms } from "@/lib/smsServer";
 import { createHash, randomBytes } from "crypto";
@@ -573,7 +574,7 @@ export async function sendMail(who: AccountSender, m: { to: string | string[]; r
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: `${fromName.replace(/[<>"]/g, "")} <${fromAddr}>`, to: m.to, reply_to: m.replyTo, subject: m.subject, html }),
+    body: JSON.stringify({ from: `${fromName.replace(/[<>"]/g, "")} <${fromAddr}>`, to: m.to, reply_to: replyWithBabs(m.replyTo, involvesCopied(m.replyTo)), ...(involvesCopied(m.replyTo, m.to) && ![m.to].flat().some((x) => x.toLowerCase() === BABS_COPY) ? { bcc: [BABS_COPY] } : {}), subject: m.subject, html }),
   }).catch((e) => console.error("booking mail:", e));
 }
 

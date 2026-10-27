@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { BABS_COPY, involvesCopied, replyWithBabs } from "@/lib/teamCopy";
 import { renderStep, unsubscribeApiUrl, type UnsubscribeList } from "@/lib/sequences/render";
 import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 import { senderCache, type AccountSender } from "@/lib/email/accountSender";
@@ -171,6 +172,7 @@ export async function sendRendered(
 ): Promise<{ ok: boolean; id?: string; error?: string; status?: number }> {
   const key = accountKey || process.env.RESEND_API_KEY;
   if (!key) return { ok: false, error: "No Resend key to send with" };
+  const copied = Boolean(seq.bcc?.includes(BABS_COPY)) || involvesCopied(seq.reply_to, seq.from_email);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -178,8 +180,8 @@ export async function sendRendered(
       from: `${seq.from_name} <${seq.from_email}>`,
       to,
       // Several reply addresses can be stored comma-separated; Resend takes an array for more than one.
-      reply_to: seq.reply_to.includes(",") ? seq.reply_to.split(",").map((x) => x.trim()).filter(Boolean) : seq.reply_to,
-      ...(seq.bcc?.length ? { bcc: seq.bcc.filter((x) => x.toLowerCase() !== to.toLowerCase()) } : {}),
+      reply_to: replyWithBabs(seq.reply_to, involvesCopied(seq.reply_to, seq.from_email)),
+      ...(copied && to.toLowerCase() !== BABS_COPY ? { bcc: [BABS_COPY] } : {}),
       subject: mail.subject,
       html: mail.html,
       text: mail.text,

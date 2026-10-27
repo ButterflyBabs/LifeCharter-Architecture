@@ -90,6 +90,8 @@ export interface C2cCard {
   inCrm: boolean;
   notes: string;
   updatedAt: string;
+  /** Where they are in the no-show follow-up emails (null when they are not in the series). */
+  series: { sent: number; total: number; status: string; nextOn: string | null } | null;
 }
 const s = (v: unknown) => (typeof v === "string" ? v : "");
 export function shapeCard(r: Record<string, unknown>): C2cCard {
@@ -113,7 +115,34 @@ export function shapeCard(r: Record<string, unknown>): C2cCard {
     inCrm: Boolean(r.contact_id),
     notes: s(r.notes),
     updatedAt: s(r.updated_at),
+    series: null,
   };
+}
+
+/** Each card's place in the consultant's no-show series: "3 of 5 sent", and the day the next one goes out. */
+export async function seriesFor(db: Db, planId: string, key: string, cards: { contact_id?: unknown }[]): Promise<Map<string, C2cCard["series"]>> {
+  const out = new Map<string, C2cCard["series"]>();
+  const ids = cards.map((c) => c.contact_id as string | null).filter((x): x is string => Boolean(x));
+  if (!ids.length) return out;
+  const { data: seq } = await db.from("sequences").select("id").eq("master_plan_id", planId).eq("key", noShowKey(key)).maybeSingle();
+  if (!seq) return out;
+  const [{ data: steps }, { data: enr }] = await Promise.all([
+    db.from("sequence_steps").select("id, day_offset").eq("sequence_id", seq.id).order("position"),
+    db.from("sequence_enrollments").select("id, contact_id, status, start_date, sequence_sends(step_id, status)").eq("sequence_id", seq.id).in("contact_id", ids),
+  ]);
+  const all = (steps ?? []) as { id: string; day_offset: number }[];
+  for (const e of (enr ?? []) as unknown as { contact_id: string; status: string; start_date: string; sequence_sends: { step_id: string; status: string }[] }[]) {
+    const done = new Set(e.sequence_sends.filter((x) => x.status === "sent").map((x) => x.step_id));
+    const next = all.find((st) => !done.has(st.id));
+    let nextOn: string | null = null;
+    if (next && e.status === "active") {
+      const d = new Date(`${e.start_date}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + Math.max(0, next.day_offset));
+      nextOn = d.toISOString().slice(0, 10);
+    }
+    out.set(e.contact_id, { sent: done.size, total: all.length, status: e.status, nextOn });
+  }
+  return out;
 }
 
 const clean = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
