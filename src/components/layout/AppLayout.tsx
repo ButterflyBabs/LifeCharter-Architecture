@@ -62,10 +62,14 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   const { isCollapsed } = useSidebar();
   // Until all three assessments are finished the assistant stays closed (it could change the account).
   const [locked, setLocked] = useState(false);
+  const [consultant, setConsultant] = useState(false); // a Call to Close consultant sees the page and Settings, no floating helpers
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setLocked(d?.assessmentsLocked === true))
+      .then((d) => {
+        setLocked(d?.assessmentsLocked === true);
+        setConsultant(d?.teamRole === "consultant");
+      })
       .catch(() => {});
   }, []);
 
@@ -89,11 +93,11 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       </main>
 
       {/* Travel Partner: the one floating button (Ask the assistant, or Help & setup) */}
-      <TravelPartnerWidget />
-      <UpdateNotice />
+      {!consultant && <TravelPartnerWidget />}
+      {!consultant && <UpdateNotice />}
 
       {/* The AI assistant, when popped out: floats over any page */}
-      {!locked && <AssistantPopout />}
+      {!locked && !consultant && <AssistantPopout />}
     </div>
   );
 }

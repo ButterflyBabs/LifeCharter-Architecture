@@ -31,6 +31,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/daily-compass": "Daily Compass",
   "/assessments": "Alignment Profile",
   "/business-plan": "Business Plan",
+  "/call-to-close": "Call to Close",
   "/marketing-plan": "Marketing Plan",
   "/marketing-plan/social-planner": "Social Planner",
   "/daily-compass/calendar": "Content Calendar",
@@ -71,6 +72,14 @@ export function Header({
       .catch(() => {});
   }, []);
   const workspace = workspaceProp ?? workspaceName;
+  // A Call to Close consultant gets a bare header: the page title and nothing else (no business name, search, quick add or alerts).
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setRole(typeof d?.teamRole === "string" ? d.teamRole : null))
+      .catch(() => {});
+  }, []);
   const { mounted } = useTheme();
   const pathname = usePathname();
   const resolvedTitle = title ?? titleForPath(pathname);
@@ -89,6 +98,14 @@ export function Header({
           <div className="w-9 h-9 rounded-full bg-[#1a2b4a]/5" />
           <div className="w-9 h-9 rounded-full bg-[#1a2b4a]/5" />
         </div>
+      </header>
+    );
+  }
+
+  if (role === "consultant") {
+    return (
+      <header className="h-16 bg-card border-b border-[#c9a227]/20 flex items-center pl-14 pr-6 lg:px-6 sticky top-0 z-40">
+        <h1 className="truncate font-serif text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{resolvedTitle}</h1>
       </header>
     );
   }

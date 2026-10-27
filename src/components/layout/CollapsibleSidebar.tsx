@@ -1366,14 +1366,14 @@ export function CollapsibleSidebar() {
           </div>
         )}
 
-        {!isCollapsed && !isDemo && (sectionOrder.length > 0 || Object.keys(navOrder).length > 0) && (
+        {!isCollapsed && !isDemo && teamRole !== "consultant" && (sectionOrder.length > 0 || Object.keys(navOrder).length > 0) && (
           <button type="button" onClick={resetMenuOrder} className="mt-6 w-full px-4 text-left text-[11px] text-white/40 hover:text-white/80 hover:underline" title="Put the menu back in the standard order">
             Reset menu order
           </button>
         )}
 
-        {/* Help Section */}
-        {!isCollapsed && (
+        {/* Help Section (a Call to Close consultant's left bar is Settings only) */}
+        {!isCollapsed && teamRole !== "consultant" && (
           <div className="mt-8 pt-4 border-t border-white/10">
             <button
               onClick={() => setHelpExpanded(!helpExpanded)}
@@ -1418,7 +1418,7 @@ export function CollapsibleSidebar() {
         )}
 
         {/* Collapsed Help Icon */}
-        {isCollapsed && (
+        {isCollapsed && teamRole !== "consultant" && (
           <div className="mt-4 pt-4 border-t border-white/10">
             <Link
               href="/help/12-domain-alignment"
