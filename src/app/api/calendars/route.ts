@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../crm/guard";
 import { cleanFields } from "../crm/forms/clean";
-import { cancelBooking, markNoShow } from "@/lib/booking/engine";
+import { cancelBooking, setBookingOutcome } from "@/lib/booking/engine";
 import { isValidTz } from "@/lib/sequences/engine";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
 import { canCreateZoomMeetings, isZoomConfigured } from "@/lib/zoom";
@@ -209,19 +209,8 @@ export async function POST(request: Request) {
     }
     case "booking-status": {
       if (!["completed", "no_show"].includes(b.status)) return NextResponse.json({ error: "Unknown status." }, { status: 400 });
-      const { data: bk } = await db.from("bookings").select("id, contact_id, calendar_id, status").eq("id", str(b.id, 60)).eq("master_plan_id", a.planId).maybeSingle();
-      if (!bk) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      await db.from("bookings").update({ status: b.status }).eq("id", bk.id).eq("master_plan_id", a.planId);
-      if (b.status === "no_show" && bk.status === "confirmed") await markNoShow(bk.id as string).catch((e) => console.error("no-show follow-up:", e));
-      // Client portal packages: an Attended booking uses one of the client's sessions (once per booking).
-      if (b.status === "completed") await countAttendedSession(db, a.planId, bk.id as string).catch((e) => console.error("package session:", e));
-      if (bk.contact_id) {
-        const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).eq("master_plan_id", a.planId).maybeSingle();
-        await logEvent(a.planId, bk.contact_id, "booking", `${b.status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });
-        const { data: c } = await db.from("seq_contacts").select("tags").eq("id", bk.contact_id).eq("master_plan_id", a.planId).maybeSingle();
-        const tag = `${b.status === "no_show" ? "no-show" : "attended"}-${cal?.slug ?? "meeting"}`;
-        await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])), tag_source: `booking:${cal?.slug ?? "meeting"}` }).eq("id", bk.contact_id).eq("master_plan_id", a.planId);
-      }
+      const found = await setBookingOutcome(db, a.planId, str(b.id, 60), b.status as "completed" | "no_show");
+      if (!found) return NextResponse.json({ error: "Not found." }, { status: 404 });
       return NextResponse.json({ ok: true });
     }
     case "cancel-booking": {

@@ -41,6 +41,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
       description: cal.description,
       duration: cal.duration_min,
       location: cal.location,
+      requirePhone: Boolean(cal.require_phone),
       maxDaysAhead: cal.max_days_ahead,
       questions: cal.questions,
       hostName: cal.assignment === "single" ? (hosts ?? [])[0]?.name ?? null : null,

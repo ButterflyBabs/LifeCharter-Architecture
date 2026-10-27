@@ -19,6 +19,7 @@ interface Meta {
   description: string | null;
   duration: number;
   location: string;
+  requirePhone?: boolean;
   questions: Q[];
   hostName: string | null;
   brand?: string;
@@ -249,7 +250,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               </div>
               <label className="block text-sm font-semibold">Name *<input name="name" required defaultValue={prefill.name} autoComplete="name" className={inputCls} style={{ borderColor: th.line }} /></label>
               <label className="block text-sm font-semibold">Email *<input name="email" type="email" required defaultValue={prefill.email} autoComplete="email" className={inputCls} style={{ borderColor: th.line }} /></label>
-              <label className="block text-sm font-semibold">Phone{meta?.location === "phone" ? " *" : ""}<input name="phone" type="tel" required={meta?.location === "phone"} autoComplete="tel" className={inputCls} style={{ borderColor: th.line }} /></label>
+              <label className="block text-sm font-semibold">Phone{meta?.location === "phone" || meta?.requirePhone ? " *" : ""}<input name="phone" type="tel" required={meta?.location === "phone" || Boolean(meta?.requirePhone)} autoComplete="tel" className={inputCls} style={{ borderColor: th.line }} /></label>
               {meta?.sms && (
                 <label className="flex items-start gap-2.5 text-sm">
                   <input type="checkbox" name="sms_ok" className="mt-1 h-4 w-4 shrink-0" style={{ accentColor: th.accent }} />

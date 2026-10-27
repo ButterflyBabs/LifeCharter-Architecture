@@ -6,6 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { zonedToUtcISO, dayInTz } from "@/lib/tz";
 import { busyFor, createHostEvent, cancelHostEvent, type Busy, type Connection } from "@/lib/booking/connections";
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/zoom";
+import { c2cOnBooking, c2cOnOutcome } from "@/lib/c2c";
 import { upsertContact, logEvent, EMAIL_RE, type FormField } from "@/lib/crm";
 import { enrolContact, isValidTz } from "@/lib/sequences/engine";
 import { dealForBooking, moveDeal } from "@/lib/booking/deals";
@@ -46,6 +47,7 @@ export interface Calendar {
   deal_value: number | null;
   noshow_subject: string | null;
   noshow_body: string | null;
+  require_phone?: boolean;
   pay_mode?: "none" | "full" | "deposit";
   price?: number | null;
   deposit?: number | null;
@@ -208,6 +210,7 @@ export async function book(cal: Calendar, i: BookInput): Promise<{ ok: true; boo
   if (!EMAIL_RE.test(email)) return { ok: false, error: "Please enter a valid email address." };
   const start = Date.parse(i.startISO);
   if (!Number.isFinite(start)) return { ok: false, error: "Please choose a time." };
+  if (cal.require_phone && (i.phone || "").replace(/\D/g, "").length < 7) return { ok: false, error: "Please enter a phone number." };
 
   // Re-check the time against live calendars right now.
   const plan = await availableSlots(cal, new Date(start).toISOString(), new Date(start + 60_000).toISOString(), db);
@@ -371,12 +374,18 @@ async function afterBooking(
   await db.from("bookings").update({ meeting_url: meetingUrl, zoom_meeting_id: zoomId, host_event: hostEvent }).eq("id", bookingId);
 
   // CRM
-  const contact = await upsertContact({ masterPlanId: cal.master_plan_id, email: b.email, firstName: first || null, lastName: rest.join(" ") || null, phone: b.phone, timezone: b.tz, source: `booking:${cal.slug}`, tags: [...cal.tags, `booked-${cal.slug}`] }, db);
+  const contact = await upsertContact({ masterPlanId: cal.master_plan_id, email: b.email, firstName: first || null, lastName: rest.join(" ") || null, phone: b.phone, company: b.answers.business || b.answers.business_name || b.answers.company || undefined, timezone: b.tz, source: `booking:${cal.slug}`, tags: [...cal.tags, `booked-${cal.slug}`] }, db);
   if (contact) {
     await db.from("bookings").update({ contact_id: contact.id }).eq("id", bookingId);
     await logEvent(cal.master_plan_id, contact.id, "booking", `${b.rescheduled ? "Rescheduled" : "Booked"} ${cal.name} with ${host.name} for ${fmt(startISO, b.tz)}`, { booking: bookingId, answers: b.answers }, db);
     if (cal.sequence_key && !b.rescheduled) await enrolContact({ masterPlanId: cal.master_plan_id, sequenceKey: cal.sequence_key, email: b.email, source: `booking:${cal.slug}` }).catch(() => {});
   }
+
+  // A consultant's discovery call (Call to Close): their pipeline card takes the booking (and the CRM contact it just made).
+  await c2cOnBooking(db, cal.master_plan_id, {
+    hostEmail: host.email, contactId: contact?.id ?? null, bookingId, name: b.name, email: b.email, phone: b.phone,
+    business: b.answers.business || b.answers.business_name || b.answers.company || null, startISO, tz: b.tz,
+  }).catch((e) => console.error("call to close card:", e));
 
   // New clients who book their 1:1 Welcome Call (Executive Consultation or self-serve Starter) are invited to the next New
   // Client Launch Call: date, Zoom link and a calendar file in their own email (see lib/launchCallInvite).
@@ -564,6 +573,25 @@ export async function sendMail(who: AccountSender, m: { to: string | string[]; r
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from: `${fromName.replace(/[<>"]/g, "")} <${fromAddr}>`, to: m.to, reply_to: m.replyTo, subject: m.subject, html }),
   }).catch((e) => console.error("booking mail:", e));
+}
+
+// A booked call was attended or missed (marked by the host, or read from Zoom): the booking, the no-show follow-up, the
+// client package session, the contact's tag and timeline, and a Call to Close card all follow from one place.
+export async function setBookingOutcome(db: Db, planId: string, bookingId: string, status: "completed" | "no_show"): Promise<boolean> {
+  const { data: bk } = await db.from("bookings").select("id, contact_id, calendar_id, status").eq("id", bookingId).eq("master_plan_id", planId).maybeSingle();
+  if (!bk) return false;
+  await db.from("bookings").update({ status }).eq("id", bk.id).eq("master_plan_id", planId);
+  if (status === "no_show" && bk.status === "confirmed") await markNoShow(bk.id as string).catch((e) => console.error("no-show follow-up:", e));
+  if (status === "completed") await import("@/lib/portal").then((m) => m.countAttendedSession(db, planId, bk.id as string)).catch((e) => console.error("package session:", e));
+  if (bk.contact_id) {
+    const { data: cal } = await db.from("booking_calendars").select("name, slug").eq("id", bk.calendar_id).eq("master_plan_id", planId).maybeSingle();
+    await logEvent(planId, bk.contact_id as string, "booking", `${status === "no_show" ? "Missed" : "Attended"} ${cal?.name ?? "meeting"}`, { booking: bk.id });
+    const { data: c } = await db.from("seq_contacts").select("tags").eq("id", bk.contact_id).eq("master_plan_id", planId).maybeSingle();
+    const tag = `${status === "no_show" ? "no-show" : "attended"}-${cal?.slug ?? "meeting"}`;
+    await db.from("seq_contacts").update({ tags: Array.from(new Set([...((c?.tags as string[]) ?? []), tag])), tag_source: `booking:${cal?.slug ?? "meeting"}` }).eq("id", bk.contact_id).eq("master_plan_id", planId);
+  }
+  await c2cOnOutcome(db, planId, bk.id as string, status === "completed" ? "attended" : "no_show").catch((e) => console.error("call to close outcome:", e));
+  return true;
 }
 
 // The host marked a meeting as missed: the deal is lost for now (it reopens if
