@@ -34,7 +34,7 @@ export default function Resources({ consultant, bookingLink, shareLink }: { cons
           <li>Find the right people using the Ideal Client Profile below.</li>
           <li>Book every discovery and closing call on your own calendar (My Calendar). Each call has its own Zoom link.</li>
           <li>Keep every prospect on your pipeline and update the stage the same day. If it isn&rsquo;t on the pipeline, it didn&rsquo;t happen.</li>
-          <li>Enroll clients only through the buttons in their card (Year-1 agreement, then checkout). Never take payment any other way.</li>
+          <li>Enroll clients only through the buttons in their card, live on the call: they sign the Year-1 agreement while you are on the phone, then pay while you are on the phone. Never take payment any other way.</li>
         </ul>
         <p className={P}>Your booking page: <span className="font-mono text-xs">{bookingLink}</span>{shareLink ? <> · your referral link: <span className="font-mono text-xs">{shareLink}</span></> : null}</p>
       </section>
@@ -87,7 +87,7 @@ export default function Resources({ consultant, bookingLink, shareLink }: { cons
           <li><b>Reflect (13 to 17 min).</b> Say back what you heard in their own words. &ldquo;So the real problem is…&rdquo; Get a yes. If it is not a fit, say so kindly and stop here.</li>
           <li><b>Present (17 to 24 min).</b> Coaching and the Suite as one offer: the audit shows where the business stands, the coach and client build the plan, the first 30 days install it, and live coaching calls every weekday keep it going. Match it to what they said, not a feature tour.</li>
           <li><b>Ask (24 to 28 min).</b> &ldquo;Based on what you told me, I&rsquo;d recommend [plan]. Would you like to get started?&rdquo; Then stop talking. Handle questions with the answers below.</li>
-          <li><b>Next steps (28 to 30 min).</b> If yes: send the Year-1 agreement, then the checkout link, from their card. If not yet: book a follow-up call before you hang up. Either way, update the card.</li>
+          <li><b>Next steps (28 to 30 min).</b> If yes: stay on the call and enroll them live. First they sign the Year-1 agreement while you are on the phone, then they pay while you are on the phone (steps below). If not yet: book a follow-up call before you hang up. Either way, update the card.</li>
         </ol>
       </section>
 
@@ -115,13 +115,13 @@ export default function Resources({ consultant, bookingLink, shareLink }: { cons
       </section>
 
       <section className={CARD}>
-        <h2 className={H}>Enrolling a client, step by step</h2>
+        <h2 className={H}>Enrolling a client, step by step: all of it while you are on the phone</h2>
+        <p className={`${P} font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]`}>Enrollment happens live, on the call. Never end the call and send the agreement or the payment link for later.</p>
         <ol className="mb-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-[#3a4658] dark:text-[#d8dde6]">
-          <li>Open their card. Make sure their name, business and email are filled in, and save.</li>
-          <li>Choose the plan and how they pay (fee in full, 50/50, or annual).</li>
-          <li>Press <b>1. Send the Year-1 agreement</b>. They sign it by email.</li>
-          <li>Press <b>2. Get the checkout link</b>, copy it and send it to them. The sale is credited to you.</li>
-          <li>When they have paid and signed, press <b>Mark closed</b> with their plan. Their card moves to Closed and is tagged with the plan and the date.</li>
+          <li>Before you ask, open their card and make sure their name, business and email are filled in, and save. Choose the plan and how they pay (fee in full, 50/50, or annual).</li>
+          <li><b>Step 1, while you are on the phone: the Year-1 agreement.</b> Press <b>Step 1</b>. It goes to their email at once. Stay on the call while they open it and sign it. Wait until they say it is signed.</li>
+          <li><b>Step 2, while you are on the phone: payment.</b> Press <b>Step 2</b>, copy the checkout link, and send it to them on the call. Stay on while they pay. The sale is credited to you.</li>
+          <li>Once you have watched them sign and pay, press <b>Mark closed</b> with their plan. Their card moves to Closed and is tagged with the plan and the date.</li>
           <li>Their account is made after payment and signature. You don&rsquo;t create it.</li>
         </ol>
       </section>

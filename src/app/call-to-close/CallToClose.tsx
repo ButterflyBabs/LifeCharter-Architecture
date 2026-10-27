@@ -249,7 +249,7 @@ function Drawer({ card, data, stageName, onClose, post }: { card: Card; data: Da
     setNote("");
     const res = await fetch("/api/sales/send-agreement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: f.name, email: f.email, phone: f.phone, businessName: f.businessName, tier: tierLabel, payment: pay }) });
     const d = await res.json().catch(() => ({}));
-    setNote(res.ok ? "The Year-1 agreement is on its way to them for signature." : d.error || "Couldn't send it.");
+    setNote(res.ok ? "The Year-1 agreement is in their email now. Stay on the call while they open it and sign." : d.error || "Couldn't send it.");
   };
   const makeLink = async () => {
     setNote("");
@@ -300,20 +300,21 @@ function Drawer({ card, data, stageName, onClose, post }: { card: Card; data: Da
           </div>
 
           <div className={CARD}>
-            <p className="mb-1 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Enroll this client</p>
-            <p className="mb-2 text-xs text-[#7a8a99]">Choose the plan and how they pay. Send the Year-1 agreement for signature, then give them the checkout link. Both are credited to you. An account is made only after they have signed and paid.</p>
+            <p className="mb-1 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Enroll this client, while you are on the phone with them</p>
+            <p className="mb-2 rounded-lg bg-[#c9a227]/15 px-3 py-2 text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">Both steps happen live, while they are still on the call with you. Step 1: they sign the Year-1 agreement on the call. Step 2: they pay on the call. Do not end the call and send these for later. An account is made only after they have signed and paid.</p>
+            <p className="mb-2 text-xs text-[#7a8a99]">Choose the plan and how they pay first. Both steps are credited to you.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <select aria-label="Plan" value={tier} onChange={(e) => { setTier(e.target.value); setLink(""); }} className={FIELD}><option value="">Choose a plan</option>{data.tiers.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
               <select aria-label="How they pay" value={pay} onChange={(e) => { setPay(e.target.value); setLink(""); }} className={FIELD}><option value="full">Implementation fee in full, then monthly</option><option value="split">50/50 implementation fee, then monthly</option><option value="annual">Annual, paid in full</option></select>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button disabled={!tier || !f.email} onClick={sendAgreement} className="rounded-lg border border-[#2E7C83] px-3 py-1.5 text-sm font-medium text-[#2E7C83] disabled:opacity-50">1. Send the Year-1 agreement</button>
-              <button disabled={!tier} onClick={makeLink} className="rounded-lg border border-[#2E7C83] px-3 py-1.5 text-sm font-medium text-[#2E7C83] disabled:opacity-50">2. Get the checkout link</button>
+              <button disabled={!tier || !f.email} onClick={sendAgreement} className="rounded-lg border border-[#2E7C83] px-3 py-1.5 text-sm font-medium text-[#2E7C83] disabled:opacity-50">Step 1: send the Year-1 agreement to sign now, on the call</button>
+              <button disabled={!tier} onClick={makeLink} className="rounded-lg border border-[#2E7C83] px-3 py-1.5 text-sm font-medium text-[#2E7C83] disabled:opacity-50">Step 2: get the checkout link to pay now, on the call</button>
             </div>
             {!f.email && tier && <p className="mt-1 text-[11px] text-[#8a2f2f]">Add their email above and save, to send the agreement.</p>}
             {link && <div className="mt-2"><CopyLine text={link} /></div>}
             <div className="mt-3 border-t border-[#1a2b4a]/10 pt-3">
-              <p className="mb-1 text-xs text-[#7a8a99]">When they have paid and signed, close the card with their plan:</p>
+              <p className="mb-1 text-xs text-[#7a8a99]">Once you have watched them sign and pay, still on the call, close the card with their plan:</p>
               <button disabled={!tier || closed} onClick={() => void post({ action: "close", cardId: card.id, tier })} className="rounded-lg bg-[#c9a227] px-4 py-1.5 text-sm font-semibold text-[#1a2b4a] disabled:opacity-50">{closed ? "Closed" : `Mark closed${tierLabel ? ` · ${tierLabel}` : ""}`}</button>
             </div>
           </div>
