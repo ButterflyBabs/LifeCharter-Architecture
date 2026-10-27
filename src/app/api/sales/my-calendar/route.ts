@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { sessionUser } from "@/lib/authz";
+import { sessionUser, viewedMember } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
 import { isValidTz } from "@/lib/sequences/engine";
@@ -36,6 +36,9 @@ function cleanWeekly(v: unknown): Record<string, [string, string][]> | undefined
 async function myHost() {
   const user = await sessionUser();
   if (!user?.email) return { error: NextResponse.json({ error: "Sign in first." }, { status: 401 }) } as const;
+  // Babs looking through "View as team member" sees that person's calendar (the middleware keeps it read-only).
+  const viewed = await viewedMember();
+  if (viewed) user.email = viewed.email;
   const db = createServerClient();
   const plan = await housePlanId(db);
   if (!plan) return { error: NextResponse.json({ error: "No house account." }, { status: 500 }) } as const;

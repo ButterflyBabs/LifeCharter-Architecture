@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAlignmentArchitect, isSuperAdmin, resolveActor, sessionUser } from "@/lib/authz";
+import { isAlignmentArchitect, isSuperAdmin, resolveActor, sessionUser, viewedMember } from "@/lib/authz";
 import { assessmentGateLocked } from "@/lib/assessmentGate";
 import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
@@ -28,6 +28,23 @@ export const dynamic = "force-dynamic";
 // coach-override control). The authoritative gate is server-side on the
 // privileged routes themselves.
 export async function GET() {
+  // The owner has "View as team member" open: answer exactly as that member would be answered.
+  const vm = await viewedMember();
+  if (vm) {
+    return NextResponse.json(
+      {
+        superAdmin: false,
+        architect: false,
+        assessmentsLocked: false,
+        hasTeam: true,
+        teamRole: vm.role,
+        features: cleanFeatureMap((vm.permissions as { features?: unknown } | null)?.features),
+        extras: cleanExtras((vm.permissions as { extras?: unknown } | null)?.extras),
+        viewingMember: { id: vm.id, name: vm.name, role: vm.role },
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
   const [superAdmin, architect, actor] = await Promise.all([isSuperAdmin(), isAlignmentArchitect(), resolveActor()]);
   // Client accounts that have not finished all three assessments see only setup, assessments, settings and support.
   let assessmentsLocked = false;

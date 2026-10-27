@@ -10,6 +10,7 @@ import TravelPartnerWidget from "@/components/travel-partner/TravelPartnerWidget
 import UpdateNotice from "@/components/layout/UpdateNotice";
 import DemoBanner from "./DemoBanner";
 import ViewAsBanner from "./ViewAsBanner";
+import ViewAsMemberBanner from "./ViewAsMemberBanner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -82,6 +83,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       )}>
         <DemoBanner />
         <ViewAsBanner />
+        <ViewAsMemberBanner />
         <Header />
         <div className="flex-1">{children}</div>
       </main>

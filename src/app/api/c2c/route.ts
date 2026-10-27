@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAlignmentArchitect, sessionUser } from "@/lib/authz";
+import { isAlignmentArchitect, sessionUser, viewedMember } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
 import { BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
@@ -20,7 +20,9 @@ async function mine(request: Request) {
   if (!user?.email) return { error: NextResponse.json({ error: "Sign in first." }, { status: 401 }) } as const;
   let email = user.email;
   const as = new URL(request.url).searchParams.get("as");
-  if (as && (await isAlignmentArchitect())) email = as;
+  const viewed = await viewedMember();
+  if (viewed) email = viewed.email;
+  else if (as && (await isAlignmentArchitect())) email = as;
   const db = createServerClient();
   const planId = await housePlanId(db);
   if (!planId) return { error: NextResponse.json({ error: "No house account." }, { status: 500 }) } as const;

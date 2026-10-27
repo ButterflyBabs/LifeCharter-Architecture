@@ -753,6 +753,7 @@ export function CollapsibleSidebar() {
   }, [pathname]);
   const [features, setFeatures] = useState<FeatureMap | null>(null);
   const [extras, setExtras] = useState<AccessExtras | null>(null);
+  const [teamRole, setTeamRole] = useState<string | null>(null);
   // Until all three assessments are finished the menu shows only Set up Suite, the assessments, Settings and support.
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
   // Team Huddle shows only for an account with a team (a member, or someone added to the huddle by email).
@@ -762,6 +763,7 @@ export function CollapsibleSidebar() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         setSuperAdmin(d?.architect === true);
+        setTeamRole(typeof d?.teamRole === "string" ? d.teamRole : null);
         setFeatures(d?.features ?? null);
         setExtras(d?.extras ?? null);
         setAssessmentsLocked(d?.assessmentsLocked === true);
@@ -829,7 +831,10 @@ export function CollapsibleSidebar() {
         .map(pageItem),
     ],
   }));
-  const sections = [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
+  // A Call to Close consultant has no menu of pages: their workspace is the one page, reached from the logo, and the
+  // left bar holds only Settings (profile, appearance and security).
+  const consultantNav = [{ title: "MY ACCOUNT", color: "text-[#c9a227]", items: [{ id: "settings", label: "Settings", icon: Settings2, href: "/settings" }] }];
+  const sections = teamRole === "consultant" ? consultantNav : [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam)) }))
     .filter((s) => s.items.length > 0);
 

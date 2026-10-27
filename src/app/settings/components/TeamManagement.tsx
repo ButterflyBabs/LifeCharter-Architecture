@@ -21,6 +21,7 @@ import {
   Camera,
   Loader2,
   KeyRound,
+  Eye,
   Copy,
   Check,
   Pencil,
@@ -257,6 +258,13 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
     flash(true, cap === null ? "AI limit removed." : `AI limit set to ${cap} requests a month.`);
   };
   const [accessOpen, setAccessOpen] = useState<string | null>(null);
+  // "View as team member": opens the Suite as this person sees it (their role and area limits), read-only.
+  const handleViewAs = async (memberId: string) => {
+    const res = await fetch("/api/admin/view-as-member", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ memberId }) }).catch(() => null);
+    const d = res ? await res.json().catch(() => ({})) : {};
+    if (!res?.ok) return flash(false, d.error || "Couldn't open their view.");
+    window.location.assign(d.landing || "/");
+  };
   const saveAccess = async (id: string, access: { preset: string; features: FeatureMap; extras: AccessExtras | null } | null) => {
     await patchMember(id, { access } as Partial<TeamMember>);
     setAccessOpen(null);
@@ -604,6 +612,13 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                         <Pencil className="w-4 h-4" />
                         <span className="ml-2">{accessOpen === member.id ? "Close" : "Edit access"}</span>
                         {accessOpen !== member.id && member.access && <span className="ml-2 text-xs text-[#7a8a99]">{PRESET_LABEL[member.access.preset ?? "custom"] ?? "Custom"}</span>}
+                      </Button>
+                    )}
+
+                    {isArchitect && (
+                      <Button variant="outline" size="sm" disabled={isBusy} onClick={() => handleViewAs(member.id)} title="See the Suite exactly as this person sees it (read-only)">
+                        <Eye className="w-4 h-4" />
+                        <span className="ml-2 hidden sm:inline">View as {member.name.split(" ")[0] || "member"}</span>
                       </Button>
                     )}
 

@@ -4,6 +4,7 @@ import { IB_COOKIE, accessTokenValid } from "@/lib/investorAccess";
 import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { COLLECTIVE_FORWARD_STATUS, COLLECTIVE_HOST, COLLECTIVE_HOST_LIVE, SUITE_HOST, collectiveHostAllows, isCollectiveHost, isLegacyCollectivePath, isSuiteProductionHost } from "@/lib/collective";
+import { VIEW_MEMBER_COOKIE, isMemberId } from "@/lib/viewMember";
 import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
@@ -192,6 +193,23 @@ async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: 
       `${url}/rest/v1/workspace_members?select=id,role,workspace_id,permissions&status=in.(active,pending)&email=ilike.${encodeURIComponent(email)}`,
       { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" }
     );
+    if (!res.ok) return none;
+    const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown; extras?: unknown } | null }[];
+    if (!Array.isArray(rows) || rows.length === 0) return none;
+    return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features), extras: cleanExtras(rows[0].permissions?.extras) };
+  } catch {
+    return none;
+  }
+}
+
+// A member by id, for "View as team member" (owner only; the cookie holds the member's id).
+async function getMemberInfoById(id: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null; extras: AccessExtras | null }> {
+  const none = { isMember: false, role: null, workspaceId: null, features: null, extras: null };
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !svc) return none;
+  try {
+    const res = await fetch(`${url}/rest/v1/workspace_members?select=id,role,workspace_id,permissions&id=eq.${encodeURIComponent(id)}`, { headers: { apikey: svc, Authorization: `Bearer ${svc}` }, cache: "no-store" });
     if (!res.ok) return none;
     const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown; extras?: unknown } | null }[];
     if (!Array.isArray(rows) || rows.length === 0) return none;
@@ -453,6 +471,20 @@ export async function middleware(request: NextRequest) {
     if ((memberRole === SALES_ROLE || memberRole === CONSULTANT_ROLE) && !isHouseMember) memberRole = "viewer";
   }
   if (user && !authed && ownsAccount) authed = true; // asked for the team account but not a member: their own
+  // "View as team member": the owner sees the Suite as that member does, with their role and area limits, read-only.
+  let viewingMember = false;
+  const viewCookie = request.cookies.get(VIEW_MEMBER_COOKIE)?.value;
+  if (isSuperOwner && isMemberId(viewCookie)) {
+    const vi = await getMemberInfoById(viewCookie);
+    if (vi.isMember) {
+      viewingMember = true;
+      isTeamMember = true;
+      isHouseMember = true;
+      memberRole = vi.role;
+      memberFeatures = vi.features;
+      memberExtras = vi.extras;
+    }
+  }
   const isSalesOnly = authed && isTeamMember && memberRole === SALES_ROLE;
   const isConsultant = authed && isTeamMember && memberRole === CONSULTANT_ROLE;
   let isCommunityOnly = false;
@@ -519,6 +551,13 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith("/api/")) {
     if (!authed && !isDemo) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    // Closing "View as team member" always works. Everything else is read-only while it is open.
+    if (viewingMember) {
+      if (path === "/api/admin/view-as-member") return response;
+      if (!["GET", "HEAD", "OPTIONS"].includes(request.method) && !["/api/auth"].some((p) => path === p || path.startsWith(p + "/"))) {
+        return NextResponse.json({ error: "Read-only: you are viewing the Suite as a team member, so nothing can be changed." }, { status: 403 });
+      }
+    }
     // "View as client": while the signed lc_view_as cookie is present (only the Alignment Architect can
     // get one; masterPlan.ts verifies it), the account is read-only and the client's private connections
     // stay closed. A forged cookie only turns this read-only mode on for whoever sent it.

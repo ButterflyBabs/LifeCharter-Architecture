@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAlignmentArchitect, sessionUser } from "@/lib/authz";
+import { isAlignmentArchitect, sessionUser, viewedMember } from "@/lib/authz";
 import { housePlanId } from "@/lib/housePlan";
 import { consultantBoards } from "@/lib/c2c";
 import CallToClose from "./CallToClose";
@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 export default async function CallToClosePage({ searchParams }: { searchParams: { as?: string } }) {
   const user = await sessionUser();
   if (!user?.email) notFound();
-  const as = searchParams.as && (await isAlignmentArchitect()) ? searchParams.as : null;
+  // Babs looks at a consultant's workspace with ?as=<their email>, or through "View as team member".
+  const viewed = await viewedMember();
+  const as = viewed ? viewed.email : searchParams.as && (await isAlignmentArchitect()) ? searchParams.as : null;
   const db = createServerClient();
   const plan = await housePlanId(db);
   if (!plan) notFound();

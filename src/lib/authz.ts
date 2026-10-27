@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createServerClient as createServiceClient } from "@/lib/supabase/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
+import { VIEW_MEMBER_COOKIE, isMemberId } from "@/lib/viewMember";
 
 // Super-admin gate for privileged actions (e.g. coach overrides).
 //
@@ -117,6 +118,21 @@ export interface Actor {
   permissions: Record<string, string>;
 }
 
+/** The team member the owner has open with "View as team member", or null. Only the owner can have one. */
+export async function viewedMember(): Promise<{ id: string; name: string; email: string; role: string; workspaceId: string | null; permissions: Record<string, unknown> } | null> {
+  const id = cookies().get(VIEW_MEMBER_COOKIE)?.value;
+  if (!isMemberId(id)) return null;
+  const user = await sessionUser();
+  if (!isOwnerEmail(user?.email)) return null;
+  try {
+    const { data } = await createServiceClient().from("workspace_members").select("id, name, email, role, workspace_id, permissions").eq("id", id).maybeSingle();
+    if (!data) return null;
+    return { id: data.id as string, name: (data.name as string) || (data.email as string), email: String(data.email || "").toLowerCase(), role: (data.role as string) || "viewer", workspaceId: (data.workspace_id as string) ?? null, permissions: (data.permissions as Record<string, unknown>) || {} };
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveActor(): Promise<Actor> {
   const none: Actor = {
     kind: "none",
@@ -137,6 +153,9 @@ export async function resolveActor(): Promise<Actor> {
   if (!user) return none;
 
   if (isOwnerEmail(user.email)) {
+    // While the owner has "View as team member" open, she is that member for everything the app asks of an actor.
+    const vm = await viewedMember();
+    if (vm) return { kind: "member", userId: user.id, email: vm.email, memberId: vm.id, workspaceId: vm.workspaceId, role: vm.role, permissions: vm.permissions as Record<string, string> };
     return { ...none, kind: "owner", userId: user.id, email: user.email };
   }
 

@@ -32,7 +32,7 @@ test("a card is only in the CRM once it has a contact", () => {
 });
 
 import { readLeadsCsv } from "../src/lib/c2cLeads";
-import { CONSULTANT_APIS, CONSULTANT_PAGES, memberApiAccess, memberPageRedirect } from "../src/lib/teamRoles";
+import { CONSULTANT_APIS, CONSULTANT_PAGES, hiddenSettingsTabs, memberApiAccess, memberPageRedirect } from "../src/lib/teamRoles";
 
 test("a lead list is read however the headers are worded", () => {
   const { rows, unreadable } = readLeadsCsv("First Name,Last Name,Company,E-mail,Mobile,LinkedIn URL,IG,Comments\nDana,Lee,Lee Coaching,dana@example.com,303-555-0100,linkedin.com/in/dana,@dana,met at summit\n,,,,,,,\n");
@@ -43,8 +43,10 @@ test("a lead list is read however the headers are worded", () => {
 
 test("a Call to Close consultant reaches one page and a few APIs, nothing else", () => {
   assert.equal(memberPageRedirect("consultant", "/call-to-close"), null);
-  for (const p of ["/", "/contacts", "/sales", "/dm-pipeline", "/settings", "/sales-reference", "/tasks", "/finance"]) assert.equal(memberPageRedirect("consultant", p), "/call-to-close", p);
+  for (const p of ["/", "/contacts", "/sales", "/dm-pipeline", "/sales-reference", "/tasks", "/finance", "/website-review"]) assert.equal(memberPageRedirect("consultant", p), "/call-to-close", p);
   for (const a of CONSULTANT_APIS) assert.equal(memberApiAccess("consultant", a, "POST").allow, true, a);
   for (const a of ["/api/crm/contacts", "/api/dm-pipeline", "/api/sales/contacts", "/api/sales/search-contacts", "/api/sales/lookup-contact", "/api/pipeline", "/api/tasks", "/api/calendars", "/api/billing", "/api/workspaces"]) assert.equal(memberApiAccess("consultant", a, "GET").allow, false, a);
-  assert.deepEqual(CONSULTANT_PAGES, ["/call-to-close"]);
+  assert.deepEqual(CONSULTANT_PAGES, ["/call-to-close", "/settings"]);
+  assert.equal(memberPageRedirect("consultant", "/settings"), null);
+  assert.ok(hiddenSettingsTabs("consultant").includes("billing") && !hiddenSettingsTabs("consultant").includes("security") && !hiddenSettingsTabs("consultant").includes("profile"));
 });

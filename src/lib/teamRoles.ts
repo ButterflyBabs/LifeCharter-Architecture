@@ -17,13 +17,16 @@ import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 //            sales resources) and the few APIs behind it. Nothing else in the Suite opens, by default.
 export type TeamRole = "admin" | "editor" | "viewer" | "sales" | "consultant";
 
-export const CONSULTANT_PAGES = ["/call-to-close"];
+export const CONSULTANT_PAGES = ["/call-to-close", "/settings"]; // their workspace, and Settings (profile, appearance and security only)
 export const CONSULTANT_APIS = [
   "/api/c2c", // their own pipeline board, cards and contacts (the route only ever reaches the board that carries their email)
   "/api/sales/my-calendar", // their own calls and hours
   "/api/sales/checkout-session", // the Stripe checkout for the plan a prospect chooses (credited to them)
   "/api/sales/send-agreement", // the Year-1 agreement for signature (LC Plume)
   "/api/account/switch",
+  "/api/me", // who they are, so the menu can show only what they have
+  "/api/profile", // their own profile in Settings
+  "/api/uploads/image", // their own profile photo
 ];
 
 export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
@@ -95,6 +98,7 @@ export function memberPageRedirect(role: string | null, path: string): string | 
 /** Settings tabs to hide for a role (the UI mirror of the rules above). */
 export function hiddenSettingsTabs(role: string | null): string[] {
   if (!role) return []; // owners and clients see everything
+  if (role === "consultant") return ["workspace", "notifications", "away", "texts", "ai", "integrations", "billing", "data"]; // profile, appearance and security only
   if (role === "admin") return ["ai", "integrations", "billing", "data", "texts"];
   return ["workspace", "away", "texts", "ai", "integrations", "billing", "data"]; // editor, viewer, and Sales outside the owner's workspace
 }
