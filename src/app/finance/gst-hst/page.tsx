@@ -249,7 +249,7 @@ function CheckList({ items, cad, onSaved }: { items: { id: string; date: string;
 
   return (
     <div className="mt-4 rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/40">
-      <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Check these {items.length} sale{items.length === 1 ? "" : "s"}</p>
+      <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{items.length === 1 ? "Check this sale" : `Check these ${items.length} sales`}</p>
       <p className="mt-1 text-sm text-[#7b6b8d]">
         These Canadian-dollar sales have no GST/HST recorded. That is right for a zero-rated sale or a customer outside Canada (choose Outside Canada and it leaves this list); otherwise add the tax you charged. They are counted in sales (line 101) either way.
       </p>
