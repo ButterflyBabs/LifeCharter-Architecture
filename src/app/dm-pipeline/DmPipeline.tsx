@@ -329,7 +329,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                       <Button size="sm" variant="outline" onClick={() => void snooze(c.id, plusDays(today, 7))}>Not yet: check again in 7 days</Button>
                     </div>
                   ) : (
-                    <div className="w-60 max-w-full"><DmSentPick card={c} scripts={scripts} onPick={(sid) => openSend(c.id, sid)} /></div>
+                    <div className="w-60 max-w-full"><DmSentPick card={c} scripts={scripts} stages={stages} onPick={(sid) => openSend(c.id, sid)} /></div>
                   )}
                 </li>
               );
@@ -460,7 +460,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                               {!c.contact_id && <span className="text-[#7b6b8d]" title="Add an email to put them in Contacts and tag them">Not in Contacts</span>}
                             </div>
                           </button>
-                          <DmSentPick card={c} scripts={scripts} onPick={(sid) => openSend(c.id, sid)} />
+                          <DmSentPick card={c} scripts={scripts} stages={stages} onPick={(sid) => openSend(c.id, sid)} />
                         </article>
                       );
                     })}
@@ -1181,17 +1181,25 @@ function DmLimitNote({ use, platform }: { use: DmUse; platform: string | null })
 }
 
 // "Send a DM": pick a script to see its message, copy it, and log it as sent. Shows the last one sent.
-function DmSentPick({ card, scripts, onPick }: { card: Card; scripts: ScriptLite[]; onPick: (scriptId: string) => void }) {
+function DmSentPick({ card, scripts, stages, onPick }: { card: Card; scripts: ScriptLite[]; stages: Stage[]; onPick: (scriptId: string) => void }) {
   const mine = card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : [];
   const rest = scripts.filter((s) => !mine.includes(s));
+  // A card in Nurture is on the 4-message series: the next message in it goes first in the list, with its due date.
+  const inNurture = stages.find((s) => s.id === card.stage_id)?.key === "nurture";
+  const lastStep = Number((card.script_title ?? "").match(/\bNurture (\d)\b/i)?.[1] ?? 0);
+  const nextStep = inNurture && lastStep < 4 ? lastStep + 1 : null;
+  const nextScript = nextStep ? mine.find((s) => new RegExp(`\\bNurture ${nextStep}\\b`, "i").test(s.title)) : undefined;
+  const label = (s: ScriptLite) => s.title.replace(/^MasterClass DM · /, "");
   return (
     <div className="mt-2">
       <select value="" onChange={(e) => e.target.value && onPick(e.target.value)} aria-label="Choose a DM to send" className="block h-8 w-full rounded-md border border-[#2E7C83]/40 bg-white px-1.5 text-xs font-medium text-[#2E7C83] dark:bg-[#1a2b4a]/40">
         <option value="">Choose a DM to send…</option>
-        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{s.title.replace(/^MasterClass DM · /, "")}</option>)}</optgroup>}
-        {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{s.title.replace(/^MasterClass DM · /, "")}</option>)}</optgroup>}
+        {nextScript && <optgroup label="Next in the nurture series"><option value={nextScript.id}>{label(nextScript)}</option></optgroup>}
+        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{label(s)}</option>)}</optgroup>}
+        {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{label(s)}</option>)}</optgroup>}
       </select>
-      {card.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">DM sent: {card.script_title.replace(/^MasterClass DM · /, "")}</p>}
+      {inNurture && <p className="mt-1 text-[11px] font-medium text-[#2E7C83]">{nextStep ? `Nurture ${nextStep} of 4${card.follow_up_on ? ` · due ${card.follow_up_on}` : ""}` : "Nurture series finished: nothing more scheduled"}</p>}
+      {card.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">DM sent: {label({ title: card.script_title } as ScriptLite)}</p>}
     </div>
   );
 }
@@ -1372,7 +1380,7 @@ function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, o
           </select>
         </label>
         <PlatformPick value={d.platform} onChange={(v) => setD({ ...d, platform: v })} />
-        <DmSentPick card={card} scripts={scripts} onPick={onPick} />
+        <DmSentPick card={card} scripts={scripts} stages={stages} onPick={onPick} />
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="block text-xs font-medium text-[#5a6472]">Name<Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></label>
           <label className="block text-xs font-medium text-[#5a6472]">Handle<Input value={d.handle} onChange={(e) => setD({ ...d, handle: e.target.value })} /></label>

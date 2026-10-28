@@ -163,7 +163,7 @@ export async function retagContact(db: Db, planId: string, contactId: string | n
 
 // Replaces the card's follow-up task: the old one is removed if still open, and a new
 // one is added when the stage has a follow-up.
-async function setFollowUp(db: Db, planId: string, card: Card, stage: DmStage, boardName: string, tz: string): Promise<{ follow_up_on: string | null; follow_up_task_id: number | null }> {
+export async function setFollowUp(db: Db, planId: string, card: Card, stage: DmStage, boardName: string, tz: string): Promise<{ follow_up_on: string | null; follow_up_task_id: number | null }> {
   if (card.follow_up_task_id) {
     await db.from("tasks").delete().eq("id", card.follow_up_task_id).eq("master_plan_id", planId).neq("status", "done");
   }
@@ -211,6 +211,15 @@ async function bookDeal(db: Db, planId: string, card: Card, boardName: string): 
     .single();
   return (data?.id as string) ?? null;
 }
+
+// The LinkedIn nurture series (4 DMs over 30 days) for a card sitting in Nurture. Message 1 is due the day the card lands there;
+// after each send the next one is due this many days later, and after message 4 nothing more is scheduled.
+export const NURTURE_TOTAL = 4;
+export const NURTURE_GAP_DAYS: Record<number, number | null> = { 1: 10, 2: 10, 3: 10, 4: null };
+export const nurtureStepOf = (title: string | null | undefined): number | null => {
+  const m = (title ?? "").match(/\bNurture (\d)\b/i);
+  return m ? Number(m[1]) : null;
+};
 
 const CARD_SEL = "id, board_id, stage_id, name, platform, contact_id, follow_up_task_id, email, handle, deal_id, script_title";
 

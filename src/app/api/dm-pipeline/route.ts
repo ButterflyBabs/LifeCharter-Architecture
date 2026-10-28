@@ -5,7 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { zonedToUtcISO } from "@/lib/tz";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
@@ -448,7 +448,19 @@ export async function POST(request: Request) {
       await db.from("sales_activities").insert({ master_plan_id: a.planId, type: "dm", contact_name: (saved.name as string) ?? "", contact_company: "", title: actTitle, priority: "warm", status: "completed", outcome: "", estimated_value: 0, occurred_on: day, notes: act }).then(({ error: e }) => { if (e) console.error("dm-sent activity:", e.message); });
     }
     if (card.contact_id) await logEvent(a.planId, card.contact_id as string, "manual", `${board.name}: ${line.replace(/^\[[^\]]*\] /, "")}`, { dm_card: card.id }, db as never).catch(() => {});
-    return NextResponse.json({ card: saved, dmUsage: await dmUsage(db, a.planId) });
+    // A nurture DM went out: the next one is due on the series' schedule (10 days later; none after the 4th).
+    const step = nurtureStepOf(title);
+    const nurtureStage = stages.find((s) => s.id === saved.stage_id && s.key === "nurture");
+    let outCard = saved;
+    if (step && nurtureStage) {
+      const gap = NURTURE_GAP_DAYS[step] ?? null;
+      const fu = await setFollowUp(db, a.planId, { ...(card as object), follow_up_task_id: saved.follow_up_task_id } as never, { ...nurtureStage, followUpDays: gap }, board.name, tz);
+      const { data: re } = await db.from("dm_cards").update({ follow_up_on: fu.follow_up_on, follow_up_task_id: fu.follow_up_task_id }).eq("id", card.id).eq("master_plan_id", a.planId).select("*").single();
+      if (re) outCard = re;
+      const next = gap == null ? "That was the last nurture message: nothing more is scheduled." : `Nurture ${step + 1} is due ${fu.follow_up_on}.`;
+      await db.from("dm_cards").update({ notes: `${(outCard.notes as string | null) ?? ""}\n${next}`.trim().slice(-2000) }).eq("id", card.id).eq("master_plan_id", a.planId);
+    }
+    return NextResponse.json({ card: outCard, dmUsage: await dmUsage(db, a.planId) });
   }
 
   if (b.action === "update") {
