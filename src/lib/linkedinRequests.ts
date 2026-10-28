@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ensureBoards, boardStages, createCard } from "@/lib/dmPipeline";
+import { ensureBoards, boardStages, createCard, moveCard, type DmStage } from "@/lib/dmPipeline";
 
 // LinkedIn connection requests, read from the account's own connected Microsoft 365 inbox. LinkedIn emails every
 // request ("<Name> wants to connect"); each one found becomes a card on the first outreach pipeline, in "To reach out",
@@ -38,7 +38,34 @@ export function parseInvite(m: GraphMsg): { name: string; profileUrl: string | n
   };
 }
 
-export async function syncLinkedInRequests(db: Db, planId: string, token: string, tz = "America/Denver", sinceDays = 14): Promise<{ added: number; seen: number }> {
+// LinkedIn also emails when someone ACCEPTS a request you sent ("<Name> accepted your invitation"). Those are not new
+// requests; they move the person's card out of "Connect request sent: waiting" instead.
+export function parseAcceptance(m: GraphMsg): { name: string; slug: string | null } | null {
+  const subject = m.subject || "";
+  const hit = subject.match(/^(.+?)\s+accepted your (?:invitation|connection|request)/i);
+  if (!hit) return null;
+  const name = hit[1].trim();
+  if (!name || name.length > 80) return null;
+  const slug = (m.body?.content || "").match(/linkedin\.com\/(?:comm\/)?in\/([A-Za-z0-9%_-]{2,100})/i)?.[1] ?? null;
+  return { name, slug: slug ? decodeURIComponent(slug).toLowerCase() : null };
+}
+
+type WaitingCard = { id: string; name: string; profile_url: string | null };
+const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+
+// The one waiting card an acceptance belongs to: by profile link first, else by exact name when only one card has it.
+export function matchWaitingCard(cards: WaitingCard[], who: { name: string; slug: string | null }): WaitingCard | null {
+  if (who.slug) {
+    const bySlug = cards.find((c) => c.profile_url && decodeURIComponent(c.profile_url).toLowerCase().includes(`/in/${who.slug}`));
+    if (bySlug) return bySlug;
+  }
+  const byName = cards.filter((c) => norm(c.name) === norm(who.name));
+  return byName.length === 1 ? byName[0] : null;
+}
+
+export type Accepted = { name: string; cardId: string; board: string };
+
+export async function syncLinkedInRequests(db: Db, planId: string, token: string, tz = "America/Denver", sinceDays = 14): Promise<{ added: number; seen: number; accepted: Accepted[] }> {
   const since = new Date(Date.now() - sinceDays * 86_400_000).toISOString();
   const url =
     `${GRAPH}/me/messages?$filter=${encodeURIComponent(`receivedDateTime ge ${since} and from/emailAddress/address eq '${SENDER}'`)}` +
@@ -46,20 +73,44 @@ export async function syncLinkedInRequests(db: Db, planId: string, token: string
   const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!r.ok) throw new Error(`graph linkedin ${r.status}`);
   const msgs = (((await r.json()) as { value?: GraphMsg[] }).value ?? []) as GraphMsg[];
-  if (!msgs.length) return { added: 0, seen: 0 };
+  if (!msgs.length) return { added: 0, seen: 0, accepted: [] };
 
   const boards = await ensureBoards(db as never, planId, "outreach");
   const board = boards[0];
-  if (!board) return { added: 0, seen: msgs.length };
+  if (!board) return { added: 0, seen: msgs.length, accepted: [] };
   const stages = await boardStages(db as never, planId, board.id);
   const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
-  if (!stage) return { added: 0, seen: msgs.length };
+  if (!stage) return { added: 0, seen: msgs.length, accepted: [] };
 
   const { data: logged } = await db.from("dm_inbound_log").select("external_id").eq("master_plan_id", planId).eq("source", "linkedin").in("external_id", msgs.map((m) => m.id));
   const done = new Set(((logged ?? []) as { external_id: string }[]).map((x) => x.external_id));
   let added = 0;
+  const accepted: Accepted[] = [];
+  let waiting: { cards: WaitingCard[]; boardOf: Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }> } | null = null;
   for (const m of msgs.reverse()) {
     if (done.has(m.id)) continue;
+    const a = parseAcceptance(m);
+    if (a) {
+      if (!waiting) waiting = await loadWaiting(db, planId, boards);
+      const card = matchWaitingCard(waiting.cards, a);
+      let cardId: string | null = null;
+      if (card) {
+        const info = waiting.boardOf.get(card.id);
+        if (info?.connected) {
+          const moved = await moveCard(db as never, planId, card.id, info.connected, info.board.name, tz);
+          if (moved) {
+            cardId = card.id;
+            const day = (m.receivedDateTime || "").slice(0, 10);
+            const { data: cur } = await db.from("dm_cards").select("notes").eq("id", card.id).maybeSingle();
+            await db.from("dm_cards").update({ notes: [(cur?.notes as string | null) || "", `Accepted your LinkedIn connection request (${day}). Send the invite from this card.`].filter(Boolean).join("\n") }).eq("id", card.id);
+            accepted.push({ name: card.name, cardId: card.id, board: info.board.name });
+            waiting.cards = waiting.cards.filter((c) => c.id !== card.id);
+          }
+        }
+      }
+      await db.from("dm_inbound_log").upsert({ master_plan_id: planId, source: "linkedin", external_id: m.id, card_id: cardId, person_name: a.name }, { onConflict: "master_plan_id,source,external_id", ignoreDuplicates: true });
+      continue;
+    }
     const p = parseInvite(m);
     if (!p) {
       await db.from("dm_inbound_log").upsert({ master_plan_id: planId, source: "linkedin", external_id: m.id }, { onConflict: "master_plan_id,source,external_id", ignoreDuplicates: true });
@@ -89,5 +140,28 @@ export async function syncLinkedInRequests(db: Db, planId: string, token: string
     }
     await db.from("dm_inbound_log").upsert({ master_plan_id: planId, source: "linkedin", external_id: m.id, card_id: cardId, person_name: p.name }, { onConflict: "master_plan_id,source,external_id", ignoreDuplicates: true });
   }
-  return { added, seen: msgs.length };
+  return { added, seen: msgs.length, accepted };
+}
+
+// Every LinkedIn card still sitting in "Connect request sent: waiting", across the account's outreach boards.
+async function loadWaiting(db: Db, planId: string, boards: Awaited<ReturnType<typeof ensureBoards>>) {
+  const boardOf = new Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }>();
+  const stageIds: string[] = [];
+  const stageBoard = new Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }>();
+  for (const b of boards) {
+    const st = await boardStages(db as never, planId, b.id);
+    const waitingStage = st.find((x) => x.key === "connect_sent");
+    if (!waitingStage) continue;
+    stageIds.push(waitingStage.id);
+    stageBoard.set(waitingStage.id, { board: b, connected: st.find((x) => x.key === "connected") });
+  }
+  if (!stageIds.length) return { cards: [] as WaitingCard[], boardOf };
+  const { data } = await db.from("dm_cards").select("id, name, profile_url, stage_id").eq("master_plan_id", planId).eq("platform", "LI").in("stage_id", stageIds).limit(2000);
+  const cards: WaitingCard[] = [];
+  for (const c of (data ?? []) as { id: string; name: string; profile_url: string | null; stage_id: string }[]) {
+    cards.push({ id: c.id, name: c.name, profile_url: c.profile_url });
+    const info = stageBoard.get(c.stage_id);
+    if (info) boardOf.set(c.id, info);
+  }
+  return { cards, boardOf };
 }
