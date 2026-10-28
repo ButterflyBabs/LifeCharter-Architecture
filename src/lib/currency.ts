@@ -10,8 +10,8 @@ export type Currency = "usd" | "cad";
 export const CURRENCIES: Currency[] = ["usd", "cad"];
 export const CURRENCY_NAMES: Record<Currency, string> = { usd: "US dollars (USD)", cad: "Canadian dollars (CAD)" };
 
-/** Babs only until the Eloise test passes; then every account can pick CAD. */
-export const MULTI_CURRENCY_OPEN_TO_ALL = false;
+/** Babs only until the Eloise test passed (2026-10-28); now every account can pick CAD. */
+export const MULTI_CURRENCY_OPEN_TO_ALL = true;
 
 /** Any stored or posted value → a known currency ("CAD"/"cad" → cad; anything else → the fallback). */
 export function toCurrency(v: unknown, fallback: Currency = "usd"): Currency {

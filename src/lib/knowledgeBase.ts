@@ -1585,6 +1585,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["payments", "invoice", "invoices", "payment link", "get paid", "stripe", "connect stripe", "payment plan", "deposit", "paid booking", "refund", "send invoice", "accept payments", "charge", "payments and invoices"],
   },
   {
+    id: "currency-usd-cad",
+    category: "Finance",
+    question: "Can I work in Canadian dollars? How do I keep US and Canadian dollars separate?",
+    answer:
+      "Yes. Go to Settings, then Integrations, then Currency, and choose US dollars (USD) or Canadian dollars (CAD) as your main currency. New offers, invoices, bills, income and expense entries, booking prices, deals and agreements start in your main currency, and you can switch any single one to the other currency with the USD/CAD picker next to its amount. Stripe charges each offer, payment link, invoice or paid booking in that item's own currency. The two currencies are always kept separate: every total in Finance, Pipeline and Payments shows your main currency, with the other currency on its own line marked Kept separate, and the Suite never adds them together or converts one into the other. Changing your main currency never changes anything you already entered. To be paid in Canadian dollars without conversion, connect a Canadian Stripe account (a Canadian business and bank account); a US Stripe account can charge in CAD, but Stripe converts the money to US dollars and charges a conversion fee. Not handled yet: Canadian sales tax (GST/HST), currency conversion and other currencies. The 1099 page is for US contractors only and leaves Canadian-dollar payments out.",
+    keywords: ["currency", "canadian dollars", "cad", "usd", "us dollars", "canada", "cdn", "change currency", "default currency", "two currencies", "multi-currency", "exchange rate", "gst", "hst"],
+  },
+  {
     id: "help-any-app",
     category: "Account & Settings",
     question: "How do I get help with LC Volant, LC Spark or LC Fledge?",
