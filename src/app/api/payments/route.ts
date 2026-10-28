@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { paymentsAccount } from "@/lib/payments";
 import { getConnection } from "@/lib/stripeConnect";
-import { INVOICE_COLUMNS, cancelInvoice, contactTaxPlace, createInvoice, invoicePlan } from "@/lib/suitePayments";
-import { chargesTax } from "@/lib/salesTaxServer";
+import { INVOICE_COLUMNS, cancelInvoice, contactTaxPlace, createInvoice, invoicePlan, taxState } from "@/lib/suitePayments";
 import { isTaxPlace } from "@/lib/salesTax";
 import { isCurrency, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
@@ -22,28 +21,32 @@ export const maxDuration = 60;
 // take taxPlace ("ON".. or "OUTSIDE"); without it the contact's stored address decides, and the invoice can't go out
 // until the place is known. preview returns { note, place } (place = the one used, for the "Customer is in" select).
 // The amount is always BEFORE tax; the note shows the tax and the total with tax. Payments carry tax_amount/tax_province.
+// Provincial tax (QST, BC/SK PST, MB RST): salesTax is true when the account collects GST/HST OR a provincial tax;
+// GET also returns pstTick (a BC/SK/MB registration: the invoice form shows "Provincial sales tax applies") and
+// offers carry pst_applies (the tick's default). preview/invoice take pstApplies (boolean; not given → the chosen
+// offer's pst_applies). Payments and invoices carry prov_tax_amount (the provincial tax, apart from tax_amount).
 export async function GET(request: Request) {
   const a = await paymentsAccount();
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const contactId = new URL(request.url).searchParams.get("contact");
-  let pays = db.from("suite_payments").select("id, livemode, kind, amount, currency, refunded, email, name, contact_id, offer_id, invoice_id, description, paid_at, tax_amount, tax_province").eq("master_plan_id", a.planId).order("paid_at", { ascending: false }).limit(300);
+  let pays = db.from("suite_payments").select("id, livemode, kind, amount, currency, refunded, email, name, contact_id, offer_id, invoice_id, description, paid_at, tax_amount, tax_province, prov_tax_amount").eq("master_plan_id", a.planId).order("paid_at", { ascending: false }).limit(300);
   let invs = db.from("suite_invoices").select(INVOICE_COLUMNS).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(300);
   if (contactId) {
     pays = pays.eq("contact_id", contactId);
     invs = invs.eq("contact_id", contactId);
   }
-  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact, home, salesTax] = await Promise.all([
+  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact, home, ts] = await Promise.all([
     getConnection(db, a.planId),
     pays,
     invs,
-    db.from("sales_offers").select("id, name, price, currency").eq("master_plan_id", a.planId).order("sort_order"),
+    db.from("sales_offers").select("id, name, price, currency, pst_applies").eq("master_plan_id", a.planId).order("sort_order"),
     contactId ? db.from("seq_contacts").select("id, email, first_name, last_name").eq("id", contactId).eq("master_plan_id", a.planId).maybeSingle().then((r) => r.data) : Promise.resolve(null),
     homeCurrency(a.planId, db),
-    chargesTax(a.planId, db),
+    taxState(db, a.planId),
   ]);
   return NextResponse.json(
-    { connected: Boolean(connection), livemode: connection?.livemode ?? null, currency: home, salesTax, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
+    { connected: Boolean(connection), livemode: connection?.livemode ?? null, currency: home, salesTax: ts.collects, gst: ts.gstOn, pstTick: ts.pstTick, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -73,9 +76,18 @@ export async function POST(request: Request) {
   }
   const home = await homeCurrency(a.planId, db);
   const currency = isCurrency(b.currency) ? toCurrency(b.currency) : home;
-  const taxOn = await chargesTax(a.planId, db);
-  const taxPlace = taxOn ? (isTaxPlace(b.taxPlace) ? b.taxPlace : await contactTaxPlace(db, a.planId, contactId)) : null;
-  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7, currency, home, chargeTax: taxOn, taxPlace };
+  const ts = await taxState(db, a.planId);
+  const taxPlace = ts.collects ? (isTaxPlace(b.taxPlace) ? b.taxPlace : await contactTaxPlace(db, a.planId, contactId)) : null;
+  // The PST/RST tick: the form's own, else the chosen offer's. Off when the account has no BC/SK/MB registration.
+  let pstApplies = false;
+  if (ts.pstTick) {
+    if (typeof b.pstApplies === "boolean") pstApplies = b.pstApplies;
+    else if (typeof b.offerId === "string" && b.offerId) {
+      const { data: o } = await db.from("sales_offers").select("pst_applies").eq("id", b.offerId).eq("master_plan_id", a.planId).maybeSingle();
+      pstApplies = Boolean((o as { pst_applies?: boolean } | null)?.pst_applies);
+    }
+  }
+  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7, currency, home, chargeTax: ts.gstOn, taxPlace, provincial: ts.provincial, pstApplies };
   const plan = invoicePlan(input);
   if (b.action === "preview") return plan.ok ? NextResponse.json({ note: plan.note, place: taxPlace }) : NextResponse.json({ error: plan.reason, place: taxPlace }, { status: 400 });
   if (b.action !== "invoice") return NextResponse.json({ error: "Unknown action." }, { status: 400 });

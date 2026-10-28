@@ -11,7 +11,7 @@ import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
 import { formatMoney, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
 import { addFlow, inHome, otherBlock, zeroFlow } from "@/lib/finance/money";
-import { parseTax } from "@/lib/finance/gstReport";
+import { parseProvTax, parseTax } from "@/lib/finance/gstReport";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,7 @@ type Row = {
   receipt_path?: string | null;
   tax_amount?: number | string | null;
   tax_province?: string | null;
+  prov_tax_amount?: number | string | null;
 };
 
 function serialize(r: Row) {
@@ -53,6 +54,8 @@ function serialize(r: Row) {
     // GST/HST (task 1520 follow-up): kept apart from the amount, which is before tax.
     taxAmount: Number(r.tax_amount ?? 0) || 0,
     taxProvince: r.tax_province || null,
+    // QST / PST / RST, also kept apart from the amount.
+    provTaxAmount: Number(r.prov_tax_amount ?? 0) || 0,
   };
 }
 
@@ -88,7 +91,7 @@ export async function GET(request: Request) {
   const home = await homeCurrency(masterPlanId, supabase);
   let entriesQ = supabase
     .from("finance_entries")
-    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province, prov_tax_amount")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
   if (scope) entriesQ = entriesQ.or(businessMoneyFilter(scope));
@@ -300,6 +303,9 @@ export async function POST(request: Request) {
   // GST/HST charged (income) or paid (expense), kept apart from the amount, and where the customer is.
   const tax = parseTax(body);
   if ("error" in tax) return NextResponse.json({ error: tax.error }, { status: 400 });
+  // QST, PST or RST charged (income), or QST paid (expense), also kept apart.
+  const prov = parseProvTax(body);
+  if ("error" in prov) return NextResponse.json({ error: prov.error }, { status: 400 });
 
   // A receipt photo the assistant read (task 1150): the new expense keeps it.
   const receiptId = typeof body.receiptId === "string" && /^[0-9a-f-]{36}$/i.test(body.receiptId) ? body.receiptId : null;
@@ -356,9 +362,10 @@ export async function POST(request: Request) {
       bill_id: billId,
       tax_amount: tax.taxAmount,
       tax_province: tax.taxProvince,
+      prov_tax_amount: prov.provTaxAmount,
       ...(receipt ? { receipt_path: receipt.path, receipt_name: receipt.file_name } : {}),
     })
-    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province, prov_tax_amount")
     .single();
 
   if (!error && receipt && data?.id) await supabase.from("finance_receipts").update({ status: "saved", entry_id: data.id }).eq("id", receipt.id);

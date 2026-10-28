@@ -571,9 +571,10 @@ export async function deriveNotifications(
   }
 
   // GST/HST (task 1520 follow-up): a registered account's return coming due, or a Canadian-dollar account nearing
-  // the $30,000 registration line. Each once per period (the period is in the nkey).
+  // the $30,000 registration line; and each provincial registration's return coming due. Each once per period (the
+  // period is in the nkey).
   try {
-    const [{ loadTaxSettings }, { gstAlerts }, { fourQuarterSales }] = await Promise.all([
+    const [{ loadTaxSettings }, { gstAlerts, provAlerts }, { fourQuarterSales }] = await Promise.all([
       import("@/lib/salesTaxServer"),
       import("@/lib/finance/gstReport"),
       import("@/lib/salesTax"),
@@ -595,6 +596,8 @@ export async function deriveNotifications(
       sales = fourQuarterSales(((data || []) as { type: string; amount: number | string; currency: string; occurred_on: string }[]).map((r) => ({ ...r, amount: Number(r.amount) || 0 })), today);
     }
     out.push(...gstAlerts({ today, registered: t.registered, registeredFrom: t.registeredFrom, frequency: t.frequency, homeCurrency: home, fourQuarterSales: sales }));
+    // QST / PST / RST returns coming due, one per registration and period (no registration-line alerts).
+    out.push(...provAlerts({ today, provincial: t.provincial }));
   } catch {
     /* best effort */
   }
@@ -605,7 +608,7 @@ export async function deriveNotifications(
 
 
 // Alerts worth an email (the rest stay in the bell): keyed by nkey prefix.
-export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:", "gst-due:", "gst-line:"];
+export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:", "gst-due:", "gst-line:", "pst-due:"];
 export const isEmailWorthy = (nkey: string | null) => !!nkey && EMAIL_WORTHY.some((p) => nkey.startsWith(p));
 
 // Brings the stored notifications in line with the live alerts (keeping

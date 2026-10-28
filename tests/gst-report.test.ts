@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gstReturn, periodOf } from "../src/lib/salesTax";
-import { buildGstReport, gstCsv, gstAlerts, lastEndedPeriod, parseTax, pickPeriod, shiftPeriod, type GstRow } from "../src/lib/finance/gstReport";
+import { buildGstReport, buildProvSection, gstCsv, gstAlerts, lastEndedPeriod, parseProvTax, parseTax, pickPeriod, provAlerts, provRegistered, shiftPeriod, type GstRow } from "../src/lib/finance/gstReport";
+import { isEmailWorthy } from "../src/lib/alerts";
 import { cleanReceiptRead } from "../src/lib/finance/receipts";
 import { gstNamedPeriod } from "../src/lib/ai/actions/finance";
 
@@ -102,4 +103,84 @@ test("alerts: close to and past the $30,000 line, only for unregistered CAD acco
   assert.equal(over[0].nkey, "gst-line:over:2026-Q4");
   assert.equal(over[0].type, "warning");
   assert.equal(gstAlerts({ ...base, homeCurrency: "usd", fourQuarterSales: 50000 }).length, 0);
+});
+
+// ── Provincial sales tax (QST, PST, RST) ─────────────────────────────────────
+// Eloise also sells from Montreal (QST, monthly) and ships digital products to BC (PST, quarterly).
+
+const provRows: GstRow[] = [
+  { id: "p1", type: "income", amount: 1000, tax_amount: 50, prov_tax_amount: 99.75, currency: "cad", occurred_on: "2026-10-03", tax_province: "QC", category: "Coaching" },
+  { id: "p2", type: "income", amount: 200, tax_amount: 10, prov_tax_amount: 14, currency: "cad", occurred_on: "2026-10-04", tax_province: "BC", category: "Course" },
+  { id: "p3", type: "expense", amount: 100, tax_amount: 5, prov_tax_amount: 9.98, currency: "cad", occurred_on: "2026-10-06", category: "Software" },
+  { id: "p4", type: "expense", amount: 100, tax_amount: 5, prov_tax_amount: 9.98, currency: "cad", occurred_on: "2026-10-07", tax_province: "QC", category: "Refunds" },
+  { id: "p5", type: "income", amount: 300, tax_amount: 0, prov_tax_amount: 29.93, currency: "usd", occurred_on: "2026-10-08", tax_province: "QC" },
+  { id: "p6", type: "income", amount: 400, tax_amount: 20, prov_tax_amount: 0, currency: "cad", occurred_on: "2026-10-09", tax_province: "ON" },
+];
+const provRegs = { QC: { registered: true, number: "1234567890TQ0001", frequency: "monthly" as const }, BC: { registered: true, number: "PST-1234-5678", frequency: "quarterly" as const }, MB: { registered: false, number: "", frequency: "quarterly" as const } };
+
+test("entry APIs accept the QST / PST as 0 or more", () => {
+  assert.deepEqual(parseProvTax({}), { provTaxAmount: 0 });
+  assert.deepEqual(parseProvTax({ provTaxAmount: "9.975" }), { provTaxAmount: 9.98 });
+  assert.ok("error" in parseProvTax({ provTaxAmount: -2 }));
+  assert.ok("error" in parseProvTax({ provTaxAmount: "lots" }));
+});
+
+test("only registered provinces get a section, in a fixed order", () => {
+  assert.deepEqual(provRegistered(provRegs), ["QC", "BC"]);
+  assert.deepEqual(provRegistered({}), []);
+});
+
+test("a QST section: its own (monthly) period, collected after refunds, QST paid claimed back, USD left out", () => {
+  const q = buildProvSection(provRows, provRegs, "QC", "2026-10-28");
+  assert.equal(q.period.start, "2026-10-01");
+  assert.equal(q.period.end, "2026-10-31");
+  assert.equal(q.prev.start, "2026-09-01");
+  assert.equal(q.kind, "QST");
+  assert.equal(q.claimable, true);
+  assert.equal(q.ret.taxableSales, 900);
+  assert.equal(q.ret.collected, 89.77);
+  assert.equal(q.ret.refunded, 9.98);
+  assert.equal(q.ret.claimable, 9.98);
+  assert.equal(q.ret.net, 79.79);
+  assert.equal(q.ret.usdLeftOut, 29.93);
+  assert.equal(buildProvSection(provRows, provRegs, "QC", "2026-10-28", "2026-09-01").period.label.includes("Sep"), true, "a named period start is honoured");
+});
+
+test("a PST section: quarterly, nothing to claim back", () => {
+  const b = buildProvSection(provRows, provRegs, "BC", "2026-10-28");
+  assert.equal(b.period.start, "2026-10-01");
+  assert.equal(b.period.end, "2026-12-31");
+  assert.equal(b.kind, "PST");
+  assert.equal(b.claimable, false);
+  assert.deepEqual([b.ret.taxableSales, b.ret.collected, b.ret.claimable, b.ret.net], [200, 14, 0, 14]);
+});
+
+test("the CSV gets a provincial column, and a provincial download keeps only rows with that tax", () => {
+  const p = periodOf("quarterly", "2026-10-28");
+  const all = gstCsv(provRows, p, { prov: "QST / PST" }).trim().split("\n");
+  assert.equal(all[0], "Date,Type,Description,Amount before tax,GST/HST,QST / PST,Province,Currency,Category");
+  assert.equal(all[1], "2026-10-03,Sale,Coaching,1000.00,50.00,99.75,Quebec,CAD,Coaching");
+  const only = gstCsv(provRows, p, { prov: "QST", only: "prov" }).trim().split("\n");
+  assert.equal(only.length, 1 + 5, "the Ontario sale with no provincial tax is left out");
+  assert.ok(only.some((l) => l.startsWith("2026-10-07,Refund,")));
+  assert.equal(gstCsv(rows, p).split("\n")[0], "Date,Type,Description,Amount before tax,GST/HST,Province,Currency,Category", "no provincial column unless asked");
+});
+
+test("alerts: each provincial return coming due, once per registration and period", () => {
+  // QST monthly: September is paid by Oct 31. BC PST quarterly: Q3 is paid by Oct 31.
+  const a = provAlerts({ today: "2026-10-28", provincial: provRegs });
+  assert.deepEqual(a.map((x) => x.nkey), ["pst-due:QC:2026-09-01", "pst-due:BC:2026-07-01"]);
+  assert.match(a[0].title, /^QST return \(Quebec\) due Oct\.? 31/);
+  assert.match(a[0].body, /Revenu Québec/);
+  assert.equal(a[0].href, "/finance/gst-hst?qc=2026-09-01#qc");
+  assert.equal(provAlerts({ today: "2026-10-16", provincial: provRegs }).length, 0);
+  assert.equal(provAlerts({ today: "2026-10-28", provincial: {} }).length, 0);
+  assert.ok(isEmailWorthy(a[0].nkey));
+});
+
+test("the receipt reader keeps the QST apart only when it makes sense", () => {
+  const r = cleanReceiptRead({ amount: "114.98", tax: "5.00", provTax: "9.98" }, "2026-10-28");
+  assert.equal(r.provTax, 9.98);
+  assert.equal(cleanReceiptRead({ amount: "10", tax: "5", provTax: "6" }, "2026-10-28").provTax, undefined, "both taxes can't be more than the total");
+  assert.equal(cleanReceiptRead({ amount: "10" }, "2026-10-28").provTax, undefined);
 });

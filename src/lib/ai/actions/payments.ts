@@ -2,8 +2,7 @@ import type { ActionCtx, ActionTool } from "./types";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
 import { createOfferLink, deactivateOfferLink, getConnection, linkPlan, type OfferForLink } from "@/lib/stripeConnect";
-import { cancelInvoice, createInvoice, invoicePlan, MAX_PAYMENTS } from "@/lib/suitePayments";
-import { chargesTax } from "@/lib/salesTaxServer";
+import { cancelInvoice, createInvoice, invoicePlan, MAX_PAYMENTS, taxState } from "@/lib/suitePayments";
 import { PROVINCES, isTaxPlace, placeFromAddress, type TaxPlace } from "@/lib/salesTax";
 import { formatMoney, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
@@ -26,8 +25,8 @@ async function contactFor(ctx: ActionCtx, email: string) {
 }
 async function offerByName(ctx: ActionCtx, name: string) {
   if (!name) return null;
-  const { data } = await ctx.db.from("sales_offers").select("id, name, price, billing, payment_count, currency").eq("master_plan_id", ctx.planId).ilike("name", name).limit(1).maybeSingle();
-  return data as OfferForLink | null;
+  const { data } = await ctx.db.from("sales_offers").select("id, name, price, billing, payment_count, currency, pst_applies").eq("master_plan_id", ctx.planId).ilike("name", name).limit(1).maybeSingle();
+  return data as (OfferForLink & { pst_applies?: boolean | null }) | null;
 }
 
 export const listPayments: ActionTool = {
@@ -64,22 +63,27 @@ const INVOICE_PROPS = {
   payment_count: { type: "number", description: `1 = paid in full (default); 2 to ${MAX_PAYMENTS} = that many monthly payments of total / N, then it stops.` },
   days_until_due: { type: "number", description: "Days to pay each invoice (default 7)." },
   offer_name: { type: "string", description: "The offer this is for (optional, exact name from list_offers)." },
-  customer_place: { type: "string", enum: [...PROVINCES.map((p) => p.code), "OUTSIDE"], description: "Only for accounts that charge GST/HST: where the customer is (province code, or OUTSIDE for outside Canada). Optional when the contact's address already says; the amount is always before tax." },
+  customer_place: { type: "string", enum: [...PROVINCES.map((p) => p.code), "OUTSIDE"], description: "Only for accounts that charge GST/HST or a provincial sales tax: where the customer is (province code, or OUTSIDE for outside Canada). Optional when the contact's address already says; the amount is always before tax." },
+  pst_applies: { type: "boolean", description: "Only for accounts registered for BC, Saskatchewan or Manitoba sales tax, and only when the client says so: provincial sales tax applies to this invoice. Leave out to use the named offer's own setting (off when no offer). Never decide this yourself." },
 };
 
-/** GST/HST: the place to tax this invoice for (asked → the contact's address), or why it's needed. */
-async function invoicePlace(args: Record<string, unknown>, ctx: ActionCtx, c: { region: string | null; country: string | null }): Promise<{ on: boolean; place: TaxPlace | null }> {
-  const on = await chargesTax(ctx.planId, ctx.db);
-  if (!on) return { on, place: null };
+/**
+ * Sales tax: the place to tax this invoice for (asked → the contact's address), whether GST/HST is on, the provincial
+ * registrations, and the PST/RST tick (asked → the offer's own; off without a BC/SK/MB registration).
+ */
+async function invoicePlace(args: Record<string, unknown>, ctx: ActionCtx, c: { region: string | null; country: string | null }, offer: { pst_applies?: boolean | null } | null) {
+  const ts = await taxState(ctx.db, ctx.planId);
+  const pstApplies = ts.pstTick ? (typeof args.pst_applies === "boolean" ? args.pst_applies : Boolean(offer?.pst_applies)) : false;
+  if (!ts.collects) return { on: false, gst: false, provincial: ts.provincial, place: null as TaxPlace | null, pstApplies };
   const asked = String(args.customer_place || "").trim().toUpperCase();
-  return { on, place: isTaxPlace(asked) ? asked : placeFromAddress(c.region, c.country) };
+  return { on: true, gst: ts.gstOn, provincial: ts.provincial, place: isTaxPlace(asked) ? asked : placeFromAddress(c.region, c.country), pstApplies };
 }
 
 export const sendInvoice: ActionTool = {
   name: "send_invoice",
   kind: "write",
   apiPath: "/api/payments",
-  description: "Send a contact an invoice from the client's own Stripe account (or an invoice payment plan of N monthly payments). The client approves first; Stripe emails it. If the account charges GST/HST, the amount is before tax and the tax is added for where the customer is (customer_place, or the contact's address).",
+  description: "Send a contact an invoice from the client's own Stripe account (or an invoice payment plan of N monthly payments). The client approves first; Stripe emails it. If the account charges GST/HST or a provincial sales tax (QST, PST, RST), the amount is before tax and each tax is added for where the customer is (customer_place, or the contact's address); PST/RST only when pst_applies (or the offer's own setting) says so.",
   parameters: { type: "object", properties: INVOICE_PROPS, required: ["email", "description", "amount"] },
   plan: async (args, ctx) => {
     if (!open(ctx)) return { error: OFF };
@@ -89,12 +93,16 @@ export const sendInvoice: ActionTool = {
     const offer = await offerByName(ctx, str(args.offer_name, 200));
     const home = await homeCurrency(ctx.planId, ctx.db);
     const currency = pickCurrency(args.currency, offer ? toCurrency(offer.currency, home) : home);
-    const tax = await invoicePlace(args, ctx, c);
-    if (tax.on && !tax.place) return { error: "You charge GST/HST, and I can't tell where this customer is. Which province are they in (or are they outside Canada)?" };
-    const p = invoicePlan({ email: c.email, description: str(args.description, 500), amount: Number(args.amount), paymentCount: Number(args.payment_count) || 1, daysUntilDue: Number(args.days_until_due) || 7, currency, home, chargeTax: tax.on, taxPlace: tax.place });
+    const tax = await invoicePlace(args, ctx, c, offer);
+    if (tax.on && !tax.place) return { error: `You charge ${tax.gst ? "GST/HST" : "sales tax"}, and I can't tell where this customer is. Which province are they in (or are they outside Canada)?` };
+    const p = invoicePlan({ email: c.email, description: str(args.description, 500), amount: Number(args.amount), paymentCount: Number(args.payment_count) || 1, daysUntilDue: Number(args.days_until_due) || 7, currency, home, chargeTax: tax.gst, taxPlace: tax.place, provincial: tax.provincial, pstApplies: tax.pstApplies });
     if (!p.ok) return { error: p.reason };
     const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email;
-    const taxLine = p.tax ? [p.tax.place === "OUTSIDE" ? "Customer is outside Canada: no GST/HST." : `Customer is in ${PROVINCES.find((x) => x.code === p.tax!.place)?.name}: ${p.tax.label} added (${money(p.tax.cents / 100, currency, home)} in all).`] : [];
+    const t = p.tax;
+    const added = t ? [...(t.rate > 0 ? [`${t.label} (${money(t.cents / 100, currency, home)} in all)`] : []), ...(t.prov ? [`${t.prov.label} (${money(t.prov.cents / 100, currency, home)} in all)`] : [])] : [];
+    const taxLine = t
+      ? [t.place === "OUTSIDE" ? `Customer is outside Canada: no ${tax.gst ? "GST/HST" : "sales tax"}.` : `Customer is in ${PROVINCES.find((x) => x.code === t.place)?.name}: ${added.length ? `${added.join(" and ")} added.` : "no sales tax added."}`]
+      : [];
     return { preview: { title: `Send ${name} an invoice`, lines: [`For: ${str(args.description, 500)}`, p.note, ...taxLine, `Currency: ${currency.toUpperCase()}`, `To: ${c.email}`, ...(offer ? [`Offer: ${offer.name}`] : []), "Stripe emails it from your own Stripe account."], links: LINKS } };
   },
   run: async (args, ctx) => {
@@ -105,12 +113,12 @@ export const sendInvoice: ActionTool = {
     if (!c) throw new Error("That person isn't in Contacts.");
     const offer = await offerByName(ctx, str(args.offer_name, 200));
     const currency = pickCurrency(args.currency, offer ? toCurrency(offer.currency, await homeCurrency(ctx.planId, ctx.db)) : await homeCurrency(ctx.planId, ctx.db));
-    const tax = await invoicePlace(args, ctx, c);
+    const tax = await invoicePlace(args, ctx, c, offer);
     const inv = await createInvoice(
       ctx.db,
       ctx.planId,
       conn,
-      { email: c.email, name: [c.first_name, c.last_name].filter(Boolean).join(" ") || null, description: str(args.description, 500), amount: Number(args.amount), paymentCount: Number(args.payment_count) || 1, daysUntilDue: Number(args.days_until_due) || 7, currency, taxPlace: tax.place },
+      { email: c.email, name: [c.first_name, c.last_name].filter(Boolean).join(" ") || null, description: str(args.description, 500), amount: Number(args.amount), paymentCount: Number(args.payment_count) || 1, daysUntilDue: Number(args.days_until_due) || 7, currency, taxPlace: tax.place, pstApplies: tax.pstApplies },
       { contactId: c.id, offerId: offer?.id ?? null },
     );
     return { summary: `Sent the invoice to ${c.email}.`, result: { id: inv?.id, url: inv?.hosted_url }, undo: { id: inv?.id } };
@@ -140,8 +148,8 @@ export const createPaymentLink: ActionTool = {
     if (isCurrency(args.currency) && toCurrency(args.currency) !== cur) return { error: `"${o.name}" is priced in ${cur.toUpperCase()}. Change the offer's currency on Offers & Packages first, then make the link.` };
     const p = linkPlan({ ...o, price: o.price === null ? null : Number(o.price) });
     if (!p.ok) return { error: p.reason };
-    const taxOn = await chargesTax(ctx.planId, ctx.db);
-    const taxLines = taxOn ? ["You charge GST/HST, so the link opens a short page of your own: the buyer picks their province (or Outside Canada), sees the tax and the total, then pays with Stripe. The price above is before tax."] : [];
+    const ts = await taxState(ctx.db, ctx.planId);
+    const taxLines = ts.collects ? [`You charge ${ts.gstOn ? "GST/HST" : "sales tax"}, so the link opens a short page of your own: the buyer picks their province (or Outside Canada), sees the tax and the total, then pays with Stripe. The price above is before tax.`] : [];
     return { preview: { title: `Make a payment link for "${o.name}"`, lines: [p.note, `Currency: ${cur.toUpperCase()}`, ...taxLines, "Payments go straight to your own Stripe account."], links: [{ label: "Open Offers & Packages", href: "/sales/offers" }] } };
   },
   run: async (args, ctx) => {

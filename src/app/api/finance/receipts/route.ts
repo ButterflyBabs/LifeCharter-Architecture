@@ -14,7 +14,7 @@ export const maxDuration = 90;
 
 // Receipt photos (task 1150 part 1).
 //   POST multipart { file }  -> saves the photo and has the client's assistant read it (vendor, date, amount, category,
-//                               description, and the GST/HST shown when the account is registered). Nothing is posted: the Expenses page shows it as a draft to approve.
+//                               description, and the GST/HST shown when the account is registered, and the QST for a Quebec QST registrant). Nothing is posted: the Expenses page shows it as a draft to approve.
 //   GET ?entry=<id>          -> opens the receipt kept on an expense (a short-lived private link)
 const MAX = 8 * 1024 * 1024;
 
@@ -45,10 +45,14 @@ export async function POST(request: Request) {
   const categories = Array.from(new Set(((cats ?? []) as { category: string }[]).map((c) => c.category).filter(Boolean))).slice(0, 40);
   const today = new Date().toISOString().slice(0, 10);
   // Registered for GST/HST: also read the GST/HST printed on the receipt, so it can be claimed back.
-  const registered = (await loadTaxSettings(planId, db).catch(() => null))?.registered ?? false;
-  const taxAsk = registered
-    ? `, "tax": the GST/HST (or HST, or GST) amount printed on the receipt as a number, only the GST/HST line (not PST, QST or tips), 0 if none is printed`
-    : "";
+  const settings = await loadTaxSettings(planId, db).catch(() => null);
+  const registered = settings?.registered ?? false;
+  // A Quebec QST registrant: also read the QST (TVQ), which is claimed back too. PST is part of the cost, so never split out.
+  const qst = Boolean(settings?.provincial.QC?.registered);
+  const taxAsk =
+    (registered
+      ? `, "tax": the GST/HST (or HST, or GST) amount printed on the receipt as a number, only the GST/HST line (not PST, QST or tips), 0 if none is printed`
+      : "") + (qst ? `, "provTax": the QST (TVQ) amount printed on the receipt as a number, only the QST line, 0 if none is printed` : "");
   let read = cleanReceiptRead({}, today);
   try {
     const ai = aiClient(key, { timeout: 80000 });

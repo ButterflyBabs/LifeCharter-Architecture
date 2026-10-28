@@ -17,10 +17,10 @@ interface Cal {
   min_notice_hours: number; max_days_ahead: number; daily_cap: number | null; assignment: "single" | "round_robin"; host_ids: string[]; cc_emails: string[];
   location: "zoom" | "phone" | "custom"; location_detail: string | null; questions: Q[]; tags: string[]; sequence_key: string | null; confirmation_note: string | null; active: boolean;
   create_deal: boolean; deal_value: number | null; noshow_subject: string | null; noshow_body: string | null;
-  pay_mode?: "none" | "full" | "deposit"; price?: number | null; deposit?: number | null; currency?: string | null;
+  pay_mode?: "none" | "full" | "deposit"; price?: number | null; deposit?: number | null; currency?: string | null; pst_applies?: boolean | null;
 }
 interface Booking { id: string; calendar_id: string; host_id: string | null; start_at: string; invitee_name: string; invitee_email: string; invitee_phone: string | null; answers: Record<string, string>; status: string; meeting_url: string | null; cancel_reason: string | null }
-interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; payments?: { allowed: boolean; connected: boolean }; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
+interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; payments?: { allowed: boolean; connected: boolean; pstTick?: boolean }; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
 
 const DAYS: [string, string][] = [["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]];
 const TZS = ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu", "Europe/London"];
@@ -169,14 +169,14 @@ function Calendars({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) 
   );
 }
 
-function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; payments?: { allowed: boolean; connected: boolean }; act: Act; setMsg: (m: string) => void }) {
+function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; payments?: { allowed: boolean; connected: boolean; pstTick?: boolean }; act: Act; setMsg: (m: string) => void }) {
   const { currency: home, canChoose } = useHomeCurrency();
   const [f, setF] = useState({
     currency: toCurrency(cal.currency, home),
     name: cal.name, slug: cal.slug, description: cal.description ?? "", duration: cal.duration_min, step: cal.slot_step_min, bufferBefore: cal.buffer_before_min, bufferAfter: cal.buffer_after_min,
     minNotice: cal.min_notice_hours, maxDays: cal.max_days_ahead, dailyCap: cal.daily_cap ?? 0, assignment: cal.assignment, hostIds: cal.host_ids, cc: cal.cc_emails.join(", "),
     location: !house && cal.location === "zoom" ? "custom" : cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
-    createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, payMode: cal.pay_mode ?? "none", price: cal.price ?? 0, deposit: cal.deposit ?? 0, noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
+    createDeal: cal.create_deal, dealValue: cal.deal_value ?? 0, payMode: cal.pay_mode ?? "none", price: cal.price ?? 0, deposit: cal.deposit ?? 0, pstApplies: Boolean(cal.pst_applies), noshowSubject: cal.noshow_subject ?? "", noshowBody: cal.noshow_body ?? "",
     questions: cal.questions.map((q) => `${q.label}${q.required ? " *" : ""}${q.type === "textarea" ? " (textarea)" : ""}${q.options?.length ? `: ${q.options.join(" | ")}` : ""}`).join("\n"),
   });
   const link = `${ORIGIN}/book/${cal.slug}`;
@@ -194,7 +194,7 @@ function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal
       minNotice: f.minNotice, maxDays: f.maxDays, dailyCap: f.dailyCap || null, assignment: f.assignment, hostIds: f.hostIds, ccEmails: f.cc.split(",").map((s) => s.trim()).filter(Boolean),
       location: f.location, locationDetail: f.locationDetail, confirmationNote: f.confirmationNote, tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean), questions: parseQs(),
       createDeal: f.createDeal, dealValue: f.dealValue || null, noshowSubject: f.noshowSubject, noshowBody: f.noshowBody,
-      ...(payments?.allowed ? { payMode: f.payMode, price: f.price || null, deposit: f.deposit || null, currency: f.currency } : {}),
+      ...(payments?.allowed ? { payMode: f.payMode, price: f.price || null, deposit: f.deposit || null, currency: f.currency, ...(payments.pstTick ? { pstApplies: f.pstApplies } : {}) } : {}),
     }, "Calendar saved.");
   const noCalendars = f.hostIds.filter((id) => !(hosts.find((h) => h.id === id)?.connections.length));
   return (
@@ -279,6 +279,12 @@ function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal
                   {f.payMode === "deposit" && <label className="block">Deposit ($)<Input type="number" value={f.deposit} onChange={(e) => setF({ ...f, deposit: Number(e.target.value) || 0 })} /></label>}
                   {(canChoose || f.currency !== home) && (
                     <label className="block">Currency<CurrencySelect value={f.currency} onChange={(c) => setF({ ...f, currency: c })} className={field} /></label>
+                  )}
+                  {payments.pstTick && (
+                    <div className="sm:col-span-2">
+                      <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={f.pstApplies} onChange={(e) => setF({ ...f, pstApplies: e.target.checked })} /><span>Provincial sales tax applies</span></label>
+                      <p className="text-xs text-[#7a8a99]">BC, Saskatchewan, Manitoba. Most coaching and consulting is not taxable; software, digital products and goods often are. Ask your accountant.</p>
+                    </div>
                   )}
                 </div>
               )}

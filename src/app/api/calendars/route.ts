@@ -13,6 +13,7 @@ import { getConnection } from "@/lib/stripeConnect";
 import { countAttendedSession } from "@/lib/portal";
 import { isCurrency, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
+import { taxState } from "@/lib/suitePayments";
 
 // Paid booking shows only where "get paid inside the Suite" is open (Babs only until PAYMENTS_OPEN_TO_ALL).
 const paymentsOpen = async () => PAYMENTS_OPEN_TO_ALL || (await isAlignmentArchitect().catch(() => false));
@@ -27,6 +28,8 @@ export const maxDuration = 60;
 //   GET → everything for the screen
 //   POST { action, ... } → create-host | update-host | connection | remove-connection |
 //        new-connect-key | create-calendar | update-calendar | booking-status | cancel-booking
+// Provincial sales tax: GET payments.pstTick is true when the account has a BC/SK/MB registration (the calendar's
+// "Provincial sales tax applies" tick shows); update-calendar takes pstApplies (boolean) → booking_calendars.pst_applies.
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const int = (v: unknown, lo: number, hi: number) => (Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi ? (v as number) : undefined);
@@ -72,7 +75,9 @@ export async function GET() {
   const profile = await senderProfile(a.planId, db);
   const v = senderVerdict(profile, false);
   const sender = profile.house ? { house: true, ok: true } : { house: false, ok: v.ok, reason: v.ok ? null : v.reason, setupPath: SENDING_SETUP_PATH };
-  const payments = (await paymentsOpen()) ? { allowed: true, connected: Boolean(await getConnection(db, a.planId)) } : { allowed: false, connected: false };
+  const payments = (await paymentsOpen())
+    ? { allowed: true, connected: Boolean(await getConnection(db, a.planId)), pstTick: (await taxState(db, a.planId).catch(() => null))?.pstTick ?? false }
+    : { allowed: false, connected: false, pstTick: false };
   return NextResponse.json({ calendars: calendars ?? [], hosts: (hosts ?? []).map((h) => ({ ...h, connections: (conns ?? []).filter((c) => c.host_id === h.id) })), bookings: bookings ?? [], zoom, house: a.house, sender, payments });
 }
 
@@ -206,6 +211,7 @@ export async function POST(request: Request) {
         // The price and deposit are in the calendar's own currency (task 1520); changed only when posted.
         if (isCurrency(b.currency)) p.currency = toCurrency(b.currency);
       }
+      if (typeof b.pstApplies === "boolean" && (await paymentsOpen())) p.pst_applies = b.pstApplies;
       if (typeof b.active === "boolean") p.active = b.active;
       const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id).eq("master_plan_id", a.planId);
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken." : "Couldn't save." }, { status: 400 });

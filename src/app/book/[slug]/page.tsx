@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, Check, Clock, CreditCard, Globe, MapPin, Phone, User, Video } from "lucide-react";
 import SlotPicker from "@/components/booking/SlotPicker";
 import { formatMoney, type Currency } from "@/lib/currency";
-import { OUTSIDE_LABEL, PROVINCES, isTaxPlace, taxCents, taxFor, type TaxPlace } from "@/lib/salesTax";
+import { OUTSIDE_LABEL, PROVINCES, isTaxPlace, provincialFor, taxCents, taxFor, type ProvRegs, type TaxPlace } from "@/lib/salesTax";
 
 // Public booking page: lccommandsuite.com/book/<slug>. ?name=&email= prefill. A month calendar, then the times for the
 // chosen day, then a short form. The house account's pages wear one of its brands (Command Suite, LifeCharter or
@@ -25,7 +25,7 @@ interface Meta {
   questions: Q[];
   hostName: string | null;
   brand?: string;
-  payment?: { amount: number; kind: "full" | "deposit"; currency?: Currency; tax?: boolean } | null;
+  payment?: { amount: number; kind: "full" | "deposit"; currency?: Currency; tax?: boolean; gst?: boolean; provincial?: ProvRegs; pstApplies?: boolean } | null;
   homeCurrency?: Currency;
   sms?: { consent: string } | null;
 }
@@ -53,6 +53,18 @@ const serif = "'EB Garamond', Georgia, 'Times New Roman', serif";
 /** The price in the calendar's own currency ("$150" in the account's home currency, "CA$150" / "US$150" otherwise). */
 const money = (m: Meta) => formatMoney(m.payment?.amount ?? 0, m.payment?.currency ?? "usd", { home: m.homeCurrency ?? "usd" });
 /** Any amount in the calendar's currency, with cents (the tax line and the total with tax). */
+/** GST/HST (when registered) and the provincial tax (QST; PST/RST when the calendar's tick is on) for where the booker is, in cents. */
+function bookingTaxes(m: Meta, place: TaxPlace | "") {
+  const p = m.payment;
+  const base = Math.round((p?.amount ?? 0) * 100);
+  if (!p?.tax || !isTaxPlace(place)) return { base, chosen: false, gst: null, prov: null, gstC: 0, provC: 0, total: base };
+  const gst = (p.gst ?? true) ? taxFor(place) : null;
+  const prov = provincialFor(place, p.provincial ?? {}, Boolean(p.pstApplies));
+  const gstC = gst ? taxCents(base, gst.rate) : 0;
+  const provC = prov ? taxCents(base, prov.rate) : 0;
+  return { base, chosen: true, gst, prov, gstC, provC, total: base + gstC + provC };
+}
+
 const moneyOf = (m: Meta, n: number) => formatMoney(n, m.payment?.currency ?? "usd", { home: m.homeCurrency ?? "usd", cents: true });
 
 const inputCls = "mt-1 w-full rounded-xl border bg-white px-4 py-2.5 text-[15px] outline-none focus:ring-2";
@@ -209,7 +221,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               {meta && <Pill icon={Clock}>{meta.duration} minutes</Pill>}
               {meta?.hostName && <Pill icon={User}>{meta.hostName}</Pill>}
               {meta && where && <Pill icon={LocIcon}>{meta.location === "zoom" ? "Zoom" : "Phone"}</Pill>}
-              {meta?.payment && <Pill icon={CreditCard}>{money(meta)}{meta.payment.kind === "deposit" ? " deposit" : ""}{meta.payment.tax ? " + GST/HST" : ""}</Pill>}
+              {meta?.payment && <Pill icon={CreditCard}>{money(meta)}{meta.payment.kind === "deposit" ? " deposit" : ""}{meta.payment.tax ? ((meta.payment.gst ?? true) ? " + GST/HST" : " + tax") : ""}</Pill>}
             </div>
             {unpaid && <p className="mx-auto mt-4 max-w-xl text-center text-sm text-[#8a2f2f]">Your payment wasn&apos;t finished, so that time wasn&apos;t booked. Please choose a time again.</p>}
             {desc && (
@@ -284,9 +296,10 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               <input name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
               {meta?.payment?.tax && (() => {
-                const t = isTaxPlace(place) ? taxFor(place) : null;
-                const base = Math.round((meta.payment?.amount ?? 0) * 100);
-                const tc = t ? taxCents(base, t.rate) : 0;
+                const x = bookingTaxes(meta, place);
+                const base = x.base;
+                const t = x.gst;
+                const gstOn = meta.payment?.gst ?? true;
                 return (
                   <div className="rounded-2xl border p-4 text-sm" style={{ borderColor: th.line }}>
                     <label className="block font-semibold">
@@ -299,8 +312,11 @@ export default function BookPage({ params }: { params: { slug: string } }) {
                     </label>
                     <div className="mt-3 space-y-1">
                       <p className="flex justify-between"><span>{meta.payment?.kind === "deposit" ? "Deposit" : "Price"}</span><span>{moneyOf(meta, base / 100)}</span></p>
-                      <p className="flex justify-between opacity-80"><span>{t ? (t.rate > 0 ? `${t.kind} ${t.rate}%` : "No GST/HST (outside Canada)") : "GST/HST"}</span><span>{t ? moneyOf(meta, tc / 100) : "Choose where you are"}</span></p>
-                      {t && <p className="flex justify-between border-t pt-1 font-semibold" style={{ borderColor: th.line }}><span>Total</span><span>{moneyOf(meta, (base + tc) / 100)}</span></p>}
+                      {!x.chosen && <p className="flex justify-between opacity-80"><span>{gstOn ? "GST/HST" : "Sales tax"}</span><span>Choose where you are</span></p>}
+                      {t && <p className="flex justify-between opacity-80"><span>{t.rate > 0 ? `${t.kind} ${t.rate}%` : "No GST/HST (outside Canada)"}</span><span>{moneyOf(meta, x.gstC / 100)}</span></p>}
+                      {x.prov && <p className="flex justify-between opacity-80"><span>{x.prov.kind} {x.prov.rate}%</span><span>{moneyOf(meta, x.provC / 100)}</span></p>}
+                      {x.chosen && !t && !x.prov && <p className="flex justify-between opacity-80"><span>No sales tax</span><span>{moneyOf(meta, 0)}</span></p>}
+                      {x.chosen && <p className="flex justify-between border-t pt-1 font-semibold" style={{ borderColor: th.line }}><span>Total</span><span>{moneyOf(meta, x.total / 100)}</span></p>}
                     </div>
                   </div>
                 );
@@ -311,7 +327,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
                   ? "Booking…"
                   : meta?.payment
                     ? meta.payment.tax && isTaxPlace(place)
-                      ? `Continue to pay ${moneyOf(meta, (Math.round(meta.payment.amount * 100) + taxCents(Math.round(meta.payment.amount * 100), taxFor(place).rate)) / 100)}${meta.payment.kind === "deposit" ? " deposit" : ""}`
+                      ? `Continue to pay ${moneyOf(meta, bookingTaxes(meta, place).total / 100)}${meta.payment.kind === "deposit" ? " deposit" : ""}`
                       : `Continue to pay ${money(meta)}${meta.payment.kind === "deposit" ? " deposit" : ""}${meta.payment.tax ? " + tax" : ""}`
                     : "Confirm booking"}
               </button>

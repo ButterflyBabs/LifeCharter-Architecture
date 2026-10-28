@@ -1,5 +1,6 @@
 "use client";
 
+import { anyProvincial } from "@/lib/salesTax";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
@@ -7,7 +8,7 @@ import { CADENCE_LABEL } from "@/lib/finance/billDates";
 import { CurrencySelect } from "@/components/money/CurrencySelect";
 import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 import type { Currency } from "@/lib/currency";
-import { GstHstField, taxBody, useSalesTax } from "@/components/finance/GstHst";
+import { GstHstField, taxBody, showTaxFields, useSalesTax } from "@/components/finance/GstHst";
 
 const FREQS = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
 
@@ -49,6 +50,8 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
   // GST/HST (only when the account is registered).
   const salesTax = useSalesTax();
   const [tax, setTax] = useState("");
+  // QST / PST / RST (only when the account has a provincial registration).
+  const [provTax, setProvTax] = useState("");
   const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
           currency: currency ?? home,
-          ...taxBody(salesTax.registered, type, tax, taxProvince),
+          ...taxBody(showTaxFields(salesTax), type, tax, taxProvince, anyProvincial(salesTax.provincial) ? provTax : undefined),
           ...(type === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
         }),
       });
@@ -169,8 +172,8 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
             </label>
           )}
         </div>
-        {salesTax.registered && (
-          <GstHstField key={type} look="modal" type={type} amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
+        {showTaxFields(salesTax) && (
+          <GstHstField key={type} look="modal" type={type} amount={amount} value={tax} onChange={setTax} provValue={provTax} onProvChange={setProvTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
         )}
         {msg && <p role="alert" className="mt-3 text-xs text-red-600">{msg}</p>}
         <div className="mt-5 flex items-center justify-between gap-3">

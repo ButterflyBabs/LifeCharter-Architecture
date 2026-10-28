@@ -1,5 +1,6 @@
 "use client";
 
+import { anyProvincial } from "@/lib/salesTax";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ListPlus, Smartphone, Wallet } from "lucide-react";
@@ -11,7 +12,7 @@ import { CategoryInput, forgetCategories } from "@/components/finance/CategoryIn
 import { ExpenseDetails, IncomeFrom, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
 import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
-import { GstHstField, taxBody, useSalesTax } from "@/components/finance/GstHst";
+import { GstHstField, taxBody, showTaxFields, useSalesTax } from "@/components/finance/GstHst";
 
 // Quick capture: a phone-friendly page for the two things owners jot down on
 // the move, a task or money in/out. Also a home-screen shortcut in the Suite app.
@@ -45,6 +46,8 @@ export default function CapturePage() {
   // GST/HST (only when the account is registered).
   const salesTax = useSalesTax();
   const [tax, setTax] = useState("");
+  // QST / PST / RST (only when the account has a provincial registration).
+  const [provTax, setProvTax] = useState("");
   const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function CapturePage() {
               occurredOn: occurredOn || today(),
               vendor: vendor.trim() || undefined,
               segmentId: segmentId || undefined,
-              ...taxBody(salesTax.registered, kind, tax, taxProvince),
+              ...taxBody(showTaxFields(salesTax), kind, tax, taxProvince, anyProvincial(salesTax.provincial) ? provTax : undefined),
               ...(kind === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
             }),
           });
@@ -91,6 +94,7 @@ export default function CapturePage() {
     setVendor("");
     setSegmentId("");
     setTax("");
+    setProvTax("");
     setTaxProvince("");
     setPaymentType("one_time");
     setOccurredOn(today());
@@ -130,8 +134,8 @@ export default function CapturePage() {
                 ))}
               </div>
               <MoneyInput placeholder="Amount" value={amount} onChange={setAmount} className="[&_input]:h-12 [&_input]:text-base" aria-label="Amount" />
-              {salesTax.registered && (
-                <GstHstField key={kind} type={kind} amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} />
+              {showTaxFields(salesTax) && (
+                <GstHstField key={kind} type={kind} amount={amount} value={tax} onChange={setTax} provValue={provTax} onProvChange={setProvTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} />
               )}
               <label className="block text-sm text-[#7a8a99]">
                 Date

@@ -4,7 +4,8 @@ import { isCurrency, toCurrency, type Currency } from "@/lib/currency";
 
 /** currency: USD or CAD only when the receipt prints it (a bare "$" says nothing), else null = use the home currency. */
 /** tax: the GST/HST printed on the receipt (absent when none is shown or it wasn't asked for); amount stays the TOTAL. */
-export interface ReceiptRead { vendor: string; date: string; amount: number; tax?: number; currency: Currency | null; category: string; description: string; confident: boolean }
+/** provTax: the QST (TVQ) printed on the receipt, read only for a Quebec QST registrant (absent otherwise). */
+export interface ReceiptRead { vendor: string; date: string; amount: number; tax?: number; provTax?: number; currency: Currency | null; category: string; description: string; confident: boolean }
 
 /** What the assistant read, made safe: a real date (else today), a positive amount (else 0), short text. */
 export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
@@ -17,11 +18,15 @@ export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
   const tax = Number(String(r.tax ?? "").replace(/[^0-9.]/g, ""));
   // Only a tax smaller than the total makes sense; anything else is dropped rather than guessed.
   const okTax = Number.isFinite(tax) && tax > 0 && tax < total;
+  const ptax = Number(String(r.provTax ?? "").replace(/[^0-9.]/g, ""));
+  // The QST too must leave something of the total once both taxes are taken off.
+  const okProv = Number.isFinite(ptax) && ptax > 0 && ptax + (okTax ? tax : 0) < total;
   return {
     vendor: str(r.vendor, 120),
     date: okDate ? date : today,
     amount: total,
     ...(okTax ? { tax: Math.round(tax * 100) / 100 } : {}),
+    ...(okProv ? { provTax: Math.round(ptax * 100) / 100 } : {}),
     currency: isCurrency(r.currency) ? toCurrency(r.currency) : null,
     category: str(r.category, 60),
     description: str(r.description, 200),

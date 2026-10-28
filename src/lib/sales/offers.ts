@@ -42,10 +42,12 @@ export type Offer = {
   link: string;
   status: string;
   sortOrder: number;
+  /** The client's own tick: provincial sales tax (BC PST, SK PST, MB RST) applies to this offer. QST ignores it. */
+  pstApplies: boolean;
 };
 
 export const OFFER_COLUMNS =
-  "id, business_id, name, format, price, currency, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration, capacity, link, status, sort_order";
+  "id, business_id, name, format, price, currency, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration, capacity, link, status, sort_order, pst_applies";
 
 export function shapeOffer(r: Record<string, unknown>): Offer {
   const num = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
@@ -68,11 +70,12 @@ export function shapeOffer(r: Record<string, unknown>): Offer {
     link: (r.link as string) || "",
     status: (r.status as string) || "active",
     sortOrder: Number(r.sort_order ?? 0),
+    pstApplies: r.pst_applies === true,
   };
 }
 
 // Validates a client-sent offer into database columns. Returns an error message or the row.
-// currency is only written when posted (a new offer gets the account's home currency from the route).
+// currency is only written when posted (a new offer gets the account's home currency from the route); pstApplies the same.
 export function offerRow(b: Record<string, unknown>): { error: string } | { row: Record<string, unknown> } {
   const str = (v: unknown, max = 2000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const numOrNull = (v: unknown, min: number, max: number) => {
@@ -98,6 +101,7 @@ export function offerRow(b: Record<string, unknown>): { error: string } | { row:
   return {
     row: {
       ...(isCurrency(b.currency) ? { currency: toCurrency(b.currency) } : {}),
+      ...(typeof b.pstApplies === "boolean" ? { pst_applies: b.pstApplies } : {}),
       name,
       format,
       billing,

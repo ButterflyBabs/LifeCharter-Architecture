@@ -10,7 +10,7 @@ import { FinanceTaxRead } from "@/components/planning/AssistantPanels";
 import { isTaxPayment } from "@/lib/finance/taxRules";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
-import { useSalesTax } from "@/components/finance/GstHst";
+import { showTaxFields, useSalesTax } from "@/components/finance/GstHst";
 
 import { useMoney, otherText, otherCur, type OtherBlock } from "@/components/finance/money";
 import { CURRENCY_NAMES } from "@/lib/currency";
@@ -161,9 +161,9 @@ export default function TaxPrepPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {salesTax.registered && (
+          {showTaxFields(salesTax) && (
             <Link href="/finance/gst-hst">
-              <Button variant="outline" size="sm">GST/HST return</Button>
+              <Button variant="outline" size="sm">Sales tax (GST/HST, QST, PST)</Button>
             </Link>
           )}
           <Link href="/finance/1099">

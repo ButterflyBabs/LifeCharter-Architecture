@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { Check, CreditCard, Loader2 } from "lucide-react";
 import { formatMoney, type Currency } from "@/lib/currency";
-import { OUTSIDE_LABEL, PROVINCES, isTaxPlace, taxCents, taxFor, type TaxPlace } from "@/lib/salesTax";
+import { OUTSIDE_LABEL, PROVINCES, isTaxPlace, provincialFor, taxCents, taxFor, type ProvRegs, type TaxPlace } from "@/lib/salesTax";
 
 // An offer's pay page: lccommandsuite.com/pay/<link id>. Made for accounts that charge GST/HST (task 1520 follow-up):
 // Stripe Payment Links can't add a fixed tax rate, so the buyer says where they are here, sees the tax and the total,
 // then goes on to Stripe Checkout on the seller's own Stripe account. Plain, neutral look (like a client's booking page).
-type Info = { active: true; offer: string; seller: string | null; kind: "one_time" | "monthly" | "payment_plan"; amount: number; currency: Currency; home: Currency; count: number | null; tax: boolean; livemode: boolean };
+type Info = { active: true; offer: string; seller: string | null; kind: "one_time" | "monthly" | "payment_plan"; amount: number; currency: Currency; home: Currency; count: number | null; tax: boolean; gst?: boolean; provincial?: ProvRegs; pstApplies?: boolean; livemode: boolean };
 
 const accent = "#2E7C83";
 const line = "#EADFCF";
@@ -37,8 +37,14 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
   const money = (n: number) => (info ? formatMoney(n, info.currency, { home: info.home, cents: true }) : "");
   const cents = info ? Math.round(info.amount * 100) : 0;
-  const tax = info?.tax && isTaxPlace(place) ? taxFor(place) : null;
-  const taxC = tax ? taxCents(cents, tax.rate) : 0;
+  // GST/HST (when registered) and the provincial tax (QST; PST/RST when the offer's tick is on), each its own line.
+  const gstOn = info ? info.gst ?? info.tax : false;
+  const chosen = Boolean(info?.tax && isTaxPlace(place));
+  const tax = chosen && gstOn && isTaxPlace(place) ? taxFor(place) : null;
+  const prov = chosen && isTaxPlace(place) ? provincialFor(place, info?.provincial ?? {}, Boolean(info?.pstApplies)) : null;
+  const gstC = tax ? taxCents(cents, tax.rate) : 0;
+  const provC = prov ? taxCents(cents, prov.rate) : 0;
+  const taxC = gstC + provC;
   const every = info?.kind === "monthly" ? " every month" : info?.kind === "payment_plan" ? ` a month, for ${info.count} months` : "";
 
   async function go() {
@@ -92,24 +98,42 @@ export default function PayPage({ params }: { params: { id: string } }) {
                     {PROVINCES.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
                     <option value="OUTSIDE">{OUTSIDE_LABEL}</option>
                   </select>
-                  <span className="mt-1 block text-xs font-normal opacity-70">Sales tax (GST/HST) depends on where you are.</span>
+                  <span className="mt-1 block text-xs font-normal opacity-70">{gstOn ? "Sales tax (GST/HST) depends on where you are." : "Sales tax depends on where you are."}</span>
                 </label>
               )}
               <div className="space-y-1.5 border-t pt-4 text-[15px]" style={{ borderColor: line }}>
                 <p className="flex justify-between"><span>Price</span><span>{money(cents / 100)}</span></p>
-                {info.tax && (
+                {info.tax && !chosen && (
                   <p className="flex justify-between opacity-80">
-                    <span>{tax ? (tax.rate > 0 ? `${tax.kind} ${tax.rate}%` : "No GST/HST (outside Canada)") : "GST/HST"}</span>
-                    <span>{tax ? money(taxC / 100) : "Choose where you are"}</span>
+                    <span>{gstOn ? "GST/HST" : "Sales tax"}</span>
+                    <span>Choose where you are</span>
+                  </p>
+                )}
+                {tax && (
+                  <p className="flex justify-between opacity-80">
+                    <span>{tax.rate > 0 ? `${tax.kind} ${tax.rate}%` : "No GST/HST (outside Canada)"}</span>
+                    <span>{money(gstC / 100)}</span>
+                  </p>
+                )}
+                {prov && (
+                  <p className="flex justify-between opacity-80">
+                    <span>{prov.kind} {prov.rate}%</span>
+                    <span>{money(provC / 100)}</span>
+                  </p>
+                )}
+                {chosen && !tax && !prov && (
+                  <p className="flex justify-between opacity-80">
+                    <span>No sales tax</span>
+                    <span>{money(0)}</span>
                   </p>
                 )}
                 <p className="flex justify-between border-t pt-2 text-lg font-semibold" style={{ borderColor: line }}>
                   <span>Total</span>
-                  <span>{!info.tax || tax ? `${money((cents + taxC) / 100)}${every}` : "—"}</span>
+                  <span>{!info.tax || chosen ? `${money((cents + taxC) / 100)}${every}` : "—"}</span>
                 </p>
               </div>
               {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
-              <button onClick={() => void go()} disabled={busy || (info.tax && !tax)} className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-base font-semibold text-white disabled:opacity-60" style={{ background: accent }}>
+              <button onClick={() => void go()} disabled={busy || (info.tax && !chosen)} className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-base font-semibold text-white disabled:opacity-60" style={{ background: accent }}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}Continue to payment
               </button>
               <p className="text-center text-xs opacity-60">You pay securely with Stripe.{info.kind === "payment_plan" ? " The payments stop by themselves after the last one." : ""}</p>

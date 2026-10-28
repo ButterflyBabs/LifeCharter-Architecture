@@ -63,3 +63,33 @@ test("the $30,000 line counts the last four quarters of CAD sales", () => {
   ];
   assert.equal(fourQuarterSales(rows, "2026-10-28"), 20000);
 });
+
+// Quebec QST and provincial sales tax (BC, SK, MB): only where registered, QST follows GST, PST only on ticked items.
+import { provincialFor, provincialReturn, cleanProvRegs } from "../src/lib/salesTax";
+
+test("QST follows GST for Quebec customers; PST needs the item's tick; nothing where not registered", () => {
+  const regs = cleanProvRegs({ QC: { registered: true, number: "1234567890 tq0001", frequency: "quarterly" }, BC: { registered: true }, SK: { registered: false } });
+  assert.equal(regs.QC?.number, "1234567890 TQ0001");
+  assert.deepEqual(provincialFor("QC", regs, false), { place: "QC", kind: "QST", rate: 9.975, label: "QST 9.975% (Quebec)" });
+  assert.equal(provincialFor("BC", regs, false), null, "coaching: PST not ticked");
+  assert.equal(provincialFor("BC", regs, true)?.rate, 7);
+  assert.equal(provincialFor("SK", regs, true), null, "not registered in Saskatchewan");
+  assert.equal(provincialFor("MB", regs, true), null);
+  assert.equal(provincialFor("ON", regs, true), null, "Ontario has HST only");
+  assert.equal(provincialFor("OUTSIDE", regs, true), null);
+  assert.equal(taxCents(100000, 9.975), 9975);
+});
+
+test("a province's return: collected, refunds given back, QST claimed back, USD left out", () => {
+  const rows = [
+    { type: "income", amount: 1000, prov_tax_amount: 99.75, currency: "cad", occurred_on: "2026-10-05", tax_province: "QC" },
+    { type: "income", amount: 500, prov_tax_amount: 35, currency: "cad", occurred_on: "2026-10-06", tax_province: "BC" },
+    { type: "expense", category: "Refunds", amount: 200, prov_tax_amount: 19.95, currency: "cad", occurred_on: "2026-11-01", tax_province: "QC" },
+    { type: "expense", category: "Software", amount: 100, prov_tax_amount: 9.98, currency: "cad", occurred_on: "2026-11-02" },
+    { type: "income", amount: 300, prov_tax_amount: 29.93, currency: "usd", occurred_on: "2026-11-03", tax_province: "QC" },
+  ];
+  const qc = provincialReturn(rows, "QC", "2026-10-01", "2026-12-31");
+  assert.deepEqual([qc.taxableSales, qc.collected, qc.refunded, qc.claimable, qc.net, qc.usdLeftOut], [800, 79.8, 19.95, 9.98, 69.82, 29.93]);
+  const bc = provincialReturn(rows, "BC", "2026-10-01", "2026-12-31");
+  assert.deepEqual([bc.collected, bc.claimable, bc.net], [35, 0, 35], "PST paid on expenses is not claimed back");
+});

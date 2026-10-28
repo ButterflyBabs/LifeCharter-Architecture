@@ -9,13 +9,35 @@ import { MoneyInput } from "@/components/finance/MoneyInput";
 import { PROVINCES, OUTSIDE_LABEL, taxFor, isTaxPlace, type Period } from "@/lib/salesTax";
 import { placeName } from "@/lib/finance/gstReport";
 
-// Finance › GST/HST (task 1520 follow-up): the totals for a GST/HST return, in plain words, from the Canadian-dollar
-// entries in the ledger. A guide for the owner and their accountant, not tax advice; nothing is filed with the CRA.
+// Finance › Sales tax returns (task 1520 follow-up + provincial): the totals for a GST/HST return and for each
+// provincial registration (Quebec QST, BC/Saskatchewan PST, Manitoba RST), in plain words, from the Canadian-dollar
+// entries in the ledger. A guide for the owner and their accountant, not tax advice; nothing is filed for them.
+
+type Prov = {
+  province: "QC" | "BC" | "SK" | "MB";
+  kind: string;
+  title: string;
+  rate: number;
+  number: string;
+  frequency: "monthly" | "quarterly" | "annual";
+  period: Period;
+  prev: Period | null;
+  next: Period | null;
+  isCurrent: boolean;
+  claimable: boolean;
+  taxableSales: number;
+  collected: number;
+  claimBack: number;
+  net: number;
+  refunded: number;
+  usdLeftOut: number;
+};
 
 type Data =
-  | { registered: false }
+  | { registered: false; provincial?: Prov[] }
   | {
       registered: true;
+      provincial?: Prov[];
       businessNumber: string;
       province: string | null;
       frequency: "monthly" | "quarterly" | "annual";
@@ -38,24 +60,40 @@ const longDate = (iso: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
 };
 
+// The period asked for in the link (a reminder links to its own period): ?start= for GST/HST, ?qc= ?bc= ?sk= ?mb=.
+function fromUrl(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  const v = new URLSearchParams(window.location.search).get(key);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+
 export default function GstHstReport() {
-  const [start, setStart] = useState<string | null>(null);
+  const [start, setStart] = useState<string | null>(() => fromUrl("start"));
+  const [provStarts, setProvStarts] = useState<Record<string, string | null>>(() => ({ qc: fromUrl("qc"), bc: fromUrl("bc"), sk: fromUrl("sk"), mb: fromUrl("mb") }));
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState("");
   const { currency: home } = useHomeCurrency();
   const cad = (n: number) => formatMoney(n, "cad", { home, cents: true });
   const usd = (n: number) => formatMoney(n, "usd", { home, cents: true });
 
-  const load = useCallback(async (s: string | null) => {
+  const query = (s: string | null, ps: Record<string, string | null>) => {
+    const q = new URLSearchParams();
+    if (s) q.set("start", s);
+    for (const [k, v] of Object.entries(ps)) if (v) q.set(k, v);
+    const t = q.toString();
+    return t ? `?${t}` : "";
+  };
+  const load = useCallback(async (s: string | null, ps: Record<string, string | null>) => {
     setErr("");
-    const r = await fetch(`/api/finance/gst-hst${s ? `?start=${s}` : ""}`, { cache: "no-store" }).catch(() => null);
+    const r = await fetch(`/api/finance/gst-hst${query(s, ps)}`, { cache: "no-store" }).catch(() => null);
     const x = r ? await r.json().catch(() => null) : null;
-    if (!r?.ok || !x) return setErr(x?.error || "Couldn't load the GST/HST report. Please try again.");
+    if (!r?.ok || !x) return setErr(x?.error || "Couldn't load the sales tax report. Please try again.");
     setD(x as Data);
   }, []);
   useEffect(() => {
-    void load(start);
-  }, [start, load]);
+    void load(start, provStarts);
+  }, [start, provStarts, load]);
+  const setProv = (code: string, v: string | null) => setProvStarts((p) => ({ ...p, [code.toLowerCase()]: v }));
 
   const header = (
     <>
@@ -67,8 +105,8 @@ export default function GstHstReport() {
           <Landmark className="h-6 w-6 text-[#2E7C83]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">GST/HST return</h1>
-          <p className="text-sm text-[#7b6b8d]">The numbers for your GST/HST return, worked out from your income and expenses.</p>
+          <h1 className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Sales tax returns</h1>
+          <p className="text-sm text-[#7b6b8d]">The numbers for your sales tax returns, worked out from your income and expenses.</p>
         </div>
       </div>
     </>
@@ -76,6 +114,24 @@ export default function GstHstReport() {
 
   if (err) return <div className="w-full px-4 py-6 sm:px-6">{header}<p className="text-sm text-red-600">{err}</p></div>;
   if (!d) return <div className="w-full px-4 py-6 sm:px-6">{header}<p className="text-sm text-[#7b6b8d]">Loading…</p></div>;
+
+  const provs = d.provincial ?? [];
+  const provBlock = provs.length > 0 && (
+    <div className="mt-8 space-y-8">
+      {provs.map((x) => (
+        <ProvSectionView key={x.province} x={x} cad={cad} usd={usd} onPeriod={(v) => setProv(x.province, v)} />
+      ))}
+    </div>
+  );
+
+  if (!d.registered && provs.length > 0) {
+    return (
+      <div className="w-full px-4 py-6 sm:px-6">
+        {header}
+        {provBlock}
+      </div>
+    );
+  }
 
   if (!d.registered) {
     return (
@@ -107,6 +163,8 @@ export default function GstHstReport() {
   return (
     <div className="w-full px-4 py-6 sm:px-6">
       {header}
+
+      {provs.length > 0 && <h2 className="mb-3 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">GST/HST</h2>}
 
       {/* Period picker + download */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -214,13 +272,107 @@ export default function GstHstReport() {
         </div>
       )}
 
-      <CheckList items={d.check} cad={cad} onSaved={() => load(start)} />
+      <CheckList items={d.check} cad={cad} onSaved={() => load(start, provStarts)} />
 
       <p className="mt-6 max-w-3xl text-xs text-[#7b6b8d]">
         This is a guide worked out from what you recorded, not tax advice. Only Canadian-dollar entries are counted, the amount on each entry is before tax, and nothing is
         filed with the CRA for you. Adjustments (lines 104 and 107), instalments and anything unusual are for your accountant.
       </p>
+
+      {provBlock}
     </div>
+  );
+}
+
+// One provincial registration (QST, PST or RST): its own period, totals, due dates and download.
+function ProvSectionView({ x, cad, usd, onPeriod }: { x: Prov; cad: (n: number) => string; usd: (n: number) => string; onPeriod: (start: string | null) => void }) {
+  const tile = "rounded-xl border border-[#1a2b4a]/10 bg-white p-4 dark:bg-[#1a2b4a]/40";
+  const owing = x.net >= 0;
+  const agency = x.province === "QC" ? "Revenu Québec" : x.province === "BC" ? "the BC government" : x.province === "SK" ? "the Saskatchewan government" : "the Manitoba government";
+  return (
+    <section id={x.province.toLowerCase()} className="scroll-mt-6 border-t border-[#1a2b4a]/10 pt-6">
+      <h2 className="mb-3 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{x.title}</h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button onClick={() => x.prev && onPeriod(x.prev.start)} disabled={!x.prev} aria-label="Previous period" className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#1a2b4a]/20 hover:bg-[#1a2b4a]/5 disabled:opacity-40">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-[12rem] text-center">
+            <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{x.period.label}</p>
+            <p className="text-xs text-[#7b6b8d]">{x.isCurrent ? "This period, so far" : `${longDate(x.period.start)} to ${longDate(x.period.end)}`}</p>
+          </div>
+          <button onClick={() => x.next && onPeriod(x.next.start)} disabled={!x.next} aria-label="Next period" className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#1a2b4a]/20 hover:bg-[#1a2b4a]/5 disabled:opacity-40">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {!x.isCurrent && (
+            <button onClick={() => onPeriod(null)} className="ml-1 text-sm text-[#2E7C83] hover:underline">
+              Back to this period
+            </button>
+          )}
+        </div>
+        <a
+          href={`/api/finance/gst-hst?${x.province.toLowerCase()}=${x.period.start}&tax=${x.province}&format=csv`}
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[#1a2b4a]/20 px-3 text-sm font-medium hover:bg-[#1a2b4a]/5"
+        >
+          <Download className="h-4 w-4" />
+          Download {x.kind} for my accountant (CSV)
+        </a>
+      </div>
+
+      <div className={`grid gap-3 sm:grid-cols-2 ${x.claimable ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+        <div className={tile}>
+          <p className="text-sm text-[#7b6b8d]">Sales you charged {x.kind} on (before tax)</p>
+          <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{cad(x.taxableSales)}</p>
+        </div>
+        <div className={tile}>
+          <p className="text-sm text-[#7b6b8d]">{x.kind} you collected</p>
+          <p className="text-2xl font-bold text-[#2E7C83]">{cad(x.collected)}</p>
+          {x.refunded > 0 && <p className="text-[11px] text-[#b8a898]">After {cad(x.refunded)} given back on refunds</p>}
+        </div>
+        {x.claimable && (
+          <div className={tile}>
+            <p className="text-sm text-[#7b6b8d]">QST you paid that you can claim back</p>
+            <p className="text-2xl font-bold text-[#7b6b8d]">{cad(x.claimBack)}</p>
+            <p className="text-[11px] text-[#b8a898]">Input tax refunds</p>
+          </div>
+        )}
+        <div className={tile} style={{ borderColor: owing ? "#b06a5a55" : "#2c6b3f55" }}>
+          <p className="text-sm text-[#7b6b8d]">{owing ? `${x.claimable ? "Net QST" : x.kind} to pay` : "Net tax to get back (a refund)"}</p>
+          <p className="text-2xl font-bold" style={{ color: owing ? "#b06a5a" : "#2c6b3f" }}>{cad(Math.abs(x.net))}</p>
+          {x.claimable && <p className="text-[11px] text-[#b8a898]">Collected minus claimed back</p>}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className={tile}>
+          <p className="mb-2 flex items-center gap-2 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <CalendarClock className="h-4 w-4 text-[#2E7C83]" /> When it&apos;s due
+          </p>
+          <p className="text-sm text-[#3F4654] dark:text-[#e8e4f0]">File by <strong>{longDate(x.period.fileBy)}</strong></p>
+          <p className="text-sm text-[#3F4654] dark:text-[#e8e4f0]">Pay by <strong>{longDate(x.period.payBy)}</strong></p>
+          <p className="mt-2 text-xs text-[#7b6b8d]">
+            You file {FREQ_WORD[x.frequency]}{x.number ? ` under ${x.number}` : ""}. These are the GST/HST dates; {agency}&apos;s own due dates can differ, so confirm them with your
+            accountant. Change this in{" "}
+            <Link href="/settings?tab=integrations" className="text-[#2E7C83] hover:underline">Settings</Link>.
+          </p>
+        </div>
+        {x.usdLeftOut !== 0 && (
+          <div className="flex gap-2 rounded-xl border border-[#c9a227]/40 bg-[#c9a227]/10 p-4 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#c9a227]" />
+            <div>
+              <p className="font-semibold">US-dollar money is left out</p>
+              <p className="mt-1">
+                {usd(Math.abs(x.usdLeftOut))} of {x.kind} {x.usdLeftOut < 0 ? "given back on US-dollar refunds" : "collected in US dollars"} is not in the totals above: the return needs
+                Canadian dollars, and your accountant converts it. It is in the download.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="mt-4 max-w-3xl text-xs text-[#7b6b8d]">
+        A guide worked out from what you recorded, not tax advice. Only Canadian-dollar entries are counted{x.claimable ? "" : `, and ${x.kind} you paid on purchases is part of their cost, so there is nothing to claim back`}.
+      </p>
+    </section>
   );
 }
 

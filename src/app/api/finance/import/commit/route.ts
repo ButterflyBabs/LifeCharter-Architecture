@@ -5,7 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { isCurrency, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
-import { parseTax } from "@/lib/finance/gstReport";
+import { parseProvTax, parseTax } from "@/lib/finance/gstReport";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       // GST/HST on the row when the import has it (else 0); a bad value is dropped, not the row.
       const tax = parseTax(e);
       const { taxAmount, taxProvince } = "error" in tax ? { taxAmount: 0, taxProvince: null } : tax;
+      const prov = parseProvTax(e);
       return {
         master_plan_id: masterPlanId,
         type: e.type === "income" ? "income" : "expense",
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
         source: "import",
         tax_amount: taxAmount,
         tax_province: taxProvince,
+        prov_tax_amount: "error" in prov ? 0 : prov.provTaxAmount,
       };
     })
     .filter(Boolean)

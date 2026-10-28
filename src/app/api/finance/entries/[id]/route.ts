@@ -5,7 +5,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity } from "@/lib/activity";
 import { formatMoney } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
-import { parseTax } from "@/lib/finance/gstReport";
+import { parseProvTax, parseTax } from "@/lib/finance/gstReport";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   return NextResponse.json({ ok: true });
 }
 
-// PATCH { taxAmount?, taxProvince? } — set the GST/HST on an entry (task 1520 follow-up). The amount stays the
+// PATCH { taxAmount?, taxProvince?, provTaxAmount? } — set the GST/HST (and QST / PST) on an entry (task 1520 follow-up). The amount stays the
 // amount before tax, so totals do not change. Send taxProvince null to clear it.
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   if (crossOriginBlocked(request)) {
@@ -46,7 +46,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const tax = parseTax(body);
   if ("error" in tax) return NextResponse.json({ error: tax.error }, { status: 400 });
+  const prov = parseProvTax(body);
+  if ("error" in prov) return NextResponse.json({ error: prov.error }, { status: 400 });
   const patch: Record<string, unknown> = {};
+  if ("provTaxAmount" in body) patch.prov_tax_amount = prov.provTaxAmount;
   if ("taxAmount" in body) patch.tax_amount = tax.taxAmount;
   if ("taxProvince" in body) patch.tax_province = tax.taxProvince;
   if (!Object.keys(patch).length) return NextResponse.json({ error: "Nothing to change." }, { status: 400 });
@@ -55,7 +58,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     .update(patch)
     .eq("id", params.id)
     .eq("master_plan_id", masterPlanId)
-    .select("id, type, amount, currency, tax_amount, tax_province")
+    .select("id, type, amount, currency, tax_amount, tax_province, prov_tax_amount")
     .maybeSingle();
   if (error) {
     console.error("PATCH /api/finance/entries/[id]:", error.message);
@@ -68,7 +71,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     action: "updated",
     entityType: data.type === "income" ? "income" : "expense",
     entityId: data.id as string,
-    summary: `Set GST/HST to ${formatMoney(Number(data.tax_amount ?? 0), data.currency as string, { home, cents: true })} on ${formatMoney(Number(data.amount), data.currency as string, { home, cents: true })}`,
+    summary: `Set ${"provTaxAmount" in body && !("taxAmount" in body) ? `QST / PST to ${formatMoney(Number(data.prov_tax_amount ?? 0), data.currency as string, { home, cents: true })}` : `GST/HST to ${formatMoney(Number(data.tax_amount ?? 0), data.currency as string, { home, cents: true })}`} on ${formatMoney(Number(data.amount), data.currency as string, { home, cents: true })}`,
   });
-  return NextResponse.json({ entry: { id: data.id, taxAmount: Number(data.tax_amount ?? 0) || 0, taxProvince: (data.tax_province as string) || null } });
+  return NextResponse.json({ entry: { id: data.id, taxAmount: Number(data.tax_amount ?? 0) || 0, taxProvince: (data.tax_province as string) || null, provTaxAmount: Number(data.prov_tax_amount ?? 0) || 0 } });
 }

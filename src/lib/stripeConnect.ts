@@ -156,8 +156,9 @@ export async function createOfferLink(db: Db, planId: string, c: Connection, o: 
 
   // GST/HST (task 1520 follow-up): a Stripe Payment Link can't add a fixed tax rate, so a registered account's link is
   // the Suite's own pay page (/pay/<id>): the buyer says where they are, sees the tax, then pays in Stripe Checkout.
-  const { chargesTax } = await import("@/lib/salesTaxServer");
-  if (await chargesTax(planId, db)) {
+  // The same for an account that collects only a provincial tax (QST, PST, RST).
+  const { collectsTax } = await import("@/lib/salesTaxServer");
+  if (await collectsTax(planId, db)) {
     const id = randomUUID();
     const url = `${SITE}/pay/${id}`;
     await retire();

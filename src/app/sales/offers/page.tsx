@@ -34,11 +34,13 @@ type Form = {
   currency: Currency;
   /** The saved offer's currency (null for a new offer): a non-home offer always shows the picker. */
   savedCurrency: Currency | null;
+  /** Provincial sales tax (BC/SK/MB) applies: the client's own tick, shown only with a BC, SK or MB registration. */
+  pstApplies: boolean;
 };
 
 const EMPTY: Form = {
   id: null, name: "", format: "one_to_one", price: "", billing: "one_time", paymentCount: "", deliverables: "", transformation: "",
-  idealClient: "", notFor: "", guarantee: "", duration: "", capacity: "", link: "", status: "active", businessId: "", currency: "usd", savedCurrency: null,
+  idealClient: "", notFor: "", guarantee: "", duration: "", capacity: "", link: "", status: "active", businessId: "", currency: "usd", savedCurrency: null, pstApplies: false,
 };
 
 const toForm = (o: Offer): Form => ({
@@ -46,7 +48,7 @@ const toForm = (o: Offer): Form => ({
   paymentCount: o.paymentCount === null ? "" : String(o.paymentCount), deliverables: o.deliverables.join("\n"),
   transformation: o.transformation, idealClient: o.idealClient, notFor: o.notFor, guarantee: o.guarantee, duration: o.duration,
   capacity: o.capacity === null ? "" : String(o.capacity), link: o.link, status: o.status, businessId: o.businessId ? String(o.businessId) : "",
-  currency: o.currency, savedCurrency: o.currency,
+  currency: o.currency, savedCurrency: o.currency, pstApplies: Boolean(o.pstApplies),
 });
 
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
@@ -88,6 +90,7 @@ export default function OffersPage() {
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { currency: home, canChoose } = useHomeCurrency();
+  const [pstTick, setPstTick] = useState(false);
   // USD/CAD picker: only for accounts that can choose, or an offer already saved in the other currency.
   const showCurrency = !!form && (canChoose || (form.savedCurrency !== null && form.savedCurrency !== home));
 
@@ -97,6 +100,7 @@ export default function OffersPage() {
     setOffers(d.offers ?? []);
     setBusinesses(d.businesses ?? []);
     setCurrentBiz(d.currentBusinessId ?? null);
+    setPstTick(Boolean(d.pstTick));
   }, []);
   useEffect(() => {
     load();
@@ -159,10 +163,12 @@ export default function OffersPage() {
     if (!form) return;
     setBusy(true);
     setError("");
-    const { currency, savedCurrency: _saved, ...rest } = form;
+    const { currency, savedCurrency: _saved, pstApplies, ...rest } = form;
     void _saved;
     const payload = {
       ...rest,
+      // Sent only when the tick is shown (a BC, SK or MB registration); otherwise the saved value stays.
+      ...(pstTick ? { pstApplies } : {}),
       // Sent only when the picker is shown; otherwise a new offer takes the home currency and an edit keeps its own.
       ...(showCurrency ? { currency } : {}),
       deliverables: form.deliverables.split("\n").map((s) => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean),
@@ -326,6 +332,15 @@ export default function OffersPage() {
                   <input id="o-price" inputMode="decimal" className={input} value={form.price} onChange={set("price")} placeholder="2500" />
                 )}
               </div>
+              {pstTick && (
+                <div className="sm:col-span-2">
+                  <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                    <input type="checkbox" className="mt-1" checked={form.pstApplies} onChange={(e) => setForm((f) => (f ? { ...f, pstApplies: e.target.checked } : f))} />
+                    <span>Provincial sales tax applies</span>
+                  </label>
+                  <p className="mt-1 text-xs text-[#7b6b8d] dark:text-[#b8a898]">BC, Saskatchewan, Manitoba. Most coaching and consulting is not taxable; software, digital products and goods often are. Ask your accountant.</p>
+                </div>
+              )}
               <div><label className={label} htmlFor="o-billing">How it&rsquo;s paid</label><select id="o-billing" className={input} value={form.billing} onChange={set("billing")}>{OFFER_BILLING.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></div>
               {form.billing === "payment_plan" && <div><label className={label} htmlFor="o-payments">Number of payments</label><input id="o-payments" inputMode="numeric" className={input} value={form.paymentCount} onChange={set("paymentCount")} placeholder="3" /></div>}
               <div><label className={label} htmlFor="o-duration">Length</label><input id="o-duration" className={input} value={form.duration} onChange={set("duration")} placeholder="e.g. 12 weeks" /></div>

@@ -76,10 +76,10 @@ test("the pay page's Checkout: the fixed rate on the line, the province in the m
 test("the books: income filed before tax, a refund's tax in proportion, an invoice's tax summed", async () => {
   const { splitGross, refundTaxPart } = await import("../src/lib/stripeSync");
   const { invoiceTaxCents } = await import("../src/lib/suitePayments");
-  assert.deepEqual(splitGross(1695, 195), { amount: 1500, tax_amount: 195 });
-  assert.deepEqual(splitGross(1575, 75), { amount: 1500, tax_amount: 75 });
-  assert.deepEqual(splitGross(10, 50), { amount: 0, tax_amount: 10 }, "tax is never more than the gross");
-  assert.deepEqual(splitGross(100, -5), { amount: 100, tax_amount: 0 });
+  assert.deepEqual(splitGross(1695, 195), { amount: 1500, tax_amount: 195, prov_tax_amount: 0 });
+  assert.deepEqual(splitGross(1575, 75), { amount: 1500, tax_amount: 75, prov_tax_amount: 0 });
+  assert.deepEqual(splitGross(10, 50), { amount: 0, tax_amount: 10, prov_tax_amount: 0 }, "tax is never more than the gross");
+  assert.deepEqual(splitGross(100, -5), { amount: 100, tax_amount: 0, prov_tax_amount: 0 });
   // Half of a $1,695 payment refunded: half its $195 tax comes back.
   assert.equal(refundTaxPart(847.5, 1695, 195), 97.5);
   assert.equal(refundTaxPart(1695, 1695, 195), 195);
@@ -87,4 +87,100 @@ test("the books: income filed before tax, a refund's tax in proportion, an invoi
   assert.equal(refundTaxPart(100, 1695, 0), 0);
   assert.equal(invoiceTaxCents({ total_taxes: [{ amount: 13000 }, { amount: 500 }] }), 13500);
   assert.equal(invoiceTaxCents({ total_taxes: null }), 0);
+});
+
+// Provincial sales tax (QST, BC/SK PST, MB RST): its own line next to the GST/HST, kept apart in the books.
+
+const QC = { QC: { registered: true, number: "1234567890TQ0001", frequency: "quarterly" as const } };
+const BC = { BC: { registered: true, number: "PST-1234-5678", frequency: "quarterly" as const } };
+
+test("a Quebec customer gets GST and QST, each its own line", async () => {
+  const { invoicePlan } = await import("../src/lib/suitePayments");
+  const p = invoicePlan({ email: "eloise@example.com", description: "Strategy day", amount: 1000, currency: "cad", home: "cad", chargeTax: true, taxPlace: "QC", provincial: QC });
+  assert.equal(p.ok, true);
+  if (!p.ok) return;
+  assert.equal(p.tax?.cents, 5000, "GST 5% stays in tax");
+  assert.deepEqual(p.tax?.prov && { kind: p.tax.prov.kind, rate: p.tax.prov.rate, cents: p.tax.prov.cents }, { kind: "QST", rate: 9.975, cents: 9975 });
+  assert.equal(p.note, "$1,000.00 + GST 5% ($50.00) + QST 9.975% ($99.75) = $1,149.75, due in 7 days");
+  // QST follows GST on everything: the PST tick doesn't matter.
+  const ticked = invoicePlan({ email: "eloise@example.com", description: "x", amount: 1000, currency: "cad", home: "cad", chargeTax: true, taxPlace: "QC", provincial: QC, pstApplies: false });
+  assert.equal(ticked.ok && ticked.tax?.prov?.cents, 9975);
+  // Registered for QST but the customer is in Ontario: HST only.
+  const on = invoicePlan({ email: "eloise@example.com", description: "x", amount: 1000, currency: "cad", home: "cad", chargeTax: true, taxPlace: "ON", provincial: QC });
+  assert.equal(on.ok && on.tax?.prov, null);
+  assert.equal(on.ok && on.tax?.cents, 13000);
+});
+
+test("a BC customer pays PST only on an offer ticked for it", async () => {
+  const { invoicePlan } = await import("../src/lib/suitePayments");
+  const base = { email: "eloise@example.com", description: "Software setup", amount: 1000, currency: "cad" as const, home: "cad" as const, chargeTax: true, taxPlace: "BC", provincial: BC };
+  const ticked = invoicePlan({ ...base, pstApplies: true });
+  assert.equal(ticked.ok, true);
+  if (!ticked.ok) return;
+  assert.equal(ticked.tax?.cents, 5000);
+  assert.equal(ticked.tax?.prov?.kind, "PST");
+  assert.equal(ticked.tax?.prov?.cents, 7000);
+  assert.equal(ticked.note, "$1,000.00 + GST 5% ($50.00) + PST 7% ($70.00) = $1,120.00, due in 7 days");
+  const unticked = invoicePlan({ ...base, pstApplies: false });
+  assert.equal(unticked.ok && unticked.tax?.prov, null);
+  assert.equal(unticked.ok && unticked.note, "$1,000.00 + GST 5% ($50.00) = $1,050.00, due in 7 days");
+  // A plan: each monthly payment carries both taxes.
+  const plan = invoicePlan({ ...base, pstApplies: true, paymentCount: 2 });
+  assert.equal(plan.ok && plan.tax?.prov?.perCents, 3500);
+  assert.match(plan.ok ? plan.note : "", /^2 monthly payments of \$500\.00 \+ GST 5% \(\$25\.00\) \+ PST 7% \(\$35\.00\) = \$560\.00 each \(\$1,120\.00 in all, tax included\)/);
+});
+
+test("registered provincially without GST/HST: only the provincial tax, and the place is still asked", async () => {
+  const { invoicePlan } = await import("../src/lib/suitePayments");
+  const base = { email: "eloise@example.com", description: "Workbook", amount: 100, currency: "cad" as const, home: "cad" as const, provincial: BC, pstApplies: true };
+  const missing = invoicePlan(base);
+  assert.equal(missing.ok, false);
+  assert.match(missing.ok ? "" : missing.reason, /sales tax/);
+  const bc = invoicePlan({ ...base, taxPlace: "BC" });
+  assert.equal(bc.ok, true);
+  if (!bc.ok) return;
+  assert.equal(bc.tax?.cents, 0, "no GST/HST");
+  assert.equal(bc.tax?.prov?.cents, 700);
+  assert.equal(bc.note, "$100.00 + PST 7% ($7.00) = $107.00, due in 7 days");
+  const ab = invoicePlan({ ...base, taxPlace: "AB" });
+  assert.equal(ab.ok && ab.note, "$100.00, due in 7 days");
+  const out = invoicePlan({ ...base, taxPlace: "OUTSIDE" });
+  assert.equal(out.ok && out.note, "$100.00, no sales tax (customer outside Canada), due in 7 days");
+});
+
+test("the pay page's Checkout carries both rates on the line", async () => {
+  const { paySessionParams } = await import("../src/lib/suitePayments");
+  const link = { id: "22222222-2222-2222-2222-222222222222", offer_id: "offer-1", master_plan_id: "plan-1", kind: "one_time", price_id: "price_1", payment_count: null };
+  const p = paySessionParams(link, { place: "QC", rateIds: ["txr_gst", "txr_qst"], site: "https://x.co" });
+  assert.deepEqual(p.line_items, [{ price: "price_1", quantity: 1, tax_rates: ["txr_gst", "txr_qst"] }]);
+  const none = paySessionParams(link, { place: "AB", rateIds: [], site: "https://x.co" });
+  assert.deepEqual(none.line_items, [{ price: "price_1", quantity: 1 }]);
+});
+
+test("posting: each Stripe tax line is matched to GST/HST or provincial by its rate", async () => {
+  const { splitTaxLines, invoiceTaxLines } = await import("../src/lib/suitePayments");
+  const prov = new Set(["txr_qst"]);
+  assert.deepEqual(splitTaxLines([{ rateId: "txr_gst", amount: 5000 }, { rateId: "txr_qst", amount: 9975 }], prov), { gst: 5000, prov: 9975 });
+  // A rate the cache doesn't know is placed by its name.
+  assert.deepEqual(splitTaxLines([{ rateId: "txr_x", amount: 700, name: "PST" }, { rateId: "txr_y", amount: 500, name: "GST" }], prov), { gst: 500, prov: 700 });
+  // Couldn't read the lines: all of it is GST/HST, as before.
+  assert.deepEqual(splitTaxLines([{ rateId: null, amount: 1300 }], prov), { gst: 1300, prov: 0 });
+  assert.deepEqual(
+    invoiceTaxLines({ total_taxes: [{ amount: 5000, tax_rate_details: { tax_rate: "txr_gst" } }, { amount: 9975, tax_rate_details: { tax_rate: "txr_qst" } }, { amount: 0, tax_rate_details: null }] }),
+    [{ rateId: "txr_gst", amount: 5000 }, { rateId: "txr_qst", amount: 9975 }],
+  );
+});
+
+test("the books with both taxes: income before tax, each refund's taxes in proportion", async () => {
+  const { splitGross, refundTaxPart } = await import("../src/lib/stripeSync");
+  // $1,149.75 from a Quebec customer: $1,000 + $50 GST + $99.75 QST.
+  assert.deepEqual(splitGross(1149.75, 50, 99.75), { amount: 1000, tax_amount: 50, prov_tax_amount: 99.75 });
+  // Provincial only: BC PST on $100.
+  assert.deepEqual(splitGross(107, 0, 7), { amount: 100, tax_amount: 0, prov_tax_amount: 7 });
+  // The taxes never add up to more than the gross.
+  assert.deepEqual(splitGross(10, 8, 5), { amount: 0, tax_amount: 8, prov_tax_amount: 2 });
+  // Half the Quebec payment refunded: half of each tax comes back.
+  assert.equal(refundTaxPart(574.875, 1149.75, 50), 25);
+  assert.equal(refundTaxPart(574.875, 1149.75, 99.75), 49.88);
+  assert.deepEqual(splitGross(574.88, 25, 49.88), { amount: 500, tax_amount: 25, prov_tax_amount: 49.88 });
 });

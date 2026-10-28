@@ -1,9 +1,27 @@
 // The GST/HST report (task 1520 follow-up), the pure parts: the period to show, the four lines, the sales to check
 // and the CSV for the accountant. Server reads live in /api/finance/gst-hst; this file never touches the database.
 
-import { gstReturn, isTaxRefund, periodOf, periodsFor, taxFor, isTaxPlace, OUTSIDE_LABEL, SMALL_SUPPLIER_LIMIT, type Frequency, type GstReturn, type Period, type TaxRow } from "@/lib/salesTax";
+import {
+  gstReturn,
+  isTaxRefund,
+  periodOf,
+  periodsFor,
+  provincialReturn,
+  taxFor,
+  isTaxPlace,
+  OUTSIDE_LABEL,
+  PROVINCIAL_TAXES,
+  SMALL_SUPPLIER_LIMIT,
+  type Frequency,
+  type GstReturn,
+  type Period,
+  type ProvRegs,
+  type ProvReturn,
+  type ProvTaxProvince,
+  type TaxRow,
+} from "@/lib/salesTax";
 
-export type GstRow = TaxRow & { id: string; description?: string | null; vendor?: string | null };
+export type GstRow = TaxRow & { id: string; description?: string | null; vendor?: string | null; prov_tax_amount?: number | string | null };
 
 /** The day before an ISO day. */
 function dayBefore(day: string): string {
@@ -86,14 +104,19 @@ const cell = (v: string | number) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/** Every row in the period, for the accountant: date, type, description, amount before tax, GST/HST, province, currency. */
-export function gstCsv(rows: GstRow[], period: Period): string {
-  const head = ["Date", "Type", "Description", "Amount before tax", "GST/HST", "Province", "Currency", "Category"];
+/**
+ * Every row in the period, for the accountant: date, type, description, amount before tax, GST/HST, province, currency.
+ * `prov` names a provincial tax (e.g. "QST") to add its own column (an account with a provincial registration);
+ * `only` = "prov" keeps just the rows with that tax recorded (a provincial section's own download).
+ */
+export function gstCsv(rows: GstRow[], period: Period, opts: { prov?: string; only?: "prov" } = {}): string {
+  const head = ["Date", "Type", "Description", "Amount before tax", "GST/HST", ...(opts.prov ? [opts.prov] : []), "Province", "Currency", "Category"];
   const body = rows
-    .filter((r) => inPeriod(r, period))
+    .filter((r) => inPeriod(r, period) && (opts.only !== "prov" || (Number(r.prov_tax_amount ?? 0) || 0) > 0))
     .sort((a, b) => a.occurred_on.localeCompare(b.occurred_on))
     .map((r) => {
-      const type = r.type === "income" ? "Sale" : isTaxRefund(r) ? "Refund" : "Expense";
+      const ptax = Number(r.prov_tax_amount ?? 0) || 0;
+      const type = r.type === "income" ? "Sale" : isTaxRefund(r) || (ptax > 0 && (r.category || "").trim().toLowerCase() === "refunds") ? "Refund" : "Expense";
       const tax = Number(r.tax_amount ?? 0) || 0;
       return [
         r.occurred_on,
@@ -101,6 +124,7 @@ export function gstCsv(rows: GstRow[], period: Period): string {
         what(r),
         (Number(r.amount) || 0).toFixed(2),
         tax.toFixed(2),
+        ...(opts.prov ? [ptax.toFixed(2)] : []),
         r.tax_province ? placeName(r.tax_province) : "",
         (r.currency || "usd").toUpperCase(),
         r.category || "",
@@ -120,6 +144,55 @@ export function parseTax(body: Record<string, unknown>): { taxAmount: number; ta
   const p = body.taxProvince;
   if (p !== undefined && p !== null && p !== "" && !isTaxPlace(p)) return { error: "Choose a province (or Outside Canada) for the GST/HST." };
   return { taxAmount: Math.round(taxAmount * 100) / 100, taxProvince: p && isTaxPlace(p) ? p : null };
+}
+
+/** provTaxAmount (0 or more, rounded to the cent) from a request body: the QST, PST or RST on an entry. Missing = 0. */
+export function parseProvTax(body: Record<string, unknown>): { provTaxAmount: number } | { error: string } {
+  const raw = body.provTaxAmount;
+  const n = raw === undefined || raw === null || raw === "" ? 0 : Number(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 100_000_000) return { error: "Enter the QST / PST as 0 or more." };
+  return { provTaxAmount: Math.round(n * 100) / 100 };
+}
+
+// ── Provincial returns (QST, PST, RST) ─────────────────────────────────────────
+
+export type ProvSection = {
+  province: ProvTaxProvince;
+  kind: string;
+  title: string;
+  rate: number;
+  number: string;
+  frequency: Frequency;
+  period: Period;
+  prev: Period;
+  next: Period;
+  claimable: boolean;
+  ret: ProvReturn;
+};
+
+/** The registered provinces, in the fixed order (Quebec, BC, Saskatchewan, Manitoba). */
+export function provRegistered(regs: ProvRegs): ProvTaxProvince[] {
+  return PROVINCIAL_TAXES.filter((p) => regs[p.code]?.registered).map((p) => p.code);
+}
+
+/** One provincial registration's section for the period it files in (named by start, else the one today falls in). */
+export function buildProvSection(rows: GstRow[], regs: ProvRegs, province: ProvTaxProvince, today: string, start?: string | null): ProvSection {
+  const p = PROVINCIAL_TAXES.find((x) => x.code === province)!;
+  const reg = regs[province] ?? { registered: true, number: "", frequency: "quarterly" as Frequency };
+  const period = pickPeriod(reg.frequency, today, start);
+  return {
+    province,
+    kind: p.kind,
+    title: p.title,
+    rate: p.rate,
+    number: reg.number,
+    frequency: reg.frequency,
+    period,
+    prev: shiftPeriod(reg.frequency, period, -1),
+    next: shiftPeriod(reg.frequency, period, 1),
+    claimable: p.claimable,
+    ret: provincialReturn(rows, province, period.start, period.end),
+  };
 }
 
 // ── Alerts ───────────────────────────────────────────────────────────────────
@@ -183,6 +256,33 @@ export function gstAlerts(x: {
       title: "You're close to the $30,000 GST/HST registration line",
       body: `Your sales over the last four quarters are ${amt}. Past $30,000 you must register for GST/HST and start charging it. Worth a word with your accountant now.`,
       href: "/finance/gst-hst",
+    });
+  }
+  return out;
+}
+
+/**
+ * The provincial return reminders (QST, PST, RST): for each registration, the return for its period just ended, from
+ * 14 days before its pay-by date until that day, once per period. Uses the same filing dates as GST/HST; Revenu
+ * Québec's and the provinces' own dates can differ, so the body says to check. No registration-line alerts.
+ */
+export function provAlerts(x: { today: string; provincial: ProvRegs }): GstAlert[] {
+  const out: GstAlert[] = [];
+  const nice = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" });
+  };
+  for (const code of provRegistered(x.provincial)) {
+    const reg = x.provincial[code]!;
+    const t = PROVINCIAL_TAXES.find((p) => p.code === code)!;
+    const p = lastEndedPeriod(reg.frequency, x.today);
+    if (x.today < addDays(p.payBy, -14) || x.today > p.payBy) continue;
+    out.push({
+      nkey: `pst-due:${code}:${p.start}`,
+      type: "action",
+      title: `${t.kind} return (${t.name}) due ${nice(p.payBy)}`,
+      body: `${p.label}: ${p.fileBy === p.payBy ? `file and pay by ${nice(p.payBy)}` : `pay by ${nice(p.payBy)}, file by ${nice(p.fileBy)}`}. ${code === "QC" ? "Revenu Québec's" : "The province's"} own due date can differ, so confirm it with your accountant. Your numbers are ready on the Sales tax page.`,
+      href: `/finance/gst-hst?${code.toLowerCase()}=${p.start}#${code.toLowerCase()}`,
     });
   }
   return out;

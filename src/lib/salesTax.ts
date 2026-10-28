@@ -199,3 +199,122 @@ export function fourQuarterSales(rows: TaxRow[], today: string): number {
   const from = `${sy}-${pad(sm)}-01`;
   return r2(rows.filter((r) => r.type === "income" && (r.currency || "usd").toLowerCase() === "cad" && r.occurred_on >= from && r.occurred_on <= today).reduce((s, r) => s + (Number(r.amount) || 0), 0));
 }
+
+// ── Provincial sales tax: Quebec QST, BC PST, Saskatchewan PST, Manitoba RST ─────────────────────────────────────
+//
+// Charged only when the business is registered in that province AND the customer is there. QST applies to nearly
+// everything GST does, so it follows GST/HST on every item; PST/RST mostly cover goods, software and digital products
+// (most coaching and consulting is not taxable), so it is charged only on items the client ticks (pst_applies). The
+// Suite never decides what is taxable: the client does, with their accountant. QST paid on expenses can be claimed
+// back by a Quebec business (an input tax refund); PST/RST paid is generally a cost and is not tracked for a claim.
+// Rates checked 2026-10-28. Manitoba's rules for out-of-province and cloud-software sellers were unclear in the
+// sources found, which is one more reason the choice stays with the client.
+
+export type ProvTaxProvince = "QC" | "BC" | "SK" | "MB";
+export type ProvTaxKind = "QST" | "PST" | "RST";
+
+export const PROVINCIAL_TAXES: { code: ProvTaxProvince; name: string; kind: ProvTaxKind; rate: number; title: string; followsGst: boolean; claimable: boolean }[] = [
+  { code: "QC", name: "Quebec", kind: "QST", rate: 9.975, title: "Quebec sales tax (QST)", followsGst: true, claimable: true },
+  { code: "BC", name: "British Columbia", kind: "PST", rate: 7, title: "BC provincial sales tax (PST)", followsGst: false, claimable: false },
+  { code: "SK", name: "Saskatchewan", kind: "PST", rate: 6, title: "Saskatchewan provincial sales tax (PST)", followsGst: false, claimable: false },
+  { code: "MB", name: "Manitoba", kind: "RST", rate: 7, title: "Manitoba retail sales tax (RST)", followsGst: false, claimable: false },
+];
+
+export type ProvReg = { registered: boolean; number: string; frequency: Frequency };
+export type ProvRegs = Partial<Record<ProvTaxProvince, ProvReg>>;
+
+export function isProvTaxProvince(v: unknown): v is ProvTaxProvince {
+  return PROVINCIAL_TAXES.some((p) => p.code === v);
+}
+
+/** Cleans a stored or posted registrations object. */
+export function cleanProvRegs(v: unknown): ProvRegs {
+  const out: ProvRegs = {};
+  if (!v || typeof v !== "object") return out;
+  for (const p of PROVINCIAL_TAXES) {
+    const r = (v as Record<string, unknown>)[p.code] as Record<string, unknown> | undefined;
+    if (!r || typeof r !== "object") continue;
+    const frequency = (["monthly", "quarterly", "annual"].includes(r.frequency as string) ? r.frequency : "quarterly") as Frequency;
+    out[p.code] = { registered: r.registered === true, number: typeof r.number === "string" ? r.number.trim().toUpperCase().slice(0, 30) : "", frequency };
+  }
+  return out;
+}
+
+export type ProvTaxLine = { place: ProvTaxProvince; kind: ProvTaxKind; rate: number; label: string };
+
+/**
+ * The provincial tax to add for a customer in this place, or null. `pstApplies` is the item's own tick; QST ignores
+ * it (it follows GST/HST), PST/RST need it.
+ */
+export function provincialFor(place: TaxPlace | null, regs: ProvRegs, pstApplies: boolean): ProvTaxLine | null {
+  if (!place || place === "OUTSIDE") return null;
+  const p = PROVINCIAL_TAXES.find((x) => x.code === place);
+  if (!p || !regs[p.code]?.registered) return null;
+  if (!p.followsGst && !pstApplies) return null;
+  return { place: p.code, kind: p.kind, rate: p.rate, label: `${p.kind} ${p.rate}% (${p.name})` };
+}
+
+/** True when any provincial registration is on. */
+export function anyProvincial(regs: ProvRegs): boolean {
+  return PROVINCIAL_TAXES.some((p) => regs[p.code]?.registered);
+}
+
+export type ProvRow = TaxRow & { prov_tax_amount?: number | string | null };
+
+export type ProvReturn = {
+  province: ProvTaxProvince;
+  kind: ProvTaxKind;
+  /** Sales (before tax) on which this province's tax was charged, Canadian dollars. */
+  taxableSales: number;
+  /** Tax collected from customers in this province (refunds already taken off). */
+  collected: number;
+  /** QST paid on business expenses that a Quebec business can claim back (input tax refunds); 0 for PST/RST. */
+  claimable: number;
+  /** collected minus claimable: positive = to pay. */
+  net: number;
+  /** Tax given back on refunds (already taken off `collected`). */
+  refunded: number;
+  /** US-dollar tax left out (the return needs Canadian dollars). */
+  usdLeftOut: number;
+};
+
+/**
+ * One province's return for a period, from finance entries. Income rows with prov_tax_amount and tax_province = the
+ * province count as collected; a Refunds expense row with prov_tax_amount gives tax back; for Quebec, other expense
+ * rows with prov_tax_amount are QST paid that can be claimed back (any province: QST is QST wherever it was paid).
+ */
+export function provincialReturn(rows: ProvRow[], province: ProvTaxProvince, from: string, to: string): ProvReturn {
+  const p = PROVINCIAL_TAXES.find((x) => x.code === province)!;
+  const out: ProvReturn = { province, kind: p.kind, taxableSales: 0, collected: 0, claimable: 0, net: 0, refunded: 0, usdLeftOut: 0 };
+  for (const r of rows) {
+    if (r.occurred_on < from || r.occurred_on > to) continue;
+    const ptax = Number(r.prov_tax_amount ?? 0) || 0;
+    if (!ptax) continue;
+    const cad = (r.currency || "usd").toLowerCase() === "cad";
+    const refund = r.type !== "income" && (r.category || "").trim().toLowerCase() === "refunds";
+    const here = (r.tax_province || "") === province;
+    if (r.type === "income" && here) {
+      if (!cad) out.usdLeftOut += ptax;
+      else {
+        out.collected += ptax;
+        out.taxableSales += Number(r.amount) || 0;
+      }
+    } else if (refund && here) {
+      if (!cad) out.usdLeftOut -= ptax;
+      else {
+        out.collected -= ptax;
+        out.refunded += ptax;
+        out.taxableSales -= Number(r.amount) || 0;
+      }
+    } else if (!refund && r.type !== "income" && p.claimable && cad) {
+      out.claimable += ptax;
+    }
+  }
+  out.taxableSales = r2(out.taxableSales);
+  out.collected = r2(out.collected);
+  out.claimable = r2(out.claimable);
+  out.refunded = r2(out.refunded);
+  out.usdLeftOut = r2(out.usdLeftOut);
+  out.net = r2(out.collected - out.claimable);
+  return out;
+}

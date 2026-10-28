@@ -3,17 +3,20 @@ import { crossOriginBlocked } from "@/lib/security";
 import { OFFER_COLUMNS, offerRow, shapeOffer } from "@/lib/sales/offers";
 import { ownBusinessId, planBusinesses, salesAccount } from "@/lib/sales/account";
 import { homeCurrency } from "@/lib/currencyServer";
+import { loadTaxSettings } from "@/lib/salesTaxServer";
 
 export const dynamic = "force-dynamic";
 
-// GET: the account's offers and packages (plus its businesses, for tagging).
+// GET: the account's offers and packages (plus its businesses, for tagging). pstTick: the account has a BC, SK or MB
+// sales tax registration, so the offer form shows "Provincial sales tax applies" (offer.pstApplies).
 export async function GET() {
   const a = await salesAccount();
   if (!a) return NextResponse.json({ offers: [], businesses: [] });
   let q = a.supabase.from("sales_offers").select(OFFER_COLUMNS).eq("master_plan_id", a.masterPlanId);
   if (a.businessId) q = q.or(`business_id.eq.${a.businessId},business_id.is.null`);
-  const [{ data }, businesses] = await Promise.all([q.order("sort_order").order("created_at"), planBusinesses(a.masterPlanId)]);
-  return NextResponse.json({ offers: ((data ?? []) as Record<string, unknown>[]).map(shapeOffer), businesses, currentBusinessId: a.businessId });
+  const [{ data }, businesses, tax] = await Promise.all([q.order("sort_order").order("created_at"), planBusinesses(a.masterPlanId), loadTaxSettings(a.masterPlanId).catch(() => null)]);
+  const pstTick = (["BC", "SK", "MB"] as const).some((c) => tax?.provincial[c]?.registered);
+  return NextResponse.json({ offers: ((data ?? []) as Record<string, unknown>[]).map(shapeOffer), businesses, currentBusinessId: a.businessId, pstTick });
 }
 
 // POST: add an offer.

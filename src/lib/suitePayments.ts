@@ -9,8 +9,8 @@ import { invoiceSubscriptionId } from "@/lib/stripeShapes";
 import { HOLD_MINUTES, confirmPaidBooking, fmt, releaseHold } from "@/lib/booking/engine";
 import { formatCents, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
-import { isTaxPlace, placeFromAddress, taxCents, taxFor, type TaxPlace } from "@/lib/salesTax";
-import { chargesTax, stripeTaxRate } from "@/lib/salesTaxServer";
+import { anyProvincial, isTaxPlace, placeFromAddress, provincialFor, taxCents, taxFor, type ProvRegs, type ProvTaxKind, type ProvTaxProvince, type TaxPlace } from "@/lib/salesTax";
+import { loadTaxSettings, stripeProvTaxRate, stripeTaxRate, taxesToCharge } from "@/lib/salesTaxServer";
 import { fixFinanceTax, refundTaxPart } from "@/lib/stripeSync";
 
 // Get paid inside the Suite, step b (task 1146): invoices from a contact, invoice payment plans, and automatic posting.
@@ -52,12 +52,22 @@ export interface InvoiceInput {
   home?: Currency;
   /** GST/HST: the account charges it, so the customer's place is required (an amount is always BEFORE tax). */
   chargeTax?: boolean;
-  /** Where the customer is: a province code or "OUTSIDE" (only used when chargeTax). */
+  /** Where the customer is: a province code or "OUTSIDE" (only used when the account collects any tax). */
   taxPlace?: TaxPlace | string | null;
+  /** The account's provincial registrations (QST, BC/SK PST, MB RST); any on → the customer's place is required too. */
+  provincial?: ProvRegs | null;
+  /** The client's own tick: provincial sales tax (BC/SK/MB) applies to this item. QST ignores it. */
+  pstApplies?: boolean;
 }
 
-/** The GST/HST an invoice adds: per payment and in all (cents), or null when the account doesn't charge it. */
-export type InvoiceTax = { place: TaxPlace; label: string; kind: "GST" | "HST" | "none"; rate: number; perCents: number; cents: number };
+/** The provincial tax (QST, PST, RST) an invoice adds: per payment and in all (cents). */
+export type InvoiceProvTax = { place: ProvTaxProvince; kind: ProvTaxKind; label: string; rate: number; perCents: number; cents: number };
+
+/**
+ * The tax an invoice adds, or null when the account collects none. GST/HST: per payment and in all (cents; rate 0 and
+ * kind "none" when the account isn't registered for it or the customer is outside Canada). prov: the provincial tax.
+ */
+export type InvoiceTax = { place: TaxPlace; label: string; kind: "GST" | "HST" | "none"; rate: number; perCents: number; cents: number; prov: InvoiceProvTax | null };
 
 /** What an invoice would bill, or why it can't be sent. */
 export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: number; per: number; days: number; note: string; tax: InvoiceTax | null } | { ok: false; reason: string } {
@@ -76,20 +86,34 @@ export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: 
   if (per < 50) return { ok: false, reason: `Stripe's smallest charge is ${money(50, cur, home)} per payment.` };
   const m = (c: number) => money(c, cur, home);
   let tax: InvoiceTax | null = null;
-  if (i.chargeTax) {
-    if (!isTaxPlace(i.taxPlace)) return { ok: false, reason: "Choose where the customer is (their province, or Outside Canada) so the right GST/HST is added." };
-    const line = taxFor(i.taxPlace);
+  const provOn = anyProvincial(i.provincial ?? {});
+  if (i.chargeTax || provOn) {
+    if (!isTaxPlace(i.taxPlace)) return { ok: false, reason: `Choose where the customer is (their province, or Outside Canada) so the right ${i.chargeTax ? "GST/HST" : "sales tax"} is added.` };
     // Stripe works the tax out on each invoice, so a plan's tax is the tax on one payment times the number of payments.
-    const perCents = taxCents(count === 1 ? cents : per, line.rate);
-    tax = { place: line.place, label: line.kind === "none" ? "" : `${line.kind} ${line.rate}%`, kind: line.kind, rate: line.rate, perCents, cents: perCents * count };
+    const base = count === 1 ? cents : per;
+    const line = i.chargeTax ? taxFor(i.taxPlace) : { place: i.taxPlace, kind: "none" as const, rate: 0 };
+    const perCents = taxCents(base, line.rate);
+    const p = provincialFor(i.taxPlace, i.provincial ?? {}, Boolean(i.pstApplies));
+    const pPer = p ? taxCents(base, p.rate) : 0;
+    tax = {
+      place: i.taxPlace,
+      label: line.kind === "none" ? "" : `${line.kind} ${line.rate}%`,
+      kind: line.kind,
+      rate: line.rate,
+      perCents,
+      cents: perCents * count,
+      prov: p ? { place: p.place, kind: p.kind, label: `${p.kind} ${p.rate}%`, rate: p.rate, perCents: pPer, cents: pPer * count } : null,
+    };
   }
-  const plus = (base: number) => (tax && tax.rate > 0 ? ` + ${tax.label} (${m(tax.perCents)}) = ${m(base + tax.perCents)}` : "");
-  const outside = tax && tax.rate === 0 ? ", no GST/HST (customer outside Canada)" : "";
+  const perTax = tax ? tax.perCents + (tax.prov?.perCents ?? 0) : 0;
+  const lines = tax ? [...(tax.rate > 0 ? [`${tax.label} (${m(tax.perCents)})`] : []), ...(tax.prov ? [`${tax.prov.label} (${m(tax.prov.perCents)})`] : [])] : [];
+  const plus = (base: number) => (lines.length ? ` + ${lines.join(" + ")} = ${m(base + perTax)}` : "");
+  const outside = tax && tax.place === "OUTSIDE" ? `, no ${i.chargeTax ? "GST/HST" : "sales tax"} (customer outside Canada)` : "";
   const due = `${days} day${days === 1 ? "" : "s"}`;
   const note =
     count === 1
       ? `${m(cents)}${plus(cents)}${outside}, due in ${due}`
-      : `${count} monthly payments of ${m(per)}${plus(per)}${tax && tax.rate > 0 ? ` each (${m(total + tax.cents)} in all, tax included)` : ` (${m(total)} in all)`}${outside}, each due ${due} after it is sent`;
+      : `${count} monthly payments of ${m(per)}${plus(per)}${lines.length ? ` each (${m(total + perTax * count)} in all, tax included)` : ` (${m(total)} in all)`}${outside}, each due ${due} after it is sent`;
   return { ok: true, cents: count === 1 ? cents : total, count, per, days, note, tax };
 }
 
@@ -113,27 +137,58 @@ async function customerFor(s: Stripe, account: string, email: string, name?: str
 
 export interface InvoiceOpts { contactId?: string | null; offerId?: string | null }
 
+/** What sales tax an account collects today: GST/HST (registered and started) and its provincial registrations. */
+export async function taxState(db: Db, planId: string): Promise<{ gstOn: boolean; provincial: ProvRegs; collects: boolean; pstTick: boolean }> {
+  const t = await loadTaxSettings(planId, db);
+  const today = new Date().toISOString().slice(0, 10);
+  const gstOn = t.registered && (!t.registeredFrom || t.registeredFrom <= today);
+  const pstTick = (["BC", "SK", "MB"] as const).some((c) => t.provincial[c]?.registered);
+  return { gstOn, provincial: t.provincial, collects: gstOn || anyProvincial(t.provincial), pstTick };
+}
+
+/** Provincial registrations safe for a public page: which ones are on, nothing else (no numbers). */
+export function publicProvRegs(regs: ProvRegs): ProvRegs {
+  const out: ProvRegs = {};
+  for (const [code, r] of Object.entries(regs) as [keyof ProvRegs, ProvRegs[keyof ProvRegs]][]) {
+    if (r?.registered) out[code] = { registered: true, number: "", frequency: r.frequency };
+  }
+  return out;
+}
+
+/** The Stripe tax rates (on the client's own account) for an invoice's tax: GST/HST and the provincial one. */
+async function invoiceRateIds(db: Db, planId: string, account: string, tax: InvoiceTax | null): Promise<string[]> {
+  if (!tax) return [];
+  const ids: string[] = [];
+  if (tax.rate > 0) {
+    const g = await stripeTaxRate(db, planId, account, tax.place);
+    if (g) ids.push(g);
+  }
+  if (tax.prov) ids.push(await stripeProvTaxRate(db, planId, account, tax.prov));
+  return ids;
+}
+
 /** Send an invoice (or start an invoice payment plan) from the client's own Stripe account. Stripe emails it. */
 export async function createInvoice(db: Db, planId: string, c: Connection, i: InvoiceInput, o: InvoiceOpts = {}) {
   const home = await homeCurrency(planId, db);
   const currency: Currency = isCurrency(i.currency) ? toCurrency(i.currency) : home;
   // GST/HST (task 1520 follow-up): a registered account adds the tax for where the customer is. Not given → the
   // contact's stored address decides; still unknown → the invoice can't go out until someone chooses.
-  const taxOn = await chargesTax(planId, db);
-  const taxPlace = taxOn ? (isTaxPlace(i.taxPlace) ? i.taxPlace : await contactTaxPlace(db, planId, o.contactId)) : null;
-  const plan = invoicePlan({ ...i, currency, home, chargeTax: taxOn, taxPlace });
+  // Provincial tax (QST, PST, RST) the same way: its own Stripe rate next to the GST/HST one.
+  const ts = await taxState(db, planId);
+  const taxPlace = ts.collects ? (isTaxPlace(i.taxPlace) ? i.taxPlace : await contactTaxPlace(db, planId, o.contactId)) : null;
+  const plan = invoicePlan({ ...i, currency, home, chargeTax: ts.gstOn, taxPlace, provincial: ts.provincial });
   if (!plan.ok) throw new Error(plan.reason);
   const email = i.email.trim().toLowerCase();
   const description = i.description.trim().slice(0, 500);
   const s = platform();
   const opts = { stripeAccount: c.accountId };
   const customer = await customerFor(s, c.accountId, email, i.name);
-  const rateId = plan.tax ? await stripeTaxRate(db, planId, c.accountId, plan.tax.place) : null;
-  const taxRates = rateId ? { tax_rates: [rateId] } : {};
+  const rateIds = await invoiceRateIds(db, planId, c.accountId, plan.tax);
+  const taxRates = rateIds.length ? { tax_rates: rateIds } : {};
 
   const { data: row, error } = await db
     .from("suite_invoices")
-    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, currency, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open", tax_province: plan.tax?.place ?? null, tax_amount: (plan.tax?.cents ?? 0) / 100 })
+    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, currency, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open", tax_province: plan.tax?.place ?? null, tax_amount: (plan.tax?.cents ?? 0) / 100, ...(plan.tax?.prov || i.pstApplies ? { prov_tax_amount: (plan.tax?.prov?.cents ?? 0) / 100, pst_applies: Boolean(i.pstApplies) } : {}) })
     .select("id")
     .single();
   if (error || !row) throw new Error(`save invoice: ${error?.message}`);
@@ -195,7 +250,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
   return data;
 }
 
-export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, currency, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at, tax_amount, tax_province";
+export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, currency, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at, tax_amount, tax_province, prov_tax_amount, pst_applies";
 
 /** Where a contact is for GST/HST, from their stored region and country (null when it can't be told). */
 export async function contactTaxPlace(db: Db, planId: string, contactId: string | null | undefined): Promise<TaxPlace | null> {
@@ -227,17 +282,18 @@ export async function cancelInvoice(db: Db, planId: string, id: string): Promise
 const SITE = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 
 /** Stripe Checkout for a held booking, on the account owner's own Stripe, in the booking calendar's currency. The webhook confirms the booking. */
-export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean; currency: Currency; taxPlace?: TaxPlace | null }): Promise<string> {
+export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean; currency: Currency; taxPlace?: TaxPlace | null; pstApplies?: boolean }): Promise<string> {
   const s = platform();
   // GST/HST: the fixed rate for where the booker said they are (none outside Canada); the price itself is before tax.
-  const rateId = b.taxPlace ? await stripeTaxRate(createServerClient(), b.planId, c.accountId, b.taxPlace) : null;
+  // Provincial tax (QST; PST/RST when the calendar's tick is on) is its own rate on the same line.
+  const rateIds = b.taxPlace ? await placeRateIds(createServerClient(), b.planId, c.accountId, b.taxPlace, Boolean(b.pstApplies)) : [];
   const meta = { lccs_booking_id: b.bookingId, lccs_plan_id: b.planId, ...(b.taxPlace ? { lccs_tax_province: b.taxPlace } : {}) };
   const session = await s.checkout.sessions.create(
     {
       mode: "payment",
       customer_email: b.email,
       customer_creation: "always",
-      line_items: [{ quantity: 1, price_data: { currency: toCurrency(b.currency), unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } }, ...(rateId ? { tax_rates: [rateId] } : {}) }],
+      line_items: [{ quantity: 1, price_data: { currency: toCurrency(b.currency), unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } }, ...(rateIds.length ? { tax_rates: rateIds } : {}) }],
       metadata: meta,
       payment_intent_data: { metadata: meta, description: `${b.calName}${b.deposit ? " deposit" : ""}` },
       expires_at: Math.floor(Date.now() / 1000) + HOLD_MINUTES * 60 + 60,
@@ -256,12 +312,28 @@ export async function bookingCheckout(c: Connection, b: { bookingId: string; pla
 
 export interface PayLinkRow { id: string; offer_id: string; master_plan_id: string; kind: string; price_id: string; payment_count: number | null }
 
-/** The Checkout Session for a pay-page link (pure: the caller adds the stripeAccount option). */
-export function paySessionParams(l: PayLinkRow, o: { place: TaxPlace | null; rateId: string | null; site: string }): Stripe.Checkout.SessionCreateParams {
+/**
+ * The Stripe tax rates for a customer in this place, on the client's own account: GST/HST (when registered) and the
+ * provincial tax (when it applies). Empty when no tax applies.
+ */
+export async function placeRateIds(db: Db, planId: string, account: string, place: TaxPlace, pstApplies: boolean): Promise<string[]> {
+  const t = await taxesToCharge(planId, place, pstApplies, db);
+  const ids: string[] = [];
+  if (t.gst) {
+    const g = await stripeTaxRate(db, planId, account, place);
+    if (g) ids.push(g);
+  }
+  if (t.prov) ids.push(await stripeProvTaxRate(db, planId, account, t.prov));
+  return ids;
+}
+
+/** The Checkout Session for a pay-page link (pure: the caller adds the stripeAccount option). rateIds: every tax rate to add (GST/HST, provincial). */
+export function paySessionParams(l: PayLinkRow, o: { place: TaxPlace | null; rateId?: string | null; rateIds?: string[]; site: string }): Stripe.Checkout.SessionCreateParams {
   const tax: Record<string, string> = o.place ? { lccs_tax_province: o.place } : {};
   const back = `${o.site}/pay/${l.id}`;
+  const rates = o.place && o.place !== "OUTSIDE" ? [...(o.rateId ? [o.rateId] : []), ...(o.rateIds ?? [])] : [];
   const common = {
-    line_items: [{ price: l.price_id, quantity: 1, ...(o.rateId && o.place !== "OUTSIDE" ? { tax_rates: [o.rateId] } : {}) }],
+    line_items: [{ price: l.price_id, quantity: 1, ...(rates.length ? { tax_rates: rates } : {}) }],
     success_url: `${back}?paid=1`,
     cancel_url: `${back}?cancelled=1`,
   };
@@ -278,11 +350,17 @@ export function paySessionParams(l: PayLinkRow, o: { place: TaxPlace | null; rat
 export async function payLinkCheckout(db: Db, linkId: string, place: TaxPlace | null): Promise<{ url: string } | { error: string } | null> {
   const { data: l } = await db.from("offer_payment_links").select("id, offer_id, master_plan_id, kind, price_id, payment_count, stripe_account, active").eq("id", linkId).maybeSingle();
   if (!l || !l.active || !l.price_id) return null;
-  const taxOn = await chargesTax(l.master_plan_id as string, db);
-  if (taxOn && !place) return { error: "Choose where you are so the right tax is added." };
-  const usePlace = taxOn ? place : null;
-  const rateId = usePlace ? await stripeTaxRate(db, l.master_plan_id as string, l.stripe_account as string, usePlace) : null;
-  const session = await platform().checkout.sessions.create(paySessionParams(l as unknown as PayLinkRow, { place: usePlace, rateId, site: SITE() }), { stripeAccount: l.stripe_account as string });
+  const ts = await taxState(db, l.master_plan_id as string);
+  if (ts.collects && !place) return { error: "Choose where you are so the right tax is added." };
+  const usePlace = ts.collects ? place : null;
+  // The offer's own tick decides PST/RST (QST follows GST/HST on everything).
+  let pstApplies = false;
+  if (usePlace && ts.pstTick) {
+    const { data: o } = await db.from("sales_offers").select("pst_applies").eq("id", l.offer_id).eq("master_plan_id", l.master_plan_id).maybeSingle();
+    pstApplies = Boolean((o as { pst_applies?: boolean } | null)?.pst_applies);
+  }
+  const rateIds = usePlace ? await placeRateIds(db, l.master_plan_id as string, l.stripe_account as string, usePlace, pstApplies) : [];
+  const session = await platform().checkout.sessions.create(paySessionParams(l as unknown as PayLinkRow, { place: usePlace, rateIds, site: SITE() }), { stripeAccount: l.stripe_account as string });
   if (!session.url) return { error: "Stripe didn't return a payment page." };
   return { url: session.url };
 }
@@ -330,6 +408,8 @@ interface Paid {
   chargeId: string | null;
   /** GST/HST inside cents (task 1520 follow-up), and the customer's province (or OUTSIDE). */
   taxCents?: number;
+  /** Provincial tax (QST, PST, RST) inside cents, kept apart from the GST/HST. */
+  provTaxCents?: number;
   taxProvince?: string | null;
 }
 
@@ -379,6 +459,7 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
     description: p.description.slice(0, 300),
     tax_amount: (p.taxCents ?? 0) / 100,
     tax_province: p.taxProvince || null,
+    ...((p.provTaxCents ?? 0) > 0 ? { prov_tax_amount: (p.provTaxCents ?? 0) / 100 } : {}),
   });
   if (error) {
     if (error.code === "23505") return "seen";
@@ -405,32 +486,101 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
   await syncStripe(p.planId).catch((e) => console.error("sync after payment:", e));
   // The sync files income at the gross amount; take the GST/HST out of it (the sync does this too for rows it adds
   // after this payment row exists, so whichever runs first, the row ends up split once).
-  if ((p.taxCents ?? 0) > 0 && p.chargeId) await splitChargeIncome(db, p.planId, p.account, p.chargeId, (p.taxCents ?? 0) / 100, p.taxProvince || null, p.currency).catch((e) => console.error("tax split:", e));
+  if (((p.taxCents ?? 0) > 0 || (p.provTaxCents ?? 0) > 0) && p.chargeId)
+    await splitChargeIncome(db, p.planId, p.account, p.chargeId, (p.taxCents ?? 0) / 100, p.taxProvince || null, p.currency, (p.provTaxCents ?? 0) / 100).catch((e) => console.error("tax split:", e));
   return "posted";
 }
 
-/** The Finance income row for a charge: amount before tax, tax_amount = the GST/HST (only while its tax is still 0). */
-async function splitChargeIncome(db: Db, planId: string, account: string, chargeId: string, tax: number, province: string | null, currency: string) {
+/** The Finance income row for a charge: amount before tax, tax_amount = the GST/HST, prov_tax_amount = the provincial tax (only while both are still 0). */
+async function splitChargeIncome(db: Db, planId: string, account: string, chargeId: string, tax: number, province: string | null, currency: string, provTax = 0) {
   const ch = await platform().charges.retrieve(chargeId, {}, { stripeAccount: account });
   const bt = typeof ch.balance_transaction === "string" ? ch.balance_transaction : ch.balance_transaction?.id;
-  if (bt) await fixFinanceTax(db, planId, `stripe:${bt}`, tax, province, currency);
+  if (bt) await fixFinanceTax(db, planId, `stripe:${bt}`, tax, province, currency, provTax);
 }
 
-/** A refunded charge that had GST/HST: each refund's Finance row is split the same way, in proportion. */
-async function splitRefunds(db: Db, planId: string, account: string, chargeId: string, pay: { amount: number; tax: number; province: string | null; currency: string }) {
+/** A refunded charge that had GST/HST or provincial tax: each refund's Finance row is split the same way, in proportion. */
+async function splitRefunds(db: Db, planId: string, account: string, chargeId: string, pay: { amount: number; tax: number; provTax: number; province: string | null; currency: string }) {
   const refunds = await platform().refunds.list({ charge: chargeId, limit: 100 }, { stripeAccount: account });
   for (const r of refunds.data) {
     if (r.status !== "succeeded" && r.status !== "pending") continue;
     const bt = typeof r.balance_transaction === "string" ? r.balance_transaction : r.balance_transaction?.id;
     if (!bt) continue;
     const part = refundTaxPart(r.amount / 100, pay.amount, pay.tax);
-    await fixFinanceTax(db, planId, `stripe:${bt}`, part, pay.province, pay.currency);
+    const provPart = refundTaxPart(r.amount / 100, pay.amount, pay.provTax);
+    await fixFinanceTax(db, planId, `stripe:${bt}`, part, pay.province, pay.currency, provPart);
   }
 }
 
-/** The GST/HST in an invoice (cents): the sum of its tax lines. */
+/** All the tax in an invoice (cents): the sum of its tax lines. */
 export function invoiceTaxCents(inv: { total_taxes?: { amount: number }[] | null }): number {
   return (inv.total_taxes ?? []).reduce((n, t) => n + (Number(t.amount) || 0), 0);
+}
+
+/** One tax line Stripe reports on a payment: the rate's id, the amount (cents), and the rate's name when known. */
+export type PaidTaxLine = { rateId: string | null; amount: number; name?: string | null };
+
+const PROV_NAMES = new Set(["QST", "PST", "RST"]);
+
+/**
+ * Splits a payment's tax lines into GST/HST and provincial tax (cents). A rate is provincial when its id is one of the
+ * account's provincial rates (cached as "QST:QC:9.975", "PST:BC:7", ...) or its name is QST/PST/RST; everything else
+ * counts as GST/HST, as before.
+ */
+export function splitTaxLines(lines: PaidTaxLine[], provRateIds: Set<string>): { gst: number; prov: number } {
+  let gst = 0;
+  let prov = 0;
+  for (const l of lines) {
+    const amt = Number(l.amount) || 0;
+    if ((l.rateId && provRateIds.has(l.rateId)) || PROV_NAMES.has(String(l.name || "").toUpperCase())) prov += amt;
+    else gst += amt;
+  }
+  return { gst, prov };
+}
+
+/** The account's provincial Stripe tax rate ids on one connected account, from the rate cache. */
+async function provRateIdsFor(db: Db, planId: string, account: string): Promise<{ prov: Set<string>; known: Set<string> }> {
+  const { data } = await db.from("sales_tax_settings").select("stripe_rates").eq("master_plan_id", planId).maybeSingle();
+  const all = ((data?.stripe_rates as Record<string, Record<string, string>> | null) ?? {})[account] ?? {};
+  const prov = new Set<string>();
+  const known = new Set<string>();
+  for (const [key, id] of Object.entries(all)) {
+    known.add(id);
+    if (/^(QST|PST|RST):/.test(key)) prov.add(id);
+  }
+  return { prov, known };
+}
+
+/** GST/HST and provincial tax (cents) from a payment's tax lines; a rate the cache doesn't know is looked up by name. */
+async function taxParts(db: Db, planId: string, account: string, lines: PaidTaxLine[]): Promise<{ gst: number; prov: number }> {
+  if (!lines.length) return { gst: 0, prov: 0 };
+  const ids = await provRateIdsFor(db, planId, account).catch(() => ({ prov: new Set<string>(), known: new Set<string>() }));
+  const named = await Promise.all(
+    lines.map(async (l) => {
+      if (l.name || !l.rateId || ids.known.has(l.rateId)) return l;
+      const r = await platform().taxRates.retrieve(l.rateId, {}, { stripeAccount: account }).catch(() => null);
+      return { ...l, name: r?.display_name ?? null };
+    }),
+  );
+  return splitTaxLines(named, ids.prov);
+}
+
+/** A paid Checkout Session's tax lines (Stripe only lists them per rate when asked). */
+async function checkoutTaxLines(account: string, cs: Stripe.Checkout.Session): Promise<PaidTaxLine[]> {
+  const total = cs.total_details?.amount_tax ?? 0;
+  if (!total) return [];
+  let breakdown = cs.total_details?.breakdown?.taxes;
+  if (!breakdown) {
+    const full = await platform().checkout.sessions.retrieve(cs.id, { expand: ["total_details.breakdown"] }, { stripeAccount: account }).catch(() => null);
+    breakdown = full?.total_details?.breakdown?.taxes;
+  }
+  // Couldn't read the lines: all of it counts as GST/HST, as before.
+  if (!breakdown?.length) return [{ rateId: null, amount: total }];
+  return breakdown.map((t) => ({ rateId: t.rate?.id ?? null, amount: t.amount, name: t.rate?.display_name ?? null }));
+}
+
+/** An invoice's tax lines, one per tax rate. */
+export function invoiceTaxLines(inv: { total_taxes?: { amount: number; tax_rate_details?: { tax_rate: string } | null }[] | null }): PaidTaxLine[] {
+  return (inv.total_taxes ?? []).filter((t) => Number(t.amount) > 0).map((t) => ({ rateId: t.tax_rate_details?.tax_rate ?? null, amount: Number(t.amount) || 0 }));
 }
 
 /** Handle one event from a client's connected account. The event was fetched back from Stripe, so it is genuine. */
@@ -448,6 +598,11 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
     case "checkout.session.async_payment_succeeded": {
       const cs = event.data.object as Stripe.Checkout.Session;
       if (cs.mode !== "payment" || cs.payment_status !== "paid") return "not a paid one-time checkout"; // subscriptions post on invoice.paid
+      // GST/HST and provincial tax apart: Stripe gives one total, so the per-rate lines decide which is which.
+      const paidTax = async (x: Stripe.Checkout.Session) => {
+        const t = await taxParts(db, planId, account, await checkoutTaxLines(account, x));
+        return { taxCents: t.gst, provTaxCents: t.prov };
+      };
       const bookingId = meta(cs.metadata).lccs_booking_id;
       if (bookingId) {
         const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id, currency, tax_province").eq("id", bookingId).maybeSingle();
@@ -460,7 +615,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
           email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
           offerId: null, invoiceId: null, description: `${cal?.name ?? "Booking"}${cal?.pay_mode === "deposit" ? " (deposit)" : ""}, ${new Date(bk.start_at as string).toISOString().slice(0, 10)}`,
           chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
-          taxCents: cs.total_details?.amount_tax ?? 0, taxProvince: meta(cs.metadata).lccs_tax_province || (bk.tax_province as string | null) || null,
+          ...(await paidTax(cs)), taxProvince: meta(cs.metadata).lccs_tax_province || (bk.tax_province as string | null) || null,
         });
         return `booking ${confirmed}, payment ${r}`;
       }
@@ -475,7 +630,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
         cents: cs.amount_total ?? 0, currency: cs.currency || (await homeCurrency(planId, db)),
         email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
         offerId, invoiceId: null, description: "", chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
-        taxCents: cs.total_details?.amount_tax ?? 0, taxProvince: meta(cs.metadata).lccs_tax_province || null,
+        ...(await paidTax(cs)), taxProvince: meta(cs.metadata).lccs_tax_province || null,
       });
       return r;
     }
@@ -527,7 +682,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
         cents: inv.amount_paid, currency: inv.currency || invoiceCurrency || (await homeCurrency(planId, db)),
         email: (inv.customer_email || "").toLowerCase() || null, name: inv.customer_name || null,
         offerId, invoiceId: suiteInvoiceId, description, chargeId: await chargeOfInvoice(s, account, inv.id!),
-        taxCents: invoiceTaxCents(inv), taxProvince,
+        ...(await taxParts(db, planId, account, invoiceTaxLines(inv)).then((t) => ({ taxCents: t.gst, provTaxCents: t.prov }))), taxProvince,
       });
       if (r === "seen") return r;
 
@@ -600,14 +755,14 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
 
     case "charge.refunded": {
       const ch = event.data.object as Stripe.Charge;
-      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount, currency, tax_amount, tax_province").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
+      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount, currency, tax_amount, tax_province, prov_tax_amount").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
       if (pay) {
         await db.from("suite_payments").update({ refunded: (ch.amount_refunded ?? 0) / 100 }).eq("id", pay.id);
         if (pay.contact_id) await logEvent(planId, pay.contact_id as string, "purchase", `Refunded ${money(ch.amount_refunded ?? 0, ch.currency || (pay.currency as string), await homeCurrency(planId, db))}${event.livemode ? "" : " (test)"}`, { charge: ch.id }, db).catch(() => {});
       }
       await syncStripe(planId).catch(() => null); // the refund (and any affiliate credit it voids) reaches the books
-      if (pay && Number(pay.tax_amount) > 0)
-        await splitRefunds(db, planId, account, ch.id, { amount: Number(pay.amount), tax: Number(pay.tax_amount), province: (pay.tax_province as string | null) ?? null, currency: String(pay.currency || "") }).catch((e) => console.error("refund tax split:", e));
+      if (pay && (Number(pay.tax_amount) > 0 || Number(pay.prov_tax_amount) > 0))
+        await splitRefunds(db, planId, account, ch.id, { amount: Number(pay.amount), tax: Number(pay.tax_amount), provTax: Number(pay.prov_tax_amount) || 0, province: (pay.tax_province as string | null) ?? null, currency: String(pay.currency || "") }).catch((e) => console.error("refund tax split:", e));
       return pay ? "refund recorded" : "refund (no payment row)";
     }
 

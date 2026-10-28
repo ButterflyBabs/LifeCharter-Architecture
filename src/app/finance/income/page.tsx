@@ -1,7 +1,8 @@
 "use client";
 
 
-import UnassignedBanner from "@/components/finance/UnassignedBanner";import { useState, useEffect, useCallback } from "react";
+import UnassignedBanner from "@/components/finance/UnassignedBanner";import { anyProvincial } from "@/lib/salesTax";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,7 +18,7 @@ import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 import { formatTotals, otherCurrency, toCurrency, type Currency, type Totals } from "@/lib/currency";
-import { GstHstField, TaxNote, taxBody, useSalesTax } from "@/components/finance/GstHst";
+import { GstHstField, TaxNote, taxBody, showTaxFields, useSalesTax } from "@/components/finance/GstHst";
 
 interface Entry {
   id: string;
@@ -29,6 +30,7 @@ interface Entry {
   vendor?: string;
   currency?: string;
   taxAmount?: number;
+  provTaxAmount?: number;
   taxProvince?: string | null;
 }
 
@@ -62,6 +64,8 @@ export default function IncomePage() {
   // GST/HST (only when the account is registered).
   const salesTax = useSalesTax();
   const [tax, setTax] = useState("");
+  // QST / PST / RST (only when the account has a provincial registration).
+  const [provTax, setProvTax] = useState("");
   const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
@@ -110,7 +114,7 @@ export default function IncomePage() {
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
           currency: currency ?? home,
-          ...taxBody(salesTax.registered, "income", tax, taxProvince),
+          ...taxBody(showTaxFields(salesTax), "income", tax, taxProvince, anyProvincial(salesTax.provincial) ? provTax : undefined),
         }),
       });
       if (!res.ok) {
@@ -124,6 +128,7 @@ export default function IncomePage() {
         setSegmentId("");
         setVendor("");
         setTax("");
+        setProvTax("");
         setTaxProvince("");
         setCurrency(null);
         forgetCategories();
@@ -231,8 +236,8 @@ export default function IncomePage() {
                 </div>
               )}
             </div>
-            {salesTax.registered && (
-              <GstHstField type="income" amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
+            {showTaxFields(salesTax) && (
+              <GstHstField type="income" amount={amount} value={tax} onChange={setTax} provValue={provTax} onProvChange={setProvTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
             )}
             <IncomeFrom value={vendor} onChange={setVendor} />
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
@@ -318,7 +323,7 @@ export default function IncomePage() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm font-semibold text-[#2E7C83]">
                         +{usd(e.amount, toCurrency(e.currency, home))}
-                        <TaxNote taxAmount={e.taxAmount} province={e.taxProvince} currency={toCurrency(e.currency, home)} home={home} />
+                        <TaxNote taxAmount={e.taxAmount} provTaxAmount={e.provTaxAmount} province={e.taxProvince} type={e.type === "income" ? "income" : "expense"} currency={toCurrency(e.currency, home)} home={home} />
                       </span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />

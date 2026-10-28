@@ -9,9 +9,9 @@ import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { OUTSIDE_LABEL, PROVINCES, isTaxPlace, type TaxPlace } from "@/lib/salesTax";
 
-type Payment = { id: string; livemode: boolean; kind: string; amount: number; currency: string | null; refunded: number; email: string | null; name: string | null; contact_id: string | null; description: string; paid_at: string; tax_amount?: number | null; tax_province?: string | null };
-type Invoice = { id: string; contact_id: string | null; livemode: boolean; number: string | null; email: string; name: string | null; description: string; amount: number; currency: string | null; payment_count: number; payments_made: number; status: string; hosted_url: string | null; pdf_url: string | null; due_date: string | null; paid_at: string | null; created_at: string; tax_amount?: number | null; tax_province?: string | null };
-type Data = { connected: boolean; salesTax?: boolean; livemode: boolean | null; payments: Payment[]; invoices: Invoice[]; offers: { id: string; name: string; price: number | null; currency: string | null }[]; contact: { id: string; email: string; first_name: string | null; last_name: string | null } | null };
+type Payment = { id: string; livemode: boolean; kind: string; amount: number; currency: string | null; refunded: number; email: string | null; name: string | null; contact_id: string | null; description: string; paid_at: string; tax_amount?: number | null; tax_province?: string | null; prov_tax_amount?: number | null };
+type Invoice = { id: string; contact_id: string | null; livemode: boolean; number: string | null; email: string; name: string | null; description: string; amount: number; currency: string | null; payment_count: number; payments_made: number; status: string; hosted_url: string | null; pdf_url: string | null; due_date: string | null; paid_at: string | null; created_at: string; tax_amount?: number | null; tax_province?: string | null; prov_tax_amount?: number | null };
+type Data = { connected: boolean; salesTax?: boolean; gst?: boolean; pstTick?: boolean; livemode: boolean | null; payments: Payment[]; invoices: Invoice[]; offers: { id: string; name: string; price: number | null; currency: string | null; pst_applies?: boolean | null }[]; contact: { id: string; email: string; first_name: string | null; last_name: string | null } | null };
 
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
 const input = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
@@ -21,6 +21,8 @@ const money = (n: number, currency: string | null | undefined, home: Currency) =
 const day = (s: string) => new Date(s.length === 10 ? `${s}T12:00:00` : s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const KIND: Record<string, string> = { link: "Payment link", invoice: "Invoice", plan: "Payment plan", subscription: "Monthly" };
 /** "HST, Ontario" / "outside Canada" for a stored tax place. */
+/** The provincial tax's short name for where the customer is (QST, PST, RST). */
+const provWord = (p: string | null | undefined) => ({ QC: "QST", BC: "PST", SK: "PST", MB: "RST" } as Record<string, string>)[p || ""] ?? "provincial tax";
 const placeName = (p: string | null | undefined) => (p === "OUTSIDE" ? "outside Canada" : PROVINCES.find((x) => x.code === p)?.name ?? "");
 const STATUS: Record<string, string> = { open: "Unpaid", paid: "Paid", void: "Voided", uncollectible: "Uncollectible", plan_active: "Plan running", plan_done: "Plan complete", plan_cancelled: "Plan stopped" };
 
@@ -100,7 +102,7 @@ export default function Payments({ contactId }: { contactId: string | null }) {
                     {p.description && <span className="text-[#5b5f73] dark:text-[#b8a898]"> · {p.description}</span>}
                     {!p.livemode && <Test />}
                   </span>
-                  <span className="text-xs text-[#7b6b8d]">{KIND[p.kind] || p.kind} · {day(p.paid_at)}{Number(p.tax_amount) > 0 ? ` · includes ${money(Number(p.tax_amount), p.currency, home)} GST/HST${p.tax_province ? ` (${placeName(p.tax_province)})` : ""}` : ""}{Number(p.refunded) > 0 ? ` · refunded ${money(p.refunded, p.currency, home)}` : ""}</span>
+                  <span className="text-xs text-[#7b6b8d]">{KIND[p.kind] || p.kind} · {day(p.paid_at)}{Number(p.tax_amount) > 0 || Number(p.prov_tax_amount) > 0 ? ` · includes ${[Number(p.tax_amount) > 0 ? `${money(Number(p.tax_amount), p.currency, home)} GST/HST` : "", Number(p.prov_tax_amount) > 0 ? `${money(Number(p.prov_tax_amount), p.currency, home)} ${provWord(p.tax_province)}` : ""].filter(Boolean).join(" + ")}${p.tax_province ? ` (${placeName(p.tax_province)})` : ""}` : ""}{Number(p.refunded) > 0 ? ` · refunded ${money(p.refunded, p.currency, home)}` : ""}</span>
                 </li>
               ))}
             </ul>
@@ -143,6 +145,7 @@ function InvoiceRow({ i, onChange, home }: { i: Invoice; onChange: () => void; h
         <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
           <span className="font-semibold">{money(i.amount, i.currency, home)}</span>
           {Number(i.tax_amount) > 0 && <span className="text-xs text-[#7b6b8d]"> + {money(Number(i.tax_amount), i.currency, home)} GST/HST</span>}
+          {Number(i.prov_tax_amount) > 0 && <span className="text-xs text-[#7b6b8d]"> + {money(Number(i.prov_tax_amount), i.currency, home)} {provWord(i.tax_province)}</span>}
           {i.contact_id ? <Link href={`/contacts?contact=${i.contact_id}`} className="ml-2 text-[#2E7C83] hover:underline">{i.name || i.email}</Link> : <span className="ml-2">{i.name || i.email}</span>}
           <span className="text-[#5b5f73] dark:text-[#b8a898]"> · {i.description}</span>
           {!i.livemode && <Test />}
@@ -184,6 +187,11 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
   const [place, setPlace] = useState<TaxPlace | "">("");
   const [placeTouched, setPlaceTouched] = useState(false);
   const taxOn = Boolean(data.salesTax);
+  const gstOn = data.gst ?? taxOn;
+  const taxWord = gstOn ? "GST/HST" : "sales tax";
+  // PST/RST (BC, SK, MB registrations only): the client's own tick; an offer sets its default.
+  const pstTick = Boolean(data.pstTick);
+  const [pst, setPst] = useState(false);
 
   useEffect(() => {
     if (!contactId) return;
@@ -201,7 +209,7 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
   useEffect(() => {
     if (!who || !(Number(amount) > 0)) return setNote("");
     const t = setTimeout(() => {
-      fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "preview", contactId: who.id, email: who.email, description: description || "x", amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), currency, taxPlace: taxOn && place ? place : undefined }) })
+      fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "preview", contactId: who.id, email: who.email, description: description || "x", amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), currency, taxPlace: taxOn && place ? place : undefined, ...(pstTick ? { pstApplies: pst } : {}) }) })
         .then((r) => r.json())
         .then((j) => {
           setNote(j.note || j.error || "");
@@ -211,7 +219,7 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
         .catch(() => setNote(""));
     }, 300);
     return () => clearTimeout(t);
-  }, [who, amount, count, days, description, currency, place, placeTouched, taxOn]);
+  }, [who, amount, count, days, description, currency, place, placeTouched, taxOn, pst, pstTick]);
   // A different contact: their own address decides again.
   useEffect(() => {
     setPlace("");
@@ -223,6 +231,7 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
     const o = data.offers.find((x) => x.id === id);
     // The invoice follows the offer's currency; no offer = the home currency.
     setCurrencyPick(o ? toCurrency(o.currency, home) : null);
+    setPst(Boolean(o?.pst_applies));
     if (o) {
       if (!description) setDescription(o.name);
       if (!amount && o.price) setAmount(String(o.price));
@@ -231,10 +240,10 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
 
   async function send() {
     if (!who) return setMsg("Choose a contact.");
-    if (taxOn && !place) return setMsg("Choose where the customer is, so the right GST/HST is added.");
+    if (taxOn && !place) return setMsg(`Choose where the customer is, so the right ${taxWord} is added.`);
     setBusy(true);
     setMsg("");
-    const r = await fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "invoice", contactId: who.id, description, amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), offerId: offerId || null, currency, taxPlace: taxOn ? place : undefined }) });
+    const r = await fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "invoice", contactId: who.id, description, amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), offerId: offerId || null, currency, taxPlace: taxOn ? place : undefined, ...(pstTick ? { pstApplies: pst } : {}) }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setMsg(j.error || "That didn't work.");
@@ -243,6 +252,7 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
     setCount("1");
     setOfferId("");
     setCurrencyPick(null);
+    setPst(false);
     setPlace("");
     setPlaceTouched(false);
     setOpen(false);
@@ -302,10 +312,19 @@ function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: 
             <label className={label} htmlFor="inv-place">Customer is in *</label>
             <select id="inv-place" className={input} value={place} onChange={(e) => { setPlace(e.target.value as TaxPlace | ""); setPlaceTouched(true); }}>
               <option value="">Choose where they are</option>
-              {PROVINCES.map((p) => <option key={p.code} value={p.code}>{p.name} ({p.kind} {p.rate}%)</option>)}
-              <option value="OUTSIDE">{OUTSIDE_LABEL} (no GST/HST)</option>
+              {PROVINCES.map((p) => <option key={p.code} value={p.code}>{p.name}{gstOn ? ` (${p.kind} ${p.rate}%)` : ""}</option>)}
+              <option value="OUTSIDE">{OUTSIDE_LABEL} (no {taxWord})</option>
             </select>
-            <p className="mt-1 text-xs text-[#7b6b8d]">GST/HST is charged by where your customer is.</p>
+            <p className="mt-1 text-xs text-[#7b6b8d]">{gstOn ? "GST/HST is" : "Sales tax is"} charged by where your customer is.</p>
+          </div>
+        )}
+        {pstTick && (
+          <div className="md:col-span-2 xl:col-span-1">
+            <label className="flex items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+              <input type="checkbox" className="mt-1" checked={pst} onChange={(e) => setPst(e.target.checked)} />
+              <span>Provincial sales tax applies</span>
+            </label>
+            <p className="mt-1 text-xs text-[#7b6b8d]">BC, Saskatchewan, Manitoba. Most coaching and consulting is not taxable; software, digital products and goods often are. Ask your accountant.</p>
           </div>
         )}
         <div>

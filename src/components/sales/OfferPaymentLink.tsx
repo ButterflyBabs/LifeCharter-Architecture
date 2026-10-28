@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check, Copy, CreditCard, ExternalLink, Loader2 } from "lucide-react";
 
 export type PayLink = { offer_id: string; url: string; kind: string; amount: number; currency?: string; livemode: boolean; created_at: string };
-export type PayLinks = { connected: boolean; salesTax?: boolean; livemode: boolean | null; links: Record<string, PayLink>; plans: Record<string, { ok: boolean; text: string }> };
+export type PayLinks = { connected: boolean; salesTax?: boolean; taxWord?: string; livemode: boolean | null; links: Record<string, PayLink>; plans: Record<string, { ok: boolean; text: string }> };
 
 // One offer's payment link, made on the client's OWN Stripe account: create it, copy it, open it, or turn it off.
 export default function OfferPaymentLink({ offerId, data, onChange }: { offerId: string; data: PayLinks; onChange: () => void }) {
@@ -49,9 +49,9 @@ export default function OfferPaymentLink({ offerId, data, onChange }: { offerId:
           </div>
           <p className="mt-1 text-[11px] text-[#7b6b8d]">Payments go straight to your own Stripe account. Changed the price? Press Remake.</p>
           {link.url.includes("/pay/") ? (
-            <p className="mt-1 text-[11px] text-[#7b6b8d]">This link opens a short page where the buyer picks their province (or Outside Canada) and sees the GST/HST before paying with Stripe. Your price is before tax.</p>
+            <p className="mt-1 text-[11px] text-[#7b6b8d]">This link opens a short page where the buyer picks their province (or Outside Canada) and sees the {data.taxWord || "GST/HST"} before paying with Stripe. Your price is before tax.</p>
           ) : data.salesTax ? (
-            <p className="mt-1 text-[11px] text-[#8a6a15]">You now charge GST/HST, but this link was made before and adds no tax. Press Remake to get a link that adds it.</p>
+            <p className="mt-1 text-[11px] text-[#8a6a15]">You now charge {data.taxWord || "GST/HST"}, but this link was made before and adds no tax. Press Remake to get a link that adds it.</p>
           ) : null}
         </>
       ) : !data.connected ? (

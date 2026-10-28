@@ -19,6 +19,7 @@ const OFFER_PROPS = {
   ideal_client: { type: "string" },
   duration: { type: "string" },
   link: { type: "string", description: "Sales page or checkout link." },
+  pst_applies: { type: "boolean", description: "Only when the client says so: provincial sales tax (BC PST, Saskatchewan PST, Manitoba RST) applies to this offer. Never decide this yourself; most coaching and consulting is not taxable, and the client's accountant decides. Leave out to keep it as it is." },
 };
 
 function toBody(args: Record<string, unknown>) {
@@ -35,6 +36,7 @@ function toBody(args: Record<string, unknown>) {
     idealClient: args.ideal_client,
     duration: args.duration,
     link: args.link,
+    pstApplies: typeof args.pst_applies === "boolean" ? args.pst_applies : undefined,
   } as Record<string, unknown>;
 }
 
@@ -75,6 +77,7 @@ export const createOffer: ActionTool = {
           `Format: ${r.format}`,
           `Status: ${r.status}`,
           ...((r.deliverables as string[]).slice(0, 5).map((d) => `Includes: ${d}`)),
+          ...(r.pst_applies === true ? ["Provincial sales tax (BC, Saskatchewan, Manitoba) applies"] : []),
         ],
       },
     };
@@ -120,6 +123,7 @@ export const updateOffer: ActionTool = {
     if (body.name && body.name !== cur.name) lines.push(`Name: ${cur.name} → ${body.name}`);
     if (body.deliverables) lines.push(`Includes: ${(body.deliverables as string[]).slice(0, 4).join("; ")}`);
     if (body.link) lines.push(`Link: ${body.link}`);
+    if (typeof body.pstApplies === "boolean" && body.pstApplies !== (cur.pst_applies === true)) lines.push(`Provincial sales tax (BC, Saskatchewan, Manitoba): ${body.pstApplies ? "applies" : "does not apply"}`);
     if (!lines.length && (body.format || body.transformation || body.idealClient || body.duration || body.paymentCount)) lines.push("Other details updated");
     if (!lines.length) return { error: "What should change on that offer?" };
     return { preview: { title: `Update the offer "${cur.name}"`, lines } };
@@ -147,6 +151,8 @@ export const updateOffer: ActionTool = {
       guarantee: cur.guarantee,
       duration: b.duration ?? cur.duration,
       link: b.link ?? cur.link,
+      // Only changes when asked for.
+      pstApplies: b.pstApplies,
     } as Record<string, unknown>;
     const v = offerRow(merged);
     if ("error" in v) throw new Error(v.error);
