@@ -94,7 +94,8 @@ export async function POST(request: Request) {
     const conns = plan?.user_id ? await google.listConnections({ ownerId: plan.user_id as string }) : [];
     const c = conns.find((x) => x.accountKey === key);
     if (!c) return NextResponse.json({ error: "That Google mailbox is not connected. Connect it in Settings > Integrations first." }, { status: 400 });
-    await db.from("cold_email_senders").upsert({ master_plan_id: a.planId, account_key: key, email: c.email, daily_cap: 30 }, { onConflict: "master_plan_id,account_key" });
+    const { data: have } = await db.from("cold_email_senders").select("id").eq("master_plan_id", a.planId).eq("account_key", key).is("send_as", null).maybeSingle();
+    if (!have) await db.from("cold_email_senders").insert({ master_plan_id: a.planId, account_key: key, email: c.email, daily_cap: 30 });
     return NextResponse.json({ ok: true, canReadMail: c.canReadMail });
   }
 
@@ -135,8 +136,9 @@ export async function POST(request: Request) {
 
   // A test of one of the emails to the signed-in person only, from the first mailbox, filled in with example details.
   if (b.action === "test") {
-    const { data: sd } = await db.from("cold_email_senders").select("*").eq("master_plan_id", a.planId).order("created_at").limit(1);
-    const sender = (sd ?? [])[0] as { account_key: string; email: string | null } | undefined;
+    const pick = db.from("cold_email_senders").select("*").eq("master_plan_id", a.planId);
+    const { data: sd } = await (typeof b.senderId === "string" && b.senderId ? pick.eq("id", clean(b.senderId, 60)) : pick.order("created_at")).limit(1);
+    const sender = (sd ?? [])[0] as { account_key: string; email: string | null; send_as?: string | null } | undefined;
     if (!sender) return NextResponse.json({ error: "Add a sending mailbox first." }, { status: 400 });
     const { data: plan } = await db.from("client_master_plans").select("user_id, client_email").eq("id", a.planId).maybeSingle();
     const to = testRecipient(a, (plan?.client_email as string) || "");
@@ -149,9 +151,9 @@ export async function POST(request: Request) {
     const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, "this Wednesday");
     await google.sendEmail(token, {
       to,
-      subject: "[TEST] " + render(steps[n].subject, vars),
+      subject: "[TEST" + (sender.send_as ? ` from ${sender.send_as}` : "") + "] " + render(steps[n].subject, vars),
       body: render(steps[n].body, vars) + footer((s?.footer as string) || DEFAULT_FOOTER, "https://lccommandsuite.com/unsubscribe?c=example"),
-      extraHeaders: [...listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", to), `Reply-To: ${to}`],
+      extraHeaders: [...(sender.send_as ? [`From: AmiLynne Carroll <${sender.send_as}>`] : []), ...listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", to), `Reply-To: ${to}`],
     }).catch((e) => {
       throw new Error(String(e));
     });

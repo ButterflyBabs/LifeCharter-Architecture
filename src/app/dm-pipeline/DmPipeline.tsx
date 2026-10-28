@@ -1048,6 +1048,9 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
                   Daily cap{" "}
                   <input type="number" min={1} max={100} defaultValue={s.daily_cap} onBlur={(e) => void act({ action: "update-sender", id: s.id, dailyCap: Number(e.target.value) })} className="ml-1 w-16 rounded border border-[#1a2b4a]/20 px-1 py-0.5 text-sm" />
                 </label>
+                <button onClick={() => void act({ action: "test", step: 0, senderId: s.id }, `A test of Email 1 was sent to you from ${s.email ?? "this mailbox"}. Check junk too.`)} className="text-xs font-medium text-[#2E7C83] hover:underline">
+                  Send me a test
+                </button>
                 <button onClick={() => void act({ action: "update-sender", id: s.id, paused: !s.paused })} className="text-xs font-medium text-[#2E7C83] hover:underline">
                   {s.paused ? "Resume" : "Pause"}
                 </button>

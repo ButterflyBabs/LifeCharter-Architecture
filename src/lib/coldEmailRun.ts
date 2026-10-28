@@ -8,11 +8,12 @@ import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, f
 
 type Db = ReturnType<typeof createServerClient>;
 const SITE = "https://lccommandsuite.com";
+const FROM_NAME = "AmiLynne Carroll"; // shown on mail sent as a domain alias; the mailbox's own name is used otherwise
 const SENDABLE = ["to_reach", "sent", "followed_up"];
 const MAX_PER_SENDER_PER_RUN = 2;
 
 type Settings = { master_plan_id: string; board_id: string | null; enabled: boolean; steps: ColdStep[]; tz: string; window_start: number; window_end: number; weekdays_only: boolean; footer: string | null; started_on: string | null };
-type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number; created_at?: string };
+type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number; created_at?: string; send_as?: string | null };
 type CardRow = { id: string; board_id: string; stage_id: string; name: string; email: string | null; notes: string | null; link_code: string | null };
 
 export async function coldEmailSwitchOn(db: Db): Promise<boolean> {
@@ -180,7 +181,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     const subject = render(steps[step].subject, vars);
     const body = render(steps[step].body, vars) + footer(s.footer || DEFAULT_FOOTER, `${SITE}/unsubscribe?c=${linkCode}`);
     try {
-      const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: [...listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, replyTo), `Reply-To: ${replyTo}`] });
+      const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: [...(sender.send_as ? [`From: ${FROM_NAME} <${sender.send_as}>`] : []), ...listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, replyTo), `Reply-To: ${replyTo}`] });
       await db.from("cold_email_sends").update({ status: "sent", subject, message_id: r.id, thread_id: r.threadId, sent_at: new Date().toISOString() }).eq("card_id", card.id).eq("step", step);
       await db.from("cold_email_senders").update({ fail_count: 0, last_error: null }).eq("id", sender.id);
       const to = stageByKey.get(step === 0 ? "sent" : "followed_up");
