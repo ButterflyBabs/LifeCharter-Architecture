@@ -7,13 +7,14 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { PORTAL_BUCKET } from "@/lib/portal";
 import { cleanReceiptRead } from "@/lib/finance/receipts";
+import { loadTaxSettings } from "@/lib/salesTaxServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 90;
 
 // Receipt photos (task 1150 part 1).
 //   POST multipart { file }  -> saves the photo and has the client's assistant read it (vendor, date, amount, category,
-//                               description). Nothing is posted: the Expenses page shows it as a draft to approve.
+//                               description, and the GST/HST shown when the account is registered). Nothing is posted: the Expenses page shows it as a draft to approve.
 //   GET ?entry=<id>          -> opens the receipt kept on an expense (a short-lived private link)
 const MAX = 8 * 1024 * 1024;
 
@@ -43,6 +44,11 @@ export async function POST(request: Request) {
   const { data: cats } = await db.from("finance_entries").select("category").eq("master_plan_id", planId).eq("type", "expense").not("category", "is", null).limit(1000);
   const categories = Array.from(new Set(((cats ?? []) as { category: string }[]).map((c) => c.category).filter(Boolean))).slice(0, 40);
   const today = new Date().toISOString().slice(0, 10);
+  // Registered for GST/HST: also read the GST/HST printed on the receipt, so it can be claimed back.
+  const registered = (await loadTaxSettings(planId, db).catch(() => null))?.registered ?? false;
+  const taxAsk = registered
+    ? `, "tax": the GST/HST (or HST, or GST) amount printed on the receipt as a number, only the GST/HST line (not PST, QST or tips), 0 if none is printed`
+    : "";
   let read = cleanReceiptRead({}, today);
   try {
     const ai = aiClient(key, { timeout: 80000 });
@@ -52,7 +58,7 @@ export async function POST(request: Request) {
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: `You read a photo of a receipt or invoice for a small business owner's bookkeeping. Reply with JSON only: {"vendor": who was paid (the business name on the receipt), "date": "YYYY-MM-DD" (the purchase date; today is ${today}), "amount": the TOTAL paid as a number with no currency sign, "currency": "USD" or "CAD" only if the receipt clearly shows which (e.g. "CAD", "CA$", "USD", "US$", a Canadian GST/HST line), else "", "category": the best fit, preferring one of these existing categories if any fits: ${JSON.stringify(categories)}, else a short common business category, "description": a few words on what was bought, "confident": true or false}. If something can't be read, use an empty string (or 0 for amount) and set confident to false. Never guess a total that isn't printed.` },
+        { role: "system", content: `You read a photo of a receipt or invoice for a small business owner's bookkeeping. Reply with JSON only: {"vendor": who was paid (the business name on the receipt), "date": "YYYY-MM-DD" (the purchase date; today is ${today}), "amount": the TOTAL paid as a number with no currency sign${taxAsk}, "currency": "USD" or "CAD" only if the receipt clearly shows which (e.g. "CAD", "CA$", "USD", "US$", a Canadian GST/HST line), else "", "category": the best fit, preferring one of these existing categories if any fits: ${JSON.stringify(categories)}, else a short common business category, "description": a few words on what was bought, "confident": true or false}. If something can't be read, use an empty string (or 0 for amount) and set confident to false. Never guess a total that isn't printed.` },
         { role: "user", content: [{ type: "text", text: "Read this receipt." }, { type: "image_url", image_url: { url: `data:${file.type};base64,${bytes.toString("base64")}` } }] },
       ],
     });

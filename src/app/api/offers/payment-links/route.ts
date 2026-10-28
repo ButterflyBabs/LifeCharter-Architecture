@@ -1,31 +1,35 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { paymentsAccount } from "@/lib/payments";
+import { chargesTax } from "@/lib/salesTaxServer";
 import { createOfferLink, deactivateOfferLink, getConnection, linkPlan, type OfferForLink } from "@/lib/stripeConnect";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 // Payment links for Offers & Packages, made on the client's OWN connected Stripe account.
-//   GET                                   -> { connected, links: { [offerId]: link }, plans: { [offerId]: note | reason } }
+//   GET                                   -> { connected, salesTax, links: { [offerId]: link }, plans: { [offerId]: note | reason } }
+// salesTax (GST/HST registered): new links are the Suite's own pay page (/pay/<id>), where the buyer picks their
+// province and sees the tax before Stripe Checkout; prices are before tax.
 //   POST { offerId }                      -> creates (or replaces) the offer's link
 //   POST { offerId, action: "off" }       -> turns the link off
 export async function GET() {
   const a = await paymentsAccount();
   if ("denied" in a) return a.denied;
   const db = createServerClient();
-  const [connection, { data: links }, { data: offers }] = await Promise.all([
+  const [connection, { data: links }, { data: offers }, salesTax] = await Promise.all([
     getConnection(db, a.planId),
     db.from("offer_payment_links").select("offer_id, url, kind, amount, currency, livemode, created_at").eq("master_plan_id", a.planId).eq("active", true),
     db.from("sales_offers").select("id, name, price, billing, payment_count, currency").eq("master_plan_id", a.planId),
+    chargesTax(a.planId, db),
   ]);
   const plans: Record<string, { ok: boolean; text: string }> = {};
   for (const o of (offers ?? []) as OfferForLink[]) {
     const p = linkPlan({ ...o, price: o.price === null ? null : Number(o.price) });
-    plans[o.id] = p.ok ? { ok: true, text: p.note } : { ok: false, text: p.reason };
+    plans[o.id] = p.ok ? { ok: true, text: salesTax ? `${p.note}, plus GST/HST for where the buyer is` : p.note } : { ok: false, text: p.reason };
   }
   return NextResponse.json(
-    { connected: Boolean(connection), livemode: connection?.livemode ?? null, links: Object.fromEntries((links ?? []).map((l) => [l.offer_id, l])), plans },
+    { connected: Boolean(connection), salesTax, livemode: connection?.livemode ?? null, links: Object.fromEntries((links ?? []).map((l) => [l.offer_id, l])), plans },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

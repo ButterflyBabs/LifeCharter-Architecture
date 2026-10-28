@@ -9,6 +9,9 @@ import { invoiceSubscriptionId } from "@/lib/stripeShapes";
 import { HOLD_MINUTES, confirmPaidBooking, fmt, releaseHold } from "@/lib/booking/engine";
 import { formatCents, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
+import { isTaxPlace, placeFromAddress, taxCents, taxFor, type TaxPlace } from "@/lib/salesTax";
+import { chargesTax, stripeTaxRate } from "@/lib/salesTaxServer";
+import { fixFinanceTax, refundTaxPart } from "@/lib/stripeSync";
 
 // Get paid inside the Suite, step b (task 1146): invoices from a contact, invoice payment plans, and automatic posting.
 // Step c: paid and deposit booking (bookingCheckout + the booking branch of the webhook).
@@ -47,10 +50,17 @@ export interface InvoiceInput {
   currency?: Currency;
   /** The account's home currency, only for how the note shows amounts. */
   home?: Currency;
+  /** GST/HST: the account charges it, so the customer's place is required (an amount is always BEFORE tax). */
+  chargeTax?: boolean;
+  /** Where the customer is: a province code or "OUTSIDE" (only used when chargeTax). */
+  taxPlace?: TaxPlace | string | null;
 }
 
+/** The GST/HST an invoice adds: per payment and in all (cents), or null when the account doesn't charge it. */
+export type InvoiceTax = { place: TaxPlace; label: string; kind: "GST" | "HST" | "none"; rate: number; perCents: number; cents: number };
+
 /** What an invoice would bill, or why it can't be sent. */
-export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: number; per: number; days: number; note: string } | { ok: false; reason: string } {
+export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: number; per: number; days: number; note: string; tax: InvoiceTax | null } | { ok: false; reason: string } {
   const email = (i.email || "").trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "This contact needs an email address to get an invoice." };
   if (!(i.description || "").trim()) return { ok: false, reason: "Say what the invoice is for." };
@@ -65,8 +75,22 @@ export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: 
   const cur = toCurrency(i.currency, home);
   if (per < 50) return { ok: false, reason: `Stripe's smallest charge is ${money(50, cur, home)} per payment.` };
   const m = (c: number) => money(c, cur, home);
-  const note = count === 1 ? `${m(cents)}, due in ${days} day${days === 1 ? "" : "s"}` : `${count} monthly payments of ${m(per)} (${m(total)} in all), each due ${days} day${days === 1 ? "" : "s"} after it is sent`;
-  return { ok: true, cents: count === 1 ? cents : total, count, per, days, note };
+  let tax: InvoiceTax | null = null;
+  if (i.chargeTax) {
+    if (!isTaxPlace(i.taxPlace)) return { ok: false, reason: "Choose where the customer is (their province, or Outside Canada) so the right GST/HST is added." };
+    const line = taxFor(i.taxPlace);
+    // Stripe works the tax out on each invoice, so a plan's tax is the tax on one payment times the number of payments.
+    const perCents = taxCents(count === 1 ? cents : per, line.rate);
+    tax = { place: line.place, label: line.kind === "none" ? "" : `${line.kind} ${line.rate}%`, kind: line.kind, rate: line.rate, perCents, cents: perCents * count };
+  }
+  const plus = (base: number) => (tax && tax.rate > 0 ? ` + ${tax.label} (${m(tax.perCents)}) = ${m(base + tax.perCents)}` : "");
+  const outside = tax && tax.rate === 0 ? ", no GST/HST (customer outside Canada)" : "";
+  const due = `${days} day${days === 1 ? "" : "s"}`;
+  const note =
+    count === 1
+      ? `${m(cents)}${plus(cents)}${outside}, due in ${due}`
+      : `${count} monthly payments of ${m(per)}${plus(per)}${tax && tax.rate > 0 ? ` each (${m(total + tax.cents)} in all, tax included)` : ` (${m(total)} in all)`}${outside}, each due ${due} after it is sent`;
+  return { ok: true, cents: count === 1 ? cents : total, count, per, days, note, tax };
 }
 
 /** The tag a buyer of an offer gets: "bought-" + the offer's name in lowercase-dashes. */
@@ -93,26 +117,32 @@ export interface InvoiceOpts { contactId?: string | null; offerId?: string | nul
 export async function createInvoice(db: Db, planId: string, c: Connection, i: InvoiceInput, o: InvoiceOpts = {}) {
   const home = await homeCurrency(planId, db);
   const currency: Currency = isCurrency(i.currency) ? toCurrency(i.currency) : home;
-  const plan = invoicePlan({ ...i, currency, home });
+  // GST/HST (task 1520 follow-up): a registered account adds the tax for where the customer is. Not given → the
+  // contact's stored address decides; still unknown → the invoice can't go out until someone chooses.
+  const taxOn = await chargesTax(planId, db);
+  const taxPlace = taxOn ? (isTaxPlace(i.taxPlace) ? i.taxPlace : await contactTaxPlace(db, planId, o.contactId)) : null;
+  const plan = invoicePlan({ ...i, currency, home, chargeTax: taxOn, taxPlace });
   if (!plan.ok) throw new Error(plan.reason);
   const email = i.email.trim().toLowerCase();
   const description = i.description.trim().slice(0, 500);
   const s = platform();
   const opts = { stripeAccount: c.accountId };
   const customer = await customerFor(s, c.accountId, email, i.name);
+  const rateId = plan.tax ? await stripeTaxRate(db, planId, c.accountId, plan.tax.place) : null;
+  const taxRates = rateId ? { tax_rates: [rateId] } : {};
 
   const { data: row, error } = await db
     .from("suite_invoices")
-    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, currency, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open" })
+    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, currency, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open", tax_province: plan.tax?.place ?? null, tax_amount: (plan.tax?.cents ?? 0) / 100 })
     .select("id")
     .single();
   if (error || !row) throw new Error(`save invoice: ${error?.message}`);
-  const meta = { lccs_invoice_id: row.id as string, lccs_plan_id: planId, ...(o.offerId ? { lccs_offer_id: o.offerId } : {}) };
+  const meta = { lccs_invoice_id: row.id as string, lccs_plan_id: planId, ...(o.offerId ? { lccs_offer_id: o.offerId } : {}), ...(plan.tax ? { lccs_tax_province: plan.tax.place } : {}) };
 
   try {
     if (plan.count === 1) {
       const inv = await s.invoices.create({ customer, collection_method: "send_invoice", days_until_due: plan.days, auto_advance: true, description, metadata: meta }, opts);
-      await s.invoiceItems.create({ customer, invoice: inv.id, currency, amount: plan.cents, description }, opts);
+      await s.invoiceItems.create({ customer, invoice: inv.id, currency, amount: plan.cents, description, ...taxRates }, opts);
       const fin = await s.invoices.finalizeInvoice(inv.id!, {}, opts);
       const sent = await s.invoices.sendInvoice(fin.id!, {}, opts).catch(() => fin); // test mode may not email; the link still works
       await db
@@ -130,7 +160,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
           metadata: meta,
           phases: [
             {
-              items: [{ price_data: { currency, product: product.id, unit_amount: plan.per, recurring: { interval: "month" } } }],
+              items: [{ price_data: { currency, product: product.id, unit_amount: plan.per, recurring: { interval: "month" } }, ...taxRates }], // each monthly invoice carries the tax
               duration: { interval: "month", interval_count: plan.count },
               collection_method: "send_invoice",
               invoice_settings: { days_until_due: plan.days },
@@ -165,7 +195,14 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
   return data;
 }
 
-export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, currency, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at";
+export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, currency, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at, tax_amount, tax_province";
+
+/** Where a contact is for GST/HST, from their stored region and country (null when it can't be told). */
+export async function contactTaxPlace(db: Db, planId: string, contactId: string | null | undefined): Promise<TaxPlace | null> {
+  if (!contactId) return null;
+  const { data } = await db.from("seq_contacts").select("region, country").eq("id", contactId).eq("master_plan_id", planId).maybeSingle();
+  return data ? placeFromAddress(data.region as string | null, data.country as string | null) : null;
+}
 
 /** Void an unpaid invoice, or stop an invoice payment plan (payments already made stay paid). */
 export async function cancelInvoice(db: Db, planId: string, id: string): Promise<boolean> {
@@ -190,15 +227,17 @@ export async function cancelInvoice(db: Db, planId: string, id: string): Promise
 const SITE = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 
 /** Stripe Checkout for a held booking, on the account owner's own Stripe, in the booking calendar's currency. The webhook confirms the booking. */
-export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean; currency: Currency }): Promise<string> {
+export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean; currency: Currency; taxPlace?: TaxPlace | null }): Promise<string> {
   const s = platform();
-  const meta = { lccs_booking_id: b.bookingId, lccs_plan_id: b.planId };
+  // GST/HST: the fixed rate for where the booker said they are (none outside Canada); the price itself is before tax.
+  const rateId = b.taxPlace ? await stripeTaxRate(createServerClient(), b.planId, c.accountId, b.taxPlace) : null;
+  const meta = { lccs_booking_id: b.bookingId, lccs_plan_id: b.planId, ...(b.taxPlace ? { lccs_tax_province: b.taxPlace } : {}) };
   const session = await s.checkout.sessions.create(
     {
       mode: "payment",
       customer_email: b.email,
       customer_creation: "always",
-      line_items: [{ quantity: 1, price_data: { currency: toCurrency(b.currency), unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } } }],
+      line_items: [{ quantity: 1, price_data: { currency: toCurrency(b.currency), unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } }, ...(rateId ? { tax_rates: [rateId] } : {}) }],
       metadata: meta,
       payment_intent_data: { metadata: meta, description: `${b.calName}${b.deposit ? " deposit" : ""}` },
       expires_at: Math.floor(Date.now() / 1000) + HOLD_MINUTES * 60 + 60,
@@ -209,6 +248,43 @@ export async function bookingCheckout(c: Connection, b: { bookingId: string; pla
   );
   if (!session.url) throw new Error("Stripe didn't return a payment page.");
   return session.url;
+}
+
+// ── The pay page for an offer (GST/HST accounts) ─────────────────────────────
+// Stripe Payment Links can't take a fixed tax rate, so an account that charges GST/HST gets /pay/<link id> instead:
+// the buyer says where they are, sees the tax, and goes on to a Stripe Checkout made on the client's own account.
+
+export interface PayLinkRow { id: string; offer_id: string; master_plan_id: string; kind: string; price_id: string; payment_count: number | null }
+
+/** The Checkout Session for a pay-page link (pure: the caller adds the stripeAccount option). */
+export function paySessionParams(l: PayLinkRow, o: { place: TaxPlace | null; rateId: string | null; site: string }): Stripe.Checkout.SessionCreateParams {
+  const tax: Record<string, string> = o.place ? { lccs_tax_province: o.place } : {};
+  const back = `${o.site}/pay/${l.id}`;
+  const common = {
+    line_items: [{ price: l.price_id, quantity: 1, ...(o.rateId && o.place !== "OUTSIDE" ? { tax_rates: [o.rateId] } : {}) }],
+    success_url: `${back}?paid=1`,
+    cancel_url: `${back}?cancelled=1`,
+  };
+  if (l.kind === "one_time") {
+    const metadata: Record<string, string> = { lccs_offer_id: l.offer_id, lccs_plan_id: l.master_plan_id, lccs_kind: l.kind, ...tax };
+    return { ...common, mode: "payment", customer_creation: "always", invoice_creation: { enabled: true, invoice_data: { metadata } }, metadata, payment_intent_data: { metadata } };
+  }
+  // The webhook reads these off each subscription invoice: which offer, (plans) when to stop, and the tax province.
+  const subMeta: Record<string, string> = { lccs_offer_id: l.offer_id, lccs_plan_id: l.master_plan_id, ...(l.kind === "payment_plan" ? { lccs_plan_payments: String(l.payment_count ?? 0) } : {}), ...tax };
+  return { ...common, mode: "subscription", metadata: { lccs_offer_id: l.offer_id, lccs_plan_id: l.master_plan_id, lccs_kind: l.kind, ...tax }, subscription_data: { metadata: subMeta } };
+}
+
+/** Start paying a pay-page link: the Checkout Session on the client's own account. Null = the link is off. */
+export async function payLinkCheckout(db: Db, linkId: string, place: TaxPlace | null): Promise<{ url: string } | { error: string } | null> {
+  const { data: l } = await db.from("offer_payment_links").select("id, offer_id, master_plan_id, kind, price_id, payment_count, stripe_account, active").eq("id", linkId).maybeSingle();
+  if (!l || !l.active || !l.price_id) return null;
+  const taxOn = await chargesTax(l.master_plan_id as string, db);
+  if (taxOn && !place) return { error: "Choose where you are so the right tax is added." };
+  const usePlace = taxOn ? place : null;
+  const rateId = usePlace ? await stripeTaxRate(db, l.master_plan_id as string, l.stripe_account as string, usePlace) : null;
+  const session = await platform().checkout.sessions.create(paySessionParams(l as unknown as PayLinkRow, { place: usePlace, rateId, site: SITE() }), { stripeAccount: l.stripe_account as string });
+  if (!session.url) return { error: "Stripe didn't return a payment page." };
+  return { url: session.url };
 }
 
 // ── Automatic posting (Connect webhook) ──────────────────────────────────────
@@ -252,6 +328,9 @@ interface Paid {
   invoiceId: string | null;
   description: string;
   chargeId: string | null;
+  /** GST/HST inside cents (task 1520 follow-up), and the customer's province (or OUTSIDE). */
+  taxCents?: number;
+  taxProvince?: string | null;
 }
 
 /** Open deals for this buyer are won (a deal tied to a different offer is left alone). */
@@ -298,6 +377,8 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
     offer_id: p.offerId,
     invoice_id: p.invoiceId,
     description: p.description.slice(0, 300),
+    tax_amount: (p.taxCents ?? 0) / 100,
+    tax_province: p.taxProvince || null,
   });
   if (error) {
     if (error.code === "23505") return "seen";
@@ -322,7 +403,34 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
   }
   // Income, fees and affiliate credit come from the sync (live payments only), so a payment is never counted twice.
   await syncStripe(p.planId).catch((e) => console.error("sync after payment:", e));
+  // The sync files income at the gross amount; take the GST/HST out of it (the sync does this too for rows it adds
+  // after this payment row exists, so whichever runs first, the row ends up split once).
+  if ((p.taxCents ?? 0) > 0 && p.chargeId) await splitChargeIncome(db, p.planId, p.account, p.chargeId, (p.taxCents ?? 0) / 100, p.taxProvince || null, p.currency).catch((e) => console.error("tax split:", e));
   return "posted";
+}
+
+/** The Finance income row for a charge: amount before tax, tax_amount = the GST/HST (only while its tax is still 0). */
+async function splitChargeIncome(db: Db, planId: string, account: string, chargeId: string, tax: number, province: string | null, currency: string) {
+  const ch = await platform().charges.retrieve(chargeId, {}, { stripeAccount: account });
+  const bt = typeof ch.balance_transaction === "string" ? ch.balance_transaction : ch.balance_transaction?.id;
+  if (bt) await fixFinanceTax(db, planId, `stripe:${bt}`, tax, province, currency);
+}
+
+/** A refunded charge that had GST/HST: each refund's Finance row is split the same way, in proportion. */
+async function splitRefunds(db: Db, planId: string, account: string, chargeId: string, pay: { amount: number; tax: number; province: string | null; currency: string }) {
+  const refunds = await platform().refunds.list({ charge: chargeId, limit: 100 }, { stripeAccount: account });
+  for (const r of refunds.data) {
+    if (r.status !== "succeeded" && r.status !== "pending") continue;
+    const bt = typeof r.balance_transaction === "string" ? r.balance_transaction : r.balance_transaction?.id;
+    if (!bt) continue;
+    const part = refundTaxPart(r.amount / 100, pay.amount, pay.tax);
+    await fixFinanceTax(db, planId, `stripe:${bt}`, part, pay.province, pay.currency);
+  }
+}
+
+/** The GST/HST in an invoice (cents): the sum of its tax lines. */
+export function invoiceTaxCents(inv: { total_taxes?: { amount: number }[] | null }): number {
+  return (inv.total_taxes ?? []).reduce((n, t) => n + (Number(t.amount) || 0), 0);
 }
 
 /** Handle one event from a client's connected account. The event was fetched back from Stripe, so it is genuine. */
@@ -342,7 +450,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
       if (cs.mode !== "payment" || cs.payment_status !== "paid") return "not a paid one-time checkout"; // subscriptions post on invoice.paid
       const bookingId = meta(cs.metadata).lccs_booking_id;
       if (bookingId) {
-        const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id, currency").eq("id", bookingId).maybeSingle();
+        const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id, currency, tax_province").eq("id", bookingId).maybeSingle();
         if (!bk || bk.master_plan_id !== planId) return "booking not in this account";
         const confirmed = await confirmPaidBooking(bookingId, cs.amount_total ?? 0, cs.id);
         const { data: cal } = await db.from("booking_calendars").select("name, pay_mode").eq("id", bk.calendar_id).maybeSingle();
@@ -352,6 +460,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
           email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
           offerId: null, invoiceId: null, description: `${cal?.name ?? "Booking"}${cal?.pay_mode === "deposit" ? " (deposit)" : ""}, ${new Date(bk.start_at as string).toISOString().slice(0, 10)}`,
           chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
+          taxCents: cs.total_details?.amount_tax ?? 0, taxProvince: meta(cs.metadata).lccs_tax_province || (bk.tax_province as string | null) || null,
         });
         return `booking ${confirmed}, payment ${r}`;
       }
@@ -366,6 +475,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
         cents: cs.amount_total ?? 0, currency: cs.currency || (await homeCurrency(planId, db)),
         email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
         offerId, invoiceId: null, description: "", chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
+        taxCents: cs.total_details?.amount_tax ?? 0, taxProvince: meta(cs.metadata).lccs_tax_province || null,
       });
       return r;
     }
@@ -401,12 +511,14 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
       let kind: Paid["kind"] = "subscription";
       let description = inv.description || inv.lines?.data?.[0]?.description || "";
       let invoiceCurrency: string | null = null;
+      let taxProvince: string | null = m.lccs_tax_province || null;
       if (suiteInvoiceId) {
-        const { data: row } = await db.from("suite_invoices").select("id, payment_count, payments_made, description, currency").eq("id", suiteInvoiceId).eq("master_plan_id", planId).maybeSingle();
+        const { data: row } = await db.from("suite_invoices").select("id, payment_count, payments_made, description, currency, tax_province").eq("id", suiteInvoiceId).eq("master_plan_id", planId).maybeSingle();
         if (!row) return "invoice not in this account";
         kind = (row.payment_count as number) > 1 ? "plan" : "invoice";
         description = row.description as string;
         invoiceCurrency = toCurrency(row.currency);
+        taxProvince = taxProvince || (row.tax_province as string | null) || null;
       } else if (Number(m.lccs_plan_payments) > 1) {
         kind = "plan";
       }
@@ -415,6 +527,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
         cents: inv.amount_paid, currency: inv.currency || invoiceCurrency || (await homeCurrency(planId, db)),
         email: (inv.customer_email || "").toLowerCase() || null, name: inv.customer_name || null,
         offerId, invoiceId: suiteInvoiceId, description, chargeId: await chargeOfInvoice(s, account, inv.id!),
+        taxCents: invoiceTaxCents(inv), taxProvince,
       });
       if (r === "seen") return r;
 
@@ -487,12 +600,14 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
 
     case "charge.refunded": {
       const ch = event.data.object as Stripe.Charge;
-      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount, currency").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
+      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount, currency, tax_amount, tax_province").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
       if (pay) {
         await db.from("suite_payments").update({ refunded: (ch.amount_refunded ?? 0) / 100 }).eq("id", pay.id);
         if (pay.contact_id) await logEvent(planId, pay.contact_id as string, "purchase", `Refunded ${money(ch.amount_refunded ?? 0, ch.currency || (pay.currency as string), await homeCurrency(planId, db))}${event.livemode ? "" : " (test)"}`, { charge: ch.id }, db).catch(() => {});
       }
       await syncStripe(planId).catch(() => null); // the refund (and any affiliate credit it voids) reaches the books
+      if (pay && Number(pay.tax_amount) > 0)
+        await splitRefunds(db, planId, account, ch.id, { amount: Number(pay.amount), tax: Number(pay.tax_amount), province: (pay.tax_province as string | null) ?? null, currency: String(pay.currency || "") }).catch((e) => console.error("refund tax split:", e));
       return pay ? "refund recorded" : "refund (no payment row)";
     }
 

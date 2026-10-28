@@ -52,6 +52,41 @@ interface Txn {
 }
 
 const day = (unix: number) => new Date(unix * 1000).toISOString().slice(0, 10);
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+// ── GST/HST kept apart from income (task 1520 follow-up) ─────────────────────
+// Stripe's balance transactions are the gross amount (tax included). A payment the Suite charged GST/HST on is filed
+// as amount = before tax, tax_amount = the tax, tax_province = where the customer is. A refund of such a payment is
+// split the same way, in proportion: it stays an expense in "Refunds" and carries tax_province, which marks it as tax
+// given back (it reduces the GST/HST collected rather than being tax paid on a purchase).
+
+/** A gross amount (dollars) split into before-tax and tax. Tax is never more than the gross. */
+export function splitGross(gross: number, tax: number): { amount: number; tax_amount: number } {
+  const t = r2(Math.min(Math.max(tax, 0), Math.abs(gross)));
+  return { amount: r2(Math.abs(gross) - t), tax_amount: t };
+}
+
+/** The tax inside a refund, in proportion to the payment's tax (dollars). */
+export function refundTaxPart(refund: number, paymentGross: number, paymentTax: number): number {
+  if (!(paymentGross > 0) || !(paymentTax > 0) || !(refund > 0)) return 0;
+  return r2(Math.min(paymentTax, (Math.min(refund, paymentGross) * paymentTax) / paymentGross));
+}
+
+type Db = ReturnType<typeof createServerClient>;
+
+/**
+ * Take the tax out of one Stripe Finance row (income or refund). Only while its tax_amount is still 0 and its currency
+ * matches the payment's, so it is safe to repeat and safe whichever of the webhook and the sync runs first.
+ */
+export async function fixFinanceTax(db: Db, planId: string, externalId: string, tax: number, province: string | null, currency: string): Promise<boolean> {
+  if (!(tax > 0)) return false;
+  const { data: row } = await db.from("finance_entries").select("id, amount, currency, tax_amount").eq("master_plan_id", planId).eq("external_id", externalId).maybeSingle();
+  if (!row || Number(row.tax_amount) !== 0) return false;
+  if (currency && String(row.currency || "usd").toLowerCase() !== currency.toLowerCase()) return false; // settled in another currency: left as is
+  const split = splitGross(Number(row.amount), tax);
+  const { error } = await db.from("finance_entries").update({ ...split, tax_province: province }).eq("id", row.id).eq("tax_amount", 0);
+  return !error;
+}
 
 // Pulls new balance transactions since the last sync (first sync: 90 days back).
 export async function syncStripe(masterPlanId: string): Promise<{ added: number; checked: number; error?: string }> {
@@ -106,6 +141,42 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
     if (t.fee > 0 && (t.type === "charge" || t.type === "payment")) {
       rows.push({ master_plan_id: masterPlanId, type: "expense", amount: t.fee / 100, currency, category: "Payment processing fees", description: "Stripe fees", occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}:fee` });
     }
+  }
+
+  // GST/HST: payments the Suite recorded with tax (webhook first) are filed before tax here; refunds of them in proportion.
+  try {
+    const { data: anyTax } = await db.from("suite_payments").select("id").eq("master_plan_id", masterPlanId).gt("tax_amount", 0).limit(1);
+    if (anyTax?.length) {
+      const bySource = new Map<string, string>(); // balance transaction id -> charge id
+      for (const t of txns) {
+        if ((t.type === "charge" || t.type === "payment") && t.source) bySource.set(t.id, t.source);
+      }
+      let reads = 0;
+      for (const t of txns) {
+        if ((t.type !== "refund" && t.type !== "payment_refund") || !t.source?.startsWith("re_") || reads >= 25) continue;
+        reads++;
+        const refund = await stripeGet(key, `/refunds/${t.source}`, {}, account).catch(() => null);
+        const ch = typeof refund?.charge === "string" ? refund.charge : refund?.charge?.id;
+        if (ch) bySource.set(t.id, ch);
+      }
+      const charges = Array.from(new Set(bySource.values()));
+      const { data: pays } = charges.length ? await db.from("suite_payments").select("stripe_charge_id, amount, currency, tax_amount, tax_province").eq("master_plan_id", masterPlanId).in("stripe_charge_id", charges).gt("tax_amount", 0) : { data: [] };
+      const payOf = new Map((pays ?? []).map((p) => [p.stripe_charge_id as string, p]));
+      for (const r of rows) {
+        const btId = String(r.external_id).replace(/^stripe:/, "");
+        if (String(r.external_id).endsWith(":fee")) continue;
+        const pay = payOf.get(bySource.get(btId) || "");
+        if (!pay || String(pay.currency || "").toLowerCase() !== r.currency) continue;
+        const tax = r.type === "income" ? Number(pay.tax_amount) : refundTaxPart(Number(r.amount), Number(pay.amount), Number(pay.tax_amount));
+        Object.assign(r, splitGross(Number(r.amount), tax), { tax_province: (pay.tax_province as string | null) ?? null });
+      }
+      // One upsert, one set of columns: every row names its tax (0 when none), never a null in a not-null column.
+      for (const r of rows) {
+        if (r.tax_amount === undefined) Object.assign(r, { tax_amount: 0, tax_province: null });
+      }
+    }
+  } catch (e) {
+    console.error("stripe sync tax split:", (e as Error).message);
   }
 
   let added = 0;

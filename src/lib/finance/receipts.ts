@@ -3,7 +3,8 @@
 import { isCurrency, toCurrency, type Currency } from "@/lib/currency";
 
 /** currency: USD or CAD only when the receipt prints it (a bare "$" says nothing), else null = use the home currency. */
-export interface ReceiptRead { vendor: string; date: string; amount: number; currency: Currency | null; category: string; description: string; confident: boolean }
+/** tax: the GST/HST printed on the receipt (absent when none is shown or it wasn't asked for); amount stays the TOTAL. */
+export interface ReceiptRead { vendor: string; date: string; amount: number; tax?: number; currency: Currency | null; category: string; description: string; confident: boolean }
 
 /** What the assistant read, made safe: a real date (else today), a positive amount (else 0), short text. */
 export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
@@ -12,10 +13,15 @@ export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
   const date = str(r.date, 10);
   const okDate = /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date)) && date <= today && date >= "2000-01-01";
   const amount = Number(String(r.amount ?? "").replace(/[^0-9.]/g, ""));
+  const total = Number.isFinite(amount) && amount > 0 && amount < 1_000_000 ? Math.round(amount * 100) / 100 : 0;
+  const tax = Number(String(r.tax ?? "").replace(/[^0-9.]/g, ""));
+  // Only a tax smaller than the total makes sense; anything else is dropped rather than guessed.
+  const okTax = Number.isFinite(tax) && tax > 0 && tax < total;
   return {
     vendor: str(r.vendor, 120),
     date: okDate ? date : today,
-    amount: Number.isFinite(amount) && amount > 0 && amount < 1_000_000 ? Math.round(amount * 100) / 100 : 0,
+    amount: total,
+    ...(okTax ? { tax: Math.round(tax * 100) / 100 } : {}),
     currency: isCurrency(r.currency) ? toCurrency(r.currency) : null,
     category: str(r.category, 60),
     description: str(r.description, 200),

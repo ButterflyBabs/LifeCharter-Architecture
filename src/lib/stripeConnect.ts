@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { toCurrency } from "@/lib/currency";
 
@@ -150,6 +150,24 @@ export async function createOfferLink(db: Db, planId: string, c: Connection, o: 
     { product: product.id, currency, unit_amount: plan.cents, ...(plan.kind !== "one_time" ? { recurring: { interval: "month" as const } } : {}), metadata: { lccs_offer_id: o.id } },
     opts,
   );
+  const retire = () => db.from("offer_payment_links").update({ active: false, updated_at: new Date().toISOString() }).eq("offer_id", o.id).eq("active", true);
+  const row = { master_plan_id: planId, offer_id: o.id, stripe_account: c.accountId, livemode: c.livemode, kind: plan.kind, amount: plan.cents / 100, currency, payment_count: plan.kind === "payment_plan" ? plan.count : null, product_id: product.id, price_id: price.id };
+  const cols = "id, url, kind, amount, currency, livemode, created_at";
+
+  // GST/HST (task 1520 follow-up): a Stripe Payment Link can't add a fixed tax rate, so a registered account's link is
+  // the Suite's own pay page (/pay/<id>): the buyer says where they are, sees the tax, then pays in Stripe Checkout.
+  const { chargesTax } = await import("@/lib/salesTaxServer");
+  if (await chargesTax(planId, db)) {
+    const id = randomUUID();
+    const url = `${SITE}/pay/${id}`;
+    await retire();
+    let ins = await db.from("offer_payment_links").insert({ id, ...row, payment_link_id: null, url }).select(cols).single();
+    // Until payment_link_id may be null in the database, an empty one stands for "no Stripe link".
+    if (ins.error?.code === "23502") ins = await db.from("offer_payment_links").insert({ id, ...row, payment_link_id: "", url }).select(cols).single();
+    if (ins.error) throw new Error(`save link: ${ins.error.message}`);
+    return ins.data;
+  }
+
   const link = await s.paymentLinks.create(
     {
       line_items: [{ price: price.id, quantity: 1 }],
@@ -161,12 +179,8 @@ export async function createOfferLink(db: Db, planId: string, c: Connection, o: 
     },
     opts,
   );
-  await db.from("offer_payment_links").update({ active: false, updated_at: new Date().toISOString() }).eq("offer_id", o.id).eq("active", true);
-  const { data, error } = await db
-    .from("offer_payment_links")
-    .insert({ master_plan_id: planId, offer_id: o.id, stripe_account: c.accountId, livemode: c.livemode, kind: plan.kind, amount: plan.cents / 100, currency, payment_count: plan.kind === "payment_plan" ? plan.count : null, product_id: product.id, price_id: price.id, payment_link_id: link.id, url: link.url })
-    .select("id, url, kind, amount, currency, livemode, created_at")
-    .single();
+  await retire();
+  const { data, error } = await db.from("offer_payment_links").insert({ ...row, payment_link_id: link.id, url: link.url }).select(cols).single();
   if (error) throw new Error(`save link: ${error.message}`);
   return data;
 }
@@ -175,10 +189,13 @@ export async function createOfferLink(db: Db, planId: string, c: Connection, o: 
 export async function deactivateOfferLink(db: Db, planId: string, offerId: string): Promise<boolean> {
   const { data: row } = await db.from("offer_payment_links").select("id, stripe_account, payment_link_id").eq("master_plan_id", planId).eq("offer_id", offerId).eq("active", true).maybeSingle();
   if (!row) return false;
-  try {
-    await platform().paymentLinks.update(row.payment_link_id as string, { active: false }, { stripeAccount: row.stripe_account as string });
-  } catch (e) {
-    console.error("deactivate payment link:", e instanceof Error ? e.message : e);
+  // A pay-page link (GST/HST accounts) has no Stripe payment link: turning the row off closes the page.
+  if (row.payment_link_id) {
+    try {
+      await platform().paymentLinks.update(row.payment_link_id as string, { active: false }, { stripeAccount: row.stripe_account as string });
+    } catch (e) {
+      console.error("deactivate payment link:", e instanceof Error ? e.message : e);
+    }
   }
   await db.from("offer_payment_links").update({ active: false, updated_at: new Date().toISOString() }).eq("id", row.id);
   return true;

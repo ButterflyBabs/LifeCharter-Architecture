@@ -12,13 +12,17 @@ import { cookies } from "next/headers";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 import { toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
+import { chargesTax } from "@/lib/salesTaxServer";
+import { isTaxPlace } from "@/lib/salesTax";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // Public booking page data.
 //   GET ?from=ISO&to=ISO → the calendar's public details + open start times
-//   POST { start, name, email, phone, timezone, answers } → books it
+//   POST { start, name, email, phone, timezone, answers, taxPlace? } → books it
+// GST/HST (task 1520 follow-up): when the account charges it and the calendar takes payment, calendar.payment.tax is
+// true and POST needs taxPlace ("ON".. or "OUTSIDE"); the price shown is before tax and Stripe adds the fixed rate.
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
   const cal = await calendarBySlug(params.slug);
   if (!cal || !cal.active) return NextResponse.json({ error: "This booking page isn't available." }, { status: 404 });
@@ -27,10 +31,12 @@ export async function GET(request: Request, { params }: { params: { slug: string
   const to = u.searchParams.get("to") || new Date(Date.now() + 14 * 86_400_000).toISOString();
   if (Date.parse(to) - Date.parse(from) > 45 * 86_400_000) return NextResponse.json({ error: "Range too long." }, { status: 400 });
   const { data: hosts } = await createServerClient().from("booking_hosts").select("name").eq("master_plan_id", cal.master_plan_id).in("id", cal.host_ids.length ? cal.host_ids : ["00000000-0000-0000-0000-000000000000"]);
-  const [plan, away, sms] = await Promise.all([
+  const charge = bookingCharge(cal);
+  const [plan, away, sms, taxOn] = await Promise.all([
     availableSlots(cal, from, to),
     awayAhead(createServerClient(), cal.master_plan_id),
     createServerClient().from("sms_accounts").select("status, reminders_on, business").eq("master_plan_id", cal.master_plan_id).maybeSingle(),
+    charge ? chargesTax(cal.master_plan_id) : Promise.resolve(false),
   ]);
   const smsBiz = sms.data?.business as { dba?: string; legalName?: string } | undefined;
   const smsOn = sms.data?.status === "approved" && sms.data.reminders_on ? consentText(smsBiz?.dba || smsBiz?.legalName || "us") : null;
@@ -48,10 +54,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
       questions: cal.questions,
       hostName: cal.assignment === "single" ? (hosts ?? [])[0]?.name ?? null : null,
       sms: smsOn ? { consent: smsOn } : null,
-      payment: (() => {
-        const c = bookingCharge(cal);
-        return c ? { amount: c.cents / 100, kind: c.kind, currency: toCurrency((cal as { currency?: string }).currency) } : null;
-      })(),
+      payment: charge ? { amount: charge.cents / 100, kind: charge.kind, currency: toCurrency((cal as { currency?: string }).currency), tax: taxOn } : null,
       // The account's home currency decides which currency shows as a plain "$".
       homeCurrency: await homeCurrency(cal.master_plan_id),
     },
@@ -70,6 +73,10 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const charge = bookingCharge(cal);
   const connection = charge ? await getConnection(createServerClient(), cal.master_plan_id) : null;
   if (charge && !connection) return NextResponse.json({ error: "This booking page can't take payments right now. Please contact us to book." }, { status: 409 });
+  // GST/HST: where the booker is decides the tax; asked before the time is held.
+  const taxOn = charge ? await chargesTax(cal.master_plan_id) : false;
+  const taxPlace = taxOn && isTaxPlace(b.taxPlace) ? b.taxPlace : null;
+  if (taxOn && !taxPlace) return NextResponse.json({ error: "Choose where you are so the right tax is added." }, { status: 400 });
   const r = await book(cal, {
     hold: charge ? { amount: charge.cents / 100 } : null,
     startISO: str(b.start),
@@ -119,11 +126,11 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   if (r.ok && charge && connection) {
     // The booking is charged (and kept) in its calendar's currency (task 1520).
     const currency = toCurrency((cal as { currency?: string }).currency, await homeCurrency(cal.master_plan_id));
-    await createServerClient().from("bookings").update({ currency }).eq("id", r.bookingId);
+    await createServerClient().from("bookings").update({ currency, ...(taxPlace ? { tax_province: taxPlace } : {}) }).eq("id", r.bookingId);
     try {
       const pay = await bookingCheckout(connection, {
         bookingId: r.bookingId, planId: cal.master_plan_id, slug: cal.slug, calName: cal.name, startISO: str(b.start),
-        tz: str(b.timezone) || "America/Denver", email: str(b.email).trim().toLowerCase(), token: r.manageToken, cents: charge.cents, deposit: charge.kind === "deposit", currency,
+        tz: str(b.timezone) || "America/Denver", email: str(b.email).trim().toLowerCase(), token: r.manageToken, cents: charge.cents, deposit: charge.kind === "deposit", currency, taxPlace,
       });
       return NextResponse.json({ ok: true, pay, manage: `/book/manage/${r.manageToken}` });
     } catch (e) {

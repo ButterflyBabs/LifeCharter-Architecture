@@ -13,7 +13,7 @@ import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAc
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go", "/sign"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go", "/sign", "/pay"];
 const PUBLIC_APIS = [
   "/api/sign/", // e-signature (task 1072): a signer's private link (the token is the key, plus an emailed code)
   "/api/cron/sign-reminders", // secured by its own CRON_SECRET check, not a session
@@ -27,6 +27,7 @@ const PUBLIC_APIS = [
   "/api/cron/cold-email", // secured by its own CRON_SECRET check, not a session
   "/api/cold-unsubscribe", // the unsubscribe link in a cold email; the personal code in the link is the key
   "/api/lp/", // landing pages (task 1153): visits, sign-ups, registrations, Buy clicks, bookings, main image
+  "/api/pay/", // an offer's pay page (GST/HST accounts): pick where you are, then on to Stripe Checkout
   "/api/e/", // public event pages (task 1149): sign-up, calendar file, a registrant's challenge page (their private link is the key)
   "/api/cron/events", // secured by its own CRON_SECRET check, not a session
   "/api/portal", // a client's private portal (task 1147): the unguessable link is the key; writes are origin-checked and limited to that client

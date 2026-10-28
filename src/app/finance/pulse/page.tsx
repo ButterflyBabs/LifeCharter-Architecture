@@ -29,6 +29,7 @@ import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 import { toCurrency, type Currency } from "@/lib/currency";
+import { GstHstField, TaxNote, taxBody, useSalesTax } from "@/components/finance/GstHst";
 
 interface Entry {
   id: string;
@@ -43,6 +44,8 @@ interface Entry {
   frequency?: string | null;
   renewal?: string | null;
   currency?: string;
+  taxAmount?: number;
+  taxProvince?: string | null;
 }
 interface Totals {
   income: number;
@@ -108,6 +111,10 @@ export default function FinancialPulsePage() {
   const [renewal, setRenewal] = useState<Renewal>("auto");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // GST/HST (only when the account is registered).
+  const salesTax = useSalesTax();
+  const [tax, setTax] = useState("");
+  const [taxProvince, setTaxProvince] = useState("");
   const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
 
   const [segments, setSegments] = useState<SegmentOption[]>([]);
@@ -190,6 +197,7 @@ export default function FinancialPulsePage() {
           frequency: type === "expense" && paymentType === "recurring" ? frequency : undefined,
           renewal: type === "expense" && paymentType === "recurring" ? renewal : undefined,
           currency: currency ?? home,
+          ...taxBody(salesTax.registered, type, tax, taxProvince),
         }),
       });
       if (!res.ok) {
@@ -203,6 +211,8 @@ export default function FinancialPulsePage() {
         setSegmentId("");
         setVendor("");
         setPaymentType("one_time");
+        setTax("");
+        setTaxProvince("");
         setCurrency(null);
         forgetCategories();
         const saved = await res.json().catch(() => ({}));
@@ -398,6 +408,9 @@ export default function FinancialPulsePage() {
                 </div>
               )}
             </div>
+            {salesTax.registered && (
+              <GstHstField key={type} type={type} amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
+            )}
             {type === "income" && <IncomeFrom value={vendor} onChange={setVendor} />}
             {type === "expense" && (
               <ExpenseDetails
@@ -677,6 +690,7 @@ export default function FinancialPulsePage() {
                       >
                         {e.type === "income" ? "+" : "−"}
                         {usd(e.amount, toCurrency(e.currency, home))}
+                        <TaxNote taxAmount={e.taxAmount} province={e.taxProvince} currency={toCurrency(e.currency, home)} home={home} />
                       </span>
                       <button
                         onClick={() => remove(e.id)}

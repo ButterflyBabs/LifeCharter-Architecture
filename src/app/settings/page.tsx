@@ -16,6 +16,7 @@ import { TeamManagement } from "./components/TeamManagement";
 import { IntegrationsPanel, IntegrationUsage } from "./components/IntegrationsPanel";
 import StripeConnectCard from "./components/StripeConnectCard";
 import CurrencyCard from "./components/CurrencyCard";
+import GstHstCard from "./components/GstHstCard";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import AccountAccessLog from "./components/AccountAccessLog";
@@ -1432,6 +1433,7 @@ export default function SettingsPage() {
         )}
 
         <CurrencyCard />
+        <GstHstCard />
         <StripeConnectCard />
 
         <IntegrationsPanel />

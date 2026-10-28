@@ -17,6 +17,7 @@ import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 import { formatTotals, otherCurrency, toCurrency, type Currency, type Totals } from "@/lib/currency";
+import { GstHstField, TaxNote, taxBody, useSalesTax } from "@/components/finance/GstHst";
 
 interface Entry {
   id: string;
@@ -27,6 +28,8 @@ interface Entry {
   occurredOn: string;
   vendor?: string;
   currency?: string;
+  taxAmount?: number;
+  taxProvince?: string | null;
 }
 
 const tz = () =>
@@ -56,6 +59,10 @@ export default function IncomePage() {
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // GST/HST (only when the account is registered).
+  const salesTax = useSalesTax();
+  const [tax, setTax] = useState("");
+  const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
@@ -103,6 +110,7 @@ export default function IncomePage() {
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
           currency: currency ?? home,
+          ...taxBody(salesTax.registered, "income", tax, taxProvince),
         }),
       });
       if (!res.ok) {
@@ -115,6 +123,8 @@ export default function IncomePage() {
         setOccurredOn("");
         setSegmentId("");
         setVendor("");
+        setTax("");
+        setTaxProvince("");
         setCurrency(null);
         forgetCategories();
         await load();
@@ -221,6 +231,9 @@ export default function IncomePage() {
                 </div>
               )}
             </div>
+            {salesTax.registered && (
+              <GstHstField type="income" amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
+            )}
             <IncomeFrom value={vendor} onChange={setVendor} />
             {msg && <p className="text-xs text-red-600 mt-2">{msg}</p>}
           </CardContent>
@@ -303,7 +316,10 @@ export default function IncomePage() {
                       <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-semibold text-[#2E7C83]">+{usd(e.amount, toCurrency(e.currency, home))}</span>
+                      <span className="text-sm font-semibold text-[#2E7C83]">
+                        +{usd(e.amount, toCurrency(e.currency, home))}
+                        <TaxNote taxAmount={e.taxAmount} province={e.taxProvince} currency={toCurrency(e.currency, home)} home={home} />
+                      </span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>

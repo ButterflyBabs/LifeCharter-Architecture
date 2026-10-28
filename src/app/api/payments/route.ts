@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { paymentsAccount } from "@/lib/payments";
 import { getConnection } from "@/lib/stripeConnect";
-import { INVOICE_COLUMNS, cancelInvoice, createInvoice, invoicePlan } from "@/lib/suitePayments";
+import { INVOICE_COLUMNS, cancelInvoice, contactTaxPlace, createInvoice, invoicePlan } from "@/lib/suitePayments";
+import { chargesTax } from "@/lib/salesTaxServer";
+import { isTaxPlace } from "@/lib/salesTax";
 import { isCurrency, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
 
@@ -16,27 +18,32 @@ export const maxDuration = 60;
 //   POST { action: "preview", amount, paymentCount, daysUntilDue, email, description, currency? } -> { note } | { error }
 //   POST { action: "invoice", contactId, description, amount, paymentCount?, daysUntilDue?, offerId?, currency? } (currency defaults to home)
 //   POST { action: "cancel", id }                    -> void an unpaid invoice / stop a plan
+// GST/HST (task 1520 follow-up): GET also returns salesTax (true when the account charges it). Then preview and invoice
+// take taxPlace ("ON".. or "OUTSIDE"); without it the contact's stored address decides, and the invoice can't go out
+// until the place is known. preview returns { note, place } (place = the one used, for the "Customer is in" select).
+// The amount is always BEFORE tax; the note shows the tax and the total with tax. Payments carry tax_amount/tax_province.
 export async function GET(request: Request) {
   const a = await paymentsAccount();
   if ("denied" in a) return a.denied;
   const db = createServerClient();
   const contactId = new URL(request.url).searchParams.get("contact");
-  let pays = db.from("suite_payments").select("id, livemode, kind, amount, currency, refunded, email, name, contact_id, offer_id, invoice_id, description, paid_at").eq("master_plan_id", a.planId).order("paid_at", { ascending: false }).limit(300);
+  let pays = db.from("suite_payments").select("id, livemode, kind, amount, currency, refunded, email, name, contact_id, offer_id, invoice_id, description, paid_at, tax_amount, tax_province").eq("master_plan_id", a.planId).order("paid_at", { ascending: false }).limit(300);
   let invs = db.from("suite_invoices").select(INVOICE_COLUMNS).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(300);
   if (contactId) {
     pays = pays.eq("contact_id", contactId);
     invs = invs.eq("contact_id", contactId);
   }
-  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact, home] = await Promise.all([
+  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact, home, salesTax] = await Promise.all([
     getConnection(db, a.planId),
     pays,
     invs,
     db.from("sales_offers").select("id, name, price, currency").eq("master_plan_id", a.planId).order("sort_order"),
     contactId ? db.from("seq_contacts").select("id, email, first_name, last_name").eq("id", contactId).eq("master_plan_id", a.planId).maybeSingle().then((r) => r.data) : Promise.resolve(null),
     homeCurrency(a.planId, db),
+    chargesTax(a.planId, db),
   ]);
   return NextResponse.json(
-    { connected: Boolean(connection), livemode: connection?.livemode ?? null, currency: home, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
+    { connected: Boolean(connection), livemode: connection?.livemode ?? null, currency: home, salesTax, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -66,9 +73,11 @@ export async function POST(request: Request) {
   }
   const home = await homeCurrency(a.planId, db);
   const currency = isCurrency(b.currency) ? toCurrency(b.currency) : home;
-  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7, currency, home };
+  const taxOn = await chargesTax(a.planId, db);
+  const taxPlace = taxOn ? (isTaxPlace(b.taxPlace) ? b.taxPlace : await contactTaxPlace(db, a.planId, contactId)) : null;
+  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7, currency, home, chargeTax: taxOn, taxPlace };
   const plan = invoicePlan(input);
-  if (b.action === "preview") return plan.ok ? NextResponse.json({ note: plan.note }) : NextResponse.json({ error: plan.reason }, { status: 400 });
+  if (b.action === "preview") return plan.ok ? NextResponse.json({ note: plan.note, place: taxPlace }) : NextResponse.json({ error: plan.reason, place: taxPlace }, { status: 400 });
   if (b.action !== "invoice") return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   if (!contactId) return NextResponse.json({ error: "Choose a contact." }, { status: 400 });
   if (!plan.ok) return NextResponse.json({ error: plan.reason }, { status: 400 });

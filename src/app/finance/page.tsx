@@ -23,6 +23,7 @@ import type { FinanceOverview } from "@/lib/finance/overview";
 import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 import { formatMoney, type Currency } from "@/lib/currency";
+import { useSalesTax } from "@/components/finance/GstHst";
 
 interface Section {
   href: string;
@@ -37,6 +38,15 @@ const BANK_SECTION: Section = {
   href: "/finance/bank-feeds",
   title: "Bank & card feeds",
   description: "Link a bank or card; approve new transactions into your books",
+  icon: <Landmark className="w-5 h-5 text-[#2E7C83]" />,
+  tint: "#2E7C83",
+};
+
+// GST/HST return (task 1520 follow-up): shown only to accounts registered for GST/HST.
+const GST_SECTION: Section = {
+  href: "/finance/gst-hst",
+  title: "GST/HST Return",
+  description: "Tax collected, tax to claim back, net to pay and due dates",
   icon: <Landmark className="w-5 h-5 text-[#2E7C83]" />,
   tint: "#2E7C83",
 };
@@ -154,6 +164,7 @@ export default function FinancePage() {
   const usd = (n: number) => money(n);
   const [other, setOther] = useState<OtherBlock>(null);
   const [bankFeeds, setBankFeeds] = useState(false);
+  const salesTax = useSalesTax();
   useEffect(() => {
     // The feeds API answers 404 where the page is not open yet, so the card only shows when it works.
     fetch("/api/bank-feeds", { cache: "no-store" }).then((r) => setBankFeeds(r.ok)).catch(() => setBankFeeds(false));
@@ -238,7 +249,7 @@ export default function FinancePage() {
       {/* Sections */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">Finance Sections</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...SECTIONS, ...(bankFeeds ? [BANK_SECTION] : [])].map((s) => (
+        {[...SECTIONS, ...(salesTax.registered ? [GST_SECTION] : []), ...(bankFeeds ? [BANK_SECTION] : [])].map((s) => (
           <Link key={s.href} href={s.href}>
             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-5">

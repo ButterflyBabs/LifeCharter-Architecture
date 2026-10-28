@@ -11,6 +11,7 @@ import { CategoryInput, forgetCategories } from "@/components/finance/CategoryIn
 import { ExpenseDetails, IncomeFrom, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
 import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
+import { GstHstField, taxBody, useSalesTax } from "@/components/finance/GstHst";
 
 // Quick capture: a phone-friendly page for the two things owners jot down on
 // the move, a task or money in/out. Also a home-screen shortcut in the Suite app.
@@ -41,6 +42,10 @@ export default function CapturePage() {
   const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
   const [done, setDone] = useState("");
   const [err, setErr] = useState("");
+  // GST/HST (only when the account is registered).
+  const salesTax = useSalesTax();
+  const [tax, setTax] = useState("");
+  const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
@@ -69,6 +74,7 @@ export default function CapturePage() {
               occurredOn: occurredOn || today(),
               vendor: vendor.trim() || undefined,
               segmentId: segmentId || undefined,
+              ...taxBody(salesTax.registered, kind, tax, taxProvince),
               ...(kind === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
             }),
           });
@@ -84,6 +90,8 @@ export default function CapturePage() {
     setCategory("");
     setVendor("");
     setSegmentId("");
+    setTax("");
+    setTaxProvince("");
     setPaymentType("one_time");
     setOccurredOn(today());
     forgetCategories();
@@ -122,6 +130,9 @@ export default function CapturePage() {
                 ))}
               </div>
               <MoneyInput placeholder="Amount" value={amount} onChange={setAmount} className="[&_input]:h-12 [&_input]:text-base" aria-label="Amount" />
+              {salesTax.registered && (
+                <GstHstField key={kind} type={kind} amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} />
+              )}
               <label className="block text-sm text-[#7a8a99]">
                 Date
                 <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} className="mt-1 h-12" />

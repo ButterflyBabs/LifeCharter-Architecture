@@ -17,6 +17,7 @@ import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 import { toCurrency, type Currency } from "@/lib/currency";
+import { GstHstField, TaxNote, taxBody, useSalesTax } from "@/components/finance/GstHst";
 import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 
 interface Entry {
@@ -32,6 +33,8 @@ interface Entry {
   renewal?: string | null;
   hasReceipt?: boolean;
   currency?: string;
+  taxAmount?: number;
+  taxProvince?: string | null;
 }
 interface CatBudget {
   category: string;
@@ -73,6 +76,9 @@ export default function ExpensesPage() {
   const [saving, setSaving] = useState(false);
   const [billMatch, setBillMatch] = useState<{ match: BillMatch; entryId: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // GST/HST paid (only when the account is registered).
+  const salesTax = useSalesTax();
+  const [tax, setTax] = useState("");
   // A receipt photo the assistant read (task 1150): its id rides along when the expense is saved.
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
@@ -129,6 +135,7 @@ export default function ExpensesPage() {
           renewal: paymentType === "recurring" ? renewal : undefined,
           receiptId: receiptId || undefined,
           currency: currency ?? home,
+          ...taxBody(salesTax.registered, "expense", tax, ""),
         }),
       });
       if (!res.ok) {
@@ -144,6 +151,7 @@ export default function ExpensesPage() {
         setPaymentType("one_time");
         setReceiptId(null);
         setReadNote(null);
+        setTax("");
         setCurrency(null);
         forgetCategories();
         const saved = await res.json().catch(() => ({}));
@@ -182,9 +190,12 @@ export default function ExpensesPage() {
       setMsg(d?.error || "Couldn't read that receipt.");
       return;
     }
-    const x = d.read as { vendor: string; date: string; amount: number; category: string; description: string; confident: boolean };
+    const x = d.read as { vendor: string; date: string; amount: number; tax?: number; category: string; description: string; confident: boolean };
     setReceiptId(d.receiptId || null);
-    setAmount(x.amount ? String(x.amount) : "");
+    // Registered for GST/HST: the tax on the receipt goes in its own box and the amount is the total before it.
+    const readTax = salesTax.registered && x.tax && x.amount && x.tax > 0 && x.tax < x.amount ? x.tax : 0;
+    setAmount(x.amount ? String(Math.round((x.amount - readTax) * 100) / 100) : "");
+    setTax(readTax ? String(readTax) : "");
     setVendor(x.vendor || "");
     setOccurredOn(x.date || "");
     setCategory(x.category || "");
@@ -279,6 +290,7 @@ export default function ExpensesPage() {
                 </div>
               )}
             </div>
+            {salesTax.registered && <GstHstField type="expense" amount={amount} value={tax} onChange={setTax} homeProvince={salesTax.province} currency={currency ?? home} home={home} />}
             <ExpenseDetails
               vendor={vendor}
               setVendor={setVendor}
@@ -388,7 +400,10 @@ export default function ExpensesPage() {
                           <FileText className="w-4 h-4" />
                         </a>
                       )}
-                      <span className="text-sm font-semibold text-[#b06a5a]">−{usd(e.amount, toCurrency(e.currency, home))}</span>
+                      <span className="text-sm font-semibold text-[#b06a5a]">
+                        −{usd(e.amount, toCurrency(e.currency, home))}
+                        <TaxNote taxAmount={e.taxAmount} province={e.taxProvince} currency={toCurrency(e.currency, home)} home={home} />
+                      </span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>

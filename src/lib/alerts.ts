@@ -570,13 +570,42 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // GST/HST (task 1520 follow-up): a registered account's return coming due, or a Canadian-dollar account nearing
+  // the $30,000 registration line. Each once per period (the period is in the nkey).
+  try {
+    const [{ loadTaxSettings }, { gstAlerts }, { fourQuarterSales }] = await Promise.all([
+      import("@/lib/salesTaxServer"),
+      import("@/lib/finance/gstReport"),
+      import("@/lib/salesTax"),
+    ]);
+    const today = new Date().toISOString().slice(0, 10);
+    const t = await loadTaxSettings(masterPlanId, supabase);
+    const home = await homeCurrency(masterPlanId, supabase);
+    let sales = 0;
+    if (!t.registered && home === "cad") {
+      const since = `${Number(today.slice(0, 4)) - 1}-01-01`;
+      const { data } = await supabase
+        .from("finance_entries")
+        .select("type, amount, currency, occurred_on")
+        .eq("master_plan_id", masterPlanId)
+        .eq("type", "income")
+        .eq("currency", "cad")
+        .gte("occurred_on", since)
+        .limit(20000);
+      sales = fourQuarterSales(((data || []) as { type: string; amount: number | string; currency: string; occurred_on: string }[]).map((r) => ({ ...r, amount: Number(r.amount) || 0 })), today);
+    }
+    out.push(...gstAlerts({ today, registered: t.registered, registeredFrom: t.registeredFrom, frequency: t.frequency, homeCurrency: home, fourQuarterSales: sales }));
+  } catch {
+    /* best effort */
+  }
+
   void nowIso;
   return out;
 }
 
 
 // Alerts worth an email (the rest stay in the bell): keyed by nkey prefix.
-export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:"];
+export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:", "gst-due:", "gst-line:"];
 export const isEmailWorthy = (nkey: string | null) => !!nkey && EMAIL_WORTHY.some((p) => nkey.startsWith(p));
 
 // Brings the stored notifications in line with the live alerts (keeping

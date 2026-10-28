@@ -11,6 +11,7 @@ import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
 import { formatMoney, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
 import { addFlow, inHome, otherBlock, zeroFlow } from "@/lib/finance/money";
+import { parseTax } from "@/lib/finance/gstReport";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ type Row = {
   frequency?: string | null;
   renewal?: string | null;
   receipt_path?: string | null;
+  tax_amount?: number | string | null;
+  tax_province?: string | null;
 };
 
 function serialize(r: Row) {
@@ -47,6 +50,9 @@ function serialize(r: Row) {
     frequency: r.frequency || null,
     renewal: r.renewal || null,
     hasReceipt: Boolean(r.receipt_path),
+    // GST/HST (task 1520 follow-up): kept apart from the amount, which is before tax.
+    taxAmount: Number(r.tax_amount ?? 0) || 0,
+    taxProvince: r.tax_province || null,
   };
 }
 
@@ -82,7 +88,7 @@ export async function GET(request: Request) {
   const home = await homeCurrency(masterPlanId, supabase);
   let entriesQ = supabase
     .from("finance_entries")
-    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
   if (scope) entriesQ = entriesQ.or(businessMoneyFilter(scope));
@@ -291,6 +297,10 @@ export async function POST(request: Request) {
         ? (await currentBusiness(masterPlanId))?.businessId ?? null
         : null;
 
+  // GST/HST charged (income) or paid (expense), kept apart from the amount, and where the customer is.
+  const tax = parseTax(body);
+  if ("error" in tax) return NextResponse.json({ error: tax.error }, { status: 400 });
+
   // A receipt photo the assistant read (task 1150): the new expense keeps it.
   const receiptId = typeof body.receiptId === "string" && /^[0-9a-f-]{36}$/i.test(body.receiptId) ? body.receiptId : null;
   const { data: receipt } = receiptId && masterPlanId
@@ -344,9 +354,11 @@ export async function POST(request: Request) {
       frequency,
       renewal,
       bill_id: billId,
+      tax_amount: tax.taxAmount,
+      tax_province: tax.taxProvince,
       ...(receipt ? { receipt_path: receipt.path, receipt_name: receipt.file_name } : {}),
     })
-    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path, tax_amount, tax_province")
     .single();
 
   if (!error && receipt && data?.id) await supabase.from("finance_receipts").update({ status: "saved", entry_id: data.id }).eq("id", receipt.id);

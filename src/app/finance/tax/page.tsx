@@ -10,6 +10,7 @@ import { FinanceTaxRead } from "@/components/planning/AssistantPanels";
 import { isTaxPayment } from "@/lib/finance/taxRules";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { useSalesTax } from "@/components/finance/GstHst";
 
 import { useMoney, otherText, otherCur, type OtherBlock } from "@/components/finance/money";
 import { CURRENCY_NAMES } from "@/lib/currency";
@@ -50,6 +51,7 @@ function nextDeadline(): { iso: string; label: string } {
 
 export default function TaxPrepPage() {
   const { overview, reload: reloadOverview } = useFinanceOverview();
+  const salesTax = useSalesTax();
   // The estimate uses the home currency only; money in the other currency is named, never added in.
   const { home, money } = useMoney();
   const usd = (n: number) => money(n);
@@ -159,6 +161,11 @@ export default function TaxPrepPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {salesTax.registered && (
+            <Link href="/finance/gst-hst">
+              <Button variant="outline" size="sm">GST/HST return</Button>
+            </Link>
+          )}
           <Link href="/finance/1099">
             <Button variant="outline" size="sm">1099 contractor totals</Button>
           </Link>

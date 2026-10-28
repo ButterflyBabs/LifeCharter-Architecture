@@ -7,6 +7,7 @@ import { CADENCE_LABEL } from "@/lib/finance/billDates";
 import { CurrencySelect } from "@/components/money/CurrencySelect";
 import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 import type { Currency } from "@/lib/currency";
+import { GstHstField, taxBody, useSalesTax } from "@/components/finance/GstHst";
 
 const FREQS = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
 
@@ -45,6 +46,10 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
   const [msg, setMsg] = useState("");
   const { currency: home, canChoose } = useHomeCurrency();
   const [currency, setCurrency] = useState<Currency | null>(null);
+  // GST/HST (only when the account is registered).
+  const salesTax = useSalesTax();
+  const [tax, setTax] = useState("");
+  const [taxProvince, setTaxProvince] = useState("");
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
@@ -73,6 +78,7 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
           currency: currency ?? home,
+          ...taxBody(salesTax.registered, type, tax, taxProvince),
           ...(type === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
         }),
       });
@@ -163,6 +169,9 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
             </label>
           )}
         </div>
+        {salesTax.registered && (
+          <GstHstField key={type} look="modal" type={type} amount={amount} value={tax} onChange={setTax} province={taxProvince} onProvinceChange={setTaxProvince} homeProvince={salesTax.province} currency={currency ?? home} home={home} />
+        )}
         {msg && <p role="alert" className="mt-3 text-xs text-red-600">{msg}</p>}
         <div className="mt-5 flex items-center justify-between gap-3">
           <a href="/finance/pulse" className="text-xs text-[#2E7C83] hover:underline">Open the full Financial Pulse</a>

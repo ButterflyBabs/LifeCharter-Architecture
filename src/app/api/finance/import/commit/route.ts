@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { isCurrency, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
+import { parseTax } from "@/lib/finance/gstReport";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
           : typeof e.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
           ? e.date
           : new Date().toISOString().slice(0, 10);
+      // GST/HST on the row when the import has it (else 0); a bad value is dropped, not the row.
+      const tax = parseTax(e);
+      const { taxAmount, taxProvince } = "error" in tax ? { taxAmount: 0, taxProvince: null } : tax;
       return {
         master_plan_id: masterPlanId,
         type: e.type === "income" ? "income" : "expense",
@@ -39,6 +43,8 @@ export async function POST(request: Request) {
         description: typeof e.description === "string" ? e.description.trim() || null : null,
         occurred_on: occurredOn,
         source: "import",
+        tax_amount: taxAmount,
+        tax_province: taxProvince,
       };
     })
     .filter(Boolean)
