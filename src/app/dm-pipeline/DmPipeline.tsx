@@ -1358,6 +1358,59 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
     : <Modal title={short} onClose={onClose} wide>{content}</Modal>;
 }
 
+// What this person wrote back to a cold email, with a box to answer it. The answer goes out in the same email thread from your
+// connected Microsoft 365 inbox, so they see it as a normal reply. Shows nothing until they have written.
+type ColdReply = { id: string; kind: string; fromEmail: string | null; subject: string | null; preview: string | null; receivedAt: string; answeredAt: string | null; answerText: string | null };
+function ColdReplyPanel({ card }: { card: Card }) {
+  const [replies, setReplies] = useState<ColdReply[] | null>(null);
+  const [body, setBody] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/cold-email/replies?cardId=${card.id}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => { if (live && x) { setReplies(x.replies ?? []); setBody(x.body ?? null); } })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [card.id]);
+  if (!replies?.length) return null;
+  const latest = replies[0];
+  const when = (iso: string) => new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  async function send() {
+    if (!text.trim() || !confirm(`Send this reply to ${card.name} (${card.email})? It goes out from your Microsoft 365 inbox.`)) return;
+    setBusy(true);
+    setErr("");
+    const r = await fetch("/api/cold-email/replies", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cardId: card.id, replyId: latest.id, text }) }).catch(() => null);
+    const x = r ? await r.json().catch(() => ({})) : {};
+    setBusy(false);
+    if (r && r.ok) { setReplies((cur) => [{ ...latest, answeredAt: x.answeredAt ?? new Date().toISOString(), answerText: text }, ...(cur ?? []).slice(1)]); setText(""); }
+    else setErr(x.error || "The reply did not send. Please try again, or answer from Outlook.");
+  }
+  return (
+    <div className="rounded-lg border border-[#C9A227]/50 bg-[#C9A227]/10 p-3 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#6b5410]">{latest.kind === "stop" ? "Asked to stop" : "Their reply"} · {when(latest.receivedAt)}</p>
+      {latest.subject && <p className="text-xs text-[#5a6472]">Subject: {latest.subject}</p>}
+      <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap max-h-56 overflow-y-auto">{body || latest.preview || "(no text)"}</p>
+      {replies.length > 1 && <p className="text-xs text-[#5a6472]">{replies.length - 1} earlier message{replies.length === 2 ? "" : "s"} from them are in your notes below.</p>}
+      {latest.answeredAt ? (
+        <div className="rounded-md bg-white/70 dark:bg-[#1a2b4a]/30 p-2 text-sm">
+          <p className="text-xs font-medium text-[#1F5E63]">You answered · {when(latest.answeredAt)}</p>
+          <p className="whitespace-pre-wrap text-[#1a2b4a] dark:text-[#F8F5F0]">{latest.answerText}</p>
+        </div>
+      ) : latest.kind === "reply" ? (
+        <div className="space-y-2">
+          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Your answer to ${card.name.split(" ")[0]}`} className={box} />
+          {err && <p className="text-xs text-[#C76F56]">{err}</p>}
+          <Button disabled={busy || !text.trim()} onClick={send}>{busy ? "Sending..." : "Send reply"}</Button>
+          <span className="ml-2 text-xs text-[#5a6472]">Goes to {card.email} in the same thread.</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; qualOn: boolean; onAngle: (text: string) => void; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
   const [d, setD] = useState({ name: card.name, handle: card.handle ?? "", profileUrl: card.profile_url ?? "", email: card.email ?? "", platform: card.platform ?? "", notes: card.notes ?? "", followUpOn: card.follow_up_on ?? "" });
   const [busy, setBusy] = useState(false);
@@ -1369,6 +1422,7 @@ function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, o
             {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
+        {stages.some((s) => s.key === "followed_up" && /^Emails 2 and 3/.test(s.name)) && <ColdReplyPanel card={card} />}
         <PlatformPick value={d.platform} onChange={(v) => setD({ ...d, platform: v })} />
         <DmSentPick card={card} scripts={scripts} stages={stages} onPick={onPick} />
         <div className="grid gap-2 sm:grid-cols-2">

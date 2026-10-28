@@ -591,6 +591,23 @@ export async function replyToMessage(
   await finishDraftWithAttachments(accessToken, draft.id, body, attachments);
 }
 
+// Reply in-thread with plain text that keeps its line breaks: make the reply draft, put the text above the quoted message, send.
+export async function replyWithText(accessToken: string, messageId: string, text: string): Promise<void> {
+  const draft = (await graphPost(accessToken, `/me/messages/${messageId}/createReply`, {})) as { id?: string };
+  if (!draft?.id) throw new Error("graph createReply: no draft id");
+  const g = await fetch(`${GRAPH}/me/messages/${draft.id}?$select=body`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const { body } = g.ok ? ((await g.json()) as { body?: { contentType?: string; content?: string } }) : { body: undefined };
+  const isHtml = (body?.contentType ?? "html").toLowerCase() === "html";
+  const lead = isHtml ? `<div>${escapeHtml(text).replace(/\r?\n/g, "<br>")}</div><br>` : `${text}\n\n`;
+  const p = await fetch(`${GRAPH}/me/messages/${draft.id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ body: { contentType: isHtml ? "HTML" : "Text", content: lead + (body?.content ?? "") } }),
+  });
+  if (!p.ok) throw new Error(`graph reply draft ${p.status} ${await p.text()}`);
+  await graphPost(accessToken, `/me/messages/${draft.id}/send`, {});
+}
+
 // Forward. Without new attachments, the native forward (keeps original
 // attachments); with new attachments, a forward draft + attach + send.
 export async function forwardMessage(

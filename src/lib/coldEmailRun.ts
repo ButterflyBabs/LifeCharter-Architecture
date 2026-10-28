@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { boardStages, moveCard, markDoNotContact, movesForward, type DmStage } from "@/lib/dmPipeline";
+import { DEFAULT_REPLY_NOTIFY, notifyReplies, recordReply, type NewReply } from "@/lib/coldEmailReplies";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, varsFor, type ColdStep } from "@/lib/coldEmail";
 
@@ -37,7 +38,7 @@ async function nextSessionLabel(): Promise<string> {
 // Replies come to the account owner's own inbox (the Reply-To on every cold email), which the Suite already reads through the
 // connected Microsoft 365 account. Google restricts reading Gmail, so the sending mailboxes are never read.
 async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, ownEmail: string) {
-  const out = { replies: 0, stops: 0, bounces: 0 };
+  const out = { replies: 0, stops: 0, bounces: 0, fresh: [] as NewReply[] };
   if (!s.board_id || !senders.length) return out;
   const byKey = new Map(stages.map((x) => [x.key, x]));
   const stageById = new Map(stages.map((x) => [x.id, x]));
@@ -78,6 +79,11 @@ async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: stri
         if (!card) continue;
         cardId = card.id;
         const cur = stageById.get(card.stage_id);
+        if (c.kind === "reply" || c.kind === "stop") {
+          if (await recordReply(db, s.master_plan_id, card, m, c.kind, s.tz).catch(() => false) && c.kind === "reply") {
+            out.fresh.push({ cardId: card.id, name: card.name, email: m.fromEmail, subject: m.subject, text: m.preview, board: boardName });
+          }
+        }
         if (c.kind === "reply") {
           const to = byKey.get("conversation");
           if (to && cur && movesForward(cur.key, cur.kind, "conversation") && (await moveCard(db, s.master_plan_id, card.id, to, boardName, s.tz))) out.replies++;
@@ -211,8 +217,14 @@ export async function runColdEmail(now = new Date()) {
     const stages = await boardStages(db, row.master_plan_id, row.board_id);
     const boardName = (board?.name as string) || "Cold Email";
     const scan = await scanReplies(db, row, senders, ownerId, stages, boardName, replyTo);
+    if (scan.fresh.length) {
+      const { data: meta } = await db.from("client_master_plans").select("metadata").eq("id", row.master_plan_id).maybeSingle();
+      const list = (meta?.metadata as { coldReplyNotify?: unknown } | null)?.coldReplyNotify;
+      const to = Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && x.includes("@")) : DEFAULT_REPLY_NOTIFY;
+      await notifyReplies(to, scan.fresh).catch((e) => console.error("cold reply notify:", e));
+    }
     const send = await sendDue(db, row, senders, ownerId, stages, boardName, now, replyTo);
-    results.push({ plan: row.master_plan_id, scan, send });
+    results.push({ plan: row.master_plan_id, scan: { replies: scan.replies, stops: scan.stops, bounces: scan.bounces }, send });
   }
   return { results };
 }
