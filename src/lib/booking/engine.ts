@@ -346,7 +346,7 @@ async function afterBooking(
     // The host's own Zoom login when they have one; otherwise (a team member with no Zoom seat, such as Marcello)
     // the meeting is created under the account's own Zoom user, and people may join before the host so the
     // team member can simply open the join link and start the call.
-    // A host on a shared Zoom user (Mide, on support@) does not sign in as it, so people may join before the host too.
+    // A host on a shared Zoom user (a Call to Close consultant, on support@) does not sign in as it, so people may join before the host too.
     let z = host.zoom_email ? await mk(host.zoom_email, Boolean(host.shared_zoom)) : null;
     if (!z) {
       if (!host.zoom_email) z = await mk(host.email, false); // they may already be a Zoom user under their sign-in email

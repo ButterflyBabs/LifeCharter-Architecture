@@ -1,16 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { cardFields, closeTag, consultantKey, discoveryTag, followupTag, leadTag, shapeCard } from "../src/lib/c2c";
+import { discoveryCalendarSlug, cardFields, closeTag, consultantKey, discoveryTag, followupTag, leadTag, shapeCard } from "../src/lib/c2c";
+
+test("a board simply named Call to Close has the generic key and booking slug", () => {
+  assert.equal(consultantKey("Call to Close"), "consultant");
+  assert.equal(discoveryCalendarSlug("consultant"), "discovery-call");
+  assert.equal(discoveryCalendarSlug("sam"), "discovery-call-sam");
+});
 
 test("tags follow the consultant's name", () => {
-  const key = consultantKey("Call to Close: Mide");
-  assert.equal(key, "mide");
-  assert.equal(leadTag(key, "America/Denver", new Date("2026-10-27T18:00:00Z")), "c2c-mide-oct-2026");
-  assert.equal(leadTag(key, "America/Denver", new Date("2026-12-01T03:00:00Z")), "c2c-mide-nov-2026"); // still Nov 30 in Denver
-  assert.equal(discoveryTag(key), "c2c-mide-discovery");
-  assert.equal(followupTag(key), "c2c-mide-followup");
-  assert.equal(closeTag(key, "vip", "2026-11-03"), "c2c-mide-vip-2026-11-03");
+  const key = consultantKey("Call to Close: Sam");
+  assert.equal(key, "sam");
+  assert.equal(leadTag(key, "America/Denver", new Date("2026-10-27T18:00:00Z")), "c2c-sam-oct-2026");
+  assert.equal(leadTag(key, "America/Denver", new Date("2026-12-01T03:00:00Z")), "c2c-sam-nov-2026"); // still Nov 30 in Denver
+  assert.equal(discoveryTag(key), "c2c-sam-discovery");
+  assert.equal(followupTag(key), "c2c-sam-followup");
+  assert.equal(closeTag(key, "vip", "2026-11-03"), "c2c-sam-vip-2026-11-03");
 });
 
 test("a card keeps only the fields a consultant may edit, cleaned", () => {
@@ -24,11 +30,11 @@ test("a card keeps only the fields a consultant may edit, cleaned", () => {
 });
 
 test("a card is only in the CRM once it has a contact", () => {
-  const base = { id: "c", stage_id: "s", name: "Dana", card_tags: ["c2c-mide-oct-2026"], discovery_outcome: "attended" };
+  const base = { id: "c", stage_id: "s", name: "Dana", card_tags: ["c2c-sam-oct-2026"], discovery_outcome: "attended" };
   assert.equal(shapeCard({ ...base, contact_id: null }).inCrm, false);
   assert.equal(shapeCard({ ...base, contact_id: "abc" }).inCrm, true);
   assert.equal(shapeCard({ ...base, contact_id: null, discovery_outcome: "weird" }).outcome, null);
-  assert.deepEqual(shapeCard({ ...base, contact_id: null }).tags, ["c2c-mide-oct-2026"]);
+  assert.deepEqual(shapeCard({ ...base, contact_id: null }).tags, ["c2c-sam-oct-2026"]);
 });
 
 import { readLeadsCsv } from "../src/lib/c2cLeads";
@@ -53,6 +59,6 @@ test("a Call to Close consultant reaches one page and a few APIs, nothing else",
 
 import { noShowKey } from "../src/lib/c2c";
 test("the no-show campaign is keyed to the consultant, so it only ever follows their own no-shows", () => {
-  assert.equal(noShowKey("mide"), "c2c-mide-no-show");
-  assert.notEqual(noShowKey("mide"), noShowKey("other"));
+  assert.equal(noShowKey("sam"), "c2c-sam-no-show");
+  assert.notEqual(noShowKey("sam"), noShowKey("other"));
 });

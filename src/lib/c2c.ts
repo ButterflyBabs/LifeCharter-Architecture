@@ -4,7 +4,7 @@ import { logEvent } from "@/lib/crm";
 import { enrolContact } from "@/lib/sequences/engine";
 import { nowParts } from "@/lib/finance/period";
 
-// Call to Close consultants (Mide first). A consultant has their OWN pipeline board in the house account's Outreach
+// Call to Close consultants. A consultant has their OWN pipeline board in the house account's Outreach
 // Pipelines (pipeline_boards.owner_email = their sign-in email) and sees nothing else. A prospect is only a CARD until
 // they book a discovery call; the booking is what creates the CRM contact. Tags follow the consultant's name:
 //   c2c-<name>-<mon>-<year>        the month the card was added
@@ -19,10 +19,12 @@ export type C2cTier = (typeof C2C_TIERS)[number];
 export const TIER_LABEL: Record<C2cTier, string> = { starter: "Starter", growth: "Growth", vip: "VIP" };
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-export const BOARD_PREFIX = /^call to close:\s*/i;
+export const BOARD_PREFIX = /^call to close(?::\s*|\s*$)/i;
 
-/** "Call to Close: Mide" -> "mide" */
+/** "Call to Close: Sam" -> "sam"; a board simply named "Call to Close" -> "consultant" */
 export const consultantKey = (boardName: string) => slugTag(boardName.replace(BOARD_PREFIX, "")) || "consultant";
+/** The booking page slug for a consultant's discovery call; the unnamed Call to Close board uses plain "discovery-call". */
+export const discoveryCalendarSlug = (key: string) => (key === "consultant" ? "discovery-call" : `discovery-call-${key}`);
 export const leadTag = (key: string, tz = "America/Denver", now: Date = new Date()) => {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit" }).formatToParts(now);
   const year = parts.find((x) => x.type === "year")?.value ?? String(now.getUTCFullYear());

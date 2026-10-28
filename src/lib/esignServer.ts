@@ -51,7 +51,7 @@ export async function signMail(db: Db, planId: string, m: { docId?: string; to: 
   if (!key) return false;
   const from = useOwn ? `${(who as { fromName: string }).fromName.replace(/[<>"]/g, "")} <${(who as { fromEmail: string }).fromEmail}>` : who && who.ok && who.house ? `${brand.name.replace(/[<>"]/g, "")} <signatures@lccommandsuite.com>` : `${brand.name.replace(/[<>"]/g, "")} via LifeCharter Command Suite <signatures@lccommandsuite.com>`;
   const replyTo = useOwn ? (who as { replyTo: string }).replyTo : owner || undefined;
-  // Agreements sent by Mide or Marcello are always copied to Babs (never the one-time signing code).
+  // Agreements sent by a Call to Close consultant or Marcello are always copied to Babs (never the one-time signing code).
   let copyBabs = false;
   if (m.docId && m.heading !== "Your signing code" && m.to.toLowerCase() !== BABS_COPY) {
     const { data: d } = await db.from("sign_documents").select("created_by").eq("id", m.docId).maybeSingle();

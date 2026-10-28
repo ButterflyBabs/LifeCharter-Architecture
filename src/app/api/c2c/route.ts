@@ -3,12 +3,12 @@ import { createServerClient } from "@/lib/supabase/server";
 import { isAlignmentArchitect, sessionUser, viewedMember } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
 import { housePlanId } from "@/lib/housePlan";
-import { seriesFor, BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
+import { discoveryCalendarSlug, seriesFor, BOARD_PREFIX, CARD_COLS, C2C_TIERS, TIER_LABEL, addProspect, importProspects, c2cStages, cardFields, closeProspect, consultantBoards, consultantKey, discoveryTag, followupTag, leadTag, moveProspect, shapeCard } from "@/lib/c2c";
 import { setBookingOutcome } from "@/lib/booking/engine";
 
 export const dynamic = "force-dynamic";
 
-// A Call to Close consultant's own pipeline (Mide first). A consultant only ever reaches the board(s) that carry THEIR
+// A Call to Close consultant's own pipeline . A consultant only ever reaches the board(s) that carry THEIR
 // sign-in email (pipeline_boards.owner_email); nothing here reads another board, a contact or any other account data.
 // Babs can look at a consultant's view with ?as=<their email>.
 //   GET  → { consultant, board, stages, cards, tags, tiers }
@@ -47,8 +47,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     affiliateCode: (aff?.code as string) ?? null,
     shareLink: aff?.code ? `${app}/r/${aff.code}` : null,
-    bookingLink: `${app}/book/discovery-call-${key}`,
-    consultant: board.name.replace(BOARD_PREFIX, ""),
+    bookingLink: `${app}/book/${discoveryCalendarSlug(key)}`,
+    consultant: board.name.replace(BOARD_PREFIX, "").trim() || "Call to Close",
     board: { id: board.id, name: board.name },
     stages: stages.map((s) => ({ id: s.id, key: s.key, name: s.name, kind: s.kind })),
     cards: ((cards ?? []) as Record<string, unknown>[]).map((c) => ({ ...shapeCard(c), series: series.get(c.contact_id as string) ?? null })),

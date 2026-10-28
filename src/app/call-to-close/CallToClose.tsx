@@ -81,7 +81,7 @@ export default function CallToClose({ as }: { as: string | null }) {
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Call to Close</p>
-      <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{data.consultant}&rsquo;s workspace</h1>
+      <h1 className="text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{data.consultant === "Call to Close" ? "Call to Close workspace" : `${data.consultant}’s workspace`}</h1>
       <p className="mb-5 mt-1 max-w-3xl text-sm text-[#7a8a99]">Your prospects, your calendar and your sales resources. Everything here is yours alone.</p>
 
       <div className="mb-5 flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl bg-[#1a2b4a]/5 p-1">

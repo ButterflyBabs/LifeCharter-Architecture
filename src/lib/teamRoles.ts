@@ -13,7 +13,7 @@
 
 import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 
-//   consultant — a Call to Close consultant (Mide): ONE page, /call-to-close (their own pipeline, calendar, contacts and
+//   consultant — a Call to Close consultant: ONE page, /call-to-close (their own pipeline, calendar, contacts and
 //            sales resources) and the few APIs behind it. Nothing else in the Suite opens, by default.
 export type TeamRole = "admin" | "editor" | "viewer" | "sales" | "consultant";
 

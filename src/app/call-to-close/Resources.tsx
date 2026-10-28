@@ -146,7 +146,7 @@ export default function Resources({ consultant, bookingLink, shareLink }: { cons
           <li>Never take payment outside the checkout link, and never create an account yourself.</li>
           <li>Anyone on the Do Not Contact list or who has unsubscribed is never contacted again.</li>
           <li>Keep prospect information private. Don&rsquo;t share or export it.</li>
-          <li>{consultant}, if you are ever unsure, ask. A slower yes is better than a wrong one.</li>
+          <li>{consultant === "Call to Close" ? "If you are ever unsure, ask." : `${consultant}, if you are ever unsure, ask.`} A slower yes is better than a wrong one.</li>
         </ul>
       </section>
     </div>
