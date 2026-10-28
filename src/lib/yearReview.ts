@@ -1,6 +1,8 @@
 import { randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { brandFor } from "@/lib/portal";
+import { otherCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Year in review (task 1155): one page of the account's year, from what the Suite already holds.
 // The share link shows the same page without money unless the owner turns money on; testimonials only with consent.
@@ -10,7 +12,16 @@ type Db = ReturnType<typeof createServerClient>;
 export interface YearReview {
   year: number;
   business: { name: string; logo: string | null };
-  money: { income: number; expenses: number; net: number; bestMonth: { month: string; income: number } | null; byMonth: { month: string; income: number; expenses: number }[] } | null;
+  // Home-currency figures only; the other currency's year comes back on its own in `other` (never added in).
+  money: {
+    currency: Currency;
+    income: number;
+    expenses: number;
+    net: number;
+    bestMonth: { month: string; income: number } | null;
+    byMonth: { month: string; income: number; expenses: number }[];
+    other: { currency: Currency; income: number; expenses: number; net: number } | null;
+  } | null;
   people: { newContacts: number; newCustomers: number };
   sessions: { completed: number; hours: number };
   events: { held: number; registrations: number };
@@ -38,7 +49,7 @@ export async function yearReview(db: Db, planId: string, year: number, opts: { m
   const head = { count: "exact" as const, head: true };
   const [business, { data: fin }, { count: newContacts }, { count: newCustomers }, { data: bookings }, { data: time }, { data: events }, { count: regs }, { count: members }, { count: tasksDone }, { count: goalsDone }, { data: scores }, { data: tst }] = await Promise.all([
     brandFor(db, planId),
-    opts.money ? db.from("finance_entries").select("type, amount, occurred_on").eq("master_plan_id", planId).gte("occurred_on", from).lt("occurred_on", to).limit(20000) : Promise.resolve({ data: null }),
+    opts.money ? db.from("finance_entries").select("type, amount, occurred_on, currency").eq("master_plan_id", planId).gte("occurred_on", from).lt("occurred_on", to).limit(20000) : Promise.resolve({ data: null }),
     db.from("seq_contacts").select("id", head).eq("master_plan_id", planId).gte("created_at", fromTs).lt("created_at", toTs),
     db.from("seq_contacts").select("id", head).eq("master_plan_id", planId).gte("created_at", fromTs).lt("created_at", toTs).overlaps("tags", ["customer", "client"]),
     db.from("bookings").select("start_at, end_at").eq("master_plan_id", planId).eq("status", "completed").gte("start_at", fromTs).lt("start_at", toTs).limit(10000),
@@ -54,10 +65,17 @@ export async function yearReview(db: Db, planId: string, year: number, opts: { m
 
   let money: YearReview["money"] = null;
   if (opts.money) {
+    const home = await homeCurrency(planId, db);
+    const other = { income: 0, expenses: 0 };
     const byMonth = MONTHS.map((m) => ({ month: m, income: 0, expenses: 0 }));
-    for (const f of (fin ?? []) as { type: string; amount: number; occurred_on: string }[]) {
+    for (const f of (fin ?? []) as { type: string; amount: number; occurred_on: string; currency: string | null }[]) {
       const i = Number(f.occurred_on.slice(5, 7)) - 1;
       if (i < 0 || i > 11) continue;
+      if (toCurrency(f.currency) !== home) {
+        if (f.type === "income") other.income += Number(f.amount) || 0;
+        else if (f.type === "expense") other.expenses += Number(f.amount) || 0;
+        continue;
+      }
       if (f.type === "income") byMonth[i].income += Number(f.amount) || 0;
       else if (f.type === "expense") byMonth[i].expenses += Number(f.amount) || 0;
     }
@@ -65,11 +83,13 @@ export async function yearReview(db: Db, planId: string, year: number, opts: { m
     const expenses = byMonth.reduce((s, m) => s + m.expenses, 0);
     const best = [...byMonth].sort((a, b) => b.income - a.income)[0];
     money = {
+      currency: home,
       income: round(income),
       expenses: round(expenses),
       net: round(income - expenses),
       bestMonth: best && best.income > 0 ? { month: best.month, income: round(best.income) } : null,
       byMonth: byMonth.map((m) => ({ ...m, income: round(m.income), expenses: round(m.expenses) })),
+      other: other.income || other.expenses ? { currency: otherCurrency(home), income: round(other.income), expenses: round(other.expenses), net: round(other.income - other.expenses) } : null,
     };
   }
 

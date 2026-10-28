@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Copy, CreditCard, ExternalLink, Loader2 } from "lucide-react";
 
-export type PayLink = { offer_id: string; url: string; kind: string; amount: number; livemode: boolean; created_at: string };
+export type PayLink = { offer_id: string; url: string; kind: string; amount: number; currency?: string; livemode: boolean; created_at: string };
 export type PayLinks = { connected: boolean; livemode: boolean | null; links: Record<string, PayLink>; plans: Record<string, { ok: boolean; text: string }> };
 
 // One offer's payment link, made on the client's OWN Stripe account: create it, copy it, open it, or turn it off.

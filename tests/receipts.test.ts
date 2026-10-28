@@ -4,7 +4,10 @@ import { cleanReceiptRead, payeeKey, threshold1099 } from "../src/lib/finance/re
 
 test("a receipt read is made safe", () => {
   const r = cleanReceiptRead({ vendor: " Office Depot ", date: "2026-10-15", amount: "$42.19", category: "Supplies", description: "Printer paper", confident: true }, "2026-10-18");
-  assert.deepEqual(r, { vendor: "Office Depot", date: "2026-10-15", amount: 42.19, category: "Supplies", description: "Printer paper", confident: true });
+  assert.deepEqual(r, { vendor: "Office Depot", date: "2026-10-15", amount: 42.19, currency: null, category: "Supplies", description: "Printer paper", confident: true });
+  // A receipt that clearly prints CAD is read as CAD (task 1520); anything else stays unknown.
+  assert.equal(cleanReceiptRead({ amount: "42.19", currency: "CAD" }, "2026-10-18").currency, "cad");
+  assert.equal(cleanReceiptRead({ amount: "42.19", currency: "EUR" }, "2026-10-18").currency, null);
   const bad = cleanReceiptRead({ date: "2027-01-01", amount: "abc", confident: true }, "2026-10-18");
   assert.equal(bad.date, "2026-10-18");
   assert.equal(bad.amount, 0);

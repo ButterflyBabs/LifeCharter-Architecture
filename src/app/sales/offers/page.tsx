@@ -9,6 +9,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { OFFER_BILLING, OFFER_FORMATS, OFFER_STATUSES, offerPriceLabel, type Offer } from "@/lib/sales/offers";
 import SalesNav from "@/components/sales/SalesNav";
 import OfferPaymentLink, { type PayLinks } from "@/components/sales/OfferPaymentLink";
+import { CurrencySelect } from "@/components/money/CurrencySelect";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import type { Currency } from "@/lib/currency";
 
 type Business = { id: number; name: string };
 type Form = {
@@ -28,11 +31,14 @@ type Form = {
   link: string;
   status: string;
   businessId: string;
+  currency: Currency;
+  /** The saved offer's currency (null for a new offer): a non-home offer always shows the picker. */
+  savedCurrency: Currency | null;
 };
 
 const EMPTY: Form = {
   id: null, name: "", format: "one_to_one", price: "", billing: "one_time", paymentCount: "", deliverables: "", transformation: "",
-  idealClient: "", notFor: "", guarantee: "", duration: "", capacity: "", link: "", status: "active", businessId: "",
+  idealClient: "", notFor: "", guarantee: "", duration: "", capacity: "", link: "", status: "active", businessId: "", currency: "usd", savedCurrency: null,
 };
 
 const toForm = (o: Offer): Form => ({
@@ -40,6 +46,7 @@ const toForm = (o: Offer): Form => ({
   paymentCount: o.paymentCount === null ? "" : String(o.paymentCount), deliverables: o.deliverables.join("\n"),
   transformation: o.transformation, idealClient: o.idealClient, notFor: o.notFor, guarantee: o.guarantee, duration: o.duration,
   capacity: o.capacity === null ? "" : String(o.capacity), link: o.link, status: o.status, businessId: o.businessId ? String(o.businessId) : "",
+  currency: o.currency, savedCurrency: o.currency,
 });
 
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
@@ -80,6 +87,9 @@ export default function OffersPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { currency: home, canChoose } = useHomeCurrency();
+  // USD/CAD picker: only for accounts that can choose, or an offer already saved in the other currency.
+  const showCurrency = !!form && (canChoose || (form.savedCurrency !== null && form.savedCurrency !== home));
 
   const load = useCallback(async () => {
     const res = await fetch("/api/offers", { cache: "no-store" });
@@ -106,10 +116,10 @@ export default function OffersPage() {
     return (offers ?? []).filter((o) => {
       if (filter !== "all" && o.status !== filter) return false;
       if (!term) return true;
-      const hay = [o.name, formatLabel(o.format), offerPriceLabel(o), o.duration, o.transformation, o.idealClient, o.notFor, o.guarantee, o.link, ...o.deliverables].join(" ").toLowerCase();
+      const hay = [o.name, formatLabel(o.format), offerPriceLabel(o, home), o.duration, o.transformation, o.idealClient, o.notFor, o.guarantee, o.link, ...o.deliverables].join(" ").toLowerCase();
       return term.split(/\s+/).every((w) => hay.includes(w));
     });
-  }, [offers, filter, q]);
+  }, [offers, filter, q, home]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -149,8 +159,12 @@ export default function OffersPage() {
     if (!form) return;
     setBusy(true);
     setError("");
+    const { currency, savedCurrency: _saved, ...rest } = form;
+    void _saved;
     const payload = {
-      ...form,
+      ...rest,
+      // Sent only when the picker is shown; otherwise a new offer takes the home currency and an edit keeps its own.
+      ...(showCurrency ? { currency } : {}),
       deliverables: form.deliverables.split("\n").map((s) => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean),
       businessId: form.businessId || null,
     };
@@ -197,7 +211,7 @@ export default function OffersPage() {
           </p>
         </div>
         <button
-          onClick={() => { setForm({ ...EMPTY, businessId: currentBiz ? String(currentBiz) : "" }); setError(""); setConfirmDelete(false); }}
+          onClick={() => { setForm({ ...EMPTY, currency: home, businessId: currentBiz ? String(currentBiz) : "" }); setError(""); setConfirmDelete(false); }}
           className="inline-flex items-center gap-2 rounded-lg bg-[#1a2b4a] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Add an offer
@@ -265,7 +279,7 @@ export default function OffersPage() {
                 {o.duration ? ` · ${o.duration}` : ""}
                 {o.businessId && businesses.length > 1 ? ` · ${businesses.find((b) => b.id === o.businessId)?.name ?? ""}` : ""}
               </p>
-              <p className="mt-3 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{offerPriceLabel(o)}</p>
+              <p className="mt-3 text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{offerPriceLabel(o, home)}</p>
               {o.transformation && <p className="mt-2 line-clamp-3 text-sm text-[#5b5f73] dark:text-[#b8a898]">{o.transformation}</p>}
               {o.deliverables.length > 0 && (
                 <ul className="mt-3 list-disc space-y-0.5 pl-5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
@@ -301,7 +315,17 @@ export default function OffersPage() {
               <div className="sm:col-span-2"><label className={label} htmlFor="o-name">Offer name</label><input id="o-name" className={input} value={form.name} onChange={set("name")} placeholder="e.g. The Alignment Intensive" /></div>
               <div><label className={label} htmlFor="o-format">Format</label><select id="o-format" className={input} value={form.format} onChange={set("format")}>{OFFER_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></div>
               <div><label className={label} htmlFor="o-status">Status</label><select id="o-status" className={input} value={form.status} onChange={set("status")}>{OFFER_STATUSES.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></div>
-              <div><label className={label} htmlFor="o-price">Price (USD)</label><input id="o-price" inputMode="decimal" className={input} value={form.price} onChange={set("price")} placeholder="2500" /></div>
+              <div>
+                <label className={label} htmlFor="o-price">Price ({form.currency.toUpperCase()})</label>
+                {showCurrency ? (
+                  <div className="flex gap-2">
+                    <input id="o-price" inputMode="decimal" className={input} value={form.price} onChange={set("price")} placeholder="2500" />
+                    <CurrencySelect value={form.currency} onChange={(c) => setForm((f) => (f ? { ...f, currency: c } : f))} aria-label="Offer currency" />
+                  </div>
+                ) : (
+                  <input id="o-price" inputMode="decimal" className={input} value={form.price} onChange={set("price")} placeholder="2500" />
+                )}
+              </div>
               <div><label className={label} htmlFor="o-billing">How it&rsquo;s paid</label><select id="o-billing" className={input} value={form.billing} onChange={set("billing")}>{OFFER_BILLING.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></div>
               {form.billing === "payment_plan" && <div><label className={label} htmlFor="o-payments">Number of payments</label><input id="o-payments" inputMode="numeric" className={input} value={form.paymentCount} onChange={set("paymentCount")} placeholder="3" /></div>}
               <div><label className={label} htmlFor="o-duration">Length</label><input id="o-duration" className={input} value={form.duration} onChange={set("duration")} placeholder="e.g. 12 weeks" /></div>

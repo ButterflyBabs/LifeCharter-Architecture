@@ -7,16 +7,20 @@ import { Plus, X, Trash2, Settings2, ArrowUp, ArrowDown, AlertCircle, Clock } fr
 import type { Deal, Stage } from "@/lib/sales/pipeline";
 import { STALE_DAYS } from "@/lib/sales/pipeline";
 import { formatMoney } from "@/lib/sales/offers";
+import { formatTotals, otherCurrency, sumByCurrency, type Currency, type Totals } from "@/lib/currency";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 import { ACTIVITY_TYPES, OUTCOMES, typeLabel, outcomeLabel } from "@/lib/salesActivities";
 import SalesNav from "@/components/sales/SalesNav";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 
-type OfferLite = { id: string; name: string; price: number | null; status: string };
+type OfferLite = { id: string; name: string; price: number | null; currency: Currency; status: string };
 type Business = { id: number; name: string };
 type Touch = { id: string; type: string; title: string; contactName: string; outcome: string; occurredOn: string | null; notes: string };
 type DealForm = {
   id: string | null; stageId: string; contactName: string; company: string; email: string; offerId: string; value: string;
   probability: string; useStageDefault: boolean; expectedClose: string; nextStep: string; nextStepDue: string; source: string; notes: string; businessId: string;
+  currency: Currency; savedCurrency: Currency | null;
 };
 
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
@@ -57,6 +61,11 @@ function PipelineBoard() {
   const [touches, setTouches] = useState<{ linked: Touch[]; recent: Touch[] } | null>(null);
   const [touch, setTouch] = useState({ type: "call", title: "", outcome: "", notes: "" });
   const [pendingOpen, setPendingOpen] = useState<Deal | null>(null);
+  const { currency: home, canChoose } = useHomeCurrency();
+  const away = otherCurrency(home);
+  // Money in the deal's own currency; totals show the home currency, with the other kept on its own small line.
+  const money = (n: number | null | undefined, currency: Currency = home) => formatMoney(n, { currency, home });
+  const awayNote = (t: Totals) => ((t[away] ?? 0) !== 0 ? formatTotals({ [away]: t[away] }, home, { cents: false }) : null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/pipeline", { cache: "no-store" });
@@ -80,16 +89,17 @@ function PipelineBoard() {
     setTouch({ type: "call", title: "", outcome: "", notes: "" });
     if (!d) {
       const first = stageId || stages.find((s) => s.kind === "open")?.id || stages[0]?.id || "";
-      setForm({ id: null, stageId: first, contactName: "", company: "", email: "", offerId: "", value: "", probability: "", useStageDefault: true, expectedClose: "", nextStep: "", nextStepDue: "", source: "", notes: "", businessId: currentBiz ? String(currentBiz) : "" });
+      setForm({ id: null, stageId: first, contactName: "", company: "", email: "", offerId: "", value: "", probability: "", useStageDefault: true, expectedClose: "", nextStep: "", nextStepDue: "", source: "", notes: "", businessId: currentBiz ? String(currentBiz) : "", currency: home, savedCurrency: null });
       return;
     }
     setForm({
       id: d.id, stageId: d.stageId, contactName: d.contactName, company: d.company, email: d.email, offerId: d.offerId ?? "",
       value: d.value === null ? "" : String(d.value), probability: d.probability === null ? "" : String(d.probability), useStageDefault: d.probability === null,
       expectedClose: d.expectedClose ?? "", nextStep: d.nextStep, nextStepDue: d.nextStepDue ?? "", source: d.source, notes: d.notes, businessId: d.businessId ? String(d.businessId) : "",
+      currency: d.currency, savedCurrency: d.currency,
     });
     fetch(`/api/pipeline/deals/${d.id}/activities`, { cache: "no-store" }).then((r) => r.json()).then((t) => setTouches({ linked: t.linked ?? [], recent: t.recent ?? [] })).catch(() => {});
-  }, [stages, currentBiz]);
+  }, [stages, currentBiz, home]);
 
   // Deep link from Executive Home / Daily Compass: /sales/pipeline?deal=<id>
   useEffect(() => {
@@ -116,11 +126,12 @@ function PipelineBoard() {
     const open = visible.filter((d) => stageById.get(d.stageId)?.kind === "open");
     const month = today.slice(0, 7);
     const won = visible.filter((d) => stageById.get(d.stageId)?.kind === "won" && (d.closedAt || "").slice(0, 7) === month);
+    // Kept per currency, never added together.
     return {
-      openValue: open.reduce((s, d) => s + (d.value ?? 0), 0),
-      weighted: open.reduce((s, d) => s + d.weightedValue, 0),
+      openValue: sumByCurrency(open, (d) => d.value ?? 0, (d) => d.currency),
+      weighted: sumByCurrency(open, (d) => d.weightedValue, (d) => d.currency),
       openCount: open.length,
-      wonValue: won.reduce((s, d) => s + (d.value ?? 0), 0),
+      wonValue: sumByCurrency(won, (d) => d.value ?? 0, (d) => d.currency),
       wonCount: won.length,
     };
   }, [visible, stageById, today]);
@@ -138,7 +149,10 @@ function PipelineBoard() {
     if (!form) return;
     setBusy(true);
     setError("");
+    // USD/CAD picker: for accounts that can choose, a deal already in the other currency, or one for an offer in it.
+    const showCurrency = canChoose || form.currency !== home || (form.savedCurrency !== null && form.savedCurrency !== home);
     const payload = {
+      ...(showCurrency ? { currency: form.currency } : {}),
       stageId: form.stageId, contactName: form.contactName, company: form.company, email: form.email, offerId: form.offerId || null,
       value: form.value === "" ? null : form.value, probability: form.useStageDefault ? null : form.probability === "" ? null : form.probability,
       expectedClose: form.expectedClose || null, nextStep: form.nextStep, nextStepDue: form.nextStepDue || null, source: form.source, notes: form.notes, businessId: form.businessId || null,
@@ -210,6 +224,7 @@ function PipelineBoard() {
     setForm((f) => (f ? { ...f, contactName: lookupName(c), company: c.company || f.company, email: c.email } : f));
   const set = (k: keyof DealForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm((f) => (f ? { ...f, [k]: e.target.value } : f));
   const formStage = form ? stageById.get(form.stageId) : undefined;
+  const showCurrency = !!form && (canChoose || form.currency !== home || (form.savedCurrency !== null && form.savedCurrency !== home));
   const removedWithDeals = editStages ? stages.filter((s) => !editStages.some((e) => e.id === s.id) && (deals ?? []).some((d) => d.stageId === s.id)) : [];
 
   return (
@@ -235,15 +250,16 @@ function PipelineBoard() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { l: "Open pipeline", v: formatMoney(totals.openValue) || "$0", s: `${totals.openCount} open deal${totals.openCount === 1 ? "" : "s"}` },
-          { l: "Weighted by probability", v: formatMoney(totals.weighted) || "$0", s: "What you can expect to close" },
-          { l: "Won this month", v: formatMoney(totals.wonValue) || "$0", s: `${totals.wonCount} deal${totals.wonCount === 1 ? "" : "s"}` },
-          { l: "Deals to move today", v: String(visible.filter((d) => stageById.get(d.stageId)?.kind === "open" && ((d.nextStepDue && d.nextStepDue <= today) || (d.stageChangedAt < staleCutoff && (!d.nextStepDue || d.nextStepDue < today)))).length), s: "Due, overdue or stuck" },
+          { l: "Open pipeline", v: money(totals.openValue[home] ?? 0), s: `${totals.openCount} open deal${totals.openCount === 1 ? "" : "s"}`, o: awayNote(totals.openValue) },
+          { l: "Weighted by probability", v: money(totals.weighted[home] ?? 0), s: "What you can expect to close", o: awayNote(totals.weighted) },
+          { l: "Won this month", v: money(totals.wonValue[home] ?? 0), s: `${totals.wonCount} deal${totals.wonCount === 1 ? "" : "s"}`, o: awayNote(totals.wonValue) },
+          { l: "Deals to move today", o: null, v: String(visible.filter((d) => stageById.get(d.stageId)?.kind === "open" && ((d.nextStepDue && d.nextStepDue <= today) || (d.stageChangedAt < staleCutoff && (!d.nextStepDue || d.nextStepDue < today)))).length), s: "Due, overdue or stuck" },
         ].map((x) => (
           <div key={x.l} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d]">{x.l}</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{x.v}</p>
             <p className="text-xs text-[#7b6b8d]">{x.s}</p>
+            <OtherCurrencyNote text={x.o} />
           </div>
         ))}
       </div>
@@ -265,7 +281,8 @@ function PipelineBoard() {
           <div className="flex min-w-max gap-4">
             {stages.map((s) => {
               const col = visible.filter((d) => d.stageId === s.id);
-              const colValue = col.reduce((a, d) => a + (d.value ?? 0), 0);
+              const colValue = sumByCurrency(col, (d) => d.value ?? 0, (d) => d.currency);
+              const colAway = awayNote(colValue);
               return (
                 <section
                   key={s.id}
@@ -279,7 +296,7 @@ function PipelineBoard() {
                       <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.name}</h2>
                       <span className="text-xs text-[#7b6b8d]">{col.length}</span>
                     </div>
-                    <p className="text-xs text-[#7b6b8d] tabular-nums">{formatMoney(colValue) || "$0"}{s.kind === "open" ? ` · ${s.probability}% default` : ""}</p>
+                    <p className="text-xs text-[#7b6b8d] tabular-nums">{money(colValue[home] ?? 0)}{colAway ? ` + ${colAway}` : ""}{s.kind === "open" ? ` · ${s.probability}% default` : ""}</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {col.map((d) => {
@@ -299,7 +316,7 @@ function PipelineBoard() {
                             <p className="font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">{d.contactName}</p>
                             {(d.company || offer) && <p className="text-xs text-[#7b6b8d]">{[d.company, offer?.name].filter(Boolean).join(" · ")}</p>}
                             <p className="mt-1.5 text-sm tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">
-                              <span className="font-semibold">{d.value === null ? "No value" : formatMoney(d.value)}</span>
+                              <span className="font-semibold">{d.value === null ? "No value" : money(d.value, d.currency)}</span>
                               {s.kind === "open" && <span className="text-[#7b6b8d]"> · {d.effectiveProbability}%{d.probability === null ? "" : " (yours)"}</span>}
                             </p>
                             {s.kind === "open" && (d.nextStep || d.nextStepDue) && (
@@ -352,14 +369,25 @@ function PipelineBoard() {
                   value={form.offerId}
                   onChange={(e) => {
                     const o = offers.find((x) => x.id === e.target.value);
-                    setForm((f) => (f ? { ...f, offerId: e.target.value, value: f.value === "" && o?.price !== null && o?.price !== undefined ? String(o.price) : f.value } : f));
+                    // A deal for an offer is in the offer's currency.
+                    setForm((f) => (f ? { ...f, offerId: e.target.value, currency: o ? o.currency : f.currency, value: f.value === "" && o?.price !== null && o?.price !== undefined ? String(o.price) : f.value } : f));
                   }}
                 >
                   <option value="">No offer</option>
-                  {offers.filter((o) => o.status !== "retired" || o.id === form.offerId).map((o) => <option key={o.id} value={o.id}>{o.name}{o.price !== null ? ` (${formatMoney(o.price)})` : ""}</option>)}
+                  {offers.filter((o) => o.status !== "retired" || o.id === form.offerId).map((o) => <option key={o.id} value={o.id}>{o.name}{o.price !== null ? ` (${money(o.price, o.currency)})` : ""}</option>)}
                 </select>
               </div>
-              <div><label className={label} htmlFor="d-value">Deal value (USD)</label><input id="d-value" inputMode="decimal" className={input} value={form.value} onChange={set("value")} placeholder="Fills in from the offer" /></div>
+              <div>
+                <label className={label} htmlFor="d-value">Deal value ({form.currency.toUpperCase()})</label>
+                {showCurrency ? (
+                  <div className="flex gap-2">
+                    <input id="d-value" inputMode="decimal" className={input} value={form.value} onChange={set("value")} placeholder="Fills in from the offer" />
+                    <CurrencySelect value={form.currency} onChange={(c) => setForm((f) => (f ? { ...f, currency: c } : f))} aria-label="Deal currency" />
+                  </div>
+                ) : (
+                  <input id="d-value" inputMode="decimal" className={input} value={form.value} onChange={set("value")} placeholder="Fills in from the offer" />
+                )}
+              </div>
               <div>
                 <label className={label} htmlFor="d-prob">Probability of closing</label>
                 {formStage && formStage.kind !== "open" ? (
@@ -379,7 +407,7 @@ function PipelineBoard() {
               </div>
               {form.value !== "" && formStage?.kind === "open" && Number.isFinite(Number(form.value)) && (
                 <p className="sm:col-span-2 -mt-2 text-xs text-[#7b6b8d]">
-                  Weighted value: {formatMoney((Number(form.value) * (form.useStageDefault ? formStage.probability : Number(form.probability) || 0)) / 100)}
+                  Weighted value: {money((Number(form.value) * (form.useStageDefault ? formStage.probability : Number(form.probability) || 0)) / 100, form.currency)}
                 </p>
               )}
               <div className="sm:col-span-2"><label className={label} htmlFor="d-next">Next step</label><input id="d-next" className={input} value={form.nextStep} onChange={set("nextStep")} placeholder="e.g. Send the proposal" /></div>

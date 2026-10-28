@@ -4,6 +4,8 @@ import { DEAL_COLUMNS, ensureStages, shapeDeal } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
 import { ownBusinessId, planBusinesses, salesAccount } from "@/lib/sales/account";
 import { logActivity, q } from "@/lib/activity";
+import { toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,7 @@ export async function GET() {
   const stages = await ensureStages(a.supabase, a.masterPlanId);
   const smap = new Map(stages.map((s) => [s.id, s]));
   let dq = a.supabase.from("pipeline_deals").select(DEAL_COLUMNS).eq("master_plan_id", a.masterPlanId);
-  let oq = a.supabase.from("sales_offers").select("id, name, price, status").eq("master_plan_id", a.masterPlanId);
+  let oq = a.supabase.from("sales_offers").select("id, name, price, currency, status").eq("master_plan_id", a.masterPlanId);
   if (a.businessId) {
     dq = dq.eq("business_id", a.businessId);
     oq = oq.or(`business_id.eq.${a.businessId},business_id.is.null`);
@@ -23,13 +25,14 @@ export async function GET() {
   return NextResponse.json({
     stages,
     deals: ((deals ?? []) as Record<string, unknown>[]).map((r) => shapeDeal(r, smap)),
-    offers: ((offers ?? []) as { id: string; name: string; price: number | string | null; status: string }[]).map((o) => ({ id: o.id, name: o.name, price: o.price === null ? null : Number(o.price), status: o.status })),
+    offers: ((offers ?? []) as { id: string; name: string; price: number | string | null; currency: string | null; status: string }[]).map((o) => ({ id: o.id, name: o.name, price: o.price === null ? null : Number(o.price), currency: toCurrency(o.currency), status: o.status })),
     businesses,
     currentBusinessId: a.businessId,
   });
 }
 
 // POST: add a deal. Value fills in from the chosen offer's price when none is given.
+// Currency: the offer's when the deal is for an offer; else the posted one; else the account's home currency.
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   const a = await salesAccount();
@@ -42,12 +45,14 @@ export async function POST(request: Request) {
   if (!stage) return NextResponse.json({ error: "No pipeline stages." }, { status: 400 });
   const row: Record<string, unknown> = { ...v.row, master_plan_id: a.masterPlanId, stage_id: stage.id };
   if (typeof body.offerId === "string" && body.offerId) {
-    const { data: offer } = await a.supabase.from("sales_offers").select("id, price").eq("id", body.offerId).eq("master_plan_id", a.masterPlanId).maybeSingle();
+    const { data: offer } = await a.supabase.from("sales_offers").select("id, price, currency").eq("id", body.offerId).eq("master_plan_id", a.masterPlanId).maybeSingle();
     if (offer) {
       row.offer_id = offer.id;
+      row.currency = toCurrency(offer.currency);
       if (row.value === undefined || row.value === null) row.value = offer.price;
     }
   }
+  if (!row.currency) row.currency = await homeCurrency(a.masterPlanId);
   row.business_id = "businessId" in body ? await ownBusinessId(a.masterPlanId, body.businessId) : a.businessId;
   if (stage.kind !== "open") row.closed_at = new Date().toISOString();
   const { count } = await a.supabase.from("pipeline_deals").select("id", { count: "exact", head: true }).eq("master_plan_id", a.masterPlanId);

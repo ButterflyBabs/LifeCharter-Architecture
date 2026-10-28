@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { payeeKey, threshold1099 } from "@/lib/finance/receipts";
+import { toCurrency } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 //                      have a W-9 on file, or were paid only by card/PayPal (those payments are reported by the card
 //                      company, not by you)
 //   POST { name, contractor, w9, card, note }  -> save those marks for a payee
+// Currency (task 1520): the 1099 is a US form, so `total` and the threshold check count US-dollar payments only;
+// payments in Canadian dollars are shown apart as `otherTotal` (never added in).
 export async function GET(request: Request) {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
@@ -19,24 +22,28 @@ export async function GET(request: Request) {
   const year = Number.isInteger(y) && y >= 2020 && y <= now ? y : now;
   const db = createServerClient();
   const [{ data: rows }, { data: payees }] = await Promise.all([
-    db.from("finance_entries").select("vendor, amount").eq("master_plan_id", planId).eq("type", "expense").gte("occurred_on", `${year}-01-01`).lt("occurred_on", `${year + 1}-01-01`).limit(20000),
+    db.from("finance_entries").select("vendor, amount, currency").eq("master_plan_id", planId).eq("type", "expense").gte("occurred_on", `${year}-01-01`).lt("occurred_on", `${year + 1}-01-01`).limit(20000),
     db.from("finance_payees").select("vendor_key, name, contractor, w9_on_file, paid_by_card, note").eq("master_plan_id", planId),
   ]);
   const marks = new Map(((payees ?? []) as { vendor_key: string; name: string; contractor: boolean; w9_on_file: boolean; paid_by_card: boolean; note: string | null }[]).map((p) => [p.vendor_key, p]));
-  const totals = new Map<string, { name: string; total: number; count: number }>();
+  const totals = new Map<string, { name: string; total: number; otherTotal: number; count: number }>();
   let unnamed = 0;
+  let unnamedOther = 0;
   let unnamedCount = 0;
-  for (const r of (rows ?? []) as { vendor: string | null; amount: number }[]) {
+  for (const r of (rows ?? []) as { vendor: string | null; amount: number; currency: string | null }[]) {
     const name = (r.vendor || "").trim();
     const amt = Number(r.amount) || 0;
+    const usd = toCurrency(r.currency) === "usd";
     if (!name) {
-      unnamed += amt;
+      if (usd) unnamed += amt;
+      else unnamedOther += amt;
       unnamedCount++;
       continue;
     }
     const k = payeeKey(name);
-    const t = totals.get(k) ?? { name, total: 0, count: 0 };
-    t.total += amt;
+    const t = totals.get(k) ?? { name, total: 0, otherTotal: 0, count: 0 };
+    if (usd) t.total += amt;
+    else t.otherTotal += amt;
     t.count++;
     totals.set(k, t);
   }
@@ -45,10 +52,10 @@ export async function GET(request: Request) {
     .map(([key, t]) => {
       const m = marks.get(key);
       const total = Math.round(t.total * 100) / 100;
-      return { key, name: m?.name || t.name, total, count: t.count, contractor: Boolean(m?.contractor), w9: Boolean(m?.w9_on_file), card: Boolean(m?.paid_by_card), note: m?.note ?? "", needs1099: Boolean(m?.contractor) && !m?.paid_by_card && total >= th.amount };
+      return { key, name: m?.name || t.name, total, otherTotal: Math.round(t.otherTotal * 100) / 100, count: t.count, contractor: Boolean(m?.contractor), w9: Boolean(m?.w9_on_file), card: Boolean(m?.paid_by_card), note: m?.note ?? "", needs1099: Boolean(m?.contractor) && !m?.paid_by_card && total >= th.amount };
     })
     .sort((a, b) => Number(b.needs1099) - Number(a.needs1099) || Number(b.contractor) - Number(a.contractor) || b.total - a.total);
-  return NextResponse.json({ year, threshold: th.amount, thresholdCheck: th.check, payees: list, unnamed: { total: Math.round(unnamed * 100) / 100, count: unnamedCount } }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ year, currency: "usd", otherCurrency: "cad", threshold: th.amount, thresholdCheck: th.check, payees: list, unnamed: { total: Math.round(unnamed * 100) / 100, otherTotal: Math.round(unnamedOther * 100) / 100, count: unnamedCount } }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {

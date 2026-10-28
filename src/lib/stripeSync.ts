@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { connectedCredentials } from "@/lib/stripeConnect";
 import { anySaleCredited, creditSale } from "@/lib/affiliates";
 import { applyRefundForCharge, fallbackRefundId, implementationForPayment, latestRefund, paymentContext, stripeReader } from "@/lib/affiliateStripe";
+import { isCurrency } from "@/lib/currency";
 
 // A client's OWN Stripe account (not the Suite's billing): with a read-only
 // restricted key, their payments, Stripe fees and refunds flow into their
@@ -91,15 +92,19 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
 
   const rows: Record<string, unknown>[] = [];
   for (const t of txns) {
-    const cur = (t.currency || "usd").toUpperCase();
-    const note = cur === "USD" ? "" : ` (${cur})`;
+    // Each row keeps its own currency (task 1520): USD and CAD are filed as such and never added together. Stripe can
+    // settle in other currencies (EUR, GBP...) the Suite doesn't support yet; those are skipped rather than filed as
+    // dollars they aren't. last_sync_created still moves past them, so they aren't retried.
+    const raw = (t.currency || "usd").toLowerCase();
+    if (!isCurrency(raw)) continue;
+    const currency = raw;
     if (t.type === "charge" || t.type === "payment") {
-      rows.push({ master_plan_id: masterPlanId, type: "income", amount: t.amount / 100, category: "Stripe sales", description: (t.description || "Stripe payment") + note, occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}` });
+      rows.push({ master_plan_id: masterPlanId, type: "income", amount: t.amount / 100, currency, category: "Stripe sales", description: t.description || "Stripe payment", occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}` });
     } else if (t.type === "refund" || t.type === "payment_refund") {
-      rows.push({ master_plan_id: masterPlanId, type: "expense", amount: Math.abs(t.amount) / 100, category: "Refunds", description: (t.description || "Stripe refund") + note, occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}` });
+      rows.push({ master_plan_id: masterPlanId, type: "expense", amount: Math.abs(t.amount) / 100, currency, category: "Refunds", description: t.description || "Stripe refund", occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}` });
     }
     if (t.fee > 0 && (t.type === "charge" || t.type === "payment")) {
-      rows.push({ master_plan_id: masterPlanId, type: "expense", amount: t.fee / 100, category: "Payment processing fees", description: "Stripe fees" + note, occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}:fee` });
+      rows.push({ master_plan_id: masterPlanId, type: "expense", amount: t.fee / 100, currency, category: "Payment processing fees", description: "Stripe fees", occurred_on: day(t.created), source: "stripe", external_id: `stripe:${t.id}:fee` });
     }
   }
 
@@ -117,13 +122,15 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
   // (once per payment; a rate that isn't set yet waits in "review"; a link that earns on the implementation fee only
   // credits just that fee). A refund on a credited sale voids it inside the payout hold, or flags it for review.
   // Needs the key to be able to read charges; if it can't, this is skipped quietly.
+  // Only USD charges are credited: affiliate sales, rates and payouts have no currency of their own and are all in
+  // US dollars, so a CAD (or other) charge would be added into USD commission totals. Left for a later pass (task 1520).
   let credited = 0;
   let creditNote: string | null = null;
   let refunded = 0;
   const read = stripeReader(key, account);
   try {
     const out = await stripeGet(key, "/charges", { limit: "100", "created[gte]": String(since) }, account);
-    type Charge = { id: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; payment_intent?: string | null; billing_details?: { email?: string | null } };
+    type Charge = { id: string; currency?: string; paid?: boolean; refunded?: boolean; amount: number; amount_refunded?: number; created: number; description?: string | null; receipt_email?: string | null; payment_intent?: string | null; billing_details?: { email?: string | null } };
     for (const c of ((out.data ?? []) as Charge[]).slice(0, 100)) {
       if (!c.paid) continue;
       // A refunded charge: void or flag its credited sale (safe to repeat).
@@ -136,6 +143,7 @@ export async function syncStripe(masterPlanId: string): Promise<{ added: number;
         }
       }
       if (c.refunded) continue;
+      if ((c.currency || "usd").toLowerCase() !== "usd") continue;
       const email = (c.billing_details?.email || c.receipt_email || "").trim().toLowerCase();
       if (!email) continue;
       const { data: contact } = await db.from("seq_contacts").select("id, referred_by_affiliate_id").eq("master_plan_id", masterPlanId).eq("email", email).maybeSingle();

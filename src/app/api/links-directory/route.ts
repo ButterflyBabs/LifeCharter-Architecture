@@ -14,7 +14,7 @@ export async function GET() {
   const plan = a.planId;
 
   const [offers, forms, calendars, shorts, domain] = await Promise.all([
-    db.from("sales_offers").select("id, name, price, billing, status, link, format").eq("master_plan_id", plan).order("sort_order").order("created_at"),
+    db.from("sales_offers").select("id, name, price, currency, billing, status, link, format").eq("master_plan_id", plan).order("sort_order").order("created_at"),
     db.from("crm_forms").select("id, key, name, active, tags, sequence_key, description").eq("master_plan_id", plan).order("created_at"),
     db.from("booking_calendars").select("id, slug, name, active, duration_min, description").eq("master_plan_id", plan).order("created_at"),
     db.from("short_links").select("code, title, destination_url, active, click_count").eq("master_plan_id", plan).order("created_at", { ascending: false }).limit(300),

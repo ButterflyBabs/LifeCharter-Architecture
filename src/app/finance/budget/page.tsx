@@ -5,6 +5,7 @@ import { CategoryInput } from "@/components/finance/CategoryInput";
 import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { useMoney } from "@/components/finance/money";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -28,8 +29,6 @@ interface CatRow {
   ytdActual: number;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const tz = () =>
   (typeof window !== "undefined" &&
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
@@ -37,6 +36,9 @@ const tz = () =>
 
 export default function BudgetPlannerPage() {
   const { overview, reload: reloadOverview } = useFinanceOverview();
+  // Budgets and goals have no currency of their own: they are the home currency, as are the actuals beside them.
+  const { money } = useMoney();
+  const usd = (n: number) => money(n);
   const [expense, setExpense] = useState<Side | null>(null);
   const [income, setIncome] = useState<Side | null>(null);
   const [cats, setCats] = useState<CatRow[]>([]);

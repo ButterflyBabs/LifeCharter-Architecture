@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { fetchSegmentOptions, type SegmentOption } from "@/app/finance/segments";
 import { CADENCE_LABEL } from "@/lib/finance/billDates";
+import { CurrencySelect } from "@/components/money/CurrencySelect";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import type { Currency } from "@/lib/currency";
 
 const FREQS = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
 
@@ -40,6 +43,8 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const { currency: home, canChoose } = useHomeCurrency();
+  const [currency, setCurrency] = useState<Currency | null>(null);
 
   useEffect(() => {
     fetchSegmentOptions().then(setSegments).catch(() => {});
@@ -67,6 +72,7 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
           occurredOn: date || undefined,
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
+          currency: currency ?? home,
           ...(type === "expense" ? { paymentType, ...(paymentType === "recurring" ? { frequency, renewal } : {}) } : {}),
         }),
       });
@@ -103,7 +109,10 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-xs font-medium text-gray-500">Amount
-            <input type="number" min="0" step="0.01" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()} placeholder="0.00" className={`${input} mt-1`} />
+            <div className="mt-1 flex gap-2">
+              <input type="number" min="0" step="0.01" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()} placeholder="0.00" className={input} />
+              {canChoose && <CurrencySelect value={currency ?? home} onChange={setCurrency} className="h-10 rounded-lg border border-[#1a2b4a]/20 bg-white px-2 text-sm text-[#1a2b4a]" />}
+            </div>
           </label>
           <label className="block text-xs font-medium text-gray-500">Date
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`${input} mt-1`} />

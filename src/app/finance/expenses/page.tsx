@@ -14,6 +14,9 @@ import { MoneyInput } from "@/components/finance/MoneyInput";
 import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+import { toCurrency, type Currency } from "@/lib/currency";
 import { ExpenseDetails, recurringBadge, type Frequency, type PaymentType, type Renewal } from "@/components/finance/ExpenseDetails";
 
 interface Entry {
@@ -28,6 +31,7 @@ interface Entry {
   frequency?: string | null;
   renewal?: string | null;
   hasReceipt?: boolean;
+  currency?: string;
 }
 interface CatBudget {
   category: string;
@@ -36,8 +40,6 @@ interface CatBudget {
   ytdActual: number;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const tz = () =>
   (typeof window !== "undefined" &&
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
@@ -49,7 +51,12 @@ export default function ExpensesPage() {
   const [ytd, setYtd] = useState(0);
   const [budget, setBudget] = useState(0);
   const [catBudgets, setCatBudgets] = useState<CatBudget[]>([]);
+  const [other, setOther] = useState<OtherBlock>(null);
   const [loaded, setLoaded] = useState(false);
+  // Totals and budgets are the home currency; each entry shows in its own.
+  const { home, canChoose, money } = useMoney();
+  const usd = (n: number, c: string = home) => money(n, c);
+  const [currency, setCurrency] = useState<Currency | null>(null);
 
   const { overview, reload: reloadOverview } = useFinanceOverview();
   const [showAdd, setShowAdd] = useState(false);
@@ -85,6 +92,7 @@ export default function ExpensesPage() {
       setYtd(d.ytd?.expense ?? 0);
       setBudget(d.budgetSummary?.expense?.mtdBudget ?? 0);
       setCatBudgets(Array.isArray(d.budgetSummary?.byCategory) ? d.budgetSummary.byCategory : []);
+      setOther(d.other ?? null);
     } catch {
       /* ignore */
     } finally {
@@ -120,6 +128,7 @@ export default function ExpensesPage() {
           frequency: paymentType === "recurring" ? frequency : undefined,
           renewal: paymentType === "recurring" ? renewal : undefined,
           receiptId: receiptId || undefined,
+          currency: currency ?? home,
         }),
       });
       if (!res.ok) {
@@ -135,6 +144,7 @@ export default function ExpensesPage() {
         setPaymentType("one_time");
         setReceiptId(null);
         setReadNote(null);
+        setCurrency(null);
         forgetCategories();
         const saved = await res.json().catch(() => ({}));
         setBillMatch(saved?.billMatch && saved?.entry?.id ? { match: saved.billMatch, entryId: saved.entry.id } : null);
@@ -227,7 +237,10 @@ export default function ExpensesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
+                <div className="flex gap-2">
+                  <MoneyInput className="flex-1" value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" currency={currency ?? home} home={home} />
+                  {canChoose && <CurrencySelect value={currency ?? home} onChange={setCurrency} />}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
@@ -295,10 +308,12 @@ export default function ExpensesPage() {
               of {usd(budget)} budget{overBudget ? ` · ${usd(mtd - budget)} over` : ""}
             </p>
           )}
+          <OtherCurrencyNote text={otherText(other, home, "mtd.expense")} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Year to date</p>
           <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(ytd)}</p>
+          <OtherCurrencyNote text={otherText(other, home, "ytd.expense")} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Entries (this year)</p>
@@ -373,7 +388,7 @@ export default function ExpensesPage() {
                           <FileText className="w-4 h-4" />
                         </a>
                       )}
-                      <span className="text-sm font-semibold text-[#b06a5a]">−{usd(e.amount)}</span>
+                      <span className="text-sm font-semibold text-[#b06a5a]">−{usd(e.amount, toCurrency(e.currency, home))}</span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>

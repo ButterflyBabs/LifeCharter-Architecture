@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { planBusinessIds } from "@/lib/planScope";
+import { formatMoney, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Finds a client's own activity that isn't tied to any segment yet, so their
 // assistant can propose where it belongs. Everything is scoped to one client's
@@ -18,7 +20,6 @@ export interface SegmentInfo { id: number; name: string; business: string; descr
 
 const LIMITS = { ledger: 45, task: 30, goal: 15, sales: 30 };
 const norm = (s: string | null | undefined) => (s || "").toLowerCase().replace(/\s+/g, " ").replace(/\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?/g, "").trim();
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
 export async function loadSegments(planId: string): Promise<SegmentInfo[]> {
   const bizIds = await planBusinessIds(planId);
@@ -62,14 +63,16 @@ export async function collectUntagged(planId: string): Promise<Untagged[]> {
   let n = 0;
   const ref = (p: string) => `${p}${++n}`;
 
-  // Ledger: group repeats.
+  // Ledger: group repeats (per currency, so a group's total never mixes USD and CAD).
+  const home = await homeCurrency(planId, db);
   const { data: led } = await db
-    .from("finance_entries").select("id, type, amount, category, description, occurred_on")
+    .from("finance_entries").select("id, type, amount, category, description, occurred_on, currency")
     .eq("master_plan_id", planId).is("segment_id", null).gte("occurred_on", yearAgo).order("occurred_on", { ascending: false }).limit(1500);
-  const groups = new Map<string, { type: string; category: string; description: string; total: number; ids: string[]; latest: string }>();
-  for (const e of (led ?? []) as { id: string; type: string; amount: number | string | null; category: string | null; description: string | null; occurred_on: string }[]) {
-    const key = `${e.type}|${norm(e.category)}|${norm(e.description)}`;
-    const g = groups.get(key) ?? { type: e.type, category: e.category || "", description: e.description || "", total: 0, ids: [], latest: e.occurred_on };
+  const groups = new Map<string, { type: string; category: string; description: string; currency: Currency; total: number; ids: string[]; latest: string }>();
+  for (const e of (led ?? []) as { id: string; type: string; amount: number | string | null; category: string | null; description: string | null; occurred_on: string; currency: string | null }[]) {
+    const currency = toCurrency(e.currency);
+    const key = `${e.type}|${norm(e.category)}|${norm(e.description)}|${currency}`;
+    const g = groups.get(key) ?? { type: e.type, category: e.category || "", description: e.description || "", currency, total: 0, ids: [], latest: e.occurred_on };
     g.total += Number(e.amount ?? 0);
     g.ids.push(e.id);
     groups.set(key, g);
@@ -81,7 +84,7 @@ export async function collectUntagged(planId: string): Promise<Untagged[]> {
       out.push({
         ref: ref("L"), kind: "ledger",
         label: `${g.type === "income" ? "Income" : "Expense"}: ${g.description || g.category || "(no description)"}`,
-        detail: `${g.category ? `${g.category} · ` : ""}${g.ids.length} entr${g.ids.length === 1 ? "y" : "ies"}, ${usd(g.total)} total, latest ${g.latest}`,
+        detail: `${g.category ? `${g.category} · ` : ""}${g.ids.length} entr${g.ids.length === 1 ? "y" : "ies"}, ${formatMoney(Math.round(g.total), g.currency, { home, cents: false })} total, latest ${g.latest}`,
         ids: g.ids,
       });
     });

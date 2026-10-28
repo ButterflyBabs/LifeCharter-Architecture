@@ -4,12 +4,13 @@ import { COLLECTIVE_LANDING_URL, collectiveUrl } from "@/lib/collective";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, Search } from "lucide-react";
 import { shortUrlFor } from "@/lib/shortLinks";
+import { formatMoney } from "@/lib/currency";
 
 const APP = "https://lccommandsuite.com";
 const SITE = "https://www.amilynnecarroll.com";
 
 interface Row { name: string; url: string; note?: string; status?: string }
-interface Offer { id: string; name: string; price: string | number | null; billing: string | null; status: string | null; link: string | null; format: string | null }
+interface Offer { id: string; name: string; price: string | number | null; currency?: string | null; billing: string | null; status: string | null; link: string | null; format: string | null }
 interface Form { id: string; key: string; name: string; active: boolean; tags: string[] | null; sequence_key: string | null; description: string | null }
 interface Calendar { id: string; slug: string; name: string; active: boolean; duration_min: number | null; description: string | null }
 interface Short { code: string; title: string | null; destination_url: string; active: boolean; click_count: number | null }
@@ -68,9 +69,9 @@ const LEGAL: Row[] = [
   { name: "LC Fledge: Data deletion", url: "https://fledge.lccommandsuite.com/legal/data-deletion" },
 ];
 
-const money = (p: string | number | null, b: string | null) => {
+const money = (p: string | number | null, b: string | null, c?: string | null) => {
   const n = Number(p);
-  const amt = Number.isFinite(n) ? `$${n.toLocaleString(undefined, { minimumFractionDigits: n % 1 ? 2 : 0 })}` : "";
+  const amt = p !== null && Number.isFinite(n) ? formatMoney(n, c || "usd") : "";
   const per = b === "monthly" ? "/month" : b === "payment_plan" ? " (payment plan)" : "";
   return amt ? amt + per : "";
 };
@@ -159,7 +160,7 @@ export default function LinksDirectory() {
     () =>
       (data?.offers ?? [])
         .filter((o) => (o.link || "").trim())
-        .map((o) => ({ name: o.name, url: (o.link as string).trim(), note: [money(o.price, o.billing), o.format].filter(Boolean).join(" · "), status: o.status && o.status !== "active" ? o.status : undefined })),
+        .map((o) => ({ name: o.name, url: (o.link as string).trim(), note: [money(o.price, o.billing, o.currency), o.format].filter(Boolean).join(" · "), status: o.status && o.status !== "active" ? o.status : undefined })),
     [data]
   );
   const offersWithoutLink = (data?.offers ?? []).filter((o) => !(o.link || "").trim());

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { formatMoney } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 
 export interface BillMatch {
   id: string;
   name: string;
   nextDue: string;
   amount: number | null;
+  currency?: string;
 }
 
 const niceDate = (iso: string) => {
@@ -21,6 +24,7 @@ const niceDate = (iso: string) => {
 export function BillMatchPrompt({ match, entryId, onClose }: { match: BillMatch; entryId: string; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState("");
+  const { currency: home } = useHomeCurrency();
 
   async function link() {
     setBusy(true);
@@ -48,7 +52,7 @@ export function BillMatchPrompt({ match, entryId, onClose }: { match: BillMatch;
         <>
           <p>
             This looks like your <strong>{match.name}</strong> bill due {niceDate(match.nextDue)}
-            {match.amount ? ` (about $${Math.round(match.amount).toLocaleString("en-US")})` : ""}. Link them so it isn&apos;t counted twice and the bill moves to its next date?
+            {match.amount ? ` (about ${formatMoney(Math.round(match.amount), match.currency || home, { home, cents: false })})` : ""}. Link them so it isn&apos;t counted twice and the bill moves to its next date?
           </p>
           <div className="mt-2 flex gap-2">
             <button onClick={link} disabled={busy} className="rounded-lg bg-[#1a2b4a] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60">

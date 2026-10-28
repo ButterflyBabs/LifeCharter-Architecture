@@ -7,6 +7,8 @@ import { moveDeal } from "@/lib/booking/deals";
 import { syncStripe } from "@/lib/stripeSync";
 import { invoiceSubscriptionId } from "@/lib/stripeShapes";
 import { HOLD_MINUTES, confirmPaidBooking, fmt, releaseHold } from "@/lib/booking/engine";
+import { formatCents, isCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Get paid inside the Suite, step b (task 1146): invoices from a contact, invoice payment plans, and automatic posting.
 // Step c: paid and deposit booking (bookingCheckout + the booking branch of the webhook).
@@ -24,7 +26,8 @@ type Db = ReturnType<typeof createServerClient>;
 
 export const MAX_PAYMENTS = 24;
 
-const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+/** Cents in their own currency, always with cents ("$1,200.00", "CA$300.00" on a USD account). */
+const money = (cents: number, currency: string = "usd", home: Currency = "usd") => formatCents(cents, currency, { home, cents: true });
 
 /** A total split into N monthly payments: each payment is the total / N rounded to the cent (the total follows). */
 export function splitPlan(totalCents: number, count: number): { per: number; total: number } {
@@ -33,7 +36,18 @@ export function splitPlan(totalCents: number, count: number): { per: number; tot
   return { per, total: per * n };
 }
 
-export interface InvoiceInput { email: string; name?: string | null; description: string; amount: number; paymentCount?: number; daysUntilDue?: number }
+export interface InvoiceInput {
+  email: string;
+  name?: string | null;
+  description: string;
+  amount: number;
+  paymentCount?: number;
+  daysUntilDue?: number;
+  /** The invoice's currency (task 1520); the account's home currency when not given. */
+  currency?: Currency;
+  /** The account's home currency, only for how the note shows amounts. */
+  home?: Currency;
+}
 
 /** What an invoice would bill, or why it can't be sent. */
 export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: number; per: number; days: number; note: string } | { ok: false; reason: string } {
@@ -47,8 +61,11 @@ export function invoicePlan(i: InvoiceInput): { ok: true; cents: number; count: 
   if (days < 1 || days > 90) return { ok: false, reason: "Due within 1 to 90 days." };
   const cents = Math.round(Number(i.amount) * 100);
   const { per, total } = splitPlan(cents, count);
-  if (per < 50) return { ok: false, reason: "Stripe's smallest charge is $0.50 per payment." };
-  const note = count === 1 ? `${money(cents)}, due in ${days} day${days === 1 ? "" : "s"}` : `${count} monthly payments of ${money(per)} (${money(total)} in all), each due ${days} day${days === 1 ? "" : "s"} after it is sent`;
+  const home = i.home ?? "usd";
+  const cur = toCurrency(i.currency, home);
+  if (per < 50) return { ok: false, reason: `Stripe's smallest charge is ${money(50, cur, home)} per payment.` };
+  const m = (c: number) => money(c, cur, home);
+  const note = count === 1 ? `${m(cents)}, due in ${days} day${days === 1 ? "" : "s"}` : `${count} monthly payments of ${m(per)} (${m(total)} in all), each due ${days} day${days === 1 ? "" : "s"} after it is sent`;
   return { ok: true, cents: count === 1 ? cents : total, count, per, days, note };
 }
 
@@ -74,7 +91,9 @@ export interface InvoiceOpts { contactId?: string | null; offerId?: string | nul
 
 /** Send an invoice (or start an invoice payment plan) from the client's own Stripe account. Stripe emails it. */
 export async function createInvoice(db: Db, planId: string, c: Connection, i: InvoiceInput, o: InvoiceOpts = {}) {
-  const plan = invoicePlan(i);
+  const home = await homeCurrency(planId, db);
+  const currency: Currency = isCurrency(i.currency) ? toCurrency(i.currency) : home;
+  const plan = invoicePlan({ ...i, currency, home });
   if (!plan.ok) throw new Error(plan.reason);
   const email = i.email.trim().toLowerCase();
   const description = i.description.trim().slice(0, 500);
@@ -84,7 +103,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
 
   const { data: row, error } = await db
     .from("suite_invoices")
-    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open" })
+    .insert({ master_plan_id: planId, contact_id: o.contactId ?? null, offer_id: o.offerId ?? null, stripe_account: c.accountId, livemode: c.livemode, stripe_customer_id: customer, email, name: i.name || null, description, amount: plan.cents / 100, currency, payment_count: plan.count, days_until_due: plan.days, status: plan.count > 1 ? "plan_active" : "open" })
     .select("id")
     .single();
   if (error || !row) throw new Error(`save invoice: ${error?.message}`);
@@ -93,7 +112,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
   try {
     if (plan.count === 1) {
       const inv = await s.invoices.create({ customer, collection_method: "send_invoice", days_until_due: plan.days, auto_advance: true, description, metadata: meta }, opts);
-      await s.invoiceItems.create({ customer, invoice: inv.id, currency: "usd", amount: plan.cents, description }, opts);
+      await s.invoiceItems.create({ customer, invoice: inv.id, currency, amount: plan.cents, description }, opts);
       const fin = await s.invoices.finalizeInvoice(inv.id!, {}, opts);
       const sent = await s.invoices.sendInvoice(fin.id!, {}, opts).catch(() => fin); // test mode may not email; the link still works
       await db
@@ -111,7 +130,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
           metadata: meta,
           phases: [
             {
-              items: [{ price_data: { currency: "usd", product: product.id, unit_amount: plan.per, recurring: { interval: "month" } } }],
+              items: [{ price_data: { currency, product: product.id, unit_amount: plan.per, recurring: { interval: "month" } } }],
               duration: { interval: "month", interval_count: plan.count },
               collection_method: "send_invoice",
               invoice_settings: { days_until_due: plan.days },
@@ -146,7 +165,7 @@ export async function createInvoice(db: Db, planId: string, c: Connection, i: In
   return data;
 }
 
-export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at";
+export const INVOICE_COLUMNS = "id, contact_id, offer_id, livemode, number, email, name, description, amount, currency, payment_count, payments_made, status, hosted_url, pdf_url, due_date, paid_at, created_at";
 
 /** Void an unpaid invoice, or stop an invoice payment plan (payments already made stay paid). */
 export async function cancelInvoice(db: Db, planId: string, id: string): Promise<boolean> {
@@ -170,8 +189,8 @@ export async function cancelInvoice(db: Db, planId: string, id: string): Promise
 
 const SITE = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 
-/** Stripe Checkout for a held booking, on the account owner's own Stripe. The webhook confirms the booking. */
-export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean }): Promise<string> {
+/** Stripe Checkout for a held booking, on the account owner's own Stripe, in the booking calendar's currency. The webhook confirms the booking. */
+export async function bookingCheckout(c: Connection, b: { bookingId: string; planId: string; slug: string; calName: string; startISO: string; tz: string; email: string; token: string; cents: number; deposit: boolean; currency: Currency }): Promise<string> {
   const s = platform();
   const meta = { lccs_booking_id: b.bookingId, lccs_plan_id: b.planId };
   const session = await s.checkout.sessions.create(
@@ -179,7 +198,7 @@ export async function bookingCheckout(c: Connection, b: { bookingId: string; pla
       mode: "payment",
       customer_email: b.email,
       customer_creation: "always",
-      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } } }],
+      line_items: [{ quantity: 1, price_data: { currency: toCurrency(b.currency), unit_amount: b.cents, product_data: { name: `${b.calName}${b.deposit ? " (deposit)" : ""}`.slice(0, 250), description: fmt(b.startISO, b.tz).slice(0, 300) } } }],
       metadata: meta,
       payment_intent_data: { metadata: meta, description: `${b.calName}${b.deposit ? " deposit" : ""}` },
       expires_at: Math.floor(Date.now() / 1000) + HOLD_MINUTES * 60 + 60,
@@ -263,6 +282,8 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
     const { data: inv } = await db.from("suite_invoices").select("contact_id").eq("id", p.invoiceId).maybeSingle();
     contactId = (inv?.contact_id as string) ?? null;
   }
+  // Kept exactly as Stripe reports it (lowercase); never converted.
+  p.currency = (p.currency || (await homeCurrency(p.planId, db))).toLowerCase();
   const { error } = await db.from("suite_payments").insert({
     master_plan_id: p.planId,
     stripe_account: p.account,
@@ -290,7 +311,7 @@ export async function postPayment(db: Db, p: Paid): Promise<"posted" | "seen"> {
     if (c) {
       contactId = contactId ?? c.id;
       await db.from("suite_payments").update({ contact_id: contactId }).eq("stripe_account", p.account).eq("stripe_ref", p.ref);
-      await logEvent(p.planId, contactId, "purchase", `Paid ${money(p.cents)}${offerName ? ` for ${offerName}` : p.description ? ` for ${p.description}` : ""}${p.livemode ? "" : " (test)"}`, { suitePayment: p.ref, kind: p.kind }, db).catch(() => {});
+      await logEvent(p.planId, contactId, "purchase", `Paid ${money(p.cents, p.currency, await homeCurrency(p.planId, db))}${offerName ? ` for ${offerName}` : p.description ? ` for ${p.description}` : ""}${p.livemode ? "" : " (test)"}`, { suitePayment: p.ref, kind: p.kind }, db).catch(() => {});
     }
     await winDeals(db, p.planId, p.email, p.offerId).catch((e) => console.error("win deals:", e));
     // Programs sold through this offer: the buyer joins them (and gets their portal link).
@@ -321,13 +342,13 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
       if (cs.mode !== "payment" || cs.payment_status !== "paid") return "not a paid one-time checkout"; // subscriptions post on invoice.paid
       const bookingId = meta(cs.metadata).lccs_booking_id;
       if (bookingId) {
-        const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id").eq("id", bookingId).maybeSingle();
+        const { data: bk } = await db.from("bookings").select("id, master_plan_id, start_at, calendar_id, currency").eq("id", bookingId).maybeSingle();
         if (!bk || bk.master_plan_id !== planId) return "booking not in this account";
         const confirmed = await confirmPaidBooking(bookingId, cs.amount_total ?? 0, cs.id);
         const { data: cal } = await db.from("booking_calendars").select("name, pay_mode").eq("id", bk.calendar_id).maybeSingle();
         const r = await postPayment(db, {
           planId, account, livemode: event.livemode, ref: cs.id, kind: "booking",
-          cents: cs.amount_total ?? 0, currency: cs.currency || "usd",
+          cents: cs.amount_total ?? 0, currency: cs.currency || toCurrency(bk.currency, await homeCurrency(planId, db)),
           email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
           offerId: null, invoiceId: null, description: `${cal?.name ?? "Booking"}${cal?.pay_mode === "deposit" ? " (deposit)" : ""}, ${new Date(bk.start_at as string).toISOString().slice(0, 10)}`,
           chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
@@ -342,7 +363,7 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
       }
       const r = await postPayment(db, {
         planId, account, livemode: event.livemode, ref: cs.id, kind: "link",
-        cents: cs.amount_total ?? 0, currency: cs.currency || "usd",
+        cents: cs.amount_total ?? 0, currency: cs.currency || (await homeCurrency(planId, db)),
         email: (cs.customer_details?.email || cs.customer_email || "").toLowerCase() || null, name: cs.customer_details?.name || null,
         offerId, invoiceId: null, description: "", chargeId: await chargeOfPaymentIntent(s, account, cs.payment_intent),
       });
@@ -379,17 +400,19 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
 
       let kind: Paid["kind"] = "subscription";
       let description = inv.description || inv.lines?.data?.[0]?.description || "";
+      let invoiceCurrency: string | null = null;
       if (suiteInvoiceId) {
-        const { data: row } = await db.from("suite_invoices").select("id, payment_count, payments_made, description").eq("id", suiteInvoiceId).eq("master_plan_id", planId).maybeSingle();
+        const { data: row } = await db.from("suite_invoices").select("id, payment_count, payments_made, description, currency").eq("id", suiteInvoiceId).eq("master_plan_id", planId).maybeSingle();
         if (!row) return "invoice not in this account";
         kind = (row.payment_count as number) > 1 ? "plan" : "invoice";
         description = row.description as string;
+        invoiceCurrency = toCurrency(row.currency);
       } else if (Number(m.lccs_plan_payments) > 1) {
         kind = "plan";
       }
       const r = await postPayment(db, {
         planId, account, livemode: event.livemode, ref: inv.id!, kind,
-        cents: inv.amount_paid, currency: inv.currency || "usd",
+        cents: inv.amount_paid, currency: inv.currency || invoiceCurrency || (await homeCurrency(planId, db)),
         email: (inv.customer_email || "").toLowerCase() || null, name: inv.customer_name || null,
         offerId, invoiceId: suiteInvoiceId, description, chargeId: await chargeOfInvoice(s, account, inv.id!),
       });
@@ -464,10 +487,10 @@ export async function handleConnectEvent(db: Db, event: Stripe.Event): Promise<s
 
     case "charge.refunded": {
       const ch = event.data.object as Stripe.Charge;
-      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
+      const { data: pay } = await db.from("suite_payments").select("id, contact_id, amount, currency").eq("stripe_account", account).eq("stripe_charge_id", ch.id).maybeSingle();
       if (pay) {
         await db.from("suite_payments").update({ refunded: (ch.amount_refunded ?? 0) / 100 }).eq("id", pay.id);
-        if (pay.contact_id) await logEvent(planId, pay.contact_id as string, "purchase", `Refunded ${money(ch.amount_refunded ?? 0)}${event.livemode ? "" : " (test)"}`, { charge: ch.id }, db).catch(() => {});
+        if (pay.contact_id) await logEvent(planId, pay.contact_id as string, "purchase", `Refunded ${money(ch.amount_refunded ?? 0, ch.currency || (pay.currency as string), await homeCurrency(planId, db))}${event.livemode ? "" : " (test)"}`, { charge: ch.id }, db).catch(() => {});
       }
       await syncStripe(planId).catch(() => null); // the refund (and any affiliate credit it voids) reaches the books
       return pay ? "refund recorded" : "refund (no payment row)";

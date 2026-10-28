@@ -3,6 +3,8 @@ import { createBoard, boardStages, createCard, moveCard, retagContact, slugTag, 
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { ensureStages } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
+import { CURRENCIES, formatMoney, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const MAX_CARDS = 200;
@@ -271,19 +273,22 @@ export const addDeal: ActionTool = {
       company: { type: "string" },
       email: { type: "string" },
       value: { type: "number", description: "Dollar value." },
+      currency: { type: "string", enum: CURRENCIES, description: "usd or cad. Leave out for the account's home currency." },
       stage: { type: "string", description: "Sales Pipeline stage name. Defaults to the first open stage." },
       next_step: { type: "string" },
       next_step_due: { type: "string", description: "YYYY-MM-DD" },
     },
     required: ["contact_name"],
   },
-  plan: async (args) => {
+  plan: async (args, ctx) => {
     const v = dealRow(dealBody(args), { partial: false });
     if ("error" in v) return { error: v.error };
+    const home = await homeCurrency(ctx.planId, ctx.db);
+    const cur = toCurrency(v.row.currency, home);
     return {
       preview: {
         title: `Add a deal with ${str(args.contact_name, 160)}${str(args.company, 160) ? ` (${str(args.company, 160)})` : ""}`,
-        lines: [...(args.value ? [`Value: $${Number(args.value).toLocaleString("en-US")}`] : []), ...(str(args.stage, 60) ? [`Stage: ${str(args.stage, 60)}`] : []), ...(str(args.next_step, 300) ? [`Next step: ${str(args.next_step, 300)}`] : [])],
+        lines: [...(args.value ? [`Value: ${formatMoney(Number(args.value), cur, { home })}${cur !== home ? ` (${cur.toUpperCase()})` : ""}`] : []), ...(str(args.stage, 60) ? [`Stage: ${str(args.stage, 60)}`] : []), ...(str(args.next_step, 300) ? [`Next step: ${str(args.next_step, 300)}`] : [])],
       },
     };
   },
@@ -295,6 +300,7 @@ export const addDeal: ActionTool = {
     const stage = (name && stages.find((s) => s.name.toLowerCase().includes(name))) || stages.find((s) => s.kind === "open") || stages[0];
     if (!stage) throw new Error("No pipeline stages.");
     const row: Record<string, unknown> = { ...v.row, master_plan_id: ctx.planId, stage_id: stage.id };
+    if (!row.currency) row.currency = await homeCurrency(ctx.planId, ctx.db);
     if (stage.kind !== "open") row.closed_at = new Date().toISOString();
     const { data, error } = await ctx.db.from("pipeline_deals").insert(row).select("id").single();
     if (error || !data) throw new Error("The deal didn't save.");
@@ -311,6 +317,7 @@ const dealBody = (a: Record<string, unknown>) => ({
   company: a.company,
   email: a.email,
   value: a.value ?? undefined,
+  ...(a.currency ? { currency: a.currency } : {}),
   nextStep: a.next_step,
   nextStepDue: a.next_step_due,
 });

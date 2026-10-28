@@ -3,6 +3,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { planningAssistant, planningSystem, runJson } from "@/lib/ai/planningAi";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { formatMoney } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
+import { inHome } from "@/lib/finance/money";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +24,18 @@ export async function POST(request: Request) {
   const since = new Date();
   since.setUTCMonth(since.getUTCMonth() - 3);
   since.setUTCDate(1);
-  const { data } = await createServerClient()
+  const db = createServerClient();
+  // Budgets are in the home currency, so only home-currency spending shapes them (task 1520).
+  const home = await homeCurrency(a.planId, db);
+  const { data } = await db
     .from("finance_entries")
-    .select("category, amount")
+    .select("category, amount, currency")
     .eq("master_plan_id", a.planId)
     .eq("type", "expense")
     .gte("occurred_on", since.toISOString().slice(0, 10));
   const spent: Record<string, number> = {};
-  for (const r of (data ?? []) as { category: string | null; amount: number | string | null }[]) {
+  for (const r of (data ?? []) as { category: string | null; amount: number | string | null; currency: string | null }[]) {
+    if (!inHome(r, home)) continue;
     const c = (r.category || "Uncategorized").trim() || "Uncategorized";
     spent[c] = (spent[c] ?? 0) + Number(r.amount ?? 0);
   }
@@ -40,10 +47,10 @@ export async function POST(request: Request) {
     a,
     "a practical financial advisor proposing this client's monthly expense budget.",
     "Propose a monthly budget for each category listed, starting from their real average spend and adjusting for their plans, forecast and income goal above (trim what's high relative to income; protect what supports their plans). " +
-      'Return STRICT JSON: {"budget":[{"category":"exact category name","amount":<whole dollars per month>,"note":"one short reason"}],"summary":"1-2 sentences on the approach"}. ' +
+      `Return STRICT JSON: {"budget":[{"category":"exact category name","amount":<whole ${home.toUpperCase()} dollars per month>,"note":"one short reason"}],"summary":"1-2 sentences on the approach"}. ` +
       "Use ONLY the categories given, with their exact names."
   );
-  const out = await runJson(a, system, `Average monthly spend over the last 3 months:\n${cats.map(([c, v]) => `- ${c}: $${avg(v)}`).join("\n")}`, 900, 0.3);
+  const out = await runJson(a, system, `Average monthly spend over the last 3 months:\n${cats.map(([c, v]) => `- ${c}: ${formatMoney(avg(v), home, { home, cents: false })}`).join("\n")}`, 900, 0.3);
   if (!out) return NextResponse.json({ error: "Couldn't suggest a budget — try again." }, { status: 502 });
 
   const known = new Map(cats.map(([c]) => [c.toLowerCase(), c]));

@@ -11,6 +11,8 @@ import { PAYMENTS_OPEN_TO_ALL } from "@/lib/paymentsFlag";
 import { isAlignmentArchitect } from "@/lib/authz";
 import { getConnection } from "@/lib/stripeConnect";
 import { countAttendedSession } from "@/lib/portal";
+import { isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Paid booking shows only where "get paid inside the Suite" is open (Babs only until PAYMENTS_OPEN_TO_ALL).
 const paymentsOpen = async () => PAYMENTS_OPEN_TO_ALL || (await isAlignmentArchitect().catch(() => false));
@@ -143,7 +145,7 @@ export async function POST(request: Request) {
       const slug = (str(b.slug, 60) || name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       if (!name || !slug) return NextResponse.json({ error: "Give the calendar a name." }, { status: 400 });
       // A client's calendar starts as "somewhere else" (Zoom is Babs's account only).
-      const { data, error } = await db.from("booking_calendars").insert({ master_plan_id: a.planId, name, slug, tags: [slug], ...(a.house ? {} : { location: "custom" }) }).select("id").single();
+      const { data, error } = await db.from("booking_calendars").insert({ master_plan_id: a.planId, name, slug, tags: [slug], currency: await homeCurrency(a.planId, db), ...(a.house ? {} : { location: "custom" }) }).select("id").single();
       if (error) return NextResponse.json({ error: error.code === "23505" ? "That link is already taken. Try another." : "Couldn't create it." }, { status: 400 });
       return NextResponse.json({ id: data.id });
     }
@@ -201,6 +203,8 @@ export async function POST(request: Request) {
         if (mode === "deposit" && price && deposit && deposit > price) return NextResponse.json({ error: "The deposit can't be more than the price." }, { status: 400 });
         if (mode !== "none" && !(await getConnection(db, a.planId))) return NextResponse.json({ error: "Connect your Stripe account first (Settings › Integrations)." }, { status: 400 });
         Object.assign(p, { pay_mode: mode, price, deposit });
+        // The price and deposit are in the calendar's own currency (task 1520); changed only when posted.
+        if (isCurrency(b.currency)) p.currency = toCurrency(b.currency);
       }
       if (typeof b.active === "boolean") p.active = b.active;
       const { error } = await db.from("booking_calendars").update(p).eq("id", cal.id).eq("master_plan_id", a.planId);

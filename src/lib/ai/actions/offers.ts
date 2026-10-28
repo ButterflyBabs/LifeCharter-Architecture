@@ -1,12 +1,15 @@
 import type { ActionTool } from "./types";
 import { OFFER_BILLING, OFFER_FORMATS, OFFER_STATUSES, offerPriceLabel, offerRow, shapeOffer, OFFER_COLUMNS } from "@/lib/sales/offers";
+import { CURRENCIES, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const ids = <T extends readonly { id: string }[]>(a: T) => a.map((x) => x.id);
 
 const OFFER_PROPS = {
   name: { type: "string" },
-  price: { type: "number", description: "US dollars" },
+  price: { type: "number", description: "In the offer's currency (dollars, not cents)." },
+  currency: { type: "string", enum: CURRENCIES, description: "usd or cad. Leave out to keep the offer's currency (a new offer uses the account's home currency)." },
   billing: { type: "string", enum: ids(OFFER_BILLING), description: "one_time, monthly or payment_plan" },
   payment_count: { type: "number", description: "Number of payments when billing is payment_plan." },
   format: { type: "string", enum: ids(OFFER_FORMATS) },
@@ -22,6 +25,7 @@ function toBody(args: Record<string, unknown>) {
   return {
     name: args.name,
     price: args.price,
+    currency: args.currency,
     billing: args.billing,
     paymentCount: args.payment_count,
     format: args.format,
@@ -44,7 +48,8 @@ export const listOffers: ActionTool = {
     const { data } = await ctx.db.from("sales_offers").select(OFFER_COLUMNS).eq("master_plan_id", ctx.planId).order("sort_order").limit(100);
     const rows = ((data ?? []) as Record<string, unknown>[]).map(shapeOffer);
     if (!rows.length) return "The client has no offers yet.";
-    return rows.map((o) => `${o.name} | ${offerPriceLabel(o)} | ${o.format} | ${o.status}`).join("\n");
+    const home = await homeCurrency(ctx.planId, ctx.db);
+    return rows.map((o) => `${o.name} | ${offerPriceLabel(o, home)} | ${o.currency.toUpperCase()} | ${o.format} | ${o.status}`).join("\n");
   },
 };
 
@@ -60,11 +65,13 @@ export const createOffer: ActionTool = {
     const { count } = await ctx.db.from("sales_offers").select("id", { count: "exact", head: true }).eq("master_plan_id", ctx.planId);
     if ((count ?? 0) >= 200) return { error: "That's the most offers one account can hold." };
     const r = v.row as Record<string, unknown>;
+    const home = await homeCurrency(ctx.planId, ctx.db);
+    const currency = toCurrency(r.currency, home);
     return {
       preview: {
         title: `Add the offer "${r.name}"`,
         lines: [
-          r.price === null ? "No price yet" : `Price: ${offerPriceLabel({ price: r.price as number, billing: r.billing as string, paymentCount: (r.payment_count as number | null) ?? null })}`,
+          r.price === null ? "No price yet" : `Price: ${offerPriceLabel({ price: r.price as number, billing: r.billing as string, paymentCount: (r.payment_count as number | null) ?? null, currency }, home)} (${currency.toUpperCase()})`,
           `Format: ${r.format}`,
           `Status: ${r.status}`,
           ...((r.deliverables as string[]).slice(0, 5).map((d) => `Includes: ${d}`)),
@@ -76,6 +83,7 @@ export const createOffer: ActionTool = {
     const v = offerRow(toBody(args));
     if ("error" in v) throw new Error(v.error);
     const { count } = await ctx.db.from("sales_offers").select("id", { count: "exact", head: true }).eq("master_plan_id", ctx.planId);
+    if (!v.row.currency) v.row.currency = await homeCurrency(ctx.planId, ctx.db);
     const { data, error } = await ctx.db.from("sales_offers").insert({ ...v.row, master_plan_id: ctx.planId, sort_order: count ?? 0 }).select("id, name").single();
     if (error || !data) throw new Error("The offer didn't save.");
     return { summary: `Added the offer "${data.name}".`, result: { id: data.id }, undo: { id: data.id } };
@@ -106,6 +114,7 @@ export const updateOffer: ActionTool = {
     const lines: string[] = [];
     const body = toBody(args);
     if (body.price !== undefined) lines.push(`Price: ${cur.price ?? "none"} → ${body.price}`);
+    if (body.currency && toCurrency(body.currency) !== toCurrency(cur.currency)) lines.push(`Currency: ${toCurrency(cur.currency).toUpperCase()} → ${toCurrency(body.currency).toUpperCase()}`);
     if (body.billing) lines.push(`Billing: ${cur.billing} → ${body.billing}`);
     if (body.status) lines.push(`Status: ${cur.status} → ${body.status}`);
     if (body.name && body.name !== cur.name) lines.push(`Name: ${cur.name} → ${body.name}`);
@@ -123,6 +132,8 @@ export const updateOffer: ActionTool = {
     const merged = {
       name: b.name ?? cur.name,
       price: b.price !== undefined ? b.price : cur.price,
+      // Only changes when asked for; otherwise offerRow leaves the column alone.
+      currency: b.currency,
       billing: b.billing ?? cur.billing,
       paymentCount: b.paymentCount ?? cur.payment_count,
       format: b.format ?? cur.format,

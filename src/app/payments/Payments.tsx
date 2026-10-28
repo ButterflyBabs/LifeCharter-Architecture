@@ -4,15 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Copy, CreditCard, ExternalLink, Loader2, Receipt, X } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
+import { formatMoney, otherCurrency, sumByCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
 
-type Payment = { id: string; livemode: boolean; kind: string; amount: number; refunded: number; email: string | null; name: string | null; contact_id: string | null; description: string; paid_at: string };
-type Invoice = { id: string; contact_id: string | null; livemode: boolean; number: string | null; email: string; name: string | null; description: string; amount: number; payment_count: number; payments_made: number; status: string; hosted_url: string | null; pdf_url: string | null; due_date: string | null; paid_at: string | null; created_at: string };
-type Data = { connected: boolean; livemode: boolean | null; payments: Payment[]; invoices: Invoice[]; offers: { id: string; name: string; price: number | null }[]; contact: { id: string; email: string; first_name: string | null; last_name: string | null } | null };
+type Payment = { id: string; livemode: boolean; kind: string; amount: number; currency: string | null; refunded: number; email: string | null; name: string | null; contact_id: string | null; description: string; paid_at: string };
+type Invoice = { id: string; contact_id: string | null; livemode: boolean; number: string | null; email: string; name: string | null; description: string; amount: number; currency: string | null; payment_count: number; payments_made: number; status: string; hosted_url: string | null; pdf_url: string | null; due_date: string | null; paid_at: string | null; created_at: string };
+type Data = { connected: boolean; livemode: boolean | null; payments: Payment[]; invoices: Invoice[]; offers: { id: string; name: string; price: number | null; currency: string | null }[]; contact: { id: string; email: string; first_name: string | null; last_name: string | null } | null };
 
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
 const input = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
-const usd = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** An amount in its own currency, always with cents ("$1,500.00"; "CA$1,500.00" on a USD account). */
+const money = (n: number, currency: string | null | undefined, home: Currency) => formatMoney(Number(n), toCurrency(currency, home), { home, cents: true });
 const day = (s: string) => new Date(s.length === 10 ? `${s}T12:00:00` : s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const KIND: Record<string, string> = { link: "Payment link", invoice: "Invoice", plan: "Payment plan", subscription: "Monthly" };
 const STATUS: Record<string, string> = { open: "Unpaid", paid: "Paid", void: "Voided", uncollectible: "Uncollectible", plan_active: "Plan running", plan_done: "Plan complete", plan_cancelled: "Plan stopped" };
@@ -24,6 +28,8 @@ function Test() {
 export default function Payments({ contactId }: { contactId: string | null }) {
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState("");
+  const { currency: home } = useHomeCurrency();
+  const other = otherCurrency(home);
   const load = useCallback(() => {
     fetch("/api/payments", { cache: "no-store" })
       .then(async (r) => (r.ok ? setD(await r.json()) : setErr("Couldn't load payments.")))
@@ -33,8 +39,11 @@ export default function Payments({ contactId }: { contactId: string | null }) {
 
   const thisMonth = new Date().toISOString().slice(0, 7);
   const live = (d?.payments ?? []).filter((p) => p.livemode === (d?.livemode ?? true));
-  const monthTotal = live.filter((p) => p.paid_at.slice(0, 7) === thisMonth).reduce((s, p) => s + Number(p.amount) - Number(p.refunded), 0);
+  // Totals are kept per currency (task 1520): the home currency is the big number, the other one a small line under it.
+  const monthTotals = sumByCurrency(live.filter((p) => p.paid_at.slice(0, 7) === thisMonth), (p) => Number(p.amount) - Number(p.refunded), (p) => p.currency ?? home);
   const unpaid = (d?.invoices ?? []).filter((i) => i.status === "open");
+  const unpaidTotals = sumByCurrency(unpaid, (i) => Number(i.amount), (i) => i.currency ?? home);
+  const otherNote = (t: Partial<Record<Currency, number>>) => (t[other] ? money(t[other] as number, other, home) : null);
   const plans = (d?.invoices ?? []).filter((i) => i.status === "plan_active");
 
   return (
@@ -59,13 +68,13 @@ export default function Payments({ contactId }: { contactId: string | null }) {
 
       {d && (
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className={card}><p className={label}>Paid this month</p><p className="text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(monthTotal)}{d.livemode === false && <Test />}</p></div>
-          <div className={card}><p className={label}>Unpaid invoices</p><p className="text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{unpaid.length} · {usd(unpaid.reduce((s, i) => s + Number(i.amount), 0))}</p></div>
+          <div className={card}><p className={label}>Paid this month</p><p className="text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{money(monthTotals[home] ?? 0, home, home)}{d.livemode === false && <Test />}</p><OtherCurrencyNote text={otherNote(monthTotals)} /></div>
+          <div className={card}><p className={label}>Unpaid invoices</p><p className="text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{unpaid.length} · {money(unpaidTotals[home] ?? 0, home, home)}</p><OtherCurrencyNote text={otherNote(unpaidTotals)} /></div>
           <div className={card}><p className={label}>Payment plans running</p><p className="text-2xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{plans.length}</p></div>
         </div>
       )}
 
-      {d?.connected && <NewInvoice data={d} contactId={contactId} onDone={load} />}
+      {d?.connected && <NewInvoice data={d} contactId={contactId} onDone={load} home={home} />}
 
       {d && (
         <div className="grid gap-6 xl:grid-cols-2">
@@ -73,7 +82,7 @@ export default function Payments({ contactId }: { contactId: string | null }) {
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]"><Receipt className="h-4 w-4 text-[#2E7C83]" />Invoices</h2>
             {!d.invoices.length && <p className="text-sm text-[#7b6b8d]">No invoices yet.</p>}
             <ul className="divide-y divide-[#1a2b4a]/10 dark:divide-white/10">
-              {d.invoices.map((i) => <InvoiceRow key={i.id} i={i} onChange={load} />)}
+              {d.invoices.map((i) => <InvoiceRow key={i.id} i={i} onChange={load} home={home} />)}
             </ul>
           </section>
           <section className={card}>
@@ -83,12 +92,12 @@ export default function Payments({ contactId }: { contactId: string | null }) {
               {d.payments.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
                   <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-                    <span className="font-semibold">{usd(p.amount)}</span>
+                    <span className="font-semibold">{money(p.amount, p.currency, home)}</span>
                     {p.contact_id ? <Link href={`/contacts?contact=${p.contact_id}`} className="ml-2 text-[#2E7C83] hover:underline">{p.name || p.email}</Link> : <span className="ml-2">{p.name || p.email || "Someone"}</span>}
                     {p.description && <span className="text-[#5b5f73] dark:text-[#b8a898]"> · {p.description}</span>}
                     {!p.livemode && <Test />}
                   </span>
-                  <span className="text-xs text-[#7b6b8d]">{KIND[p.kind] || p.kind} · {day(p.paid_at)}{Number(p.refunded) > 0 ? ` · refunded ${usd(p.refunded)}` : ""}</span>
+                  <span className="text-xs text-[#7b6b8d]">{KIND[p.kind] || p.kind} · {day(p.paid_at)}{Number(p.refunded) > 0 ? ` · refunded ${money(p.refunded, p.currency, home)}` : ""}</span>
                 </li>
               ))}
             </ul>
@@ -100,7 +109,7 @@ export default function Payments({ contactId }: { contactId: string | null }) {
   );
 }
 
-function InvoiceRow({ i, onChange }: { i: Invoice; onChange: () => void }) {
+function InvoiceRow({ i, onChange, home }: { i: Invoice; onChange: () => void; home: Currency }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState("");
@@ -129,7 +138,7 @@ function InvoiceRow({ i, onChange }: { i: Invoice; onChange: () => void }) {
     <li className="py-2 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">
-          <span className="font-semibold">{usd(i.amount)}</span>
+          <span className="font-semibold">{money(i.amount, i.currency, home)}</span>
           {i.contact_id ? <Link href={`/contacts?contact=${i.contact_id}`} className="ml-2 text-[#2E7C83] hover:underline">{i.name || i.email}</Link> : <span className="ml-2">{i.name || i.email}</span>}
           <span className="text-[#5b5f73] dark:text-[#b8a898]"> · {i.description}</span>
           {!i.livemode && <Test />}
@@ -151,7 +160,8 @@ function InvoiceRow({ i, onChange }: { i: Invoice; onChange: () => void }) {
   );
 }
 
-function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string | null; onDone: () => void }) {
+function NewInvoice({ data, contactId, onDone, home }: { data: Data; contactId: string | null; onDone: () => void; home: Currency }) {
+  const { canChoose } = useHomeCurrency();
   const [open, setOpen] = useState(Boolean(contactId));
   const [who, setWho] = useState<LookupContact | null>(null);
   const [search, setSearch] = useState("");
@@ -160,6 +170,9 @@ function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string
   const [count, setCount] = useState("1");
   const [days, setDays] = useState("7");
   const [offerId, setOfferId] = useState("");
+  // null = the home currency (follows Settings once it loads); an offer or the picker sets it.
+  const [currencyPick, setCurrencyPick] = useState<Currency | null>(null);
+  const currency = currencyPick ?? home;
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -180,17 +193,19 @@ function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string
   useEffect(() => {
     if (!who || !(Number(amount) > 0)) return setNote("");
     const t = setTimeout(() => {
-      fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "preview", email: who.email, description: description || "x", amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days) }) })
+      fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "preview", email: who.email, description: description || "x", amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), currency }) })
         .then((r) => r.json())
         .then((j) => setNote(j.note || j.error || ""))
         .catch(() => setNote(""));
     }, 300);
     return () => clearTimeout(t);
-  }, [who, amount, count, days, description]);
+  }, [who, amount, count, days, description, currency]);
 
   function pickOffer(id: string) {
     setOfferId(id);
     const o = data.offers.find((x) => x.id === id);
+    // The invoice follows the offer's currency; no offer = the home currency.
+    setCurrencyPick(o ? toCurrency(o.currency, home) : null);
     if (o) {
       if (!description) setDescription(o.name);
       if (!amount && o.price) setAmount(String(o.price));
@@ -201,7 +216,7 @@ function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string
     if (!who) return setMsg("Choose a contact.");
     setBusy(true);
     setMsg("");
-    const r = await fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "invoice", contactId: who.id, description, amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), offerId: offerId || null }) });
+    const r = await fetch("/api/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "invoice", contactId: who.id, description, amount: Number(amount), paymentCount: Number(count), daysUntilDue: Number(days), offerId: offerId || null, currency }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setMsg(j.error || "That didn't work.");
@@ -209,6 +224,7 @@ function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string
     setAmount("");
     setCount("1");
     setOfferId("");
+    setCurrencyPick(null);
     setOpen(false);
     setMsg("");
     onDone();
@@ -244,8 +260,15 @@ function NewInvoice({ data, contactId, onDone }: { data: Data; contactId: string
           <input id="inv-desc" className={input} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="VIP strategy day" />
         </div>
         <div>
-          <label className={label} htmlFor="inv-amount">Total amount (USD)</label>
-          <input id="inv-amount" inputMode="decimal" className={input} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
+          <label className={label} htmlFor="inv-amount">Total amount ({currency.toUpperCase()})</label>
+          {canChoose || currency !== home ? (
+            <div className="flex gap-2">
+              <input id="inv-amount" inputMode="decimal" className={input} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
+              <CurrencySelect value={currency} onChange={setCurrencyPick} aria-label="Invoice currency" className={`${input} w-24`} />
+            </div>
+          ) : (
+            <input id="inv-amount" inputMode="decimal" className={input} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
+          )}
         </div>
         <div>
           <label className={label} htmlFor="inv-count">Payments</label>

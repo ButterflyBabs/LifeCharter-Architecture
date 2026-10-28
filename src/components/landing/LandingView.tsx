@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PORTAL_FONTS, onAccent } from "@/lib/portalLook";
 import type { PublicPage } from "@/lib/landingServer";
+import { formatMoney } from "@/lib/currency";
 
 // One landing page (task 1153), shared by the public page (/go/<slug> and the owner's own domain) and the editor's
 // preview. In preview nothing is counted, no pixel fires and the action buttons don't submit.
@@ -50,7 +51,6 @@ const track = (event: string) => {
 
 const when = (iso: string, tz?: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: tz, timeZoneName: "short" });
-const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 export default function LandingView({ page, preview = false }: { page: PublicPage; preview?: boolean }) {
   const c = page.content;
@@ -171,7 +171,7 @@ export default function LandingView({ page, preview = false }: { page: PublicPag
           {page.offer && <p className="text-lg font-semibold" style={{ fontFamily: font.heading }}>{page.offer.name}</p>}
           {page.offer?.price != null && page.offer.price > 0 && (
             <p className="mt-1 text-3xl font-semibold">
-              {page.offer.paymentCount && page.offer.paymentCount > 1 ? `${page.offer.paymentCount} payments of ${usd(page.offer.price / page.offer.paymentCount)}` : usd(page.offer.price)}
+              {page.offer.paymentCount && page.offer.paymentCount > 1 ? `${page.offer.paymentCount} payments of ${formatMoney(page.offer.price / page.offer.paymentCount, page.offer.currency)}` : formatMoney(page.offer.price, page.offer.currency)}
               {page.offer.billing === "monthly" && <span className="text-base font-normal opacity-70"> / month</span>}
             </p>
           )}

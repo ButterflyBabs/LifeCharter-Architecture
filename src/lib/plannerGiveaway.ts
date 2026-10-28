@@ -2,6 +2,8 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 import { housePlanId } from "@/lib/housePlan";
+import { formatMoney, isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 import { renderStep } from "@/lib/sequences/render";
 import { sendRendered } from "@/lib/sequences/engine";
 
@@ -168,6 +170,10 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
   const items = (Array.isArray(ev.items) ? ev.items : []) as PayhipItem[];
   const names = items.map((i) => i.product_name || i.product_key || "Payhip product").join(" + ") || "Payhip order";
   const price = typeof ev.price === "number" ? ev.price / 100 : Number(ev.price) / 100 || 0;
+  // The order's own currency when Payhip sends one we support; else the account's home currency.
+  const home = await homeCurrency(planId, db);
+  const currency = isCurrency(ev.currency) ? toCurrency(ev.currency) : home;
+  const money = (n: number) => formatMoney(n, currency, { home, cents: true });
   const productTags = items.map((i) => PRODUCT_TAGS[i.product_key ?? ""]).filter(Boolean);
   const contact = await upsertContact(
     { masterPlanId: planId, email, source: "payhip", tags: ["payhip-buyer", ...productTags, ...(ev.type === "refunded" ? ["payhip-refunded"] : [])] },
@@ -178,7 +184,7 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
 
   if (ev.type === "refunded") {
     const refunded = Number(ev.amount_refunded) / 100 || price;
-    await logEvent(planId, contact.id, "purchase", `Refunded on Payhip: ${names} ($${refunded.toFixed(2)})`, { order: orderId }, db);
+    await logEvent(planId, contact.id, "purchase", `Refunded on Payhip: ${names} (${money(refunded)})`, { order: orderId }, db);
     // Take the refunded sale back out of real revenue.
     await db.from("finance_entries").delete().eq("master_plan_id", planId).eq("source", "payhip").eq("external_id", orderId);
     return { ok: true };
@@ -190,7 +196,7 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
   await db.from("contact_records").insert({ master_plan_id: planId, contact_id: contact.id, kind: "purchase", title: names.slice(0, 300), amount: price, note });
 
   const free = price === 0;
-  await logEvent(planId, contact.id, "purchase", `${free ? "Downloaded free on Payhip" : `Bought on Payhip ($${price.toFixed(2)})`}: ${names}`, { order: orderId, items: items.map((i) => i.product_key) }, db);
+  await logEvent(planId, contact.id, "purchase", `${free ? "Downloaded free on Payhip" : `Bought on Payhip (${money(price)})`}: ${names}`, { order: orderId, items: items.map((i) => i.product_key) }, db);
 
   // Real revenue — same pattern as affiliate income (finance_entries, one row per
   // paid order, external_id keeps a retried webhook from double-counting it).
@@ -204,6 +210,7 @@ export async function recordPayhipEvent(ev: Record<string, unknown>, db: Db = cr
       occurred_on: new Date().toISOString().slice(0, 10),
       source: "payhip",
       external_id: orderId,
+      currency,
     });
   }
 

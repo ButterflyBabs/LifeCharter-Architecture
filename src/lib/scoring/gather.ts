@@ -16,6 +16,8 @@ import { PULSE_LABEL_BY_ID } from "./pulseLabels";
 import { taskFollowThrough } from "./operational";
 import { computePillarScores, averagePillarScore, type PillarResult } from "./pillarModel";
 import type { DeeperAnswers } from "@/lib/operationsDeeper";
+import { toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Profit domainNumber → Profit domain id (matches the assessment).
 const NUM_TO_PROFIT: Record<number, string> = {
@@ -162,14 +164,16 @@ async function liveOperationalMetrics(
   const now = new Date();
   const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
 
-  // Finance — this month's revenue & expenses from the ledger.
+  // Finance — this month's revenue & expenses from the ledger, home currency only
+  // (budgets/goals are in the home currency; other-currency entries are never added in).
   try {
+    const home = await homeCurrency(scopeId, supabase);
     const { data } = await supabase
       .from("finance_entries")
-      .select("type, amount, occurred_on")
+      .select("type, amount, occurred_on, currency")
       .eq("master_plan_id", scopeId)
       .gte("occurred_on", monthStart);
-    const rows = (data || []) as { type: string; amount: number | string | null }[];
+    const rows = ((data || []) as { type: string; amount: number | string | null; currency: string | null }[]).filter((e) => toCurrency(e.currency) === home);
     if (rows.length) {
       let income = 0;
       let expense = 0;

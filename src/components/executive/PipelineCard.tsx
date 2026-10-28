@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, AlertCircle } from "lucide-react";
 import type { PipelineSummary } from "@/lib/sales/pipeline";
 import { formatMoney } from "@/lib/sales/offers";
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
 
 // Executive Home: Pipeline & Offers at a glance, from the client's own deals board and offers.
 export default function PipelineCard() {
@@ -16,7 +17,12 @@ export default function PipelineCard() {
       .catch(() => setS(null));
   }, []);
 
-  const empty = s && s.openDeals === 0 && s.wonThisMonth.count === 0 && s.activeOffers === 0;
+  const empty = s && s.openDeals === 0 && s.wonThisMonth.count === 0 && !s.other?.wonThisMonth.count && s.activeOffers === 0;
+  // Every figure is in the account's home currency; the other currency's money sits on its own small line.
+  const home = s?.currency ?? "usd";
+  const money = (n: number, currency: string = home) => formatMoney(n, { currency, home }) || formatMoney(0, { currency, home });
+  const other = (n: number | undefined) => (s?.other && n ? money(n, s.other.currency) : null);
+  const note = "text-[11px] text-gray-400";
   const openStages = s ? s.byStage.filter((b) => b.kind === "open") : [];
   const maxCount = Math.max(1, ...openStages.map((b) => b.count));
 
@@ -44,18 +50,21 @@ export default function PipelineCard() {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-gray-400">Open</p>
-                <p className="text-lg font-semibold tabular-nums text-indigo-900">{formatMoney(s.openValue) || "$0"}</p>
+                <p className="text-lg font-semibold tabular-nums text-indigo-900">{money(s.openValue)}</p>
                 <p className="text-[11px] text-gray-400">{s.openDeals} deal{s.openDeals === 1 ? "" : "s"}</p>
+                <OtherCurrencyNote text={other(s.other?.openValue)} className={note} />
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-gray-400">Weighted</p>
-                <p className="text-lg font-semibold tabular-nums text-indigo-900">{formatMoney(s.weightedValue) || "$0"}</p>
+                <p className="text-lg font-semibold tabular-nums text-indigo-900">{money(s.weightedValue)}</p>
                 <p className="text-[11px] text-gray-400">by probability</p>
+                <OtherCurrencyNote text={other(s.other?.weightedValue)} className={note} />
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-gray-400">Won this month</p>
-                <p className="text-lg font-semibold tabular-nums text-[#2f7d55]">{formatMoney(s.wonThisMonth.value) || "$0"}</p>
+                <p className="text-lg font-semibold tabular-nums text-[#2f7d55]">{money(s.wonThisMonth.value)}</p>
                 <p className="text-[11px] text-gray-400">{s.wonThisMonth.count} deal{s.wonThisMonth.count === 1 ? "" : "s"}</p>
+                <OtherCurrencyNote text={other(s.other?.wonThisMonth.value)} className={note} />
               </div>
             </div>
             {openStages.length > 0 && (
@@ -71,7 +80,9 @@ export default function PipelineCard() {
             )}
             <div className="mt-4 space-y-1.5 border-t border-gray-100 pt-3 text-xs text-gray-500">
               {s.topOffer ? (
-                <p>Top offer in the pipeline: <Link href="/sales/offers" className="font-medium text-indigo-900 hover:underline">{s.topOffer.name}</Link> ({formatMoney(s.topOffer.value)} across {s.topOffer.count} deal{s.topOffer.count === 1 ? "" : "s"})</p>
+                <p>Top offer in the pipeline: <Link href="/sales/offers" className="font-medium text-indigo-900 hover:underline">{s.topOffer.name}</Link> ({money(s.topOffer.value)} across {s.topOffer.count} deal{s.topOffer.count === 1 ? "" : "s"})</p>
+              ) : s.other?.topOffer ? (
+                <p>Top offer in the pipeline: <Link href="/sales/offers" className="font-medium text-indigo-900 hover:underline">{s.other.topOffer.name}</Link> ({money(s.other.topOffer.value, s.other.currency)} across {s.other.topOffer.count} deal{s.other.topOffer.count === 1 ? "" : "s"})</p>
               ) : (
                 <p>{s.activeOffers} active offer{s.activeOffers === 1 ? "" : "s"}. <Link href="/sales/offers" className="text-[#2E7C83] hover:underline">Manage offers</Link></p>
               )}

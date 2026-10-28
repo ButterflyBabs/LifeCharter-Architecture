@@ -9,6 +9,10 @@ import { CADENCE_LABEL, type BillCadence } from "@/lib/finance/billDates";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+import { toCurrency } from "@/lib/currency";
+
 interface Tool {
   name: string;
   ytd: number;
@@ -16,6 +20,7 @@ interface Tool {
   vendor?: string;
   frequency?: string | null;
   renewal?: string | null;
+  currency?: string;
 }
 interface BillLite {
   name: string;
@@ -28,8 +33,6 @@ interface Suggestion {
   estMonthlySavings?: number;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 export default function TechStackPage() {
   const { overview, reload: reloadOverview } = useFinanceOverview();
@@ -38,6 +41,10 @@ export default function TechStackPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [totalMonthly, setTotalMonthly] = useState(0);
   const [totalYtd, setTotalYtd] = useState(0);
+  const [other, setOther] = useState<OtherBlock>(null);
+  // Totals are the home currency; each tool shows in its own, the other currency's totals as a small line.
+  const { home, money } = useMoney();
+  const usd = (n: number, c: string = home) => money(n, c);
   const [loaded, setLoaded] = useState(false);
 
   const [optimizing, setOptimizing] = useState(false);
@@ -79,6 +86,7 @@ export default function TechStackPage() {
         nextDue,
         autopay: t.renewal === "auto",
         notes: "From Tech Stack Optimizer",
+        currency: toCurrency(t.currency, home),
       }),
     }).catch(() => {});
     await loadBills();
@@ -94,6 +102,7 @@ export default function TechStackPage() {
         setTools(d.tools || []);
         setTotalMonthly(d.totalMonthly || 0);
         setTotalYtd(d.totalYtd || 0);
+        setOther(d.other ?? null);
       })
       .finally(() => setLoaded(true));
   }, []);
@@ -139,10 +148,12 @@ export default function TechStackPage() {
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Est. monthly</p>
           <p className="text-2xl font-bold text-[#c98a27]">{usd(totalMonthly)}</p>
+          <OtherCurrencyNote text={otherText(other, home, ["totalMonthly", "monthly"])} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Year to date</p>
           <p className="text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(totalYtd)}</p>
+          <OtherCurrencyNote text={otherText(other, home, ["totalYtd", "ytd"])} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Tools tracked</p>
@@ -176,7 +187,7 @@ export default function TechStackPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">
-                        {usd(t.monthly)}<span className="text-[#b8a898]">/mo</span>
+                        {usd(t.monthly, toCurrency(t.currency, home))}<span className="text-[#b8a898]">/mo</span>
                       </span>
                       {onBills(t) ? (
                         <Link href="/finance/bills" className="text-[11px] text-[#2E7C83] hover:underline whitespace-nowrap">On Bills</Link>

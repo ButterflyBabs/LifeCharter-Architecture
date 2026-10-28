@@ -5,6 +5,8 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { logActivity, q } from "@/lib/activity";
 import { BILL_CADENCES, loadBills, nextAfter, type BillCadence } from "@/lib/finance/bills";
 import { currentBusiness } from "@/lib/businessScope";
+import { formatMoney, isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,8 @@ function clean(body: Record<string, unknown>) {
   if (typeof body.nextDue === "string" && DATE.test(body.nextDue)) out.next_due = body.nextDue;
   if (body.autopay !== undefined) out.autopay = Boolean(body.autopay);
   if (typeof body.notes === "string") out.notes = body.notes.trim().slice(0, 500) || null;
+  // Changed only when posted (task 1520); a new bill without one gets the home currency in POST.
+  if (isCurrency(body.currency)) out.currency = toCurrency(body.currency);
   return out;
 }
 
@@ -34,7 +38,7 @@ export async function GET() {
   return NextResponse.json({ bills: await loadBills(masterPlanId, scope?.businessId ?? null) });
 }
 
-// POST — add one bill { name, amount?, category?, cadence, nextDue, autopay?, notes? },
+// POST — add one bill { name, amount?, currency?, category?, cadence, nextDue, autopay?, notes? },
 // or several at once { bills: [...] } (used by the quick-add buttons).
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
@@ -45,9 +49,10 @@ export async function POST(request: Request) {
   const rows = list.map(clean).filter((r) => r.name && r.next_due);
   if (!rows.length) return NextResponse.json({ error: "Give the bill a name and a due date." }, { status: 400 });
   const scope = await currentBusiness(masterPlanId);
+  const home = await homeCurrency(masterPlanId);
   const { error } = await createServerClient()
     .from("finance_bills")
-    .insert(rows.map((r) => ({ cadence: "monthly", ...r, master_plan_id: masterPlanId, business_id: scope?.businessId ?? null })));
+    .insert(rows.map((r) => ({ cadence: "monthly", currency: home, ...r, master_plan_id: masterPlanId, business_id: scope?.businessId ?? null })));
   if (error) {
     console.error("POST /api/finance/bills:", error.message);
     return NextResponse.json({ error: "Couldn't save that bill." }, { status: 500 });
@@ -67,7 +72,7 @@ export async function PATCH(request: Request) {
   const supabase = createServerClient();
   const { data: bill } = await supabase
     .from("finance_bills")
-    .select("id, name, vendor, amount, category, cadence, next_due, autopay")
+    .select("id, name, vendor, amount, currency, category, cadence, next_due, autopay")
     .eq("id", id)
     .eq("master_plan_id", masterPlanId)
     .maybeSingle();
@@ -79,11 +84,13 @@ export async function PATCH(request: Request) {
     const entryId = typeof body.entryId === "string" ? body.entryId : "";
     const { data: entry } = await supabase
       .from("finance_entries")
-      .select("id, bill_id, occurred_on, type")
+      .select("id, bill_id, occurred_on, type, currency")
       .eq("id", entryId)
       .eq("master_plan_id", masterPlanId)
       .maybeSingle();
     if (!entry || entry.type !== "expense") return NextResponse.json({ error: "Expense not found." }, { status: 404 });
+    // Only an expense in the bill's own currency can settle it (task 1520).
+    if (toCurrency(entry.currency) !== toCurrency(bill.currency)) return NextResponse.json({ error: "That expense is in a different currency from the bill." }, { status: 400 });
     if (entry.bill_id === id) return NextResponse.json({ ok: true, nextDue: bill.next_due, already: true });
     const paidOn = String(entry.occurred_on).slice(0, 10);
     await supabase.from("finance_entries").update({ bill_id: id }).eq("id", entryId).eq("master_plan_id", masterPlanId);
@@ -104,6 +111,7 @@ export async function PATCH(request: Request) {
         master_plan_id: masterPlanId,
         type: "expense",
         amount,
+        currency: toCurrency(bill.currency),
         category: bill.category || "Bills",
         description: bill.name,
         vendor: bill.vendor || null,
@@ -120,7 +128,7 @@ export async function PATCH(request: Request) {
       .from("finance_bills")
       .update(next ? { next_due: next, last_paid_on: paidOn, updated_at: new Date().toISOString() } : { active: false, last_paid_on: paidOn, updated_at: new Date().toISOString() })
       .eq("id", id);
-    await logActivity({ masterPlanId, action: "paid", entityType: "bill", entityId: id, summary: `Paid bill ${q(bill.name)}${isFinite(amount) && amount > 0 ? ` ($${amount.toFixed(2)})` : ""}` });
+    await logActivity({ masterPlanId, action: "paid", entityType: "bill", entityId: id, summary: `Paid bill ${q(bill.name)}${isFinite(amount) && amount > 0 ? ` (${formatMoney(amount, toCurrency(bill.currency), { home: await homeCurrency(masterPlanId, supabase), cents: true })})` : ""}` });
     return NextResponse.json({ ok: true, nextDue: next, recorded: isFinite(amount) && amount > 0 });
   }
 

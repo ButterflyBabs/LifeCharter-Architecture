@@ -45,6 +45,7 @@ const TABS = [
 ] as const;
 type Partnership = { id: string; business: string; code: string; status: string; link: string; links?: { id: string; product: string; status: string; expiresAt: string | null; link: string }[] };
 const APP = "https://lccommandsuite.com";
+// Affiliate sales, commissions and program earnings are tracked in US dollars (task 1520 leaves this page USD).
 const money = (n: number) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
 const LOOKUP = "flex h-10 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] placeholder:text-[#b8a898] focus:outline-none focus:ring-2 focus:ring-[#c9a227]/50 focus:border-[#c9a227] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]";

@@ -4,12 +4,14 @@ import { houseFeatureLevel } from "@/lib/authz";
 import { ADS_START, ATTENDANCE_GOAL, FIRST_YEAR_VALUE, REGISTRATION_GOAL, masterclassResults, type EventRegistrations, type SessionRow } from "@/lib/masterclass/results";
 import Link from "next/link";
 import ReplayRelease from "./ReplayRelease";
+import { formatMoney } from "@/lib/currency";
 
 export const metadata: Metadata = { title: "MasterClass results" };
 export const dynamic = "force-dynamic";
 
-const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const usd2 = (n: number | null) => (n === null ? "—" : n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+// Babs's MasterClass funnel is in US dollars (USD ad spend only; first-year values are USD prices).
+const usd = (n: number) => formatMoney(n, "usd", { cents: false });
+const usd2 = (n: number | null) => (n === null ? "—" : formatMoney(n, "usd", { cents: true }));
 const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n * 100)}%`);
 const ratio = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—");
 const day = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });

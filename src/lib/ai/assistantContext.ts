@@ -1,3 +1,4 @@
+import { formatMoney, type Currency } from "@/lib/currency";
 import { HOUSE_RULES } from "@/lib/ai/houseRules";
 import { searchKb } from "@/lib/knowledgeBase";
 import { APP_MAP } from "@/lib/ai/appMap";
@@ -45,7 +46,7 @@ const TYPE_LABEL: Record<string, string> = {
   quick_pulse: "Quick Pulse (latest check-in)",
 };
 
-const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+const money = (n: number, c: Currency = "usd", home: Currency = c) => formatMoney(Math.round(n), c, { home, cents: false });
 
 // Never let a slow outside service (a calendar) hold up the answer.
 function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -246,10 +247,13 @@ export async function buildAssistantKnowledge(
         parts.push("Income: nothing recorded yet in their Finance Center.");
       } else {
         const one = (label: string, p: (typeof pulse.periods)["week"]) =>
-          `${label} ${money(p.income)}` +
-          (p.goal ? ` of a ${money(p.goal)} goal (${p.pct ?? 0}%)` : "") +
+          `${label} ${money(p.income, pulse.currency)}` +
+          (p.goal ? ` of a ${money(p.goal, pulse.currency)} goal (${p.pct ?? 0}%)` : "") +
           (p.changePct !== null ? `, ${p.changePct >= 0 ? "+" : ""}${p.changePct}% vs the previous period` : "");
         parts.push(`Income so far (their ledger): ${[one("this week", pulse.periods.week), one("this month", pulse.periods.month), one("this year", pulse.periods.year)].join("; ")}.`);
+        // Income in their other currency is a separate total: never add it to the numbers above or convert it (task 1520).
+        const o = pulse.other;
+        if (o) parts.push(`Also income in ${o.currency.toUpperCase()}, kept separate (never add or convert): this week ${money(o.week, o.currency, pulse.currency)}; this month ${money(o.month, o.currency, pulse.currency)}; this year ${money(o.year, o.currency, pulse.currency)}.`);
       }
     }
   } catch {

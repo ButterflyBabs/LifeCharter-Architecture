@@ -1,6 +1,9 @@
 // Receipt photos and 1099 totals (task 1150 part 1), the pure parts.
 
-export interface ReceiptRead { vendor: string; date: string; amount: number; category: string; description: string; confident: boolean }
+import { isCurrency, toCurrency, type Currency } from "@/lib/currency";
+
+/** currency: USD or CAD only when the receipt prints it (a bare "$" says nothing), else null = use the home currency. */
+export interface ReceiptRead { vendor: string; date: string; amount: number; currency: Currency | null; category: string; description: string; confident: boolean }
 
 /** What the assistant read, made safe: a real date (else today), a positive amount (else 0), short text. */
 export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
@@ -13,6 +16,7 @@ export function cleanReceiptRead(raw: unknown, today: string): ReceiptRead {
     vendor: str(r.vendor, 120),
     date: okDate ? date : today,
     amount: Number.isFinite(amount) && amount > 0 && amount < 1_000_000 ? Math.round(amount * 100) / 100 : 0,
+    currency: isCurrency(r.currency) ? toCurrency(r.currency) : null,
     category: str(r.category, 60),
     description: str(r.description, 200),
     confident: r.confident === true && okDate && amount > 0,

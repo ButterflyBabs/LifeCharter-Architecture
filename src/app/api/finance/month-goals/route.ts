@@ -2,20 +2,21 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 // Month-by-month income goals (a ramp). Months with no goal use the general monthly goal.
-//   GET                          → { goals: [{ month: "YYYY-MM", amount }] } (all of them, oldest first)
+//   GET                          → { goals: [{ month: "YYYY-MM", amount }], currency } (all of them, oldest first; home currency)
 //   POST { goals: [{ month, amount }] }  → set many at once (amount 0 or blank clears that month)
 //   DELETE                       → clear every month goal (back to the one monthly goal)
 export async function GET() {
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ goals: [] });
   const { data } = await createServerClient().from("finance_month_goals").select("month, amount").eq("master_plan_id", planId).order("month");
-  return NextResponse.json({ goals: ((data ?? []) as { month: string; amount: number | string }[]).map((g) => ({ month: g.month, amount: Number(g.amount) })) });
+  return NextResponse.json({ goals: ((data ?? []) as { month: string; amount: number | string }[]).map((g) => ({ month: g.month, amount: Number(g.amount) })), currency: await homeCurrency(planId) });
 }
 
 export async function POST(request: Request) {

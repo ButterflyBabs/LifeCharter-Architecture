@@ -1,4 +1,5 @@
 // Offers & Packages: shared labels and shaping (page, API, Executive Home).
+import { formatMoney as formatMoneyIn, isCurrency, toCurrency, type Currency } from "@/lib/currency";
 
 export const OFFER_FORMATS = [
   { id: "one_to_one", label: "1:1" },
@@ -27,6 +28,8 @@ export type Offer = {
   name: string;
   format: string;
   price: number | null;
+  /** The currency the price is in (task 1520); never added to offers in the other currency. */
+  currency: Currency;
   billing: string;
   paymentCount: number | null;
   deliverables: string[];
@@ -42,7 +45,7 @@ export type Offer = {
 };
 
 export const OFFER_COLUMNS =
-  "id, business_id, name, format, price, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration, capacity, link, status, sort_order";
+  "id, business_id, name, format, price, currency, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration, capacity, link, status, sort_order";
 
 export function shapeOffer(r: Record<string, unknown>): Offer {
   const num = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
@@ -52,6 +55,7 @@ export function shapeOffer(r: Record<string, unknown>): Offer {
     name: (r.name as string) || "",
     format: (r.format as string) || "one_to_one",
     price: num(r.price),
+    currency: toCurrency(r.currency),
     billing: (r.billing as string) || "one_time",
     paymentCount: num(r.payment_count),
     deliverables: ((r.deliverables as string[] | null) ?? []).filter(Boolean),
@@ -68,6 +72,7 @@ export function shapeOffer(r: Record<string, unknown>): Offer {
 }
 
 // Validates a client-sent offer into database columns. Returns an error message or the row.
+// currency is only written when posted (a new offer gets the account's home currency from the route).
 export function offerRow(b: Record<string, unknown>): { error: string } | { row: Record<string, unknown> } {
   const str = (v: unknown, max = 2000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const numOrNull = (v: unknown, min: number, max: number) => {
@@ -89,8 +94,10 @@ export function offerRow(b: Record<string, unknown>): { error: string } | { row:
   const businessId = numOrNull(b.businessId, 1, Number.MAX_SAFE_INTEGER);
   const deliverables = Array.isArray(b.deliverables) ? b.deliverables.map((d) => str(d, 300)).filter(Boolean).slice(0, 40) : [];
   const link = str(b.link, 500);
+  if (b.currency !== undefined && b.currency !== null && b.currency !== "" && !isCurrency(b.currency)) return { error: "Currency must be USD or CAD." };
   return {
     row: {
+      ...(isCurrency(b.currency) ? { currency: toCurrency(b.currency) } : {}),
       name,
       format,
       billing,
@@ -111,14 +118,15 @@ export function offerRow(b: Record<string, unknown>): { error: string } | { row:
   };
 }
 
-export function formatMoney(n: number | null | undefined, opts: { cents?: boolean } = {}) {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "";
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: opts.cents ? 2 : 0, minimumFractionDigits: 0 });
+// Whole dollars by default; cents: true shows cents only when there are some. Wraps the shared formatter (task 1520).
+export function formatMoney(n: number | null | undefined, opts: { cents?: boolean; currency?: Currency | string; home?: Currency } = {}) {
+  return formatMoneyIn(n, opts.currency ?? "usd", { home: opts.home, cents: opts.cents ? undefined : false });
 }
 
-export function offerPriceLabel(o: Pick<Offer, "price" | "billing" | "paymentCount">) {
+export function offerPriceLabel(o: Pick<Offer, "price" | "billing" | "paymentCount"> & { currency?: Currency | string }, home?: Currency) {
   if (o.price === null) return "No price yet";
-  if (o.billing === "monthly") return `${formatMoney(o.price)}/month`;
-  if (o.billing === "payment_plan" && o.paymentCount) return `${formatMoney(o.price)} (${o.paymentCount} payments of ${formatMoney(o.price / o.paymentCount, { cents: true })})`;
-  return formatMoney(o.price);
+  const m = (n: number, cents?: boolean) => formatMoney(n, { cents, currency: o.currency ?? "usd", home });
+  if (o.billing === "monthly") return `${m(o.price)}/month`;
+  if (o.billing === "payment_plan" && o.paymentCount) return `${m(o.price)} (${o.paymentCount} payments of ${m(o.price / o.paymentCount, true)})`;
+  return m(o.price);
 }

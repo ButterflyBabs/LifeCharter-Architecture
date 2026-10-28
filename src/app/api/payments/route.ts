@@ -3,15 +3,18 @@ import { createServerClient } from "@/lib/supabase/server";
 import { paymentsAccount } from "@/lib/payments";
 import { getConnection } from "@/lib/stripeConnect";
 import { INVOICE_COLUMNS, cancelInvoice, createInvoice, invoicePlan } from "@/lib/suitePayments";
+import { isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // The Payments page (get paid inside the Suite, step b).
-//   GET                                             -> { connected, livemode, payments, invoices, offers }
+// Every payment, invoice and offer carries its own `currency` ("usd" | "cad", task 1520); amounts are never combined.
+//   GET                                             -> { connected, livemode, currency (home), payments, invoices, offers }
 //   GET ?contact=<id>                               -> the same, for one contact (+ contact)
-//   POST { action: "preview", amount, paymentCount, daysUntilDue, email, description } -> { note } | { error }
-//   POST { action: "invoice", contactId, description, amount, paymentCount?, daysUntilDue?, offerId? }
+//   POST { action: "preview", amount, paymentCount, daysUntilDue, email, description, currency? } -> { note } | { error }
+//   POST { action: "invoice", contactId, description, amount, paymentCount?, daysUntilDue?, offerId?, currency? } (currency defaults to home)
 //   POST { action: "cancel", id }                    -> void an unpaid invoice / stop a plan
 export async function GET(request: Request) {
   const a = await paymentsAccount();
@@ -24,15 +27,16 @@ export async function GET(request: Request) {
     pays = pays.eq("contact_id", contactId);
     invs = invs.eq("contact_id", contactId);
   }
-  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact] = await Promise.all([
+  const [connection, { data: payments }, { data: invoices }, { data: offers }, contact, home] = await Promise.all([
     getConnection(db, a.planId),
     pays,
     invs,
-    db.from("sales_offers").select("id, name, price").eq("master_plan_id", a.planId).order("sort_order"),
+    db.from("sales_offers").select("id, name, price, currency").eq("master_plan_id", a.planId).order("sort_order"),
     contactId ? db.from("seq_contacts").select("id, email, first_name, last_name").eq("id", contactId).eq("master_plan_id", a.planId).maybeSingle().then((r) => r.data) : Promise.resolve(null),
+    homeCurrency(a.planId, db),
   ]);
   return NextResponse.json(
-    { connected: Boolean(connection), livemode: connection?.livemode ?? null, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
+    { connected: Boolean(connection), livemode: connection?.livemode ?? null, currency: home, payments: payments ?? [], invoices: invoices ?? [], offers: offers ?? [], contact },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -60,7 +64,9 @@ export async function POST(request: Request) {
     email = (c.email as string) || "";
     name = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
   }
-  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7 };
+  const home = await homeCurrency(a.planId, db);
+  const currency = isCurrency(b.currency) ? toCurrency(b.currency) : home;
+  const input = { email, name, description: String(b.description || ""), amount: Number(b.amount), paymentCount: Number(b.paymentCount) || 1, daysUntilDue: Number(b.daysUntilDue) || 7, currency, home };
   const plan = invoicePlan(input);
   if (b.action === "preview") return plan.ok ? NextResponse.json({ note: plan.note }) : NextResponse.json({ error: plan.reason }, { status: 400 });
   if (b.action !== "invoice") return NextResponse.json({ error: "Unknown action." }, { status: 400 });

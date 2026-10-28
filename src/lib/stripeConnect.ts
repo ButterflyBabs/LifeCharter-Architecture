@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
+import { toCurrency } from "@/lib/currency";
 
 // Get paid inside the Suite, step a (task 1146): "Connect with Stripe". Step b (invoices, plans, posting): suitePayments.ts.
 //
@@ -111,34 +112,42 @@ export async function disconnect(db: Db, planId: string): Promise<void> {
 
 // ── Payment links ────────────────────────────────────────────────────────────
 export type LinkKind = "one_time" | "monthly" | "payment_plan";
-export interface OfferForLink { id: string; name: string; price: number | null; billing: LinkKind; payment_count: number | null }
+// currency: the offer's own (task 1520). Optional so older callers compile; createOfferLink reads it from the offer when missing.
+export interface OfferForLink { id: string; name: string; price: number | null; billing: LinkKind; payment_count: number | null; currency?: string | null }
 
 /** What a link would charge, or why it can't be made yet. */
 export function linkPlan(o: OfferForLink): { ok: true; kind: LinkKind; cents: number; count: number; note: string } | { ok: false; reason: string } {
   if (o.price === null || !(o.price > 0)) return { ok: false, reason: "Add a price to this offer first." };
+  const cur = toCurrency(o.currency).toUpperCase();
   if (o.billing === "payment_plan") {
     // The offer's price is the total; each monthly payment is total / N, and the plan stops itself after payment N.
     const count = Math.floor(Number(o.payment_count) || 0);
     if (count < 2 || count > 24) return { ok: false, reason: "Set the number of payments (2 to 24) on this offer first." };
     const per = Math.round((o.price * 100) / count);
     if (per < 50) return { ok: false, reason: "Stripe's smallest charge is $0.50 per payment." };
-    return { ok: true, kind: "payment_plan", cents: per, count, note: `${count} monthly payments of ${(per / 100).toFixed(2)} USD, then it stops` };
+    return { ok: true, kind: "payment_plan", cents: per, count, note: `${count} monthly payments of ${(per / 100).toFixed(2)} ${cur}, then it stops` };
   }
   const cents = Math.round(o.price * 100);
   if (cents < 50) return { ok: false, reason: "Stripe's smallest charge is $0.50." };
-  if (o.billing === "monthly") return { ok: true, kind: "monthly", cents, count: 0, note: `${(cents / 100).toFixed(2)} USD every month until cancelled` };
-  return { ok: true, kind: "one_time", cents, count: 1, note: `${(cents / 100).toFixed(2)} USD, paid in full` };
+  if (o.billing === "monthly") return { ok: true, kind: "monthly", cents, count: 0, note: `${(cents / 100).toFixed(2)} ${cur} every month until cancelled` };
+  return { ok: true, kind: "one_time", cents, count: 1, note: `${(cents / 100).toFixed(2)} ${cur}, paid in full` };
 }
 
 /** Create the offer's payment link ON the client's own Stripe account (direct charge, no platform fee). */
 export async function createOfferLink(db: Db, planId: string, c: Connection, o: OfferForLink) {
-  const plan = linkPlan(o);
+  // The price is charged in the offer's own currency, never a hard-coded one.
+  let currency = o.currency ? toCurrency(o.currency) : null;
+  if (!currency) {
+    const { data } = await db.from("sales_offers").select("currency").eq("id", o.id).eq("master_plan_id", planId).maybeSingle();
+    currency = toCurrency((data as { currency?: string } | null)?.currency);
+  }
+  const plan = linkPlan({ ...o, currency });
   if (!plan.ok) throw new Error(plan.reason);
   const opts = { stripeAccount: c.accountId };
   const s = platform();
   const product = await s.products.create({ name: o.name.slice(0, 250), metadata: { lccs_offer_id: o.id, lccs_plan_id: planId } }, opts);
   const price = await s.prices.create(
-    { product: product.id, currency: "usd", unit_amount: plan.cents, ...(plan.kind !== "one_time" ? { recurring: { interval: "month" as const } } : {}), metadata: { lccs_offer_id: o.id } },
+    { product: product.id, currency, unit_amount: plan.cents, ...(plan.kind !== "one_time" ? { recurring: { interval: "month" as const } } : {}), metadata: { lccs_offer_id: o.id } },
     opts,
   );
   const link = await s.paymentLinks.create(
@@ -155,8 +164,8 @@ export async function createOfferLink(db: Db, planId: string, c: Connection, o: 
   await db.from("offer_payment_links").update({ active: false, updated_at: new Date().toISOString() }).eq("offer_id", o.id).eq("active", true);
   const { data, error } = await db
     .from("offer_payment_links")
-    .insert({ master_plan_id: planId, offer_id: o.id, stripe_account: c.accountId, livemode: c.livemode, kind: plan.kind, amount: plan.cents / 100, payment_count: plan.kind === "payment_plan" ? plan.count : null, product_id: product.id, price_id: price.id, payment_link_id: link.id, url: link.url })
-    .select("id, url, kind, amount, livemode, created_at")
+    .insert({ master_plan_id: planId, offer_id: o.id, stripe_account: c.accountId, livemode: c.livemode, kind: plan.kind, amount: plan.cents / 100, currency, payment_count: plan.kind === "payment_plan" ? plan.count : null, product_id: product.id, price_id: price.id, payment_link_id: link.id, url: link.url })
+    .select("id, url, kind, amount, currency, livemode, created_at")
     .single();
   if (error) throw new Error(`save link: ${error.message}`);
   return data;

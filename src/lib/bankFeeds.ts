@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { createServerClient } from "@/lib/supabase/server";
 import { platform } from "@/lib/stripeConnect";
 import { isHousePlan } from "@/lib/housePlan";
+import { isCurrency, toCurrency, type Currency } from "@/lib/currency";
 import {
   BANK_ACCOUNT_CAP_BY_TIER,
   BANK_ACCOUNT_DEFAULT_CAP,
@@ -47,6 +48,7 @@ export interface BankTxn {
   id: string;
   connection_id: string;
   amount_cents: number;
+  currency: string;
   description: string | null;
   transacted_on: string;
   review_status: string;
@@ -56,7 +58,7 @@ export interface BankTxn {
   matched_entry_id: string | null;
 }
 const CONN_COLS = "id, fc_account_id, institution_name, display_name, last4, category, status, last_synced_at, last_error";
-const TXN_COLS = "id, connection_id, amount_cents, description, transacted_on, review_status, suggested_type, suggested_category, suggested_vendor, matched_entry_id";
+const TXN_COLS = "id, connection_id, amount_cents, currency, description, transacted_on, review_status, suggested_type, suggested_category, suggested_vendor, matched_entry_id";
 
 /** Linked accounts this account may have: Starter 2, Growth 4, VIP 8 (Babs's own is VIP). */
 export async function bankAccountCap(db: Db, planId: string): Promise<number> {
@@ -169,16 +171,18 @@ export async function unlink(db: Db, planId: string, connectionId: string): Prom
 
 async function planContext(db: Db, planId: string) {
   const since = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
-  const { data } = await db.from("finance_entries").select("id, type, amount, category, occurred_on, source, vendor").eq("master_plan_id", planId).gte("occurred_on", since).limit(6000);
-  const ledger = ((data ?? []) as { id: string; type: string; amount: number | string; category: string | null; occurred_on: string; source: string; vendor: string | null }[]).map((r) => ({
+  const { data } = await db.from("finance_entries").select("id, type, amount, currency, category, occurred_on, source, vendor").eq("master_plan_id", planId).gte("occurred_on", since).limit(6000);
+  // Each ledger line keeps its currency: a bank line only ever matches an entry in the same currency (task 1520).
+  const ledger: (LedgerLine & { currency: Currency })[] = ((data ?? []) as { id: string; type: string; amount: number | string; currency: string | null; category: string | null; occurred_on: string; source: string; vendor: string | null }[]).map((r) => ({
     id: r.id,
     type: r.type === "income" ? ("income" as const) : ("expense" as const),
     amount: Number(r.amount),
+    currency: toCurrency(r.currency),
     occurred_on: r.occurred_on,
     source: r.source,
     vendor: r.vendor,
     category: r.category,
-  })) satisfies LedgerLine[];
+  }));
   const history = new Map<string, string>();
   const income = new Set<string>();
   const expense = new Set<string>();
@@ -237,12 +241,14 @@ async function fileTransactions(db: Db, planId: string, connectionId: string, tx
   const ctx = await planContext(db, planId);
 
   // Lines still waiting for review from other accounts help spot a transfer between two of the client's own accounts.
-  const { data: waiting } = await db.from("bank_transactions").select("id, connection_id, amount_cents, description, transacted_on").eq("master_plan_id", planId).eq("review_status", "new").gte("transacted_on", new Date(Date.now() - 20 * 86400000).toISOString().slice(0, 10));
-  const lines: BankLine[] = [
-    ...((waiting ?? []) as { id: string; connection_id: string; amount_cents: number; description: string | null; transacted_on: string }[]).map((w) => ({ id: w.id, connectionId: w.connection_id, amountCents: w.amount_cents, description: w.description || "", day: w.transacted_on })),
-    ...brand.map((t) => ({ id: t.id, connectionId, amountCents: t.amount, description: t.description || "", day: dayOf(t.transacted_at) })),
+  // Lines are paired only within one currency (a USD line never pairs with a CAD one).
+  const { data: waiting } = await db.from("bank_transactions").select("id, connection_id, amount_cents, currency, description, transacted_on").eq("master_plan_id", planId).eq("review_status", "new").gte("transacted_on", new Date(Date.now() - 20 * 86400000).toISOString().slice(0, 10));
+  const lines: (BankLine & { currency: string })[] = [
+    ...((waiting ?? []) as { id: string; connection_id: string; amount_cents: number; currency: string | null; description: string | null; transacted_on: string }[]).map((w) => ({ id: w.id, connectionId: w.connection_id, amountCents: w.amount_cents, currency: (w.currency || "usd").toLowerCase(), description: w.description || "", day: w.transacted_on })),
+    ...brand.map((t) => ({ id: t.id, connectionId, amountCents: t.amount, currency: (t.currency || "usd").toLowerCase(), description: t.description || "", day: dayOf(t.transacted_at) })),
   ];
-  const transfers = findOwnTransfers(lines);
+  const transfers = new Set<string>();
+  for (const cur of Array.from(new Set(lines.map((l) => l.currency)))) findOwnTransfers(lines.filter((l) => l.currency === cur)).forEach((id) => transfers.add(id));
   const taken = new Set<string>();
 
   const rows = brand.map((t) => {
@@ -253,7 +259,9 @@ async function fileTransactions(db: Db, planId: string, connectionId: string, tx
     let matched: string | null = null;
     if (transfers.has(t.id) || looksLikeTransfer(line.description)) review = "transfer";
     else {
-      const dup = findDuplicate(line, ctx.ledger, taken);
+      // A line in a currency the Suite doesn't support never matches an entry (entries are only USD or CAD).
+      const cur = (t.currency || "usd").toLowerCase();
+      const dup = isCurrency(cur) ? findDuplicate(line, ctx.ledger.filter((e) => e.currency === cur), taken) : null;
       if (dup) {
         review = "duplicate";
         matched = dup.id;
@@ -338,8 +346,8 @@ export interface ReviewItem {
 export async function reviewTransactions(db: Db, planId: string, action: "approve" | "skip" | "restore", items: ReviewItem[]): Promise<{ done: number }> {
   if (!items.length) return { done: 0 };
   const ids = items.map((i) => i.id).slice(0, 300);
-  const { data } = await db.from("bank_transactions").select("id, connection_id, fc_txn_id, amount_cents, description, transacted_on, review_status, suggested_type, suggested_category, suggested_vendor, entry_id").eq("master_plan_id", planId).in("id", ids);
-  const rows = (data ?? []) as { id: string; connection_id: string; fc_txn_id: string; amount_cents: number; description: string | null; transacted_on: string; review_status: string; suggested_type: string | null; suggested_category: string | null; suggested_vendor: string | null; entry_id: string | null }[];
+  const { data } = await db.from("bank_transactions").select("id, connection_id, fc_txn_id, amount_cents, currency, description, transacted_on, review_status, suggested_type, suggested_category, suggested_vendor, entry_id").eq("master_plan_id", planId).in("id", ids);
+  const rows = (data ?? []) as { id: string; connection_id: string; fc_txn_id: string; amount_cents: number; currency: string | null; description: string | null; transacted_on: string; review_status: string; suggested_type: string | null; suggested_category: string | null; suggested_vendor: string | null; entry_id: string | null }[];
   const by = new Map(items.map((i) => [i.id, i]));
   const now = new Date().toISOString();
   let done = 0;
@@ -357,6 +365,10 @@ export async function reviewTransactions(db: Db, planId: string, action: "approv
   const business = new Map((conns ?? []).map((c) => [c.id as string, (c.business_id as number | null) ?? null]));
   for (const r of rows) {
     if (r.entry_id || r.review_status === "approved") continue;
+    // The entry keeps the bank line's own currency (task 1520). A line in a currency the Suite doesn't support (not
+    // USD or CAD) stays on the review list rather than being filed as dollars it isn't.
+    const currency = (r.currency || "usd").toLowerCase();
+    if (!isCurrency(currency)) continue;
     const edit = by.get(r.id);
     const type = edit?.type || (r.suggested_type === "income" || r.suggested_type === "expense" ? r.suggested_type : typeOf(r.amount_cents));
     const category = (edit?.category || r.suggested_category || (type === "income" ? "Income" : "Uncategorized")).trim().slice(0, 80);
@@ -368,6 +380,7 @@ export async function reviewTransactions(db: Db, planId: string, action: "approv
           master_plan_id: planId,
           type,
           amount: Math.abs(r.amount_cents) / 100,
+          currency,
           category,
           description: (r.description || vendor || "Bank transaction").slice(0, 200),
           occurred_on: r.transacted_on,

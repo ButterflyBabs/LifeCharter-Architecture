@@ -7,6 +7,9 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { saveInsight, latestInsight } from "@/lib/ai/planKnowledge";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { formatMoney, otherCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
+import { addFlow, inHome, zeroFlow } from "@/lib/finance/money";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +34,17 @@ export async function POST(request: Request) {
 
   const { data: eData } = await supabase
     .from("finance_entries")
-    .select("type, amount, category, occurred_on")
+    .select("type, amount, currency, category, occurred_on")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", `${year}-01-01`);
-  const entries = (eData || []) as { type: string; amount: number | string | null; category: string | null }[];
+  // The assessment reads the home currency only (budgets are in it); the other currency is mentioned apart (task 1520).
+  const home = await homeCurrency(masterPlanId, supabase);
+  const allEntries = (eData || []) as { type: string; amount: number | string | null; currency: string | null; category: string | null }[];
+  const entries = allEntries.filter((e) => inHome(e, home));
+  const other = zeroFlow();
+  for (const e of allEntries) if (!inHome(e, home)) addFlow(other, e.type, Number(e.amount ?? 0));
 
-  if (entries.length === 0) {
+  if (allEntries.length === 0) {
     return NextResponse.json({
       empty: true,
       assessment: "No financial data yet. Add income and expenses (or import a statement) and I'll assess your health.",
@@ -73,8 +81,14 @@ export async function POST(request: Request) {
   if (overCap) return overCap;
   const key = assistant.key;
 
-  const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
+  const usd = (n: number) => formatMoney(Math.round(n), home, { home, cents: false });
+  const otherCur = otherCurrency(home);
+  const otherText =
+    other.income || other.expense
+      ? ` Separately, in ${otherCur.toUpperCase()} (a different currency, not included above and not to be added to it): income ${formatMoney(Math.round(other.income), otherCur, { home, cents: false })}, expenses ${formatMoney(Math.round(other.expense), otherCur, { home, cents: false })}.`
+      : "";
   const dataText =
+    `All amounts are in ${home.toUpperCase()} unless stated. ` +
     `Year-to-date: income ${usd(income)}, expenses ${usd(expense)}, net ${usd(net)} ` +
     `(margin ${income > 0 ? Math.round((net / income) * 100) : 0}%). ` +
     `Top expense categories: ${topExpenses.map(([c, v]) => `${c} ${usd(v)}`).join(", ") || "none"}. ` +
@@ -82,7 +96,7 @@ export async function POST(request: Request) {
       budgets.length
         ? budgets.map((b) => `${b.type}/${b.category || "overall"} ${usd(Number(b.amount ?? 0))}`).join(", ")
         : "none set"
-    }.`;
+    }.` + otherText;
 
   const sys = planningSystem(
     assistant,

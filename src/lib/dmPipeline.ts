@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { zonedToUtcISO } from "@/lib/tz";
 import { nowParts } from "@/lib/finance/period";
 import { ensureStages } from "@/lib/sales/pipeline";
+import { homeCurrency } from "@/lib/currencyServer";
 import { logEvent, upsertContact } from "@/lib/crm";
 import { uniqueCode } from "@/lib/affiliates";
 
@@ -205,6 +206,7 @@ async function bookDeal(db: Db, planId: string, card: Card, boardName: string): 
       email: card.email,
       source: on ? `${boardName} (${on})` : boardName,
       origin: "dm_pipeline",
+      currency: await homeCurrency(planId),
       stage_changed_at: new Date().toISOString(),
     })
     .select("id")

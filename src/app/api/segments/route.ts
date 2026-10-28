@@ -4,6 +4,8 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { crossOriginBlocked } from "@/lib/security";
 import { planBusinessIds, planSegmentIds } from "@/lib/planScope";
 import { computeSegmentScores, persistSegmentScores } from "@/lib/scoring/segmentScore";
+import { toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +42,9 @@ export async function GET() {
     });
 
   // What each segment actually earned, from the income and expenses they tagged
-  // to it in the Finance Center (this month and year to date).
+  // to it in the Finance Center (this month and year to date). Home-currency entries only:
+  // other-currency money is never added into these figures.
+  const home = await homeCurrency(masterPlanId, supabase);
   const segIds = businesses.flatMap((b) => ((b.segments as Array<Record<string, unknown>>) ?? []).map((s) => Number(s.id)));
   const fin = new Map<number, { mtdIncome: number; ytdIncome: number; ytdNet: number }>();
   if (segIds.length) {
@@ -49,11 +53,12 @@ export async function GET() {
     const monthStart = `${yearStart.slice(0, 5)}${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
     const { data: entries } = await supabase
       .from("finance_entries")
-      .select("segment_id, type, amount, occurred_on")
+      .select("segment_id, type, amount, occurred_on, currency")
       .eq("master_plan_id", masterPlanId)
       .in("segment_id", segIds)
       .gte("occurred_on", yearStart);
-    for (const e of (entries ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string }[]) {
+    for (const e of (entries ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string; currency: string | null }[]) {
+      if (toCurrency(e.currency) !== home) continue;
       const c = fin.get(e.segment_id) ?? { mtdIncome: 0, ytdIncome: 0, ytdNet: 0 };
       const a = Number(e.amount ?? 0);
       if (e.type === "income") {
@@ -91,7 +96,7 @@ export async function GET() {
     }),
   }));
 
-  return NextResponse.json({ businesses: withFin }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ businesses: withFin, currency: home }, { headers: { "Cache-Control": "no-store" } });
 }
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";

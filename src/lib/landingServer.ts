@@ -40,7 +40,7 @@ export interface PublicPage {
   pixelId: string | null;
   form: { fields: FormField[]; submitLabel: string | null } | null;
   event: { kind: string; title: string; host: string; startsAt: string | null; durationMin: number; timezone: string; days: number | null; startsOn: string | null; open: boolean; note: string | null } | null;
-  offer: { name: string; price: number | null; billing: string | null; paymentCount: number | null } | null;
+  offer: { name: string; price: number | null; currency: string; billing: string | null; paymentCount: number | null } | null;
   buyUrl: string | null;
   booking: { slug: string; name: string; durationMin: number; paid: boolean } | null;
   missing: string | null; // what the owner still has to connect (shown only in preview)
@@ -51,12 +51,12 @@ export async function publicPage(db: Db, p: PageRow): Promise<PublicPage> {
     brandFor(db, p.master_plan_id),
     p.template === "optin" && p.form_id ? db.from("crm_forms").select("fields, submit_label, active").eq("id", p.form_id).eq("master_plan_id", p.master_plan_id).maybeSingle() : Promise.resolve({ data: null }),
     p.template === "webinar" && p.event_id ? db.from("events").select("id, kind, title, host_name, starts_at, duration_min, timezone, days, starts_on, status, capacity").eq("id", p.event_id).eq("master_plan_id", p.master_plan_id).maybeSingle() : Promise.resolve({ data: null }),
-    p.template === "sales" && p.offer_id ? db.from("sales_offers").select("name, price, billing, payment_count, link").eq("id", p.offer_id).eq("master_plan_id", p.master_plan_id).maybeSingle() : Promise.resolve({ data: null }),
+    p.template === "sales" && p.offer_id ? db.from("sales_offers").select("name, price, currency, billing, payment_count, link").eq("id", p.offer_id).eq("master_plan_id", p.master_plan_id).maybeSingle() : Promise.resolve({ data: null }),
     p.template === "booking" && p.calendar_id ? db.from("booking_calendars").select("slug, name, duration_min, active, pay_mode").eq("id", p.calendar_id).eq("master_plan_id", p.master_plan_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const f = form.data as { fields: FormField[]; submit_label: string | null; active: boolean } | null;
   const e = ev.data as { id: string; kind: string; title: string; host_name: string | null; starts_at: string | null; duration_min: number; timezone: string; days: number | null; starts_on: string | null; status: string; capacity: number | null } | null;
-  const o = offer.data as { name: string; price: number | null; billing: string | null; payment_count: number | null; link: string | null } | null;
+  const o = offer.data as { name: string; price: number | null; currency: string | null; billing: string | null; payment_count: number | null; link: string | null } | null;
   const c = cal.data as { slug: string; name: string; duration_min: number; active: boolean; pay_mode: string | null } | null;
 
   let event: PublicPage["event"] = null;
@@ -89,7 +89,7 @@ export async function publicPage(db: Db, p: PageRow): Promise<PublicPage> {
     pixelId: p.pixel_id,
     form: f && f.active ? { fields: f.fields ?? [], submitLabel: f.submit_label } : null,
     event,
-    offer: o ? { name: o.name, price: o.price == null ? null : Number(o.price), billing: o.billing, paymentCount: o.payment_count } : null,
+    offer: o ? { name: o.name, price: o.price == null ? null : Number(o.price), currency: o.currency || "usd", billing: o.billing, paymentCount: o.payment_count } : null,
     buyUrl,
     booking: c && c.active ? { slug: c.slug, name: c.name, durationMin: c.duration_min, paid: Boolean(c.pay_mode && c.pay_mode !== "none") } : null,
     missing,

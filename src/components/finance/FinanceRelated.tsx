@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { FinanceOverview } from "@/lib/finance/overview";
-
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 const niceDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -14,7 +12,13 @@ const niceDate = (iso: string) => {
 type Variant = "pulse" | "expenses" | "income" | "bills" | "budget" | "tax" | "tech" | "reports";
 type Item = { href: string; label: string; value: string; note?: string; warn?: boolean };
 
-function itemsFor(v: Variant, o: FinanceOverview): Item[] {
+// Amounts are the home currency (the overview counts only those); the other currency's money, when there is any,
+// is added to the note as its own amount.
+function itemsFor(v: Variant, o: FinanceOverview, usd: (n: number) => string, alsoText: (path: string, signed?: boolean) => string | null): Item[] {
+  const also = (note: string | undefined, path: string, signed?: boolean) => {
+    const t = alsoText(path, signed);
+    return t ? [note, `${t} kept separate`].filter(Boolean).join(" · ") : note;
+  };
   const bills: Item = {
     href: "/finance/bills",
     label: "Bills coming up",
@@ -25,7 +29,7 @@ function itemsFor(v: Variant, o: FinanceOverview): Item[] {
         : o.bills.count
           ? "Nothing due this week"
           : "No bills tracked yet",
-    note: o.bills.next14.length ? o.bills.next14.slice(0, 3).map((b) => `${b.name} ${niceDate(b.date)}`).join(" · ") : undefined,
+    note: also(o.bills.next14.length ? o.bills.next14.slice(0, 3).map((b) => `${b.name} ${niceDate(b.date)}`).join(" · ") : undefined, o.bills.overdueCount ? "bills.overdueTotal" : "bills.next7Total"),
     warn: o.bills.overdueCount > 0,
   };
   const budget: Item = {
@@ -55,7 +59,7 @@ function itemsFor(v: Variant, o: FinanceOverview): Item[] {
     href: "/finance/pulse",
     label: "Cash flow this month",
     value: `${o.month.net >= 0 ? "+" : "−"}${usd(Math.abs(o.month.net))} net`,
-    note: `${usd(o.month.income)} in · ${usd(o.month.expense)} out`,
+    note: also(`${usd(o.month.income)} in · ${usd(o.month.expense)} out`, "month.net", true),
     warn: o.month.net < 0,
   };
   switch (v) {
@@ -80,8 +84,10 @@ function itemsFor(v: Variant, o: FinanceOverview): Item[] {
 
 /** "Connected to" strip: what the related Finance cards say right now, each one a link. */
 export function FinanceRelated({ variant, overview }: { variant: Variant; overview: FinanceOverview | null }) {
+  const { home, money } = useMoney();
   if (!overview) return null;
-  const items = itemsFor(variant, overview);
+  const other = (overview as { other?: OtherBlock }).other;
+  const items = itemsFor(variant, overview, (n) => money(n), (path, signed) => otherText(other, home, [path, path.replace(/^month\./, "mtd.")], { signed }));
   return (
     <div className="mb-6">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] mb-2">Connected to</p>

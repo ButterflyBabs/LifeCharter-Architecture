@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { buildForecast } from "@/lib/planning/forecastData";
+import { otherCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -55,29 +57,38 @@ export async function GET() {
   };
 
   // --- Finance (MTD / YTD net) ---
+  // Totals count home-currency entries only; the other currency is summed on its own (never added in).
+  const home = await homeCurrency(masterPlanId, supabase);
   const now = new Date();
   const yearStart = `${now.getUTCFullYear()}-01-01`;
   const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
   const { data: fin } = await supabase
     .from("finance_entries")
-    .select("type, amount, occurred_on")
+    .select("type, amount, occurred_on, currency")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
-  let ytdIncome = 0;
-  let ytdExpense = 0;
-  let mtdIncome = 0;
-  let mtdExpense = 0;
-  for (const e of (fin || []) as { type: string; amount: number | string | null; occurred_on: string | null }[]) {
+  const blank = () => ({ ytdIncome: 0, ytdExpense: 0, mtdIncome: 0, mtdExpense: 0 });
+  const other = otherCurrency(home);
+  const sums = { [home]: blank(), [other]: blank() } as Record<string, ReturnType<typeof blank>>;
+  for (const e of (fin || []) as { type: string; amount: number | string | null; occurred_on: string | null; currency: string | null }[]) {
     const amt = Number(e.amount ?? 0);
     const inMonth = (e.occurred_on || "") >= monthStart;
+    const t = sums[toCurrency(e.currency)];
     if (e.type === "income") {
-      ytdIncome += amt;
-      if (inMonth) mtdIncome += amt;
+      t.ytdIncome += amt;
+      if (inMonth) t.mtdIncome += amt;
     } else {
-      ytdExpense += amt;
-      if (inMonth) mtdExpense += amt;
+      t.ytdExpense += amt;
+      if (inMonth) t.mtdExpense += amt;
     }
   }
+  const financeOf = (t: ReturnType<typeof blank>) => ({
+    mtdNet: Math.round(t.mtdIncome - t.mtdExpense),
+    ytdNet: Math.round(t.ytdIncome - t.ytdExpense),
+    ytdIncome: Math.round(t.ytdIncome),
+    ytdExpense: Math.round(t.ytdExpense),
+  });
+  const o = sums[other];
 
   // --- Sales pipeline ---
   const { data: acts } = await supabase
@@ -123,11 +134,10 @@ export async function GET() {
       marketing: planCard("marketing"),
       sales: planCard("sales"),
     },
+    currency: home,
     finance: {
-      mtdNet: Math.round(mtdIncome - mtdExpense),
-      ytdNet: Math.round(ytdIncome - ytdExpense),
-      ytdIncome: Math.round(ytdIncome),
-      ytdExpense: Math.round(ytdExpense),
+      ...financeOf(sums[home]),
+      other: o.ytdIncome || o.ytdExpense ? { currency: other, ...financeOf(o) } : null,
     },
     pipeline: { value: Math.round(pipelineValue), openCount },
     forecast: forecastSummary,

@@ -8,6 +8,9 @@ import { currentBusiness, businessMoneyFilter } from "@/lib/businessScope";
 import { periodRange } from "@/lib/finance/period";
 import { loadIncomeGoals } from "@/lib/finance/goals";
 import { nextAfter, type BillCadence } from "@/lib/finance/billDates";
+import { formatMoney, isCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
+import { addFlow, inHome, otherBlock, zeroFlow } from "@/lib/finance/money";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +18,7 @@ type Row = {
   id: string;
   type: string;
   amount: number | string | null;
+  currency?: string | null;
   category: string | null;
   description: string | null;
   occurred_on: string;
@@ -32,6 +36,7 @@ function serialize(r: Row) {
     id: r.id,
     type: r.type === "income" ? "income" : "expense",
     amount: Number(r.amount ?? 0),
+    currency: toCurrency(r.currency),
     category: r.category || "",
     description: r.description || "",
     occurredOn: r.occurred_on,
@@ -74,9 +79,10 @@ export async function GET(request: Request) {
 
   // Header business switcher: only that business's money (tagged to it, or to one of its segments).
   const scope = masterPlanId ? await currentBusiness(masterPlanId) : null;
+  const home = await homeCurrency(masterPlanId, supabase);
   let entriesQ = supabase
     .from("finance_entries")
-    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
   if (scope) entriesQ = entriesQ.or(businessMoneyFilter(scope));
@@ -85,12 +91,17 @@ export async function GET(request: Request) {
   if (error) {
     console.error("GET /api/finance/entries:", error.message);
     return NextResponse.json(
-      { entries: [], mtd: zero(), ytd: zero(), monthly: [], error: error.message },
+      { entries: [], mtd: zero(), ytd: zero(), monthly: [], currency: home, other: null, error: error.message },
       { status: 200 }
     );
   }
 
-  const entries = ((data || []) as Row[]).map(serialize);
+  const all = ((data || []) as Row[]).map(serialize);
+  // Every total below is the home currency only (task 1520); the other currency is totalled apart in `other`.
+  const entries = all.filter((e) => inHome(e, home));
+  const otherMtd = zeroFlow();
+  const otherYtd = zeroFlow();
+  const otherWtd = zeroFlow();
 
   const mtd = zero();
   const ytd = zero();
@@ -99,6 +110,12 @@ export async function GET(request: Request) {
   const catMtd: Record<string, number> = {};
   const catYtd: Record<string, number> = {};
   const week = periodRange("week", { tz });
+  for (const e of all) {
+    if (inHome(e, home)) continue;
+    addFlow(otherYtd, e.type, e.amount);
+    if (e.occurredOn.startsWith(monthPrefix)) addFlow(otherMtd, e.type, e.amount);
+    if (e.occurredOn >= week.startStr && e.occurredOn < week.endStr) addFlow(otherWtd, e.type, e.amount);
+  }
 
   for (const e of entries) {
     const bucket = e.type === "income" ? "income" : "expense";
@@ -207,13 +224,15 @@ export async function GET(request: Request) {
     }))
     .sort((a, b) => b.net - a.net);
 
-  // Uncategorized expenses this year (for tax accuracy alerts).
-  const uncategorizedExpenses = entries.filter(
+  // Uncategorized expenses this year (for tax accuracy alerts), in any currency.
+  const uncategorizedExpenses = all.filter(
     (e) => e.type === "expense" && !(e.category || "").trim()
   ).length;
 
   return NextResponse.json({
-    entries: entries.slice(0, 100),
+    entries: all.slice(0, 100),
+    currency: home,
+    other: otherBlock(home, { mtd: otherMtd, ytd: otherYtd, wtd: otherWtd }),
     mtd,
     ytd,
     wtd,
@@ -260,6 +279,9 @@ export async function POST(request: Request) {
   const renewal = recurring ? (body.renewal === "manual" ? "manual" : "auto") : null;
   const category = typeof body.category === "string" ? body.category.trim() : null;
   const description = typeof body.description === "string" ? body.description.trim() : null;
+  // Its currency: the one posted (USD or CAD), else the account's home currency (task 1520).
+  const home = await homeCurrency(masterPlanId, supabase);
+  const currency: Currency = isCurrency(body.currency) ? toCurrency(body.currency) : home;
   // The business it belongs to: one named in the request (must be this account's own), else the one chosen in the header.
   const named = Number(body.businessId);
   const businessId: number | null =
@@ -288,6 +310,7 @@ export async function POST(request: Request) {
           name: (vendor || category || description || "Recurring expense").slice(0, 120),
           vendor,
           amount,
+          currency,
           category: category || null,
           cadence: frequency,
           next_due: next,
@@ -309,6 +332,7 @@ export async function POST(request: Request) {
       master_plan_id: masterPlanId,
       type,
       amount,
+      currency,
       category,
       description,
       occurred_on: occurredOn,
@@ -322,7 +346,7 @@ export async function POST(request: Request) {
       bill_id: billId,
       ...(receipt ? { receipt_path: receipt.path, receipt_name: receipt.file_name } : {}),
     })
-    .select("id, type, amount, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
+    .select("id, type, amount, currency, category, description, occurred_on, source, segment_id, vendor, payment_type, frequency, renewal, receipt_path")
     .single();
 
   if (!error && receipt && data?.id) await supabase.from("finance_receipts").update({ status: "saved", entry_id: data.id }).eq("id", receipt.id);
@@ -337,13 +361,13 @@ export async function POST(request: Request) {
     action: "created",
     entityType: type,
     entityId: data?.id as string | number | undefined,
-    summary: `Added ${type} $${amount.toFixed(2)}${what ? ` (${what.slice(0, 80)})` : ""}`,
+    summary: `Added ${type} ${formatMoney(amount, currency, { home, cents: true })}${what ? ` (${what.slice(0, 80)})` : ""}`,
   });
   // A one-time expense that looks like an upcoming bill (same name, close to its due date and amount): offer to
   // link them so the bill is rolled forward and the same money isn't counted twice.
-  let billMatch: { id: string; name: string; nextDue: string; amount: number | null } | null = null;
+  let billMatch: { id: string; name: string; nextDue: string; amount: number | null; currency: Currency } | null = null;
   if (type === "expense" && !recurring && masterPlanId) {
-    billMatch = await findMatchingBill(supabase, masterPlanId, { vendor, category, description, amount, occurredOn }).catch(() => null);
+    billMatch = await findMatchingBill(supabase, masterPlanId, { vendor, category, description, amount, currency, occurredOn }).catch(() => null);
   }
   return NextResponse.json({ entry: serialize(data as Row), billMatch });
 }
@@ -351,7 +375,7 @@ export async function POST(request: Request) {
 async function findMatchingBill(
   supabase: ReturnType<typeof createServerClient>,
   masterPlanId: string,
-  e: { vendor: string | null; category: string | null; description: string | null; amount: number; occurredOn: string }
+  e: { vendor: string | null; category: string | null; description: string | null; amount: number; currency: Currency; occurredOn: string }
 ) {
   const names = [e.vendor, e.description, e.category].map((v) => (v || "").trim().toLowerCase()).filter(Boolean);
   if (!names.length) return null;
@@ -363,6 +387,7 @@ async function findMatchingBill(
     .from("finance_bills")
     .select("id, name, vendor, amount, next_due")
     .eq("master_plan_id", masterPlanId)
+    .eq("currency", e.currency) // only a bill in the same currency
     .eq("active", true)
     .gte("next_due", day(e.occurredOn, -10))
     .lte("next_due", day(e.occurredOn, 21));
@@ -374,7 +399,7 @@ async function findMatchingBill(
     const amt = b.amount === null || b.amount === "" ? null : Number(b.amount);
     return amt === null || amt <= 0 || Math.abs(amt - e.amount) / amt <= 0.25;
   });
-  return hit ? { id: hit.id, name: hit.vendor || hit.name, nextDue: hit.next_due, amount: hit.amount === null ? null : Number(hit.amount) } : null;
+  return hit ? { id: hit.id, name: hit.vendor || hit.name, nextDue: hit.next_due, amount: hit.amount === null ? null : Number(hit.amount), currency: e.currency } : null;
 }
 
 // A segment id is only accepted if it belongs to THIS client's own account.

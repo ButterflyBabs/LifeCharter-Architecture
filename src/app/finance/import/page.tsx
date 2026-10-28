@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Upload, Sparkles, CheckCircle, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { CurrencySelect } from "@/components/money/CurrencySelect";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import type { Currency } from "@/lib/currency";
 
 interface Txn {
   include: boolean;
@@ -24,6 +27,9 @@ export default function FinanceImportPage() {
   const [importing, setImporting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // One statement is one currency: every imported row gets it (the home currency unless picked).
+  const { currency: home, canChoose } = useHomeCurrency();
+  const [currency, setCurrency] = useState<Currency | null>(null);
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,6 +86,7 @@ export default function FinanceImportPage() {
         category: t.category,
         description: t.description,
         occurredOn: t.date,
+        currency: currency ?? home,
       }));
     if (entries.length === 0) {
       setMsg({ ok: false, text: "Select at least one transaction." });
@@ -91,7 +98,7 @@ export default function FinanceImportPage() {
       const res = await fetch("/api/finance/import/commit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries }),
+        body: JSON.stringify({ entries, currency: currency ?? home }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -186,6 +193,12 @@ export default function FinanceImportPage() {
                 Review {txns.length} transaction(s) — {selectedCount} selected
               </p>
               <div className="flex items-center gap-2">
+                {canChoose && (
+                  <label className="flex items-center gap-1.5 text-xs text-[#b8a898]">
+                    Currency
+                    <CurrencySelect value={currency ?? home} onChange={setCurrency} aria-label="Currency of these transactions" />
+                  </label>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => setTxns(null)}>
                   Start over
                 </Button>

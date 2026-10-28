@@ -10,6 +10,8 @@ import { consentText, toE164 } from "@/lib/sms";
 import { awayAhead, awayDates, awayNote } from "@/lib/awayMode";
 import { cookies } from "next/headers";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
+import { toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -48,8 +50,10 @@ export async function GET(request: Request, { params }: { params: { slug: string
       sms: smsOn ? { consent: smsOn } : null,
       payment: (() => {
         const c = bookingCharge(cal);
-        return c ? { amount: c.cents / 100, kind: c.kind } : null;
+        return c ? { amount: c.cents / 100, kind: c.kind, currency: toCurrency((cal as { currency?: string }).currency) } : null;
       })(),
+      // The account's home currency decides which currency shows as a plain "$".
+      homeCurrency: await homeCurrency(cal.master_plan_id),
     },
     slots: plan.slots.map((s) => s.start),
     away: away?.block_bookings ? { dates: awayDates(away), note: awayNote(away) } : null,
@@ -113,10 +117,13 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     });
   }
   if (r.ok && charge && connection) {
+    // The booking is charged (and kept) in its calendar's currency (task 1520).
+    const currency = toCurrency((cal as { currency?: string }).currency, await homeCurrency(cal.master_plan_id));
+    await createServerClient().from("bookings").update({ currency }).eq("id", r.bookingId);
     try {
       const pay = await bookingCheckout(connection, {
         bookingId: r.bookingId, planId: cal.master_plan_id, slug: cal.slug, calName: cal.name, startISO: str(b.start),
-        tz: str(b.timezone) || "America/Denver", email: str(b.email).trim().toLowerCase(), token: r.manageToken, cents: charge.cents, deposit: charge.kind === "deposit",
+        tz: str(b.timezone) || "America/Denver", email: str(b.email).trim().toLowerCase(), token: r.manageToken, cents: charge.cents, deposit: charge.kind === "deposit", currency,
       });
       return NextResponse.json({ ok: true, pay, manage: `/book/manage/${r.manageToken}` });
     } catch (e) {

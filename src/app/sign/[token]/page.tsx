@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatMoney, type Currency } from "@/lib/currency";
 
 // A signer's private page (task 1072): confirm the emailed code, read, agree to sign electronically, sign or decline.
 type View = {
@@ -15,6 +16,8 @@ type View = {
   fileUrl: string | null;
   fileName: string | null;
   amount: number | null;
+  currency?: Currency;
+  homeCurrency?: Currency;
   consent: string;
   agree: string;
   canDownload: boolean;
@@ -179,7 +182,7 @@ export default function SignPage({ params }: { params: { token: string } }) {
                 <a href={v.fileUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-[#2E7C83] underline">Open the document in a new tab</a>
               </div>
             )}
-            {v.kind === "proposal" && v.amount ? <p className="rounded-xl bg-white px-4 py-3 text-[15px]">Investment: <strong>${Number(v.amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</strong></p> : null}
+            {v.kind === "proposal" && v.amount ? <p className="rounded-xl bg-white px-4 py-3 text-[15px]">Investment: <strong>{formatMoney(Number(v.amount), v.currency ?? "usd", { home: v.homeCurrency ?? "usd" })}</strong></p> : null}
             {v.others.length > 0 && <p className="text-sm text-[#56616E]">Also signing: {v.others.map((o) => `${o.name}${o.signed ? " (signed)" : ""}`).join(", ")}</p>}
           </>
         )}

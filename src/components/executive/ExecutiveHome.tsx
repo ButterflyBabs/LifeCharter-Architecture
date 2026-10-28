@@ -7,6 +7,8 @@ import { SegmentSelect } from "@/components/segments/SegmentSelect";
 import CoachingCallsCard from "@/components/coaching/CoachingCallsCard";
 import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
+import { formatMoney, type Currency } from "@/lib/currency";
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import Link from "next/link";
 import {
   CheckSquare,
@@ -176,6 +178,8 @@ export default function ExecutiveHome() {
     changePct: number | null;
     weekly: number[];
     periods?: Record<PulsePeriod, PulseStats>;
+    currency?: Currency; // home currency: every pulse figure counts only money in it
+    other?: { currency: Currency; week: number; month: number; year: number } | null; // other-currency income, kept apart
   } | null>(null);
   const [recurring, setRecurring] = useState<RecurringTask[]>([]);
   const [showRecurring, setShowRecurring] = useState(false);
@@ -1041,8 +1045,8 @@ export default function ExecutiveHome() {
     setSending(false);
   };
 
-  const currency = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  // Whole dollars in the account's home currency (the pulse is home-currency only).
+  const currency = (n: number) => formatMoney(n, finance?.currency ?? "usd", { home: finance?.currency, cents: false });
 
   const fetchTasks = async () => {
     try {
@@ -1522,6 +1526,9 @@ export default function ExecutiveHome() {
             {/* Income for the selected period (live) */}
             <div>
               <p className="text-3xl font-serif text-[#c9a227]">{currency(ps?.income ?? 0)}</p>
+              <OtherCurrencyNote
+                text={finance?.other?.[pulsePeriod] ? formatMoney(finance.other[pulsePeriod], finance.other.currency, { home: finance.currency, cents: false }) : null}
+              />
               <p className="text-sm text-gray-600 mt-1">
                 {ps && ps.changePct !== null ? (
                   <>

@@ -17,10 +17,11 @@ const money = (n: number) => Math.round(n * 100) / 100;
 // Finance: affiliate income you're paid (programs you promote) and commissions you pay
 // out (your affiliates) are real money in and out, so they're kept in finance_entries,
 // one row per paid item (external_id links them; un-paying removes the row).
+// Affiliate amounts are tracked in US dollars (the Affiliates page shows USD), so their rows are USD.
 async function syncFinance(db: ReturnType<typeof createServerClient>, planId: string, externalId: string, row: { type: "income" | "expense"; amount: number; category: string; description: string; occurredOn: string } | null) {
   await db.from("finance_entries").delete().eq("master_plan_id", planId).eq("external_id", externalId);
   if (row && row.amount > 0)
-    await db.from("finance_entries").insert({ master_plan_id: planId, type: row.type, amount: money(row.amount), category: row.category, description: row.description.slice(0, 300), occurred_on: row.occurredOn, source: "affiliate", external_id: externalId });
+    await db.from("finance_entries").insert({ master_plan_id: planId, type: row.type, amount: money(row.amount), category: row.category, description: row.description.slice(0, 300), occurred_on: row.occurredOn, source: "affiliate", external_id: externalId, currency: "usd" });
 }
 
 export async function GET(request: Request) {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 
   const [{ data: affs }, { data: offers }, { data: programs }, { data: clicks }, { data: refs }, { data: sales }, { data: earnings }] = await Promise.all([
     db.from("affiliates").select("id, name, email, code, status, default_rate, payout_delay_days, contact_id, portal_token, landing_url, created_at").eq("master_plan_id", a.planId).order("created_at"),
-    db.from("sales_offers").select("id, name, price, affiliate_rate, status").eq("master_plan_id", a.planId).order("sort_order"),
+    db.from("sales_offers").select("id, name, price, currency, affiliate_rate, status").eq("master_plan_id", a.planId).order("sort_order"),
     db.from("affiliate_programs").select("*").eq("master_plan_id", a.planId).order("created_at"),
     db.from("affiliate_clicks").select("affiliate_id").eq("master_plan_id", a.planId).limit(20000),
     db.from("affiliate_referrals").select("affiliate_id").eq("master_plan_id", a.planId).limit(20000),

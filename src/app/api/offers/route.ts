@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { OFFER_COLUMNS, offerRow, shapeOffer } from "@/lib/sales/offers";
 import { ownBusinessId, planBusinesses, salesAccount } from "@/lib/sales/account";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   const v = offerRow(body);
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
   v.row.business_id = body.businessId ? await ownBusinessId(a.masterPlanId, body.businessId) : null;
+  // A new offer is in the posted currency, else the account's home currency.
+  if (!v.row.currency) v.row.currency = await homeCurrency(a.masterPlanId);
   const { count } = await a.supabase.from("sales_offers").select("id", { count: "exact", head: true }).eq("master_plan_id", a.masterPlanId);
   if ((count ?? 0) >= 200) return NextResponse.json({ error: "That's the most offers one account can hold." }, { status: 400 });
   const { data, error } = await a.supabase

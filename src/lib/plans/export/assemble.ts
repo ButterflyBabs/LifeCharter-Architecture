@@ -2,6 +2,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { PLAN_KINDS, getBlueprint, type PlanKind } from "@/lib/plans/blueprints";
 import { loadIncomeGoals } from "@/lib/finance/goals";
 import { buildForecast } from "@/lib/planning/forecastData";
+import { formatMoney, otherCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 import { textToBlocks, VERSION_LABEL, templateLetter, type Block, type Part, type PlanDoc, type Version } from "./model";
 
 type Db = ReturnType<typeof createServerClient>;
@@ -54,41 +56,55 @@ function dropRepeatedTitle(blocks: Block[], title: string): Block[] {
   return first && first.t === "h3" && norm(first.text) === norm(title) ? blocks.slice(1) : blocks;
 }
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+// Whole dollars in the account's home currency (goals, budgets and the forecast are all in it).
+const moneyIn = (home: Currency) => (n: number, c: Currency = home) => formatMoney(Math.round(n), c, { home, cents: false });
 const monthName = (ym: string) => new Date(`${ym}-01T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 
 async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
   const blocks: Block[] = [];
   const now = new Date();
   const yearStart = `${now.getUTCFullYear()}-01-01`;
-  const [{ data: fin }, goals] = await Promise.all([
-    db.from("finance_entries").select("type, amount").eq("master_plan_id", planId).gte("occurred_on", yearStart),
+  const [{ data: fin }, goals, home] = await Promise.all([
+    db.from("finance_entries").select("type, amount, currency").eq("master_plan_id", planId).gte("occurred_on", yearStart),
     loadIncomeGoals(planId, db),
+    homeCurrency(planId, db),
   ]);
-  let inc = 0;
-  let exp = 0;
-  for (const e of (fin || []) as { type: string; amount: number | string | null }[]) {
+  const usd = moneyIn(home);
+  const other = otherCurrency(home);
+  // Each currency totalled on its own; never added together.
+  const sums = { [home]: { inc: 0, exp: 0 }, [other]: { inc: 0, exp: 0 } } as Record<Currency, { inc: number; exp: number }>;
+  for (const e of (fin || []) as { type: string; amount: number | string | null; currency: string | null }[]) {
     const a = Number(e.amount ?? 0);
-    if (e.type === "income") inc += a;
-    else exp += a;
+    const t = sums[toCurrency(e.currency)];
+    if (e.type === "income") t.inc += a;
+    else t.exp += a;
   }
+  const { inc, exp } = sums[home];
+  const o = sums[other];
   // Only show actual results once there are some; a table of zeros helps nobody.
-  if (inc > 0 || exp > 0) {
+  if (inc > 0 || exp > 0 || o.inc > 0 || o.exp > 0) {
     blocks.push({ t: "h2", text: `Year to date (${now.getUTCFullYear()})` });
     blocks.push({ t: "table", head: ["", "Amount"], rows: [["Income", usd(inc)], ["Expenses", usd(exp)], ["Net", usd(inc - exp)]], widths: [3, 2] });
+    if (o.inc > 0 || o.exp > 0) {
+      blocks.push({ t: "note", text: `Kept separate, in ${other.toUpperCase()} (not included above): income ${usd(o.inc, other)}, expenses ${usd(o.exp, other)}, net ${usd(o.inc - o.exp, other)}.` });
+    }
   }
 
   const months: string[][] = [];
+  let targetTotal = 0;
   for (let i = 0; i < 12; i++) {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1));
     const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
     const g = goals.forMonth(ym);
-    if (g) months.push([monthName(ym), usd(g)]);
+    if (g) {
+      months.push([monthName(ym), usd(g)]);
+      targetTotal += Math.round(g);
+    }
   }
   if (months.length) {
     blocks.push({ t: "h2", text: "Revenue targets, next 12 months" });
     blocks.push({ t: "note", text: "Targets set by the owner in the business's revenue model. They are goals, not results." });
-    blocks.push({ t: "table", head: ["Month", "Revenue target"], rows: [...months, ["Total", usd(months.reduce((a, r) => a + Number(r[1].replace(/[^0-9]/g, "")), 0))]], widths: [3, 2] });
+    blocks.push({ t: "table", head: ["Month", "Revenue target"], rows: [...months, ["Total", usd(targetTotal)]], widths: [3, 2] });
   }
 
   try {
@@ -115,6 +131,7 @@ async function financeBlocks(db: Db, planId: string): Promise<Block[]> {
 // three projected scenarios.
 async function forecastBlocks(planId: string): Promise<Block[]> {
   const f = await buildForecast(planId);
+  const usd = moneyIn(f.currency);
   const blocks: Block[] = [];
   if (f.revenuePlan) {
     const exp = f.revenuePlan.scenarios.find((x) => x.key === "expected") || f.revenuePlan.scenarios[0];

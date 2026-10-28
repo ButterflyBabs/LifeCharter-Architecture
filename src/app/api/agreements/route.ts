@@ -5,6 +5,8 @@ import { PORTAL_BUCKET } from "@/lib/portal";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
 import { DOC_COLUMNS, SIGNER_COLUMNS, audit, brandFor, loadDoc, ownerSignNow, resendDocument, sendDocument, signMail, signerUrl, voidDocument, type Doc } from "@/lib/esignServer";
 import { currentRound } from "@/lib/esign";
+import { isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
     db.from("sign_documents").select("id, title, kind, status, source, contact_id, sent_at, completed_at, created_at, updated_at").eq("master_plan_id", a.planId).order("updated_at", { ascending: false }).limit(300),
     db.from("sign_signers").select("document_id, name, status, order_no, is_owner, sign_documents!inner(master_plan_id)").eq("sign_documents.master_plan_id", a.planId),
     db.from("sign_templates").select("id, key, name, kind, review_note, master_plan_id, updated_at").or(`master_plan_id.is.null,master_plan_id.eq.${a.planId}`).order("name"),
-    db.from("sales_offers").select("id, name, price").eq("master_plan_id", a.planId).order("sort_order"),
+    db.from("sales_offers").select("id, name, price, currency").eq("master_plan_id", a.planId).order("sort_order"),
   ]);
   type Sg = { document_id: string; name: string; status: string; order_no: number; is_owner: boolean };
   const byDoc = new Map<string, Sg[]>();
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
     const { data: c } = contactId ? await db.from("seq_contacts").select("id, first_name, last_name, email").eq("id", contactId).eq("master_plan_id", a.planId).maybeSingle() : { data: null };
     const clientName = c ? [c.first_name, c.last_name].filter(Boolean).join(" ") : "";
     body = fillPlaceholders(body, { "Business name": brand.name, "Your business": brand.name, Date: today(), "Client name": clientName, "Client email": String(c?.email || "") });
-    const { data, error } = await db.from("sign_documents").insert({ master_plan_id: a.planId, title: title || (kind === "proposal" ? "Proposal" : "Agreement"), kind, body, contact_id: c?.id ?? null, created_by: a.userEmail }).select("id").single();
+    const { data, error } = await db.from("sign_documents").insert({ master_plan_id: a.planId, title: title || (kind === "proposal" ? "Proposal" : "Agreement"), kind, body, contact_id: c?.id ?? null, currency: await homeCurrency(a.planId, db), created_by: a.userEmail }).select("id").single();
     if (error || !data) return NextResponse.json({ error: "Couldn't create it." }, { status: 500 });
     if (c && EMAIL.test(String(c.email || ""))) await db.from("sign_signers").insert({ document_id: data.id, order_no: 1, name: clientName || String(c.email), email: String(c.email).toLowerCase(), token_hash: newToken().hash });
     await audit(db, data.id, "Created", { detail: tplId ? "from a template" : "blank" });
@@ -120,6 +122,8 @@ export async function POST(request: Request) {
         message: str(b.message, 2000) || null,
         expires_on: /^\d{4}-\d{2}-\d{2}$/.test(String(b.expiresOn || "")) ? b.expiresOn : null,
         amount: Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : null,
+        // The amount's currency (task 1520): changed only when posted.
+        ...(isCurrency(b.currency) ? { currency: toCurrency(b.currency) } : {}),
         offer_id: offer?.id ?? null,
         owner_signs: Boolean(b.ownerSigns),
         contact_id: uuid(b.contactId) ?? doc.contact_id,
@@ -178,7 +182,7 @@ export async function POST(request: Request) {
   }
   if (action === "duplicate") {
     const { signers } = await loadDoc(db, doc.id);
-    const { data } = await db.from("sign_documents").insert({ master_plan_id: a.planId, title: `${doc.title} (copy)`.slice(0, 160), kind: doc.kind, source: doc.source, body: doc.body, file_path: doc.file_path, file_name: doc.file_name, contact_id: doc.contact_id, offer_id: doc.offer_id, amount: doc.amount, message: doc.message, owner_signs: doc.owner_signs, created_by: a.userEmail }).select("id").single();
+    const { data } = await db.from("sign_documents").insert({ master_plan_id: a.planId, title: `${doc.title} (copy)`.slice(0, 160), kind: doc.kind, source: doc.source, body: doc.body, file_path: doc.file_path, file_name: doc.file_name, contact_id: doc.contact_id, offer_id: doc.offer_id, amount: doc.amount, currency: toCurrency(doc.currency), message: doc.message, owner_signs: doc.owner_signs, created_by: a.userEmail }).select("id").single();
     if (data && signers.length) await db.from("sign_signers").insert(signers.map((s) => ({ document_id: data.id, name: s.name, email: s.email, order_no: s.order_no, is_owner: s.is_owner, token_hash: newToken().hash })));
     if (data) await audit(db, data.id, "Created", { detail: `copy of ${doc.id}` });
     return NextResponse.json({ ok: true, id: data?.id });

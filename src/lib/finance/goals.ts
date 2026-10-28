@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 
 // Income goals. The account has a general monthly goal (finance_budgets: income, category ""), and may also set a
 // goal for individual months (finance_month_goals), for example a growth ramp. A month with its own goal uses
-// it; every other month uses the general one.
+// it; every other month uses the general one. Goals have no currency of their own: they are in the home currency.
 type Db = ReturnType<typeof createServerClient>;
 
 export interface IncomeGoals {

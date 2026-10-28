@@ -50,7 +50,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases, agreements });
 }
 
-type Item = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; source: string; recordId?: string };
+type Item = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; currency?: string; source: string; recordId?: string };
 
 // Calls they attended and what they bought, from every place the Suite records it,
 // plus anything logged by hand. Dates are YYYY-MM-DD; newest first.
@@ -59,7 +59,7 @@ async function history(db: ReturnType<typeof createServerClient>, planId: string
   const [{ data: bookings }, { data: records }, { data: deals }, mc, orders] = await Promise.all([
     db.from("bookings").select("id, start_at, status, booking_calendars(name)").eq("master_plan_id", planId).eq("status", "completed").or(`contact_id.eq.${contact.id},invitee_email.eq.${email}`).order("start_at", { ascending: false }).limit(200),
     db.from("contact_records").select("id, kind, title, occurred_on, amount, note, sales_offers(name)").eq("contact_id", contact.id).eq("master_plan_id", planId).order("occurred_on", { ascending: false }),
-    email ? db.from("pipeline_deals").select("id, contact_name, value, closed_at, stage_changed_at, pipeline_stages!inner(kind), sales_offers(name)").eq("master_plan_id", planId).ilike("email", email).eq("pipeline_stages.kind", "won") : Promise.resolve({ data: [] }),
+    email ? db.from("pipeline_deals").select("id, contact_name, value, currency, closed_at, stage_changed_at, pipeline_stages!inner(kind), sales_offers(name)").eq("master_plan_id", planId).ilike("email", email).eq("pipeline_stages.kind", "won") : Promise.resolve({ data: [] }),
     // Babs's MasterClass attendance comes from the Zoom reports.
     house && email ? db.from("masterclass_attendance").select("session_date, minutes").ilike("email", email).order("session_date", { ascending: false }) : Promise.resolve({ data: [] }),
     house && email ? db.from("website_build_orders").select("stripe_checkout_session_id, amount_total_cents, payment_plan, created_at").ilike("email", email) : Promise.resolve({ data: [] }),
@@ -71,8 +71,8 @@ async function history(db: ReturnType<typeof createServerClient>, planId: string
   ].sort((x, y) => y.date.localeCompare(x.date));
   const purchases: Item[] = [
     ...events.filter((e) => e.kind === "purchase").map((e) => ({ id: `e-${e.id}`, title: e.title.replace(/^Bought\s+/i, "").replace(/^Purchased\s+/i, ""), date: e.created_at.slice(0, 10), source: "purchase" })),
-    ...((orders as { data: { stripe_checkout_session_id: string; amount_total_cents: number | null; payment_plan: string | null; created_at: string }[] | null }).data ?? []).map((o) => ({ id: `wb-${o.stripe_checkout_session_id}`, title: "Website Build", date: o.created_at.slice(0, 10), amount: o.amount_total_cents != null ? o.amount_total_cents / 100 : null, detail: o.payment_plan, source: "stripe" })),
-    ...((deals ?? []) as unknown as Record<string, unknown>[]).map((d) => ({ id: `d-${d.id}`, title: (d.sales_offers as { name: string } | null)?.name ?? "Won deal", date: (((d.closed_at as string) || (d.stage_changed_at as string)) ?? "").slice(0, 10), amount: d.value != null ? Number(d.value) : null, detail: "Won in Pipeline", source: "deal" })),
+    ...((orders as { data: { stripe_checkout_session_id: string; amount_total_cents: number | null; payment_plan: string | null; created_at: string }[] | null }).data ?? []).map((o) => ({ id: `wb-${o.stripe_checkout_session_id}`, title: "Website Build", date: o.created_at.slice(0, 10), amount: o.amount_total_cents != null ? o.amount_total_cents / 100 : null, currency: "usd", detail: o.payment_plan, source: "stripe" })),
+    ...((deals ?? []) as unknown as Record<string, unknown>[]).map((d) => ({ id: `d-${d.id}`, title: (d.sales_offers as { name: string } | null)?.name ?? "Won deal", date: (((d.closed_at as string) || (d.stage_changed_at as string)) ?? "").slice(0, 10), amount: d.value != null ? Number(d.value) : null, currency: (d.currency as string) || "usd", detail: "Won in Pipeline", source: "deal" })),
     ...(records ?? []).filter((r) => r.kind === "purchase").map((r) => ({ id: `r-${r.id}`, recordId: r.id as string, title: (r.title as string) || ((r.sales_offers as unknown as { name: string } | null)?.name ?? "Purchase"), date: r.occurred_on as string, amount: r.amount != null ? Number(r.amount) : null, detail: (r.note as string) ?? null, source: "manual" })),
   ].sort((x, y) => y.date.localeCompare(x.date));
   // A won deal for something they also bought is the same purchase: keep one line,
@@ -82,7 +82,10 @@ async function history(db: ReturnType<typeof createServerClient>, planId: string
     if (p.source === "deal") {
       const same = purchases.find((q) => q !== p && q.source !== "deal" && q.title.toLowerCase() === p.title.toLowerCase());
       if (same) {
-        if (same.amount == null) same.amount = p.amount;
+        if (same.amount == null) {
+          same.amount = p.amount;
+          same.currency = p.currency;
+        }
         continue;
       }
     }

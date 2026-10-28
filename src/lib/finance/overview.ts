@@ -3,6 +3,9 @@ import { loadBills, occurrences, CADENCE_LABEL } from "@/lib/finance/bills";
 import { nowParts, fmt } from "@/lib/finance/period";
 import { techTools } from "@/lib/finance/techTools";
 import { isTaxPayment } from "@/lib/finance/taxRules";
+import { homeCurrency } from "@/lib/currencyServer";
+import { otherCurrency } from "@/lib/currency";
+import { addFlow, inHome, otherBlock, zeroFlow } from "@/lib/finance/money";
 
 export { isTaxPayment, TAX_PAID_RE } from "@/lib/finance/taxRules";
 
@@ -10,6 +13,8 @@ export { isTaxPayment, TAX_PAID_RE } from "@/lib/finance/taxRules";
 // ledger (finance_entries), budgets (finance_budgets) and bills (finance_bills); this joins them so each card
 // can show what the others know: spend against budget, what is already committed by bills, the tax set-aside
 // and the software spend.
+// Currency (task 1520): every number is the account's home currency only (budgets are in it too). Money in the other
+// currency is totalled apart in `other` and is never added in.
 
 function addDays(iso: string, n: number) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -45,15 +50,25 @@ export async function financeOverview(masterPlanId: string, tz: string) {
   const monthEnd = fmt(new Date(Date.UTC(year, month, 0)));
   const yearStart = `${year}-01-01`;
 
-  const [entriesRes, budgetsRes, bills, settings, tech] = await Promise.all([
-    db.from("finance_entries").select("type, amount, category, occurred_on").eq("master_plan_id", masterPlanId).gte("occurred_on", yearStart).limit(20000),
+  const [entriesRes, budgetsRes, allBills, settings, tech, home] = await Promise.all([
+    db.from("finance_entries").select("type, amount, currency, category, occurred_on").eq("master_plan_id", masterPlanId).gte("occurred_on", yearStart).limit(20000),
     db.from("finance_budgets").select("type, category, amount").eq("master_plan_id", masterPlanId),
     loadBills(masterPlanId),
     loadFinanceSettings(masterPlanId),
     techTools(masterPlanId),
+    homeCurrency(masterPlanId, db),
   ]);
 
-  const entries = (entriesRes.data || []) as { type: string; amount: number | string | null; category: string | null; occurred_on: string }[];
+  const allEntries = (entriesRes.data || []) as { type: string; amount: number | string | null; currency: string | null; category: string | null; occurred_on: string }[];
+  const entries = allEntries.filter((e) => inHome(e, home));
+  const bills = allBills.filter((b) => b.currency === home);
+  const otherMtd = zeroFlow();
+  const otherYtd = zeroFlow();
+  for (const e of allEntries) {
+    if (inHome(e, home)) continue;
+    addFlow(otherYtd, e.type, num(e.amount));
+    if (e.occurred_on >= monthStart && e.occurred_on <= monthEnd) addFlow(otherMtd, e.type, num(e.amount));
+  }
   let incomeMtd = 0, expenseMtd = 0, incomeYtd = 0, expenseYtd = 0, taxesPaidYtd = 0, uncategorized = 0;
   const spentByCat: Record<string, number> = {};
   for (const e of entries) {
@@ -70,9 +85,10 @@ export async function financeOverview(masterPlanId: string, tz: string) {
         spentByCat[k] = (spentByCat[k] || 0) + a;
       }
       if (isTaxPayment(e.category)) taxesPaidYtd += a;
-      if (!(e.category || "").trim()) uncategorized += 1;
     }
   }
+  // Uncategorized expenses are counted in any currency.
+  for (const e of allEntries) if (e.type !== "income" && !(e.category || "").trim()) uncategorized += 1;
 
   // Budgets (overall expense cap, per-category caps).
   const budgets = (budgetsRes.data || []) as { type: string; category: string | null; amount: number | string | null }[];
@@ -85,6 +101,11 @@ export async function financeOverview(masterPlanId: string, tz: string) {
   const horizon = addDays(today, 14);
   const overdue = bills.filter((b) => b.nextDue < today);
   const dueSoon = occurrences(bills, today, horizon);
+  // The next-14-days list shows bills in either currency (each with its own); every total stays home-only.
+  const dueSoonAll = occurrences(allBills, today, horizon);
+  const otherBills = allBills.filter((b) => b.currency !== home);
+  const otherSoon = occurrences(otherBills, today, horizon);
+  const otherSum = (list: { bill: { amount: number | null } }[]) => list.reduce((s, o) => s + (o.bill.amount ?? 0), 0);
   const dueWeek = dueSoon.filter((o) => o.date <= addDays(today, 7));
   const restOfMonth = occurrences(bills, today, monthEnd);
   const billAmount = (o: { bill: { amount: number | null } }) => o.bill.amount ?? 0;
@@ -108,8 +129,19 @@ export async function financeOverview(masterPlanId: string, tz: string) {
   const taxable = Math.max(0, incomeYtd - deductible);
   const setAside = Math.round((taxable * settings.taxRate) / 100);
 
+  const otherBillTotals = {
+    overdueTotal: otherBills.filter((b) => b.nextDue < today).reduce((s, b) => s + (b.amount ?? 0), 0),
+    next7Total: otherSum(otherSoon.filter((o) => o.date <= addDays(today, 7))),
+    next14Total: otherSum(otherSoon),
+    restOfMonthTotal: otherSum(occurrences(otherBills, today, monthEnd)),
+  };
+  const otherHasBills = Object.values(otherBillTotals).some((v) => v !== 0);
+
   return {
     today,
+    currency: home,
+    // The other currency's money, kept apart: null when it has none.
+    other: otherBlock(home, { mtd: otherMtd, ytd: otherYtd }) || otherHasBills ? { currency: otherCurrency(home), mtd: otherMtd, ytd: otherYtd, bills: otherBillTotals } : null,
     month: { income: incomeMtd, expense: expenseMtd, net: incomeMtd - expenseMtd },
     ytd: { income: incomeYtd, expense: expenseYtd, net: incomeYtd - expenseYtd },
     budget: {
@@ -120,15 +152,16 @@ export async function financeOverview(masterPlanId: string, tz: string) {
       categories,
     },
     bills: {
-      count: bills.length,
+      count: allBills.length,
       overdueCount: overdue.length,
       overdueTotal: overdue.reduce((s, b) => s + (b.amount ?? 0), 0),
       next7Count: dueWeek.length,
       next7Total: dueWeek.reduce((s, o) => s + billAmount(o), 0),
-      next14: dueSoon.slice(0, 6).map((o) => ({
+      next14: dueSoonAll.slice(0, 6).map((o) => ({
         name: o.bill.vendor || o.bill.name,
         date: o.date,
         amount: o.bill.amount,
+        currency: o.bill.currency,
         cadence: CADENCE_LABEL[o.bill.cadence],
         autopay: o.bill.autopay,
       })),

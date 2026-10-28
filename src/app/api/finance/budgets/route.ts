@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ function serialize(r: Row) {
   };
 }
 
-// GET — all budget rows for this client.
+// GET — all budget rows for this client. Budgets have no currency of their own: they are in the home currency (`currency`).
 export async function GET() {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
@@ -30,7 +31,7 @@ export async function GET() {
     console.error("GET /api/finance/budgets:", error.message);
     return NextResponse.json({ budgets: [] }, { status: 200 });
   }
-  return NextResponse.json({ budgets: ((data || []) as Row[]).map(serialize) });
+  return NextResponse.json({ budgets: ((data || []) as Row[]).map(serialize), currency: await homeCurrency(masterPlanId, supabase) });
 }
 
 // POST — set a budget (upsert by type + category). category "" = overall.

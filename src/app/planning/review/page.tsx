@@ -6,6 +6,8 @@ import { ArrowLeft, Check, ClipboardCheck, Loader2, Sparkles } from "lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatMoney, type Currency } from "@/lib/currency";
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
 
 type Cadence = "weekly" | "monthly";
 interface Q {
@@ -34,6 +36,8 @@ interface Numbers {
   goals: { met: number; inProgress: number; slipped: number; notStarted: number };
   scoreNow: number | null;
   scoreChange: number | null;
+  currency?: Currency; // home currency: the money above counts only it (reviews before task 1520 were all USD)
+  other?: { currency: Currency; income: number; expenses: number; openPipeline: number; billsNextPeriod: number } | null;
 }
 interface Briefing {
   headline?: string;
@@ -60,7 +64,7 @@ interface HistoryRow {
   tasks: { title: string }[];
 }
 
-const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+const usd = (n: number, c: Currency = "usd", home: Currency = c) => formatMoney(n, c, { home, cents: false });
 const tz = () => (typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
 const niceDay = (d: string) => {
   const [y, m, dd] = d.split("-").map(Number);
@@ -210,10 +214,10 @@ export default function ReviewPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                ["Income", `${usd(n.income)}${n.incomeGoal ? ` of ${usd(n.incomeGoal)}` : ""}`],
+                ["Income", `${usd(n.income, n.currency)}${n.incomeGoal ? ` of ${usd(n.incomeGoal, n.currency)}` : ""}`],
                 ["Tasks finished", `${n.tasksDone}${n.tasksOverdue ? ` · ${n.tasksOverdue} overdue` : ""}`],
                 ["Pipeline", `${n.dealsAdded} new · ${n.dealsClosed} closed`],
-                [`Bills next ${word}`, n.billsNextCount ? `${n.billsNextCount} · ${usd(n.billsNextPeriod)}` : "None tracked"],
+                [`Bills next ${word}`, n.billsNextCount ? `${n.billsNextCount} · ${usd(n.billsNextPeriod, n.currency)}` : "None tracked"],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-xl bg-[#1a2b4a]/5 p-3">
                   <p className="text-xs text-[#7a8a99]">{k}</p>
@@ -221,6 +225,13 @@ export default function ReviewPage() {
                 </div>
               ))}
             </div>
+            <OtherCurrencyNote
+              text={
+                n.other
+                  ? [n.other.income && `income ${usd(n.other.income, n.other.currency, n.currency)}`, n.other.billsNextPeriod && `bills next ${word} ${usd(n.other.billsNextPeriod, n.other.currency, n.currency)}`].filter(Boolean).join(" · ") || null
+                  : null
+              }
+            />
             {b.needsKey ? (
               <p className="text-sm text-[#7a8a99]">Connect your AI in Settings → AI to get your assistant&apos;s read on these numbers.</p>
             ) : (

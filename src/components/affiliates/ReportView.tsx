@@ -2,6 +2,7 @@ import type { AffiliateReport } from "@/lib/affiliates";
 
 // One affiliate's month, laid out the same everywhere (their portal, their in-app
 // partnership view, and the owner's view). No hooks: works in server and client pages.
+// Affiliate payouts are in US dollars (task 1520 leaves affiliate reports USD).
 const money = (n: number) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const day = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 export const monthLabel = (m: string) => new Date(`${m}-15T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" });

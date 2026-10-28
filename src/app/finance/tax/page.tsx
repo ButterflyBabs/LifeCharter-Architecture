@@ -11,6 +11,9 @@ import { isTaxPayment } from "@/lib/finance/taxRules";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 
+import { useMoney, otherText, otherCur, type OtherBlock } from "@/components/finance/money";
+import { CURRENCY_NAMES } from "@/lib/currency";
+
 interface Line {
   category: string;
   amount: number;
@@ -20,10 +23,9 @@ interface YearPnL {
   income: { total: number; lines: Line[] };
   expense: { total: number; lines: Line[] };
   net: number;
+  other?: OtherBlock;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const tz = () =>
   (typeof window !== "undefined" &&
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
@@ -48,6 +50,9 @@ function nextDeadline(): { iso: string; label: string } {
 
 export default function TaxPrepPage() {
   const { overview, reload: reloadOverview } = useFinanceOverview();
+  // The estimate uses the home currency only; money in the other currency is named, never added in.
+  const { home, money } = useMoney();
+  const usd = (n: number) => money(n);
   const [data, setData] = useState<YearPnL | null>(null);
   const [uncategorized, setUncategorized] = useState(0);
   const [rate, setRate] = useState(25);
@@ -217,6 +222,16 @@ export default function TaxPrepPage() {
                   <p className="text-lg font-bold text-[#c9a227]">{usd(setAside)}</p>
                 </div>
               </div>
+              {(() => {
+                const inc = otherText(data?.other, home, ["income.total", "income"]);
+                const exp = otherText(data?.other, home, ["expense.total", "expense"]);
+                if (!inc && !exp) return null;
+                return (
+                  <p className="text-xs text-[#7b6b8d] -mt-2 mb-4">
+                    Not included in this estimate: {[inc && `${inc} income`, exp && `${exp} expenses`].filter(Boolean).join(" and ")} in {CURRENCY_NAMES[otherCur(data?.other, home)].replace(/ \(.*\)$/, "")}.
+                  </p>
+                );
+              })()}
               <div className="flex items-center gap-3 flex-wrap">
                 <label className="text-sm text-[#b8a898]">Estimated tax rate</label>
                 <Input

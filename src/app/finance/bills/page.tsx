@@ -12,8 +12,12 @@ import { CategoryInput } from "@/components/finance/CategoryInput";
 import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney } from "@/components/finance/money";
+import { formatMoney, otherCurrency, toCurrency, type Currency, type Totals } from "@/lib/currency";
 
-const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+// Each bill carries its own currency (task 1520); sums are kept per currency, never added across.
+const billCur = (b: Bill, home: Currency) => toCurrency((b as Bill & { currency?: string }).currency, home);
 const pad = (n: number) => String(n).padStart(2, "0");
 const todayIso = () => {
   const d = new Date();
@@ -29,7 +33,7 @@ const niceDate = (isoDate: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 };
 
-const EMPTY = { name: "", vendor: "", amount: "", nextDue: "", cadence: "monthly" as BillCadence, category: "", autopay: false, notes: "" };
+const EMPTY = { name: "", vendor: "", amount: "", nextDue: "", cadence: "monthly" as BillCadence, category: "", autopay: false, notes: "", currency: null as Currency | null };
 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[] | null>(null);
@@ -44,6 +48,9 @@ export default function BillsPage() {
   });
 
   const { overview, reload: reloadOverview } = useFinanceOverview();
+  const { home, canChoose, money } = useMoney();
+  const usd = (n: number, c: string = home) => money(n, c);
+  const [otherIncome, setOtherIncome] = useState<number | null>(null);
   const load = useCallback(async () => {
     const r = await fetch("/api/finance/bills", { cache: "no-store" });
     const d = await r.json().catch(() => ({}));
@@ -55,20 +62,41 @@ export default function BillsPage() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     fetch(`/api/finance/entries?tz=${encodeURIComponent(tz)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d?.mtd && setMonthIncome(Number(d.mtd.income) || 0))
+      .then((d) => {
+        if (d?.mtd) setMonthIncome(Number(d.mtd.income) || 0);
+        setOtherIncome(Number(d?.other?.mtd?.income) || null);
+      })
       .catch(() => {});
   }, [load]);
 
   const today = todayIso();
   const list = useMemo(() => bills ?? [], [bills]);
   const overdue = list.filter((b) => b.nextDue < today);
-  const sum = (from: string, to: string) => occurrences(list, from, to).reduce((s, o) => s + (o.bill.amount || 0), 0);
+  const sumAll = (from: string, to: string) =>
+    occurrences(list, from, to).reduce<Totals>((t, o) => {
+      const c = billCur(o.bill, home);
+      t[c] = (t[c] ?? 0) + (o.bill.amount || 0);
+      return t;
+    }, {});
+  const sum = (from: string, to: string) => sumAll(from, to)[home] ?? 0;
   const next7 = sum(today, addDays(today, 6));
   const next30 = sum(today, addDays(today, 29));
+  const oc = otherCurrency(home);
+  const otherSum = (from: string, to: string) => {
+    const v = sumAll(from, to)[oc] ?? 0;
+    return v ? formatMoney(v, oc, { home, cents: false }) : null;
+  };
   const monthStart = `${cursor.y}-${pad(cursor.m)}-01`;
   const monthEnd = `${cursor.y}-${pad(cursor.m)}-${pad(new Date(cursor.y, cursor.m, 0).getDate())}`;
   const thisMonthKey = today.slice(0, 7);
-  const leftThisMonth = sum(today, `${thisMonthKey}-${pad(new Date(Number(thisMonthKey.slice(0, 4)), Number(thisMonthKey.slice(5, 7)), 0).getDate())}`);
+  const thisMonthEnd = `${thisMonthKey}-${pad(new Date(Number(thisMonthKey.slice(0, 4)), Number(thisMonthKey.slice(5, 7)), 0).getDate())}`;
+  const leftThisMonth = sum(today, thisMonthEnd);
+  const otherCash = [otherIncome ? `${formatMoney(otherIncome, oc, { home, cents: false })} in` : null, otherSum(today, thisMonthEnd) && `${otherSum(today, thisMonthEnd)} still due`].filter(Boolean).join(" · ");
+  const otherNotes: Record<string, string | null> = {
+    "Due in the next 7 days": otherSum(today, addDays(today, 6)),
+    "Due in the next 30 days": otherSum(today, addDays(today, 29)),
+    "Cash check this month": otherCash || null,
+  };
   const monthOcc = occurrences(list, monthStart, monthEnd);
   const upcoming = occurrences(list, today, addDays(today, 59));
 
@@ -82,7 +110,7 @@ export default function BillsPage() {
     const res = await fetch("/api/finance/bills", {
       method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...(editing ? { id: editing } : {}), ...form, amount: form.amount === "" ? null : Number(form.amount) }),
+      body: JSON.stringify({ ...(editing ? { id: editing } : {}), ...form, amount: form.amount === "" ? null : Number(form.amount), currency: form.currency ?? home }),
     });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
@@ -135,12 +163,12 @@ export default function BillsPage() {
 
   async function fromTechStack() {
     const d = await fetch("/api/finance/techstack").then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const tools = (d?.tools ?? []) as { name: string; monthly: number }[];
+    const tools = (d?.tools ?? []) as { name: string; monthly: number; currency?: string }[];
     const have = new Set(list.map((b) => b.name.toLowerCase()));
     const first = `${today.slice(0, 7)}-01`;
     const nextFirst = addDays(first, 32).slice(0, 7) + "-01";
     void addMany(
-      tools.filter((t) => !have.has(t.name.toLowerCase()) && t.monthly > 0).slice(0, 20).map((t) => ({ name: t.name, amount: t.monthly, nextDue: nextFirst, cadence: "monthly", category: "Software" })),
+      tools.filter((t) => !have.has(t.name.toLowerCase()) && t.monthly > 0).slice(0, 20).map((t) => ({ name: t.name, amount: t.monthly, nextDue: nextFirst, cadence: "monthly", category: "Software", currency: toCurrency(t.currency, home) })),
       "your Tech Stack"
     );
   }
@@ -187,6 +215,7 @@ export default function BillsPage() {
             <CardContent className="p-5">
               <p className="text-sm text-[#7a8a99] mb-1">{label}</p>
               <p className={`text-xl font-bold ${label === "Overdue" && overdue.length ? "text-[#b06a5a]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{value}</p>
+              <OtherCurrencyNote text={otherNotes[label as string]} />
             </CardContent>
           </Card>
         ))}
@@ -217,7 +246,7 @@ export default function BillsPage() {
                   <div key={i} className={`min-h-[72px] rounded-lg border p-1 text-left ${day ? "border-[#1a2b4a]/10" : "border-transparent"} ${isToday ? "bg-[#c9a227]/10 border-[#c9a227]/50" : ""}`}>
                     {day && <div className="text-[11px] text-[#7a8a99]">{day}</div>}
                     {items.slice(0, 3).map((o) => (
-                      <div key={o.bill.id + o.date} title={`${o.bill.name}${o.bill.amount ? ` · ${usd(o.bill.amount)}` : ""}`} className="truncate rounded bg-[#b06a5a]/12 px-1 text-[10.5px] text-[#1a2b4a] dark:text-[#F8F5F0]">
+                      <div key={o.bill.id + o.date} title={`${o.bill.name}${o.bill.amount ? ` · ${usd(o.bill.amount, billCur(o.bill, home))}` : ""}`} className="truncate rounded bg-[#b06a5a]/12 px-1 text-[10.5px] text-[#1a2b4a] dark:text-[#F8F5F0]">
                         {o.bill.name}
                       </div>
                     ))}
@@ -237,7 +266,10 @@ export default function BillsPage() {
             <Input placeholder="Name (e.g. Rent, Zoom, Loan payment)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <Input placeholder="Paid to (vendor or person, optional)" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={120} />
             <div className="grid grid-cols-2 gap-2">
-              <MoneyInput placeholder="Amount" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} aria-label="Amount" />
+              <div className="flex gap-2">
+                <MoneyInput className="flex-1" placeholder="Amount" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} aria-label="Amount" currency={form.currency ?? home} home={home} />
+                {(canChoose || (form.currency && form.currency !== home)) && <CurrencySelect value={form.currency ?? home} onChange={(c) => setForm({ ...form, currency: c })} />}
+              </div>
               <Input type="date" value={form.nextDue} onChange={(e) => setForm({ ...form, nextDue: e.target.value })} aria-label="Next due date" />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -298,7 +330,7 @@ export default function BillsPage() {
                         {o.bill.cadence !== "once" ? (o.bill.autopay ? " · auto-renews" : " · renew manually") : ""}
                       </p>
                     </div>
-                    <div className="w-24 text-right font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{o.bill.amount ? usd(o.bill.amount) : "—"}</div>
+                    <div className="w-24 text-right font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{o.bill.amount ? usd(o.bill.amount, billCur(o.bill, home)) : "—"}</div>
                     {isNext && (
                       <div className="flex gap-1">
                         <Button size="sm" variant="outline" disabled={busy} onClick={() => pay(o.bill)}><Check className="w-3.5 h-3.5 mr-1" />Paid</Button>
@@ -307,7 +339,7 @@ export default function BillsPage() {
                           variant="ghost"
                           onClick={() => {
                             setEditing(o.bill.id);
-                            setForm({ name: o.bill.name, vendor: o.bill.vendor, amount: o.bill.amount === null ? "" : String(o.bill.amount), nextDue: o.bill.nextDue, cadence: o.bill.cadence, category: o.bill.category, autopay: o.bill.autopay, notes: o.bill.notes });
+                            setForm({ name: o.bill.name, vendor: o.bill.vendor, amount: o.bill.amount === null ? "" : String(o.bill.amount), nextDue: o.bill.nextDue, cadence: o.bill.cadence, category: o.bill.category, autopay: o.bill.autopay, notes: o.bill.notes, currency: billCur(o.bill, home) });
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
                         >

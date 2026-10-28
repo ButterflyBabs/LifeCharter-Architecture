@@ -4,6 +4,7 @@ import { AWAY_COLUMNS, awayDates, awayNote, type Away } from "@/lib/awayMode";
 import { TEMPLATES, cleanContent, rate, slugify, starterContent, templateInfo, validSlug, type Template } from "@/lib/landingPages";
 import { yearReview } from "@/lib/yearReview";
 import { payeeKey, threshold1099 } from "@/lib/finance/receipts";
+import { formatMoney } from "@/lib/currency";
 
 // The assistant's tools for the October 18 releases: Courses & Memberships, Out of office, Landing Pages, Year in
 // Review and 1099 contractor totals. Writes always wait for the client's Approve; reads run straight away.
@@ -350,11 +351,12 @@ export const yearSoFar: ActionTool = {
     const y = Number(args.year);
     const year = Number.isInteger(y) && y >= 2020 && y <= now ? y : now;
     const r = await yearReview(ctx.db, ctx.planId, year, { money: true });
-    const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
     const m = r.money;
+    const usd = (n: number, c: string = m?.currency ?? "usd") => formatMoney(Math.round(n), c, { home: m?.currency, cents: false });
     return [
       `Year ${r.year}${year === now ? " so far" : ""}.`,
       m ? `Income ${usd(m.income)}, expenses ${usd(m.expenses)}, net ${usd(m.net)}${m.bestMonth ? `, best month ${m.bestMonth.month} (${usd(m.bestMonth.income)})` : ""}.` : "",
+      m?.other ? `Kept separate in ${m.other.currency.toUpperCase()} (not included above): income ${usd(m.other.income, m.other.currency)}, expenses ${usd(m.other.expenses, m.other.currency)}, net ${usd(m.other.net, m.other.currency)}.` : "",
       `New customers ${r.people.newCustomers} (${r.people.newContacts} new contacts). Sessions held ${r.sessions.completed} (${r.sessions.hours} hours). Events ${r.events.held} with ${r.events.registrations} sign-ups. Program members ${r.programs.members}. Tasks finished ${r.tasksDone}. Goals reached ${r.goalsDone}.`,
       r.score ? `Business score ${r.score.from} to ${r.score.to}.` : "",
       `Testimonials ${r.testimonials.count}. The full page with a share link is at /year-in-review.`,
@@ -373,7 +375,8 @@ export const check1099: ActionTool = {
     const y = Number(args.year);
     const year = Number.isInteger(y) && y >= 2020 && y <= now ? y : now;
     const [{ data: rows }, { data: payees }] = await Promise.all([
-      ctx.db.from("finance_entries").select("vendor, amount").eq("master_plan_id", ctx.planId).eq("type", "expense").gte("occurred_on", `${year}-01-01`).lt("occurred_on", `${year + 1}-01-01`).limit(20000),
+      // 1099 amounts are US dollars: only USD expenses count toward the reporting amount.
+      ctx.db.from("finance_entries").select("vendor, amount").eq("master_plan_id", ctx.planId).eq("type", "expense").eq("currency", "usd").gte("occurred_on", `${year}-01-01`).lt("occurred_on", `${year + 1}-01-01`).limit(20000),
       ctx.db.from("finance_payees").select("vendor_key, name, contractor, w9_on_file, paid_by_card").eq("master_plan_id", ctx.planId),
     ]);
     const marks = new Map(((payees || []) as { vendor_key: string; contractor: boolean; w9_on_file: boolean; paid_by_card: boolean }[]).map((p) => [p.vendor_key, p]));
@@ -391,7 +394,7 @@ export const check1099: ActionTool = {
       totals.set(k, t);
     }
     const th = threshold1099(year).amount;
-    const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+    const usd = (n: number) => formatMoney(Math.round(n), "usd", { cents: false });
     const all = Array.from(totals.entries()).map(([k, t]) => ({ ...t, m: marks.get(k) }));
     const need = all.filter((x) => x.m?.contractor && !x.m.paid_by_card && x.total >= th);
     const near = all.filter((x) => x.m?.contractor && !x.m.paid_by_card && x.total < th && x.total >= th * 0.75);

@@ -34,7 +34,7 @@ test("invoices: the amount, the plan split and the reasons an invoice can't go o
     assert.deepEqual(splitPlan(10000, 3), { per: 3333, total: 9999 });
     const one = invoicePlan({ email: "Eloise@Example.com", description: "Strategy day", amount: 1500 });
     assert.equal(one.ok && one.cents, 150000);
-    assert.equal(one.ok && one.note, "$1500.00, due in 7 days");
+    assert.equal(one.ok && one.note, "$1,500.00, due in 7 days");
     const three = invoicePlan({ email: "eloise@example.com", description: "Coaching", amount: 100, paymentCount: 3, daysUntilDue: 5 });
     assert.equal(three.ok && three.per, 3333);
     assert.equal(three.ok && three.cents, 9999);
@@ -57,4 +57,20 @@ test("paid booking: a calendar asks for nothing, the full price or a deposit (ne
     assert.deepEqual(bookingCharge({ pay_mode: "deposit", price: 500, deposit: 100 }), { cents: 10000, kind: "deposit" });
     assert.equal(bookingCharge({ pay_mode: "deposit", price: 500, deposit: null }), null);
     assert.equal(bookingCharge({ pay_mode: "full", price: 0.25, deposit: null }), null);
+});
+
+test("a Canadian-dollar offer or invoice is charged in CAD, never in USD (task 1520)", async () => {
+    const { linkPlan } = await import("../src/lib/stripeConnect");
+    const { invoicePlan } = await import("../src/lib/suitePayments");
+    const base = { id: "o1", name: "Coaching", payment_count: null };
+    assert.equal((linkPlan({ ...base, price: 2500, billing: "one_time", currency: "cad" }) as { note: string }).note, "2500.00 CAD, paid in full");
+    assert.equal((linkPlan({ ...base, price: 3000, billing: "payment_plan", payment_count: 3, currency: "cad" }) as { note: string }).note, "3 monthly payments of 1000.00 CAD, then it stops");
+    // No currency on an older offer stays USD, exactly as before.
+    assert.equal((linkPlan({ ...base, price: 2500, billing: "one_time" }) as { note: string }).note, "2500.00 USD, paid in full");
+    const cad = invoicePlan({ email: "eloise@example.com", description: "Strategy day", amount: 1500, currency: "cad" });
+    assert.equal(cad.ok && cad.note, "CA$1,500.00, due in 7 days");
+    const cadHome = invoicePlan({ email: "eloise@example.com", description: "Strategy day", amount: 1500, currency: "cad", home: "cad" });
+    assert.equal(cadHome.ok && cadHome.note, "$1,500.00, due in 7 days");
+    const usdOnCad = invoicePlan({ email: "eloise@example.com", description: "Strategy day", amount: 1500, currency: "usd", home: "cad" });
+    assert.equal(usdOnCad.ok && usdOnCad.note, "US$1,500.00, due in 7 days");
 });

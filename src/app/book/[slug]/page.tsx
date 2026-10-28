@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, Check, Clock, CreditCard, Globe, MapPin, Phone, User, Video } from "lucide-react";
 import SlotPicker from "@/components/booking/SlotPicker";
+import { formatMoney, type Currency } from "@/lib/currency";
 
 // Public booking page: lccommandsuite.com/book/<slug>. ?name=&email= prefill. A month calendar, then the times for the
 // chosen day, then a short form. The house account's pages wear one of its brands (Command Suite, LifeCharter or
@@ -23,7 +24,8 @@ interface Meta {
   questions: Q[];
   hostName: string | null;
   brand?: string;
-  payment?: { amount: number; kind: "full" | "deposit" } | null;
+  payment?: { amount: number; kind: "full" | "deposit"; currency?: Currency } | null;
+  homeCurrency?: Currency;
   sms?: { consent: string } | null;
 }
 
@@ -47,7 +49,8 @@ const THEMES: Record<string, Theme> = {
 };
 const serif = "'EB Garamond', Georgia, 'Times New Roman', serif";
 
-const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+/** The price in the calendar's own currency ("$150" in the account's home currency, "CA$150" / "US$150" otherwise). */
+const money = (m: Meta) => formatMoney(m.payment?.amount ?? 0, m.payment?.currency ?? "usd", { home: m.homeCurrency ?? "usd" });
 
 const inputCls = "mt-1 w-full rounded-xl border bg-white px-4 py-2.5 text-[15px] outline-none focus:ring-2";
 
@@ -201,7 +204,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               {meta && <Pill icon={Clock}>{meta.duration} minutes</Pill>}
               {meta?.hostName && <Pill icon={User}>{meta.hostName}</Pill>}
               {meta && where && <Pill icon={LocIcon}>{meta.location === "zoom" ? "Zoom" : "Phone"}</Pill>}
-              {meta?.payment && <Pill icon={CreditCard}>{money(meta.payment.amount)}{meta.payment.kind === "deposit" ? " deposit" : ""}</Pill>}
+              {meta?.payment && <Pill icon={CreditCard}>{money(meta)}{meta.payment.kind === "deposit" ? " deposit" : ""}</Pill>}
             </div>
             {unpaid && <p className="mx-auto mt-4 max-w-xl text-center text-sm text-[#8a2f2f]">Your payment wasn&apos;t finished, so that time wasn&apos;t booked. Please choose a time again.</p>}
             {desc && (
@@ -277,7 +280,7 @@ export default function BookPage({ params }: { params: { slug: string } }) {
               {err && <p className="text-sm text-[#8a2f2f]">{err}</p>}
               {meta?.payment && <p className="text-center text-xs opacity-70">Your time is held for 30 minutes while you pay securely with Stripe.</p>}
               <button disabled={sending} className="w-full rounded-full px-6 py-3.5 text-base font-semibold disabled:opacity-60" style={{ background: th.accent, color: th.accentInk }}>
-                {sending ? "Booking…" : meta?.payment ? `Continue to pay ${money(meta.payment.amount)}${meta.payment.kind === "deposit" ? " deposit" : ""}` : "Confirm booking"}
+                {sending ? "Booking…" : meta?.payment ? `Continue to pay ${money(meta)}${meta.payment.kind === "deposit" ? " deposit" : ""}` : "Confirm booking"}
               </button>
             </form>
           </>

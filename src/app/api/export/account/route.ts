@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sessionUser } from "@/lib/authz";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { toCurrency } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -48,12 +49,13 @@ export async function GET() {
   const masterPlanId = await resolveMasterPlanId();
   if (!user || !masterPlanId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const db = createServerClient();
-  const { data: plan } = await db.from("client_master_plans").select("id, client_name, user_id, created_at").eq("id", masterPlanId).maybeSingle();
+  const { data: plan } = await db.from("client_master_plans").select("id, client_name, user_id, created_at, default_currency").eq("id", masterPlanId).maybeSingle();
   if (!plan || plan.user_id !== user.id) return NextResponse.json({ error: "Only the account owner can download a full backup." }, { status: 403 });
 
   const out: Record<string, unknown> = {
     exportedAt: new Date().toISOString(),
-    account: { id: plan.id, name: plan.client_name, createdAt: plan.created_at, email: user.email },
+    // Money rows (entries, bills, offers, deals) each carry their own `currency` column; `currency` here is the home one.
+    account: { id: plan.id, name: plan.client_name, createdAt: plan.created_at, email: user.email, currency: toCurrency(plan.default_currency) },
     note: "Everything in your LifeCharter Command Suite account. Keep it somewhere safe. API keys and passwords are never included.",
   };
   await Promise.all(

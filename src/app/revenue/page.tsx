@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Plus } from "lucide-react";
+import { formatMoney } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 
 interface SegmentRow {
   id: number;
@@ -27,15 +29,15 @@ interface RevenueData {
   businesses: BusinessRow[];
 }
 
-const currency = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-
 interface SegmentOption {
   id: number;
   name: string;
 }
 
 export default function RevenuePage() {
+  // Segment revenue is entered by hand, in the account's home currency (whole dollars).
+  const { currency: home } = useHomeCurrency();
+  const currency = (n: number) => formatMoney(n, home, { home, cents: false });
   const [data, setData] = useState<RevenueData | null>(null);
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [showForm, setShowForm] = useState(false);

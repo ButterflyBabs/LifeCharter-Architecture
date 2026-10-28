@@ -2,6 +2,11 @@ import { createServerClient } from "@/lib/supabase/server";
 import { computeForecast, type ForecastAssumptions, type ForecastResult, type RevenuePlan } from "@/lib/forecast";
 import { loadIncomeGoals } from "@/lib/finance/goals";
 import { DEAL_COLUMNS, shapeDeal, shapeStage } from "@/lib/sales/pipeline";
+import { toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
+
+/** The forecast is in the account's home currency: only home-currency income, expenses and deals feed it. */
+export type HomeForecast = ForecastResult & { currency: Currency };
 
 const DEFAULTS: ForecastAssumptions = {
   horizonMonths: 6,
@@ -29,7 +34,8 @@ export async function loadAssumptions(masterPlanId: string): Promise<ForecastAss
 // Pull trailing monthly income/expense + open pipeline, then compute the forecast.
 async function buildActualsForecast(
   masterPlanId: string,
-  overrides?: Partial<ForecastAssumptions>
+  overrides?: Partial<ForecastAssumptions>,
+  home: Currency = "usd"
 ): Promise<ForecastResult> {
   const supabase = createServerClient();
 
@@ -40,7 +46,7 @@ async function buildActualsForecast(
 
   const { data: entries } = await supabase
     .from("finance_entries")
-    .select("type, amount, occurred_on")
+    .select("type, amount, occurred_on, currency")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", sinceStr);
 
@@ -57,8 +63,8 @@ async function buildActualsForecast(
     incomeByMonth[k] = 0;
     expenseByMonth[k] = 0;
   }
-  for (const e of (entries || []) as { type: string; amount: number | string | null; occurred_on: string | null }[]) {
-    if (!e.occurred_on) continue;
+  for (const e of (entries || []) as { type: string; amount: number | string | null; occurred_on: string | null; currency: string | null }[]) {
+    if (!e.occurred_on || toCurrency(e.currency) !== home) continue;
     const k = e.occurred_on.slice(0, 7);
     if (!(k in incomeByMonth)) continue;
     const amt = Number(e.amount ?? 0);
@@ -83,7 +89,7 @@ async function buildActualsForecast(
   const horizonEndStr = horizonEnd.toISOString().slice(0, 10);
   const openDeals = ((dealRows ?? []) as Record<string, unknown>[])
     .map((r) => shapeDeal(r, stageMap))
-    .filter((d) => stageMap.get(d.stageId)?.kind === "open" && (!d.expectedClose || d.expectedClose <= horizonEndStr));
+    .filter((d) => d.currency === home && stageMap.get(d.stageId)?.kind === "open" && (!d.expectedClose || d.expectedClose <= horizonEndStr));
   if (openDeals.length > 0) {
     return computeForecast(
       {
@@ -113,11 +119,12 @@ async function buildActualsForecast(
 
 // With no income recorded yet, the forecast would be all zeros. If the client has income goals (for example the
 // month-by-month ramp from their revenue model), show those as a revenue plan instead. Recorded income always wins.
-export async function buildForecast(masterPlanId: string, overrides?: Partial<ForecastAssumptions>): Promise<ForecastResult> {
-  const result = await buildActualsForecast(masterPlanId, overrides);
+export async function buildForecast(masterPlanId: string, overrides?: Partial<ForecastAssumptions>): Promise<HomeForecast> {
+  const supabase = createServerClient();
+  const currency = await homeCurrency(masterPlanId, supabase);
+  const result: HomeForecast = { ...(await buildActualsForecast(masterPlanId, overrides, currency)), currency };
   if (result.baseMonthlyRevenue > 0) return result;
   try {
-    const supabase = createServerClient();
     const since = new Date();
     since.setUTCMonth(since.getUTCMonth() - 6);
     const { count } = await supabase
@@ -125,6 +132,7 @@ export async function buildForecast(masterPlanId: string, overrides?: Partial<Fo
       .select("id", { count: "exact", head: true })
       .eq("master_plan_id", masterPlanId)
       .eq("type", "income")
+      .eq("currency", currency)
       .gte("occurred_on", since.toISOString().slice(0, 10));
     if ((count ?? 0) > 0) return result;
     const goals = await loadIncomeGoals(masterPlanId, supabase);

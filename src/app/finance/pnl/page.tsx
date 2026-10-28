@@ -9,6 +9,8 @@ import Link from "next/link";
 import { FinancePnlRead } from "@/components/planning/AssistantPanels";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
 
 type Period = "week" | "month" | "quarter" | "year" | "custom";
 interface Line {
@@ -25,10 +27,9 @@ interface PnL {
   expense: { total: number; lines: Line[] };
   net: number;
   parties?: { income: Line[]; expense: Line[] };
+  /** Home currency only above; the other currency's totals for the same period, kept separate (task 1520). */
+  other?: OtherBlock;
 }
-
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
 function tz(): string {
   if (typeof window === "undefined") return "UTC";
@@ -44,6 +45,16 @@ function shiftDays(dateStr: string, n: number): string {
 
 export default function PnLPage() {
   const { overview } = useFinanceOverview();
+  const { home, money } = useMoney();
+  const usd = (n: number) => money(n, home, true);
+  // "CA$300.00 in · CA$120.00 out · net +CA$180.00" for the other currency in this period, or null.
+  const otherLine = (o: OtherBlock) => {
+    const inc = otherText(o, home, ["income.total", "income"], { cents: true });
+    const exp = otherText(o, home, ["expense.total", "expense"], { cents: true });
+    const net = otherText(o, home, "net", { cents: true, signed: true });
+    if (!inc && !exp && !net) return null;
+    return [inc && `${inc} in`, exp && `${exp} out`, net && `net ${net}`].filter(Boolean).join(" · ");
+  };
   const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<PnL | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,6 +179,14 @@ export default function PnLPage() {
     doc.setFontSize(12);
     doc.text("Net Profit", left, y);
     doc.text(usd(data.net), right, y, { align: "right" });
+    const also = otherLine(data.other);
+    if (also) {
+      y += 20;
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(`Kept separate (not added above): ${also}`, left, y);
+      doc.setTextColor(0);
+    }
 
     doc.save(`finance-${data.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`);
   };
@@ -289,6 +308,7 @@ export default function PnLPage() {
                   {usd(Math.abs(data.net))}
                 </span>
               </div>
+              <OtherCurrencyNote text={otherLine(data.other)} />
             </>
           )}
         </CardContent>

@@ -1,3 +1,4 @@
+import { toCurrency } from "@/lib/currency";
 import { createServerClient } from "@/lib/supabase/server";
 import { ensureStages, type Stage } from "@/lib/sales/pipeline";
 
@@ -24,7 +25,7 @@ const openStage = (stages: Stage[]) => stages.find((s) => s.kind === "open" && /
 
 export async function dealForBooking(
   db: Db,
-  cal: { master_plan_id: string; slug: string; name: string; deal_value: number | null },
+  cal: { master_plan_id: string; slug: string; name: string; deal_value: number | null; currency?: string | null },
   b: { name: string; email: string; startISO: string; answers: Record<string, string> }
 ): Promise<string | null> {
   const stages = await ensureStages(db, cal.master_plan_id);
@@ -62,6 +63,7 @@ export async function dealForBooking(
       contact_name: b.name,
       email: b.email,
       value: cal.deal_value,
+      currency: toCurrency(cal.currency), // the deal value is in the calendar's currency
       expected_close: day,
       next_step: cal.name,
       next_step_due: day,

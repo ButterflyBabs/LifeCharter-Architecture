@@ -26,6 +26,9 @@ import { MoneyInput } from "@/components/finance/MoneyInput";
 import { BillMatchPrompt, type BillMatch } from "@/components/finance/BillMatchPrompt";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+import { toCurrency, type Currency } from "@/lib/currency";
 
 interface Entry {
   id: string;
@@ -39,6 +42,7 @@ interface Entry {
   paymentType?: string;
   frequency?: string | null;
   renewal?: string | null;
+  currency?: string;
 }
 interface Totals {
   income: number;
@@ -69,9 +73,6 @@ interface Health {
   hasBudget: boolean;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function tz(): string {
@@ -87,6 +88,11 @@ export default function FinancialPulsePage() {
   const [monthly, setMonthly] = useState<MonthPoint[]>([]);
   const [label, setLabel] = useState("");
   const [loaded, setLoaded] = useState(false);
+  // Tiles, budgets and the chart are the home currency; the other currency shows as its own small line.
+  const [other, setOther] = useState<OtherBlock>(null);
+  const { home, canChoose, money } = useMoney();
+  const usd = (n: number, c: string = home) => money(n, c);
+  const [currency, setCurrency] = useState<Currency | null>(null);
 
   const { overview, reload: reloadOverview } = useFinanceOverview();
   const [showAdd, setShowAdd] = useState(false);
@@ -148,6 +154,7 @@ export default function FinancialPulsePage() {
         setIncTargetInput(d.budgetSummary.income.monthly ? String(d.budgetSummary.income.monthly) : "");
       }
       if (d.health) setHealth(d.health);
+      setOther(d.other ?? null);
     } catch {
       /* ignore */
     } finally {
@@ -182,6 +189,7 @@ export default function FinancialPulsePage() {
           paymentType: type === "expense" ? paymentType : undefined,
           frequency: type === "expense" && paymentType === "recurring" ? frequency : undefined,
           renewal: type === "expense" && paymentType === "recurring" ? renewal : undefined,
+          currency: currency ?? home,
         }),
       });
       if (!res.ok) {
@@ -195,6 +203,7 @@ export default function FinancialPulsePage() {
         setSegmentId("");
         setVendor("");
         setPaymentType("one_time");
+        setCurrency(null);
         forgetCategories();
         const saved = await res.json().catch(() => ({}));
         setBillMatch(saved?.billMatch && saved?.entry?.id ? { match: saved.billMatch, entryId: saved.entry.id } : null);
@@ -243,7 +252,8 @@ export default function FinancialPulsePage() {
     value: number,
     tone: "income" | "expense" | "net",
     icon: React.ReactNode,
-    budget?: { target: number; isCap: boolean }
+    budget?: { target: number; isCap: boolean },
+    otherPath?: string
   ) => {
     const color =
       tone === "income" ? "#2E7C83" : tone === "expense" ? "#b06a5a" : value >= 0 ? "#2c6b3f" : "#b06a5a";
@@ -273,6 +283,7 @@ export default function FinancialPulsePage() {
             </p>
           </div>
         )}
+        {otherPath && <OtherCurrencyNote text={otherText(other, home, otherPath, { signed: tone === "net" })} />}
       </div>
     );
   };
@@ -345,7 +356,10 @@ export default function FinancialPulsePage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
+                <div className="flex gap-2">
+                  <MoneyInput className="flex-1" value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" currency={currency ?? home} home={home} />
+                  {canChoose && <CurrencySelect value={currency ?? home} onChange={setCurrency} />}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Category</label>
@@ -523,9 +537,9 @@ export default function FinancialPulsePage() {
       {/* This week */}
       <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7b6b8d] mb-3">This week</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {tile("Income (WTD)", wtd.income, "income", <TrendingUp className="w-4 h-4" />)}
-        {tile("Expenses (WTD)", wtd.expense, "expense", <TrendingDown className="w-4 h-4" />)}
-        {tile("Net (WTD)", wtd.net, "net", <Wallet className="w-4 h-4" />)}
+        {tile("Income (WTD)", wtd.income, "income", <TrendingUp className="w-4 h-4" />, undefined, "wtd.income")}
+        {tile("Expenses (WTD)", wtd.expense, "expense", <TrendingDown className="w-4 h-4" />, undefined, "wtd.expense")}
+        {tile("Net (WTD)", wtd.net, "net", <Wallet className="w-4 h-4" />, undefined, "wtd.net")}
       </div>
 
       {/* This month */}
@@ -536,12 +550,12 @@ export default function FinancialPulsePage() {
         {tile("Income (MTD)", mtd.income, "income", <TrendingUp className="w-4 h-4" />, {
           target: budgetSummary?.income.mtdBudget ?? 0,
           isCap: false,
-        })}
+        }, "mtd.income")}
         {tile("Expenses (MTD)", mtd.expense, "expense", <TrendingDown className="w-4 h-4" />, {
           target: budgetSummary?.expense.mtdBudget ?? 0,
           isCap: true,
-        })}
-        {tile("Net (MTD)", mtd.net, "net", <Wallet className="w-4 h-4" />)}
+        }, "mtd.expense")}
+        {tile("Net (MTD)", mtd.net, "net", <Wallet className="w-4 h-4" />, undefined, "mtd.net")}
       </div>
 
       {/* Year to date */}
@@ -550,12 +564,12 @@ export default function FinancialPulsePage() {
         {tile("Income (YTD)", ytd.income, "income", <TrendingUp className="w-4 h-4" />, {
           target: budgetSummary?.income.ytdBudget ?? 0,
           isCap: false,
-        })}
+        }, "ytd.income")}
         {tile("Expenses (YTD)", ytd.expense, "expense", <TrendingDown className="w-4 h-4" />, {
           target: budgetSummary?.expense.ytdBudget ?? 0,
           isCap: true,
-        })}
-        {tile("Net (YTD)", ytd.net, "net", <Wallet className="w-4 h-4" />)}
+        }, "ytd.expense")}
+        {tile("Net (YTD)", ytd.net, "net", <Wallet className="w-4 h-4" />, undefined, "ytd.net")}
       </div>
 
       {/* Profit by business segment */}
@@ -662,7 +676,7 @@ export default function FinancialPulsePage() {
                         style={{ color: e.type === "income" ? "#2E7C83" : "#b06a5a" }}
                       >
                         {e.type === "income" ? "+" : "−"}
-                        {usd(e.amount)}
+                        {usd(e.amount, toCurrency(e.currency, home))}
                       </span>
                       <button
                         onClick={() => remove(e.id)}

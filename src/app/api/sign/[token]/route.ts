@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 import { PORTAL_BUCKET } from "@/lib/portal";
 import { SIGN_AGREE, consentText, currentRound, validDrawnSignature, validTypedSignature } from "@/lib/esign";
+import { toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 import { audit, brandFor, declineDocument, sendCode, signCookieMac, signCookieName, signDocument, signerByToken, verifyCode } from "@/lib/esignServer";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +58,9 @@ export async function GET(request: Request, { params }: { params: { token: strin
       fileUrl,
       fileName: doc.file_name,
       amount: doc.amount,
+      // The amount's own currency, and the account's home currency (which decides the plain "$").
+      currency: toCurrency(doc.currency),
+      homeCurrency: await homeCurrency(doc.master_plan_id, db),
       consent: consentText(brand.name),
       agree: SIGN_AGREE,
       canDownload: verified && doc.status === "completed" && Boolean(doc.final_path),

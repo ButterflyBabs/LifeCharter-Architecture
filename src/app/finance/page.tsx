@@ -20,9 +20,9 @@ import {
 import Link from "next/link";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
 import type { FinanceOverview } from "@/lib/finance/overview";
-
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+import { formatMoney, type Currency } from "@/lib/currency";
 
 interface Section {
   href: string;
@@ -100,9 +100,25 @@ const SECTIONS: Section[] = [
   },
 ];
 
-// One live line per card, drawn from the same ledger, budgets and bills the pages themselves use.
-function liveLine(href: string, o: FinanceOverview | null): { text: string; warn?: boolean } | null {
+// One live line per card, drawn from the same ledger, budgets and bills the pages themselves use. Amounts are the
+// home currency; money in the other currency is added as its own short note, never into the same number.
+function liveLine(href: string, o: FinanceOverview | null, home: Currency): { text: string; warn?: boolean; also?: string | null } | null {
   if (!o) return null;
+  const usd = (n: number) => formatMoney(n, home, { home, cents: false });
+  const other = (o as { other?: OtherBlock }).other;
+  const line = liveLineText(href, o, usd);
+  if (!line) return null;
+  const also: Record<string, string | null> = {
+    "/finance/income": otherText(other, home, ["month.income", "mtd.income"]),
+    "/finance/expenses": otherText(other, home, ["month.expense", "mtd.expense"]),
+    "/finance/pulse": otherText(other, home, ["month.net", "mtd.net"], { signed: true }),
+    "/finance/bills": otherText(other, home, ["bills.overdueTotal"]) || otherText(other, home, ["bills.next7Total"]),
+    "/finance/pnl": otherText(other, home, ["ytd.net"], { signed: true }),
+  };
+  return { ...line, also: also[href] ?? null };
+}
+
+function liveLineText(href: string, o: FinanceOverview, usd: (n: number) => string): { text: string; warn?: boolean } | null {
   switch (href) {
     case "/finance/income":
       return { text: `${usd(o.month.income)} this month · ${usd(o.ytd.income)} year to date` };
@@ -134,6 +150,9 @@ function liveLine(href: string, o: FinanceOverview | null): { text: string; warn
 
 export default function FinancePage() {
   const { overview } = useFinanceOverview();
+  const { home, money } = useMoney();
+  const usd = (n: number) => money(n);
+  const [other, setOther] = useState<OtherBlock>(null);
   const [bankFeeds, setBankFeeds] = useState(false);
   useEffect(() => {
     // The feeds API answers 404 where the page is not open yet, so the card only shows when it works.
@@ -153,6 +172,7 @@ export default function FinancePage() {
         if (!d) return;
         setHealth(d.health?.score ?? null);
         if (d.mtd) setMtd(d.mtd);
+        setOther(d.other ?? null);
       })
       .catch(() => {});
   }, []);
@@ -185,6 +205,7 @@ export default function FinancePage() {
               <span className="text-sm">Income (MTD)</span>
             </div>
             <p className="text-2xl font-bold text-[#2E7C83]">{mtd ? usd(mtd.income) : "—"}</p>
+            <OtherCurrencyNote text={otherText(other, home, "mtd.income")} />
           </CardContent>
         </Card>
         <Card>
@@ -194,6 +215,7 @@ export default function FinancePage() {
               <span className="text-sm">Expenses (MTD)</span>
             </div>
             <p className="text-2xl font-bold text-[#b06a5a]">{mtd ? usd(mtd.expense) : "—"}</p>
+            <OtherCurrencyNote text={otherText(other, home, "mtd.expense")} />
           </CardContent>
         </Card>
         <Card>
@@ -208,6 +230,7 @@ export default function FinancePage() {
             >
               {mtd ? `${mtd.net >= 0 ? "+" : "−"}${usd(Math.abs(mtd.net))}` : "—"}
             </p>
+            <OtherCurrencyNote text={otherText(other, home, "mtd.net", { signed: true })} />
           </CardContent>
         </Card>
       </div>
@@ -231,11 +254,14 @@ export default function FinancePage() {
                 <h3 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</h3>
                 <p className="text-sm text-[#b8a898] mt-1">{s.description}</p>
                 {(() => {
-                  const live = liveLine(s.href, overview);
+                  const live = liveLine(s.href, overview, home);
                   return live ? (
-                    <p className="text-sm font-medium mt-2" style={{ color: live.warn ? "#b06a5a" : s.tint }}>
-                      {live.text}
-                    </p>
+                    <>
+                      <p className="text-sm font-medium mt-2" style={{ color: live.warn ? "#b06a5a" : s.tint }}>
+                        {live.text}
+                      </p>
+                      <OtherCurrencyNote text={live.also} />
+                    </>
                   ) : null;
                 })()}
               </CardContent>

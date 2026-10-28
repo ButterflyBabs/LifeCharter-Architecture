@@ -4,6 +4,8 @@ import { logEvent, upsertContact } from "@/lib/crm";
 import { enrolContact } from "@/lib/sequences/engine";
 import { joinProgram } from "@/lib/programs";
 import { platformLabel, productTag, readEvent, type BridgeEvent, type Platform } from "@/lib/bridge";
+import { formatMoney, isCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // The bridge (task 1152 part 2), the server side: one sale, refund or cancellation from another platform, posted
 // into the account exactly once. What happens per product is set on the Bridge page (tags, income, a campaign, a
@@ -20,6 +22,13 @@ export function signatureOk(c: Connection, body: Record<string, unknown>): boole
   const a = Buffer.from(sig);
   const b = Buffer.from(want);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** The sale's currency when the platform says (top level or one level down, e.g. data.currency); else the account's home currency. */
+function eventCurrency(raw: Record<string, unknown>, home: Currency): Currency {
+  const seen = [raw.currency, ...Object.values(raw).map((v) => (v && typeof v === "object" ? (v as Record<string, unknown>).currency : undefined))];
+  const c = seen.find((v) => isCurrency(v));
+  return c ? toCurrency(c, home) : home;
 }
 
 export async function handleBridge(db: Db, c: Connection, raw: Record<string, unknown>): Promise<string> {
@@ -53,7 +62,9 @@ export async function handleBridge(db: Db, c: Connection, raw: Record<string, un
   const contact = await upsertContact({ masterPlanId: planId, email: ev.email, firstName: ev.firstName || null, lastName: ev.lastName || null, source: `bridge:${c.platform}`, tags: Array.from(new Set(tags)) }, db);
   if (!contact) return "bad email";
   await db.from("bridge_events").update({ contact_id: contact.id }).eq("master_plan_id", planId).eq("platform", c.platform).eq("kind", ev.kind).eq("external_id", externalId);
-  const money = `$${(ev.amountCents / 100).toFixed(2)}`;
+  const home = await homeCurrency(planId, db);
+  const currency = eventCurrency(raw, home);
+  const money = formatMoney(ev.amountCents / 100, currency, { home, cents: true });
   const ref = `bridge:${c.platform}:${externalId}`;
 
   if (ev.kind === "refund") {
@@ -80,7 +91,7 @@ export async function handleBridge(db: Db, c: Connection, raw: Record<string, un
   // A sale (or an enrollment): timeline, income, campaign, course.
   await logEvent(planId, contact.id, "purchase", `${ev.kind === "enroll" ? "Enrolled" : "Bought"} on ${label}: ${names}${ev.kind === "sale" && ev.amountCents ? ` (${money})` : ""}`, { bridge: ref }, db).catch(() => null);
   if (ev.kind === "sale" && ev.amountCents > 0 && (rules.length === 0 || rules.some((r) => r.record_income))) {
-    await db.from("finance_entries").insert({ master_plan_id: planId, type: "income", amount: ev.amountCents / 100, category: "Course sales", description: `${label}: ${names}`.slice(0, 300), occurred_on: new Date().toISOString().slice(0, 10), source: `bridge:${c.platform}`, external_id: externalId });
+    await db.from("finance_entries").insert({ master_plan_id: planId, type: "income", amount: ev.amountCents / 100, category: "Course sales", description: `${label}: ${names}`.slice(0, 300), occurred_on: new Date().toISOString().slice(0, 10), source: `bridge:${c.platform}`, external_id: externalId, currency });
   }
   for (const r of rules) {
     if (r.sequence_key) await enrolContact({ masterPlanId: planId, sequenceKey: r.sequence_key, email: ev.email, firstName: ev.firstName || null, lastName: ev.lastName || null, source: "bridge", sourceRef: ref }).catch((e) => console.error("bridge enrol:", e));

@@ -1,10 +1,13 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { nowParts, MONTHS } from "@/lib/finance/period";
 import { loadIncomeGoals } from "@/lib/finance/goals";
+import { otherCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // The Financial Pulse numbers for one client: income this week / month / year
 // in their time zone against their goals. Shared by the dashboard card and the
-// AI assistant so they always agree.
+// AI assistant so they always agree. Every number is the home currency only (goals are in it); income in the other
+// currency is totalled apart in `other` and never added in (task 1520).
 
 export type Bar = { label: string; value: number };
 export type PeriodOut = {
@@ -30,6 +33,9 @@ export interface PulseResult {
   changePct: number | null;
   weekly: number[];
   periods: { week: PeriodOut; month: PeriodOut; year: PeriodOut };
+  currency: Currency;
+  /** Income to date in the other currency (week / month / year), or null when there is none. */
+  other: { currency: Currency; week: number; month: number; year: number } | null;
 }
 
 // moneyFilter: limit income to one business (entries tagged to it or to its segments; see businessMoneyFilter).
@@ -37,17 +43,21 @@ export async function computePulse(masterPlanId: string, tz: string, moneyFilter
   const supabase = createServerClient();
   let q = supabase
     .from("finance_entries")
-    .select("amount, occurred_on")
+    .select("amount, currency, occurred_on")
     .eq("type", "income")
     .eq("master_plan_id", masterPlanId);
   if (moneyFilter) q = q.or(moneyFilter);
   const { data, error } = await q;
 
   if (error) return { error: error.message };
-  const rows = ((data ?? []) as { amount: number | string | null; occurred_on: string }[]).map((r) => ({
+  const home = await homeCurrency(masterPlanId, supabase);
+  const all = ((data ?? []) as { amount: number | string | null; currency: string | null; occurred_on: string }[]).map((r) => ({
     amount: Number(r.amount ?? 0),
+    currency: toCurrency(r.currency),
     day: String(r.occurred_on).slice(0, 10),
   }));
+  const rows = all.filter((r) => r.currency === home);
+  const otherRows = all.filter((r) => r.currency !== home);
 
   const { year, month, day } = nowParts(tz);
   const today = `${year}-${pad(month)}-${pad(day)}`;
@@ -65,8 +75,8 @@ export async function computePulse(masterPlanId: string, tz: string, moneyFilter
   const pwStart = ymd(prevWeekStart);
   const pwEnd = ymd(addDays(weekStart, -1));
 
-  const sum = (pred: (d: string) => boolean) =>
-    rows.reduce((t, r) => (pred(r.day) ? t + r.amount : t), 0);
+  const sum = (pred: (d: string) => boolean, list = rows) =>
+    list.reduce((t, r) => (pred(r.day) ? t + r.amount : t), 0);
 
   const week: PeriodOut = {
     income: sum((d) => d >= wStart && d <= today),
@@ -123,8 +133,17 @@ export async function computePulse(masterPlanId: string, tz: string, moneyFilter
     p.pct = p.goal ? Math.round((p.income / p.goal) * 100) : null;
   }
 
+  const other = {
+    currency: otherCurrency(home),
+    week: sum((d) => d >= wStart && d <= today, otherRows),
+    month: sum((d) => d.startsWith(monthKey) && d <= today, otherRows),
+    year: sum((d) => d.startsWith(yearKey) && d <= today, otherRows),
+  };
+
   return {
     hasData: rows.length > 0,
+    currency: home,
+    other: other.week || other.month || other.year ? other : null,
     // Legacy fields (Morning Brief and older callers).
     thisMonth: monthOut.income,
     lastMonth: monthOut.prevIncome,

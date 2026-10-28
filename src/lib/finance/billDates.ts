@@ -2,6 +2,8 @@
 // Bills & cash calendar: what's due to go out. A bill has a next due date and a
 // cadence; "Mark paid" records the expense and moves it to the following date.
 
+import { toCurrency, type Currency } from "@/lib/currency";
+
 export type BillCadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannual" | "annual" | "once";
 export const BILL_CADENCES: BillCadence[] = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual", "once"];
 export const CADENCE_LABEL: Record<BillCadence, string> = {
@@ -18,6 +20,7 @@ export interface Bill {
   id: string;
   name: string;
   amount: number | null;
+  currency: Currency; // the bill's own currency (task 1520); sums are kept per currency
   vendor: string;
   category: string;
   cadence: BillCadence;
@@ -31,6 +34,7 @@ export interface BillRow {
   id: string;
   name: string;
   amount: number | string | null;
+  currency?: string | null;
   vendor?: string | null;
   category: string | null;
   cadence: string;
@@ -45,6 +49,7 @@ export function toBill(r: BillRow): Bill {
     id: r.id,
     name: r.name,
     amount: r.amount === null || r.amount === "" ? null : Number(r.amount),
+    currency: toCurrency(r.currency),
     vendor: r.vendor || "",
     category: r.category || "",
     cadence: (BILL_CADENCES as string[]).includes(r.cadence) ? (r.cadence as BillCadence) : "monthly",

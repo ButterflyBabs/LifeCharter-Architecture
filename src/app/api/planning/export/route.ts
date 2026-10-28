@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { buildForecast } from "@/lib/planning/forecastData";
+import { formatMoney, otherCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
-
-const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const PLAN_TITLES: Record<string, string> = {
   business: "Business Plan",
   marketing: "Marketing Plan",
@@ -17,6 +17,10 @@ export async function GET() {
   const supabase = createServerClient();
   const masterPlanId = await resolveMasterPlanId();
   if (!masterPlanId) return NextResponse.json({ error: "no workspace" }, { status: 400 });
+
+  // Whole dollars in the account's home currency; other-currency money is listed on its own line, never added in.
+  const home = await homeCurrency(masterPlanId, supabase);
+  const money = (n: number, c: string = home) => formatMoney(Math.round(n), c, { home, cents: false });
 
   const out: string[] = [];
   const today = new Date().toISOString().slice(0, 10);
@@ -69,31 +73,36 @@ export async function GET() {
   const yearStart = `${now.getUTCFullYear()}-01-01`;
   const { data: fin } = await supabase
     .from("finance_entries")
-    .select("type, amount")
+    .select("type, amount, currency")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
-  let inc = 0;
-  let exp = 0;
-  for (const e of (fin || []) as { type: string; amount: number | string | null }[]) {
+  const other = otherCurrency(home);
+  const sums = { [home]: { inc: 0, exp: 0 }, [other]: { inc: 0, exp: 0 } } as Record<string, { inc: number; exp: number }>;
+  for (const e of (fin || []) as { type: string; amount: number | string | null; currency: string | null }[]) {
     const amt = Number(e.amount ?? 0);
-    if (e.type === "income") inc += amt;
-    else exp += amt;
+    const t = sums[toCurrency(e.currency)];
+    if (e.type === "income") t.inc += amt;
+    else t.exp += amt;
   }
+  const { inc, exp } = sums[home];
   out.push(`## Finance (year to date)`, ``);
-  out.push(`- Income: ${usd(inc)}`, `- Expenses: ${usd(exp)}`, `- Net: ${usd(inc - exp)}`, ``);
+  out.push(`- Income: ${money(inc)}`, `- Expenses: ${money(exp)}`, `- Net: ${money(inc - exp)}`);
+  const o = sums[other];
+  if (o.inc || o.exp) out.push(`- Kept separate (${other.toUpperCase()}): income ${money(o.inc, other)}, expenses ${money(o.exp, other)}, net ${money(o.inc - o.exp, other)}`);
+  out.push(``);
 
   // Forecast.
   try {
     const f = await buildForecast(masterPlanId);
     out.push(`## Financial Forecast (${f.assumptions.horizonMonths} months)`, ``);
     out.push(
-      `Base monthly revenue ${usd(f.baseMonthlyRevenue)} · expense ratio ${f.derivedExpenseRatio}% · ` +
+      `Base monthly revenue ${money(f.baseMonthlyRevenue)} · expense ratio ${f.derivedExpenseRatio}% · ` +
         `growth ${f.assumptions.monthlyGrowthPct}%/mo · pipeline close ${f.assumptions.pipelineClosePct}%`,
       ``
     );
     out.push(`| Scenario | Projected revenue | Projected net |`, `| --- | --- | --- |`);
     for (const s of f.scenarios) {
-      out.push(`| ${s.label} | ${usd(s.totalRevenue)} | ${usd(s.totalNet)} |`);
+      out.push(`| ${s.label} | ${money(s.totalRevenue)} | ${money(s.totalNet)} |`);
     }
     out.push(``);
   } catch {

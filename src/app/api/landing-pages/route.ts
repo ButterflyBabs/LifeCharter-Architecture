@@ -42,7 +42,7 @@ export async function GET() {
     db.from("landing_pages").select(PAGE_COLUMNS).eq("master_plan_id", a.planId).order("updated_at", { ascending: false }),
     db.from("crm_forms").select("id, name, active").eq("master_plan_id", a.planId).order("name"),
     db.from("events").select("id, title, kind, status, starts_at").eq("master_plan_id", a.planId).neq("status", "archived").order("created_at", { ascending: false }),
-    db.from("sales_offers").select("id, name, price, billing, link, status").eq("master_plan_id", a.planId).order("sort_order"),
+    db.from("sales_offers").select("id, name, price, currency, billing, link, status").eq("master_plan_id", a.planId).order("sort_order"),
     db.from("booking_calendars").select("id, name, slug, active").eq("master_plan_id", a.planId).order("name"),
     db.from("testimonials").select("client_name, headline, content").eq("master_plan_id", a.planId).eq("consent", true).in("status", ["approved", "featured"]).order("created_at", { ascending: false }).limit(20),
     db.from("client_master_plans").select("short_link_domain, short_link_domain_status").eq("id", a.planId).maybeSingle(),
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
     const calId = uuid(b.calendarId) || p.calendar_id;
     const formId = uuid(b.formId) || p.form_id;
     if (offerId) {
-      const { data: o } = await db.from("sales_offers").select("name, format, price, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration").eq("id", offerId).eq("master_plan_id", a.planId).maybeSingle();
+      const { data: o } = await db.from("sales_offers").select("name, format, price, currency, billing, payment_count, deliverables, transformation, ideal_client, not_for, guarantee, duration").eq("id", offerId).eq("master_plan_id", a.planId).maybeSingle();
       if (o) ctx.push(`Offer: ${JSON.stringify(o)}`);
     }
     if (eventId) {

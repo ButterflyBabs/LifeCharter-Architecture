@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import Link from "next/link";
 import QuickWins from "@/components/QuickWins";
+import { formatMoney, type Currency } from "@/lib/currency";
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
 import {
   Sun,
   Calendar,
@@ -37,16 +39,14 @@ interface Finance {
   thisMonth: number;
   changePct: number | null;
   weekly: number[];
+  currency?: Currency; // home currency: every figure above counts only money in it
+  other?: { currency: Currency; month: number } | null; // other-currency income this month, kept apart
 }
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-const currency = (n: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
+// Whole dollars in the account's home currency (the pulse figures are home-currency only).
+const currency = (n: number, home: Currency = "usd") => formatMoney(n, home, { home, cents: false });
 
 export default function MorningBriefPage() {
   const [firstName, setFirstName] = useState("");
@@ -177,7 +177,7 @@ export default function MorningBriefPage() {
     const todayLine = todayList.length ? todayList.slice(0, 6).join("; ") : "none flagged for today";
     const overflowLine = overflowList.length ? overflowList.slice(0, 6).join("; ") : "";
     const revLine = finance?.hasData
-      ? `${currency(finance.thisMonth)} revenue this month`
+      ? `${currency(finance.thisMonth, finance.currency)} revenue this month`
       : "no revenue recorded yet";
     const message =
       `Give me my morning briefing in 3-4 warm, focused sentences (speak to me directly as ${firstName || "the founder"}). ` +
@@ -331,7 +331,8 @@ export default function MorningBriefPage() {
           </div>
           {finance?.hasData ? (
             <>
-              <p className="text-2xl font-serif text-indigo-900">{currency(finance.thisMonth)}</p>
+              <p className="text-2xl font-serif text-indigo-900">{currency(finance.thisMonth, finance.currency)}</p>
+              <OtherCurrencyNote text={finance.other?.month ? formatMoney(finance.other.month, finance.other.currency, { home: finance.currency, cents: false }) : null} />
               {finance.changePct !== null && (
                 <p
                   className={`text-sm mt-1 ${

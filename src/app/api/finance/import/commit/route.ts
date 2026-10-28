@@ -3,6 +3,8 @@ import { currentBusiness } from "@/lib/businessScope";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
+import { isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ export async function POST(request: Request) {
   const masterPlanId = await resolveMasterPlanId();
   const body = await request.json().catch(() => ({}));
   const list = Array.isArray(body.entries) ? body.entries : [];
+  // Currency (task 1520): each row's own, else the one chosen for the whole import, else the account's home currency.
+  const fallback = isCurrency(body.currency) ? toCurrency(body.currency) : await homeCurrency(masterPlanId, supabase);
 
   const rows = list
     .map((e: Record<string, unknown>) => {
@@ -30,6 +34,7 @@ export async function POST(request: Request) {
         master_plan_id: masterPlanId,
         type: e.type === "income" ? "income" : "expense",
         amount,
+        currency: isCurrency(e.currency) ? toCurrency(e.currency) : fallback,
         category: typeof e.category === "string" ? e.category.trim() || null : null,
         description: typeof e.description === "string" ? e.description.trim() || null : null,
         occurred_on: occurredOn,

@@ -3,6 +3,8 @@ import { reminderLeadFor, minutesUntil, inMinutes, ownerTimezone, upcomingRecurr
 import { ownOnlyMemberLogins } from "@/lib/remindersServer";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 import { occurrences, type CallRow } from "@/lib/accountabilityCalls";
+import { formatMoney } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // The Suite's alerts: what needs the owner's attention right now, derived from
 // their own live data. The bell shows them; the daily alert email sends the
@@ -277,13 +279,15 @@ export async function deriveNotifications(
   try {
     const { data } = await supabase
       .from("finance_bills")
-      .select("id, name, amount, next_due, autopay")
+      .select("id, name, amount, currency, next_due, autopay")
       .eq("master_plan_id", masterPlanId)
       .eq("active", true)
       .eq("autopay", false)
       .lte("next_due", new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10));
     const today = new Date().toISOString().slice(0, 10);
-    for (const b of (data || []) as { id: string; name: string; amount: number | null; next_due: string }[]) {
+    // Each bill in its own currency (whole dollars, as before).
+    const home = (data || []).length ? await homeCurrency(masterPlanId, supabase) : "usd";
+    for (const b of (data || []) as { id: string; name: string; amount: number | null; currency: string | null; next_due: string }[]) {
       const late = b.next_due < today;
       const [y, m, d] = b.next_due.split("-").map(Number);
       const when = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -291,7 +295,7 @@ export async function deriveNotifications(
         nkey: `bill-due:${b.id}:${b.next_due}`,
         type: late ? "warning" : "action",
         title: late ? `${b.name} is overdue` : `${b.name} is due ${b.next_due === today ? "today" : when}`,
-        body: `${b.amount ? `$${Math.round(Number(b.amount)).toLocaleString("en-US")} · ` : ""}${late ? `was due ${when}. ` : ""}Mark it paid on your Bills calendar once it's done.`,
+        body: `${b.amount ? `${formatMoney(Math.round(Number(b.amount)), b.currency ?? home, { home, cents: false })} · ` : ""}${late ? `was due ${when}. ` : ""}Mark it paid on your Bills calendar once it's done.`,
         href: "/finance/bills",
       });
     }

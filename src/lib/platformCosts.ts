@@ -143,6 +143,7 @@ export function marginOf(priceCents: number, costPerClientCents: number): number
   return priceCents > 0 ? (priceCents - costPerClientCents) / priceCents : null;
 }
 
+// Babs's own platform costs and Suite plan prices are in US dollars (task 1520 leaves this USD).
 export const money = (cents: number) => {
   const neg = cents < 0;
   const s = (Math.abs(cents) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

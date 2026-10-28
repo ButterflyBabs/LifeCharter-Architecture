@@ -15,6 +15,7 @@ import { AvatarUpload } from "./components/AvatarUpload";
 import { TeamManagement } from "./components/TeamManagement";
 import { IntegrationsPanel, IntegrationUsage } from "./components/IntegrationsPanel";
 import StripeConnectCard from "./components/StripeConnectCard";
+import CurrencyCard from "./components/CurrencyCard";
 import BillingPanel from "./components/BillingPanel";
 import SecurityPanel from "./components/SecurityPanel";
 import AccountAccessLog from "./components/AccountAccessLog";
@@ -1430,6 +1431,7 @@ export default function SettingsPage() {
         </Card>
         )}
 
+        <CurrencyCard />
         <StripeConnectCard />
 
         <IntegrationsPanel />

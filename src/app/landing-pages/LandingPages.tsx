@@ -33,7 +33,7 @@ type Data = {
   pages: Page[];
   forms: { id: string; name: string; active: boolean }[];
   events: { id: string; title: string; kind: string; status: string; starts_at: string | null }[];
-  offers: { id: string; name: string; price: number | null; billing: string | null; link: string | null; status: string | null }[];
+  offers: { id: string; name: string; price: number | null; currency?: string; billing: string | null; link: string | null; status: string | null }[];
   calendars: { id: string; name: string; slug: string; active: boolean }[];
   testimonials: { name: string; quote: string }[];
   domain: string | null;
@@ -298,7 +298,7 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
       pixelId: null,
       form: fm ? { fields: [{ name: "first_name", label: "First name", required: true }, { name: "email", label: "Email", required: true, type: "email" }], submitLabel: null } : null,
       event: ev ? { kind: ev.kind, title: ev.title, host: data.brand.name, startsAt: ev.starts_at, durationMin: 60, timezone: "America/Denver", days: null, startsOn: null, open: true, note: null } : null,
-      offer: of ? { name: of.name, price: of.price == null ? null : Number(of.price), billing: of.billing, paymentCount: null } : null,
+      offer: of ? { name: of.name, price: of.price == null ? null : Number(of.price), currency: of.currency || "usd", billing: of.billing, paymentCount: null } : null,
       buyUrl,
       booking: cal ? { slug: cal.slug, name: cal.name, durationMin: 30, paid: false } : null,
       missing,

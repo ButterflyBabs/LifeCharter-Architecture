@@ -7,6 +7,9 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Wallet, TrendingUp, TrendingDown,
 import Link from "next/link";
 import { FinanceMonthlyRead } from "@/components/planning/AssistantPanels";
 
+import { OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+
 interface Line {
   category: string;
   amount: number;
@@ -18,10 +21,10 @@ interface PnL {
   income: { total: number; lines: Line[] };
   expense: { total: number; lines: Line[] };
   net: number;
+  /** The other currency's totals for the month, kept separate (task 1520). */
+  other?: OtherBlock;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const tz = () =>
   (typeof window !== "undefined" &&
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
@@ -30,6 +33,8 @@ const tz = () =>
 export default function MonthlyReviewPage() {
   const [data, setData] = useState<PnL | null>(null);
   const [loading, setLoading] = useState(true);
+  const { home, money } = useMoney();
+  const usd = (n: number) => money(n);
 
   const load = useCallback(async (year?: number, index?: number) => {
     setLoading(true);
@@ -99,6 +104,7 @@ export default function MonthlyReviewPage() {
                 <span className="text-sm">Income</span>
               </div>
               <p className="text-2xl font-bold text-[#2E7C83]">{usd(data.income.total)}</p>
+              <OtherCurrencyNote text={otherText(data.other, home, ["income.total", "income"])} />
             </div>
             <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
               <div className="flex items-center gap-2 text-[#b06a5a] mb-1">
@@ -106,6 +112,7 @@ export default function MonthlyReviewPage() {
                 <span className="text-sm">Expenses</span>
               </div>
               <p className="text-2xl font-bold text-[#b06a5a]">{usd(data.expense.total)}</p>
+              <OtherCurrencyNote text={otherText(data.other, home, ["expense.total", "expense"])} />
             </div>
             <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
               <div className="flex items-center gap-2 text-[#7b6b8d] mb-1">
@@ -119,6 +126,7 @@ export default function MonthlyReviewPage() {
               {savingsRate !== null && (
                 <p className="text-[11px] text-[#b8a898] mt-1">{savingsRate}% margin</p>
               )}
+              <OtherCurrencyNote text={otherText(data.other, home, "net", { signed: true })} />
             </div>
           </div>
 

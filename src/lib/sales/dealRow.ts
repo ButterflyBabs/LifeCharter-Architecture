@@ -1,3 +1,5 @@
+import { isCurrency, toCurrency } from "@/lib/currency";
+
 // Validates a client-sent deal into database columns (create and edit).
 export function dealRow(b: Record<string, unknown>, opts: { partial: boolean }): { error: string } | { row: Record<string, unknown> } {
   const row: Record<string, unknown> = {};
@@ -23,6 +25,11 @@ export function dealRow(b: Record<string, unknown>, opts: { partial: boolean }):
       if (!Number.isFinite(n) || n < 0 || n > 100_000_000) return { error: "Deal value must be a number." };
       row.value = Math.round(n * 100) / 100;
     }
+  }
+  // Only when posted: a new deal otherwise takes its offer's currency or the home currency (the route decides).
+  if (has("currency") && b.currency !== null && b.currency !== "") {
+    if (!isCurrency(b.currency)) return { error: "Currency must be USD or CAD." };
+    row.currency = toCurrency(b.currency);
   }
   if (has("probability")) {
     if (b.probability === null || b.probability === "") row.probability = null;

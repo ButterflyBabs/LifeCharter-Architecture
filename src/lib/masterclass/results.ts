@@ -294,7 +294,8 @@ export async function masterclassResults(now = new Date()): Promise<{ sessions: 
     supabase.from("website_build_orders").select("email, created_at"),
     supabase.from("booking_calendars").select("id").eq("slug", "executive-consultation"),
     supabase.from("short_links").select("id").like("code", "mc-%"),
-    supabase.from("finance_entries").select("category, amount, occurred_on, type").eq("type", "expense").gte("occurred_on", ADS_START),
+    // Babs's MasterClass funnel is in US dollars (ad spend and first-year values), so only USD ad spend counts.
+    supabase.from("finance_entries").select("category, amount, occurred_on, type").eq("type", "expense").eq("currency", "usd").gte("occurred_on", ADS_START),
   ]);
 
   const registrants = ((regs.data ?? []) as { email: string; synced_at: string; registered_at: string | null; event_key: string | null; details: Record<string, string> | null }[])

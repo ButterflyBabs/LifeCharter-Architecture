@@ -43,7 +43,7 @@ export function DealsToMove() {
                   <Link href={`/sales/pipeline?deal=${d.id}`} className="block rounded-lg border border-[#1a2b4a]/10 p-2.5 hover:border-[#c9a227] dark:border-white/10">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{d.contactName}</span>
-                      {d.value !== null && <span className="shrink-0 text-xs tabular-nums text-[#7b6b8d]">{formatMoney(d.value)}</span>}
+                      {d.value !== null && <span className="shrink-0 text-xs tabular-nums text-[#7b6b8d]">{formatMoney(d.value, { currency: d.currency, home: s?.currency })}</span>}
                     </div>
                     <p className={`mt-0.5 flex items-start gap-1 text-xs ${d.reason === "overdue" ? "font-semibold text-[#b03a2e]" : d.reason === "due" ? "font-semibold text-[#8a6a15]" : "text-[#7b6b8d]"}`}>
                       {d.reason === "overdue" ? <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" /> : d.reason === "due" ? <Clock className="mt-px h-3.5 w-3.5 shrink-0" /> : <Hourglass className="mt-px h-3.5 w-3.5 shrink-0" />}

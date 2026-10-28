@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Download, FileCheck2 } from "lucide-react";
+import { formatMoney } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 
 // Finance › 1099 contractor totals (task 1150 part 1): who you paid this year and who may need a 1099-NEC.
-type Payee = { key: string; name: string; total: number; count: number; contractor: boolean; w9: boolean; card: boolean; note: string; needs1099: boolean };
+// A 1099 is a US form, so only US-dollar payments count here (task 1520); Canadian-dollar ones are left out.
+type Payee = { key: string; name: string; total: number; count: number; contractor: boolean; w9: boolean; card: boolean; note: string; needs1099: boolean; otherTotal?: number };
 type Data = { year: number; threshold: number; thresholdCheck: boolean; payees: Payee[]; unnamed: { total: number; count: number } };
-const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+// `total` is US dollars only; someone paid only in Canadian dollars (otherTotal) is left off the list.
+const isUsd = (p: Payee) => p.total > 0 || !(p.otherTotal && p.otherTotal > 0);
 
 export default function Contractors1099() {
   const thisYear = new Date().getFullYear();
@@ -15,10 +19,15 @@ export default function Contractors1099() {
   const [d, setD] = useState<Data | null>(null);
   const [onlyContractors, setOnlyContractors] = useState(false);
   const [msg, setMsg] = useState("");
+  const { currency: home, canChoose } = useHomeCurrency();
+  const usd = (n: number) => formatMoney(n, "usd", { home, cents: true });
 
   const load = useCallback(async (y: number) => {
     const r = await fetch(`/api/finance/contractors?year=${y}`, { cache: "no-store" });
-    if (r.ok) setD(await r.json());
+    if (r.ok) {
+      const x = (await r.json()) as Data;
+      setD({ ...x, payees: (x.payees ?? []).filter(isUsd) });
+    }
   }, []);
   useEffect(() => {
     void load(year);
@@ -97,6 +106,7 @@ export default function Contractors1099() {
             </div>
           )}
           <p className="text-xs text-[#7b6b8d]">Contractors are people or businesses you paid for work who aren&apos;t your employees (most corporations don&apos;t get one). The reporting amount is {usd(600)} for payments made through 2025 and {usd(2000)} from 2026. This is a guide to bring to your accountant, not tax advice.</p>
+          {(canChoose || home === "cad") && <p className="text-xs text-[#7b6b8d]">Amounts paid in Canadian dollars are not included.</p>}
         </div>
       )}
     </div>

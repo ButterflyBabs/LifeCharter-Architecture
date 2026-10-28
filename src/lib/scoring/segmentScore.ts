@@ -3,6 +3,8 @@ import { gatherAndCompute } from "@/lib/scoring/gather";
 import { DIMENSION_KEYS, DIMENSION_LABEL, type DimensionKey } from "@/lib/scoring/dimensionModel";
 import { planBusinessIds } from "@/lib/planScope";
 import { legalCompletion, type LegalState } from "@/lib/legalChecklist";
+import { formatMoney, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // Segment scores from EVIDENCE, not opinion.
 //
@@ -125,6 +127,8 @@ export async function computeSegmentScores(planId: string, opts: { units?: "busi
   const segIds = businessMode ? Array.from(segToUnit.keys()) : segs.map((s) => s.id);
   const unitOf = (segmentId: number | null | undefined): number | null => (segmentId == null ? null : businessMode ? segToUnit.get(segmentId) ?? null : segmentId);
   const sinceDay = new Date(now - 120 * DAY).toISOString().slice(0, 10);
+  // Finance signals use home-currency entries only (amounts in two currencies are never added together); targets are in the home currency.
+  const home = await homeCurrency(planId, db);
 
   const { data: planRows } = await db.from("client_plans").select("id").eq("master_plan_id", planId);
   const planIds = ((planRows ?? []) as { id: string }[]).map((p) => p.id);
@@ -138,10 +142,10 @@ export async function computeSegmentScores(planId: string, opts: { units?: "busi
     ).then((r) => (r.data ?? []) as TaskRow[]),
     planIds.length ? db.from("client_plan_goals").select("segment_id, dimension_key, title, status").in("plan_id", planIds).in("segment_id", segIds).then((r) => (r.data ?? []) as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]) : Promise.resolve([] as { segment_id: number; dimension_key: string | null; title: string; status: string | null }[]),
     (businessMode
-      ? db.from("finance_entries").select("segment_id, business_id, type, amount, occurred_on").eq("master_plan_id", planId).gte("occurred_on", sinceDay)
+      ? db.from("finance_entries").select("segment_id, business_id, type, amount, occurred_on, currency").eq("master_plan_id", planId).gte("occurred_on", sinceDay)
           .or(`business_id.in.(${segs.map((x) => x.id).join(",")})${segIds.length ? `,segment_id.in.(${segIds.join(",")})` : ""}`).limit(5000)
-      : db.from("finance_entries").select("segment_id, type, amount, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", sinceDay).limit(5000)
-    ).then((r) => (r.data ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string }[]),
+      : db.from("finance_entries").select("segment_id, type, amount, occurred_on, currency").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", sinceDay).limit(5000)
+    ).then((r) => ((r.data ?? []) as { segment_id: number; type: string; amount: number | string | null; occurred_on: string; currency: string | null }[]).filter((e) => toCurrency(e.currency) === home)),
     db.from("sales_activities").select("segment_id, outcome, occurred_on").eq("master_plan_id", planId).in("segment_id", segIds).gte("occurred_on", new Date(now - WINDOW_DAYS * DAY).toISOString().slice(0, 10)).limit(3000).then((r) => (r.data ?? []) as { segment_id: number; outcome: string | null; occurred_on: string }[]),
     businessMode ? Promise.resolve([] as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]) : db.from("segment_score_snapshots").select("segment_id, domains, overall, created_at").in("segment_id", segIds).order("created_at", { ascending: false }).limit(2000).then((r) => (r.data ?? []) as { segment_id: number; domains: Record<string, number>; overall: number | null; created_at: string }[]),
   ]);
@@ -211,7 +215,7 @@ export async function computeSegmentScores(planId: string, opts: { units?: "busi
       if (target > 0) {
         const avg = inc / 3;
         parts.push(clamp(30 + 70 * Math.min(1, avg / target)));
-        if (avg / target < 0.7) needs.push(`income is at ${pct(avg / target)} of the ${`$${Math.round(target).toLocaleString("en-US")}`} monthly target`);
+        if (avg / target < 0.7) needs.push(`income is at ${pct(avg / target)} of the ${formatMoney(Math.round(target), home, { home, cents: false })} monthly target`);
         else if (avg / target >= 1) wins.push("meeting its monthly income target");
       }
       const last30 = myLedger.filter((e) => e.type === "income" && e.occurred_on >= day30).reduce((s, e) => s + Number(e.amount ?? 0), 0);

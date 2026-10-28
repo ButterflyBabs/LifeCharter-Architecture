@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Banknote, Check, Landmark, Loader2, RefreshCw, Undo2, X } from "lucide-react";
+import { formatCents, type Currency } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 
 type Conn = { id: string; fc_account_id: string; institution_name: string | null; display_name: string | null; last4: string | null; category: string | null; status: string; last_synced_at: string | null; last_error: string | null };
-type Txn = { id: string; connection_id: string; amount_cents: number; description: string | null; transacted_on: string; review_status: string; suggested_type: string | null; suggested_category: string | null; suggested_vendor: string | null; matched_entry_id: string | null };
+type Txn = { id: string; connection_id: string; amount_cents: number; description: string | null; transacted_on: string; review_status: string; suggested_type: string | null; suggested_category: string | null; suggested_vendor: string | null; matched_entry_id: string | null; currency?: string | null };
 type Data = { configured: boolean; cap: number; connections: Conn[]; review: Txn[]; setAside: Txn[]; duplicates: Txn[] };
 type Edit = { category?: string; vendor?: string };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
 const field = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-2 py-1.5 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
 const btn = "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50";
-const usd = (cents: number) => `${cents < 0 ? "-" : "+"}$${(Math.abs(cents) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// Signed, in the transaction's own currency ("+$12.50", or "+CA$12.50" when it is not the home currency).
+const signed = (cents: number, currency: string | null | undefined, home: Currency) => `${cents < 0 ? "-" : "+"}${formatCents(Math.abs(cents), currency || home, { home, cents: true })}`;
 const day = (s: string) => new Date(`${s}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 declare global {
@@ -33,6 +36,8 @@ function loadStripeJs(): Promise<void> {
 
 export default function BankFeeds() {
   const [d, setD] = useState<Data | null>(null);
+  const { currency: home } = useHomeCurrency();
+  const usd = (cents: number, currency?: string | null) => signed(cents, currency, home);
   const [err, setErr] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
@@ -176,7 +181,7 @@ export default function BankFeeds() {
                       <td className="py-2 pr-2"><input type="checkbox" checked={!!picked[t.id]} onChange={(e) => setPicked((p) => ({ ...p, [t.id]: e.target.checked }))} aria-label="Select" /></td>
                       <td className="whitespace-nowrap py-2 pr-3 text-xs text-[#7b6b8d]">{day(t.transacted_on)}<br />{conn(t.connection_id)?.institution_name || ""}</td>
                       <td className="py-2 pr-3 text-[#1a2b4a] dark:text-[#F8F5F0]"><span className="line-clamp-2">{t.description}</span></td>
-                      <td className={`whitespace-nowrap py-2 pr-3 font-semibold ${t.amount_cents < 0 ? "text-[#8a2f2f]" : "text-[#2E7C83]"}`}>{usd(t.amount_cents)}</td>
+                      <td className={`whitespace-nowrap py-2 pr-3 font-semibold ${t.amount_cents < 0 ? "text-[#8a2f2f]" : "text-[#2E7C83]"}`}>{usd(t.amount_cents, t.currency)}</td>
                       <td className="py-2 pr-2"><input className={field} defaultValue={t.suggested_vendor || ""} onChange={(e) => setEdits((m) => ({ ...m, [t.id]: { ...m[t.id], vendor: e.target.value } }))} aria-label="Paid to or from" placeholder={t.amount_cents < 0 ? "Paid to" : "From"} /></td>
                       <td className="py-2"><input className={field} list={`cats-${type}`} defaultValue={t.suggested_category || ""} onChange={(e) => setEdits((m) => ({ ...m, [t.id]: { ...m[t.id], category: e.target.value } }))} aria-label="Category" placeholder="Category" /></td>
                     </tr>
@@ -198,7 +203,7 @@ export default function BankFeeds() {
             <ul className="mt-3 divide-y divide-[#1a2b4a]/10 dark:divide-white/10">
               {[...d.setAside.map((t) => ({ t, why: "Looks like a transfer or payout" })), ...d.duplicates.map((t) => ({ t, why: "Looks like one you already entered" }))].map(({ t, why }) => (
                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]"><span className={t.amount_cents < 0 ? "font-semibold text-[#8a2f2f]" : "font-semibold text-[#2E7C83]"}>{usd(t.amount_cents)}</span> · {day(t.transacted_on)} · {t.description}<span className="ml-2 text-xs text-[#7b6b8d]">{why}</span></span>
+                  <span className="text-[#1a2b4a] dark:text-[#F8F5F0]"><span className={t.amount_cents < 0 ? "font-semibold text-[#8a2f2f]" : "font-semibold text-[#2E7C83]"}>{usd(t.amount_cents, t.currency)}</span> · {day(t.transacted_on)} · {t.description}<span className="ml-2 text-xs text-[#7b6b8d]">{why}</span></span>
                   <button type="button" onClick={() => act("restore", [t])} className="inline-flex items-center gap-1 text-xs font-semibold text-[#2E7C83] hover:underline"><Undo2 className="h-3 w-3" />Move back to review</button>
                 </li>
               ))}

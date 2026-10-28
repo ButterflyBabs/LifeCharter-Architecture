@@ -3,15 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { FileSignature, PenLine, Plus, Send, Upload, Download, Copy, Ban, BellRing, Trash2, ArrowUp, ArrowDown, Eye, X } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
+import { formatMoney, toCurrency, type Currency } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import { CurrencySelect } from "@/components/money/CurrencySelect";
 
 // Clients & Sales › LC Plume, agreements and proposals with e-signature (task 1072): write or upload a document, add signers, send for signature
 // (emailed link + 6-digit code), follow every step, and download the sealed copy with its certificate of completion.
 
 type Row = { id: string; title: string; kind: string; status: string; source: string; sent_at: string | null; completed_at: string | null; updated_at: string; signers: { name: string; status: string }[]; needsMe?: boolean };
+type Offer = { id: string; name: string; price: number | null; currency?: string | null };
 type Tpl = { id: string; name: string; kind: string; review_note: string | null; starter: boolean };
 type Signer = { id: string; order_no: number; name: string; email: string; is_owner: boolean; status: string; signed_at: string | null; decline_reason: string | null };
 type Detail = {
-  doc: { id: string; title: string; kind: string; source: string; body: string | null; file_name: string | null; contact_id: string | null; offer_id: string | null; amount: number | null; message: string | null; status: string; owner_signs: boolean; expires_on: string | null; final_hash: string | null; original_hash: string | null; final_path: string | null };
+  doc: { id: string; title: string; kind: string; source: string; body: string | null; file_name: string | null; contact_id: string | null; offer_id: string | null; amount: number | null; currency?: string | null; message: string | null; status: string; owner_signs: boolean; expires_on: string | null; final_hash: string | null; original_hash: string | null; final_path: string | null };
   signers: Signer[];
   events: { event: string; signer_id: string | null; detail: string | null; ip: string | null; at: string }[];
   placeholders: string[];
@@ -32,7 +36,7 @@ async function call(body: Record<string, unknown>) {
 }
 
 export default function Agreements() {
-  const [list, setList] = useState<{ docs: Row[]; templates: Tpl[]; offers: { id: string; name: string; price: number | null }[] } | null>(null);
+  const [list, setList] = useState<{ docs: Row[]; templates: Tpl[]; offers: Offer[] } | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [d, setD] = useState<Detail | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -154,13 +158,14 @@ export default function Agreements() {
   );
 }
 
-function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: { id: string; name: string; price: number | null }[]; act: (b: Record<string, unknown>, ok?: string) => Promise<Record<string, unknown> | null>; busy: boolean; reload: () => Promise<void>; setMsg: (m: { ok: boolean; text: string } | null) => void }) {
+function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: Offer[]; act: (b: Record<string, unknown>, ok?: string) => Promise<Record<string, unknown> | null>; busy: boolean; reload: () => Promise<void>; setMsg: (m: { ok: boolean; text: string } | null) => void }) {
   const doc = d.doc;
   const draft = doc.status === "draft";
   const [fixFor, setFixFor] = useState<string | null>(null);
   const [fixEmail, setFixEmail] = useState("");
   const others = d.signers.filter((s) => !s.is_owner);
-  const [f, setF] = useState({ title: doc.title, kind: doc.kind, body: doc.body ?? "", message: doc.message ?? "", expiresOn: doc.expires_on ?? "", amount: doc.amount ? String(doc.amount) : "", offerId: doc.offer_id ?? "", ownerSigns: doc.owner_signs });
+  const { currency: home, canChoose } = useHomeCurrency();
+  const [f, setF] = useState({ currency: toCurrency(doc.currency, home), title: doc.title, kind: doc.kind, body: doc.body ?? "", message: doc.message ?? "", expiresOn: doc.expires_on ?? "", amount: doc.amount ? String(doc.amount) : "", offerId: doc.offer_id ?? "", ownerSigns: doc.owner_signs });
   const [signers, setSigners] = useState(others.length ? others.map((s) => ({ name: s.name, email: s.email, order: s.order_no })) : [{ name: "", email: "", order: 1 }]);
   const [fills, setFills] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
@@ -210,15 +215,16 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
             <div><label className={label} htmlFor="d-kind">Type</label><select id="d-kind" className={input} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="agreement">Agreement</option><option value="proposal">Proposal</option></select></div>
             {f.kind === "proposal" && (
               <>
-                <div><label className={label} htmlFor="d-offer">Offer (optional)</label><select id="d-offer" className={input} value={f.offerId} onChange={(e) => { const o = offers.find((x) => x.id === e.target.value); setF({ ...f, offerId: e.target.value, amount: o?.price ? String(o.price) : f.amount }); }}><option value="">None</option>{offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
+                <div><label className={label} htmlFor="d-offer">Offer (optional)</label><select id="d-offer" className={input} value={f.offerId} onChange={(e) => { const o = offers.find((x) => x.id === e.target.value); setF({ ...f, offerId: e.target.value, amount: o?.price ? String(o.price) : f.amount, currency: o ? toCurrency(o.currency, home) : f.currency }); }}><option value="">None</option>{offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
                 <div><label className={label} htmlFor="d-amount">Amount (shown to the signer)</label><input id="d-amount" inputMode="decimal" className={input} value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value.replace(/[^0-9.]/g, "") })} placeholder="2497" /></div>
+                {(canChoose || f.currency !== home) && <div><label className={label} htmlFor="d-cur">Currency</label><CurrencySelect value={f.currency} onChange={(c) => setF({ ...f, currency: c })} className={input} aria-label="Amount currency" /></div>}
               </>
             )}
             <div><label className={label} htmlFor="d-exp">Sign by (optional)</label><input id="d-exp" type="date" className={input} value={f.expiresOn} onChange={(e) => setF({ ...f, expiresOn: e.target.value })} /></div>
             <div className="md:col-span-2"><label className={label} htmlFor="d-msg">Note in the email (optional)</label><textarea id="d-msg" rows={2} className={input} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} /></div>
           </div>
         ) : (
-          <p className="mt-1 text-sm text-[#7b6b8d]">{doc.kind === "proposal" ? "Proposal" : "Agreement"}{doc.amount ? ` · $${Number(doc.amount).toLocaleString("en-US")}` : ""}{doc.expires_on ? ` · sign by ${doc.expires_on}` : ""}</p>
+          <p className="mt-1 text-sm text-[#7b6b8d]">{doc.kind === "proposal" ? "Proposal" : "Agreement"}{doc.amount ? ` · ${formatMoney(Number(doc.amount), toCurrency(doc.currency, home), { home })}` : ""}{doc.expires_on ? ` · sign by ${doc.expires_on}` : ""}</p>
         )}
       </section>
 
@@ -324,6 +330,8 @@ function Editor({ d, offers, act, busy, reload, setMsg }: { d: Detail; offers: {
           fileName={doc.file_name}
           kind={f.kind}
           amount={f.amount}
+          currency={f.currency}
+          home={home}
           expiresOn={f.expiresOn}
           message={f.message}
           signers={signers}
@@ -367,8 +375,8 @@ function WithBlanks({ text }: { text: string }) {
 }
 
 /** What each signer will see, before anything is sent. Matches the signing page; blanks still empty are highlighted. */
-function PreviewModal({ title, body, isPdf, fileName, kind, amount, expiresOn, message, signers, ownerSigns, blanks, busy, onClose, onSend }: {
-  title: string; body: string; isPdf: boolean; fileName: string | null; kind: string; amount: string; expiresOn: string; message: string;
+function PreviewModal({ title, body, isPdf, fileName, kind, amount, currency, home, expiresOn, message, signers, ownerSigns, blanks, busy, onClose, onSend }: {
+  title: string; body: string; isPdf: boolean; fileName: string | null; kind: string; amount: string; currency: Currency; home: Currency; expiresOn: string; message: string;
   signers: { name: string; email: string; order: number }[]; ownerSigns: boolean; blanks: string[]; busy: boolean; onClose: () => void; onSend: () => void;
 }) {
   useEffect(() => {
@@ -419,7 +427,7 @@ function PreviewModal({ title, body, isPdf, fileName, kind, amount, expiresOn, m
               })}
             </article>
           )}
-          {kind === "proposal" && amount && <p className="rounded-xl bg-white px-4 py-3 text-[15px] dark:bg-[#1a2b4a]/40">Investment: <strong>${Number(amount).toLocaleString("en-US")}</strong></p>}
+          {kind === "proposal" && amount && <p className="rounded-xl bg-white px-4 py-3 text-[15px] dark:bg-[#1a2b4a]/40">Investment: <strong>{formatMoney(Number(amount), currency, { home })}</strong></p>}
           <div className="rounded-2xl border border-[#E5DDCF] bg-white p-5 text-sm dark:bg-[#1a2b4a]/40">
             <p className="font-semibold">Signatures{expiresOn ? ` · sign by ${expiresOn}` : ""}</p>
             <ol className="mt-2 space-y-2">

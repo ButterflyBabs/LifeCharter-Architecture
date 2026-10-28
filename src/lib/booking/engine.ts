@@ -1,4 +1,5 @@
 import { isAwayOn } from "@/lib/awayMode";
+import { formatMoney } from "@/lib/currency";
 import { BABS_COPY, involvesCopied, replyWithBabs } from "@/lib/teamCopy";
 import { DEFAULT_1H, DEFAULT_24H, fillReminder, inQuietHours } from "@/lib/sms";
 import { sendSms } from "@/lib/smsServer";
@@ -50,6 +51,7 @@ export interface Calendar {
   noshow_body: string | null;
   require_phone?: boolean;
   pay_mode?: "none" | "full" | "deposit";
+  currency?: string; // "usd" | "cad": the price and deposit are in this currency (task 1520)
   price?: number | null;
   deposit?: number | null;
 }
@@ -301,7 +303,7 @@ export async function confirmPaidBooking(bookingId: string, paidCents: number, s
         fromName: "Bookings",
         subject: `Action needed: ${b.invitee_name} paid but their time was taken`,
         heading: "A payment needs your attention",
-        lines: [`${b.invitee_name} (${b.invitee_email}) paid $${(paidCents / 100).toFixed(2)} for ${cal.name} at ${fmt(b.start_at, host.timezone || "America/Denver")}, but finished paying after the 30-minute hold and the time was booked by someone else.`, "Please reach out to rebook them, or refund the payment in your Stripe account."],
+        lines: [`${b.invitee_name} (${b.invitee_email}) paid ${formatMoney(paidCents / 100, cal.currency, { cents: true })} for ${cal.name} at ${fmt(b.start_at, host.timezone || "America/Denver")}, but finished paying after the 30-minute hold and the time was booked by someone else.`, "Please reach out to rebook them, or refund the payment in your Stripe account."],
       }).catch(() => null);
     }
     return "lost";
@@ -419,7 +421,7 @@ async function afterBooking(
       `<strong>${esc(cal.name)}</strong> with ${esc(host.name)}`,
       `${esc(fmt(startISO, b.tz))} (${esc(b.tz.replace(/_/g, " "))})`,
       meetingUrl ? `Join on Zoom: <a href="${meetingUrl}">${esc(meetingUrl)}</a>` : esc(where),
-      b.paid ? `Paid: $${b.paid.toFixed(2)}${cal.pay_mode === "deposit" ? " deposit" : ""}. Your receipt comes from Stripe.` : "",
+      b.paid ? `Paid: ${formatMoney(b.paid, cal.currency, { cents: true })}${cal.pay_mode === "deposit" ? " deposit" : ""}. Your receipt comes from Stripe.` : "",
       cal.confirmation_note ? esc(cal.confirmation_note) : "",
       "A calendar invitation is on its way too.",
     ],
@@ -434,7 +436,7 @@ async function afterBooking(
     heading: `${b.rescheduled ? "Rescheduled" : "New"} ${cal.name}`,
     lines: [
       `<strong>${esc(b.name)}</strong> · <a href="mailto:${esc(b.email)}">${esc(b.email)}</a>${b.phone ? ` · ${esc(b.phone)}` : ""}`,
-      b.paid ? `Paid $${b.paid.toFixed(2)}${cal.pay_mode === "deposit" ? " (deposit)" : ""} to your Stripe account.` : "",
+      b.paid ? `Paid ${formatMoney(b.paid, cal.currency, { cents: true })}${cal.pay_mode === "deposit" ? " (deposit)" : ""} to your Stripe account.` : "",
       `${esc(fmt(startISO, host.timezone))} (${esc(host.timezone.replace(/_/g, " "))}) · host: ${esc(host.name)}`,
       meetingUrl ? `Zoom: <a href="${meetingUrl}">${esc(meetingUrl)}</a>` : esc(where),
       ...qa.map(esc),
@@ -479,7 +481,7 @@ export async function cancelBooking(bookingId: string, reason: string, by: "invi
       fromName: SUITE_NAME,
       subject: `Canceled: ${cal.name} with ${b.invitee_name}, ${fmt(b.start_at, host.timezone, "short")}`,
       heading: `${cal.name} canceled`,
-      lines: [`${esc(b.invitee_name)} (${esc(b.invitee_email)}) · ${esc(fmt(b.start_at, host.timezone))}`, `Canceled ${by === "invitee" ? "by them" : "by you"}${reason ? `: ${esc(reason)}` : ""}`, Number(b.paid_amount) > 0 ? `They paid $${Number(b.paid_amount).toFixed(2)} when booking. Payments aren't refunded automatically: refund it in your Stripe account if your policy allows.` : ""],
+      lines: [`${esc(b.invitee_name)} (${esc(b.invitee_email)}) · ${esc(fmt(b.start_at, host.timezone))}`, `Canceled ${by === "invitee" ? "by them" : "by you"}${reason ? `: ${esc(reason)}` : ""}`, Number(b.paid_amount) > 0 ? `They paid ${formatMoney(Number(b.paid_amount), b.currency ?? cal.currency, { cents: true })} when booking. Payments aren't refunded automatically: refund it in your Stripe account if your policy allows.` : ""],
     });
   }
   return true;

@@ -5,6 +5,9 @@ import { CalendarDays, Copy, ExternalLink, Plus, Trash2, Check } from "lucide-re
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { toCurrency } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
+import { CurrencySelect } from "@/components/money/CurrencySelect";
 
 interface Conn { id: string; provider: string; email: string | null; check_busy: boolean; add_events: boolean }
 interface Host { id: string; name: string; email: string; zoom_email: string | null; timezone: string; weekly: Record<string, [string, string][]>; connect_key: string; active: boolean; connections: Conn[] }
@@ -14,7 +17,7 @@ interface Cal {
   min_notice_hours: number; max_days_ahead: number; daily_cap: number | null; assignment: "single" | "round_robin"; host_ids: string[]; cc_emails: string[];
   location: "zoom" | "phone" | "custom"; location_detail: string | null; questions: Q[]; tags: string[]; sequence_key: string | null; confirmation_note: string | null; active: boolean;
   create_deal: boolean; deal_value: number | null; noshow_subject: string | null; noshow_body: string | null;
-  pay_mode?: "none" | "full" | "deposit"; price?: number | null; deposit?: number | null;
+  pay_mode?: "none" | "full" | "deposit"; price?: number | null; deposit?: number | null; currency?: string | null;
 }
 interface Booking { id: string; calendar_id: string; host_id: string | null; start_at: string; invitee_name: string; invitee_email: string; invitee_phone: string | null; answers: Record<string, string>; status: string; meeting_url: string | null; cancel_reason: string | null }
 interface Data { calendars: Cal[]; hosts: Host[]; bookings: Booking[]; zoom: { configured: boolean; canCreate: boolean; available?: boolean }; house?: boolean; payments?: { allowed: boolean; connected: boolean }; sender?: { house: boolean; ok: boolean; reason?: string | null; setupPath?: string } }
@@ -167,7 +170,9 @@ function Calendars({ d, act, setMsg }: { d: Data; act: Act; setMsg: (m: string) 
 }
 
 function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal; hosts: Host[]; house: boolean; payments?: { allowed: boolean; connected: boolean }; act: Act; setMsg: (m: string) => void }) {
+  const { currency: home, canChoose } = useHomeCurrency();
   const [f, setF] = useState({
+    currency: toCurrency(cal.currency, home),
     name: cal.name, slug: cal.slug, description: cal.description ?? "", duration: cal.duration_min, step: cal.slot_step_min, bufferBefore: cal.buffer_before_min, bufferAfter: cal.buffer_after_min,
     minNotice: cal.min_notice_hours, maxDays: cal.max_days_ahead, dailyCap: cal.daily_cap ?? 0, assignment: cal.assignment, hostIds: cal.host_ids, cc: cal.cc_emails.join(", "),
     location: !house && cal.location === "zoom" ? "custom" : cal.location, locationDetail: cal.location_detail ?? "", confirmationNote: cal.confirmation_note ?? "", tags: cal.tags.join(", "),
@@ -189,7 +194,7 @@ function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal
       minNotice: f.minNotice, maxDays: f.maxDays, dailyCap: f.dailyCap || null, assignment: f.assignment, hostIds: f.hostIds, ccEmails: f.cc.split(",").map((s) => s.trim()).filter(Boolean),
       location: f.location, locationDetail: f.locationDetail, confirmationNote: f.confirmationNote, tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean), questions: parseQs(),
       createDeal: f.createDeal, dealValue: f.dealValue || null, noshowSubject: f.noshowSubject, noshowBody: f.noshowBody,
-      ...(payments?.allowed ? { payMode: f.payMode, price: f.price || null, deposit: f.deposit || null } : {}),
+      ...(payments?.allowed ? { payMode: f.payMode, price: f.price || null, deposit: f.deposit || null, currency: f.currency } : {}),
     }, "Calendar saved.");
   const noCalendars = f.hostIds.filter((id) => !(hosts.find((h) => h.id === id)?.connections.length));
   return (
@@ -272,6 +277,9 @@ function CalendarEditor({ cal, hosts, house, payments, act, setMsg }: { cal: Cal
                 <div className="grid gap-2 sm:grid-cols-2">
                   <label className="block">Price ($)<Input type="number" value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) || 0 })} /></label>
                   {f.payMode === "deposit" && <label className="block">Deposit ($)<Input type="number" value={f.deposit} onChange={(e) => setF({ ...f, deposit: Number(e.target.value) || 0 })} /></label>}
+                  {(canChoose || f.currency !== home) && (
+                    <label className="block">Currency<CurrencySelect value={f.currency} onChange={(c) => setF({ ...f, currency: c })} className={field} /></label>
+                  )}
                 </div>
               )}
               <p className="text-xs text-[#7a8a99]">

@@ -2,6 +2,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { nowParts } from "@/lib/finance/period";
 import { zonedToUtcISO } from "@/lib/tz";
 import { loadBills, occurrences } from "@/lib/finance/bills";
+import { formatMoney, otherCurrency, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // The guided weekly & monthly review. Its period, the hard numbers the
 // assistant briefs from (so the briefing never invents them), and the three
@@ -79,6 +81,10 @@ export interface ReviewNumbers {
   goals: { met: number; inProgress: number; slipped: number; notStarted: number };
   scoreNow: number | null;
   scoreChange: number | null;
+  // Money figures above are in the home currency only; the other currency's figures are kept apart (never added in).
+  // Optional because reviews saved before task 1520 don't have them (they were all USD).
+  currency?: Currency;
+  other?: { currency: Currency; income: number; expenses: number; openPipeline: number; billsNextPeriod: number } | null;
 }
 
 // Live numbers for the period, straight from the client's own data.
@@ -86,6 +92,9 @@ export async function gatherNumbers(masterPlanId: string, p: ReviewPeriod, tz: s
   const db = createServerClient();
   const startTs = zonedToUtcISO(p.start, "00:00", tz);
   const endTs = zonedToUtcISO(p.nextStart, "00:00", tz);
+  const home = await homeCurrency(masterPlanId, db);
+  const isHome = (c: unknown) => toCurrency(c) === home;
+  const other = { currency: otherCurrency(home), income: 0, expenses: 0, openPipeline: 0, billsNextPeriod: 0 };
   const n: ReviewNumbers = {
     income: 0,
     expenses: 0,
@@ -100,14 +109,16 @@ export async function gatherNumbers(masterPlanId: string, p: ReviewPeriod, tz: s
     goals: { met: 0, inProgress: 0, slipped: 0, notStarted: 0 },
     scoreNow: null,
     scoreChange: null,
+    currency: home,
   };
 
   await Promise.all([
     (async () => {
-      const { data } = await db.from("finance_entries").select("type, amount").eq("master_plan_id", masterPlanId).gte("occurred_on", p.start).lte("occurred_on", p.end);
-      for (const r of (data || []) as { type: string; amount: number | string | null }[]) {
-        if (r.type === "income") n.income += Number(r.amount ?? 0);
-        else n.expenses += Number(r.amount ?? 0);
+      const { data } = await db.from("finance_entries").select("type, amount, currency").eq("master_plan_id", masterPlanId).gte("occurred_on", p.start).lte("occurred_on", p.end);
+      for (const r of (data || []) as { type: string; amount: number | string | null; currency: string | null }[]) {
+        const t = isHome(r.currency) ? n : other;
+        if (r.type === "income") t.income += Number(r.amount ?? 0);
+        else t.expenses += Number(r.amount ?? 0);
       }
       const { data: goals } = await db.from("finance_goals").select("period, amount").eq("master_plan_id", masterPlanId);
       const want = cadence === "weekly" ? "week" : "month";
@@ -128,17 +139,17 @@ export async function gatherNumbers(masterPlanId: string, p: ReviewPeriod, tz: s
       n.tasksOverdue = od ?? 0;
     })(),
     (async () => {
-      const { data } = await db.from("pipeline_deals").select("value, created_at, closed_at").eq("master_plan_id", masterPlanId);
-      for (const d of (data || []) as { value: number | null; created_at: string; closed_at: string | null }[]) {
+      const { data } = await db.from("pipeline_deals").select("value, currency, created_at, closed_at").eq("master_plan_id", masterPlanId);
+      for (const d of (data || []) as { value: number | null; currency: string | null; created_at: string; closed_at: string | null }[]) {
         if (d.created_at >= startTs && d.created_at < endTs) n.dealsAdded++;
         if (d.closed_at && d.closed_at >= startTs && d.closed_at < endTs) n.dealsClosed++;
-        if (!d.closed_at) n.openPipeline += Number(d.value ?? 0);
+        if (!d.closed_at) (isHome(d.currency) ? n : other).openPipeline += Number(d.value ?? 0);
       }
     })(),
     (async () => {
       const occ = occurrences(await loadBills(masterPlanId), p.nextStart, p.nextEnd);
       n.billsNextCount = occ.length;
-      n.billsNextPeriod = occ.reduce((s, o) => s + (o.bill.amount || 0), 0);
+      for (const o of occ) (isHome(o.bill.currency) ? n : other).billsNextPeriod += o.bill.amount || 0;
     })(),
     (async () => {
       const { data: plans } = await db.from("client_plans").select("id").eq("master_plan_id", masterPlanId).eq("status", "active");
@@ -165,19 +176,24 @@ export async function gatherNumbers(masterPlanId: string, p: ReviewPeriod, tz: s
   n.expenses = Math.round(n.expenses);
   n.openPipeline = Math.round(n.openPipeline);
   n.billsNextPeriod = Math.round(n.billsNextPeriod);
+  n.other = other.income || other.expenses || other.openPipeline || other.billsNextPeriod
+    ? { currency: other.currency, income: Math.round(other.income), expenses: Math.round(other.expenses), openPipeline: Math.round(other.openPipeline), billsNextPeriod: Math.round(other.billsNextPeriod) }
+    : null;
   return n;
 }
-
-const usd = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
 
 export function numbersText(n: ReviewNumbers, cadence: ReviewCadence): string {
   const per = cadence === "weekly" ? "this week" : "this month";
   const nxt = cadence === "weekly" ? "next week" : "next month";
+  const home = toCurrency(n.currency);
+  const usd = (v: number, c: Currency = home) => formatMoney(Math.round(v), c, { home, cents: false });
+  const o = n.other;
   return [
     `Income ${per}: ${usd(n.income)}${n.incomeGoal ? ` of a ${usd(n.incomeGoal)} goal` : ""}; expenses ${usd(n.expenses)}.`,
     `Tasks finished ${per}: ${n.tasksDone}; open tasks now overdue: ${n.tasksOverdue}.`,
     `Pipeline: ${n.dealsAdded} new deal(s), ${n.dealsClosed} closed ${per}; ${usd(n.openPipeline)} still open.`,
     `Bills due ${nxt}: ${n.billsNextCount} (${usd(n.billsNextPeriod)}).`,
+    o ? `Kept separate in ${o.currency.toUpperCase()} (not included above): income ${usd(o.income, o.currency)}, expenses ${usd(o.expenses, o.currency)}, open pipeline ${usd(o.openPipeline, o.currency)}, bills due ${nxt} ${usd(o.billsNextPeriod, o.currency)}.` : "",
     `Plan goals: ${n.goals.met} met, ${n.goals.inProgress} in progress, ${n.goals.slipped} slipped, ${n.goals.notStarted} not started.`,
     n.scoreNow !== null ? `Alignment score: ${n.scoreNow}${n.scoreChange !== null ? ` (${n.scoreChange >= 0 ? "+" : ""}${n.scoreChange} over the period)` : ""}.` : "",
   ]

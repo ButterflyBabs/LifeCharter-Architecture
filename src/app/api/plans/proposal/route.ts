@@ -8,6 +8,8 @@ import { planningAssistant, planningSystem } from "@/lib/ai/planningAi";
 import { BLUEPRINTS, PLAN_KINDS } from "@/lib/plans/blueprints";
 import { buildForecast } from "@/lib/planning/forecastData";
 import { memberAiGate } from "@/lib/ai/memberCap";
+import { formatMoney, otherCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +20,6 @@ const PROPOSAL_TYPES: Record<string, string> = {
   loan: "small-business loan application narrative",
   sponsorship: "sponsorship proposal",
 };
-
-const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 // GET — history of generated proposals, or one proposal's content
 // (?id=...), or a Markdown download (?id=...&download=1).
@@ -114,18 +114,29 @@ export async function POST(request: Request) {
   // Finance + forecast for the numbers section.
   const now = new Date();
   const yearStart = `${now.getUTCFullYear()}-01-01`;
+  // Totals are in the account's home currency; other-currency entries are summed on their own, never added in.
+  const home = await homeCurrency(masterPlanId, supabase);
+  const other = otherCurrency(home);
+  const usd = (n: number, c: string = home) => formatMoney(Math.round(n), c, { home, cents: false });
   const { data: fin } = await supabase
     .from("finance_entries")
-    .select("type, amount")
+    .select("type, amount, currency")
     .eq("master_plan_id", masterPlanId)
     .gte("occurred_on", yearStart);
   let inc = 0;
   let exp = 0;
-  for (const e of (fin || []) as { type: string; amount: number | string | null }[]) {
+  let otherInc = 0;
+  let otherExp = 0;
+  for (const e of (fin || []) as { type: string; amount: number | string | null; currency: string | null }[]) {
     const a = Number(e.amount ?? 0);
-    if (e.type === "income") inc += a;
-    else exp += a;
+    const isHome = toCurrency(e.currency) === home;
+    if (e.type === "income") {
+      if (isHome) inc += a;
+      else otherInc += a;
+    } else if (isHome) exp += a;
+    else otherExp += a;
   }
+  const otherLine = otherInc || otherExp ? ` Separately in ${other.toUpperCase()} (not included above): income ${usd(otherInc, other)}, expenses ${usd(otherExp, other)}.` : "";
   let forecastLine = "";
   try {
     const f = await buildForecast(masterPlanId);
@@ -150,7 +161,7 @@ export async function POST(request: Request) {
     (target ? ` Target funder/recipient: ${target}.` : "") +
     (notes ? ` Additional context: ${notes}.` : "") +
     `\n\n--- THE FOUNDER'S PLANS ---\n${planText}\n\n` +
-    `--- NUMBERS ---\nYTD income ${usd(inc)}, expenses ${usd(exp)}, net ${usd(inc - exp)}. ${forecastLine}`;
+    `--- NUMBERS ---\nYTD income ${usd(inc)}, expenses ${usd(exp)}, net ${usd(inc - exp)}.${otherLine} ${forecastLine}`;
 
   try {
     const openai = aiClient(key);

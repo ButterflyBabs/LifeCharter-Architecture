@@ -16,8 +16,8 @@ export async function GET() {
   const db = createServerClient();
   const [connection, { data: links }, { data: offers }] = await Promise.all([
     getConnection(db, a.planId),
-    db.from("offer_payment_links").select("offer_id, url, kind, amount, livemode, created_at").eq("master_plan_id", a.planId).eq("active", true),
-    db.from("sales_offers").select("id, name, price, billing, payment_count").eq("master_plan_id", a.planId),
+    db.from("offer_payment_links").select("offer_id, url, kind, amount, currency, livemode, created_at").eq("master_plan_id", a.planId).eq("active", true),
+    db.from("sales_offers").select("id, name, price, billing, payment_count, currency").eq("master_plan_id", a.planId),
   ]);
   const plans: Record<string, { ok: boolean; text: string }> = {};
   for (const o of (offers ?? []) as OfferForLink[]) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const b = (await request.json().catch(() => ({}))) as { offerId?: string; action?: string };
   const db = createServerClient();
   const offerId = typeof b.offerId === "string" ? b.offerId : "";
-  const { data: offer } = await db.from("sales_offers").select("id, name, price, billing, payment_count").eq("id", offerId).eq("master_plan_id", a.planId).maybeSingle();
+  const { data: offer } = await db.from("sales_offers").select("id, name, price, billing, payment_count, currency").eq("id", offerId).eq("master_plan_id", a.planId).maybeSingle();
   if (!offer) return NextResponse.json({ error: "That offer could not be found." }, { status: 404 });
   if (b.action === "off") {
     await deactivateOfferLink(db, a.planId, offer.id as string);

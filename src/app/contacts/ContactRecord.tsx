@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactEmails from "./ContactEmails";
 import FollowUpScheduler from "./FollowUpScheduler";
+import { formatMoney, formatTotals, sumByCurrency, toCurrency } from "@/lib/currency";
+import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 
 export interface ContactFull {
   id: string;
@@ -157,10 +159,9 @@ function sourceLabel(s: string | null) {
 }
 
 type Draft = Record<string, string> & { relationships?: never };
-type HistoryItem = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; source: string; recordId?: string };
+type HistoryItem = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; currency?: string | null; source: string; recordId?: string };
 const SOURCE_LABEL: Record<string, string> = { booking: "booked call", zoom: "Zoom", purchase: "checkout", stripe: "checkout", deal: "Pipeline", manual: "added by hand" };
 const histDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
 // Calls they attended or what they bought: newest first, with a small form to log one by hand.
 function HistorySection({ kind, title, items, contactId, onChanged, setMsg }: { kind: "attended" | "purchase"; title: string; items: HistoryItem[]; contactId: string; onChanged: () => void; setMsg: (m: string) => void }) {
@@ -179,12 +180,15 @@ function HistorySection({ kind, title, items, contactId, onChanged, setMsg }: { 
     setOpen(false);
     onChanged();
   }
-  const total = items.reduce((t, i) => t + (i.amount ?? 0), 0);
+  // Each amount in its own currency (task 1520); the total is kept per currency, never one combined number.
+  const { currency: home } = useHomeCurrency();
+  const totals = sumByCurrency(items.filter((i) => i.amount != null), (i) => i.amount ?? 0, (i) => i.currency ?? home);
+  const total = Object.values(totals).some((v) => (v ?? 0) > 0);
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">
-          {title} ({items.length}){kind === "purchase" && total > 0 ? ` · ${usd(total)}` : ""}
+          {title} ({items.length}){kind === "purchase" && total ? ` · ${formatTotals(totals, home)}` : ""}
         </p>
         <button type="button" onClick={() => setOpen((v) => !v)} className="text-xs text-[#2E7C83] hover:underline">{open ? "Cancel" : "+ Add"}</button>
       </div>
@@ -217,7 +221,7 @@ function HistorySection({ kind, title, items, contactId, onChanged, setMsg }: { 
                 <span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{i.title}</span>
                 <span className="block text-xs text-[#7a8a99]">
                   {histDate(i.date)}
-                  {i.amount != null ? ` · ${usd(i.amount)}` : ""}
+                  {i.amount != null ? ` · ${formatMoney(i.amount, toCurrency(i.currency, home), { home })}` : ""}
                   {i.detail ? ` · ${i.detail}` : ""}
                   {SOURCE_LABEL[i.source] ? ` · ${SOURCE_LABEL[i.source]}` : ""}
                 </span>
@@ -329,7 +333,8 @@ function ContactTexts({ contactId }: { contactId: string }) {
 }
 
 function ContactPayments({ contactId }: { contactId: string }) {
-  const [d, setD] = useState<{ connected: boolean; payments: { id: string; amount: number; refunded: number; description: string; paid_at: string; livemode: boolean }[]; invoices: { id: string; description: string; amount: number; status: string; hosted_url: string | null }[] } | null>(null);
+  const [d, setD] = useState<{ connected: boolean; payments: { id: string; amount: number; currency: string | null; refunded: number; description: string; paid_at: string; livemode: boolean }[]; invoices: { id: string; description: string; amount: number; currency: string | null; status: string; hosted_url: string | null }[] } | null>(null);
+  const { currency: home } = useHomeCurrency();
   useEffect(() => {
     fetch(`/api/payments?contact=${contactId}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -337,7 +342,8 @@ function ContactPayments({ contactId }: { contactId: string }) {
       .catch(() => setD(null));
   }, [contactId]);
   if (!d) return null;
-  const usd = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Each amount in its own currency, with cents ("$1,500.00"; "CA$1,500.00" on a USD account).
+  const money = (n: number, currency: string | null) => formatMoney(Number(n), toCurrency(currency, home), { home, cents: true });
   return (
     <div>
       <p className={heading}>Payments &amp; invoices</p>
@@ -345,7 +351,7 @@ function ContactPayments({ contactId }: { contactId: string }) {
         <ul className="mb-1 space-y-1">
           {d.invoices.map((i) => (
             <li key={i.id} className="text-sm">
-              Invoice: {i.description} · {usd(i.amount)} · <span className="text-xs text-[#7a8a99]">{i.status.replace("plan_", "plan ")}</span>
+              Invoice: {i.description} · {money(i.amount, i.currency)} · <span className="text-xs text-[#7a8a99]">{i.status.replace("plan_", "plan ")}</span>
               {i.hosted_url && i.status !== "paid" && <a href={i.hosted_url} target="_blank" rel="noreferrer" className="ml-1 text-xs text-[#2E7C83] hover:underline">open</a>}
             </li>
           ))}
@@ -355,8 +361,8 @@ function ContactPayments({ contactId }: { contactId: string }) {
         <ul className="mb-1 space-y-1">
           {d.payments.map((p) => (
             <li key={p.id} className="text-sm">
-              Paid {usd(p.amount)}{p.description ? ` · ${p.description}` : ""}
-              <span className="text-xs text-[#7a8a99]"> · {new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}{p.refunded > 0 ? ` · refunded ${usd(p.refunded)}` : ""}{p.livemode ? "" : " · test"}</span>
+              Paid {money(p.amount, p.currency)}{p.description ? ` · ${p.description}` : ""}
+              <span className="text-xs text-[#7a8a99]"> · {new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}{p.refunded > 0 ? ` · refunded ${money(p.refunded, p.currency)}` : ""}{p.livemode ? "" : " · test"}</span>
             </li>
           ))}
         </ul>

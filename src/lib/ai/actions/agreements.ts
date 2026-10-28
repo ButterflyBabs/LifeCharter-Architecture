@@ -1,6 +1,8 @@
 import type { ActionTool } from "./types";
 import { fillPlaceholders, newToken, placeholders } from "@/lib/esign";
 import { brandFor } from "@/lib/esignServer";
+import { isCurrency, toCurrency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // The assistant and LC Plume (task 1072): it can report who has signed and draft a document with its
 // signers. It never sends one: the client reads it and presses Send for signature themselves.
@@ -37,7 +39,7 @@ export const draftAgreement: ActionTool = {
   kind: "write",
   apiPath: "/api/agreements",
   description:
-    "Draft an agreement or proposal in LC Plume, saved as a DRAFT with its signers; it is never sent by you (the client reads it and presses Send for signature). Either name a template (part of its name, from list_agreements) or write the body yourself in plain words with '## ' headings, in the client's voice, using only facts you know; leave anything unknown as a {{Blank}} for them to fill. For a proposal you may give amount in US dollars. Starter templates are not legal advice: say their attorney should review. The client approves first.",
+    "Draft an agreement or proposal in LC Plume, saved as a DRAFT with its signers; it is never sent by you (the client reads it and presses Send for signature). Either name a template (part of its name, from list_agreements) or write the body yourself in plain words with '## ' headings, in the client's voice, using only facts you know; leave anything unknown as a {{Blank}} for them to fill. For a proposal you may give amount, in the account's home currency unless you give currency (usd or cad). Starter templates are not legal advice: say their attorney should review. The client approves first.",
   parameters: {
     type: "object",
     properties: {
@@ -49,6 +51,7 @@ export const draftAgreement: ActionTool = {
       signers: { type: "array", items: { type: "object", properties: { name: { type: "string" }, email: { type: "string" } }, required: ["name", "email"] } },
       owner_signs: { type: "boolean", description: "The client signs too, last." },
       amount: { type: "number" },
+      currency: { type: "string", enum: ["usd", "cad"], description: "The amount's currency (optional; default the account's home currency)." },
     },
     required: ["title"],
   },
@@ -73,7 +76,7 @@ export const draftAgreement: ActionTool = {
     const r = await build(args, ctx);
     if ("error" in r) throw new Error(r.error);
     const amount = Number(args.amount);
-    const { data, error } = await ctx.db.from("sign_documents").insert({ master_plan_id: ctx.planId, title: r.title, kind: r.kind, body: r.body, amount: r.kind === "proposal" && amount > 0 ? Math.round(amount * 100) / 100 : null, owner_signs: Boolean(args.owner_signs), created_by: "assistant" }).select("id").single();
+    const { data, error } = await ctx.db.from("sign_documents").insert({ master_plan_id: ctx.planId, title: r.title, kind: r.kind, body: r.body, amount: r.kind === "proposal" && amount > 0 ? Math.round(amount * 100) / 100 : null, currency: isCurrency(args.currency) ? toCurrency(args.currency) : await homeCurrency(ctx.planId, ctx.db), owner_signs: Boolean(args.owner_signs), created_by: "assistant" }).select("id").single();
     if (error || !data) throw new Error("Couldn't save the draft.");
     const rows = r.signers.map((s, i) => ({ document_id: data.id, name: s.name, email: s.email, order_no: i + 1, is_owner: false, token_hash: newToken().hash }));
     if (args.owner_signs) {

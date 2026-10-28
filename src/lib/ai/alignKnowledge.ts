@@ -2,6 +2,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { latestInsight } from "@/lib/ai/planKnowledge";
 import { DIMENSION_LABEL } from "@/lib/scoring/dimensionModel";
 import { planBusinessIds } from "@/lib/planScope";
+import { formatMoney, toCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 // What the Alignment area knows about a client, as text for their assistant:
 // how their scores have moved since baseline, their businesses and segments and
@@ -10,7 +12,6 @@ import { planBusinessIds } from "@/lib/planScope";
 // is this client's own. This is what lets Progress, Segments, Reviews and the
 // Alignment Profile inform the rest of the Suite.
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trim()}…` : s.trim());
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 const label = (k: string) => (DIMENSION_LABEL as Record<string, string>)[k] ?? k;
@@ -58,11 +59,14 @@ export async function alignmentKnowledge(masterPlanId: string): Promise<string> 
       const now = new Date();
       const yearStart = `${now.getUTCFullYear()}-01-01`;
       const monthStart = `${yearStart.slice(0, 5)}${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
-      // Income they tagged to each segment in the Finance Center, this month.
+      // Income they tagged to each segment in the Finance Center, this month (home currency only, never mixed).
+      const home: Currency = await homeCurrency(masterPlanId, db);
+      const usd = (n: number) => formatMoney(Math.round(n), home, { home, cents: false });
       const revBySeg = new Map<number, { actual: number; target: number }>();
       if (segIds.length) {
-        const { data: ent } = await db.from("finance_entries").select("segment_id, amount").eq("master_plan_id", masterPlanId).eq("type", "income").in("segment_id", segIds).gte("occurred_on", monthStart);
-        for (const e of (ent ?? []) as { segment_id: number; amount: number | string | null }[]) {
+        const { data: ent } = await db.from("finance_entries").select("segment_id, amount, currency").eq("master_plan_id", masterPlanId).eq("type", "income").in("segment_id", segIds).gte("occurred_on", monthStart);
+        for (const e of (ent ?? []) as { segment_id: number; amount: number | string | null; currency: string | null }[]) {
+          if (toCurrency(e.currency) !== home) continue;
           const c = revBySeg.get(e.segment_id) ?? { actual: 0, target: 0 };
           c.actual += Number(e.amount ?? 0);
           revBySeg.set(e.segment_id, c);

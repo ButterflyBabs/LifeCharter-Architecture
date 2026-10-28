@@ -14,6 +14,9 @@ import { CategoryInput, forgetCategories } from "@/components/finance/CategoryIn
 import { MoneyInput } from "@/components/finance/MoneyInput";
 import { FinanceRelated } from "@/components/finance/FinanceRelated";
 import { useFinanceOverview } from "@/components/finance/useFinanceOverview";
+import { CurrencySelect, OtherCurrencyNote } from "@/components/money/CurrencySelect";
+import { useMoney, otherText, type OtherBlock } from "@/components/finance/money";
+import { formatTotals, otherCurrency, toCurrency, type Currency, type Totals } from "@/lib/currency";
 
 interface Entry {
   id: string;
@@ -23,10 +26,9 @@ interface Entry {
   description: string;
   occurredOn: string;
   vendor?: string;
+  currency?: string;
 }
 
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const tz = () =>
   (typeof window !== "undefined" &&
     (localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone)) ||
@@ -37,7 +39,11 @@ export default function IncomePage() {
   const [mtd, setMtd] = useState(0);
   const [ytd, setYtd] = useState(0);
   const [target, setTarget] = useState(0);
+  const [other, setOther] = useState<OtherBlock>(null);
   const [loaded, setLoaded] = useState(false);
+  const { home, canChoose, money } = useMoney();
+  const usd = (n: number, c: string = home) => money(n, c);
+  const [currency, setCurrency] = useState<Currency | null>(null);
 
   const { overview, reload: reloadOverview } = useFinanceOverview();
   const [vendor, setVendor] = useState("");
@@ -64,6 +70,7 @@ export default function IncomePage() {
       setMtd(d.mtd?.income ?? 0);
       setYtd(d.ytd?.income ?? 0);
       setTarget(d.budgetSummary?.income?.mtdBudget ?? 0);
+      setOther(d.other ?? null);
     } catch {
       /* ignore */
     } finally {
@@ -95,6 +102,7 @@ export default function IncomePage() {
           occurredOn: occurredOn || undefined,
           segmentId: segmentId || undefined,
           vendor: vendor.trim() || undefined,
+          currency: currency ?? home,
         }),
       });
       if (!res.ok) {
@@ -107,6 +115,7 @@ export default function IncomePage() {
         setOccurredOn("");
         setSegmentId("");
         setVendor("");
+        setCurrency(null);
         forgetCategories();
         await load();
         void reloadOverview();
@@ -127,22 +136,20 @@ export default function IncomePage() {
     }
   };
 
-  const byCat = Object.entries(
-    entries.reduce<Record<string, number>>((m, e) => {
-      const c = e.category || "Uncategorized";
-      m[c] = (m[c] || 0) + e.amount;
-      return m;
-    }, {})
-  ).sort((a, b) => b[1] - a[1]);
-
-  const byFrom = Object.entries(
-    entries.reduce<Record<string, number>>((m, e) => {
-      const f = (e.vendor || "").trim();
-      if (!f) return m;
-      m[f] = (m[f] || 0) + e.amount;
-      return m;
-    }, {})
-  ).sort((a, b) => b[1] - a[1]);
+  // Per source and per payer, each currency kept on its own ("$1,200 + CA$300"), sorted by the home amount.
+  const group = (key: (e: Entry) => string) =>
+    Object.entries(
+      entries.reduce<Record<string, Totals>>((m, e) => {
+        const k = key(e);
+        if (!k) return m;
+        const c = toCurrency(e.currency, home);
+        const t = (m[k] = m[k] || {});
+        t[c] = (t[c] ?? 0) + e.amount;
+        return m;
+      }, {})
+    ).sort((a, b) => (b[1][home] ?? 0) - (a[1][home] ?? 0) || (b[1][otherCurrency(home)] ?? 0) - (a[1][otherCurrency(home)] ?? 0));
+  const byCat = group((e) => e.category || "Uncategorized");
+  const byFrom = group((e) => (e.vendor || "").trim());
 
   return (
     <div className="py-6 px-4 max-w-4xl mx-auto">
@@ -172,7 +179,10 @@ export default function IncomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Amount</label>
-                <MoneyInput value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" />
+                <div className="flex gap-2">
+                  <MoneyInput className="flex-1" value={amount} onChange={setAmount} placeholder="0.00" aria-label="Amount" currency={currency ?? home} home={home} />
+                  {canChoose && <CurrencySelect value={currency ?? home} onChange={setCurrency} />}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Source / category</label>
@@ -224,10 +234,12 @@ export default function IncomePage() {
           <p className="text-sm text-[#7b6b8d]">This month</p>
           <p className="text-2xl font-bold text-[#2E7C83]">{usd(mtd)}</p>
           {target > 0 && <p className="text-[11px] text-[#b8a898] mt-1">toward {usd(target)} target</p>}
+          <OtherCurrencyNote text={otherText(other, home, "mtd.income")} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Year to date</p>
           <p className="text-2xl font-bold text-[#2E7C83]">{usd(ytd)}</p>
+          <OtherCurrencyNote text={otherText(other, home, "ytd.income")} />
         </div>
         <div className="bg-white dark:bg-[#1a2b4a]/40 rounded-xl border border-[#1a2b4a]/10 p-4">
           <p className="text-sm text-[#7b6b8d]">Entries (this year)</p>
@@ -248,7 +260,7 @@ export default function IncomePage() {
                 {byCat.map(([c, amt]) => (
                   <div key={c} className="flex items-center justify-between text-sm">
                     <span className="text-[#3F4654] dark:text-[#e8e4f0]">{c}</span>
-                    <span className="tabular-nums text-[#2E7C83] font-medium">{usd(amt)}</span>
+                    <span className="tabular-nums text-[#2E7C83] font-medium">{formatTotals(amt, home, { cents: false })}</span>
                   </div>
                 ))}
               </div>
@@ -260,7 +272,7 @@ export default function IncomePage() {
                   {byFrom.slice(0, 12).map(([f, amt]) => (
                     <div key={f} className="flex items-center justify-between text-sm">
                       <span className="text-[#3F4654] dark:text-[#e8e4f0] truncate">{f}</span>
-                      <span className="tabular-nums text-[#2E7C83] font-medium">{usd(amt)}</span>
+                      <span className="tabular-nums text-[#2E7C83] font-medium">{formatTotals(amt, home, { cents: false })}</span>
                     </div>
                   ))}
                 </div>
@@ -291,7 +303,7 @@ export default function IncomePage() {
                       <p className="text-xs text-[#b8a898]">{e.occurredOn}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-semibold text-[#2E7C83]">+{usd(e.amount)}</span>
+                      <span className="text-sm font-semibold text-[#2E7C83]">+{usd(e.amount, toCurrency(e.currency, home))}</span>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>

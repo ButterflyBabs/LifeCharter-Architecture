@@ -3,6 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { ownerMasterPlanId } from "@/lib/housePlan";
 import { dayInTz } from "@/lib/tz";
 import { loadBills, occurrences } from "@/lib/finance/bills";
+import { formatMoney, formatTotals, sumByCurrency, type Currency } from "@/lib/currency";
+import { homeCurrency } from "@/lib/currencyServer";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,6 @@ const TZ = "America/Denver";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 const FROM = process.env.TASK_REMINDER_FROM || "LifeCharter Command Suite <reminders@lccommandsuite.com>";
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const addDays = (iso: string, n: number) => {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
@@ -51,14 +52,16 @@ async function run(request: Request) {
   const week = occurrences(bills, today, addDays(today, 7));
   if (!overdue.length && !week.length) return NextResponse.json({ skipped: "nothing due" });
 
-  const total = week.reduce((s, o) => s + (o.bill.amount || 0), 0);
-  const li = (name: string, amount: number | null | undefined, when: string, autopay: boolean) =>
-    `<li style="margin:0 0 8px"><strong>${esc(name)}</strong>${amount ? ` ${usd(amount)}` : ""} <span style="color:#7a8a99">· ${esc(when)}${autopay ? " · autopay" : ""}</span></li>`;
+  // Each bill in its own currency; the week's total is per currency, never added together (task 1520).
+  const home = await homeCurrency(planId, db);
+  const total = formatTotals(sumByCurrency(week, (o) => o.bill.amount || 0, (o) => o.bill.currency), home, { cents: false });
+  const li = (name: string, amount: number | null | undefined, cur: Currency, when: string, autopay: boolean) =>
+    `<li style="margin:0 0 8px"><strong>${esc(name)}</strong>${amount ? ` ${formatMoney(Math.round(amount), cur, { home, cents: false })}` : ""} <span style="color:#7a8a99">· ${esc(when)}${autopay ? " · autopay" : ""}</span></li>`;
   const html = `<div style="font-family:Arial,sans-serif;font-size:14.5px;line-height:1.5;max-width:600px;color:#1a2b4a">
     <h1 style="font-size:20px;margin:0 0 4px">Bills due this week</h1>
-    <p style="color:#7a8a99;margin:0">${esc(nice(today))} to ${esc(nice(addDays(today, 7)))}${week.length ? ` · ${usd(total)} across ${week.length} bill${week.length === 1 ? "" : "s"}` : ""}</p>
-    ${overdue.length ? `<h2 style="font-size:15px;color:#b3422f;margin:20px 0 8px">Overdue (${overdue.length})</h2><ul style="padding-left:18px;margin:0">${overdue.map((b) => li(b.name, b.amount, `was due ${nice(b.nextDue)}`, false)).join("")}</ul>` : ""}
-    ${week.length ? `<h2 style="font-size:15px;color:#2E7C83;margin:20px 0 8px">Coming up (${week.length})</h2><ul style="padding-left:18px;margin:0">${week.map((o) => li(o.bill.name, o.bill.amount, nice(o.date), o.bill.autopay)).join("")}</ul>` : ""}
+    <p style="color:#7a8a99;margin:0">${esc(nice(today))} to ${esc(nice(addDays(today, 7)))}${week.length ? ` · ${total} across ${week.length} bill${week.length === 1 ? "" : "s"}` : ""}</p>
+    ${overdue.length ? `<h2 style="font-size:15px;color:#b3422f;margin:20px 0 8px">Overdue (${overdue.length})</h2><ul style="padding-left:18px;margin:0">${overdue.map((b) => li(b.name, b.amount, b.currency, `was due ${nice(b.nextDue)}`, false)).join("")}</ul>` : ""}
+    ${week.length ? `<h2 style="font-size:15px;color:#2E7C83;margin:20px 0 8px">Coming up (${week.length})</h2><ul style="padding-left:18px;margin:0">${week.map((o) => li(o.bill.name, o.bill.amount, o.bill.currency, nice(o.date), o.bill.autopay)).join("")}</ul>` : ""}
     <p style="margin:22px 0 0"><a href="${APP_URL}/finance/bills" style="display:inline-block;background:#1a2b4a;color:#fff;font-weight:bold;padding:10px 18px;border-radius:999px;text-decoration:none">Open Bills &amp; Cash Calendar</a></p>
   </div>`;
   const res = await fetch("https://api.resend.com/emails", {
