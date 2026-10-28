@@ -32,6 +32,7 @@ const BARE_ROUTES = [
   "/unsubscribe",
   "/f",
   "/book",
+  "/pay", // an offer's public pay page for GST/HST accounts (buyer picks their province)
   "/a", // an affiliate's private dashboard
   "/partner", // an outside accountability partner's private page
   "/p", // a client or contractor's private project page
