@@ -92,6 +92,13 @@ export function localParts(now: Date, tz: string): { hour: number; weekday: numb
   return { hour: Number(p.hour) % 24, weekday: wd, ymd: `${p.year}-${p.month}-${p.day}` };
 }
 
+// A mailbox added after the series began warms up from the day it was added, so a new domain starts at the bottom of the ramp.
+export function senderStart(seriesStart: string | null, addedAt: string | undefined, tz: string): string | null {
+  if (!addedAt) return seriesStart;
+  const added = localParts(new Date(addedAt), tz).ymd;
+  return !seriesStart || added > seriesStart ? added : seriesStart;
+}
+
 export function inSendWindow(now: Date, tz: string, startHour: number, endHour: number, weekdaysOnly: boolean): boolean {
   const { hour, weekday } = localParts(now, tz);
   if (weekdaysOnly && (weekday === 0 || weekday === 6)) return false;

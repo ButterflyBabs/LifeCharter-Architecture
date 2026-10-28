@@ -15,3 +15,13 @@ test("turns an HTML reply into plain text", () => {
 test("handles empty input", () => {
   assert.equal(replyText(null), "");
 });
+
+import { senderStart, rampCap, daysBetween } from "../src/lib/coldEmail";
+
+test("a mailbox added after the series began warms up from its own first day", () => {
+  assert.equal(senderStart("2026-10-26", "2026-10-21T02:11:00Z", "America/Denver"), "2026-10-26");
+  const start = senderStart("2026-10-26", "2026-10-29T14:00:00Z", "America/Denver");
+  assert.equal(start, "2026-10-29");
+  assert.equal(rampCap(daysBetween(start, "2026-10-29"), 30), 5);
+  assert.equal(rampCap(daysBetween(start, "2026-11-04"), 30), 10);
+});

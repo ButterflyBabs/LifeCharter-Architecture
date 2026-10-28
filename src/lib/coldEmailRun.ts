@@ -4,7 +4,7 @@ import * as microsoft from "@/lib/microsoft";
 import { boardStages, moveCard, markDoNotContact, movesForward, type DmStage } from "@/lib/dmPipeline";
 import { DEFAULT_REPLY_NOTIFY, notifyReplies, recordReply, type NewReply } from "@/lib/coldEmailReplies";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, varsFor, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, senderStart, varsFor, type ColdStep } from "@/lib/coldEmail";
 
 type Db = ReturnType<typeof createServerClient>;
 const SITE = "https://lccommandsuite.com";
@@ -12,7 +12,7 @@ const SENDABLE = ["to_reach", "sent", "followed_up"];
 const MAX_PER_SENDER_PER_RUN = 2;
 
 type Settings = { master_plan_id: string; board_id: string | null; enabled: boolean; steps: ColdStep[]; tz: string; window_start: number; window_end: number; weekdays_only: boolean; footer: string | null; started_on: string | null };
-type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number };
+type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number; created_at?: string };
 type CardRow = { id: string; board_id: string; stage_id: string; name: string; email: string | null; notes: string | null; link_code: string | null };
 
 export async function coldEmailSwitchOn(db: Db): Promise<boolean> {
@@ -149,7 +149,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
   const perRun = new Map<string, number>();
   for (const sd of senders) {
     const { count } = await db.from("cold_email_sends").select("id", { count: "exact", head: true }).eq("sender_id", sd.id).gte("sent_at", sinceMidnight.toISOString());
-    left.set(sd.id, Math.max(0, rampCap(daysBetween(s.started_on, ymd), sd.daily_cap) - (count ?? 0)));
+    left.set(sd.id, Math.max(0, rampCap(daysBetween(senderStart(s.started_on, sd.created_at, s.tz), ymd), sd.daily_cap) - (count ?? 0)));
     perRun.set(sd.id, 0);
   }
   const session = await nextSessionLabel();

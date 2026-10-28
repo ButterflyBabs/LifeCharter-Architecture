@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount, testRecipient } from "../crm/guard";
 import * as google from "@/lib/google";
 import { ensureBoards, boardStages } from "@/lib/dmPipeline";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, rampCap, daysBetween, localParts, render, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, rampCap, daysBetween, localParts, render, senderStart, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
 import { coldEmailSwitchOn } from "@/lib/coldEmailRun";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +38,9 @@ export async function GET() {
   const { ymd, hour } = localParts(new Date(), tz);
   const since = new Date(Date.now() - (hour * 60 + new Date().getUTCMinutes()) * 60_000).toISOString();
   const rows = [];
-  for (const sd of (senders ?? []) as { id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; last_error: string | null; scanned_at: string | null }[]) {
+  for (const sd of (senders ?? []) as { id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; last_error: string | null; scanned_at: string | null; created_at?: string }[]) {
     const { count } = await db.from("cold_email_sends").select("id", { count: "exact", head: true }).eq("sender_id", sd.id).gte("sent_at", since);
-    rows.push({ ...sd, sentToday: count ?? 0, todayCap: rampCap(daysBetween((s?.started_on as string) ?? null, ymd), sd.daily_cap) });
+    rows.push({ ...sd, sentToday: count ?? 0, todayCap: rampCap(daysBetween(senderStart((s?.started_on as string) ?? null, sd.created_at, tz), ymd), sd.daily_cap) });
   }
   const { count: sentTotal } = await db.from("cold_email_sends").select("id", { count: "exact", head: true }).eq("master_plan_id", a.planId).eq("status", "sent");
   return NextResponse.json({
