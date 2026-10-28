@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Video } from "lucide-react";
 
-type Call = { id: string; eventId: string; title: string; start: string; end: string; joinUrl: string | null; about: string };
+type Call = { id: string; eventId: string; title: string; start: string; end: string; joinUrl: string | null; about: string; host?: boolean };
 
 // "This week's coaching calls": Mon-Sun of Command Suite coaching calls,
 // so clients always know when and where to go for support and training.
@@ -65,7 +65,7 @@ export default function CoachingCallsCard({ compact = false }: { compact?: boole
         <p className="text-xs font-semibold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0] line-clamp-2">{c.title}</p>
         {c.joinUrl && (
           <a href={c.joinUrl} target="_blank" rel="noopener noreferrer" className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${live ? "bg-[#2E7C83] text-white" : "border border-[#c9a227] text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
-            <Video className="w-3 h-3" aria-hidden /> {live ? "Join now" : "Zoom"}
+            <Video className="w-3 h-3" aria-hidden /> {c.host ? (live ? "Start now (host)" : "Host link") : live ? "Join now" : "Zoom"}
           </a>
         )}
       </li>

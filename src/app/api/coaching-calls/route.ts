@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { sessionsBetween } from "@/lib/community/events";
+import { isAlignmentArchitect } from "@/lib/authz";
+import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +44,32 @@ export async function GET() {
     }));
   const thisWeek = (await sessionsBetween(db, new Date(now - 2 * 3600_000), endOfWeek, space.id as string)).filter((x) => x.end.getTime() > now);
   const nextWeek = await sessionsBetween(db, endOfWeek, new Date(endOfWeek.getTime() + 7 * 86_400_000), space.id as string);
+  // Babs's own account only (never a client's): the weekly MasterClass, with the Zoom link she opens as HOST (signed in to Zoom, it starts the class).
+  type Item = ReturnType<typeof shape>[number];
+  const masterclass = async (from: number, to: number): Promise<Item[]> => {
+    if (isDemo || !isZoomConfigured() || !(await isAlignmentArchitect())) return [];
+    const id = masterclassMeetingId();
+    const sch = await meetingSchedule(id).catch(() => null);
+    return (sch?.occurrences ?? [])
+      .map((o) => ({ s: new Date(o.start).getTime(), e: new Date(o.start).getTime() + o.duration * 60_000, start: o.start }))
+      .filter((o) => o.e > from && o.s < to)
+      .map((o) => ({
+        id: `masterclass:${o.start}`,
+        eventId: "masterclass",
+        title: "MasterClass: From Hustle to Command",
+        start: new Date(o.s).toISOString(),
+        end: new Date(o.e).toISOString(),
+        joinUrl: `https://us02web.zoom.us/j/${id}`,
+        about: "Your MasterClass. Open the link signed in to Zoom as the host to start it.",
+        host: true,
+      }));
+  };
+  const byStart = (a: { start: string }, b: { start: string }) => a.start.localeCompare(b.start);
   // The card opens on this week, or next week when nothing is left this week (and always
   // for the demo, so a live sales demo never catches a partial row); it has a tab for each.
-  const week: "this" | "next" = isDemo || !thisWeek.length ? "next" : "this";
-  const tabs = { this: shape(thisWeek), next: shape(nextWeek) };
+  const [mcThis, mcNext] = await Promise.all([masterclass(now - 2 * 3600_000, endOfWeek.getTime()), masterclass(endOfWeek.getTime(), endOfWeek.getTime() + 7 * 86_400_000)]);
+  const tabs = { this: [...shape(thisWeek), ...mcThis].sort(byStart), next: [...shape(nextWeek), ...mcNext].sort(byStart) };
+  const week: "this" | "next" = isDemo || !tabs.this.length ? "next" : "this";
   return NextResponse.json({ calls: tabs[week], week, tabs });
 }
 
