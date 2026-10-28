@@ -37,3 +37,8 @@ test("falls back to an exact name when only one card has it", () => {
 test("two cards with the same name and no link are left alone", () => {
   assert.equal(matchWaitingCard(cards, { name: "Sam Lee", slug: null }), null);
 });
+
+test("connections-page links match the same way as email links (case-insensitive ids)", () => {
+  const waiting = [{ id: "j", name: "Judy Kehler, Prosci Certified Change Management", profile_url: "https://www.linkedin.com/in/ACwAAAOszKUBUH2k1prsIaoGCbDqgQDGhX48ixc" }];
+  assert.equal(matchWaitingCard(waiting, { name: "x", slug: "ACwAAAOszKUBUH2k1prsIaoGCbDqgQDGhX48ixc".toLowerCase() })?.id, "j");
+});

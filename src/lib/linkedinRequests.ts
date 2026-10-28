@@ -86,28 +86,15 @@ export async function syncLinkedInRequests(db: Db, planId: string, token: string
   const done = new Set(((logged ?? []) as { external_id: string }[]).map((x) => x.external_id));
   let added = 0;
   const accepted: Accepted[] = [];
-  let waiting: { cards: WaitingCard[]; boardOf: Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }> } | null = null;
+  let waiting: Waiting | null = null;
   for (const m of msgs.reverse()) {
     if (done.has(m.id)) continue;
     const a = parseAcceptance(m);
     if (a) {
       if (!waiting) waiting = await loadWaiting(db, planId, boards);
-      const card = matchWaitingCard(waiting.cards, a);
-      let cardId: string | null = null;
-      if (card) {
-        const info = waiting.boardOf.get(card.id);
-        if (info?.connected) {
-          const moved = await moveCard(db as never, planId, card.id, info.connected, info.board.name, tz);
-          if (moved) {
-            cardId = card.id;
-            const day = (m.receivedDateTime || "").slice(0, 10);
-            const { data: cur } = await db.from("dm_cards").select("notes").eq("id", card.id).maybeSingle();
-            await db.from("dm_cards").update({ notes: [(cur?.notes as string | null) || "", `Accepted your LinkedIn connection request (${day}). Send the invite from this card.`].filter(Boolean).join("\n") }).eq("id", card.id);
-            accepted.push({ name: card.name, cardId: card.id, board: info.board.name });
-            waiting.cards = waiting.cards.filter((c) => c.id !== card.id);
-          }
-        }
-      }
+      const hit = await acceptWaiting(db, planId, tz, waiting, a, (m.receivedDateTime || "").slice(0, 10));
+      const cardId = hit ? hit.cardId : null;
+      if (hit) accepted.push(hit);
       await db.from("dm_inbound_log").upsert({ master_plan_id: planId, source: "linkedin", external_id: m.id, card_id: cardId, person_name: a.name }, { onConflict: "master_plan_id,source,external_id", ignoreDuplicates: true });
       continue;
     }
@@ -143,11 +130,30 @@ export async function syncLinkedInRequests(db: Db, planId: string, token: string
   return { added, seen: msgs.length, accepted };
 }
 
+type Boards = Awaited<ReturnType<typeof ensureBoards>>;
+type WaitInfo = { board: Boards[number]; connected: DmStage | undefined };
+export type Waiting = { cards: WaitingCard[]; boardOf: Map<string, WaitInfo> };
+
+// Moves the one waiting card this person belongs to into "Connected: send the invite" (as if the owner had pressed the
+// button) and notes it. Returns null when there is no single matching card, so nothing is guessed.
+export async function acceptWaiting(db: Db, planId: string, tz: string, waiting: Waiting, who: { name: string; slug: string | null }, day: string): Promise<Accepted | null> {
+  const card = matchWaitingCard(waiting.cards, who);
+  const info = card ? waiting.boardOf.get(card.id) : undefined;
+  if (!card || !info?.connected) return null;
+  const moved = await moveCard(db as never, planId, card.id, info.connected, info.board.name, tz);
+  if (!moved) return null;
+  const { data: cur } = await db.from("dm_cards").select("notes").eq("id", card.id).maybeSingle();
+  await db.from("dm_cards").update({ notes: [(cur?.notes as string | null) || "", `Accepted your LinkedIn connection request (${day}). Send the invite from this card.`].filter(Boolean).join("\n") }).eq("id", card.id);
+  waiting.cards = waiting.cards.filter((c) => c.id !== card.id);
+  return { name: card.name, cardId: card.id, board: info.board.name };
+}
+
 // Every LinkedIn card still sitting in "Connect request sent: waiting", across the account's outreach boards.
-async function loadWaiting(db: Db, planId: string, boards: Awaited<ReturnType<typeof ensureBoards>>) {
-  const boardOf = new Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }>();
+export async function loadWaiting(db: Db, planId: string, boards?: Boards): Promise<Waiting> {
+  boards = boards ?? (await ensureBoards(db as never, planId, "outreach"));
+  const boardOf = new Map<string, WaitInfo>();
   const stageIds: string[] = [];
-  const stageBoard = new Map<string, { board: (typeof boards)[number]; connected: DmStage | undefined }>();
+  const stageBoard = new Map<string, WaitInfo>();
   for (const b of boards) {
     const st = await boardStages(db as never, planId, b.id);
     const waitingStage = st.find((x) => x.key === "connect_sent");
@@ -155,7 +161,7 @@ async function loadWaiting(db: Db, planId: string, boards: Awaited<ReturnType<ty
     stageIds.push(waitingStage.id);
     stageBoard.set(waitingStage.id, { board: b, connected: st.find((x) => x.key === "connected") });
   }
-  if (!stageIds.length) return { cards: [] as WaitingCard[], boardOf };
+  if (!stageIds.length) return { cards: [], boardOf };
   const { data } = await db.from("dm_cards").select("id, name, profile_url, stage_id").eq("master_plan_id", planId).eq("platform", "LI").in("stage_id", stageIds).limit(2000);
   const cards: WaitingCard[] = [];
   for (const c of (data ?? []) as { id: string; name: string; profile_url: string | null; stage_id: string }[]) {

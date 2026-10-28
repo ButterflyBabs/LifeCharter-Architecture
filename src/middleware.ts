@@ -77,6 +77,7 @@ const PUBLIC_APIS = [
   "/api/cron/calendar-connections", // secured by its own CRON_SECRET check, not a session
   "/api/cron/reminders", // secured by its own CRON_SECRET check, not a session
   "/api/cron/linkedin-requests", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/linkedin-connections", // secured by the account's own sweep token, not a session
   "/api/cron/client-check-in", // secured by its own CRON_SECRET check, not a session
   "/api/cron/client-care", // secured by its own CRON_SECRET check, not a session
   "/api/cron/owner-weekly-bills", // secured by its own CRON_SECRET check, not a session
