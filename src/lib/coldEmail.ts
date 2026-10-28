@@ -17,7 +17,7 @@ I'm AmiLynne Carroll. I help founders and coaches get their business out of a do
 
 What is the one thing in your business that still runs through you and nobody else?
 
-I ask because I teach a free, live, 60-minute session called From Hustle to Command. In it you map exactly that: where your business leans on you most, and a seven-day plan to start changing it. You build it in the room, on one of your own real business issues. The next one is {{next_session_date}} at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders.
+I ask because I teach a free, live, 60-minute session called From Hustle to Command. In it you map exactly that: where your business leans on you most, and a seven-day plan to start changing it. You build it in the room, on one of your own real business issues. The next one is this Wednesday at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders.
 
 If that sounds useful, you can save a seat here: {{personal_link}}
 
@@ -37,7 +37,7 @@ One short follow-up, then I will leave you be.
 
 The pattern I hear most from founders and coaches is that the business is moving, but every decision, follow-up and detail still lands on one person. In the free session we name that pattern and map one real bottleneck, so you can see exactly where it gets stuck and what to do first.
 
-The next session is {{next_session_date}} at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders. You can save a seat here: {{personal_link}}
+The next session is this Wednesday at noon Mountain, and everyone who joins live gets a free 2027 digital planner for founders. You can save a seat here: {{personal_link}}
 
 If this is not for you, reply "no thanks".
 

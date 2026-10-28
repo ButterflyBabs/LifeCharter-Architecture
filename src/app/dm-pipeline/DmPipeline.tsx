@@ -1093,7 +1093,7 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
                 )}
               </div>
             ))}
-            <p className="text-xs text-[#7a8a99]">Merge fields: {"{{first_name}} {{at_company}} {{personal_link}} {{next_session_date}} {{booking_link}}"}. The footer and the unsubscribe line are added to every email.</p>
+            <p className="text-xs text-[#7a8a99]">Merge fields: {"{{first_name}} {{at_company}} {{personal_link}} {{booking_link}}"}. The footer and the unsubscribe line are added to every email.</p>
             <label className="block text-xs font-medium text-[#5a6472]">
               Footer (your postal address)
               <Input value={foot} onChange={(e) => setFoot(e.target.value)} />
@@ -1216,7 +1216,6 @@ function fillScript(card: Card, script: ScriptLite, sessionDate: string): string
     if (m) return m[1].trim();
   }
   t = t.replace(/\[Name\]/g, firstNameOf(card.name));
-  if (sessionDate) t = t.replace(/\[Thursday, date\]/g, sessionDate);
   if (card.link_code) t = t.replace(/\[their personal link[^\]]*\]/gi, `https://lccommandsuite.com/m/${card.link_code}`);
   return t;
 }
@@ -1291,15 +1290,6 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
               ? "This is a connection request note, not a message. On their profile click Connect (it may be under More), choose Add a note, and paste. LinkedIn caps the note at 200 characters, and free accounts get only a few notes a month. Out of notes? Send the request with no note and use the Invite message once they accept."
               : "LinkedIn only lets you message someone once they have accepted your connection request. On a profile that isn't connected yet, the Message button opens a Sales Navigator upgrade, so send the Connect request first."}
           </p>
-        )}
-        {sessionIso && (
-          <label className="block text-xs font-medium text-[#5a6472]">Session date used in the message
-            <Input value={sessionDate} onChange={(e) => {
-              const old = sessionDate;
-              setSessionDate(e.target.value);
-              if (old) setText((t) => t.split(old).join(e.target.value));
-            }} />
-          </label>
         )}
         <textarea rows={12} value={text} onChange={(e) => setText(e.target.value)} className={`${box} text-[15px] leading-relaxed`} aria-label="Message" />
         <div className="flex items-center justify-between text-xs text-[#7a8a99]">

@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     const { data: s } = await db.from("cold_email_settings").select("steps, footer").eq("master_plan_id", a.planId).maybeSingle();
     const steps = ((s?.steps as ColdStep[] | undefined) ?? []).length ? (s!.steps as ColdStep[]) : DEFAULT_STEPS;
     const n = Math.max(0, Math.min(steps.length - 1, Math.round(Number(b.step) || 0)));
-    const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, "Thursday, November 5");
+    const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, "this Wednesday");
     await google.sendEmail(token, {
       to,
       subject: "[TEST] " + render(steps[n].subject, vars),
