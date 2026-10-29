@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { isAlignmentArchitect, resolveActor } from "@/lib/authz";
+import { canManageAccount, isAlignmentArchitect } from "@/lib/authz";
 import { isCurrency, MULTI_CURRENCY_OPEN_TO_ALL, toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
 
@@ -25,8 +25,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
   if (!(await canChoose())) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const actor = await resolveActor();
-  if (actor.kind === "none" || (actor.kind === "member" && actor.role !== "admin")) {
+  if (!(await canManageAccount())) {
     return NextResponse.json({ error: "Only the account owner can change the currency." }, { status: 403 });
   }
   const planId = await resolveMasterPlanId();

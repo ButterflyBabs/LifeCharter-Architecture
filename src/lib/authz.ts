@@ -197,6 +197,16 @@ export async function resolveActor(): Promise<Actor> {
   return none;
 }
 
+// May this request change account-level settings (currency, GST/HST, payments, bank feeds)? Owners and team
+// admins, and a client signed in to their own account: resolveActor reports that client as "none" (they are not
+// a team member), so "none" alone must not be read as signed out. Signed-out requests stay refused.
+export async function canManageAccount(actor?: Actor): Promise<boolean> {
+  const a = actor ?? (await resolveActor());
+  if (a.kind === "owner") return true;
+  if (a.kind === "member") return a.role === "admin";
+  return !!(await sessionUser().catch(() => null));
+}
+
 // Support Desk (and any other house-only page a team member may be given): Babs has full access; a member of
 // Babs's OWN team workspace (never a client's) gets the level she set for that feature; everyone else gets none.
 export async function houseFeatureLevel(feature: string): Promise<"none" | "view" | "edit"> {

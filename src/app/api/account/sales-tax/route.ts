@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { resolveActor } from "@/lib/authz";
+import { canManageAccount } from "@/lib/authz";
 import { loadTaxSettings } from "@/lib/salesTaxServer";
 import { cleanProvRegs, isTaxPlace, PROVINCIAL_TAXES } from "@/lib/salesTax";
 
@@ -18,8 +18,7 @@ export async function GET() {
 // provincial: { QC|BC|SK|MB: { registered, number, frequency } }, each on its own.
 export async function PATCH(request: Request) {
   if (crossOriginBlocked(request)) return NextResponse.json({ error: "cross-origin request blocked" }, { status: 403 });
-  const actor = await resolveActor();
-  if (actor.kind === "none" || (actor.kind === "member" && actor.role !== "admin")) {
+  if (!(await canManageAccount())) {
     return NextResponse.json({ error: "Only the account owner can change GST/HST settings." }, { status: 403 });
   }
   const planId = await resolveMasterPlanId();
