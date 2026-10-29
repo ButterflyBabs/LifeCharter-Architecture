@@ -4,6 +4,7 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
 import { zonedToUtcISO } from "@/lib/tz";
 import { DIGEST_HOUR, TEAM_DAILY_TASKS, TEAM_TZ, countsLine, groupDigest, isWeekday, mountainParts, niceDay, tallyDms, type DigestTask } from "@/lib/teamDailyTasks";
 import { dayInTz, timeInTz } from "@/lib/tz";
+import { FB_APPROVAL_KEY } from "@/lib/dmLanding";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,14 @@ export const dynamic = "force-dynamic";
 //   8:00 AM Mountain, Mon-Fri: the team member gets an email at her own address listing ALL her open tasks (overdue,
 //   due today, next three days) and the same list as a reminder on her Reminders page (she has no bell: that is
 //   Executive Home). Her task reminder emails also still go 60 minutes before a timed task is due (task-reminders cron).
+//   8:00 AM and 6:00 PM Mountain, Mon-Fri: if Facebook people are waiting in the pipeline's "fb_approval" stage, a reminder
+//   (bell and email) tells Babs how many and who, once per run hour.
 //   6:00 PM Mountain, Mon-Fri: if it is not checked complete, put a reminder in front of Babs. The Reminders cron
 //   turns that into the bell card and an email, and the notes carry the day's new and follow-up DM counts.
 // vercel.json runs this at 13:00, 14:00, 15:00, 00:00 and 01:00 UTC (and on the half hour); only the run that lands on the right Mountain hour
 // acts, so daylight saving needs no change. Turn it off: app_settings key "team_daily_tasks" → {"on":false}.
 // A day off: app_settings key "team_daily_tasks:skip:YYYY-MM-DD" (any value). Same CRON_SECRET convention.
+const APPROVAL_EVENING_HOUR = 18;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 const FROM = process.env.TASK_REMINDER_FROM || "LifeCharter Command Suite <reminders@lccommandsuite.com>";
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -169,6 +173,32 @@ ${total ? sec("Overdue", g.overdue, true) + sec("Today", g.dueToday, false) + se
       }
       await db.from("app_settings").upsert({ key: alertKey, value: "alerted", updated_at: now.toISOString() }, { onConflict: "key" });
       result[def.key] = "alerted";
+    }
+  }
+  // ── Facebook people waiting for Babs's approval (the "fb_approval" stage), 8 AM and 6 PM Mountain ──
+  if (hour === DIGEST_HOUR || hour === APPROVAL_EVENING_HOUR) {
+    const approvalKey = `team_daily_tasks:fb_approval:${day}:${hour}`;
+    const { data: sent } = await db.from("app_settings").select("key").eq("key", approvalKey).maybeSingle();
+    if (!sent) {
+      const { data: stages } = await db.from("dm_stages").select("id, board_id").eq("master_plan_id", planId).eq("key", FB_APPROVAL_KEY);
+      const stageIds = ((stages ?? []) as { id: string }[]).map((x) => x.id);
+      const { data: waiting } = stageIds.length
+        ? await db.from("dm_cards").select("name").eq("master_plan_id", planId).in("stage_id", stageIds).order("created_at").limit(500)
+        : { data: [] };
+      const names = ((waiting ?? []) as { name: string | null }[]).map((c) => c.name || "Unnamed");
+      if (names.length) {
+        const { error } = await db.from("reminders").insert({
+          master_plan_id: planId,
+          title: `${names.length} Facebook ${names.length === 1 ? "person is" : "people are"} waiting for your approval`,
+          notes: `Open the first column on the pipeline, remove anyone you do not want messaged, and drag the rest into To reach out. That move is your approval, and Sumbal waits for it. Waiting: ${names.slice(0, 12).join(", ")}${names.length > 12 ? `, and ${names.length - 12} more` : ""}. Pipeline: ${APP_URL}/dm-pipeline`,
+          remind_at: now.toISOString(),
+        });
+        if (error) console.error("team-daily-tasks fb approval:", error.message);
+        else {
+          await db.from("app_settings").upsert({ key: approvalKey, value: String(names.length), updated_at: now.toISOString() }, { onConflict: "key" });
+          result["fb_approval"] = `${names.length} waiting`;
+        }
+      }
     }
   }
   return NextResponse.json({ day, hour, result });
