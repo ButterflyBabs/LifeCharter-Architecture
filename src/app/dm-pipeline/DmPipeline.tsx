@@ -554,7 +554,7 @@ function PlatformPick({ value, onChange }: { value: string; onChange: (v: string
 }
 
 function AddCard({ board, stages, scripts, onClose, onSaved, post, initial }: { board: Board; stages: Stage[]; scripts: ScriptLite[]; onClose: () => void; onSaved: (c: Card) => void; post: Post; initial?: Partial<Draft> }) {
-  const first = stages.find((s) => s.key === "sent") ?? stages[0];
+  const first = stages.find((s) => s.key === "sent") ?? stages.find((s) => s.key !== "fb_approval") ?? stages[0];
   const [d, setD] = useState<Draft>({ name: "", handle: "", profileUrl: "", email: "", platform: "", contactId: null, stageId: first?.id ?? "", scriptId: "", notes: "", ...initial });
   const [busy, setBusy] = useState(false);
   const stage = stages.find((s) => s.id === d.stageId);

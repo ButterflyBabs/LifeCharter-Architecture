@@ -6,6 +6,7 @@ import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
 import { isSameCard, type CardKey } from "@/lib/dmCardDuplicate";
+import { landingStage } from "@/lib/dmLanding";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { zonedToUtcISO } from "@/lib/tz";
@@ -202,7 +203,7 @@ export async function POST(request: Request) {
     const name = str(b.name, 120);
     const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
     if (!name) return NextResponse.json({ error: "Add their name." }, { status: 400 });
-    const stage = stages.find((s) => s.id === b.stageId) ?? stages.find((s) => s.key === "sent") ?? stages[0];
+    const stage = landingStage(stages, platform, stages.find((s) => s.id === b.stageId) ?? stages.find((s) => s.key === "sent") ?? stages[0]);
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     // Already on this board? Checked before anything is created, so a repeat makes no new contact either.
     {
@@ -265,7 +266,7 @@ export async function POST(request: Request) {
     const { rows, skipped } = parseList(str(b.text, 60000), 100);
     if (!rows.length) return NextResponse.json({ error: "Paste at least one name, one person per line." }, { status: 400 });
     const stages = await boardStages(db, a.planId, board.id);
-    const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
+    const stage = landingStage(stages, platform, stages.find((s) => s.key === "to_reach") ?? stages[0]);
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     const { data: existing } = await db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).limit(10000);
     const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
