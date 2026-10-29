@@ -22,6 +22,7 @@ const PUBLIC_APIS = [
   "/api/bridge/", // course-platform bridge (task 1152): sales from Payhip, Kajabi, Teachable, Thinkific, Zapier/Make; the private token is the key
   "/api/sms/inbound", // Twilio: texts to an account's number (task 1151), checked by Twilio's signature
   "/api/sms/status", // Twilio: delivery updates, checked by Twilio's signature
+  "/api/sms/opt-in-image", // the opt-in screenshot Twilio and the carriers fetch for a texting number's verification (public, shows only a business name)
   "/api/cron/sms", // secured by its own CRON_SECRET check, not a session
   "/api/cron/bank-feeds", // secured by its own CRON_SECRET check, not a session
   "/api/cron/cold-email", // secured by its own CRON_SECRET check, not a session

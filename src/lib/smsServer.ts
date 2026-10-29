@@ -165,7 +165,7 @@ export async function registerNumber(db: Db, planId: string, b: Business, sample
     UseCaseCategories: ["ACCOUNT_NOTIFICATIONS"],
     UseCaseSummary: `${name} texts appointment reminders (the day before and about an hour before) to clients who booked a session through ${name}'s online booking page and ticked a box agreeing to text reminders. Clients may reply to reach ${name}. Sent through the LifeCharter Command Suite.`,
     ProductionMessageSample: sample,
-    OptInImageUrls: [`${APP()}/sms/opt-in-example.png`],
+    OptInImageUrls: [`${APP()}/api/sms/opt-in-image?n=${encodeURIComponent(name)}&l=${encodeURIComponent(b.legalName)}`],
     OptInType: "WEB_FORM",
     OptInConfirmationMessage: "",
     MessageVolume: "1,000",
