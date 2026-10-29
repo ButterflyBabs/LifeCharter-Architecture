@@ -1520,7 +1520,7 @@ export default function SettingsPage() {
         items: [
           { id: "stripe", name: "Stripe", description: "Payment processing", icon: "💳", color: "#635BFF" },
           { id: "paypal", name: "PayPal", description: "Payment platform", icon: "💰", color: "#003087" },
-          { id: "quickbooks", name: "QuickBooks", description: "Accounting software", icon: "📊", color: "#2CA01C" },
+          { id: "quickbooks", name: "QuickBooks", description: "Accounting software · connection in process, not live yet", icon: "📊", color: "#2CA01C" },
           { id: "xero", name: "Xero", description: "Accounting software", icon: "📈", color: "#13B5EA" },
           { id: "wise", name: "Wise", description: "International payments", icon: "💱", color: "#00B9FF" },
           { id: "thrivecart", name: "ThriveCart", description: "Shopping cart", icon: "🛒", color: "#00C853" }

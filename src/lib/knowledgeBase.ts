@@ -1585,6 +1585,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["payments", "invoice", "invoices", "payment link", "get paid", "stripe", "connect stripe", "payment plan", "deposit", "paid booking", "refund", "send invoice", "accept payments", "charge", "payments and invoices"],
   },
   {
+    id: "quickbooks-connection",
+    category: "Finance",
+    question: "Can I connect QuickBooks to the Suite? Is there a QuickBooks integration?",
+    answer:
+      "Not yet. A direct QuickBooks connection is in process: LifeCharter is applying to QuickBooks (Intuit) for access, and it cannot connect to anyone's real QuickBooks until that is approved. The QuickBooks card in Settings, then Integrations, is a placeholder for now and does not sync anything, so please do not rely on it. Until it is live, keep QuickBooks as your books and use the Suite alongside it. Open Finance, then Import, and upload a bank or card statement or a CSV export from QuickBooks; the Suite reads it into income and expense entries (this uses your AI key, and you can set the currency, for example CAD). For the occasional entry, use Finance, then Expenses, then Add expense. To take numbers the other way, Finance has a CSV export by period (date, type, category, description, amount, currency) that you or your bookkeeper can bring into QuickBooks. You will be told here and in What's New when the connection is ready.",
+    keywords: ["quickbooks", "quickbooks online", "qbo", "intuit", "accounting software", "bookkeeping", "bookkeeper", "sync", "connect quickbooks", "integration", "xero", "import transactions", "export", "accountant", "books"],
+  },
+  {
     id: "currency-usd-cad",
     category: "Finance",
     question: "Can I work in Canadian dollars? How do I keep US and Canadian dollars separate?",
