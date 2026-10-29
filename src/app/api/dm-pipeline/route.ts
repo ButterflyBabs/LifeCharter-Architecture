@@ -5,6 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
+import { isSameCard, type CardKey } from "@/lib/dmCardDuplicate";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { zonedToUtcISO } from "@/lib/tz";
@@ -203,6 +204,14 @@ export async function POST(request: Request) {
     if (!name) return NextResponse.json({ error: "Add their name." }, { status: 400 });
     const stage = stages.find((s) => s.id === b.stageId) ?? stages.find((s) => s.key === "sent") ?? stages[0];
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
+    // Already on this board? Checked before anything is created, so a repeat makes no new contact either.
+    {
+      const { data: onBoard } = await db.from("dm_cards").select("name, profile_url, handle, platform").eq("board_id", board.id).limit(10000);
+      const incoming = { name, profileUrl: str(b.profileUrl, 500) || null, handle: str(b.handle, 120) || null, platform };
+      if (((onBoard ?? []) as CardKey[]).some((c) => isSameCard(c, incoming))) {
+        return NextResponse.json({ error: `They're already in ${board.name}.` }, { status: 409 });
+      }
+    }
     const email = str(b.email, 200).toLowerCase();
     if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
 
