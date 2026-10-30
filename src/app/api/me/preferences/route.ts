@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sessionUser } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
+import { cleanOrders } from "@/lib/taskOrder";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export async function GET() {
   return NextResponse.json(
     {
       tasksView: LAYOUTS.includes(prefs.tasksView as (typeof LAYOUTS)[number]) ? prefs.tasksView : null,
+      // The order this person put the Tasks page sections in (lib/taskOrder.ts); null = the usual order.
+      tasksOrder: cleanOrders(prefs.tasksOrder),
       textSize: TEXT_SIZES.includes(prefs.textSize as (typeof TEXT_SIZES)[number]) ? prefs.textSize : null,
       // Which text scale this person gets; null = the app's default (lib/textScale.ts). Set by Claude, not by the person.
       textScale: TEXT_SCALES.includes(prefs.textScale as (typeof TEXT_SCALES)[number]) ? prefs.textScale : null,
@@ -32,10 +35,15 @@ export async function PATCH(request: Request) {
   const user = await sessionUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
-  const change: Record<string, string> = {};
+  const change: Record<string, unknown> = {};
   if (body.tasksView !== undefined) {
     if (!LAYOUTS.includes(body.tasksView)) return NextResponse.json({ error: "tasksView must be list or cards" }, { status: 400 });
     change.tasksView = body.tasksView;
+  }
+  if (body.tasksOrder !== undefined) {
+    const orders = cleanOrders(body.tasksOrder);
+    if (!orders) return NextResponse.json({ error: "tasksOrder must be an object of lists" }, { status: 400 });
+    change.tasksOrder = orders;
   }
   if (body.textSize !== undefined) {
     if (!TEXT_SIZES.includes(body.textSize)) return NextResponse.json({ error: "textSize must be small, medium or large" }, { status: 400 });

@@ -9,6 +9,7 @@ import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
 import { FOCUS_LABEL, focusOf, matchesFocus, type Focus, type FocusFilter } from "@/lib/taskFocus";
+import { applyOrder, moveKey } from "@/lib/taskOrder";
 
 interface Task {
   id: number;
@@ -170,6 +171,69 @@ export default function TasksPage() {
       /* default */
     }
   }, []);
+  // Each person's own order for the sections (the three groups, and the lists and project sections inside a group),
+  // kept on this device and on their profile so it follows them. Dragging a section by its grip changes it.
+  const [order, setOrder] = useState<Record<string, string[]>>({});
+  const [dragSeg, setDragSeg] = useState<{ scope: string; key: string } | null>(null);
+  const [overSeg, setOverSeg] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("tasksOrder");
+      if (raw) setOrder(JSON.parse(raw));
+    } catch {
+      /* default order */
+    }
+    fetch("/api/me/preferences", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.tasksOrder && Object.keys(d.tasksOrder).length) {
+          setOrder(d.tasksOrder);
+          try {
+            localStorage.setItem("tasksOrder", JSON.stringify(d.tasksOrder));
+          } catch {
+            /* ignore */
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+  const dropSeg = (scope: string, fullKeys: string[], to: string) => {
+    const from = dragSeg;
+    setDragSeg(null);
+    setOverSeg(null);
+    if (!from || from.scope !== scope) return;
+    const next = { ...order, [scope]: moveKey(fullKeys, from.key, to) };
+    setOrder(next);
+    try {
+      localStorage.setItem("tasksOrder", JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    void fetch("/api/me/preferences", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tasksOrder: next }) }).catch(() => {});
+  };
+  // The grip a section is dragged by; the whole section follows the pointer.
+  const grip = (scope: string, key: string) => (
+    <span
+      draggable
+      onDragStart={(e) => {
+        e.stopPropagation();
+        setDragSeg({ scope, key });
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", "section");
+        const sec = (e.currentTarget as HTMLElement).closest("section");
+        if (sec) e.dataTransfer.setDragImage(sec, 16, 16);
+      }}
+      onDragEnd={() => {
+        setDragSeg(null);
+        setOverSeg(null);
+      }}
+      title="Drag to move this section"
+      aria-label="Drag to move this section"
+      className="shrink-0 cursor-grab touch-none rounded p-1 text-gray-300 hover:bg-[#1a2b4a]/5 hover:text-gray-500 active:cursor-grabbing"
+    >
+      <GripVertical className="h-4 w-4" />
+    </span>
+  );
   const toggleSection = (k: string, folded = false) =>
     setCollapsed((c) => {
       const next = { ...c, [k]: !(c[k] ?? folded) };
@@ -440,39 +504,71 @@ export default function TasksPage() {
   const focusN = { program: 0, incubator: 0, other: 0 };
   for (const t of tasks ?? []) if (t.status !== "done") focusN[focusOfTask(t) ?? "other"]++;
   const hasGroups = !isSales && focusN.program + focusN.incubator > 0;
-  const groups: (Focus | "other")[] = hasGroups ? (["program", "incubator", "other"] as const).filter((g) => !fFocus || fFocus === g) : [];
+  const groupOrder = applyOrder(["program", "incubator", "other"], order.groups) as (Focus | "other")[];
+  const groups: (Focus | "other")[] = hasGroups ? groupOrder.filter((g) => !fFocus || fFocus === g) : [];
 
   // The six lists (Overdue to Done) for one group of tasks; group is null when the page is not split into groups.
-  const renderLists = (group: Focus | "other" | null) =>
-    SECTIONS.map((col) => {
-            const all = (tasks ?? []).filter((t) => matchTask(t) && sectionOf(t) === col.key && (group === null || (focusOfTask(t) ?? "other") === group));
-            const sectionLinked = (group === null || group === "other" ? linked : []).filter((l) => matchLinked(l) && linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
+  const renderLists = (group: Focus | "other" | null) => {
+    // The six status lists, then one section per project that has open tasks here (only when the account uses projects).
+    type Col = { key: string; id: string; label: string; kind: "status" | "project"; segKey: string };
+    const scope = `lists:${group ?? "all"}`;
+    const defs: Col[] = SECTIONS.map((c) => ({ key: c.key, id: c.key, label: c.label, kind: "status" as const, segKey: `status:${c.key}` }));
+    const inHere = (tasks ?? []).filter((t) => t.status !== "done" && matchTask(t) && (group === null || (focusOfTask(t) ?? "other") === group));
+    const ids = Array.from(new Set(inHere.map((t) => t.project_id ?? "none")));
+    if (ids.some((x) => x !== "none")) {
+      const nameOfProject = (id: string) => (id === "none" ? "No project" : projects.find((p) => p.id === id)?.name ?? "Another project");
+      ids
+        .sort((a, b) => (a === "none" ? 1 : b === "none" ? -1 : nameOfProject(a).localeCompare(nameOfProject(b))))
+        .forEach((id) => defs.push({ key: `project:${id}`, id, label: nameOfProject(id), kind: "project", segKey: `project:${id}` }));
+    }
+    const fullKeys = applyOrder(defs.map((d) => d.segKey), order[scope]);
+    return fullKeys.map((k) => defs.find((d) => d.segKey === k) as Col).map((col) => {
+            const all = (tasks ?? []).filter((t) => matchTask(t) && (group === null || (focusOfTask(t) ?? "other") === group) && (col.kind === "project" ? sectionOf(t) !== "done" && (t.project_id ?? "none") === col.id : sectionOf(t) === col.key));
+            const segId = `${group ?? "all"}:${col.key}`;
+            const sectionLinked = (col.kind === "status" && (group === null || group === "other") ? linked : []).filter((l) => matchLinked(l) && linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
             const total = all.length + sectionLinked.length;
             // Done is newest first and capped, so a long history never takes over the page.
             const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : [...all].sort(byDueThenPriority);
             const items = col.key === "done" && !showAllDone ? sorted.slice(0, DONE_SHOWN) : sorted;
             const foldKey = group ? `${group}:${col.key}` : col.key;
-            const folded = Boolean(collapsed[foldKey] ?? col.key === "done") && !searching;
+            const folded = Boolean(collapsed[foldKey] ?? (col.key === "done" || col.kind === "project")) && !searching;
             const hint =
               col.key === "today"
                 ? `${new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric" }).format(new Date())}. Tasks dated today, plus anything you drag here.`
                 : col.key === "overdue"
                   ? "Dated before today and not done. Finish them or give them a new date to clear this list."
                   : "";
-            if (col.key === "overdue" && total === 0) return null;
+            if ((col.key === "overdue" || col.kind === "project") && total === 0) return null;
             return (
               <section
-                key={col.key}
+                key={col.segKey}
                 id={`tasks-${group ?? "all"}-${col.key}`}
                 aria-label={col.label}
                 onDragOver={(e) => {
-                  if (dragId === null || col.key === "overdue") return;
+                  if (dragSeg) {
+                    if (dragSeg.scope !== scope) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setOverSeg(`${scope}|${col.segKey}`);
+                    return;
+                  }
+                  if (dragId === null || col.kind === "project" || col.key === "overdue") return;
                   e.preventDefault();
-                  setOverKey(col.key);
+                  setOverKey(segId);
                 }}
-                onDragLeave={() => setOverKey((k) => (k === col.key ? null : k))}
+                onDragLeave={() => {
+                  setOverKey((k) => (k === segId ? null : k));
+                  setOverSeg((k) => (k === `${scope}|${col.segKey}` ? null : k));
+                }}
                 onDrop={(e) => {
-                  if (col.key === "overdue") return;
+                  if (dragSeg) {
+                    if (dragSeg.scope !== scope) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropSeg(scope, fullKeys, col.segKey);
+                    return;
+                  }
+                  if (col.kind === "project" || col.key === "overdue") return;
                   e.preventDefault();
                   const id = dragId ?? Number(e.dataTransfer.getData("text/plain"));
                   setDragId(null);
@@ -480,18 +576,22 @@ export default function TasksPage() {
                   const t = (tasks ?? []).find((x) => x.id === id);
                   if (t && sectionOf(t) !== col.key) void setStatus(id, col.key);
                 }}
-                className={`rounded-2xl p-3 transition-colors ${overKey === col.key ? "bg-[#2E7C83]/15 ring-2 ring-[#2E7C83]/50" : "bg-[#F8F5F0] dark:bg-white/5"}`}
+                className={`rounded-2xl p-3 transition-colors ${overSeg === `${scope}|${col.segKey}` ? "ring-2 ring-[#1a2b4a]/40 bg-[#F8F5F0] dark:bg-white/5" : overKey === segId ? "bg-[#2E7C83]/15 ring-2 ring-[#2E7C83]/50" : "bg-[#F8F5F0] dark:bg-white/5"}`}
               >
-                <button
-                  onClick={() => toggleSection(foldKey, col.key === "done")}
-                  aria-expanded={!folded}
-                  className="flex w-full items-center gap-2 px-2 py-1 text-left"
-                >
-                  {folded ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                  <h2 className={`text-base font-semibold ${col.key === "overdue" ? "text-[#B0342C]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{col.label}</h2>
-                  <span className="text-xs text-gray-400">{total}</span>
-                  {hint && <span className="ml-1 hidden text-xs text-gray-500 sm:inline">{hint}</span>}
-                </button>
+                <div className="flex items-center gap-1">
+                  {grip(scope, col.segKey)}
+                  <button
+                    onClick={() => toggleSection(foldKey, col.key === "done" || col.kind === "project")}
+                    aria-expanded={!folded}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-1 py-1 text-left"
+                  >
+                    {folded ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    <h2 className={`text-base font-semibold ${col.key === "overdue" ? "text-[#B0342C]" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{col.label}</h2>
+                    {col.kind === "project" && <span className="rounded-full bg-[#2E7C83]/10 px-2 py-0.5 text-[10px] text-[#1F5E63]">Project</span>}
+                    <span className="text-xs text-gray-400">{total}</span>
+                    {hint && <span className="ml-1 hidden text-xs text-gray-500 sm:inline">{hint}</span>}
+                  </button>
+                </div>
                 {!folded && (
                   <div className="mt-2">
                     {col.key === "done" && all.length > 0 && (
@@ -781,6 +881,7 @@ export default function TasksPage() {
               </section>
             );
           });
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -1052,12 +1153,31 @@ export default function TasksPage() {
                 const label = g === "other" ? "Everything else" : FOCUS_LABEL[g];
                 const gFolded = Boolean(collapsed[`group:${g}`]) && !searching;
                 return (
-                  <section key={g} id={`tasks-group-${g}`} aria-label={label} className="rounded-3xl border border-[#1a2b4a]/10 bg-white/60 p-3 dark:bg-white/[0.03]">
-                    <button onClick={() => toggleSection(`group:${g}`)} aria-expanded={!gFolded} className="flex w-full items-center gap-2 px-2 py-1.5 text-left">
-                      {gFolded ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                      <h2 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</h2>
-                      <span className="text-sm text-gray-400">{focusN[g]} open</span>
-                    </button>
+                  <section
+                    key={g}
+                    id={`tasks-group-${g}`}
+                    aria-label={label}
+                    onDragOver={(e) => {
+                      if (!dragSeg || dragSeg.scope !== "groups") return;
+                      e.preventDefault();
+                      setOverSeg(`groups|${g}`);
+                    }}
+                    onDragLeave={() => setOverSeg((k) => (k === `groups|${g}` ? null : k))}
+                    onDrop={(e) => {
+                      if (!dragSeg || dragSeg.scope !== "groups") return;
+                      e.preventDefault();
+                      dropSeg("groups", groupOrder, g);
+                    }}
+                    className={`rounded-3xl border bg-white/60 p-3 dark:bg-white/[0.03] ${overSeg === `groups|${g}` ? "border-[#1a2b4a]/50 ring-2 ring-[#1a2b4a]/30" : "border-[#1a2b4a]/10"}`}
+                  >
+                    <div className="flex items-center gap-1">
+                      {grip("groups", g)}
+                      <button onClick={() => toggleSection(`group:${g}`)} aria-expanded={!gFolded} className="flex min-w-0 flex-1 items-center gap-2 px-1 py-1.5 text-left">
+                        {gFolded ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        <h2 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</h2>
+                        <span className="text-sm text-gray-400">{focusN[g]} open</span>
+                      </button>
+                    </div>
                     {!gFolded && <div className="mt-2 space-y-4">{renderLists(g)}</div>}
                   </section>
                 );
