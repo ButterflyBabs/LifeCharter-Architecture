@@ -30,9 +30,9 @@ import {
   Loader2,
   LifeBuoy,
   Bot,
-  Plus,
 } from "lucide-react";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
+import AssistantPanel from "@/components/assistant/AssistantPanel";
 import Link from "next/link";
 
 interface OnboardingStep {
@@ -127,59 +127,6 @@ export default function TravelPartnerWidget() {
       .then((d) => d?.assistantName && setAssistantName(d.assistantName))
       .catch(() => {});
   }, []);
-  const [chat, setChat] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("assistant-chat");
-      if (saved) setChat(JSON.parse(saved));
-    } catch {
-      /* ignore */
-    }
-  }, []);
-  useEffect(() => {
-    try {
-      localStorage.setItem("assistant-chat", JSON.stringify(chat.slice(-40)));
-    } catch {
-      /* ignore */
-    }
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-  }, [chat]);
-  const pageLabel = (() => {
-    const p = pathname || "/";
-    const map: [string, string][] = [["/sales/pipeline", "Pipeline"], ["/sales/offers", "Offers & Packages"], ["/business-plan", "Business Plan"], ["/marketing-plan", "Marketing Plan"], ["/sales", "Sales"], ["/finance", "Finance"], ["/operations", "Operations"], ["/assessments", "Assessments"], ["/daily-compass", "Daily Compass"], ["/planning", "Planning"]];
-    return p === "/" ? "Executive Home" : map.find(([k]) => p.startsWith(k))?.[1] ?? "General";
-  })();
-  const assistantSuggestions = ["What should I focus on this week?", "Where is my business most out of alignment?", `Help me with my ${pageLabel === "General" ? "next step" : pageLabel}`];
-  const sendChat = async (q: string) => {
-    const message = q.trim();
-    if (!message || chatLoading) return;
-    setChat((c) => [...c, { role: "user", text: message }]);
-    setChatInput("");
-    setChatLoading(true);
-    let reply = "";
-    try {
-      const res = await fetch("/api/mariposa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, page: pageLabel, tz: localStorage.getItem("userTimezone") || Intl.DateTimeFormat().resolvedOptions().timeZone }),
-      });
-      const d = await res.json().catch(() => ({}));
-      reply = d.reply || (d.needsKey ? `Connect your AI in Settings › AI Assistant and I'll be ready to help.` : "");
-    } catch {
-      /* friendly fallback below */
-    }
-    setChat((c) => [...c, { role: "assistant", text: reply || "I couldn't reach my brain just now. Please try again in a moment." }]);
-    setChatLoading(false);
-  };
-  const newConversation = async () => {
-    if (!confirm(`Start fresh? ${assistantName} will forget this conversation (your assessments aren't affected).`)) return;
-    await fetch("/api/mariposa", { method: "DELETE" }).catch(() => {});
-    setChat([]);
-  };
-
   // Help & setup › "How do I…" — answers questions from the LifeCharter knowledge base.
   const [mode, setMode] = useState<"journey" | "ask">("journey");
   const [askInput, setAskInput] = useState("");
@@ -505,62 +452,9 @@ export default function TravelPartnerWidget() {
         )}
 
         {activeTab === "assistant" ? (
-          <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[240px]">
-              {chat.length === 0 ? (
-                <div>
-                  <p className="text-sm text-[#7b6b8d] dark:text-[#e8e4f0] mb-3">
-                    Ask {assistantName} anything about your business. It answers from your own assessments, plans and tasks, and it&apos;s the same conversation as the ask box on Executive Home.
-                  </p>
-                  <div className="space-y-2">
-                    {assistantSuggestions.map((sq) => (
-                      <button key={sq} onClick={() => sendChat(sq)} className="w-full text-left text-sm px-3 py-2 rounded-lg border border-[#1a2b4a]/12 hover:border-[#c9a227]/60 hover:bg-[#c9a227]/5 text-[#1a2b4a] dark:text-[#F8F5F0]">
-                        {sq}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                chat.map((m, i) => (
-                  <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                    <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === "user" ? "bg-[#1a2b4a] text-[#F8F5F0]" : "bg-[#c9a227]/10 text-[#1a2b4a] dark:text-[#F8F5F0] border border-[#c9a227]/25"}`}>
-                      <p className="leading-relaxed whitespace-pre-wrap">{m.text}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-[#c9a227]/10 border border-[#c9a227]/25 rounded-2xl px-3 py-2 text-xs text-[#7b6b8d]">
-                    <Loader2 className="inline w-4 h-4 animate-spin text-[#c9a227] mr-1" /> {assistantName} is thinking…
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-            <div className="p-3 border-t border-[#1a2b4a]/10 bg-white dark:bg-[#1a2b4a]/40">
-              <div className="flex items-center gap-2">
-                <input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") sendChat(chatInput);
-                  }}
-                  aria-label={`Ask ${assistantName}`}
-                  placeholder={`Ask ${assistantName}…`}
-                  className="flex-1 px-3 h-10 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"
-                />
-                <button onClick={() => sendChat(chatInput)} disabled={chatLoading || !chatInput.trim()} className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#1a2b4a] text-[#F8F5F0] hover:bg-[#1a2b4a]/90 disabled:opacity-50" aria-label="Send">
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-[#b8a898]">
-                {chat.length > 0 ? (
-                  <button onClick={newConversation} className="inline-flex items-center gap-1 hover:text-[#b03a2e]"><Plus className="w-3 h-3 rotate-45" /> New conversation</button>
-                ) : <span />}
-                <Link href="/settings?tab=ai" onClick={() => setIsOpen(false)} className="hover:text-[#2E7C83]">AI Assistant settings</Link>
-              </div>
-            </div>
+          // The full assistant (growing text box, microphone, Approve cards, past conversations): the same one as on Executive Home.
+          <CardContent className="p-0 flex flex-col flex-1 min-h-0 overflow-hidden">
+            <AssistantPanel variant="floating" />
           </CardContent>
         ) : mode === "ask" ? (
           <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">

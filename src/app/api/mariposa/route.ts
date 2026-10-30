@@ -15,6 +15,7 @@ import { approvedHelpFor } from "@/lib/ai/helpSuggestions";
 import { handleToolCall, type ActionCard } from "@/lib/ai/actions/engine";
 import { isDemoRequest } from "@/lib/scoring/masterPlan";
 import { sessionUser } from "@/lib/authz";
+import { claimsDone, NOT_YET_SENT } from "@/lib/ai/approvalClaim";
 
 export const dynamic = "force-dynamic";
 // A reply can read several things (campaigns, an inbox) and call the model a few times: give it room.
@@ -180,6 +181,11 @@ export async function POST(request: Request) {
     }
     if (!reply && !cards.length) reply = `I looked into that but did not get to a clear answer. Please ask again, or ask for one smaller piece at a time. — ${name}`;
     if (!reply && cards.length) reply = cards.length === 1 ? "Here is what I would do. Review it and press Approve when you are ready." : "Here is what I would do. Review each one and press Approve when you are ready.";
+    // Chat can never run a card: if the reply claims something was submitted while a card still waits, correct it.
+    if (reply && ctx && claimsDone(reply) && !cards.some((c) => c.status === "executed")) {
+      const { count } = await createServerClient().from("assistant_actions").select("id", { count: "exact", head: true }).eq("master_plan_id", planId as string).eq("status", "proposed");
+      if (cards.some((c) => c.status === "proposed") || (count ?? 0) > 0) reply = NOT_YET_SENT(name);
+    }
     // Whenever something waits for approval, the reply says exactly where to approve it.
     if (reply && cards.some((c) => c.status === "proposed") && !reply.includes("/assistant-approvals")) {
       reply = `${reply.trimEnd()}\n\nApprove it here: [Waiting for your approval](/assistant-approvals)`;
