@@ -183,6 +183,10 @@
     {
       "path": "/api/cron/meta-ads-report",
       "schedule": "0 14,15 * * 1"
+    },
+    {
+      "path": "/api/cron/cold-email-weekly",
+      "schedule": "0 22,23 * * 5"
     }
   ],
   "rewrites": [

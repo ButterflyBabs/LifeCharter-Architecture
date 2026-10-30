@@ -26,6 +26,7 @@ const PUBLIC_APIS = [
   "/api/cron/sms", // secured by its own CRON_SECRET check, not a session
   "/api/cron/bank-feeds", // secured by its own CRON_SECRET check, not a session
   "/api/cron/cold-email", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/cold-email-weekly", // secured by its own CRON_SECRET check, not a session
   "/api/cold-unsubscribe", // the unsubscribe link in a cold email; the personal code in the link is the key
   "/api/lp/", // landing pages (task 1153): visits, sign-ups, registrations, Buy clicks, bookings, main image
   "/api/pay/", // an offer's pay page (GST/HST accounts): pick where you are, then on to Stripe Checkout
