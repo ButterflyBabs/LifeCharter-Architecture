@@ -113,6 +113,7 @@ export default function AIGuideHelpPage() {
             <li><strong>Edit</strong> lets you say what to change (&quot;rename it&quot;, &quot;drop the third step&quot;, &quot;make it warmer&quot;). The old preview is cancelled and a corrected one comes back.</li>
             <li><strong>Cancel</strong> throws the preview away. Nothing was changed.</li>
           </ul>
+          <p>Approve cards appear right in the conversation, including in the Travel Partner window in the corner, and on the Waiting for my approval page. Typing &quot;I approve&quot; or &quot;please send&quot; in the chat does not do anything: only the Approve button does. When you approve a problem report for support, you get a confirmation email and it appears under Help → Contact Support → My requests.</p>
           <p>Emails are only ever saved as drafts. Your assistant never sends, schedules or turns on an email or message, and it never publishes a post right now. You review and send from Campaigns &amp; Broadcasts yourself. It only works in your own account, and a team member can only approve what their role allows.</p>
         </div>
       )
