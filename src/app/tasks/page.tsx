@@ -8,7 +8,7 @@ import { askAssistant } from "@/lib/assistantPopout";
 import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
-import { FOCUS_LABEL, focusOf, matchesFocus, type FocusFilter } from "@/lib/taskFocus";
+import { FOCUS_LABEL, focusOf, matchesFocus, type Focus, type FocusFilter } from "@/lib/taskFocus";
 
 interface Task {
   id: number;
@@ -170,9 +170,9 @@ export default function TasksPage() {
       /* default */
     }
   }, []);
-  const toggleSection = (k: string) =>
+  const toggleSection = (k: string, folded = false) =>
     setCollapsed((c) => {
-      const next = { ...c, [k]: !c[k] };
+      const next = { ...c, [k]: !(c[k] ?? folded) };
       try {
         localStorage.setItem("tasksCollapsed", JSON.stringify(next));
       } catch {
@@ -325,7 +325,8 @@ export default function TasksPage() {
   const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, optional: 4 };
   const linkedSection = (l: Linked): string => (l.dueDay && l.dueDay < todayStr ? "overdue" : l.dueDay === todayStr ? "today" : "backlog");
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const filtering = words.length > 0 || Boolean(fProject) || Boolean(fOffer) || Boolean(fFocus);
+  const searching = words.length > 0 || Boolean(fProject) || Boolean(fOffer); // a search shows its matches even in a folded list
+  const filtering = searching || Boolean(fFocus);
   const focusOfTask = (t: Task) => focusOf(projects.find((p) => p.id === t.project_id)?.name, offers.find((o) => o.id === t.offer_id)?.name);
   const matchTask = (t: Task) => {
     if (words.length) {
@@ -424,7 +425,7 @@ export default function TasksPage() {
   }));
   const jumpTo = (key: string) => {
     setCollapsed((c) => {
-      const next = { ...c, [key]: false };
+      const next = { ...c, [key]: false, "group:program": false, "group:incubator": false, "group:other": false, [`program:${key}`]: false, [`incubator:${key}`]: false, [`other:${key}`]: false };
       try {
         localStorage.setItem("tasksCollapsed", JSON.stringify(next));
       } catch {
@@ -432,288 +433,26 @@ export default function TasksPage() {
       }
       return next;
     });
-    setTimeout(() => document.getElementById(`tasks-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    setTimeout(() => document.querySelector(`[id^="tasks-"][id$="-${key}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
-  return (
-    <div className="max-w-[1400px] mx-auto px-6 py-8">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-4">
-        <ChevronLeft className="w-4 h-4" /> Back to Executive Home
-      </Link>
+  // Program / Incubator / everything else: counts of open tasks, and which groups the page is split into.
+  const focusN = { program: 0, incubator: 0, other: 0 };
+  for (const t of tasks ?? []) if (t.status !== "done") focusN[focusOfTask(t) ?? "other"]++;
+  const hasGroups = !isSales && focusN.program + focusN.incubator > 0;
+  const groups: (Focus | "other")[] = hasGroups ? (["program", "incubator", "other"] as const).filter((g) => !fFocus || fFocus === g) : [];
 
-      <div className="mb-6">
-        <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Tasks</h1>
-        <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Everything across your businesses, in lists you can fold away. Drag a task into another list to move it.</p>
-      </div>
-
-      {members.length > 0 && view && !isSales && (
-        <div className="flex flex-wrap gap-2 mb-5">
-          {[["all", "Everyone"], ["mine", "Assigned to me"], ...(me ? [] : [["none", "Unassigned (mine)"]]), ...members.filter((m) => m.id !== me).map((m) => [m.id, m.name])].map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setView(k)}
-              className={`rounded-full px-3.5 py-1.5 text-sm ${view === k ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Add task */}
-      <form onSubmit={addTask} className="flex flex-wrap gap-2 mb-8">
-        <input
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="Add a task…"
-          className="flex-1 min-w-[240px] px-4 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
-        />
-        <select
-          value={newPriority}
-          onChange={(e) => setNewPriority(e.target.value)}
-          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
-        >
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <input
-          type="date"
-          value={newDay}
-          onChange={(e) => setNewDay(e.target.value)}
-          aria-label="Due date"
-          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
-        />
-        <input
-          type="time"
-          value={newTime}
-          onChange={(e) => setNewTime(e.target.value)}
-          aria-label="Time of day"
-          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
-        />
-        {newTime && (
-          <select
-            value={newKind}
-            onChange={(e) => setNewKind(e.target.value as "deadline" | "scheduled")}
-            aria-label="What the time means"
-            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
-          >
-            <option value="deadline">Due by this time</option>
-            <option value="scheduled">Do it at this time</option>
-          </select>
-        )}
-        {members.length > 0 && !isSales && (
-          <select
-            value={newAssignee}
-            onChange={(e) => setNewAssignee(e.target.value)}
-            aria-label="Assign to"
-            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
-          >
-            <option value="">{me ? "Assign to…" : "Assign to me"}</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.id === me ? `${m.name} (me)` : m.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {!isSales && projects.length > 0 && (
-          <select value={newProject} onChange={(e) => setNewProject(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
-            <option value="">No project</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        )}
-        {!isSales && offers.length > 0 && (
-          <select value={newOffer} onChange={(e) => setNewOffer(e.target.value)} aria-label="Program (offer)" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
-            <option value="">No program</option>
-            {offers.map((o) => (
-              <option key={o.id} value={o.id}>{o.name}</option>
-            ))}
-          </select>
-        )}
-        <button
-          type="submit"
-          disabled={adding || !newTitle.trim()}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-[#1a2b4a] text-white rounded-lg text-sm hover:bg-[#1a2b4a]/90 disabled:opacity-50"
-        >
-          <Plus className="w-4 h-4" /> Add
-        </button>
-      </form>
-
-      {tasks !== null && !showArchived && (
-        <div className="mb-5 flex flex-wrap gap-2" aria-label="Number of tasks in each list">
-          {tally.map((c) => (
-            <div key={c.key} className="group relative">
-              <button
-                onClick={() => jumpTo(c.key)}
-                aria-describedby={`tally-help-${c.key}`}
-                className={`inline-flex items-baseline gap-2 rounded-xl border px-3.5 py-2 text-left transition hover:shadow-sm ${
-                  c.key === "overdue" && c.n > 0 ? "border-[#B0342C]/40 bg-[#FBECEA] text-[#B0342C]" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0]"
-                }`}
-              >
-                <span className="text-xl font-semibold tabular-nums leading-none">{c.n}</span>
-                <span className="text-xs">{c.label}</span>
-              </button>
-              <div
-                role="tooltip"
-                id={`tally-help-${c.key}`}
-                className="pointer-events-none absolute left-0 top-full z-20 mt-1.5 hidden w-64 rounded-lg border border-[#1a2b4a]/10 bg-white p-3 text-xs leading-snug text-[#3F4654] shadow-lg group-hover:block group-focus-within:block dark:bg-[#1A1A2E] dark:text-[#e8e4f0]"
-              >
-                <p className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.label}</p>
-                {SECTION_HELP[c.key]}
-                <p className="mt-1 text-[11px] text-gray-400">Press to go to this list.</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tasks !== null && !showArchived && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search tasks: title, notes, project or program…"
-            aria-label="Search tasks"
-            className="flex-1 min-w-[220px] px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
-          />
-          <div role="group" aria-label="How tasks are shown" className="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] text-sm">
-            <button
-              type="button"
-              onClick={() => chooseLayout("list")}
-              aria-pressed={layout === "list"}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "list" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
-            >
-              <LayoutList className="h-4 w-4" /> List
-            </button>
-            <button
-              type="button"
-              onClick={() => chooseLayout("cards")}
-              aria-pressed={layout === "cards"}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "cards" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
-            >
-              <LayoutGrid className="h-4 w-4" /> Cards
-            </button>
-          </div>
-          {!isSales && (
-            <>
-              <select value={fProject} onChange={(e) => setFProject(e.target.value)} aria-label="Filter by project" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
-                <option value="">All projects</option>
-                <option value="none">No project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <select value={fOffer} onChange={(e) => setFOffer(e.target.value)} aria-label="Filter by program" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
-                <option value="">All programs</option>
-                <option value="none">No program</option>
-                {offers.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
-            </>
-          )}
-          {filtering && (
-            <button
-              onClick={() => {
-                setQ("");
-                setFProject("");
-                setFOffer("");
-                setFFocus("");
-              }}
-              className="text-sm text-[#2E7C83] hover:underline"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      )}
-
-      {tasks !== null && !showArchived && !isSales && (() => {
-        const open = tasks.filter((t) => t.status !== "done");
-        const n = { program: 0, incubator: 0, other: 0 };
-        for (const t of open) n[focusOfTask(t) ?? "other"]++;
-        if (!n.program && !n.incubator) return null;
-        const chips: { key: FocusFilter; label: string; n: number }[] = [
-          { key: "", label: "All tasks", n: open.length },
-          { key: "program", label: FOCUS_LABEL.program, n: n.program },
-          { key: "incubator", label: FOCUS_LABEL.incubator, n: n.incubator },
-          { key: "other", label: "Everything else", n: n.other },
-        ];
-        return (
-          <div role="group" aria-label="Focus" className="-mt-2 mb-5 flex flex-wrap items-center gap-2">
-            {chips.map((c) => (
-              <button
-                key={c.key || "all"}
-                type="button"
-                onClick={() => setFFocus(c.key)}
-                aria-pressed={fFocus === c.key}
-                className={`inline-flex items-baseline gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-                  fFocus === c.key ? "border-[#1a2b4a] bg-[#1a2b4a] text-white" : "border-[#1a2b4a]/15 bg-white text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:bg-[#1A1A2E] dark:text-[#F8F5F0]"
-                }`}
-              >
-                {c.label}
-                <span className="tabular-nums text-xs opacity-70">{c.n}</span>
-              </button>
-            ))}
-          </div>
-        );
-      })()}
-
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => {
-            setShowArchived((v) => !v);
-            setConfirmArchive(false);
-          }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3.5 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
-        >
-          <Archive className="w-4 h-4" /> {showArchived ? "Back to the board" : `Archived (${archivedCount})`}
-        </button>
-        {showArchived && <span className="text-xs text-gray-500">Done tasks you archived. They still count toward your follow-through.</span>}
-      </div>
-
-      {reportTask && (
-        <div className="mb-4 max-w-4xl">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Assistant report: {reportTask.title}</p>
-            <button onClick={() => setReportTask(null)} className="text-xs text-[#2E7C83] hover:underline">Close</button>
-          </div>
-          <AssistantReportCard type="task" itemKey={String(reportTask.id)} />
-        </div>
-      )}
-
-      {tasks === null ? (
-        <p className="text-sm text-gray-400">Loading…</p>
-      ) : showArchived ? (
-        <div className="bg-[#F8F5F0] dark:bg-white/5 rounded-2xl p-3 max-w-3xl">
-          {tasks.length === 0 && <p className="text-sm text-gray-400 px-2 py-3">Nothing archived yet.</p>}
-          <div className="space-y-2">
-            {tasks.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-white/10 px-3 py-2">
-                <Check className="w-3.5 h-3.5 text-[#54A33B] shrink-0" />
-                <p className="flex-1 min-w-0 text-sm text-gray-500 line-through truncate" title={t.title}>{t.title}</p>
-                {t.completed_at && <span className="text-[10px] text-gray-400 whitespace-nowrap">{dayInTz(t.completed_at, tz)}</span>}
-                <button onClick={() => restoreOne(t.id)} className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline whitespace-nowrap" title="Put it back in Done">
-                  <ArchiveRestore className="w-3.5 h-3.5" /> Restore
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {SECTIONS.map((col) => {
-            const all = tasks.filter((t) => matchTask(t) && sectionOf(t) === col.key);
-            const sectionLinked = linked.filter((l) => matchLinked(l) && linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
+  // The six lists (Overdue to Done) for one group of tasks; group is null when the page is not split into groups.
+  const renderLists = (group: Focus | "other" | null) =>
+    SECTIONS.map((col) => {
+            const all = (tasks ?? []).filter((t) => matchTask(t) && sectionOf(t) === col.key && (group === null || (focusOfTask(t) ?? "other") === group));
+            const sectionLinked = (group === null || group === "other" ? linked : []).filter((l) => matchLinked(l) && linkedSection(l) === col.key).sort((a, b) => (a.dueDay ?? "9999").localeCompare(b.dueDay ?? "9999"));
             const total = all.length + sectionLinked.length;
             // Done is newest first and capped, so a long history never takes over the page.
             const sorted = col.key === "done" ? [...all].sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? "")) : [...all].sort(byDueThenPriority);
             const items = col.key === "done" && !showAllDone ? sorted.slice(0, DONE_SHOWN) : sorted;
-            const folded = Boolean(collapsed[col.key]) && !filtering; // a search shows its matches even in a folded list
+            const foldKey = group ? `${group}:${col.key}` : col.key;
+            const folded = Boolean(collapsed[foldKey] ?? col.key === "done") && !searching;
             const hint =
               col.key === "today"
                 ? `${new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric" }).format(new Date())}. Tasks dated today, plus anything you drag here.`
@@ -724,7 +463,7 @@ export default function TasksPage() {
             return (
               <section
                 key={col.key}
-                id={`tasks-${col.key}`}
+                id={`tasks-${group ?? "all"}-${col.key}`}
                 aria-label={col.label}
                 onDragOver={(e) => {
                   if (dragId === null || col.key === "overdue") return;
@@ -738,13 +477,13 @@ export default function TasksPage() {
                   const id = dragId ?? Number(e.dataTransfer.getData("text/plain"));
                   setDragId(null);
                   setOverKey(null);
-                  const t = tasks.find((x) => x.id === id);
+                  const t = (tasks ?? []).find((x) => x.id === id);
                   if (t && sectionOf(t) !== col.key) void setStatus(id, col.key);
                 }}
                 className={`rounded-2xl p-3 transition-colors ${overKey === col.key ? "bg-[#2E7C83]/15 ring-2 ring-[#2E7C83]/50" : "bg-[#F8F5F0] dark:bg-white/5"}`}
               >
                 <button
-                  onClick={() => toggleSection(col.key)}
+                  onClick={() => toggleSection(foldKey, col.key === "done")}
                   aria-expanded={!folded}
                   className="flex w-full items-center gap-2 px-2 py-1 text-left"
                 >
@@ -1041,7 +780,288 @@ export default function TasksPage() {
                 )}
               </section>
             );
-          })}
+          });
+
+  return (
+    <div className="max-w-[1400px] mx-auto px-6 py-8">
+      <Link href="/" className="inline-flex items-center gap-1 text-sm text-[#2E7C83] hover:underline mb-4">
+        <ChevronLeft className="w-4 h-4" /> Back to Executive Home
+      </Link>
+
+      <div className="mb-6">
+        <h1 className="text-4xl lg:text-5xl font-serif font-bold text-[#1a2b4a] dark:text-[#F8F5F0] mb-1">Tasks</h1>
+        <p className="text-[#7b6b8d] dark:text-[#e8e4f0]">Everything across your businesses, in lists you can fold away. Drag a task into another list to move it.</p>
+      </div>
+
+      {members.length > 0 && view && !isSales && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          {[["all", "Everyone"], ["mine", "Assigned to me"], ...(me ? [] : [["none", "Unassigned (mine)"]]), ...members.filter((m) => m.id !== me).map((m) => [m.id, m.name])].map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => setView(k)}
+              className={`rounded-full px-3.5 py-1.5 text-sm ${view === k ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Add task */}
+      <form onSubmit={addTask} className="flex flex-wrap gap-2 mb-8">
+        <input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="Add a task…"
+          className="flex-1 min-w-[240px] px-4 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
+        />
+        <select
+          value={newPriority}
+          onChange={(e) => setNewPriority(e.target.value)}
+          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+        >
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <input
+          type="date"
+          value={newDay}
+          onChange={(e) => setNewDay(e.target.value)}
+          aria-label="Due date"
+          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+        />
+        <input
+          type="time"
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          aria-label="Time of day"
+          className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+        />
+        {newTime && (
+          <select
+            value={newKind}
+            onChange={(e) => setNewKind(e.target.value as "deadline" | "scheduled")}
+            aria-label="What the time means"
+            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+          >
+            <option value="deadline">Due by this time</option>
+            <option value="scheduled">Do it at this time</option>
+          </select>
+        )}
+        {members.length > 0 && !isSales && (
+          <select
+            value={newAssignee}
+            onChange={(e) => setNewAssignee(e.target.value)}
+            aria-label="Assign to"
+            className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm"
+          >
+            <option value="">{me ? "Assign to…" : "Assign to me"}</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.id === me ? `${m.name} (me)` : m.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {!isSales && projects.length > 0 && (
+          <select value={newProject} onChange={(e) => setNewProject(e.target.value)} aria-label="Project" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
+            <option value="">No project</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
+        {!isSales && offers.length > 0 && (
+          <select value={newOffer} onChange={(e) => setNewOffer(e.target.value)} aria-label="Program (offer)" className="px-3 py-2.5 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[200px]">
+            <option value="">No program</option>
+            {offers.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+        )}
+        <button
+          type="submit"
+          disabled={adding || !newTitle.trim()}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-[#1a2b4a] text-white rounded-lg text-sm hover:bg-[#1a2b4a]/90 disabled:opacity-50"
+        >
+          <Plus className="w-4 h-4" /> Add
+        </button>
+      </form>
+
+      {tasks !== null && !showArchived && (
+        <div className="mb-5 flex flex-wrap gap-2" aria-label="Number of tasks in each list">
+          {tally.map((c) => (
+            <div key={c.key} className="group relative">
+              <button
+                onClick={() => jumpTo(c.key)}
+                aria-describedby={`tally-help-${c.key}`}
+                className={`inline-flex items-baseline gap-2 rounded-xl border px-3.5 py-2 text-left transition hover:shadow-sm ${
+                  c.key === "overdue" && c.n > 0 ? "border-[#B0342C]/40 bg-[#FBECEA] text-[#B0342C]" : "border-[#1a2b4a]/10 bg-white dark:bg-[#1A1A2E] text-[#1a2b4a] dark:text-[#F8F5F0]"
+                }`}
+              >
+                <span className="text-xl font-semibold tabular-nums leading-none">{c.n}</span>
+                <span className="text-xs">{c.label}</span>
+              </button>
+              <div
+                role="tooltip"
+                id={`tally-help-${c.key}`}
+                className="pointer-events-none absolute left-0 top-full z-20 mt-1.5 hidden w-64 rounded-lg border border-[#1a2b4a]/10 bg-white p-3 text-xs leading-snug text-[#3F4654] shadow-lg group-hover:block group-focus-within:block dark:bg-[#1A1A2E] dark:text-[#e8e4f0]"
+              >
+                <p className="mb-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{c.label}</p>
+                {SECTION_HELP[c.key]}
+                <p className="mt-1 text-[11px] text-gray-400">Press to go to this list.</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tasks !== null && !showArchived && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search tasks: title, notes, project or program…"
+            aria-label="Search tasks"
+            className="flex-1 min-w-[220px] px-4 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-[#84AEB2]"
+          />
+          <div role="group" aria-label="How tasks are shown" className="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1A2E] text-sm">
+            <button
+              type="button"
+              onClick={() => chooseLayout("list")}
+              aria-pressed={layout === "list"}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "list" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
+            >
+              <LayoutList className="h-4 w-4" /> List
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseLayout("cards")}
+              aria-pressed={layout === "cards"}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 ${layout === "cards" ? "bg-[#2E7C83] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"}`}
+            >
+              <LayoutGrid className="h-4 w-4" /> Cards
+            </button>
+          </div>
+          {!isSales && (
+            <>
+              <select value={fProject} onChange={(e) => setFProject(e.target.value)} aria-label="Filter by project" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
+                <option value="">All projects</option>
+                <option value="none">No project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <select value={fOffer} onChange={(e) => setFOffer(e.target.value)} aria-label="Filter by program" className="px-3 py-2 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-lg text-sm max-w-[220px]">
+                <option value="">All programs</option>
+                <option value="none">No program</option>
+                {offers.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </>
+          )}
+          {filtering && (
+            <button
+              onClick={() => {
+                setQ("");
+                setFProject("");
+                setFOffer("");
+                setFFocus("");
+              }}
+              className="text-sm text-[#2E7C83] hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {tasks !== null && !showArchived && hasGroups && (
+        <div role="group" aria-label="Focus" className="-mt-2 mb-5 flex flex-wrap items-center gap-2">
+          {([
+            { key: "", label: "All tasks", n: focusN.program + focusN.incubator + focusN.other },
+            { key: "program", label: FOCUS_LABEL.program, n: focusN.program },
+            { key: "incubator", label: FOCUS_LABEL.incubator, n: focusN.incubator },
+            { key: "other", label: "Everything else", n: focusN.other },
+          ] as { key: FocusFilter; label: string; n: number }[]).map((c) => (
+            <button
+              key={c.key || "all"}
+              type="button"
+              onClick={() => setFFocus(c.key)}
+              aria-pressed={fFocus === c.key}
+              className={`inline-flex items-baseline gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                fFocus === c.key ? "border-[#1a2b4a] bg-[#1a2b4a] text-white" : "border-[#1a2b4a]/15 bg-white text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:bg-[#1A1A2E] dark:text-[#F8F5F0]"
+              }`}
+            >
+              {c.label}
+              <span className="tabular-nums text-xs opacity-70">{c.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => {
+            setShowArchived((v) => !v);
+            setConfirmArchive(false);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3.5 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5"
+        >
+          <Archive className="w-4 h-4" /> {showArchived ? "Back to the board" : `Archived (${archivedCount})`}
+        </button>
+        {showArchived && <span className="text-xs text-gray-500">Done tasks you archived. They still count toward your follow-through.</span>}
+      </div>
+
+      {reportTask && (
+        <div className="mb-4 max-w-4xl">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Assistant report: {reportTask.title}</p>
+            <button onClick={() => setReportTask(null)} className="text-xs text-[#2E7C83] hover:underline">Close</button>
+          </div>
+          <AssistantReportCard type="task" itemKey={String(reportTask.id)} />
+        </div>
+      )}
+
+      {tasks === null ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : showArchived ? (
+        <div className="bg-[#F8F5F0] dark:bg-white/5 rounded-2xl p-3 max-w-3xl">
+          {tasks.length === 0 && <p className="text-sm text-gray-400 px-2 py-3">Nothing archived yet.</p>}
+          <div className="space-y-2">
+            {tasks.map((t) => (
+              <div key={t.id} className="flex items-center gap-3 bg-white dark:bg-[#1A1A2E] rounded-xl border border-gray-200/60 dark:border-white/10 px-3 py-2">
+                <Check className="w-3.5 h-3.5 text-[#54A33B] shrink-0" />
+                <p className="flex-1 min-w-0 text-sm text-gray-500 line-through truncate" title={t.title}>{t.title}</p>
+                {t.completed_at && <span className="text-[10px] text-gray-400 whitespace-nowrap">{dayInTz(t.completed_at, tz)}</span>}
+                <button onClick={() => restoreOne(t.id)} className="inline-flex items-center gap-1 text-xs text-[#2E7C83] hover:underline whitespace-nowrap" title="Put it back in Done">
+                  <ArchiveRestore className="w-3.5 h-3.5" /> Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {groups.length === 0
+            ? renderLists(null)
+            : groups.map((g) => {
+                const label = g === "other" ? "Everything else" : FOCUS_LABEL[g];
+                const gFolded = Boolean(collapsed[`group:${g}`]) && !searching;
+                return (
+                  <section key={g} id={`tasks-group-${g}`} aria-label={label} className="rounded-3xl border border-[#1a2b4a]/10 bg-white/60 p-3 dark:bg-white/[0.03]">
+                    <button onClick={() => toggleSection(`group:${g}`)} aria-expanded={!gFolded} className="flex w-full items-center gap-2 px-2 py-1.5 text-left">
+                      {gFolded ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                      <h2 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</h2>
+                      <span className="text-sm text-gray-400">{focusN[g]} open</span>
+                    </button>
+                    {!gFolded && <div className="mt-2 space-y-4">{renderLists(g)}</div>}
+                  </section>
+                );
+              })}
         </div>
       )}
     </div>
