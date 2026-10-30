@@ -8,6 +8,7 @@ import { askAssistant } from "@/lib/assistantPopout";
 import AssistantReportCard from "@/components/assistant/AssistantReportCard";
 import { dueInfo, TONE_CLASS } from "@/lib/taskDue";
 import { dayInTz } from "@/lib/tz";
+import { FOCUS_LABEL, focusOf, matchesFocus, type FocusFilter } from "@/lib/taskFocus";
 
 interface Task {
   id: number;
@@ -185,6 +186,7 @@ export default function TasksPage() {
   const [q, setQ] = useState("");
   const [fProject, setFProject] = useState("");
   const [fOffer, setFOffer] = useState("");
+  const [fFocus, setFFocus] = useState<FocusFilter>("");
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [offers, setOffers] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
@@ -323,7 +325,8 @@ export default function TasksPage() {
   const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, optional: 4 };
   const linkedSection = (l: Linked): string => (l.dueDay && l.dueDay < todayStr ? "overdue" : l.dueDay === todayStr ? "today" : "backlog");
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const filtering = words.length > 0 || Boolean(fProject) || Boolean(fOffer);
+  const filtering = words.length > 0 || Boolean(fProject) || Boolean(fOffer) || Boolean(fFocus);
+  const focusOfTask = (t: Task) => focusOf(projects.find((p) => p.id === t.project_id)?.name, offers.find((o) => o.id === t.offer_id)?.name);
   const matchTask = (t: Task) => {
     if (words.length) {
       const hay = `${t.title} ${t.description ?? ""} ${projects.find((p) => p.id === t.project_id)?.name ?? ""} ${offers.find((o) => o.id === t.offer_id)?.name ?? ""}`.toLowerCase();
@@ -331,6 +334,7 @@ export default function TasksPage() {
     }
     if (fProject === "none" ? Boolean(t.project_id) : fProject && t.project_id !== fProject) return false;
     if (fOffer === "none" ? Boolean(t.offer_id) : fOffer && t.offer_id !== fOffer) return false;
+    if (!matchesFocus(fFocus, focusOfTask(t))) return false;
     return true;
   };
   const matchLinked = (l: Linked) => {
@@ -339,6 +343,8 @@ export default function TasksPage() {
     const pid = l.kind === "milestone" ? l.href.split("/").pop() : null;
     if (fProject === "none" ? Boolean(pid) : fProject && pid !== fProject) return false;
     if (fOffer && fOffer !== "none") return false;
+    // Nothing linked is filed under the Program or the Incubator, so only the "Everything else" view keeps it.
+    if (fFocus === "program" || fFocus === "incubator") return false;
     return true;
   };
   const completeLinked = async (l: Linked) => {
@@ -616,6 +622,7 @@ export default function TasksPage() {
                 setQ("");
                 setFProject("");
                 setFOffer("");
+                setFFocus("");
               }}
               className="text-sm text-[#2E7C83] hover:underline"
             >
@@ -624,6 +631,37 @@ export default function TasksPage() {
           )}
         </div>
       )}
+
+      {tasks !== null && !showArchived && !isSales && (() => {
+        const open = tasks.filter((t) => t.status !== "done");
+        const n = { program: 0, incubator: 0, other: 0 };
+        for (const t of open) n[focusOfTask(t) ?? "other"]++;
+        if (!n.program && !n.incubator) return null;
+        const chips: { key: FocusFilter; label: string; n: number }[] = [
+          { key: "", label: "All tasks", n: open.length },
+          { key: "program", label: FOCUS_LABEL.program, n: n.program },
+          { key: "incubator", label: FOCUS_LABEL.incubator, n: n.incubator },
+          { key: "other", label: "Everything else", n: n.other },
+        ];
+        return (
+          <div role="group" aria-label="Focus" className="-mt-2 mb-5 flex flex-wrap items-center gap-2">
+            {chips.map((c) => (
+              <button
+                key={c.key || "all"}
+                type="button"
+                onClick={() => setFFocus(c.key)}
+                aria-pressed={fFocus === c.key}
+                className={`inline-flex items-baseline gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                  fFocus === c.key ? "border-[#1a2b4a] bg-[#1a2b4a] text-white" : "border-[#1a2b4a]/15 bg-white text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:bg-[#1A1A2E] dark:text-[#F8F5F0]"
+                }`}
+              >
+                {c.label}
+                <span className="tabular-nums text-xs opacity-70">{c.n}</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
