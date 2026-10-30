@@ -174,6 +174,36 @@ export default function TasksPage() {
   // Each person's own order for the sections (the three groups, and the lists and project sections inside a group),
   // kept on this device and on their profile so it follows them. Dragging a section by its grip changes it.
   const [order, setOrder] = useState<Record<string, string[]>>({});
+  // Projects people start here: the new project shows at once, even before it has a task, and each project section has its own add box.
+  const [madeIds, setMadeIds] = useState<string[]>([]);
+  const [makingProject, setMakingProject] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectMsg, setProjectMsg] = useState("");
+  const [projAdd, setProjAdd] = useState<Record<string, string>>({});
+  const createProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = projectName.trim();
+    if (!name) return;
+    setProjectMsg("");
+    const res = await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, tz }) }).catch(() => null);
+    const d = res && res.ok ? ((await res.json().catch(() => null)) as { id?: string } | null) : null;
+    if (!d?.id) {
+      setProjectMsg("Couldn't start that project. Try again.");
+      return;
+    }
+    setProjects((prev) => [...prev, { id: d.id as string, name }]);
+    setMadeIds((prev) => [...prev, d.id as string]);
+    setCollapsed((c) => ({ ...c, [`project:${d.id}`]: false, [`other:project:${d.id}`]: false }));
+    setProjectName("");
+    setMakingProject(false);
+  };
+  const addToProject = async (pid: string) => {
+    const title = (projAdd[pid] ?? "").trim();
+    if (!title) return;
+    setProjAdd((m) => ({ ...m, [pid]: "" }));
+    await fetch("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, status: "backlog", priority: "medium", projectId: pid }) }).catch(() => {});
+    void load();
+  };
   const [dragSeg, setDragSeg] = useState<{ scope: string; key: string } | null>(null);
   const [overSeg, setOverSeg] = useState<string | null>(null);
   useEffect(() => {
@@ -514,7 +544,11 @@ export default function TasksPage() {
     const scope = `lists:${group ?? "all"}`;
     const defs: Col[] = SECTIONS.map((c) => ({ key: c.key, id: c.key, label: c.label, kind: "status" as const, segKey: `status:${c.key}` }));
     const inHere = (tasks ?? []).filter((t) => t.status !== "done" && matchTask(t) && (group === null || (focusOfTask(t) ?? "other") === group));
-    const ids = Array.from(new Set(inHere.map((t) => t.project_id ?? "none")));
+    const idSet = new Set(inHere.map((t) => t.project_id ?? "none"));
+    // An account that is not split into groups lists all its projects, even empty ones; otherwise only those with open tasks here plus any just started.
+    if (group === null) projects.forEach((p) => idSet.add(p.id));
+    else if (group === "other") madeIds.forEach((id) => idSet.add(id));
+    const ids = Array.from(idSet);
     if (ids.some((x) => x !== "none")) {
       const nameOfProject = (id: string) => (id === "none" ? "No project" : projects.find((p) => p.id === id)?.name ?? "Another project");
       ids
@@ -538,7 +572,8 @@ export default function TasksPage() {
                 : col.key === "overdue"
                   ? "Dated before today and not done. Finish them or give them a new date to clear this list."
                   : "";
-            if ((col.key === "overdue" || col.kind === "project") && total === 0) return null;
+            if (col.key === "overdue" && total === 0) return null;
+            if (col.kind === "project" && total === 0 && (searching || !(group === null || madeIds.includes(col.id)))) return null;
             return (
               <section
                 key={col.segKey}
@@ -552,7 +587,7 @@ export default function TasksPage() {
                     setOverSeg(`${scope}|${col.segKey}`);
                     return;
                   }
-                  if (dragId === null || col.kind === "project" || col.key === "overdue") return;
+                  if (dragId === null || col.key === "overdue") return;
                   e.preventDefault();
                   setOverKey(segId);
                 }}
@@ -568,13 +603,17 @@ export default function TasksPage() {
                     dropSeg(scope, fullKeys, col.segKey);
                     return;
                   }
-                  if (col.kind === "project" || col.key === "overdue") return;
+                  if (col.key === "overdue") return;
                   e.preventDefault();
                   const id = dragId ?? Number(e.dataTransfer.getData("text/plain"));
                   setDragId(null);
                   setOverKey(null);
                   const t = (tasks ?? []).find((x) => x.id === id);
-                  if (t && sectionOf(t) !== col.key) void setStatus(id, col.key);
+                  if (!t) return;
+                  // Dropped on a project section: file it under that project. On a status list: move it there.
+                  if (col.kind === "project") {
+                    if ((t.project_id ?? "none") !== col.id) void fileUnder(id, "projectId", col.id === "none" ? "" : col.id);
+                  } else if (sectionOf(t) !== col.key) void setStatus(id, col.key);
                 }}
                 className={`rounded-2xl p-3 transition-colors ${overSeg === `${scope}|${col.segKey}` ? "ring-2 ring-[#1a2b4a]/40 bg-[#F8F5F0] dark:bg-white/5" : overKey === segId ? "bg-[#2E7C83]/15 ring-2 ring-[#2E7C83]/50" : "bg-[#F8F5F0] dark:bg-white/5"}`}
               >
@@ -594,6 +633,26 @@ export default function TasksPage() {
                 </div>
                 {!folded && (
                   <div className="mt-2">
+                    {col.kind === "project" && col.id !== "none" && (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void addToProject(col.id);
+                        }}
+                        className="mb-2 flex gap-2 px-2"
+                      >
+                        <input
+                          value={projAdd[col.id] ?? ""}
+                          onChange={(e) => setProjAdd((m) => ({ ...m, [col.id]: e.target.value }))}
+                          placeholder={`Add a task to ${col.label}…`}
+                          aria-label={`Add a task to ${col.label}`}
+                          className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#84AEB2] dark:border-white/10 dark:bg-[#1A1A2E]"
+                        />
+                        <button type="submit" className="rounded-lg bg-[#2E7C83] px-3 py-1.5 text-sm text-white disabled:opacity-40" disabled={!(projAdd[col.id] ?? "").trim()}>
+                          Add
+                        </button>
+                      </form>
+                    )}
                     {col.key === "done" && all.length > 0 && (
                       <div className="px-2 mb-2 flex flex-wrap items-center gap-2">
                         {confirmArchive ? (
@@ -1115,6 +1174,27 @@ export default function TasksPage() {
           <Archive className="w-4 h-4" /> {showArchived ? "Back to the board" : `Archived (${archivedCount})`}
         </button>
         {showArchived && <span className="text-xs text-gray-500">Done tasks you archived. They still count toward your follow-through.</span>}
+        {!showArchived && !isSales && (
+          makingProject ? (
+            <form onSubmit={createProject} className="flex flex-wrap items-center gap-2">
+              <input
+                autoFocus
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Name your project"
+                aria-label="Project name"
+                className="w-64 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#84AEB2] dark:border-white/10 dark:bg-[#1A1A2E]"
+              />
+              <button type="submit" disabled={!projectName.trim()} className="rounded-full bg-[#2E7C83] px-3.5 py-1.5 text-sm text-white disabled:opacity-40">Start project</button>
+              <button type="button" onClick={() => { setMakingProject(false); setProjectName(""); setProjectMsg(""); }} className="text-sm text-gray-500 hover:underline">Cancel</button>
+              {projectMsg && <span className="text-xs text-[#B0342C]">{projectMsg}</span>}
+            </form>
+          ) : (
+            <button onClick={() => setMakingProject(true)} className="inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3.5 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/5">
+              <Plus className="w-4 h-4" /> New project
+            </button>
+          )
+        )}
       </div>
 
       {reportTask && (
