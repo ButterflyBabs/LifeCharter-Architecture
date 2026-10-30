@@ -573,7 +573,7 @@ export default function DailyCompassPage() {
                   <AlertCircle className="w-3 h-3 text-[#b8a898]" />
                 </button>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setShowAddTask(true)}>
+              <Button size="sm" variant="outline" onClick={() => { setFocusCollapsed(false); setShowAddTask(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Task
               </Button>
