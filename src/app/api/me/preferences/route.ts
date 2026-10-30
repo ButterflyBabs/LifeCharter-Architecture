@@ -3,6 +3,7 @@ import { sessionUser } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { cleanOrders } from "@/lib/taskOrder";
+import { cleanGuideRecent } from "@/lib/userGuide/search";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export async function GET() {
       textSize: TEXT_SIZES.includes(prefs.textSize as (typeof TEXT_SIZES)[number]) ? prefs.textSize : null,
       // Which text scale this person gets; null = the app's default (lib/textScale.ts). Set by Claude, not by the person.
       textScale: TEXT_SCALES.includes(prefs.textScale as (typeof TEXT_SCALES)[number]) ? prefs.textScale : null,
+      // This person's recent User Guide searches, newest first.
+      guideRecent: cleanGuideRecent(prefs.guideRecent),
     },
     { headers: { "Cache-Control": "no-store" } }
   );
@@ -49,6 +52,7 @@ export async function PATCH(request: Request) {
     if (!TEXT_SIZES.includes(body.textSize)) return NextResponse.json({ error: "textSize must be small, medium or large" }, { status: 400 });
     change.textSize = body.textSize;
   }
+  if (body.guideRecent !== undefined) change.guideRecent = cleanGuideRecent(body.guideRecent);
   if (!Object.keys(change).length) return NextResponse.json({ error: "Nothing to save" }, { status: 400 });
   const db = createServerClient();
   const { data } = await db.from("profiles").select("preferences").eq("id", user.id).maybeSingle();

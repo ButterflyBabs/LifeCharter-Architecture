@@ -265,7 +265,7 @@ export function cleanExtras(v: unknown): AccessExtras | null {
 export const NO_DELETE_MESSAGE = "Deleting needs AmiLynne's permission. Ask her and she will remove it for you.";
 
 // Always open to a restricted member: their own profile, Help, sign-in pages.
-const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
+const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
 // APIs open to a restricted member beyond the ones their areas map to (profile, menu order, the small helpers the
 // allowed pages call). Everything else that belongs to no area stays closed to them.
 const RESTRICTED_OPEN_APIS = [

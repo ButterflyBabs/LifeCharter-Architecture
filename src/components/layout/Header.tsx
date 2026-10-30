@@ -13,6 +13,7 @@ import {
 import { NotificationsBell } from "./NotificationsBell";
 import { FeedbackButton } from "./FeedbackButton";
 import { QuickAddMenu } from "./QuickAddMenu";
+import GuideSearch from "@/components/userGuide/GuideSearch";
 import { BusinessSwitcher } from "./BusinessSwitcher";
 import AccountSwitcher from "./AccountSwitcher";
 import Link from "next/link";
@@ -46,6 +47,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings": "Settings",
   "/projects": "Projects",
   "/tasks": "Tasks",
+  "/user-guide": "User Guide",
 };
 
 export function titleForPath(pathname: string | null): string {
@@ -74,10 +76,14 @@ export function Header({
   const workspace = workspaceProp ?? workspaceName;
   // A Call to Close consultant gets a bare header: the page title and nothing else (no business name, search, quick add or alerts).
   const [role, setRole] = useState<string | null>(null);
+  const [userGuide, setUserGuide] = useState(false);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setRole(typeof d?.teamRole === "string" ? d.teamRole : null))
+      .then((d) => {
+        setRole(typeof d?.teamRole === "string" ? d.teamRole : null);
+        setUserGuide(d?.userGuide === true);
+      })
       .catch(() => {});
   }, []);
   const { mounted } = useTheme();
@@ -138,6 +144,12 @@ export function Header({
             searchFocused ? "w-72" : "w-56"
           )}
         >
+          {userGuide ? (
+            <div onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}>
+              <GuideSearch variant="header" />
+            </div>
+          ) : (
+          <>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b8a898]" />
           <input
             type="text"
@@ -153,6 +165,8 @@ export function Header({
               "transition-all duration-200"
             )}
           />
+          </>
+          )}
         </div>
 
         {/* Quick add menu */}

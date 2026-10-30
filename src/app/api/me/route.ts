@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAlignmentArchitect, isSuperAdmin, resolveActor, sessionUser, viewedMember } from "@/lib/authz";
 import { assessmentGateLocked } from "@/lib/assessmentGate";
+import { USER_GUIDE_OPEN_TO_ALL, userGuideOpenFor } from "@/lib/userGuide/flag";
 import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -36,6 +37,7 @@ export async function GET() {
         superAdmin: false,
         architect: false,
         assessmentsLocked: false,
+        userGuide: USER_GUIDE_OPEN_TO_ALL,
         hasTeam: true,
         teamRole: vm.role,
         features: cleanFeatureMap((vm.permissions as { features?: unknown } | null)?.features),
@@ -46,11 +48,11 @@ export async function GET() {
     );
   }
   const [superAdmin, architect, actor] = await Promise.all([isSuperAdmin(), isAlignmentArchitect(), resolveActor()]);
+  const signedIn = await sessionUser();
   // Client accounts that have not finished all three assessments see only setup, assessments, settings and support.
   let assessmentsLocked = false;
   if (!superAdmin && !architect && actor.kind !== "member") {
-    const u = await sessionUser();
-    if (u?.id) assessmentsLocked = await assessmentGateLocked(u.id, u.email ?? null);
+    if (signedIn?.id) assessmentsLocked = await assessmentGateLocked(signedIn.id, signedIn.email ?? null);
   }
   const hasTeam = architect || actor.kind === "member" ? true : await accountHasTeam().catch(() => true);
   return NextResponse.json(
@@ -60,6 +62,7 @@ export async function GET() {
       superAdmin,
       architect,
       assessmentsLocked,
+      userGuide: userGuideOpenFor(signedIn?.email, architect),
       hasTeam,
       teamRole: actor.kind === "member" ? actor.role : null,
       features: actor.kind === "member" ? cleanFeatureMap((actor.permissions as unknown as { features?: unknown } | null)?.features) : null,
