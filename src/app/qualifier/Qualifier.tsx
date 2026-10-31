@@ -543,7 +543,7 @@ function IcpTab({ icps, offers, post, setMsg, onChanged }: { icps: Icp[]; offers
 
       <div className={`${panel} space-y-4`}>
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
-          <label className={label}>Profile name<Input value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. MasterClass, Incubator, Suite + Executive Coaching" /></label>
+          <label className={label}>Profile name<Input value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Signature program, Group coaching, VIP day" /></label>
           <label className={label}>For which offer (optional)
             <select value={d.offerId ?? ""} onChange={(e) => pickOffer(e.target.value)} className={`${box} h-10`}>
               <option value="">Not tied to one offer</option>

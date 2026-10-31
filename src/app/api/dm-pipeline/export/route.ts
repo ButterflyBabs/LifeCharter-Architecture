@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 // Spreadsheets for the cold-email tool.
-//   ?kind=list&board=<id>         → people on one pipeline with their email and personal MasterClass link (merge fields)
+//   ?kind=list&board=<id>         → people on one pipeline with their email and personal link (merge fields)
 //   ?kind=suppression             → every address that must not be emailed: unsubscribed or Do Not Contact in Contacts, plus
 //                                   anyone on a pipeline in a closed "asked to stop" stage
 const q = (v: unknown) => {
@@ -48,13 +48,15 @@ export async function GET(request: Request) {
 
   const board = boards.find((b) => b.id === u.searchParams.get("board")) ?? boards[0];
   if (!board) return NextResponse.json({ error: "No pipeline." }, { status: 404 });
+  const { data: own } = await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle();
+  const linksReady = a.house || Boolean(own?.personal_link_url);
   const rows: unknown[][] = [];
   for (let from = 0; ; from += 1000) {
     const { data } = await db.from("dm_cards").select("name, email, notes, link_code, stage_id").eq("master_plan_id", a.planId).eq("board_id", board.id).not("email", "is", null).order("created_at").order("id").range(from, from + 999);
     const part = (data ?? []) as { name: string; email: string; notes: string | null; link_code: string | null }[];
     for (const c of part) {
       const [first, ...rest] = c.name.split(/\s+/);
-      rows.push([first, rest.join(" "), c.email, c.notes ?? "", c.link_code ? `https://lccommandsuite.com/m/${c.link_code}` : ""]);
+      rows.push([first, rest.join(" "), c.email, c.notes ?? "", linksReady && c.link_code ? `https://lccommandsuite.com/m/${c.link_code}` : ""]);
     }
     if (part.length < 1000) break;
   }

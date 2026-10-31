@@ -67,8 +67,72 @@ Alignment Architect, LifeCharter Command Suite`,
   },
 ];
 
+// What a client account starts from. Everything in [brackets] is theirs to fill in; the sender stays off until none is left.
+export const STARTER_STEPS: ColdStep[] = [
+  {
+    day: 0,
+    subject: "{{first_name}}, a quick question",
+    body: `Hi {{first_name}},
+
+I'm [your name]. I help [who you help] with [what you help them with]. I'm writing because of your work{{at_company}}, and I have one question.
+
+[Your one question.]
+
+If that sounds useful, you can take a look here: [your link]
+
+If I have reached you at a bad time or this is not for you, reply "no thanks" and I will not write again.
+
+[Your sign-off]`,
+  },
+  {
+    day: 4,
+    subject: "A short follow-up, {{first_name}}",
+    body: `Hi {{first_name}},
+
+One short follow-up, then I will leave you be.
+
+[One useful thought for them.]
+
+You can take a look here: [your link]
+
+If this is not for you, reply "no thanks".
+
+[Your sign-off]`,
+  },
+  {
+    day: 9,
+    subject: "Last note from me, {{first_name}}",
+    body: `Hi {{first_name}},
+
+This is my last note. If now is not the time, that is completely fine.
+
+If you would like to talk it through, you can book a time here: [your link]
+
+Reply "no thanks" if you would rather not hear from me again.
+
+[Your sign-off]`,
+  },
+];
+
 export const DEFAULT_FOOTER = "Sacred Kaleidoscope Community LLC, 5787 S Odessa St, Centennial, CO 80015";
 export const BOOKING_LINK = "https://lccommandsuite.com/book/executive-consultation";
+
+// A web address someone may save as a destination, or "" if it is not one.
+export function cleanLinkUrl(v: unknown): string {
+  const t = typeof v === "string" ? v.trim().slice(0, 500) : "";
+  return /^https?:\/\/[^\s]+\.[^\s]+$/i.test(t) ? t : "";
+}
+
+// Why a client account's series cannot go out yet, or null when it can. Babs's own account keeps its defaults, so this is for clients.
+export function coldNotReady(steps: ColdStep[], foot: string, links: { personal: string; booking: string }): string | null {
+  if (!steps.length) return "Write and save your own emails first.";
+  const text = steps.map((s) => `${s.subject}\n${s.body}`).join("\n");
+  if (/\[[^\]\n]{2,80}\]/.test(text)) return "Fill in everything in [brackets] in your emails, then save them.";
+  if (!foot.trim()) return "Add your business name and postal address in the footer, then save.";
+  if (/\{\{\s*personal_link\s*\}\}/i.test(text) && !links.personal) return "Your emails use a personal link. Set where it goes under Stages & settings first.";
+  if (/\{\{\s*booking_link\s*\}\}/i.test(text) && !links.booking) return "Your emails use a booking link. Add it here and save first.";
+  return null;
+}
 
 export function render(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, k: string) => vars[k.toLowerCase()] ?? "");
@@ -149,14 +213,15 @@ export function listUnsubscribeHeaders(unsubApiUrl: string, replyTo: string): st
   return [`List-Unsubscribe: <${unsubApiUrl}>, <mailto:${replyTo}?subject=unsubscribe>`, "List-Unsubscribe-Post: List-Unsubscribe=One-Click"];
 }
 
-export function varsFor(card: { name: string; notes: string | null; link_code: string | null }, nextSession: string): Record<string, string> {
+// links is the account's own destinations; left out, it is Babs's account and her MasterClass and booking page apply.
+export function varsFor(card: { name: string; notes: string | null; link_code: string | null }, nextSession: string, links?: { personal: string; booking: string }): Record<string, string> {
   const company = (card.notes ?? "").split(" · ")[0]?.trim() ?? "";
   return {
     first_name: firstNameOf(card.name),
     company,
     at_company: company ? ` at ${company}` : "",
-    personal_link: card.link_code ? `https://lccommandsuite.com/m/${card.link_code}` : "https://lccommandsuite.com/masterclass-signup",
+    personal_link: links ? (links.personal && card.link_code ? `https://lccommandsuite.com/m/${card.link_code}` : "") : card.link_code ? `https://lccommandsuite.com/m/${card.link_code}` : "https://lccommandsuite.com/masterclass-signup",
     next_session_date: nextSession,
-    booking_link: BOOKING_LINK,
+    booking_link: links ? links.booking : BOOKING_LINK,
   };
 }

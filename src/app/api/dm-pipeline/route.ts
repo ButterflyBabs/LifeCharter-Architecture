@@ -9,6 +9,7 @@ import { isSameCard, type CardKey } from "@/lib/dmCardDuplicate";
 import { landingStage } from "@/lib/dmLanding";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
+import { cleanLinkUrl } from "@/lib/coldEmail";
 import { zonedToUtcISO } from "@/lib/tz";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
   ]);
   // The MasterClass boards offer the next session that is still more than a day away, for the dates in their DM scripts.
   let nextSession: string | null = null;
-  if (/masterclass/i.test(`${board.name} ${board.tag ?? ""}`) && isZoomConfigured()) {
+  if (a.house && /masterclass/i.test(`${board.name} ${board.tag ?? ""}`) && isZoomConfigured()) {
     const sch = await meetingSchedule(masterclassMeetingId()).catch(() => null);
     nextSession = sch?.occurrences.find((o) => new Date(o.start).getTime() > Date.now() + 24 * 3600_000)?.start ?? null;
   }
@@ -91,8 +92,12 @@ export async function GET(request: Request) {
     const { data: sentRows } = await db.from("dm_sends").select("card_id").eq("master_plan_id", a.planId).eq("board_id", board.id).limit(10000);
     for (const r of (sentRows ?? []) as { card_id: string }[]) counts.set(r.card_id, (counts.get(r.card_id) ?? 0) + 1);
   }
-  const withCounts = ((cards ?? []) as { id: string }[]).map((c) => ({ ...c, dm_count: counts.get(c.id) ?? 0 }));
-  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, dmUsage: await dmUsage(db, a.planId) });
+  // A personal link only fills into a message once it has somewhere to go.
+  const { data: own } = await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle();
+  const personalLinkUrl = (own?.personal_link_url as string | null) ?? "";
+  const linksReady = a.house || Boolean(personalLinkUrl);
+  const withCounts = ((cards ?? []) as { id: string }[]).map((c) => ({ ...c, dm_count: counts.get(c.id) ?? 0, ...(linksReady ? {} : { link_code: null }) }));
+  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, personalLinkUrl, dmUsage: await dmUsage(db, a.planId) });
 }
 
 export async function POST(request: Request) {
@@ -131,6 +136,11 @@ export async function POST(request: Request) {
         const stages = await boardStages(db, a.planId, board.id);
         for (const s of stages) if (s.tag?.startsWith(`${board.tag}-`)) await db.from("dm_stages").update({ tag: `${tag}-${s.tag.slice(board.tag.length + 1)}` }).eq("id", s.id);
       }
+    }
+    if (b.personalLinkUrl !== undefined) {
+      const url = cleanLinkUrl(b.personalLinkUrl);
+      if (String(b.personalLinkUrl).trim() && !url) return NextResponse.json({ error: "Enter the whole web address, starting with https://" }, { status: 400 });
+      patch.personal_link_url = url || null;
     }
     await db.from("pipeline_boards").update(patch).eq("id", board.id).eq("master_plan_id", a.planId);
     return NextResponse.json({ boards: await ensureBoards(db, a.planId, purpose), stages: await boardStages(db, a.planId, board.id) });

@@ -9,6 +9,13 @@ const esc = (x: string) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 // Who is told when a prospect answers a cold email, unless the account's metadata.coldReplyNotify says otherwise.
 export const DEFAULT_REPLY_NOTIFY = ["sumbal@amilynnecarroll.com", "amilynne@amilynnecarroll.com"];
 
+// Who hears about replies for an account: its own list, else the account owner. Babs's account falls back to her team.
+export function replyNotifyList(metadata: unknown, house: boolean, ownerEmail: string): string[] {
+  const list = (metadata as { coldReplyNotify?: unknown } | null)?.coldReplyNotify;
+  if (Array.isArray(list)) return list.filter((x): x is string => typeof x === "string" && x.includes("@"));
+  return house ? DEFAULT_REPLY_NOTIFY : ownerEmail ? [ownerEmail] : [];
+}
+
 export type NewReply = { cardId: string; name: string; email: string; subject: string; text: string; board: string };
 
 // The words the person wrote, without the quoted copy of our own email, tags or the signature block's long tail.

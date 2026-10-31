@@ -2,9 +2,10 @@ import { createServerClient } from "@/lib/supabase/server";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { boardStages, moveCard, markDoNotContact, movesForward, type DmStage } from "@/lib/dmPipeline";
-import { DEFAULT_REPLY_NOTIFY, notifyReplies, recordReply, type NewReply } from "@/lib/coldEmailReplies";
+import { notifyReplies, recordReply, replyNotifyList, type NewReply } from "@/lib/coldEmailReplies";
+import { isHousePlan } from "@/lib/housePlan";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, senderStart, varsFor, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, coldNotReady, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, senderStart, varsFor, type ColdStep } from "@/lib/coldEmail";
 
 type Db = ReturnType<typeof createServerClient>;
 const SITE = "https://lccommandsuite.com";
@@ -12,13 +13,18 @@ const FROM_NAME = "AmiLynne Carroll"; // shown on mail sent as a domain alias; t
 const SENDABLE = ["to_reach", "sent", "followed_up"];
 const MAX_PER_SENDER_PER_RUN = 2;
 
-type Settings = { master_plan_id: string; board_id: string | null; enabled: boolean; steps: ColdStep[]; tz: string; window_start: number; window_end: number; weekdays_only: boolean; footer: string | null; started_on: string | null };
+type Settings = { master_plan_id: string; board_id: string | null; enabled: boolean; steps: ColdStep[]; tz: string; window_start: number; window_end: number; weekdays_only: boolean; booking_url?: string | null; footer: string | null; started_on: string | null };
 type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number; created_at?: string; send_as?: string | null };
 type CardRow = { id: string; board_id: string; stage_id: string; name: string; email: string | null; notes: string | null; link_code: string | null };
 
 export async function coldEmailSwitchOn(db: Db): Promise<boolean> {
   const { data } = await db.from("app_settings").select("value").eq("key", "cold_email_on").maybeSingle();
   return String(data?.value ?? "").replace(/["\s]/g, "") === "true";
+}
+
+async function boardLink(db: Db, boardId: string): Promise<string> {
+  const { data } = await db.from("pipeline_boards").select("personal_link_url").eq("id", boardId).maybeSingle();
+  return (data?.personal_link_url as string | null) ?? "";
 }
 
 const code7 = () => Array.from({ length: 7 }, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 31)]).join("");
@@ -104,12 +110,18 @@ async function scanReplies(db: Db, s: Settings, senders: Sender[], ownerId: stri
 }
 
 // ── Sends ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, now: Date, replyTo: string) {
+async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, stages: DmStage[], boardName: string, now: Date, replyTo: string, house: boolean) {
   const out = { sent: 0, failed: 0, waiting: 0, skipped: "" };
   if (!s.board_id) return out;
+  // A client's series is always their own: their emails, address and links. Babs's defaults never go out from another account.
+  const links = house ? undefined : { personal: await boardLink(db, s.board_id), booking: s.booking_url ?? "" };
+  if (links) {
+    const problem = coldNotReady(s.steps ?? [], s.footer ?? "", links);
+    if (problem) return { ...out, skipped: problem };
+  }
   if (s.started_on && localParts(now, s.tz).ymd < s.started_on) return { ...out, skipped: "before the start date" };
   if (!inSendWindow(now, s.tz, s.window_start, s.window_end, s.weekdays_only)) return { ...out, skipped: "outside the send window" };
-  const steps = s.steps && s.steps.length ? s.steps : DEFAULT_STEPS;
+  const steps = s.steps && s.steps.length ? s.steps : house ? DEFAULT_STEPS : [];
   const sendable = stages.filter((x) => SENDABLE.includes(x.key ?? ""));
   const stageIds = sendable.map((x) => x.id);
   if (!stageIds.length || !senders.length) return { ...out, skipped: "no mailbox or no stages" };
@@ -153,7 +165,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     left.set(sd.id, Math.max(0, rampCap(daysBetween(senderStart(s.started_on, sd.created_at, s.tz), ymd), sd.daily_cap) - (count ?? 0)));
     perRun.set(sd.id, 0);
   }
-  const session = await nextSessionLabel();
+  const session = house ? await nextSessionLabel() : "";
   const stageByKey = new Map(stages.map((x) => [x.key, x]));
   const tokens = new Map<string, string | null>();
   for (const { card, step } of due) {
@@ -177,9 +189,9 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     }
     const claim = await db.from("cold_email_sends").insert({ master_plan_id: s.master_plan_id, card_id: card.id, step, sender_id: sender.id, to_email: card.email, status: "sending" });
     if (claim.error) continue; // someone else (or an earlier run) has this step
-    const vars = varsFor({ name: card.name, notes: card.notes, link_code: linkCode }, session);
+    const vars = varsFor({ name: card.name, notes: card.notes, link_code: linkCode }, session, links);
     const subject = render(steps[step].subject, vars);
-    const body = render(steps[step].body, vars) + footer(s.footer || DEFAULT_FOOTER, `${SITE}/unsubscribe?c=${linkCode}`);
+    const body = render(steps[step].body, vars) + footer(s.footer || (house ? DEFAULT_FOOTER : ""), `${SITE}/unsubscribe?c=${linkCode}`);
     try {
       const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: [...(sender.send_as ? [`From: ${FROM_NAME} <${sender.send_as}>`] : []), ...listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, replyTo), `Reply-To: ${replyTo}`] });
       await db.from("cold_email_sends").update({ status: "sent", subject, message_id: r.id, thread_id: r.threadId, sent_at: new Date().toISOString() }).eq("card_id", card.id).eq("step", step);
@@ -212,6 +224,7 @@ export async function runColdEmail(now = new Date()) {
     const ownerId = plan?.user_id as string | undefined;
     const replyTo = ((plan?.client_email as string | null) ?? "").toLowerCase();
     if (!ownerId || !row.board_id || !replyTo) continue;
+    const house = await isHousePlan(row.master_plan_id, db);
     const { data: sd } = await db.from("cold_email_senders").select("*").eq("master_plan_id", row.master_plan_id).eq("paused", false);
     const senders = (sd ?? []) as Sender[];
     const { data: board } = await db.from("pipeline_boards").select("name").eq("id", row.board_id).maybeSingle();
@@ -220,11 +233,9 @@ export async function runColdEmail(now = new Date()) {
     const scan = await scanReplies(db, row, senders, ownerId, stages, boardName, replyTo);
     if (scan.fresh.length) {
       const { data: meta } = await db.from("client_master_plans").select("metadata").eq("id", row.master_plan_id).maybeSingle();
-      const list = (meta?.metadata as { coldReplyNotify?: unknown } | null)?.coldReplyNotify;
-      const to = Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && x.includes("@")) : DEFAULT_REPLY_NOTIFY;
-      await notifyReplies(to, scan.fresh).catch((e) => console.error("cold reply notify:", e));
+      await notifyReplies(replyNotifyList(meta?.metadata, house, replyTo), scan.fresh).catch((e) => console.error("cold reply notify:", e));
     }
-    const send = await sendDue(db, row, senders, ownerId, stages, boardName, now, replyTo);
+    const send = await sendDue(db, row, senders, ownerId, stages, boardName, now, replyTo, house);
     results.push({ plan: row.master_plan_id, scan: { replies: scan.replies, stops: scan.stops, bounces: scan.bounces }, send });
   }
   return { results };

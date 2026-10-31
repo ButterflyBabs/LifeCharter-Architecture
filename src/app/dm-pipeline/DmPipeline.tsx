@@ -73,6 +73,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [today, setToday] = useState("");
   const [nextSession, setNextSession] = useState<string | null>(null);
+  const [personalLinkUrl, setPersonalLinkUrl] = useState("");
   const [dmUsage, setDmUsage] = useState<Record<string, DmUse>>({});
   const [sending, setSending] = useState<{ cardId: string; scriptId: string; angle?: string } | null>(null);
   // Prospect Qualifier on the cards: Babs only until it is opened to every account.
@@ -128,6 +129,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setCards(d.cards ?? []);
       setToday(d.today ?? "");
       setNextSession(d.nextSession ?? null);
+      setPersonalLinkUrl(d.personalLinkUrl ?? "");
       setDmUsage(d.dmUsage ?? {});
       try {
         if (d.board?.id) localStorage.setItem(`pipelines-board-${purpose}`, d.board.id);
@@ -505,6 +507,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       {settings && board && (
         <BoardSettings
           board={board}
+          personalLinkUrl={personalLinkUrl}
           stages={stages}
           cards={cards ?? []}
           canDelete={boards.length > 1}
@@ -809,7 +812,7 @@ function UploadList({ boardId, boardName, onAdded }: { boardId: string | null; b
       <p className={HEAD_CLS}>Upload a list (.csv)</p>
       <p className={`mt-1 ${TXT_CLS}`}>
         A spreadsheet with a header row: First name, Last name, Email, Company, Title, Location, Profile link (any of them; a name plus an email or a profile link is enough). Each person becomes a card in the first stage of the pipeline you have open
-        {boardName ? <> (<b>{boardName}</b>)</> : null}, with their own personal MasterClass link. Nobody is added to your marketing contacts by an upload, and anyone unsubscribed or marked Do Not Contact is left out.
+        {boardName ? <> (<b>{boardName}</b>)</> : null}, with their own personal link. Nobody is added to your marketing contacts by an upload, and anyone unsubscribed or marked Do Not Contact is left out.
       </p>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">
@@ -975,13 +978,14 @@ function OutreachOverview({ refreshKey }: { refreshKey: string }) {
 
 
 type SenderRow = { id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; last_error: string | null; scanned_at: string | null; sentToday: number; todayCap: number };
-type ColdData = { boardId: string | null; globalOn: boolean; enabled: boolean; steps: { day: number; subject: string; body: string }[]; windowStart: number; windowEnd: number; weekdaysOnly: boolean; footer: string; startedOn: string | null; senders: SenderRow[]; connections: { accountKey: string; email: string | null; canReadMail: boolean }[]; sentTotal: number };
+type ColdData = { house: boolean; bookingUrl: string; personalLinkUrl: string; boardId: string | null; globalOn: boolean; enabled: boolean; steps: { day: number; subject: string; body: string }[]; windowStart: number; windowEnd: number; weekdaysOnly: boolean; footer: string; startedOn: string | null; senders: SenderRow[]; connections: { accountKey: string; email: string | null; canReadMail: boolean }[]; sentTotal: number };
 
 function ColdEmailSender({ boardId }: { boardId: string | null }) {
   const [d, setD] = useState<ColdData | null>(null);
   const [open, setOpen] = useState(false);
   const [steps, setSteps] = useState<ColdData["steps"]>([]);
   const [foot, setFoot] = useState("");
+  const [booking, setBooking] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState<number | null>(null);
@@ -1001,6 +1005,7 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
     setD(x);
     setSteps(x.steps);
     setFoot(x.footer);
+    setBooking(x.bookingUrl);
   }
   useEffect(() => {
     void load();
@@ -1096,12 +1101,19 @@ function ColdEmailSender({ boardId }: { boardId: string | null }) {
                 )}
               </div>
             ))}
+            <label className="block text-xs font-medium text-[#5a6472]">
+              Your booking link, for {"{{booking_link}}"}
+              <Input value={booking} onChange={(e) => setBooking(e.target.value)} placeholder="https://" />
+            </label>
+            {!d.house && (
+              <p className="text-xs text-[#7a8a99]">{d.personalLinkUrl ? `{{personal_link}} goes to ${d.personalLinkUrl}.` : "To use {{personal_link}}, set where it goes under Stages & settings."}</p>
+            )}
             <p className="text-xs text-[#7a8a99]">Merge fields: {"{{first_name}} {{at_company}} {{personal_link}} {{booking_link}}"}. The footer and the unsubscribe line are added to every email.</p>
             <label className="block text-xs font-medium text-[#5a6472]">
-              Footer (your postal address)
+              Footer (your business name and postal address, required)
               <Input value={foot} onChange={(e) => setFoot(e.target.value)} />
             </label>
-            <Button onClick={() => void act({ action: "save", steps, footer: foot })} disabled={busy}>
+            <Button onClick={() => void act({ action: "save", steps, footer: foot, bookingUrl: booking })} disabled={busy}>
               Save the emails
             </Button>
           </div>
@@ -1598,9 +1610,10 @@ function NewBoard({ onClose, onCreated, post }: { onClose: () => void; onCreated
   );
 }
 
-function BoardSettings({ board, stages: initialStages, cards, canDelete, onClose, onDeleted, post }: { board: Board; stages: Stage[]; cards: Card[]; canDelete: boolean; onClose: () => void; onDeleted: () => void; post: Post }) {
+function BoardSettings({ board, personalLinkUrl, stages: initialStages, cards, canDelete, onClose, onDeleted, post }: { board: Board; personalLinkUrl: string; stages: Stage[]; cards: Card[]; canDelete: boolean; onClose: () => void; onDeleted: () => void; post: Post }) {
   const [name, setName] = useState(board.name);
   const [tag, setTag] = useState(board.tag ?? "");
+  const [link, setLink] = useState(personalLinkUrl);
   const [stages, setStages] = useState(initialStages);
   const [edits, setEdits] = useState<Record<string, { name: string; followUpDays: string; tag: string; kind: Stage["kind"] }>>(() =>
     Object.fromEntries(initialStages.map((s) => [s.id, { name: s.name, followUpDays: s.followUpDays == null ? "" : String(s.followUpDays), tag: s.tag ?? "", kind: s.kind }]))
@@ -1615,9 +1628,13 @@ function BoardSettings({ board, stages: initialStages, cards, canDelete, onClose
 
   async function saveAll() {
     setSaving(true);
-    if (name.trim() !== board.name || (tag.trim() || "") !== (board.tag ?? "")) {
-      const r = (await post({ action: "board-update", boardId: board.id, name, tag })) as { stages?: Stage[] } | null;
-      if (r?.stages) sync(r.stages);
+    if (name.trim() !== board.name || (tag.trim() || "") !== (board.tag ?? "") || link.trim() !== personalLinkUrl) {
+      const r = (await post({ action: "board-update", boardId: board.id, name, tag, personalLinkUrl: link })) as { stages?: Stage[] } | null;
+      if (!r) {
+        setSaving(false);
+        return;
+      }
+      if (r.stages) sync(r.stages);
     }
     for (const s of stages) {
       const e = edits[s.id];
@@ -1635,6 +1652,7 @@ function BoardSettings({ board, stages: initialStages, cards, canDelete, onClose
         <label className="block text-xs font-medium text-[#5a6472]">Pipeline name<Input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label className="block text-xs font-medium text-[#5a6472]">Pipeline tag (everyone on it)<Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. masterclass-dm" /></label>
       </div>
+      <label className="mb-4 block text-xs font-medium text-[#5a6472]">Personal links go to (your own page)<Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" /></label>
       <p className="mb-2 text-sm text-[#7a8a99]">Each stage&rsquo;s tag goes on a person&rsquo;s contact record while they&rsquo;re in that stage. Follow-up days set their next task when they land there; leave empty for none.</p>
       <div className="space-y-2">
         <div className="hidden sm:grid grid-cols-[64px_1fr_80px_1fr_150px_32px] gap-2 text-[11px] font-semibold uppercase tracking-wide text-[#7a8a99]">

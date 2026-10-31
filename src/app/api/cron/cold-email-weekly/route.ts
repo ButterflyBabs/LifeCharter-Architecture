@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { DEFAULT_REPLY_NOTIFY, sendWeeklyStops } from "@/lib/coldEmailReplies";
+import { replyNotifyList, sendWeeklyStops } from "@/lib/coldEmailReplies";
+import { isHousePlan } from "@/lib/housePlan";
 import { mountainParts } from "@/lib/teamDailyTasks";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +25,8 @@ export async function GET(request: Request) {
     const key = `cold-email-weekly:${s.master_plan_id}:${day}`;
     const { data: done } = await db.from("app_settings").select("key").eq("key", key).maybeSingle();
     if (done && !force) { result[s.master_plan_id] = "already sent"; continue; }
-    const { data: meta } = await db.from("client_master_plans").select("metadata").eq("id", s.master_plan_id).maybeSingle();
-    const list = (meta?.metadata as { coldReplyNotify?: unknown } | null)?.coldReplyNotify;
-    const to = Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && x.includes("@")) : DEFAULT_REPLY_NOTIFY;
+    const { data: meta } = await db.from("client_master_plans").select("metadata, client_email").eq("id", s.master_plan_id).maybeSingle();
+    const to = replyNotifyList(meta?.metadata, await isHousePlan(s.master_plan_id, db), (meta?.client_email as string | null) ?? "");
     const { data: board } = s.board_id ? await db.from("pipeline_boards").select("name").eq("id", s.board_id).maybeSingle() : { data: null };
     const n = await sendWeeklyStops(db, s.master_plan_id, (board?.name as string) || "Cold Email", to, s.tz || "America/Denver", now);
     if (n < 0) { result[s.master_plan_id] = "could not send"; continue; }

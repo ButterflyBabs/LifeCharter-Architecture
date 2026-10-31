@@ -11,14 +11,13 @@ export const dynamic = "force-dynamic";
 //   GET  ?cardId= → { replies: [{ id, kind, subject, preview, receivedAt, answeredAt, answerText }], body }
 //                   body = the whole text of the newest message, read from the inbox (null if it can't be read just now)
 //   POST { cardId, replyId, text } → answers that message in its own thread from the connected Microsoft 365 inbox
-// Babs-only like the rest of the cold email sender.
+// Each account answers its own prospects, from its own connected inbox.
 type Row = { id: string; message_id: string; from_email: string | null; kind: string; subject: string | null; preview: string | null; received_at: string; answered_at: string | null; answer_text: string | null };
 const COLS = "id, message_id, from_email, kind, subject, preview, received_at, answered_at, answer_text";
 
 async function allowed(request?: Request) {
   const a = await crmAccount(request);
   if ("denied" in a) return { denied: a.denied };
-  if (!a.house && !a.isArchitect) return { denied: NextResponse.json({ error: "Cold email is not open for this account." }, { status: 403 }) };
   return { a };
 }
 

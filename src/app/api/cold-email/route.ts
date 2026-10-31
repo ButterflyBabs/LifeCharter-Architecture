@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount, testRecipient } from "../crm/guard";
 import * as google from "@/lib/google";
 import { ensureBoards, boardStages } from "@/lib/dmPipeline";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, rampCap, daysBetween, localParts, render, senderStart, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, STARTER_STEPS, cleanLinkUrl, coldNotReady, rampCap, daysBetween, localParts, render, senderStart, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
 import { coldEmailSwitchOn } from "@/lib/coldEmailRun";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +35,7 @@ export async function GET() {
   const { data: plan } = await db.from("client_master_plans").select("user_id").eq("id", a.planId).maybeSingle();
   const conns = plan?.user_id ? await google.listConnections({ ownerId: plan.user_id as string }) : [];
   const tz = (s?.tz as string) || "America/Denver";
+  const { data: bd } = board ? await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle() : { data: null };
   const { ymd, hour } = localParts(new Date(), tz);
   const since = new Date(Date.now() - (hour * 60 + new Date().getUTCMinutes()) * 60_000).toISOString();
   const rows = [];
@@ -48,12 +49,15 @@ export async function GET() {
     boardName: board?.name ?? null,
     globalOn: switchOn,
     enabled: Boolean(s?.enabled),
-    steps: ((s?.steps as ColdStep[] | undefined) ?? []).length ? s!.steps : DEFAULT_STEPS,
+    house: a.house,
+    steps: ((s?.steps as ColdStep[] | undefined) ?? []).length ? s!.steps : a.house ? DEFAULT_STEPS : STARTER_STEPS,
+    bookingUrl: (s?.booking_url as string | null) ?? "",
+    personalLinkUrl: (bd?.personal_link_url as string | null) ?? "",
     tz,
     windowStart: s?.window_start ?? 9,
     windowEnd: s?.window_end ?? 16,
     weekdaysOnly: s?.weekdays_only ?? true,
-    footer: s?.footer || DEFAULT_FOOTER,
+    footer: s?.footer || (a.house ? DEFAULT_FOOTER : ""),
     startedOn: s?.started_on ?? null,
     senders: rows,
     connections: conns.map((c) => ({ accountKey: c.accountKey, email: c.email, canReadMail: c.canReadMail })),
@@ -64,7 +68,6 @@ export async function GET() {
 export async function POST(request: Request) {
   const a = await crmAccount(request);
   if ("denied" in a) return a.denied;
-  if (!a.house && !a.isArchitect) return NextResponse.json({ error: "Cold email sending is not open for this account yet." }, { status: 403 });
   const db = createServerClient();
   const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const board = await coldBoard(db, a.planId);
@@ -80,6 +83,11 @@ export async function POST(request: Request) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (steps) patch.steps = steps;
     if (typeof b.footer === "string") patch.footer = clean(b.footer, 300);
+    if (b.bookingUrl !== undefined) {
+      const url = cleanLinkUrl(b.bookingUrl);
+      if (String(b.bookingUrl).trim() && !url) return NextResponse.json({ error: "Enter the whole booking link, starting with https://" }, { status: 400 });
+      patch.booking_url = url || null;
+    }
     if (b.windowStart !== undefined) patch.window_start = Math.max(0, Math.min(22, Math.round(Number(b.windowStart))));
     if (b.windowEnd !== undefined) patch.window_end = Math.max(1, Math.min(23, Math.round(Number(b.windowEnd))));
     if (typeof b.weekdaysOnly === "boolean") patch.weekdays_only = b.weekdaysOnly;
@@ -124,7 +132,12 @@ export async function POST(request: Request) {
     if (on) {
       const { data: sd } = await db.from("cold_email_senders").select("id").eq("master_plan_id", a.planId).eq("paused", false);
       if (!(sd ?? []).length) return NextResponse.json({ error: "Add at least one sending mailbox first." }, { status: 400 });
-      const { data: cur } = await db.from("cold_email_settings").select("started_on, tz").eq("master_plan_id", a.planId).maybeSingle();
+      const { data: cur } = await db.from("cold_email_settings").select("started_on, tz, steps, footer, booking_url").eq("master_plan_id", a.planId).maybeSingle();
+      if (!a.house) {
+        const { data: bd } = await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle();
+        const problem = coldNotReady((cur?.steps as ColdStep[] | undefined) ?? [], (cur?.footer as string) ?? "", { personal: (bd?.personal_link_url as string | null) ?? "", booking: (cur?.booking_url as string | null) ?? "" });
+        if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+      }
       const patch: Record<string, unknown> = { enabled: true, updated_at: new Date().toISOString() };
       if (!cur?.started_on) patch.started_on = localParts(new Date(), (cur?.tz as string) || "America/Denver").ymd;
       await db.from("cold_email_settings").update(patch).eq("master_plan_id", a.planId);
@@ -145,14 +158,14 @@ export async function POST(request: Request) {
     if (!to) return NextResponse.json({ error: "No address to send the test to." }, { status: 400 });
     const token = await google.getValidAccessToken({ ownerId: plan?.user_id as string, accountKey: sender.account_key });
     if (!token) return NextResponse.json({ error: "That mailbox is not connected." }, { status: 400 });
-    const { data: s } = await db.from("cold_email_settings").select("steps, footer").eq("master_plan_id", a.planId).maybeSingle();
-    const steps = ((s?.steps as ColdStep[] | undefined) ?? []).length ? (s!.steps as ColdStep[]) : DEFAULT_STEPS;
+    const { data: s } = await db.from("cold_email_settings").select("steps, footer, booking_url").eq("master_plan_id", a.planId).maybeSingle();
+    const steps = ((s?.steps as ColdStep[] | undefined) ?? []).length ? (s!.steps as ColdStep[]) : a.house ? DEFAULT_STEPS : STARTER_STEPS;
     const n = Math.max(0, Math.min(steps.length - 1, Math.round(Number(b.step) || 0)));
-    const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, "this Wednesday");
+    const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, a.house ? "this Wednesday" : "", a.house ? undefined : { personal: "example", booking: (s?.booking_url as string | null) ?? "" });
     await google.sendEmail(token, {
       to,
       subject: "[TEST" + (sender.send_as ? ` from ${sender.send_as}` : "") + "] " + render(steps[n].subject, vars),
-      body: render(steps[n].body, vars) + footer((s?.footer as string) || DEFAULT_FOOTER, "https://lccommandsuite.com/unsubscribe?c=example"),
+      body: render(steps[n].body, vars) + footer((s?.footer as string) || (a.house ? DEFAULT_FOOTER : ""), "https://lccommandsuite.com/unsubscribe?c=example"),
       extraHeaders: [...(sender.send_as ? [`From: AmiLynne Carroll <${sender.send_as}>`] : []), ...listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", to), `Reply-To: ${to}`],
     }).catch((e) => {
       throw new Error(String(e));
