@@ -4160,6 +4160,17 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
           "waiting",
           "accepted"
         ]
+      },
+      {
+        "id": "personal-links",
+        "title": "Personal links",
+        "body": "Under Stages & settings, fill in Personal links go to with your own page. Each person on that pipeline then has their own link to it. Use [their personal link] in a script and it fills in for that person.",
+        "keywords": [
+          "personal link",
+          "tracking link",
+          "landing page",
+          "link clicks"
+        ]
       }
     ]
   },
@@ -4962,7 +4973,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Clients & Sales",
     "where": "Clients & Sales > Outreach Pipelines > New pipeline, and Add people faster > Update from your cold-email tool",
     "href": "/dm-pipeline",
-    "what": "A ready-made pipeline for cold email, and a quick way to keep it up to date. Your cold-email tool sends the emails. You paste the addresses here, and the cards move for you.",
+    "what": "A ready-made pipeline for cold email, and a quick way to keep it up to date. Send from your own Google mailboxes with the Cold email sender, or from your own cold-email tool and paste the addresses here.",
     "ai": "No AI",
     "aiNote": "This does not use AI. Your assistant can create a pipeline or move people on one, and that waits behind Approve.",
     "steps": [
@@ -4976,7 +4987,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Stages that are only waiting make no follow-up tasks, so a big upload does not flood your Tasks. A reply makes one.",
       "Choose Asked to stop as soon as someone asks, so the Suite never emails them either.",
-      "One update covers every pipeline a person is on, so paste each address once."
+      "One update covers every pipeline a person is on, so paste each address once.",
+      "Send from a separate domain, not your main one. It protects your everyday email."
     ],
     "questions": [
       {
@@ -5038,6 +5050,19 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
           "update their cards",
           "they replied",
           "paste addresses"
+        ]
+      },
+      {
+        "id": "cold-email-sender",
+        "title": "Cold email sender",
+        "body": "On a Cold email pipeline, open Cold email sender, add a connected Google mailbox, write your own emails, add your business name and postal address, and save. It stays off until everything in [brackets] is filled in. Each mailbox starts at 5 a day and grows to its cap, on weekdays inside your send window. Replies go to your own inbox. Connect Microsoft 365 and replies and stop requests are picked up on their own. Without it, paste them under Update from your cold-email tool.",
+        "keywords": [
+          "cold email sender",
+          "send cold email",
+          "gmail",
+          "mailbox",
+          "warm up",
+          "footer"
         ]
       }
     ]
