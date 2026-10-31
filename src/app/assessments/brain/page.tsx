@@ -3333,7 +3333,7 @@ const BASE_QUESTIONS: Question[] = [
     type: "text",
     section: "9. Customer Journey and Client Experience",
     placeholder: "The buying process and payment experience...",
-    tip: "Walk through how someone actually pays you: invoice, checkout page, contract signing, or payment plan. Mention the tools you use and any steps that feel clunky.",
+    tip: "Describe how someone actually pays you: invoice, checkout page, contract signing, or payment plan. Mention the tools you use and any steps that feel clunky.",
   },
   {
     id: "cj_1_6",

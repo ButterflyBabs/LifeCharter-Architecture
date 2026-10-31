@@ -24,7 +24,7 @@ export async function GET() {
 
   const out: string[] = [];
   const today = new Date().toISOString().slice(0, 10);
-  out.push(`# Strategic Plan — LifeCharter`, ``, `_Exported ${today}_`, ``);
+  out.push(`# Strategic Plan`, ``, `_Exported ${today}_`, ``);
 
   // Plans + goals.
   const { data: plans } = await supabase

@@ -26,6 +26,7 @@ const PUBLIC_APIS = [
   "/api/cron/sms", // secured by its own CRON_SECRET check, not a session
   "/api/cron/bank-feeds", // secured by its own CRON_SECRET check, not a session
   "/api/cron/cold-email", // secured by its own CRON_SECRET check, not a session
+  "/api/user-guide/seed-review", // secured by a one-time token in app_settings, not a session; removed at release
   "/api/cron/cold-email-weekly", // secured by its own CRON_SECRET check, not a session
   "/api/cold-unsubscribe", // the unsubscribe link in a cold email; the personal code in the link is the key
   "/api/lp/", // landing pages (task 1153): visits, sign-ups, registrations, Buy clicks, bookings, main image

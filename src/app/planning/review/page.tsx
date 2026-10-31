@@ -315,7 +315,7 @@ export default function ReviewPage() {
       {step === 3 && review && (
         <Card className="mb-6 border-[#2c6b3f]/30">
           <CardContent className="p-6 space-y-3">
-            <p className="text-lg font-semibold text-[#2c6b3f]">Review done for {period?.label}. 🦋</p>
+            <p className="text-lg font-semibold text-[#2c6b3f]">Review done for {period?.label}.</p>
             {sessionId && <p className="text-sm text-[#7a8a99]">Your planning session is marked complete, with this review as its notes.</p>}
             {!!review.tasks?.length && (
               <div>

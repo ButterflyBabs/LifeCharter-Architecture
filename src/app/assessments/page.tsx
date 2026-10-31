@@ -23,9 +23,9 @@ const alignmentProfiles = [
     icon: Brain,
     color: "#4a9b9b",
     bgColor: "bg-[#4a9b9b]/10",
-    questions: 535,
-    timeEstimate: "60-75 min",
-    sections: ["Business Identity", "Business Model", "Vision & Strategy", "Ideal Clients", "Offers & Products", "Messaging & Brand", "Sales Process", "Operations", "Team & Culture", "Financials", "Legal & Risk", "Growth & Scale"],
+    questions: 538,
+    timeEstimate: "3-5 hours",
+    sections: ["Business Identity", "Business Model", "Vision & Strategy", "Ideal Clients", "Offers & Products", "Messaging & Brand", "Sales System", "Marketing System", "Customer Experience", "Operations", "Team & Roles", "Tech Stack"],
     benefits: [
       "Identify system gaps",
       "Reduce owner dependency",
@@ -41,8 +41,8 @@ const alignmentProfiles = [
     color: "#7b6b8d",
     bgColor: "bg-[#7b6b8d]/10",
     questions: 263,
-    timeEstimate: "50-60 min",
-    sections: ["Core Identity", "Origin Story", "Calling & Purpose", "Values & Standards", "Beliefs & Worldview", "Shadow & Resistance", "Sacred Practices", "Body & Energy", "Integration"],
+    timeEstimate: "2-3 hours",
+    sections: ["Core Identity", "Origin Story", "Calling, Purpose, and Sacred Why", "Values and Standards", "Beliefs and Worldview", "Voice and Communication Style", "Emotional Texture and Presence", "Client Transformation", "Story Library"],
     benefits: [
       "Reconnect with mission",
       "Align offers with values",
@@ -58,7 +58,7 @@ const alignmentProfiles = [
     color: "#c9a227",
     bgColor: "bg-[#c9a227]/10",
     questions: 60,
-    timeEstimate: "25-30 min",
+    timeEstimate: "1-2 hours",
     sections: ["12 Business Domains"],
     benefits: [
       "Improve cash flow",

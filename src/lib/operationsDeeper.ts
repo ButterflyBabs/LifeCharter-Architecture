@@ -17,7 +17,7 @@ export const DEEPER_QUESTIONS: Record<string, DeeperQuestion[]> = {
     { id: "challenge", type: "textarea", q: "What's the biggest thing holding back new clients?" },
   ],
   "sales-journey": [
-    { id: "steps", type: "textarea", q: "Walk through how someone goes from interested to paid.", placeholder: "e.g. DM → discovery call → proposal → payment link" },
+    { id: "steps", type: "textarea", q: "Describe how someone goes from interested to paid.", placeholder: "e.g. DM → discovery call → proposal → payment link" },
     { id: "discovery_call", type: "choice", q: "Do you run a discovery or sales call?", options: ["Yes, with a set structure", "Yes, but it varies", "No, people buy without a call"] },
     { id: "close_rate", type: "choice", q: "Of the people you talk to about working together, how many say yes?", options: ["Under 10%", "10–25%", "25–50%", "Over 50%", "I don't track it"] },
     { id: "cycle", type: "choice", q: "How long from first conversation to paid?", options: ["Same day", "Under a week", "1–4 weeks", "1–3 months", "Longer than 3 months"] },
