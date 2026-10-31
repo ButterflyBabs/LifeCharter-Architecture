@@ -5324,6 +5324,1494 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ]
   },
   {
+    "id": "finance-center",
+    "name": "Finance Center",
+    "area": "Money",
+    "where": "Money > Finance",
+    "href": "/finance",
+    "what": "The front door to your money. See your financial health number and this month's income, expenses and net, then open any Finance page from its card. Each card shows a live line from your own records.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. The AI buttons are on the pages it opens. In chat, your assistant can record an income or expense entry, and that waits behind Approve.",
+    "steps": [
+      "Open Finance from the left menu.",
+      "Read the four tiles at the top: Financial health, Income (MTD), Expenses (MTD) and Net (MTD).",
+      "Scan the live line on each card, such as bills due or budget left after bills.",
+      "Press a card to open that page."
+    ],
+    "health": "The Financial health number here is its own number, built from your profit margin this year and your expense budget. It is not one of your 12 dimensions. The income and expenses behind it do feed your Finance dimension.",
+    "tips": [
+      "A live line turns red-brown when something needs a look, such as overdue bills or being over budget.",
+      "Financial health stays blank until you have at least one entry this year."
+    ],
+    "questions": [
+      {
+        "q": "What do MTD and YTD mean?",
+        "a": "MTD is month to date, so this month so far. YTD is year to date, so this year so far."
+      },
+      {
+        "q": "Why do I see a Sales tax card and someone else does not?",
+        "a": "That card only shows for accounts registered for GST/HST, QST or PST."
+      },
+      {
+        "q": "Do I have to enter the same thing on each page?",
+        "a": "No. Everything you record goes into one set of records, and every Finance page reads from it."
+      }
+    ],
+    "related": [
+      "income",
+      "expenses",
+      "cash-flow-dashboard",
+      "bills-cash-calendar",
+      "budget-planner",
+      "profit-loss",
+      "tax-preparation",
+      "tech-stack-optimizer"
+    ],
+    "who": "Everyone. Team members need the Finance area. The Bookkeeper preset sees Finance only.",
+    "keywords": [
+      "finance",
+      "finance center",
+      "money",
+      "my numbers",
+      "financial health",
+      "health score",
+      "income this month",
+      "expenses this month",
+      "net",
+      "mtd",
+      "ytd",
+      "money overview"
+    ],
+    "sections": [
+      {
+        "id": "finance-connections",
+        "title": "How the Finance pages connect",
+        "body": "One set of records feeds every card. Each detail page has a Connected to strip showing what the related pages say right now, and each item is a link. Add forms suggest the categories you already use, so Software and software do not split your reports.",
+        "keywords": [
+          "connected to",
+          "strip",
+          "linked pages",
+          "one ledger",
+          "categories",
+          "live numbers"
+        ]
+      },
+      {
+        "id": "more-than-one-business",
+        "title": "If you have more than one business",
+        "body": "Money added while a business is chosen in the switcher belongs to that business. Income, Expenses, Bills, Profit & Loss and the Financial Pulse then show that business, and All businesses adds them together. Budgets and income goals cover the whole account. If some money has no business yet, a banner offers to assign it in one click.",
+        "keywords": [
+          "business switcher",
+          "all businesses",
+          "assign",
+          "unassigned money",
+          "two businesses",
+          "banner"
+        ]
+      },
+      {
+        "id": "two-currencies",
+        "title": "US and Canadian dollars",
+        "body": "Totals use your account's main currency. Money in the other currency shows as its own small note and is never added into the same number.",
+        "keywords": [
+          "usd",
+          "cad",
+          "currency",
+          "canadian dollars",
+          "kept separate"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "income",
+    "name": "Income",
+    "area": "Money",
+    "where": "Money > Finance > Income Tracker",
+    "href": "/finance/income",
+    "what": "Log money coming in, with who paid you and where it came from. See your total for the month and the year, plus lists by source and by who paid you.",
+    "ai": "Has an AI button",
+    "aiNote": "Read my income & spending has your assistant look at where your money comes from, where it goes and what to change. It uses your own AI key, and the read is saved to your account. Your assistant can also record income in chat, and that waits behind Approve.",
+    "steps": [
+      "On the Finance Center, press Income Tracker.",
+      "Press Add income.",
+      "Fill in Amount, Source / category and Date. Leave Date blank to use today.",
+      "Add From (client or source) and a Note if you like. If you have business segments, you can choose one.",
+      "Press Add. It appears under Recent income."
+    ],
+    "health": "Income you record this month feeds your Finance dimension, measured against your monthly income goal. Income tagged to a business segment also counts toward that segment's own score.",
+    "tips": [
+      "Pick from the suggested categories so one source does not split into two spellings.",
+      "Fill in From each time. That builds your By who paid you list.",
+      "Delete happens right away with no second check. To fix an entry, use the pencil instead."
+    ],
+    "questions": [
+      {
+        "q": "Do I need to enter Stripe payments by hand?",
+        "a": "Payments made through a payment link on your connected Stripe add income to your Finance records for you. Check Recent income before adding one yourself, so it is not counted twice."
+      },
+      {
+        "q": "Can I edit an income entry?",
+        "a": "Yes. Press the pencil on the entry, change the amount, category, date, From or note, and press Save changes. Money that came from Stripe keeps its amount and date."
+      },
+      {
+        "q": "What does toward target mean?",
+        "a": "It shows your monthly income goal under This month. You set that goal in the Budget Planner."
+      }
+    ],
+    "related": [
+      "expenses",
+      "cash-flow-dashboard",
+      "budget-planner",
+      "import-transactions",
+      "revenue-by-segment",
+      "connect-stripe",
+      "quick-capture"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "income",
+      "income tracker",
+      "add income",
+      "log income",
+      "money in",
+      "revenue",
+      "sales",
+      "who paid me",
+      "by source",
+      "record a payment",
+      "client payment"
+    ],
+    "sections": [
+      {
+        "id": "by-source-by-who-paid",
+        "title": "By source and By who paid you",
+        "body": "By source adds up your income by category. By who paid you adds it up by the name in From. Each currency stays on its own.",
+        "keywords": [
+          "by source",
+          "by who paid you",
+          "top clients",
+          "income by client"
+        ]
+      },
+      {
+        "id": "sales-tax-on-income",
+        "title": "Sales tax on income",
+        "body": "If your account is registered for GST/HST, QST or PST, the add form also has boxes for the tax you charged and where the customer is. That tax is kept apart from the amount.",
+        "keywords": [
+          "gst",
+          "hst",
+          "pst",
+          "qst",
+          "tax charged",
+          "customer province"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "expenses",
+    "name": "Expenses",
+    "area": "Money",
+    "where": "Money > Finance > Expense Manager",
+    "href": "/finance/expenses",
+    "what": "Log money going out, with who you paid and whether it repeats. Compare each category with its budget and keep a receipt photo with the expense.",
+    "ai": "Has an AI button",
+    "aiNote": "Read my income & spending has your assistant look at your spending and suggest what to change, on your own AI key. Snap a receipt also uses AI to read a photo. Your assistant can record an expense in chat, and that waits behind Approve.",
+    "steps": [
+      "On the Finance Center, press Expense Manager.",
+      "Press Add expense, or press Snap a receipt to start from a photo.",
+      "Fill in Amount, Category and Date. Leave Date blank to use today.",
+      "Add Paid to, then choose One-time or Recurring.",
+      "For Recurring, choose How often and Auto-renews or I renew it manually.",
+      "Press Add. It appears under Recent expenses."
+    ],
+    "health": "Expenses you record this month feed your Finance dimension, through your profit margin. Expenses tagged to a business segment also count toward that segment's own score.",
+    "tips": [
+      "Always choose a category. Uncategorized expenses trigger a warning on Tax Preparation and in your bell.",
+      "Press the pencil on an expense to change its amount, category, date, Paid to or note. Its receipt photo stays with it.",
+      "A document icon on an expense opens its receipt photo."
+    ],
+    "questions": [
+      {
+        "q": "What happens when I choose Recurring?",
+        "a": "Today's payment is saved as an expense, and the next renewal goes onto your Bills & Cash Calendar. You do not need to add it there too."
+      },
+      {
+        "q": "Why did it ask to link my expense to a bill?",
+        "a": "The expense looks like a bill you track, by name, amount and date. Press Yes, link them so it is not counted twice. The bill then moves to its next due date."
+      },
+      {
+        "q": "If I delete a recurring expense, does the bill go too?",
+        "a": "No. Delete only removes that expense. To stop the bill, use the trash icon on Bills & Cash Calendar."
+      }
+    ],
+    "related": [
+      "snap-a-receipt",
+      "bills-cash-calendar",
+      "budget-planner",
+      "tech-stack-optimizer",
+      "tax-preparation",
+      "import-transactions",
+      "quick-capture"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "expenses",
+      "expense manager",
+      "add expense",
+      "log expense",
+      "spending",
+      "money out",
+      "paid to",
+      "vendor",
+      "recurring",
+      "subscription",
+      "uncategorized",
+      "category budget",
+      "auto-renews"
+    ],
+    "sections": [
+      {
+        "id": "category-vs-budget",
+        "title": "By category vs budget",
+        "body": "Once you set category budgets, each category shows what you spent this month against its budget, with a bar that turns red-brown when you go over.",
+        "keywords": [
+          "category budget",
+          "over budget",
+          "spend vs budget"
+        ]
+      },
+      {
+        "id": "link-to-a-bill",
+        "title": "Linking an expense to a bill",
+        "body": "After you save a one-time expense that matches an upcoming bill, a box offers to link them. Nothing new is recorded, and the bill rolls to its next date.",
+        "keywords": [
+          "link bill",
+          "yes, link them",
+          "double count",
+          "counted twice"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "snap-a-receipt",
+    "name": "Snap a receipt",
+    "area": "Money",
+    "where": "Money > Finance > Expense Manager, the Snap a receipt button",
+    "href": "/finance/expenses",
+    "what": "Take a photo of a receipt, or upload one, and your assistant fills in the expense for you. You check it and press Add. The photo stays with the expense.",
+    "ai": "AI-powered",
+    "aiNote": "Your assistant reads the photo using your own AI key. It fills in the details as a draft, and nothing is saved until you check it and press Add. Add your AI key in Settings > AI first. A team member's receipts run on the account's key and count toward any AI limit the owner sets.",
+    "steps": [
+      "On the Finance Center, press Expense Manager.",
+      "Press Snap a receipt, then take a photo or choose one.",
+      "Wait while it says Reading your receipt.",
+      "Check the form that opens: Amount, Category, Date, Note and Paid to.",
+      "Press Add."
+    ],
+    "health": "Reading a receipt changes nothing. Once you press Add, the expense feeds your Finance dimension like any other expense.",
+    "tips": [
+      "Lay the receipt flat in good light. If parts are hard to read, the form asks you to check every field.",
+      "It suggests from the categories you already use, so your reports stay tidy.",
+      "A subscription receipt starts as One-time. Switch to Recurring before you press Add."
+    ],
+    "questions": [
+      {
+        "q": "What kind of file works?",
+        "a": "A photo in JPG, PNG or WebP, up to 8 MB. A normal iPhone camera photo works. A PDF will not."
+      },
+      {
+        "q": "Where is the photo kept?",
+        "a": "With the expense. Press the document icon on it to open a private link, which lasts a few minutes."
+      },
+      {
+        "q": "What if I close the form without pressing Add?",
+        "a": "No expense is saved, and the photo is not linked to anything. Snap it again when you are ready."
+      }
+    ],
+    "related": [
+      "expenses",
+      "gst-hst",
+      "provincial-sales-tax-qst-pst-rst",
+      "tax-preparation"
+    ],
+    "who": "Everyone with an AI key connected. Team members need the Finance area.",
+    "keywords": [
+      "snap a receipt",
+      "receipt",
+      "photo",
+      "scan receipt",
+      "upload receipt",
+      "camera",
+      "read receipt",
+      "keep receipts",
+      "receipt photo",
+      "invoice photo"
+    ],
+    "sections": [
+      {
+        "id": "receipt-sales-tax",
+        "title": "Sales tax on a receipt",
+        "body": "If your account is registered for GST/HST, the GST/HST printed on the receipt goes in its own box and Amount is the total before it. Quebec QST registrants get the QST in its own box too.",
+        "keywords": [
+          "gst on receipt",
+          "hst",
+          "qst",
+          "tax box",
+          "claim back"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cash-flow-dashboard",
+    "name": "Cash Flow Dashboard",
+    "area": "Money",
+    "where": "Money > Finance > Cash Flow Dashboard. The page is headed Financial Pulse.",
+    "href": "/finance/pulse",
+    "what": "Your money at a glance. See income, expenses and net for this week, this month and this year, how you track to budget, profit by business segment and a month-by-month chart.",
+    "ai": "Has an AI button",
+    "aiNote": "Run my assessment has your assistant grade your financial health out of 100, flag where expenses look high and suggest specific steps, on your own AI key. It saves to your account, so it is there when you return. Press Refresh for a new one.",
+    "steps": [
+      "On the Finance Center, press Cash Flow Dashboard.",
+      "Read This week, This month and Year to date.",
+      "Press Add entry, choose Income or Expense, fill in the form and press Add.",
+      "Type a Monthly expense budget and a Monthly income target, and press Set beside each.",
+      "Press Run my assessment for your assistant's read.",
+      "Use Import to bring in a statement, or P&L to open your full report."
+    ],
+    "health": "Entries added here feed your Finance dimension, and so do your Monthly income target and Cash in the bank. The Financial health number on this page is separate. It blends your profit margin with how spending tracks to budget, and your assistant's score out of 100 is separate too.",
+    "tips": [
+      "Set one overall budget for the simple view, or press Set budgets by category for more detail.",
+      "Tag entries with a business segment to see which parts of the business are most profitable.",
+      "A recurring expense added here also lands on Bills & Cash Calendar."
+    ],
+    "questions": [
+      {
+        "q": "Why are there two health numbers?",
+        "a": "Financial health is worked out from your numbers. The Health Assessment score is your assistant's own grade. They can differ, and neither one is your Finance dimension score."
+      },
+      {
+        "q": "Is this the same as the Financial Pulse on my dashboard?",
+        "a": "Both read the same records. The card on Executive Home is the quick view, and its title opens this page."
+      },
+      {
+        "q": "Where do I download my entries?",
+        "a": "Open Profit & Loss and press CSV. The file includes Paid to, Payment type, How often and Renewal."
+      }
+    ],
+    "related": [
+      "income",
+      "expenses",
+      "bills-cash-calendar",
+      "budget-planner",
+      "profit-loss",
+      "import-transactions",
+      "revenue-by-segment"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "cash flow",
+      "cash flow dashboard",
+      "financial pulse",
+      "pulse",
+      "add entry",
+      "week to date",
+      "wtd",
+      "mtd",
+      "ytd",
+      "profit by segment",
+      "most profitable",
+      "monthly chart",
+      "health assessment",
+      "income target"
+    ],
+    "sections": [
+      {
+        "id": "add-entry-details",
+        "title": "What Add entry asks for",
+        "body": "For an expense, it asks who was paid, One-time or Recurring, how often and how it renews. How often can be Weekly, Every 2 weeks, Monthly, Quarterly, Every 6 months or Yearly. Recent entries then show the name and a Recurring badge.",
+        "keywords": [
+          "paid to",
+          "one-time",
+          "recurring",
+          "how often",
+          "every 2 weeks",
+          "every 6 months",
+          "renewal",
+          "recurring badge"
+        ]
+      },
+      {
+        "id": "cash-in-the-bank",
+        "title": "Cash in the bank",
+        "body": "Type what your business has in its accounts and press Set. Your Finance dimension uses it to work out how many months of expenses you have covered. Update it when it changes. The date under the box shows when you last did.",
+        "keywords": [
+          "cash",
+          "bank balance",
+          "runway",
+          "savings"
+        ]
+      },
+      {
+        "id": "profit-by-segment",
+        "title": "Profit by business segment",
+        "body": "This card shows income, expenses and net for the year by segment. The top earner gets a Most profitable label. Tag entries with a segment in the add form.",
+        "keywords": [
+          "segment",
+          "profit by segment",
+          "most profitable",
+          "unassigned"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "bills-cash-calendar",
+    "name": "Bills & Cash Calendar",
+    "area": "Money",
+    "where": "Money > Finance > Bills & Cash Calendar",
+    "href": "/finance/bills",
+    "what": "See what is due to go out and when, on a calendar and in a list. Mark a bill Paid and it records the expense and moves to its next date.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant knows about bills that are overdue or due soon. A recurring expense it records for you, behind Approve, also lands here.",
+    "steps": [
+      "On the Finance Center, press Bills & Cash Calendar.",
+      "Under Add a bill, fill in the name, Paid to, amount and next due date.",
+      "Choose how often and a category. Tick Renews automatically if it is on autopay.",
+      "Press Add bill. It appears on the calendar and under Coming up (next 60 days).",
+      "When a bill is paid, press Paid on its row."
+    ],
+    "health": "A bill on its own does not change your scores. When you press Paid, the expense it records feeds your Finance dimension. Your bills also show in the Budget Planner as money still due this month.",
+    "tips": [
+      "Auto-renewing bills are not recorded for you. They stay on the calendar until you press Paid.",
+      "Give a bill an amount. Without one, Paid moves the date but records no expense.",
+      "A recurring expense added on Expenses or the Financial Pulse appears here by itself."
+    ],
+    "questions": [
+      {
+        "q": "Why is my autopay bill showing as overdue?",
+        "a": "The page cannot see your bank, so it does not know the money left. Press Paid and it records the expense and moves to the next date."
+      },
+      {
+        "q": "How do I remove a bill?",
+        "a": "Press the trash icon on its row, then confirm Stop tracking. Payments already recorded stay in your records."
+      },
+      {
+        "q": "Can I add a bill that only happens once?",
+        "a": "Yes. Choose One time in the how often box. After you press Paid, it leaves your list."
+      }
+    ],
+    "related": [
+      "expenses",
+      "budget-planner",
+      "tech-stack-optimizer",
+      "tax-preparation",
+      "cash-flow-dashboard"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "bills",
+      "bill calendar",
+      "cash calendar",
+      "due dates",
+      "overdue",
+      "upcoming bills",
+      "autopay",
+      "renewals",
+      "mark paid",
+      "subscriptions",
+      "rent",
+      "loan payment",
+      "cash check"
+    ],
+    "sections": [
+      {
+        "id": "top-tiles",
+        "title": "The four tiles",
+        "body": "Due in the next 7 days, Due in the next 30 days, Overdue, and Cash check this month. The cash check sets the income you have so far this month beside the bills still due.",
+        "keywords": [
+          "due in the next 7 days",
+          "due in the next 30 days",
+          "overdue",
+          "cash check this month"
+        ]
+      },
+      {
+        "id": "marking-paid",
+        "title": "Paid, Edit and Stop tracking",
+        "body": "Paid records the expense dated today, with the bill's Paid to name and renewal type, and rolls the bill to its next date. Edit opens the bill in the form. These buttons show on a bill's next due date only.",
+        "keywords": [
+          "paid",
+          "mark paid",
+          "edit bill",
+          "stop tracking",
+          "next due"
+        ]
+      },
+      {
+        "id": "quick-add",
+        "title": "Quick add",
+        "body": "Quarterly estimated-tax dates adds the upcoming US estimated-tax dates as one-time bills with no amount, so check them with your tax professional. Subscriptions from my Tech Stack adds your tools as monthly bills.",
+        "keywords": [
+          "quick add",
+          "quarterly estimated-tax dates",
+          "subscriptions from my tech stack",
+          "import subscriptions"
+        ]
+      },
+      {
+        "id": "connected-strip",
+        "title": "Connected to",
+        "body": "This strip shows your budget left after bills, your software spend and your cash flow this month. Each one is a link.",
+        "keywords": [
+          "budget left after bills",
+          "tech tools",
+          "connected to"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "budget-planner",
+    "name": "Budget Planner",
+    "area": "Money",
+    "where": "Money > Finance > Budget Planner",
+    "href": "/finance/budget",
+    "what": "Set your income goals and spending budgets, as simple or as detailed as you like. Each category shows what you have spent, what is still due from bills this month and what is left.",
+    "ai": "Has an AI button",
+    "aiNote": "Suggest a budget has your assistant build a monthly budget from what you spent over about the last three months, shaped by your plans and forecast. It uses your own AI key. Nothing is saved until you press Use this budget.",
+    "steps": [
+      "On the Finance Center, press Budget Planner.",
+      "Under Income goals, type a Weekly, Monthly or Yearly goal and press Set.",
+      "If you are growing, fill in Month-by-month income goals and press Save month goals.",
+      "Under Overall monthly spending, type your Expense budget (monthly) and press Set.",
+      "For more detail, add a Category and Monthly $ under Expense budgets by category, then press Add.",
+      "Or press Suggest a budget, review it, and press Use this budget."
+    ],
+    "health": "Your monthly income goal, or this month's own goal, is the target your Finance dimension measures income against. Your expense budgets do not change that dimension. They feed the separate Financial health number and your budget lines.",
+    "tips": [
+      "Leave Weekly or Yearly blank and they are worked out from your monthly goal.",
+      "A month left blank under Month-by-month uses your monthly goal.",
+      "Press the X beside a category to clear its budget."
+    ],
+    "questions": [
+      {
+        "q": "Why does Suggest a budget say to add expenses first?",
+        "a": "It builds from what you actually spend, so it needs some expenses from the last few months."
+      },
+      {
+        "q": "Does Use this budget replace everything?",
+        "a": "It sets a budget for each category it lists. Other category budgets and your overall budget stay as they are."
+      },
+      {
+        "q": "What does the (avg) amount mean in a suggestion?",
+        "a": "That is your average monthly spend in that category, so you can compare it with the suggested amount."
+      }
+    ],
+    "related": [
+      "expenses",
+      "bills-cash-calendar",
+      "cash-flow-dashboard",
+      "income",
+      "finance-center"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "budget",
+      "budget planner",
+      "income goal",
+      "revenue goal",
+      "monthly goal",
+      "weekly goal",
+      "yearly goal",
+      "expense budget",
+      "category budget",
+      "suggest a budget",
+      "month by month goals",
+      "spending limit",
+      "left after bills"
+    ],
+    "sections": [
+      {
+        "id": "income-goals",
+        "title": "Income goals",
+        "body": "Your Financial Pulse tracks these. The Weekly, Monthly and Yearly goals live here, and Forecasting can also fill them with Use as my income goals.",
+        "keywords": [
+          "income goals",
+          "weekly",
+          "monthly",
+          "yearly",
+          "goal tracking"
+        ]
+      },
+      {
+        "id": "month-by-month-goals",
+        "title": "Month-by-month income goals",
+        "body": "Give each of the next 12 months its own goal, and your Financial Pulse follows that ramp.",
+        "keywords": [
+          "ramp",
+          "month by month",
+          "save month goals",
+          "growth goals"
+        ]
+      },
+      {
+        "id": "category-budget-lines",
+        "title": "Spent, still due and left",
+        "body": "Each category shows spent against its monthly budget. When bills in that category are still due this month, a line adds what is due and what is left.",
+        "keywords": [
+          "still due",
+          "left",
+          "spent",
+          "bills this month",
+          "over budget"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "profit-loss",
+    "name": "Profit & Loss",
+    "area": "Money",
+    "where": "Money > Finance > Financial Reports. The page is headed Profit & Loss.",
+    "href": "/finance/pnl",
+    "what": "A profit and loss statement for any period, with income and expenses by category and your net profit. Download it, print it, and see who paid you and who you paid.",
+    "ai": "Has an AI button",
+    "aiNote": "Read my P&L has your assistant look at your margin, your biggest costs and where profit is growing or leaking, on your own AI key. It reads your recent months, not only the period on screen. The read is saved to your account.",
+    "steps": [
+      "On the Finance Center, press Financial Reports.",
+      "Choose Week, Month, Quarter, Year or Custom.",
+      "Use the arrows to move between periods. For Custom, pick two dates and press Apply.",
+      "Read Income, Expenses and Net Profit.",
+      "Press CSV, PDF or Print to take it with you."
+    ],
+    "health": "This does not change your scores. It helps by showing whether your business made money in any period, using the same records that feed your Finance dimension.",
+    "tips": [
+      "CSV lists every transaction, which suits an accountant or bookkeeper. PDF is the tidy statement.",
+      "Expenses with no category show as Uncategorized here, so tidy them for a cleaner report.",
+      "Fill in Paid to and From on your entries so the Who paid you and Who you paid lists fill up."
+    ],
+    "questions": [
+      {
+        "q": "Why does a note show below Net Profit?",
+        "a": "That is money in your other currency, kept separate. It is never added into the totals above."
+      },
+      {
+        "q": "Do the name lists print?",
+        "a": "No. Who paid you and Who you paid show on screen only. They are not in the print view or the PDF."
+      },
+      {
+        "q": "Is this ready to give my accountant?",
+        "a": "It is a report from the entries you recorded. Your accountant can use the CSV, and they will tell you if they need anything else."
+      }
+    ],
+    "related": [
+      "income",
+      "expenses",
+      "monthly-money-review",
+      "tax-preparation",
+      "cash-flow-dashboard"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "profit and loss",
+      "p&l",
+      "pnl",
+      "financial reports",
+      "income statement",
+      "net profit",
+      "report",
+      "export",
+      "csv",
+      "pdf",
+      "print",
+      "quarterly report",
+      "custom dates",
+      "who paid me",
+      "who i paid"
+    ],
+    "sections": [
+      {
+        "id": "who-paid-you-who-you-paid",
+        "title": "Who paid you and Who you paid",
+        "body": "Under the statement, these lists show the top names for the period, using From on income and Paid to on expenses.",
+        "keywords": [
+          "who paid you",
+          "who you paid",
+          "top clients",
+          "vendors",
+          "by name"
+        ]
+      },
+      {
+        "id": "csv-columns",
+        "title": "What is in the CSV",
+        "body": "Date, Type, Category, Description, Amount, Currency, Paid to, Payment type, How often and Renewal, with totals at the end. Each currency has its own totals.",
+        "keywords": [
+          "csv columns",
+          "download transactions",
+          "spreadsheet",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "monthly-money-review",
+    "name": "Monthly Money Review",
+    "area": "Money",
+    "where": "Money > Finance > Monthly Money Review",
+    "href": "/finance/monthly-review",
+    "what": "A one-month snapshot of your money: income, expenses, net and margin, plus the top categories where your money went. Look back through past months and print it.",
+    "ai": "Has an AI button",
+    "aiNote": "Read my month has your assistant compare this month, or the last complete month, with the months before. It says what changed, what drove it and the one money decision worth making now. It uses your own AI key, and the read is saved to your account.",
+    "steps": [
+      "On the Finance Center, press Monthly Money Review.",
+      "Use the arrows to choose a month.",
+      "Read Income, Expenses and Net, with your margin under Net.",
+      "Check Where the money went for your top five expense categories.",
+      "Press Read my month, or press Print to keep a copy."
+    ],
+    "health": "This does not change your scores. It helps you see one month clearly, using the same records that feed your Finance dimension.",
+    "tips": [
+      "Press Open full P&L for every category in that month.",
+      "Set a monthly date to read this page, such as the first week of each month."
+    ],
+    "questions": [
+      {
+        "q": "What is the margin?",
+        "a": "The share of your income left after expenses that month. It only shows when the month has income."
+      },
+      {
+        "q": "Does Read my month follow the month I picked?",
+        "a": "No. It reads your recent months, so pick the current month if you want the page and the read to match."
+      }
+    ],
+    "related": [
+      "profit-loss",
+      "cash-flow-dashboard",
+      "budget-planner",
+      "finance-center"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "monthly money review",
+      "monthly review",
+      "month summary",
+      "where the money went",
+      "margin",
+      "top expenses",
+      "last month",
+      "read my month",
+      "month end"
+    ]
+  },
+  {
+    "id": "tax-preparation",
+    "name": "Tax Preparation",
+    "area": "Money",
+    "where": "Money > Finance > Tax Preparation",
+    "href": "/finance/tax",
+    "what": "A planning estimate of what to set aside for taxes this year, from your own income and expenses. See a per-quarter amount and expenses by category, and export the year for your accountant. This is not tax advice.",
+    "ai": "Has an AI button",
+    "aiNote": "Check my tax readiness has your assistant look at what to categorize, what you might be missing and what to set aside, on your own AI key. It is an estimate, not tax advice, and the read is saved to your account.",
+    "steps": [
+      "On the Finance Center, press Tax Preparation.",
+      "If a yellow box says expenses are uncategorized, deal with those first.",
+      "Type your Estimated tax rate, then click away to save it. Ask your tax professional what rate suits you.",
+      "Read Income (YTD), Deductible expenses, Taxable net and Set aside.",
+      "Press Add quarterly payment to my tasks.",
+      "Press Export year (CSV) when you are ready to hand it to your accountant."
+    ],
+    "health": "This does not change your scores. It helps by showing what to set aside before a payment comes due.",
+    "tips": [
+      "Use a category such as Taxes when you record a tax payment. The page keeps those out of the expense total.",
+      "The rate starts at 25% until you change it, and it saves to your account.",
+      "Press Add quarterly payment once per payment. The Bills entry is added only once, but each press adds another task."
+    ],
+    "questions": [
+      {
+        "q": "Does the page decide what is deductible?",
+        "a": "No. Deductible expenses is every expense you recorded this year, except taxes you already paid. Your tax professional decides what really counts."
+      },
+      {
+        "q": "Does the set-aside drop after I pay taxes?",
+        "a": "No. Taxes paid show on their own line under the category list, and the set-aside is not reduced by them."
+      },
+      {
+        "q": "How is the per-quarter amount worked out?",
+        "a": "Your set-aside divided by four. The payment date shown follows the US estimated-tax calendar, so check your own dates with your tax professional."
+      }
+    ],
+    "related": [
+      "profit-loss",
+      "bills-cash-calendar",
+      "1099-contractor-totals",
+      "gst-hst",
+      "provincial-sales-tax-qst-pst-rst",
+      "expenses"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "tax",
+      "taxes",
+      "tax preparation",
+      "tax prep",
+      "set aside",
+      "quarterly taxes",
+      "estimated taxes",
+      "tax rate",
+      "deductions",
+      "write offs",
+      "uncategorized",
+      "export for accountant",
+      "irs",
+      "tax readiness"
+    ],
+    "sections": [
+      {
+        "id": "uncategorized-alert",
+        "title": "The uncategorized warning",
+        "body": "A yellow box counts expenses with no category and links to Expenses. If you press Add quarterly payment while any remain, the page warns you first and the button changes to Add task anyway. To give an old expense a category, open Expenses and press the pencil on it.",
+        "keywords": [
+          "uncategorized",
+          "categorize",
+          "review expenses",
+          "add task anyway"
+        ]
+      },
+      {
+        "id": "add-quarterly-payment",
+        "title": "Add quarterly payment",
+        "body": "This adds a high-priority task with the amount and due date, and puts an Estimated tax payment on your Bills & Cash Calendar once, so your budget sees it coming. The button is greyed out when your taxable net for the year is zero or less.",
+        "keywords": [
+          "add quarterly payment",
+          "tax task",
+          "tax bill",
+          "payment reminder",
+          "next estimated payment"
+        ]
+      },
+      {
+        "id": "potential-deductions",
+        "title": "Potential deductions",
+        "body": "This lists your expenses by category with a total. It is a starting point for you and your tax professional, not a ruling on what you can claim.",
+        "keywords": [
+          "potential deductions",
+          "expenses by category",
+          "total deductible",
+          "taxes already paid"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1099-contractor-totals",
+    "name": "1099 contractor totals",
+    "area": "Money",
+    "where": "Money > Finance > Tax Preparation > 1099 contractor totals",
+    "href": "/finance/1099",
+    "what": "Everyone you paid in a year, taken from the Paid to name on your expenses. Mark your contractors and the page shows who may need a 1099-NEC, who still needs a W-9, and gives you a file for your accountant.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can tell you who you paid, who is marked as a contractor and who likely needs a 1099-NEC.",
+    "steps": [
+      "Open Finance from the left menu, press Tax Preparation, then press 1099 contractor totals.",
+      "Pick the year at the top of the page.",
+      "Tick Contractor beside each person or business you paid for work who is not your employee.",
+      "Tick W-9 on file once you have their form, and Only by card / PayPal if you never paid them any other way.",
+      "Check the 1099-NEC column, then press Download for my accountant."
+    ],
+    "health": "This does not change your scores. It helps by keeping your contractor totals ready for your accountant at year end.",
+    "tips": [
+      "Expenses with no Paid to name are not on the list. The box at the top shows their total, so you can add the name on the Expenses page.",
+      "The same payee counts as one person even if you typed the name a little differently.",
+      "Use Show only contractors for a shorter list."
+    ],
+    "questions": [
+      {
+        "q": "What does Likely needed mean?",
+        "a": "That contractor is ticked, was not paid only by card or PayPal, and reached the reporting amount shown on the page for that year. It is a guide to bring to your accountant, not tax advice."
+      },
+      {
+        "q": "Why is someone I paid missing?",
+        "a": "The page lists expenses with a Paid to name. It counts US-dollar payments only, so someone paid only in Canadian dollars is left off."
+      },
+      {
+        "q": "Does the Suite file the 1099 for me?",
+        "a": "No. The page gives you the totals and the download. You or your accountant prepare and file the forms."
+      }
+    ],
+    "related": [
+      "expenses",
+      "tax-preparation",
+      "snap-a-receipt"
+    ],
+    "who": "Everyone can open it. It is built for US businesses, because a 1099 is a US form. Team members need the Finance area.",
+    "keywords": [
+      "1099",
+      "1099-nec",
+      "contractor",
+      "contractors",
+      "w-9",
+      "w9",
+      "paid to",
+      "who did i pay",
+      "vendor totals",
+      "year end",
+      "freelancer",
+      "accountant",
+      "january 31"
+    ]
+  },
+  {
+    "id": "gst-hst",
+    "name": "GST/HST",
+    "area": "Money",
+    "where": "Money > Finance > Sales tax (GST/HST, QST, PST). Turn it on in Settings > Integrations > Canadian sales tax",
+    "href": "/finance/gst-hst",
+    "what": "For Canadian businesses registered for GST/HST. Once it is on, the Suite adds the tax to your invoices, offer payment links and paid bookings at the rate for your customer's province, records it apart from your income, and works out the numbers for your return.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can give you a GST/HST summary for a period. Snap a receipt can also read the GST/HST on a receipt with your own AI key, and you check it before it is saved.",
+    "steps": [
+      "Open Settings, press Integrations, and find Canadian sales tax (GST/HST, QST, PST). It shows when your main currency is Canadian dollars.",
+      "Tick My business is registered for GST/HST, add your GST/HST number, province and how often you file, then press Save sales tax settings.",
+      "If you made payment links before turning this on, press Remake on each offer so they charge the tax.",
+      "Add the GST/HST you paid when you enter expenses, using the GST/HST box.",
+      "When a return is coming up, open Finance and press Sales tax (GST/HST, QST, PST). Use the arrows to pick the period.",
+      "Check any sales listed under Check these sales, then press Download for my accountant (CSV)."
+    ],
+    "health": "This does not change your scores. It helps by keeping the tax apart from your income and your return numbers ready for each period.",
+    "tips": [
+      "Each card shows the matching CRA line number, so your accountant can follow it: lines 101, 103, 106 and 109.",
+      "On an invoice, the province comes from the contact's address and you can change it in Customer is in. A payment link asks the buyer on a short page before they pay.",
+      "Only Canadian-dollar entries are counted. US-dollar money is listed in a note on the page and is in the download."
+    ],
+    "questions": [
+      {
+        "q": "Does the Suite file my return?",
+        "a": "No. It works out the numbers from what you recorded. You or your accountant file with the CRA. Adjustments, instalments and anything unusual are for your accountant."
+      },
+      {
+        "q": "What rates does it use?",
+        "a": "It uses the rate for where your customer is: 13% HST in Ontario, 14% in Nova Scotia, 15% in New Brunswick, Newfoundland and Labrador and Prince Edward Island, and 5% GST elsewhere in Canada. Customers outside Canada are not charged."
+      },
+      {
+        "q": "I am not registered. Will the Suite tell me if I get close?",
+        "a": "Yes. If your main currency is Canadian dollars, you get an alert and an email as your sales near the $30,000 registration line, and again if you pass it. Ask your tax professional what that means for your business."
+      }
+    ],
+    "related": [
+      "provincial-sales-tax-qst-pst-rst",
+      "currency-usd-and-cad",
+      "tax-preparation",
+      "payments-invoices",
+      "payment-links-on-offers",
+      "snap-a-receipt"
+    ],
+    "who": "Accounts with Canadian dollars as their main currency, or already registered. Only the account owner can turn it on, because team members do not see Settings > Integrations. Team members need the Finance area to see the report.",
+    "keywords": [
+      "gst",
+      "hst",
+      "gst/hst",
+      "sales tax",
+      "canadian tax",
+      "canada tax",
+      "cra",
+      "tax return",
+      "input tax credit",
+      "itc",
+      "claim back tax",
+      "business number",
+      "file by",
+      "pay by",
+      "small supplier",
+      "30000",
+      "register for gst"
+    ]
+  },
+  {
+    "id": "tech-stack-optimizer",
+    "name": "Tech Stack Optimizer",
+    "area": "Money",
+    "where": "Money > Finance > Tech Stack Optimizer",
+    "href": "/finance/techstack",
+    "what": "Finds the software and subscriptions in your expenses for this year and totals them. You see an estimated monthly cost, your year to date and each tool, and you can put a renewal on your Bills & Cash Calendar.",
+    "ai": "Has an AI button",
+    "aiNote": "Press Optimize with AI and your assistant looks over your tools for overlap, plans you could downgrade and possible savings. This uses your own AI key. It only gives suggestions and changes nothing.",
+    "steps": [
+      "Open Finance from the left menu and press Tech Stack Optimizer.",
+      "Check the tools listed under Your tools.",
+      "Press Add to Bills beside a tool to put it on your Bills & Cash Calendar. Tools already there say On Bills.",
+      "Press Optimize with AI for ideas on where to save.",
+      "Act on any idea you like in the tool itself, then press the refresh icon to look again later."
+    ],
+    "health": "This does not change your scores. It helps you see what your tools cost and spot spending you could trim.",
+    "tips": [
+      "Add a Paid to name on your software expenses. Tools are grouped by that name, so one vendor shows as one line.",
+      "If a tool is missing, give the expense a category like Software or Subscription, or name the tool in the note.",
+      "Check the amount and date on the Bills page after you press Add to Bills. The bill starts from the estimated monthly cost and the first of next month."
+    ],
+    "questions": [
+      {
+        "q": "Why is something here that is not software?",
+        "a": "Any expense marked as recurring is counted, and so is one with software-type words in its category, note or Paid to name, such as plan, email or app."
+      },
+      {
+        "q": "How is the monthly amount worked out?",
+        "a": "It is an estimate: what you have spent on the tool this year divided by the months so far. A tool paid once a year will look spread out."
+      },
+      {
+        "q": "Why does the AI button ask for a key?",
+        "a": "The review runs on your own AI key. Press Set up your AI assistant to add it. The button also needs at least one tool on the list."
+      }
+    ],
+    "related": [
+      "expenses",
+      "bills-cash-calendar",
+      "budget-planner"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "tech stack",
+      "software",
+      "subscriptions",
+      "saas",
+      "tools",
+      "apps",
+      "renewals",
+      "cancel subscription",
+      "save money",
+      "overlap",
+      "monthly software cost",
+      "optimizer"
+    ]
+  },
+  {
+    "id": "import-transactions",
+    "name": "Import transactions",
+    "area": "Money",
+    "where": "Money > Finance > Cash Flow Dashboard > Import",
+    "href": "/finance/import",
+    "what": "Turns a bank or card statement, a CSV or invoice text into income and expense entries. You upload or paste it, your assistant reads the rows, and you check them before anything goes into your Finance Center.",
+    "ai": "AI-powered",
+    "aiNote": "Parse with AI reads your text and sorts it into transactions with a date, description, category, type and amount. This uses your own AI key. Nothing is saved until you check the rows and press Import.",
+    "steps": [
+      "Open Finance from the left menu, press Cash Flow Dashboard, then press Import.",
+      "Press Upload CSV / text, or paste your statement rows into the box.",
+      "Press Parse with AI.",
+      "Check each row. Change the date, description, category, type or amount, and untick or remove any row you do not want.",
+      "If the money is not in your main currency, choose the Currency above the table.",
+      "Press Import to add the ticked rows to your Finance Center."
+    ],
+    "health": "Imported income and expenses go into your Finance ledger. This month's entries in your main currency count toward your Finance dimension, one of your 12 dimensions, once you have a monthly income goal set.",
+    "tips": [
+      "CSV exports from your bank or card work best. For a PDF statement, copy the text and paste it in.",
+      "A long statement is cut off. The assistant reads about the first 16,000 characters and up to 300 rows, so split a big file into smaller pieces.",
+      "One import is one currency. Do your US-dollar and Canadian-dollar statements separately."
+    ],
+    "questions": [
+      {
+        "q": "Does it catch duplicates?",
+        "a": "No. Every row you import is added as new. Untick anything already in your Finance Center, such as Stripe payments that came in on their own."
+      },
+      {
+        "q": "Will imported expenses show on my 1099 totals?",
+        "a": "Not until they have a Paid to name. Imported rows come in without one, so add it on the Expenses page."
+      },
+      {
+        "q": "It says to add my AI key. What do I do?",
+        "a": "Press Set up your AI assistant and add your key, then come back and press Parse with AI. You can also add single entries by hand on the Income and Expenses pages."
+      }
+    ],
+    "related": [
+      "finance-center",
+      "income",
+      "expenses",
+      "cash-flow-dashboard",
+      "connect-stripe",
+      "currency-usd-and-cad"
+    ],
+    "who": "Everyone. Team members need the Finance area and a role that can edit.",
+    "keywords": [
+      "import",
+      "upload statement",
+      "bank statement",
+      "credit card statement",
+      "csv",
+      "quickbooks",
+      "qbo",
+      "paste transactions",
+      "bring in my books",
+      "pdf statement",
+      "bookkeeping",
+      "transactions",
+      "move from quickbooks"
+    ],
+    "sections": [
+      {
+        "id": "quickbooks-connection",
+        "title": "Using QuickBooks",
+        "body": "The Suite does not connect to QuickBooks. The QuickBooks card in Settings > Integrations does not sync anything. Keep QuickBooks as your books, export a CSV from it and bring that in here. To send numbers the other way, use Export year (CSV) on Tax Preparation, or the export on Financial Reports, and give the file to your bookkeeper.",
+        "keywords": [
+          "quickbooks",
+          "qbo",
+          "intuit",
+          "connect quickbooks",
+          "accounting software",
+          "bookkeeper",
+          "xero",
+          "sync",
+          "export csv"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "revenue-by-segment",
+    "name": "Revenue by Segment",
+    "area": "Money",
+    "where": "Daily Operations > Executive Home > View revenue by segment",
+    "href": "/revenue",
+    "what": "A simple view of this month's revenue across each business and segment, against a target you set. You type these numbers in yourself, month by month. They are separate from your Finance Center.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI, and your assistant has no tool for these entries.",
+    "steps": [
+      "Set up your businesses and segments in Business Segments, under Settings in the left menu.",
+      "On Executive Home, press View revenue by segment.",
+      "Press Record revenue.",
+      "Choose the Segment and Month, type the Actual and Target, then press Save.",
+      "Read the total for This month, the change from last month, and the bar for each segment."
+    ],
+    "health": "This does not change your scores. It helps you compare your segments against a target. To move a segment's score, tag income and expenses to that segment in Finance.",
+    "tips": [
+      "The link on Executive Home appears once you have income or expenses recorded. Until then that spot says Add your first income to see your pulse.",
+      "Numbers here do not come from Income or Stripe, and they do not go there either. Keep them in step yourself if you use both.",
+      "Amounts use your main currency, in whole dollars."
+    ],
+    "questions": [
+      {
+        "q": "Can I fix a number I entered wrong?",
+        "a": "Not on this page. There is no edit or delete here, and each Save adds to that month, so check the numbers before you press Save."
+      },
+      {
+        "q": "Why is the Segment list empty?",
+        "a": "You need at least one business with a segment first. Add them in Business Segments, then come back."
+      }
+    ],
+    "related": [
+      "finance-center",
+      "income",
+      "profit-loss"
+    ],
+    "who": "Everyone. Team members need the Finance area.",
+    "keywords": [
+      "revenue by segment",
+      "segment revenue",
+      "revenue target",
+      "actual vs target",
+      "income by business",
+      "business segments",
+      "this month revenue",
+      "multiple businesses",
+      "record revenue"
+    ]
+  },
+  {
+    "id": "payments-invoices",
+    "name": "Payments & Invoices",
+    "area": "Money",
+    "where": "Money > Payments & Invoices",
+    "href": "/payments",
+    "what": "Every payment taken through the Suite in one place: payment links, invoices, payment plans, monthly subscriptions and paid bookings. You can send an invoice to any contact, paid in full or in monthly payments. The money goes straight to your own Stripe account.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can look up payments and unpaid invoices, and prepare an invoice or an offer payment link. Nothing is sent until you press Approve.",
+    "steps": [
+      "Open Payments & Invoices from the left menu. If it asks, connect your Stripe account first.",
+      "Press New invoice.",
+      "Choose the Contact, pick an Offer if you want, and fill in What it's for and the Total amount.",
+      "Under Payments, choose Paid in full or a number of monthly payments, from 2 to 24, and set Due within (days).",
+      "Press Send invoice. Stripe emails it from your own Stripe account, with a secure pay page.",
+      "Watch the Invoices list. Use Copy pay link, Open, PDF, Void or Stop plan on any invoice."
+    ],
+    "health": "This page does not change your scores by itself. Paid amounts reach your Finance ledger through the Stripe sync, and this month's income and expenses in your main currency count toward your Finance dimension, one of your 12 dimensions, once you have a monthly income goal set.",
+    "tips": [
+      "You can start an invoice from a contact too. Open their record and press Send an invoice under Payments & invoices.",
+      "A payment plan stops by itself after the last payment. A new invoice goes out each month until then.",
+      "The three boxes at the top show Paid this month, Unpaid invoices and Payment plans running. Your other currency shows on its own Kept separate line."
+    ],
+    "questions": [
+      {
+        "q": "What happens if I void an invoice or stop a plan?",
+        "a": "A voided invoice's link stops working. If you stop a plan, payments already made stay paid and no more invoices go out."
+      },
+      {
+        "q": "Why can't I send an invoice to this contact?",
+        "a": "The contact needs an email address, and Stripe's smallest charge applies to each payment. The message on the form tells you what is missing."
+      },
+      {
+        "q": "What does the TEST label mean?",
+        "a": "That payment or invoice was made in Stripe's test mode. Test payments do not go into your Finance Center."
+      }
+    ],
+    "related": [
+      "connect-stripe",
+      "offers-packages",
+      "payment-links-on-offers",
+      "income",
+      "gst-hst",
+      "currency-usd-and-cad"
+    ],
+    "who": "The account owner and team admins. Stripe must be connected to send invoices. Other team members cannot load this page, even with the Finance area.",
+    "keywords": [
+      "invoice",
+      "invoices",
+      "send invoice",
+      "bill a client",
+      "payment plan",
+      "installments",
+      "monthly payments",
+      "payments",
+      "unpaid invoice",
+      "void invoice",
+      "pay link",
+      "get paid",
+      "stripe invoice",
+      "subscription",
+      "refund"
+    ],
+    "sections": [
+      {
+        "id": "automatic-payment-posting",
+        "title": "What happens when someone pays",
+        "body": "It happens on its own. The payment appears here. The person is added or updated in Contacts with the customer tag and a tag for the offer they bought. The payment goes on their timeline, and their open deal moves to Won, unless that deal is for a different offer. The invoice or plan updates. The Stripe sync then puts the income, Stripe's fees and any affiliate credit in your Finance Center. Refunds are recorded too.",
+        "keywords": [
+          "automatic",
+          "payment posted",
+          "deal won",
+          "customer tag",
+          "bought tag",
+          "timeline",
+          "refund recorded",
+          "stripe fees",
+          "webhook"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "connect-stripe",
+    "name": "Connect Stripe",
+    "area": "Money",
+    "where": "Settings > Integrations > Stripe",
+    "href": "/settings?tab=integrations",
+    "what": "Links your own Stripe account to the Suite. Your payments go straight to you, and the Suite can make payment links, invoices and booking payments on your account. Your payments, refunds and Stripe fees also come into your Finance Center each morning.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI. If Stripe is not connected, your assistant will ask you to connect it before it can prepare an invoice or payment link.",
+    "steps": [
+      "Open Settings from the left menu and press Integrations.",
+      "Find the Stripe card and press Connect with Stripe.",
+      "Sign in to Stripe and allow the connection.",
+      "Back in Settings, check that the card says Connected with Stripe.",
+      "Press Sync now if you want your payments brought in straight away."
+    ],
+    "health": "Connecting does not change your scores by itself. Synced income and expenses go into your Finance ledger, and this month's entries in your main currency count toward your Finance dimension, one of your 12 dimensions, once you have a monthly income goal set.",
+    "tips": [
+      "Press Disconnect to unlink Stripe. Payments already in your Finance Center stay there.",
+      "The card shows when it last synced and any problem from the last try.",
+      "Test payments never reach your Finance Center."
+    ],
+    "questions": [
+      {
+        "q": "Does the Suite hold my money?",
+        "a": "No. Everything is made on your own Stripe account, so the money goes straight to you."
+      },
+      {
+        "q": "How far back does it go?",
+        "a": "Your first sync looks back 90 days. After that, it brings in what is new each morning and never adds the same item twice."
+      },
+      {
+        "q": "Can I only bring payments into Finance, without payment links?",
+        "a": "Yes. Follow the steps on the card to make a read-only key in Stripe and paste it in. With a key, the Suite can bring payments in, but it cannot make payment links for you."
+      }
+    ],
+    "related": [
+      "payments-invoices",
+      "payment-links-on-offers",
+      "income",
+      "expenses",
+      "currency-usd-and-cad"
+    ],
+    "who": "The account owner. Team members do not see Settings > Integrations.",
+    "keywords": [
+      "stripe",
+      "connect stripe",
+      "link stripe",
+      "take payments",
+      "accept cards",
+      "get paid",
+      "stripe sync",
+      "sync now",
+      "payment processor",
+      "disconnect stripe",
+      "restricted key",
+      "read only key",
+      "stripe fees"
+    ],
+    "sections": [
+      {
+        "id": "connect-with-stripe",
+        "title": "Connect with Stripe",
+        "body": "One click, with no keys to copy. It connects your own Stripe account, so payment links, invoices and booking payments are made on your account. The money goes straight to you.",
+        "keywords": [
+          "connect with stripe",
+          "one click",
+          "own stripe account",
+          "payment links",
+          "no platform fee",
+          "oauth"
+        ]
+      },
+      {
+        "id": "stripe-sync",
+        "title": "Stripe sync",
+        "body": "Each morning, your Stripe payments come into your Finance Center as income, and Stripe's fees and any refunds come in as expenses. Press Sync now on the Stripe card any time. Nothing comes in twice.",
+        "keywords": [
+          "stripe sync",
+          "sync now",
+          "every morning",
+          "fees",
+          "refunds",
+          "ledger",
+          "income from stripe"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "currency-usd-and-cad",
+    "name": "Currency (USD and CAD)",
+    "area": "Money",
+    "where": "Settings > Integrations > Currency",
+    "href": "/settings?tab=integrations",
+    "what": "Pick your main currency, US dollars or Canadian dollars. New offers, invoices, bills and money entries start in it, and you can switch any single item to the other currency. The two are always kept separate. The Suite never adds them together or converts one into the other.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI. In chat, your assistant shows each amount in its own currency and does not add the two together.",
+    "steps": [
+      "Open Settings from the left menu and press Integrations.",
+      "Find the Currency card.",
+      "Press US dollars or Canadian dollars. It saves as soon as you press it.",
+      "To use the other currency on a single item, use the USD/CAD picker next to its amount."
+    ],
+    "health": "Your Finance dimension, one of your 12 dimensions, counts income and expenses in your main currency only. Amounts in your other currency stay out of that score.",
+    "tips": [
+      "Changing your main currency never changes anything you already entered.",
+      "Look for Kept separate under a total. That line is your other currency.",
+      "To be paid in Canadian dollars without conversion, connect a Canadian Stripe account. A US Stripe account can charge in CAD, but Stripe converts it to US dollars and charges a conversion fee."
+    ],
+    "questions": [
+      {
+        "q": "Does the Suite convert between the two?",
+        "a": "No. Each amount stays in its own currency, and there are no exchange rates. Other currencies are not available."
+      },
+      {
+        "q": "Which currency does Stripe charge?",
+        "a": "Stripe charges in the item's own currency, so a CAD offer charges in CAD."
+      },
+      {
+        "q": "Why don't I see my Canadian-dollar payments on the 1099 page?",
+        "a": "A 1099 is a US form, so that page counts US dollars only."
+      }
+    ],
+    "related": [
+      "gst-hst",
+      "provincial-sales-tax-qst-pst-rst",
+      "connect-stripe",
+      "offers-packages",
+      "1099-contractor-totals"
+    ],
+    "who": "Everyone. Only the account owner can change the main currency, because team members do not see Settings > Integrations.",
+    "keywords": [
+      "currency",
+      "canadian dollars",
+      "cad",
+      "usd",
+      "us dollars",
+      "canada",
+      "main currency",
+      "change currency",
+      "two currencies",
+      "exchange rate",
+      "convert",
+      "kept separate"
+    ]
+  },
+  {
+    "id": "provincial-sales-tax-qst-pst-rst",
+    "name": "Provincial sales tax (QST, PST, RST)",
+    "area": "Money",
+    "where": "Money > Finance > Sales tax (GST/HST, QST, PST). Turn it on in Settings > Integrations > Canadian sales tax",
+    "href": "/finance/gst-hst",
+    "what": "For Canadian businesses registered for Quebec QST, BC or Saskatchewan PST, or Manitoba RST. Each one has its own number and filing schedule, works with or without GST/HST, and gets its own return section. Tax is added only for customers in a province you are registered in.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. If you are registered for QST, Snap a receipt can also read the QST on a receipt with your own AI key, and you check it before it is saved.",
+    "steps": [
+      "Open Settings, press Integrations, and find Canadian sales tax (GST/HST, QST, PST). It shows when your main currency is Canadian dollars.",
+      "Under Provincial sales tax, tick each one you are registered for. Add the number and how often you file, then press Save sales tax settings.",
+      "For BC, Saskatchewan or Manitoba, tick Provincial sales tax applies on each offer, booking calendar or invoice it applies to.",
+      "If you made payment links before, press Remake on each offer so they charge the tax.",
+      "Open Finance and press Sales tax (GST/HST, QST, PST). Each registration has its own section with its own period.",
+      "Press Download for my accountant (CSV) in that section. The button names the tax."
+    ],
+    "health": "This does not change your scores. It helps by keeping each provincial tax apart from your income and from GST/HST, ready for its own return.",
+    "tips": [
+      "QST is added for Quebec customers on everything that has GST. BC, Saskatchewan and Manitoba tax is added only where you tick it.",
+      "Each tax shows as its own line on invoices, pay pages and bookings.",
+      "The file by and pay by dates shown are the GST/HST dates. A province's own dates can differ, so confirm them with your tax professional."
+    ],
+    "questions": [
+      {
+        "q": "Does PST apply to what I sell?",
+        "a": "The Suite never decides that for you. Settings notes that most coaching and consulting is not subject to it, while software, digital products and goods often are. Ask your tax professional which of your offers it applies to."
+      },
+      {
+        "q": "Can I claim back tax I paid on expenses?",
+        "a": "The page has a claim-back box for QST only, and a Quebec registrant can record QST paid on an expense. PST and RST you paid are treated as part of the cost, so there is nothing to claim back here."
+      },
+      {
+        "q": "Will the Suite warn me about provincial registration?",
+        "a": "No. The $30,000 alert is for GST/HST only. Ask your tax professional about the rules in your province."
+      }
+    ],
+    "related": [
+      "gst-hst",
+      "currency-usd-and-cad",
+      "tax-preparation",
+      "offers-packages",
+      "payments-invoices",
+      "snap-a-receipt"
+    ],
+    "who": "Accounts with Canadian dollars as their main currency, or already registered. Only the account owner can turn it on, because team members do not see Settings > Integrations. Team members need the Finance area to see the returns.",
+    "keywords": [
+      "qst",
+      "tvq",
+      "pst",
+      "rst",
+      "quebec sales tax",
+      "provincial sales tax",
+      "bc pst",
+      "saskatchewan pst",
+      "manitoba rst",
+      "revenu quebec",
+      "provincial tax",
+      "provincial sales tax applies",
+      "9.975",
+      "tax by province"
+    ]
+  },
+  {
     "id": "brain-profile",
     "name": "Brain Profile",
     "area": "Alignment & Systems",
