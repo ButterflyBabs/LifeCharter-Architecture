@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import GuideSearch from "@/components/userGuide/GuideSearch";
 import { askAssistant } from "@/lib/assistantPopout";
-import { guideEntry } from "@/lib/userGuide/entries";
 import type { GuideEntry } from "@/lib/userGuide/types";
 import { guideCard } from "../guideStyles";
 
@@ -18,7 +17,7 @@ function Part({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export default function UserGuideEntry({ entry }: { entry: GuideEntry }) {
+export default function UserGuideEntry({ entry, related }: { entry: GuideEntry; related: { id: string; name: string }[] }) {
   // The assistant is closed during the assessment lock, to the Sales and consultant roles and to a restricted member.
   const [canAsk, setCanAsk] = useState(false);
   useEffect(() => {
@@ -27,7 +26,6 @@ export default function UserGuideEntry({ entry }: { entry: GuideEntry }) {
       .then((d) => setCanAsk(Boolean(d) && !d.assessmentsLocked && !["sales", "consultant"].includes(d.teamRole) && !d.extras?.restrict))
       .catch(() => {});
   }, []);
-  const related = entry.related.map(guideEntry).filter((e): e is GuideEntry => Boolean(e));
 
   return (
     <div className="px-4 py-8 sm:px-6">

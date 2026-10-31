@@ -12,5 +12,6 @@ export default async function UserGuideEntryPage({ params }: { params: Promise<{
   const [user, architect] = await Promise.all([sessionUser(), isAlignmentArchitect()]);
   const entry = guideEntry(id);
   if (!entry || !userGuideOpenFor(user?.email, architect)) notFound();
-  return <UserGuideEntry entry={entry} />;
+  const related = entry.related.map(guideEntry).flatMap((e) => (e ? [{ id: e.id, name: e.name }] : []));
+  return <UserGuideEntry entry={entry} related={related} />;
 }

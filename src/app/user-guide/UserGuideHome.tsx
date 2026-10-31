@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import GuideSearch, { guideHitHref, rememberGuideSearch } from "@/components/userGuide/GuideSearch";
-import { GUIDE_ENTRIES } from "@/lib/userGuide/entries";
 import { searchGuide } from "@/lib/userGuide/search";
 import { GUIDE_AREAS, type GuideEntry } from "@/lib/userGuide/types";
 import { guideCard } from "./guideStyles";
 
-function EntryCard({ entry }: { entry: GuideEntry }) {
+type EntryCardData = Pick<GuideEntry, "id" | "name" | "where" | "area" | "starter">;
+
+function EntryCard({ entry }: { entry: EntryCardData }) {
   return (
     <Link href={`/user-guide/${entry.id}`} className={`${guideCard} block p-4 transition-shadow hover:shadow-[0_14px_34px_rgba(31,43,58,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c9a227]`}>
       <span className="block font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{entry.name}</span>
@@ -18,7 +19,7 @@ function EntryCard({ entry }: { entry: GuideEntry }) {
   );
 }
 
-export default function UserGuideHome() {
+export default function UserGuideHome({ entries }: { entries: EntryCardData[] }) {
   const router = useRouter();
   const [recent, setRecent] = useState<string[]>([]);
   const [area, setArea] = useState<string | null>(null);
@@ -29,14 +30,15 @@ export default function UserGuideHome() {
       .catch(() => {});
   }, []);
 
-  const rerun = (text: string) => {
+  const rerun = async (text: string) => {
+    const { GUIDE_ENTRIES } = await import("@/lib/userGuide/entries");
     const hit = searchGuide(text, GUIDE_ENTRIES)[0];
     if (!hit) return;
     void rememberGuideSearch(text);
     router.push(guideHitHref(hit));
   };
-  const starters = GUIDE_ENTRIES.filter((e) => e.starter);
-  const areas = GUIDE_AREAS.filter((a) => GUIDE_ENTRIES.some((e) => e.area === a));
+  const starters = entries.filter((e) => e.starter);
+  const areas = GUIDE_AREAS.filter((a) => entries.some((e) => e.area === a));
   const heading = "text-sm font-semibold uppercase tracking-[0.12em] text-[#5a6472] dark:text-[#b8c2cf]";
 
   return (
@@ -52,7 +54,7 @@ export default function UserGuideHome() {
           <h2 id="guide-recent" className={heading}>Recently searched</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {recent.map((text) => (
-              <button key={text} type="button" onClick={() => rerun(text)} className="rounded-full border border-[#E6DDCB] dark:border-[#2F3B4A] bg-card px-3 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10">
+              <button key={text} type="button" onClick={() => void rerun(text)} className="rounded-full border border-[#E6DDCB] dark:border-[#2F3B4A] bg-card px-3 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10">
                 {text}
               </button>
             ))}
@@ -78,7 +80,7 @@ export default function UserGuideHome() {
         </div>
         {area && (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {GUIDE_ENTRIES.filter((e) => e.area === area).map((e) => <EntryCard key={e.id} entry={e} />)}
+            {entries.filter((e) => e.area === area).map((e) => <EntryCard key={e.id} entry={e} />)}
           </div>
         )}
       </section>

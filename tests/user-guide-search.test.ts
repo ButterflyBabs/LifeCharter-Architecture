@@ -22,7 +22,8 @@ test("small typos are forgiven", () => {
 });
 
 test("the small words in a question are ignored", () => {
-  assert.equal(top("how do I add a password")?.entry.id, "logins-passwords");
+  assert.equal(top("how do I reset my password")?.entry.id, "signing-in-and-resetting-your-password");
+  assert.equal(top("where do I save a password in my vault")?.entry.id, "logins-passwords");
 });
 
 test("a search finds the words people use, not only the page name", () => {

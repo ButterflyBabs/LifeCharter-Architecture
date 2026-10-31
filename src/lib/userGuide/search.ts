@@ -2,7 +2,7 @@ import type { GuideEntry } from "./types";
 
 // The User Guide search: runs in the browser over the guide's own words, so no keystroke ever costs an AI call.
 // Forgives small typos and ignores the small words in "how do I add a task".
-const SMALL_WORDS = new Set(["a", "add", "an", "and", "are", "can", "change", "create", "do", "does", "find", "for", "get", "how", "i", "in", "is", "it", "make", "me", "my", "new", "of", "on", "or", "see", "set", "the", "to", "use", "what", "where", "with"]);
+const SMALL_WORDS = new Set(["a", "add", "an", "and", "are", "can", "create", "do", "does", "find", "for", "get", "how", "i", "in", "is", "it", "make", "me", "my", "new", "of", "on", "or", "see", "set", "the", "to", "use", "what", "where", "with"]);
 
 export const guideWords = (text: string) =>
   text.toLowerCase().replace(/[’']/g, "").split(/[^a-z0-9]+/).filter(Boolean);

@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GUIDE_ENTRIES } from "@/lib/userGuide/entries";
+import type { GuideEntry } from "@/lib/userGuide/types";
 import { cleanGuideRecent, searchGuide, type GuideHit } from "@/lib/userGuide/search";
 
 // Remembers a search on the person's own profile. Called when they pick a result, never on each keystroke.
@@ -28,7 +28,12 @@ export default function GuideSearch({ variant, initial = "" }: { variant: "page"
   const [active, setActive] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
   const listId = useId();
-  const hits = useMemo(() => searchGuide(q, GUIDE_ENTRIES), [q]);
+  // The guide is large, so it only loads once someone starts to search.
+  const [entries, setEntries] = useState<GuideEntry[]>([]);
+  const loadEntries = () => {
+    if (!entries.length) void import("@/lib/userGuide/entries").then((m) => setEntries(m.GUIDE_ENTRIES));
+  };
+  const hits = useMemo(() => searchGuide(q, entries), [q, entries]);
   useEffect(() => setActive(-1), [q]);
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -65,7 +70,10 @@ export default function GuideSearch({ variant, initial = "" }: { variant: "page"
           setQ(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setOpen(true);
+          loadEntries();
+        }}
         onKeyDown={(e) => {
           if (e.key === "Escape") setOpen(false);
           if (!hits.length) return;
@@ -107,7 +115,7 @@ export default function GuideSearch({ variant, initial = "" }: { variant: "page"
             <span className="block text-xs text-[#5a6472] dark:text-[#b8c2cf]">{hit.entry.where}</span>
           </button>
         ))}
-        {showList && !hits.length && <p className="px-4 py-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Nothing matches that yet. Try another word.</p>}
+        {showList && !hits.length && entries.length > 0 && <p className="px-4 py-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Nothing matches that yet. Try another word.</p>}
       </div>
     </div>
   );
