@@ -227,8 +227,8 @@ export default function TasksPage() {
       })
       .catch(() => {});
   }, []);
-  const dropSeg = (scope: string, fullKeys: string[], to: string) => {
-    const from = dragSeg;
+  const dropSeg = (scope: string, fullKeys: string[], to: string, fromKey?: string) => {
+    const from = fromKey ? { scope, key: fromKey } : dragSeg;
     setDragSeg(null);
     setOverSeg(null);
     if (!from || from.scope !== scope) return;
@@ -241,25 +241,65 @@ export default function TasksPage() {
     }
     void fetch("/api/me/preferences", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tasksOrder: next }) }).catch(() => {});
   };
-  // The grip a section is dragged by; the whole section follows the pointer.
-  const grip = (scope: string, key: string) => (
-    <span
-      draggable
-      onDragStart={(e) => {
-        e.stopPropagation();
-        setDragSeg({ scope, key });
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", "section");
-        const sec = (e.currentTarget as HTMLElement).closest("section");
-        if (sec) e.dataTransfer.setDragImage(sec, 16, 16);
-      }}
-      onDragEnd={() => {
+  // The grip a section is dragged by. Pointer events (not the browser's own drag and drop) so it works the same with a
+  // mouse, a trackpad, a pen and a finger, and never has to draw a drag picture of a section that may be a page tall.
+  const startSegDrag = (e: React.PointerEvent<HTMLElement>, scope: string, key: string, keys: string[]) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragSeg({ scope, key });
+    // The section of this kind under the pointer (a list inside a group is skipped when moving groups).
+    const overAt = (x: number, y: number): string | null => {
+      let el = document.elementFromPoint(x, y) as HTMLElement | null;
+      while (el) {
+        const sec = el.closest<HTMLElement>("[data-seg-key]");
+        if (!sec) return null;
+        if (sec.dataset.segScope === scope) return sec.dataset.segKey ?? null;
+        el = sec.parentElement;
+      }
+      return null;
+    };
+    let target: string | null = null;
+    let lastY = e.clientY;
+    const tick = window.setInterval(() => {
+      // Keep the page scrolling while the section is held near the top or bottom edge.
+      if (lastY < 90) window.scrollBy(0, -18);
+      else if (lastY > window.innerHeight - 90) window.scrollBy(0, 18);
+    }, 30);
+    const finish = (drop: boolean) => {
+      window.clearInterval(tick);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+      window.removeEventListener("keydown", onKey);
+      if (drop && target && target !== key) dropSeg(scope, keys, target, key);
+      else {
         setDragSeg(null);
         setOverSeg(null);
-      }}
+      }
+    };
+    const onMove = (ev: PointerEvent) => {
+      lastY = ev.clientY;
+      target = overAt(ev.clientX, ev.clientY);
+      setOverSeg(target ? `${scope}|${target}` : null);
+    };
+    const onUp = () => finish(true);
+    const onCancel = () => finish(false);
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") finish(false);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("keydown", onKey);
+  };
+  const grip = (scope: string, key: string, keys: string[]) => (
+    <span
+      onPointerDown={(e) => startSegDrag(e, scope, key, keys)}
       title="Drag to move this section"
       aria-label="Drag to move this section"
-      className="shrink-0 cursor-grab touch-none rounded p-1 text-gray-300 hover:bg-[#1a2b4a]/5 hover:text-gray-500 active:cursor-grabbing"
+      role="button"
+      className="shrink-0 cursor-grab touch-none select-none rounded p-1 text-gray-300 hover:bg-[#1a2b4a]/5 hover:text-gray-500 active:cursor-grabbing"
     >
       <GripVertical className="h-4 w-4" />
     </span>
@@ -578,6 +618,8 @@ export default function TasksPage() {
               <section
                 key={col.segKey}
                 id={`tasks-${group ?? "all"}-${col.key}`}
+                data-seg-scope={scope}
+                data-seg-key={col.segKey}
                 aria-label={col.label}
                 onDragOver={(e) => {
                   if (dragSeg) {
@@ -618,7 +660,7 @@ export default function TasksPage() {
                 className={`rounded-2xl p-3 transition-colors ${overSeg === `${scope}|${col.segKey}` ? "ring-2 ring-[#1a2b4a]/40 bg-[#F8F5F0] dark:bg-white/5" : overKey === segId ? "bg-[#2E7C83]/15 ring-2 ring-[#2E7C83]/50" : "bg-[#F8F5F0] dark:bg-white/5"}`}
               >
                 <div className="flex items-center gap-1">
-                  {grip(scope, col.segKey)}
+                  {grip(scope, col.segKey, fullKeys)}
                   <button
                     onClick={() => toggleSection(foldKey, col.key === "done" || col.kind === "project")}
                     aria-expanded={!folded}
@@ -1236,6 +1278,8 @@ export default function TasksPage() {
                   <section
                     key={g}
                     id={`tasks-group-${g}`}
+                    data-seg-scope="groups"
+                    data-seg-key={g}
                     aria-label={label}
                     onDragOver={(e) => {
                       if (!dragSeg || dragSeg.scope !== "groups") return;
@@ -1251,7 +1295,7 @@ export default function TasksPage() {
                     className={`rounded-3xl border bg-white/60 p-3 dark:bg-white/[0.03] ${overSeg === `groups|${g}` ? "border-[#1a2b4a]/50 ring-2 ring-[#1a2b4a]/30" : "border-[#1a2b4a]/10"}`}
                   >
                     <div className="flex items-center gap-1">
-                      {grip("groups", g)}
+                      {grip("groups", g, groupOrder)}
                       <button onClick={() => toggleSection(`group:${g}`)} aria-expanded={!gFolded} className="flex min-w-0 flex-1 items-center gap-2 px-1 py-1.5 text-left">
                         {gFolded ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                         <h2 className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</h2>
