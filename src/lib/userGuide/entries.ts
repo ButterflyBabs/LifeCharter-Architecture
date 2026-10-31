@@ -4172,6 +4172,18 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
           "landing page",
           "link clicks"
         ]
+      },
+      {
+        "id": "private-contact",
+        "title": "Do not contact - private contact",
+        "body": "The last stage on every outreach pipeline. Move someone here when they are a private contact you do not want to reach out to. The card gets no follow-ups and stays put. It does not unsubscribe them from your emails.",
+        "keywords": [
+          "do not contact",
+          "private contact",
+          "friend",
+          "family",
+          "personal contact"
+        ]
       }
     ]
   },
@@ -5031,7 +5043,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "cold-email-stages",
         "title": "Cold email stages",
-        "body": "The pipeline starts with these stages: To email, Email 1 sent, Emails 2 and 3 sent (no reply yet), Replied, Invited, Registered, Attended, No-show, Consultation booked, Client, Nurture, and Asked to stop or bounced.",
+        "body": "The pipeline starts with these stages: To email, Email 1 sent, Emails 2 and 3 sent (no reply yet), Replied, Invited, Registered, Attended, No-show, Consultation booked, Client, Nurture, Asked to stop or bounced, and Do not contact - private contact.",
         "keywords": [
           "cold email stages",
           "to email",

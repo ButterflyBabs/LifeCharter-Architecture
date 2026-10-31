@@ -40,11 +40,13 @@ const DM_TEMPLATE: { key: string; name: string; slug: string; followUpDays: numb
   { key: "booked", name: "Booked", slug: "booked", followUpDays: null, kind: "booked" },
   { key: "nurture", name: "Nurture", slug: "nurture", followUpDays: 30, kind: "open" },
   { key: "not_now", name: "Not now", slug: "not-now", followUpDays: null, kind: "closed" },
+  { key: "private_contact", name: "Do not contact - private contact", slug: "private-contact", followUpDays: null, kind: "closed" },
 ];
 const SIMPLE_TEMPLATE: typeof DM_TEMPLATE = [
   { key: "new", name: "New", slug: "new", followUpDays: 2, kind: "open" },
   { key: "in_progress", name: "In progress", slug: "in-progress", followUpDays: 7, kind: "open" },
   { key: "done", name: "Done", slug: "done", followUpDays: null, kind: "closed" },
+  { key: "private_contact", name: "Do not contact - private contact", slug: "private-contact", followUpDays: null, kind: "closed" },
 ];
 const AFFILIATE_TEMPLATE: typeof DM_TEMPLATE = [
   { key: "prospect", name: "Prospect", slug: "prospect", followUpDays: null, kind: "open" },
@@ -69,6 +71,7 @@ const COLD_EMAIL_TEMPLATE: typeof DM_TEMPLATE = [
   { key: "client", name: "Client", slug: "client", followUpDays: null, kind: "closed" },
   { key: "nurture", name: "Nurture", slug: "nurture", followUpDays: 30, kind: "open" },
   { key: "not_now", name: "Asked to stop or bounced", slug: "stopped", followUpDays: null, kind: "closed" },
+  { key: "private_contact", name: "Do not contact - private contact", slug: "private-contact", followUpDays: null, kind: "closed" },
 ];
 export const TEMPLATES = { dm: DM_TEMPLATE, simple: SIMPLE_TEMPLATE, affiliate: AFFILIATE_TEMPLATE, coldemail: COLD_EMAIL_TEMPLATE };
 export type Purpose = "outreach" | "affiliate";
