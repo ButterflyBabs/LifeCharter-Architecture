@@ -11,6 +11,7 @@ import { aiActionAllowed, recordAiAction, AI_LIMIT_BODY } from "@/lib/capabiliti
 import { memberAiGate } from "@/lib/ai/memberCap";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // Runs AI scoring over the stored Soul AND Brain answers and caches a 0-100
 // sub-score (+ rationale) per dimension+source into

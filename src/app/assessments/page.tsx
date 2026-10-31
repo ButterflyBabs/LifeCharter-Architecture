@@ -1,4 +1,5 @@
 import { ProfileRead } from "@/components/planning/AssistantPanels";
+import { ScoreAnswersCard } from "@/components/assessment/ScoreAnswersCard";
 import { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -90,6 +91,7 @@ export default function AssessmentsPage() {
 
       {/* Assessment Cards */}
       <div className="max-w-6xl mx-auto px-4 py-12">
+        <ScoreAnswersCard />
         <ProfileRead />
 
         {/* Recurring check-in rhythm */}

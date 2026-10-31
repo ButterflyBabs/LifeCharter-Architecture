@@ -256,7 +256,7 @@ export const GUIDE_DRAFTS: GuideEntry[] = [
   "href": "/business-alignment",
   "what": "Every score is worked out from what you answered and what you do in the Suite. You cannot type a score in. Your overall score, each of the 12 dimensions, each of the 8 pillars and your Quick Pulse result all use the same 0 to 100 scale.",
   "ai": "AI-powered",
-  "aiNote": "The blending is plain math, and AI only does one job. It reads your written Brain and Soul answers and gives that part a 0 to 100 reading, using your own AI key, when you finish Brain or Soul. Soul questions marked sensitive are left out. Without a key, those parts show as AI scoring pending. Profit, Quick Pulse, live data and plan completeness use no AI.",
+  "aiNote": "The blending is plain math, and AI only does one job. It reads your written Brain and Soul answers and gives that part a 0 to 100 reading, using your own AI key, when you finish Brain or Soul. Soul questions marked sensitive are left out. Without a key, those parts show as AI scoring pending. Add your key and press Score my answers on Alignment Profile. Profit, Quick Pulse, live data and plan completeness use no AI.",
   "steps": [
    "Finish your Brain, Soul and Profit assessments.",
    "Open Business Alignment to see your overall score and phase.",
@@ -282,6 +282,10 @@ export const GUIDE_DRAFTS: GuideEntry[] = [
    {
     "q": "Does an old answer lower my score?",
     "a": "No. After 90 days an assessment input is marked getting stale, and after 14 days a Quick Pulse is too. It still counts. The mark is a nudge to refresh it."
+   },
+   {
+    "q": "What does AI scoring pending mean?",
+    "a": "Your written Brain or Soul answers have not been read yet, usually because no AI key was connected when you finished. Add your key, open Alignment Profile and press Score my answers."
    }
   ],
   "related": [
@@ -1336,6 +1340,17 @@ export const GUIDE_DRAFTS: GuideEntry[] = [
    "locked pages"
   ],
   "sections": [
+   {
+    "id": "score-my-answers",
+    "title": "Score my answers",
+    "body": "If you finished Brain or Soul with no AI key connected, a card here says those answers still need scoring. Add your key, come back and press Score my answers. It uses your own AI key, and the card leaves once they are scored.",
+    "keywords": [
+     "ai scoring pending",
+     "score my answers",
+     "rescore",
+     "scores missing"
+    ]
+   },
    {
     "id": "your-check-in-rhythm",
     "title": "Your Check-in Rhythm",

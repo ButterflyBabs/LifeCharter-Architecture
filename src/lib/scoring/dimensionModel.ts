@@ -67,7 +67,7 @@ export interface DimensionSource {
   soulSections?: string[];
   pulseLabels?: string[];
   operationalMetrics?: string[];
-  invert?: boolean; // e.g. "Operational Stress" — high answer = low health
+  invert?: boolean; // for a question where a high answer means low health
   /** Soul only: sensitivity tier gate for this source. */
   soulTier?: "scoreable" | "private"; // flagged-sensitive answers always excluded upstream
   /** business_plan only: which plan's completeness feeds this (defaults to business). */
@@ -159,7 +159,7 @@ export const DIMENSION_MODEL: DimensionDefinition[] = [
         weight: 25,
         operationalMetrics: ["pillar_score_avg"],
       },
-      { kind: "pulse", method: "scale", weight: 15, pulseLabels: ["Operational Stress"], invert: true },
+      { kind: "pulse", method: "scale", weight: 15, pulseLabels: ["Operational Stress"] }, // 1 = Overwhelmed, 5 = Effortless, so a high answer is healthy
     ],
   },
   {
