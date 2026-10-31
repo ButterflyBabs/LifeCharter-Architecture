@@ -36,7 +36,7 @@ function wordMatch(term: string, words: string[]): number {
   for (const w of words) {
     if (w === term) return 3;
     if (term.length >= 2 && w.startsWith(term)) best = Math.max(best, 2);
-    else if (best === 0 && slips(term, w, allowedSlips(term)) <= allowedSlips(term)) best = 1;
+    else if (best === 0 && slips(term, w.replace(/s$/, ""), allowedSlips(term)) <= allowedSlips(term)) best = 1;
   }
   return best;
 }
@@ -62,7 +62,7 @@ export function searchGuide(query: string, entries: GuideEntry[], limit = 8): Gu
     let matched = 0;
     const sectionScore = new Map<string, number>();
     for (const term of asked) {
-      const inName = wordMatch(term, name) * 10;
+      const inName = wordMatch(term, name) * 12;
       const inKeywords = wordMatch(term, keywords) * 6;
       const inBody = wordMatch(term, body) * 2;
       let inSection = 0;
@@ -90,7 +90,8 @@ export function searchGuide(query: string, entries: GuideEntry[], limit = 8): Gu
       ...(bestSection && !nameLed ? { section: { id: bestSection.s.id, title: bestSection.s.title } } : {}),
     });
   }
-  return hits.sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name)).slice(0, limit);
+  // On a tie the shorter name is the closer match: Contacts before Contact record.
+  return hits.sort((a, b) => b.score - a.score || a.entry.name.length - b.entry.name.length).slice(0, limit);
 }
 
 // A person's recent searches, newest first, no repeats (saved on their profile through /api/me/preferences).
