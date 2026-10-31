@@ -1,3 +1,4 @@
+import { saveDealContact } from "@/lib/sales/dealContact";
 import type { ActionTool, ActionCtx } from "./types";
 import { createBoard, boardStages, createCard, moveCard, retagContact, slugTag, type Board, type DmStage } from "@/lib/dmPipeline";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
@@ -304,6 +305,7 @@ export const addDeal: ActionTool = {
     if (stage.kind !== "open") row.closed_at = new Date().toISOString();
     const { data, error } = await ctx.db.from("pipeline_deals").insert(row).select("id").single();
     if (error || !data) throw new Error("The deal didn't save.");
+    await saveDealContact(ctx.db, ctx.planId, row).catch((e) => console.error("deal contact:", e));
     return { summary: `Added a deal with ${str(args.contact_name, 160)} in "${stage.name}".`, result: { id: data.id }, undo: { id: data.id } };
   },
   undo: async (u, ctx) => {

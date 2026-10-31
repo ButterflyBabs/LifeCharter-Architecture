@@ -4,6 +4,7 @@ import { DEAL_COLUMNS, ensureStages, shapeDeal } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
 import { ownBusinessId, salesAccount } from "@/lib/sales/account";
 import { logActivity, q } from "@/lib/activity";
+import { saveDealContact } from "@/lib/sales/dealContact";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const { data, error } = await a.supabase.from("pipeline_deals").update(row).eq("id", params.id).eq("master_plan_id", a.masterPlanId).select(DEAL_COLUMNS).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Couldn't save the deal." }, { status: 500 });
   const d = data as Record<string, unknown>;
+  if (row.email) await saveDealContact(a.supabase, a.masterPlanId, d).catch((e) => console.error("deal contact:", e));
   const name = q(d.contact_name || d.company);
   const moved = row.stage_id ? stages.find((s) => s.id === row.stage_id) : null;
   if (moved) {

@@ -4,6 +4,7 @@ import { DEAL_COLUMNS, ensureStages, shapeDeal } from "@/lib/sales/pipeline";
 import { dealRow } from "@/lib/sales/dealRow";
 import { ownBusinessId, planBusinesses, salesAccount } from "@/lib/sales/account";
 import { logActivity, q } from "@/lib/activity";
+import { saveDealContact } from "@/lib/sales/dealContact";
 import { toCurrency } from "@/lib/currency";
 import { homeCurrency } from "@/lib/currencyServer";
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
   const { data, error } = await a.supabase.from("pipeline_deals").insert(row).select(DEAL_COLUMNS).single();
   if (error) return NextResponse.json({ error: "Couldn't save the deal." }, { status: 500 });
   const d = data as Record<string, unknown>;
+  await saveDealContact(a.supabase, a.masterPlanId, row).catch((e) => console.error("deal contact:", e));
   await logActivity({ masterPlanId: a.masterPlanId, action: "created", entityType: "deal", entityId: d.id as string, summary: `Added deal ${q(d.contact_name || d.company)} in ${stage.name}` });
   return NextResponse.json({ deal: shapeDeal(d, new Map(stages.map((s) => [s.id, s]))) });
 }

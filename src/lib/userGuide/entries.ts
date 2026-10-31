@@ -3798,7 +3798,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Give every open deal a next step. It keeps the deal moving and it is what your Sales Journey pillar reads.",
       "A deal with no movement for 14 days is marked, and it counts in Deals to move today.",
-      "Any deal can have its own odds. Untick Use the stage's default to set them."
+      "Any deal can have its own odds. Untick Use the stage's default to set them.",
+      "Add an email to a deal and that person is saved to Contacts, so you never enter them twice."
     ],
     "questions": [
       {

@@ -359,7 +359,7 @@ function PipelineBoard() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div><label className={label} htmlFor="d-name">Who it&rsquo;s with</label><ContactLookupInput id="d-name" className={input} value={form.contactName} onChange={(v) => setForm((f) => (f ? { ...f, contactName: v } : f))} onPick={fillFromContact} placeholder="Name, or search your contacts" /></div>
               <div><label className={label} htmlFor="d-company">Company</label><input id="d-company" className={input} value={form.company} onChange={set("company")} /></div>
-              <div className="sm:col-span-2"><label className={label} htmlFor="d-email">Email</label><ContactLookupInput id="d-email" type="email" className={input} value={form.email} onChange={(v) => setForm((f) => (f ? { ...f, email: v } : f))} onPick={fillFromContact} /></div>
+              <div className="sm:col-span-2"><label className={label} htmlFor="d-email">Email (adds them to Contacts)</label><ContactLookupInput id="d-email" type="email" className={input} value={form.email} onChange={(v) => setForm((f) => (f ? { ...f, email: v } : f))} onPick={fillFromContact} /></div>
               <div><label className={label} htmlFor="d-stage">Stage</label><select id="d-stage" className={input} value={form.stageId} onChange={set("stageId")}>{stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
               <div>
                 <label className={label} htmlFor="d-offer">Offer</label>
