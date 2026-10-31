@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { COLLECTIVE_FORWARD_STATUS, COLLECTIVE_HOST, COLLECTIVE_HOST_LIVE, SUITE_HOST, collectiveHostAllows, isCollectiveHost, isLegacyCollectivePath, isSuiteProductionHost } from "@/lib/collective";
 import { VIEW_MEMBER_COOKIE, isMemberId } from "@/lib/viewMember";
-import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
+import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAccess, memberPageRedirect, featureApiAccess, featurePageRedirect, cleanFeatureMap, cleanExtras, memberAccessExpired, extrasApiAccess, bodyDeleteVerdict, restrictedPageRedirect, type FeatureMap, type AccessExtras } from "@/lib/teamRoles";
 
 // Auth gate for the whole app. Kept behind AUTH_ENABLED so there is NO lock-out
 // window: until you set AUTH_ENABLED=true (after creating your Supabase user),
@@ -200,6 +200,7 @@ async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: 
     if (!res.ok) return none;
     const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown; extras?: unknown } | null }[];
     if (!Array.isArray(rows) || rows.length === 0) return none;
+    if (memberAccessExpired(rows[0].permissions)) return none; // a time-limited login (Julian's demo access) stops working after its last day
     return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features), extras: cleanExtras(rows[0].permissions?.extras) };
   } catch {
     return none;

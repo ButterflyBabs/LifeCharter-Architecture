@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createServerClient as createServiceClient } from "@/lib/supabase/server";
 import { switcherAllowed } from "@/lib/accountSwitcher";
 import { VIEW_MEMBER_COOKIE, isMemberId } from "@/lib/viewMember";
+import { memberAccessExpired } from "@/lib/teamRoles";
 
 // Super-admin gate for privileged actions (e.g. coach overrides).
 //
@@ -174,7 +175,7 @@ export async function resolveActor(): Promise<Actor> {
       .ilike("email", email)
       .in("status", ["active", "pending"])
       .maybeSingle();
-    if (m?.id) {
+    if (m?.id && !memberAccessExpired(m.permissions)) {
       // First time we see them signed in: bind the login identity + activate.
       await supabase
         .from("workspace_members")

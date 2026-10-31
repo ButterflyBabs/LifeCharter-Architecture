@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { authEnabled, sessionUser, isOwnerEmail, prefersTeamAccount, ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
 import { readViewAs } from "@/lib/viewAs";
 import { switcherAllowed } from "@/lib/accountSwitcher";
+import { memberAccessExpired } from "@/lib/teamRoles";
 
 // The seeded demo workspace. When the lc_demo cookie is set, every data route
 // resolves to this plan so the whole app shows sample data for sales/training.
@@ -77,11 +78,11 @@ async function memberTeamPlanId(
   if (!email) return null;
   const { data: member } = await supabase
     .from("workspace_members")
-    .select("workspace_id, status")
+    .select("workspace_id, status, permissions")
     .ilike("email", email)
     .in("status", ["active", "pending"])
     .maybeSingle();
-  if (!member?.workspace_id) return null;
+  if (!member?.workspace_id || memberAccessExpired(member.permissions)) return null;
   const { data: ws } = await supabase.from("workspaces").select("master_plan_id").eq("id", member.workspace_id).maybeSingle();
   return (ws?.master_plan_id as string) ?? null;
 }

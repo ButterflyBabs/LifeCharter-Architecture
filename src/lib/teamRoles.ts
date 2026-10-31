@@ -243,11 +243,14 @@ export interface AccessExtras {
   noDelete?: boolean;
   pages?: Record<string, "view" | "edit">;
   demo?: boolean; // may present the Demo Account (sample data) — only meaningful in Babs's own team
+  expiresOn?: string; // YYYY-MM-DD: the last day this person's access works (Mountain time); the day after, they are signed out of everything
 }
+const EXPIRY_RE = /^\d{4}-\d{2}-\d{2}$/;
 export function cleanExtras(v: unknown): AccessExtras | null {
   if (!v || typeof v !== "object") return null;
   const o = v as Record<string, unknown>;
   const out: AccessExtras = {};
+  if (typeof o.expiresOn === "string" && EXPIRY_RE.test(o.expiresOn)) out.expiresOn = o.expiresOn;
   if (o.restrict === true) out.restrict = true;
   if (o.ownOnly === true) out.ownOnly = true;
   if (o.noDelete === true) out.noDelete = true;
@@ -262,7 +265,16 @@ export function cleanExtras(v: unknown): AccessExtras | null {
   return Object.keys(out).length ? out : null;
 }
 
-export const NO_DELETE_MESSAGE = "Deleting needs the account owner's permission. Ask them and they will remove it for you.";
+/** True once the day after a member's expiresOn has begun in Mountain time. A member with no expiry never expires. */
+export function memberAccessExpired(permissions: unknown, now: Date = new Date()): boolean {
+  const extras = (permissions as { extras?: { expiresOn?: unknown } } | null | undefined)?.extras;
+  const last = typeof extras?.expiresOn === "string" && EXPIRY_RE.test(extras.expiresOn) ? extras.expiresOn : null;
+  if (!last) return false;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  return today > last;
+}
+
+export const NO_DELETE_MESSAGE ="Deleting needs the account owner's permission. Ask them and they will remove it for you.";
 
 // Always open to a restricted member: their own profile, Help, sign-in pages.
 const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
