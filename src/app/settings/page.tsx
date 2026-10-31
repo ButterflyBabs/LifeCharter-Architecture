@@ -1830,7 +1830,7 @@ export default function SettingsPage() {
           Export Your Data
         </h4>
         <p className="text-sm text-[#b8a898] mb-4">
-          Download your account data. The full backup holds your main records, never your passwords or API keys. Export your contacts from the Contacts page.
+          Download your account data. The full backup holds your records across the Suite, never your passwords or API keys. Uploaded files stay in the Suite.
         </p>
         <div className="space-y-3">
           <a href="/api/export/account" className="block">

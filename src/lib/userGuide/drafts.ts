@@ -774,7 +774,8 @@ export const GUIDE_DRAFTS: GuideEntry[] = [
   ],
   "health": "This does not change your scores. It keeps your account paid and up to date.",
   "tips": [
-   "If your card fails, start with Manage billing to update it."
+   "If your card fails, start with Manage billing to update it.",
+   "Press Change to on another plan's card to open the same billing page."
   ],
   "questions": [
    {
@@ -936,12 +937,12 @@ export const GUIDE_DRAFTS: GuideEntry[] = [
   "tips": [
    "This year's ledger (CSV) is handy for your bookkeeper or accountant.",
    "Your backup never includes your passwords or API keys.",
-   "Export your contacts from the Contacts page with Export contacts."
+   "Your backup never includes private links. Uploaded files stay in the Suite."
   ],
   "questions": [
    {
     "q": "What is in each download?",
-    "a": "Full account backup (JSON) is a data file with your plans, tasks, finance, pipeline, SOPs, assessments and more. Your plans, goals and reviews (document) is one written document. This year's ledger (CSV) is your income and expenses for the year."
+    "a": "Full account backup (JSON) is a data file with your records across the Suite: contacts, plans, tasks, finance, pipeline, bookings, projects, agreements, assessments and more. Your plans, goals and reviews (document) is one written document. This year's ledger (CSV) is your income and expenses for the year."
    },
    {
     "q": "If I press Delete, is my account gone right away?",

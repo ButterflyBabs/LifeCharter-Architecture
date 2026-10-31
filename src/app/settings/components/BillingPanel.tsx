@@ -284,6 +284,10 @@ export default function BillingPanel() {
                       <Button className="w-full mt-6" variant="outline" disabled>
                         Your current plan
                       </Button>
+                    ) : current && !current.comped ? (
+                      <Button className="w-full mt-6" variant={copy.popular ? "primary" : "outline"} onClick={openBillingPortal} disabled={portalLoading}>
+                        {portalLoading ? "Opening…" : `Change to ${plan.name}`}
+                      </Button>
                     ) : (
                       <a
                         href={`/schedule/website?src=${encodeURIComponent("billing-upgrade-" + plan.id)}`}
