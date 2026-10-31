@@ -155,7 +155,7 @@ export default function BillsPage() {
   // The four US estimated-tax dates still ahead in the next 12 months.
   function taxDates() {
     const y = Number(today.slice(0, 4));
-    const dates = [`${y}-04-15`, `${y}-06-15`, `${y}-09-15`, `${y + 1}-01-15`, `${y + 1}-04-15`, `${y + 1}-06-15`, `${y + 1}-09-15`]
+    const dates = [`${y}-01-15`, `${y}-04-15`, `${y}-06-15`, `${y}-09-15`, `${y + 1}-01-15`, `${y + 1}-04-15`, `${y + 1}-06-15`, `${y + 1}-09-15`]
       .filter((d) => d >= today)
       .slice(0, 4);
     return dates.map((d) => ({ name: "Estimated tax payment", nextDue: d, cadence: "once", category: "Taxes" }));

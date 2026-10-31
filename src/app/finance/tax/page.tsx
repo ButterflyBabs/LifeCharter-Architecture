@@ -37,6 +37,7 @@ function nextDeadline(): { iso: string; label: string } {
   const now = new Date();
   const y = now.getFullYear();
   const candidates = [
+    new Date(Date.UTC(y, 0, 15)),
     new Date(Date.UTC(y, 3, 15)),
     new Date(Date.UTC(y, 5, 15)),
     new Date(Date.UTC(y, 8, 15)),

@@ -102,6 +102,13 @@ const SECTIONS: Section[] = [
     tint: "#4a9b9b",
   },
   {
+    href: "/finance/monthly-review",
+    title: "Monthly Money Review",
+    description: "One month at a glance: income, expenses, net and margin",
+    icon: <Receipt className="w-5 h-5 text-[#c98a27]" />,
+    tint: "#c98a27",
+  },
+  {
     href: "/finance/techstack",
     title: "Tech Stack Optimizer",
     description: "Review software & subscription spend",

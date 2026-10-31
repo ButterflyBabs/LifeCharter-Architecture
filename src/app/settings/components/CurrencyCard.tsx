@@ -56,7 +56,7 @@ export default function CurrencyCard() {
           Getting paid in Canadian dollars: Stripe pays you in your Stripe account&apos;s own currency. To receive
           Canadian dollars without conversion, connect a Canadian Stripe account (a Canadian business and bank
           account). A US Stripe account can still charge in CAD, but Stripe converts it to US dollars and charges a
-          conversion fee. Sales tax (GST/HST) is not handled by the Suite yet.
+          conversion fee.
         </p>
         {msg && <p className={`text-sm ${msg.ok ? "text-green-700 dark:text-green-400" : "text-red-600"}`}>{msg.text}</p>}
       </CardContent>

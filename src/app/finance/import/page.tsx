@@ -178,8 +178,7 @@ export default function FinanceImportPage() {
               </div>
             )}
             <p className="text-xs text-[#b8a898] mt-3">
-              CSV bank/card exports work best. PDF statements: for now, copy the text out and paste it here — direct
-              PDF upload is coming next.
+              CSV bank/card exports work best. PDF statements: copy the text out and paste it here.
             </p>
           </CardContent>
         </Card>
