@@ -243,6 +243,28 @@ export default function FinancialPulsePage() {
     }
   };
 
+  const [cashInput, setCashInput] = useState("");
+  const [cashAt, setCashAt] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/finance/cash", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.amount != null) setCashInput(String(d.amount));
+        setCashAt(d?.at ?? null);
+      })
+      .catch(() => {});
+  }, []);
+  const saveCash = async () => {
+    setBudgetSaving(true);
+    try {
+      const r = await fetch("/api/finance/cash", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: cashInput }) });
+      const d = r.ok ? await r.json() : null;
+      if (d) setCashAt(d.at ?? null);
+    } finally {
+      setBudgetSaving(false);
+    }
+  };
+
   const saveBudget = async (bType: "income" | "expense", cat: string, amt: number) => {
     setBudgetSaving(true);
     try {
@@ -450,7 +472,7 @@ export default function FinancialPulsePage() {
               </div>
               <div className="text-xs text-[#b8a898]">Financial health</div>
             </div>
-            <div className="flex-1 min-w-[280px] grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex-1 min-w-[280px] grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#b8a898] mb-1">Monthly expense budget</label>
                 <div className="flex gap-2">
@@ -478,6 +500,16 @@ export default function FinancialPulsePage() {
                     Set
                   </Button>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#b8a898] mb-1">Cash in the bank</label>
+                <div className="flex gap-2">
+                  <MoneyInput value={cashInput} onChange={setCashInput} placeholder="Business accounts" aria-label="Cash in the bank" />
+                  <Button variant="outline" size="sm" disabled={budgetSaving} onClick={() => void saveCash()}>
+                    Set
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-[#7a8a99]">{cashAt ? `Updated ${new Date(cashAt).toLocaleDateString()}. Counts toward your Finance dimension.` : "Counts toward your Finance dimension."}</p>
               </div>
             </div>
           </div>

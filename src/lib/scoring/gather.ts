@@ -188,6 +188,14 @@ async function liveOperationalMetrics(
   } catch {
     /* optional */
   }
+  // What the owner last typed as cash in the bank (Financial Pulse) → the runway part of the Finance dimension.
+  try {
+    const { data } = await supabase.from("client_master_plans").select("metadata").eq("id", scopeId).maybeSingle();
+    const cash = (data?.metadata as { cash_in_bank?: { amount?: number } } | null)?.cash_in_bank?.amount;
+    if (typeof cash === "number") m.cash_in_bank = cash;
+  } catch {
+    /* optional */
+  }
   // Monthly income target from budgets → revenue_goal.
   try {
     const { data } = await supabase

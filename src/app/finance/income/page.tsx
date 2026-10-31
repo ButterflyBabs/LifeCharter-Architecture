@@ -2,11 +2,12 @@
 
 
 import UnassignedBanner from "@/components/finance/UnassignedBanner";import { anyProvincial } from "@/lib/salesTax";
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
+import { EntryEditForm } from "@/components/finance/EntryEditForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft, TrendingUp, Plus, X, Trash2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Plus, X, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { fetchSegmentOptions, type SegmentOption } from "../segments";
 import { FinanceLedgerRead } from "@/components/planning/AssistantPanels";
@@ -28,6 +29,7 @@ interface Entry {
   description: string;
   occurredOn: string;
   vendor?: string;
+  source?: string;
   currency?: string;
   taxAmount?: number;
   provTaxAmount?: number;
@@ -139,6 +141,8 @@ export default function IncomePage() {
       setSaving(false);
     }
   };
+
+  const [editing, setEditing] = useState<string | null>(null);
 
   const remove = async (id: string) => {
     setEntries((prev) => prev.filter((e) => e.id !== id));
@@ -309,9 +313,10 @@ export default function IncomePage() {
             ) : entries.length === 0 ? (
               <p className="text-sm text-[#b8a898]">No income yet — add your first above.</p>
             ) : (
-              <div className="divide-y divide-[#1a2b4a]/8 max-h-[360px] overflow-y-auto">
+              <div className="divide-y divide-[#1a2b4a]/8 max-h-[480px] overflow-y-auto">
                 {entries.map((e) => (
-                  <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
+                  <Fragment key={e.id}>
+                  <div className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] truncate">
                         {e.vendor ? `${e.vendor} · ` : ""}
@@ -325,11 +330,26 @@ export default function IncomePage() {
                         +{usd(e.amount, toCurrency(e.currency, home))}
                         <TaxNote taxAmount={e.taxAmount} provTaxAmount={e.provTaxAmount} province={e.taxProvince} type={e.type === "income" ? "income" : "expense"} currency={toCurrency(e.currency, home)} home={home} />
                       </span>
+                      <button onClick={() => setEditing(editing === e.id ? null : e.id)} className="text-[#b8a898] hover:text-[#2E7C83]" title="Edit" aria-label="Edit this entry">
+                        <Pencil className="w-4 h-4" />
+                      </button>
                       <button onClick={() => remove(e.id)} className="text-[#b8a898] hover:text-red-500" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
+                  {editing === e.id && (
+                    <EntryEditForm
+                      entry={e}
+                      onCancel={() => setEditing(null)}
+                      onSaved={() => {
+                        setEditing(null);
+                        load();
+                        void reloadOverview();
+                      }}
+                    />
+                  )}
+                  </Fragment>
                 ))}
               </div>
             )}
