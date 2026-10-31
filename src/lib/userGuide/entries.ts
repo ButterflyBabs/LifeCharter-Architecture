@@ -2585,35 +2585,976 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ]
   },
   {
+    "id": "the-collective",
+    "name": "The Collective",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective",
+    "href": "/community",
+    "what": "The LifeCharter community: conversations, live events, private messages, your private Alignment Journal and the LifeCharter Library. It has its own look, its own menu and its own address. Nothing from your Command Suite is shared with the community.",
+    "ai": "Has an AI button",
+    "aiNote": "On Home, What you missed has a Catch me up button that summarizes new posts and replies, only from channels you can open. It uses your own AI key, or Mariposa on your Collective Plus allowance. You are asked to allow this once. The safety check on posts and replies runs on LifeCharter's side and never uses your key. Everything else on Home works without AI.",
+    "steps": [
+      "Press The Collective in the left menu. It opens at collective.lccommandsuite.com.",
+      "Sign in with your usual email and password the first time.",
+      "If you are new, follow Four small steps to settle in, then press the I'm settled button to hide them.",
+      "Read your Home cards: Alignment Anchor, Your Intention, Your Next Session and Share a Win.",
+      "Press Share with the Collective to post, and choose where under Post to.",
+      "Use the Collective's own menu for My Journal, Messages, Notifications, Events, Members and Help & FAQ."
+    ],
+    "health": "This does not change your scores. It gives you community, live support and people who understand what you are building.",
+    "tips": [
+      "On a phone, the bottom bar has Home, Channels, Messages, Events and Me.",
+      "Above your feed, choose All, Community or My programs to narrow what you see.",
+      "Hide What you missed with its X when you do not need it.",
+      "The Command Suite button in the Collective's menu takes you back to your Suite."
+    ],
+    "questions": [
+      {
+        "q": "Why am I asked to sign in again?",
+        "a": "The Collective has its own address, so it keeps its own sign-in. Use the same email and password. Command Suite sign-in stays on lccommandsuite.com."
+      },
+      {
+        "q": "Can other members see my business data?",
+        "a": "No. The Collective is a separate space. Nothing from your Command Suite is shared with the community."
+      },
+      {
+        "q": "Why don't I see The Collective in my left menu?",
+        "a": "It appears once your assessments are finished. A team member whose access is limited to their own areas does not see it in the menu."
+      }
+    ],
+    "related": [
+      "collective-channels-and-posts",
+      "collective-events-and-calls",
+      "my-alignment-journal",
+      "collective-profile-and-notifications",
+      "executive-home"
+    ],
+    "who": "Every Command Suite client and invited team member is added as a member. Anyone else joins with an invitation.",
+    "keywords": [
+      "collective",
+      "community",
+      "lifecharter collective",
+      "feed",
+      "home",
+      "what you missed",
+      "catch me up",
+      "search posts",
+      "group",
+      "sign in to collective",
+      "welcome"
+    ],
+    "sections": [
+      {
+        "id": "collective-home-and-feed",
+        "title": "Collective Home and feed",
+        "body": "At the top of Home is Search posts and replies, then What you missed and your four cards. Below them is a Share with the Collective box and your feed of newest activity. The latest announcement from the past week stays on top.",
+        "keywords": [
+          "home",
+          "feed",
+          "search",
+          "alignment anchor",
+          "your intention",
+          "your next session",
+          "share a win"
+        ]
+      },
+      {
+        "id": "collective-help-and-faq",
+        "title": "Help & FAQ",
+        "body": "Answers to common questions about the Collective, with a search box. Press Message an admin to send a private message if you still need help.",
+        "keywords": [
+          "help",
+          "faq",
+          "questions",
+          "message an admin",
+          "support"
+        ]
+      },
+      {
+        "id": "collective-safety-check",
+        "title": "Automatic safety check",
+        "body": "New and edited posts and replies are checked automatically. Anything flagged goes to an admin to review, and clearly harmful content is hidden until an admin has looked at it. Private messages are never scanned.",
+        "keywords": [
+          "moderation",
+          "safety",
+          "flagged",
+          "hidden post",
+          "harmful"
+        ]
+      },
+      {
+        "id": "collective-public-page-and-joining",
+        "title": "The public page and joining",
+        "body": "Anyone can press Request your invitation on the public page at collective.lccommandsuite.com. A personal link and invite code arrive by email, and they join under New here. Existing members use Already a member.",
+        "keywords": [
+          "join",
+          "invite code",
+          "invitation",
+          "request an invite",
+          "new here",
+          "already a member"
+        ]
+      },
+      {
+        "id": "collective-own-address",
+        "title": "The Collective's own address",
+        "body": "The Collective lives at collective.lccommandsuite.com. Old links to the Collective forward there on their own. If you used push notifications or a home screen icon on the old address, switch them on once more on the new one.",
+        "keywords": [
+          "address",
+          "url",
+          "collective.lccommandsuite.com",
+          "old link",
+          "sign in",
+          "push moved"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-events-and-calls",
+    "name": "Collective events and calls",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > Events",
+    "href": "/community/events",
+    "what": "LifeCharter Live: Alignment Anchors, office hours, workshops and more, shown in your time zone. The full coaching call schedule and replays are here too.",
+    "ai": "Has an AI button",
+    "aiNote": "My focus note on a past session writes one private takeaway and a next step. It uses your own AI key, or Mariposa on your Collective Plus allowance. Hosts also get Write recap, which drafts a recap from pasted notes. It uses the host's own AI key, or LifeCharter's key if they have none, and never counts against a Plus allowance. Nothing posts until the host presses Post recap.",
+    "steps": [
+      "Open Events from the Collective's menu, or from the bottom bar on a phone.",
+      "Choose Upcoming, Calendar or Past & replays.",
+      "On a session, press Going or Maybe. Going on a series covers every session.",
+      "Press Add to calendar, or Add series to calendar for a repeating event.",
+      "When it is time, press Join link. It changes to Join now 30 minutes before the start.",
+      "To catch up, open Past & replays and press Watch the replay."
+    ],
+    "health": "This does not change your scores. It gives you live coaching, learning and connection each week.",
+    "tips": [
+      "Going gets you a reminder about an hour before each session. Maybe does not.",
+      "On Calendar, press a day to see what is on it.",
+      "Your Next Session on Collective Home opens the next one for you."
+    ],
+    "questions": [
+      {
+        "q": "Where is the replay of a call I missed?",
+        "a": "Open Past & replays and find the session. A replay shows there once it has been added, so a very recent call may not have one yet."
+      },
+      {
+        "q": "Why can't I see a session someone mentioned?",
+        "a": "Each event is for the whole Collective or for certain channels. You see the ones for the whole Collective and for channels you can open."
+      },
+      {
+        "q": "Who can see my focus note?",
+        "a": "Only you. It is saved privately on that session. If the session has no recap yet, tell it what stood out to you first."
+      }
+    ],
+    "related": [
+      "coaching-calls-and-replays",
+      "the-collective",
+      "collective-plus",
+      "collective-profile-and-notifications"
+    ],
+    "who": "Every Collective member, for the events shown to them. My focus note needs Collective Plus or your own AI key. Write recap is for the session's host.",
+    "keywords": [
+      "events",
+      "calendar",
+      "live",
+      "lifecharter live",
+      "alignment anchor",
+      "office hours",
+      "workshop",
+      "rsvp",
+      "going",
+      "replay",
+      "join link",
+      "zoom",
+      "recap"
+    ],
+    "sections": [
+      {
+        "id": "events-lifecharter-live",
+        "title": "Events (LifeCharter Live)",
+        "body": "Each session shows its type, who it is for, the time and any repeat pattern. Series have one RSVP and a reminder before each session. Add to calendar saves a calendar file for your own calendar.",
+        "keywords": [
+          "lifecharter live",
+          "rsvp",
+          "series",
+          "reminder",
+          "add to calendar",
+          "calendar file"
+        ]
+      },
+      {
+        "id": "events-past-and-replays",
+        "title": "Past & replays",
+        "body": "Past sessions from the last 18 months, newest first. Press Watch the replay when one has been added, or Read the recap when the host has posted one.",
+        "keywords": [
+          "replay",
+          "past sessions",
+          "recording",
+          "watch the replay",
+          "read the recap"
+        ]
+      },
+      {
+        "id": "events-my-focus-note",
+        "title": "My focus note",
+        "body": "On a past session, press My focus note, add what stood out, and press Write my focus note. Edit the takeaway and next step, then press Save privately.",
+        "keywords": [
+          "focus note",
+          "takeaway",
+          "next step",
+          "save privately"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "my-alignment-journal",
+    "name": "My Alignment Journal",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > My Journal",
+    "href": "/community/journal",
+    "what": "Your private weekly journal: an intention, your wins and a reflection, with simple tracking and a search. Only you see it. Anything you choose to share goes to the Collective as a headline and a note, never your journal.",
+    "ai": "Has an AI button",
+    "aiNote": "Inside an entry, Sharpen my intention, Help me unpack this and Draft my reflection use AI, as do Speak it instead and the patterns button. They run on your own AI key, or Mariposa on your Collective Plus allowance. Your words go to the AI only when you tap. Voice notes need an OpenAI key. A Claude key covers the rest. The Sunday week in review runs on its own once you have allowed Mariposa.",
+    "steps": [
+      "Open My Journal from the Collective's menu.",
+      "Under This week, press Set my intention, write a headline and press Save to journal.",
+      "Press Capture a win when something moves forward. Add as many as you like.",
+      "At the end of the week, press Reflect on my week and rate how aligned it felt, 1 to 5.",
+      "Use the private journal box in any entry for the fuller story.",
+      "To share an intention or win, turn on Also share with the Collective and press Save & share."
+    ],
+    "health": "This does not change your scores. The 12 areas of life you can tag are journal labels, not your 12 Business Dimensions. It helps you keep your intention and wins in view week by week.",
+    "tips": [
+      "Wins start with sharing on, and intentions start with it off. The journal remembers your last choice, so check the switch before you save.",
+      "Monday and Friday journal reminders come in the app and by push. Turn them off in your profile if you prefer, but that also stops the Sunday review.",
+      "Your Intention and Share a Win on Collective Home open the same entries."
+    ],
+    "questions": [
+      {
+        "q": "Who can see my journal?",
+        "a": "Only you. If you share an entry, the Collective sees the headline and any note you wrote for them. Your private journal is never shared."
+      },
+      {
+        "q": "Can I share a reflection?",
+        "a": "No. Only intentions and wins can be shared. Intentions go to This Week's Intention and wins go to the Wins conversation."
+      },
+      {
+        "q": "Why don't I see Monthly report or Export?",
+        "a": "They appear when you have Collective Plus or your own AI key connected, and at least one journal entry."
+      }
+    ],
+    "related": [
+      "collective-plus",
+      "collective-profile-and-notifications",
+      "the-collective",
+      "accountability-partner"
+    ],
+    "who": "Every Collective member. The 90-day focus, Sunday review, Monthly report and Export need Collective Plus or your own AI key connected.",
+    "keywords": [
+      "journal",
+      "alignment journal",
+      "my journal",
+      "intention",
+      "weekly intention",
+      "win",
+      "wins",
+      "reflection",
+      "rating",
+      "area of life",
+      "private",
+      "voice note",
+      "speak",
+      "mariposa"
+    ],
+    "sections": [
+      {
+        "id": "journal-this-week",
+        "title": "This week",
+        "body": "One intention, any number of wins and one reflection for each week. Below them you see your tracking, then past weeks. Use Search your journal to find an old entry. Press the pencil on an entry to edit or delete it.",
+        "keywords": [
+          "this week",
+          "intention",
+          "wins",
+          "reflection",
+          "tracking",
+          "search your journal"
+        ]
+      },
+      {
+        "id": "journal-90-day-focus",
+        "title": "Your 90-day focus",
+        "body": "Name one bigger goal for the next 90 days. Your weekly intentions roll up into it. In an entry, tick Toward my 90-day focus to link it.",
+        "keywords": [
+          "90-day focus",
+          "90 day goal",
+          "focus",
+          "bigger goal"
+        ]
+      },
+      {
+        "id": "journal-voice-notes",
+        "title": "Voice notes",
+        "body": "Press Speak it instead, talk for up to 5 minutes, then press Stop. Your words become text. Press Tidy it up to clean the text while keeping your words, then Add to my journal. The recording is not kept.",
+        "keywords": [
+          "voice",
+          "voice note",
+          "speak it instead",
+          "dictate",
+          "microphone",
+          "tidy it up"
+        ]
+      },
+      {
+        "id": "journal-sunday-review",
+        "title": "Sunday week in review",
+        "body": "On Sunday, if you journaled that week and have journal reminders on, you get a short personal review with a focus for the week ahead. It shows in your journal and as a notification.",
+        "keywords": [
+          "sunday review",
+          "week in review",
+          "weekly review",
+          "mariposa review"
+        ]
+      },
+      {
+        "id": "journal-export",
+        "title": "Journal export",
+        "body": "Press Export. Choose Everything, This year or Last 90 days, choose whether to include your private notes, then press Save as PDF.",
+        "keywords": [
+          "export",
+          "pdf",
+          "print journal",
+          "download journal",
+          "save as pdf"
+        ]
+      },
+      {
+        "id": "journal-monthly-report",
+        "title": "Journal monthly report",
+        "body": "Press Monthly report to see weeks with an intention, your wins, your average alignment, a balance wheel of your areas of life and your alignment trend. With three or more entries, press What patterns do you see? for a look at the month.",
+        "keywords": [
+          "monthly report",
+          "alignment report",
+          "balance wheel",
+          "radar",
+          "alignment trend"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lifecharter-library",
+    "name": "LifeCharter Library",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > LifeCharter Library",
+    "href": "/community/library",
+    "what": "Templates, worksheets, recordings and tools in one place, grouped by category. Each item is a file, a video or a link.",
+    "ai": "Has an AI button",
+    "aiNote": "Ask the Library answers your question from Library items you can see and lists the items it used under From. It uses your own AI key, or Mariposa on your Collective Plus allowance. Of your own words, only your question is sent. Browsing and searching the Library do not use AI.",
+    "steps": [
+      "Open LifeCharter Library from the Collective's menu.",
+      "Choose Library at the top, or a channel if it has its own resources.",
+      "Type in Search to find an item by its title, description or category.",
+      "Press an item's title to open it in a new tab.",
+      "To ask a question, type it in the Ask box and press Ask."
+    ],
+    "health": "This does not change your scores. It keeps the LifeCharter resources you need close by.",
+    "tips": [
+      "Under an answer, press an item's name beside From to open it.",
+      "Channel chips show only for channels that have their own resources."
+    ],
+    "questions": [
+      {
+        "q": "Why don't I see the Library in the Collective's menu?",
+        "a": "It appears once there is something in it."
+      },
+      {
+        "q": "Why don't I see the Ask box?",
+        "a": "Ask the Library needs Collective Plus or your own AI key connected. Without either, you see an invitation to Collective Plus instead."
+      }
+    ],
+    "related": [
+      "collective-plus",
+      "the-collective",
+      "collective-events-and-calls"
+    ],
+    "who": "Every Collective member. Ask the Library needs Collective Plus or your own AI key connected.",
+    "keywords": [
+      "library",
+      "resources",
+      "templates",
+      "worksheets",
+      "recordings",
+      "guides",
+      "tools",
+      "ask the library",
+      "mariposa",
+      "frameworks"
+    ],
+    "sections": [
+      {
+        "id": "library-resources-by-category",
+        "title": "Resources by category",
+        "body": "Items are grouped under category headings. Each one shows its title, a short description, and whether it is a file, a video or a link.",
+        "keywords": [
+          "categories",
+          "resources",
+          "files",
+          "videos",
+          "links"
+        ]
+      },
+      {
+        "id": "ask-the-library",
+        "title": "Ask the Library",
+        "body": "Ask about LifeCharter's frameworks and resources. The answer comes from the main Library and the channels you belong to, and it names the items it used.",
+        "keywords": [
+          "ask the library",
+          "ask mariposa",
+          "question",
+          "frameworks"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-plus",
+    "name": "Collective Plus",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > Collective Plus (My Plus once you have it)",
+    "href": "/community/plus",
+    "what": "An optional add-on in the Collective that turns on Mariposa, the LifeCharter AI coach, and the tools around your journal. If your own AI key is connected in the Suite, you already have every Plus feature on your own key and there is nothing to buy.",
+    "ai": "AI-powered",
+    "aiNote": "Plus is the AI side of the Collective. If your own AI key is connected, everything runs on your key, under your assistant's name, and uses no Plus allowance. Otherwise it runs as Mariposa on a monthly Plus allowance that resets on the 1st. You are asked to allow Mariposa once, and you can withdraw that in your profile. Mariposa never posts or sends anything for you.",
+    "steps": [
+      "Open Collective Plus from the Collective's menu. It reads My Plus once you have it.",
+      "If you see Included with your Command Suite, you are set and there is nothing to do.",
+      "To add it, choose Monthly or Annual and press Join Collective Plus.",
+      "Check your plan and Mariposa this month to see how much of your allowance you have used.",
+      "Press Manage billing to manage or cancel your plan.",
+      "Try Mariposa in My Journal: press Set my intention, then Sharpen my intention."
+    ],
+    "health": "This does not change your scores. The monthly alignment report reflects your journal only. It helps you get more from your weekly journaling.",
+    "tips": [
+      "Posting, conversations, messages, events and your journal stay in your membership without Plus.",
+      "Plus is added on the web."
+    ],
+    "questions": [
+      {
+        "q": "Do I need Plus if I have Command Suite?",
+        "a": "Not if your own AI key is connected. The page then says Included with your Command Suite. If it offers you Plus instead, connect your AI key in the Suite first."
+      },
+      {
+        "q": "What happens when my allowance runs out?",
+        "a": "You see a note that you have reached this month's Mariposa limit. It resets on the 1st. The rest of the Collective keeps working."
+      },
+      {
+        "q": "How do I cancel?",
+        "a": "Press Manage billing on this page. Deleting your Collective account also cancels Plus right away."
+      }
+    ],
+    "related": [
+      "my-alignment-journal",
+      "lifecharter-library",
+      "collective-on-your-phone",
+      "collective-profile-and-notifications"
+    ],
+    "who": "Every Collective member. An invited team member uses their account owner's AI key.",
+    "keywords": [
+      "collective plus",
+      "plus",
+      "my plus",
+      "mariposa",
+      "ai coach",
+      "upgrade",
+      "manage billing",
+      "cancel plus",
+      "allowance",
+      "limit reached"
+    ],
+    "sections": [
+      {
+        "id": "what-plus-includes",
+        "title": "What Plus includes",
+        "body": "Mariposa in your journal, the Sunday week-in-review, the monthly alignment report, Ask the Library, your 90-day focus, journal export, and a small Plus badge on your profile and in the member directory.",
+        "keywords": [
+          "what's included",
+          "plus features",
+          "plus badge",
+          "sunday review",
+          "monthly report",
+          "export"
+        ]
+      },
+      {
+        "id": "plus-your-ai-privacy",
+        "title": "Your privacy with Mariposa",
+        "body": "Your journal stays private to you. When you ask for help, the text involved is sent to the AI service to write the answer. Nothing is shared with other members.",
+        "keywords": [
+          "privacy",
+          "openai",
+          "training",
+          "consent",
+          "allow mariposa"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-on-your-phone",
+    "name": "The Collective on your phone",
+    "area": "Daily Operations",
+    "where": "On your phone: The Collective > Me > Put the Collective on your phone",
+    "href": "/community/profile#app",
+    "what": "The Collective on your phone, with its own icon and push notifications. It is the same live community you see on the web. The Put the Collective on your phone card in your profile shows the exact steps for your phone and browser.",
+    "ai": "Has an AI button",
+    "aiNote": "The same buttons as on the web, on the same AI: your own key, or Mariposa on your Collective Plus allowance. Nothing about AI is different on your phone.",
+    "steps": [
+      "On your phone, open collective.lccommandsuite.com/community in Safari or Chrome and sign in.",
+      "Press Me in the bottom bar.",
+      "Find Put the Collective on your phone and follow the steps it shows for your phone.",
+      "Open the Collective from its new icon on your home screen.",
+      "In Me, under Notifications, press Turn on."
+    ],
+    "health": "This does not change your scores. It keeps your community within reach during the day.",
+    "tips": [
+      "If you opened the link inside Instagram or Facebook, press the menu and choose Open in browser first. Those apps cannot install it.",
+      "On iPhone, push notifications only work once you open the Collective from its home screen icon.",
+      "On a computer, the card tells you to open the page on your phone instead."
+    ],
+    "questions": [
+      {
+        "q": "Why don't I get notifications on my iPhone?",
+        "a": "Open the Collective from its home screen icon, then check that your profile says Push is on for this device."
+      }
+    ],
+    "related": [
+      "collective-profile-and-notifications",
+      "the-collective",
+      "collective-plus"
+    ],
+    "who": "Every Collective member.",
+    "keywords": [
+      "iphone",
+      "app",
+      "phone",
+      "mobile",
+      "app store",
+      "install",
+      "home screen",
+      "add to home screen",
+      "android",
+      "push",
+      "download app",
+      "iphone",
+      "android",
+      "app",
+      "home screen",
+      "install"
+    ],
+    "sections": [
+      {
+        "id": "collective-add-to-home-screen",
+        "title": "Add it to your home screen",
+        "body": "On iPhone, use Share, then Add to Home Screen, then Add. On Android in Chrome, use the menu, then Install app. Where your browser allows it, you see an Install the Collective button instead.",
+        "keywords": [
+          "add to home screen",
+          "install the collective",
+          "share button",
+          "install app",
+          "chrome",
+          "safari"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-channels-and-posts",
+    "name": "Collective channels and posts",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > Community and Your Channels in the Collective's menu",
+    "href": "/community/s/commons",
+    "what": "Channels are the areas of the Collective, such as Community and any program you belong to. Each channel holds conversations on one topic, where members post, reply and react.",
+    "ai": "Has an AI button",
+    "aiNote": "Help me say this rewrites your draft Warmer, Clearer or Shorter in your own voice. Catch me up summarizes a post with six or more replies. Both use your own AI key, or Mariposa on your Collective Plus allowance. Nothing posts for you. You review it and press Post or Reply yourself.",
+    "steps": [
+      "Open a channel from the Collective's menu. On a phone, press Channels in the bottom bar.",
+      "Press a conversation in the channel to read it.",
+      "Press the box at the top, write your post, and type @ to tag someone.",
+      "Press Photo / video to add a file, then press Post.",
+      "Press a post to open it, then reply or add a reaction.",
+      "Press the three dots on a post to edit, delete or report it."
+    ],
+    "health": "This does not change your scores. It gives you a place to ask, share and be encouraged by people doing the same work.",
+    "tips": [
+      "Paste a YouTube, Vimeo or Loom link and it plays right in the post.",
+      "Add up to 10 photos or files to a post, each up to 50 MB.",
+      "Looking for an accountability partner? Try the Find an Accountability Partner conversation in Community."
+    ],
+    "questions": [
+      {
+        "q": "Why can't I post in a channel?",
+        "a": "If you see Join channel, press it first. Some conversations, like announcements, are only for updates from the hosts."
+      },
+      {
+        "q": "How do I leave a channel?",
+        "a": "Open the channel and press Leave channel. Community and other default channels cannot be left."
+      },
+      {
+        "q": "What happens when I report something?",
+        "a": "Choose what is wrong and press Send report. An admin reviews it, and the person is not told who reported them."
+      }
+    ],
+    "related": [
+      "the-collective",
+      "collective-messages",
+      "collective-members-directory",
+      "accountability-partner"
+    ],
+    "who": "Every Collective member. You see public channels and the private ones you belong to.",
+    "keywords": [
+      "channels",
+      "spaces",
+      "posts",
+      "post",
+      "reply",
+      "thread",
+      "reaction",
+      "mention",
+      "tag",
+      "pin",
+      "report a post",
+      "help me say this",
+      "catch me up",
+      "wins"
+    ],
+    "sections": [
+      {
+        "id": "spaces-and-channels",
+        "title": "Channels",
+        "body": "Your menu lists Community, Your Channels and Start Here. A channel page shows its conversations, upcoming events and members. Public channels can be read before you join. Private ones show only once you belong to them.",
+        "keywords": [
+          "channels",
+          "spaces",
+          "private channel",
+          "public channel",
+          "join channel",
+          "start here"
+        ]
+      },
+      {
+        "id": "posts-and-threads",
+        "title": "Posts and threads",
+        "body": "Open a post to see its replies. You can reply to a reply, react, attach a photo or video, and delete your own reply. Press the flag to report a reply. New replies appear as they come in.",
+        "keywords": [
+          "post",
+          "thread",
+          "replies",
+          "reactions",
+          "attachments",
+          "report",
+          "flag"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-messages",
+    "name": "Collective messages",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > Messages",
+    "href": "/community/messages",
+    "what": "Private conversations with fellow members, one-on-one or in a small group.",
+    "ai": "Has an AI button",
+    "aiNote": "Help me say this appears above the box once you have written a little. It rewrites your draft Warmer, Clearer or Shorter in your own voice, using your own AI key or Mariposa on your Collective Plus allowance. It never sends for you. Private messages are not scanned by the Collective's safety check.",
+    "steps": [
+      "Open Messages from the Collective's menu, or from the bottom bar on a phone.",
+      "Press New and choose one person, or two or more for a group.",
+      "For a group, add a Group name if you like.",
+      "Press the button at the bottom to start the conversation.",
+      "Write your message. Press Enter to send, or Shift and Enter for a new line."
+    ],
+    "health": "This does not change your scores. It helps you build real relationships with other members.",
+    "tips": [
+      "You can also press Message on any member's profile.",
+      "Press the image button beside the box to add a photo or video.",
+      "New messages show as a count on Messages, not in your Notifications list."
+    ],
+    "questions": [
+      {
+        "q": "Why does it say my message couldn't be sent?",
+        "a": "The member may not be accepting messages from you. In a group, you may no longer be in the conversation."
+      },
+      {
+        "q": "How do I stop people messaging me?",
+        "a": "In your profile, turn off Let members send me direct messages, then press Save changes. To stop one person, block them from their profile."
+      },
+      {
+        "q": "How do I report a message?",
+        "a": "Press the flag beside the message, choose what is wrong and press Send report."
+      }
+    ],
+    "related": [
+      "collective-members-directory",
+      "collective-profile-and-notifications",
+      "collective-channels-and-posts"
+    ],
+    "who": "Every Collective member, unless the other person has turned messages off or blocked you.",
+    "keywords": [
+      "messages",
+      "dm",
+      "direct message",
+      "private message",
+      "group message",
+      "group chat",
+      "new message",
+      "help me say this",
+      "leave group"
+    ],
+    "sections": [
+      {
+        "id": "direct-messages",
+        "title": "Direct messages",
+        "body": "A one-on-one conversation with another member. Your list shows the latest message from each conversation, newest first, with a dot on anything unread.",
+        "keywords": [
+          "direct message",
+          "dm",
+          "one on one",
+          "unread"
+        ]
+      },
+      {
+        "id": "group-messages",
+        "title": "Group messages",
+        "body": "Press the group's name to see who is in it. Anyone in the group can rename it or use Add people. Whoever started it can remove people. Press Leave this group to leave.",
+        "keywords": [
+          "group",
+          "add people",
+          "rename group",
+          "remove",
+          "leave this group"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-members-directory",
+    "name": "Collective members directory",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > Members",
+    "href": "/community/members",
+    "what": "The people of The LifeCharter Collective. Find members by name, focus or location and open their profiles.",
+    "ai": "No AI",
+    "aiNote": "",
+    "steps": [
+      "Open Members from the Collective's menu.",
+      "Type in Search by name, focus or location.",
+      "Use the Everyone list to narrow it to one of your channels.",
+      "Press a member to open their profile.",
+      "Press Message to write to them."
+    ],
+    "health": "This does not change your scores. It helps you find people to learn from, collaborate with and encourage.",
+    "tips": [
+      "To stay out of the directory, turn off Show me in the member directory in your profile, then press Save changes.",
+      "A small gold mark beside a name means that member has Collective Plus.",
+      "Press your own card, then Edit profile, to change what others see."
+    ],
+    "questions": [
+      {
+        "q": "Why can't I find someone?",
+        "a": "They may have chosen not to show in the directory, or you may have blocked them."
+      },
+      {
+        "q": "What does Block do?",
+        "a": "You do not see their posts or replies, you cannot message each other, and their tags and replies do not notify you. They are not told. You can press Unblock anytime."
+      }
+    ],
+    "related": [
+      "collective-messages",
+      "collective-profile-and-notifications",
+      "accountability-partner"
+    ],
+    "who": "Every Collective member.",
+    "keywords": [
+      "members",
+      "directory",
+      "find a member",
+      "search people",
+      "profile",
+      "block",
+      "unblock",
+      "report member"
+    ],
+    "sections": [
+      {
+        "id": "members-directory",
+        "title": "Members directory",
+        "body": "A card for each member with their photo, what they do and their location. Search and the channel list work together.",
+        "keywords": [
+          "directory",
+          "search",
+          "filter by channel"
+        ]
+      },
+      {
+        "id": "member-profiles",
+        "title": "Member profiles",
+        "body": "A profile shows a member's photo, bio, location, website, channels and recent posts. From there you can press Message, Block or Report.",
+        "keywords": [
+          "member profile",
+          "bio",
+          "recent posts",
+          "message",
+          "block",
+          "report"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "collective-profile-and-notifications",
+    "name": "Collective profile and notifications",
+    "area": "Daily Operations",
+    "where": "Daily Operations > The Collective > your photo and name (Profile & settings), or Me on a phone. Notifications has its own place in the Collective's menu.",
+    "href": "/community/profile",
+    "what": "Your photo, bio, privacy and notification choices in the Collective, and the page that lists what you have been notified about. This is your Collective profile, separate from your Suite settings.",
+    "ai": "No AI",
+    "aiNote": "Nothing on these pages uses AI. Your profile has a Mariposa (AI) card that shows whether you have allowed Mariposa, with a Withdraw permission button.",
+    "steps": [
+      "Press your photo and name at the bottom of the Collective's menu, or Me on a phone.",
+      "Press Change photo and fill in your name, focus, location, website and About you.",
+      "Under Privacy, choose whether you show in the directory and can be messaged.",
+      "Under Notifications, choose email, push and journal reminders.",
+      "Press Save changes.",
+      "To get push on this device, press Turn on in the Notifications card."
+    ],
+    "health": "This does not change your scores. It helps members get to know you and keeps your notifications to what you want.",
+    "tips": [
+      "Your phone number is private. Only admins can see it.",
+      "Under Per channel, set each channel to Everything, Announcements only or Muted.",
+      "Appearance offers Light, Dark or System and is saved on that device."
+    ],
+    "questions": [
+      {
+        "q": "How do I stop Collective emails?",
+        "a": "Turn off Email me about announcements, replies and messages in your profile, then press Save changes."
+      },
+      {
+        "q": "How do I delete my Collective account?",
+        "a": "Press Delete my account at the bottom of your profile, type DELETE and press Delete permanently. This cannot be undone."
+      },
+      {
+        "q": "What if my login also has Command Suite?",
+        "a": "You see Request received, and the LifeCharter team finishes the deletion and confirms by email. Any Collective Plus subscription is cancelled the moment you ask, so you are not billed again."
+      }
+    ],
+    "related": [
+      "the-collective",
+      "collective-on-your-phone",
+      "collective-plus",
+      "collective-members-directory",
+      "my-alignment-journal"
+    ],
+    "who": "Every Collective member.",
+    "keywords": [
+      "profile",
+      "notifications",
+      "bell",
+      "push",
+      "email digest",
+      "mute",
+      "privacy",
+      "photo",
+      "bio",
+      "delete account",
+      "change password",
+      "dark mode",
+      "mariposa permission"
+    ],
+    "sections": [
+      {
+        "id": "collective-notifications",
+        "title": "Collective notifications",
+        "body": "The Notifications page lists announcements, replies, tags, event reminders and journal nudges. Press one to open it, or press Mark all read. Push arrives on your devices, and email gathers anything still unread.",
+        "keywords": [
+          "notifications",
+          "mark all read",
+          "push",
+          "email digest",
+          "reminders"
+        ]
+      },
+      {
+        "id": "collective-profile",
+        "title": "Collective profile",
+        "body": "Your profile also holds Blocked members, Put the Collective on your phone, the Mariposa (AI) card, and links for Community guidelines and Change password.",
+        "keywords": [
+          "profile",
+          "blocked members",
+          "community guidelines",
+          "change password",
+          "consent"
+        ]
+      },
+      {
+        "id": "collective-delete-account-plus",
+        "title": "Deleting your account stops Plus billing",
+        "body": "A Collective-only account is deleted in one step, with Plus cancelled. It removes your profile, posts, replies, reactions, messages, journal and uploads. If your login also has Command Suite, the team finishes the deletion, and Plus is cancelled as soon as you ask.",
+        "keywords": [
+          "delete my account",
+          "cancel plus",
+          "billing",
+          "request received"
+        ]
+      }
+    ]
+  },
+  {
     "id": "contacts",
     "name": "Contacts",
     "area": "Clients & Sales",
     "where": "Clients & Sales > Contacts",
     "href": "/contacts",
-    "what": "Your address book. Everyone who books, buys or fills in a form lands here, and you can add people yourself.",
+    "what": "Your address book. Everyone who books, buys or fills in a form lands here, and you can add people yourself. Every touch shows on that person's timeline.",
     "ai": "Has an AI button",
-    "aiNote": "When you schedule a follow-up, your assistant can draft the email using your own AI key. Without a key you can still write the email yourself.",
+    "aiNote": "When you schedule a follow-up on a contact, Draft the email with AI writes it using your own AI key. Nothing is sent until you press Send in Daily Compass. Without a key you can still write the email yourself. In chat, your assistant can also find and add contacts, and any change waits behind Approve. The rest of this page does not use AI.",
     "steps": [
       "Open Contacts from the left menu.",
-      "Search for a person, or filter by tag.",
-      "Add a new contact. The Suite checks for a duplicate first.",
-      "Open a contact to see their record and schedule a follow-up.",
-      "Export your list whenever you need a copy."
+      "Search by name or email, or choose a tag in the All tags menu.",
+      "Press Add contact, fill in the email and anything else you know, and press Save. As you type, the Suite shows people already in your list so you can open them instead.",
+      "Press a person in the list to see their record and timeline.",
+      "On their record, use Schedule a follow-up to pick a day and say what it is about, then press Schedule follow-up.",
+      "Press Export contacts whenever you want a copy of your list as a spreadsheet file."
     ],
-    "health": "New contacts are part of the live data behind your scores, so keeping this list current gives your dimensions and pillars a truer picture.",
+    "health": "Contacts added in the last 30 days count toward your Customer Acquisition pillar. Contacts who came through an affiliate count toward your Referral Process pillar. Keeping this list current gives those two pillars a truer picture.",
     "tips": [
-      "Add tags as you go, so you can filter to the right people later."
+      "Press any tag on a person to see everyone who has it.",
+      "Add tags as you go, so you can filter to the right people later.",
+      "Moving your list over from somewhere else? Press Import contacts instead of adding people one by one."
     ],
     "questions": [
       {
         "q": "Do I have to enter people who book or buy?",
         "a": "No. Everyone who books, buys or fills in a form lands here on their own."
+      },
+      {
+        "q": "What if I add someone who is already here?",
+        "a": "The Suite does not make a second copy. If you save an email that is already in your list, it updates that person and tells you so."
+      },
+      {
+        "q": "What happens to a follow-up I schedule?",
+        "a": "It becomes a task for that day. If you added an email draft, the draft waits for you in Daily Compass on that day."
       }
     ],
     "related": [
+      "contact-record",
+      "import-contacts",
+      "forms",
+      "tag-library",
       "tasks"
     ],
-    "who": "Everyone. Team members need the Contacts area.",
+    "who": "Everyone. Team members need the Contacts area. Only the account owner can export the list.",
     "keywords": [
       "crm",
       "address book",
@@ -2622,12 +3563,1740 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "leads",
       "customers",
       "tags",
+      "search",
+      "add contact",
+      "duplicate",
       "export",
+      "download list",
       "import",
       "follow up",
-      "follow-up"
+      "follow-up",
+      "timeline"
     ],
     "starter": true
+  },
+  {
+    "id": "import-contacts",
+    "name": "Import contacts",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Contacts > Contacts tab > Import contacts",
+    "href": "/contacts",
+    "what": "Brings your existing list into the Suite from a CSV or vCard file, or from cells you paste out of a spreadsheet. You check everything before it saves, and it never emails anyone.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI. The columns are matched by the Suite itself, and you can change any match.",
+    "steps": [
+      "Export your list from where it lives now. How to export from… on the import panel shows the steps for Gmail, Outlook, iPhone, your old CRM and spreadsheets.",
+      "Open Contacts and press Import contacts.",
+      "Drop in your file, or press Paste from a spreadsheet instead and then Use pasted list.",
+      "On Match your columns, check each column. Only the email is required.",
+      "Read the counts and the preview, keep or change the tag, and tick the box to confirm these people have agreed to hear from you.",
+      "Press the Import button and keep the page open until it finishes."
+    ],
+    "health": "Contacts added in the last 30 days, imports included, count toward your Customer Acquisition pillar. People you already had do not count again.",
+    "tips": [
+      "The Suite adds a tag with today's date to everyone in the import, so you can find the group afterward. Change it or leave it blank.",
+      "Excel and Numbers files will not load. Save as CSV first, or copy the cells and paste them.",
+      "If rows were skipped, press Download skipped rows (CSV), fix them and import that file."
+    ],
+    "questions": [
+      {
+        "q": "Will importing email anyone?",
+        "a": "No. Importing does not email anyone or start a campaign."
+      },
+      {
+        "q": "What happens to people already in my contacts?",
+        "a": "They are merged, not copied. Tags already on them are kept. Anyone who unsubscribed stays unsubscribed."
+      },
+      {
+        "q": "How big can my file be?",
+        "a": "Up to 5 MB and 5,000 contacts in one import. For more, split the list into smaller files and import each one."
+      }
+    ],
+    "related": [
+      "contacts",
+      "tag-library",
+      "forms"
+    ],
+    "who": "Everyone. Team members need the Contacts area.",
+    "keywords": [
+      "import",
+      "upload",
+      "csv",
+      "vcard",
+      "vcf",
+      "spreadsheet",
+      "paste",
+      "bring my list",
+      "move contacts",
+      "gmail contacts",
+      "outlook contacts",
+      "iphone contacts",
+      "mailchimp",
+      "gohighlevel",
+      "kajabi",
+      "merge",
+      "skipped rows",
+      "consent"
+    ]
+  },
+  {
+    "id": "forms",
+    "name": "Forms",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Contacts > Forms tab",
+    "href": "/contacts?tab=forms",
+    "what": "Sign-up and lead forms with their own share link. Each submission saves the person as a contact, tags them, and can start one of your campaigns.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can create a form or change an existing one. It waits behind Approve, and Undo puts the old version back.",
+    "steps": [
+      "Open Contacts and press the Forms tab.",
+      "Type a name in New form name and press the plus button.",
+      "Under Settings, list your fields, one per line, then press Save fields. Add * for required, and : choice | choice for a list.",
+      "Set the tags, the button text, the thank-you message and, if you like, a campaign to start.",
+      "Press Preview to see what the person will see.",
+      "Press the copy icon beside Share link and share it. Press Turn on if the form is off."
+    ],
+    "health": "This does not have its own score. New people from a form count toward your Customer Acquisition pillar, and people credited to an affiliate count toward your Referral Process pillar.",
+    "tips": [
+      "Email is always included, so you do not need to add it.",
+      "Tick Email me each new submission to hear about each one.",
+      "A campaign only sends once your Email sending setup is finished."
+    ],
+    "questions": [
+      {
+        "q": "Can I put a form on my own website?",
+        "a": "Yes. Link to the share link, or point a plain HTML form at the address shown on the form. The form shows the input names to use."
+      },
+      {
+        "q": "Where do I see who filled it in?",
+        "a": "Open the form and look under Submissions. Each person also lands in Contacts."
+      },
+      {
+        "q": "What does Turn off do?",
+        "a": "The form stops taking new submissions. You can press Turn on at any time."
+      }
+    ],
+    "related": [
+      "contacts",
+      "email-sending-setup",
+      "tag-library",
+      "affiliates"
+    ],
+    "who": "Everyone. Team members need the Contacts area.",
+    "keywords": [
+      "form",
+      "forms",
+      "sign up form",
+      "signup",
+      "lead form",
+      "opt in",
+      "opt-in",
+      "share link",
+      "embed",
+      "website form",
+      "thank you message",
+      "submissions",
+      "button text",
+      "questions"
+    ],
+    "sections": [
+      {
+        "id": "form-preview",
+        "title": "Form preview",
+        "body": "Press Preview on any form to see it as the person will: the fields, the button, the thank-you message and what happens after they press the button. You can try the boxes and choices. Nothing is sent or saved, and it shows your typed fields even before you save them.",
+        "keywords": [
+          "preview",
+          "see my form",
+          "test form",
+          "what they see",
+          "hide preview"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "email-sending-setup",
+    "name": "Email sending setup",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Contacts > Email sending tab",
+    "href": "/contacts?tab=sending",
+    "what": "Three steps that let the Suite email your contacts from your own business. You connect your own Resend account, verify your own sending domain, and say who your emails come from.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI.",
+    "steps": [
+      "Open Contacts and press the Email sending tab.",
+      "Create a free account at resend.com/signup. Open API Keys, press Create API Key and choose Full access.",
+      "Paste the key into step 1 and press Connect Resend.",
+      "In step 2, type a subdomain like mail.yourbusiness.com and press Add domain.",
+      "Add each record shown where you manage your domain, using the copy buttons, then press Check verification.",
+      "In step 3, fill in your From name, sign-off and Business mailing address, then press Save."
+    ],
+    "health": "This does not change your scores. It helps by letting your campaigns, broadcasts and booking emails reach people.",
+    "tips": [
+      "Use a subdomain, not your main domain. It keeps your everyday email untouched.",
+      "Resend shows your key only once, so paste it right away.",
+      "Leave a box in step 3 empty to use what is shown in grey."
+    ],
+    "questions": [
+      {
+        "q": "What is waiting until I finish?",
+        "a": "Booking confirmations and reminders wait on your Resend account and verified domain. Campaigns and broadcasts also need your mailing address. The top of the tab shows what is ready."
+      },
+      {
+        "q": "My domain still says Not found yet. What now?",
+        "a": "Check that each record matches exactly, then press Check verification again. Some domain providers take longer than others."
+      },
+      {
+        "q": "Is connecting Google or Microsoft in Settings the same thing?",
+        "a": "No. That does not email your contacts. Calendar invites from a host's connected calendar still go out, but all other email to contacts needs this setup."
+      }
+    ],
+    "related": [
+      "contacts",
+      "forms",
+      "calendars-and-booking-pages"
+    ],
+    "who": "Only the account owner can connect Resend or add or remove the domain. Team members with the Contacts area can see this tab and change step 3.",
+    "keywords": [
+      "email sending",
+      "resend",
+      "api key",
+      "domain",
+      "verify domain",
+      "dns",
+      "records",
+      "sender",
+      "from name",
+      "from address",
+      "reply to",
+      "sign-off",
+      "mailing address",
+      "can-spam",
+      "emails not sending",
+      "deliverability"
+    ]
+  },
+  {
+    "id": "pipeline",
+    "name": "Pipeline",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Pipeline",
+    "href": "/sales/pipeline",
+    "what": "Your board of deals, from first conversation to won. Each deal has a value and your honest odds of closing it, so you can see what is open and what you can expect to close.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can add a deal for you, and it waits behind Approve.",
+    "steps": [
+      "Open Pipeline from the left menu.",
+      "Press Add a deal. Fill in Who it's with, or search your contacts there.",
+      "Choose an Offer to fill in the Deal value, add a Next step and its due date, then press Save deal.",
+      "Drag the card to its next column, or use the Move to menu on the card.",
+      "Open a deal to log a call under Calls and follow-ups, then press Log it on this deal.",
+      "Press Edit columns to rename, reorder, add or remove columns and set their default odds."
+    ],
+    "health": "Open deals with a Next step filled in count toward your Sales Journey pillar. Calls and follow-ups you log on a deal are sales activities. They feed your Sales dimension, and their Won and Lost outcomes set your win rate.",
+    "tips": [
+      "Give every open deal a next step. It keeps the deal moving and it is what your Sales Journey pillar reads.",
+      "A deal with no movement for 14 days is marked, and it counts in Deals to move today.",
+      "Any deal can have its own odds. Untick Use the stage's default to set them."
+    ],
+    "questions": [
+      {
+        "q": "What does Weighted by probability mean?",
+        "a": "Each open deal's value multiplied by its odds of closing, added up. It is what you can expect to close."
+      },
+      {
+        "q": "What happens if I remove a column with deals in it?",
+        "a": "Edit columns asks where those deals should go. If you do not choose, they move to the first open column."
+      },
+      {
+        "q": "Do deals appear here on their own?",
+        "a": "Yes, in two cases: a calendar set to Add each booking to the Pipeline as a deal, and a card moved to a Booked stage in Outreach Pipelines."
+      }
+    ],
+    "related": [
+      "offers-packages",
+      "sales-activities",
+      "calendars-and-booking-pages",
+      "outreach-pipelines",
+      "contacts"
+    ],
+    "who": "Everyone. Team members need the Pipeline, Offers & Sales Plan area.",
+    "keywords": [
+      "pipeline",
+      "deals",
+      "deal board",
+      "kanban",
+      "stages",
+      "columns",
+      "probability",
+      "odds",
+      "weighted",
+      "won this month",
+      "next step",
+      "sales",
+      "forecast",
+      "lost deal",
+      "edit columns"
+    ],
+    "sections": [
+      {
+        "id": "pipeline-tiles",
+        "title": "The four tiles",
+        "body": "Open pipeline is the value of your open deals. Weighted by probability is what you can expect to close. Won this month is what you closed this month. Deals to move today counts deals that are due, overdue or stuck.",
+        "keywords": [
+          "open pipeline",
+          "weighted by probability",
+          "won this month",
+          "deals to move today",
+          "tiles"
+        ]
+      },
+      {
+        "id": "calls-and-follow-ups",
+        "title": "Calls and follow-ups on a deal",
+        "body": "Open a saved deal to log a call or follow-up with Log it on this deal, or attach one you logged in the last 90 days. These also show in Sales Activities.",
+        "keywords": [
+          "log a call",
+          "calls and follow-ups",
+          "attach activity",
+          "deal history"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "calendars-and-booking-pages",
+    "name": "Calendars and booking pages",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Calendars",
+    "href": "/calendars",
+    "what": "Booking links people use to pick a time with you. They check each host's real calendars, send reminders and put every booking in Contacts. The page has three tabs: Bookings, Calendars and Hosts.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can create a booking link or change an existing one. It waits behind Approve, and Undo puts the old values back.",
+    "steps": [
+      "Open Calendars and press the Hosts tab. Fill in Add a host and press Add host.",
+      "Type the host's working hours and press Save host. Then press Connect calendars, or Copy link to send the host their private link.",
+      "Press the Calendars tab, type a New calendar name and press the plus button.",
+      "Set the length, gaps, notice, hosts, where you will meet and any questions, then press Save calendar.",
+      "If the top button says Turn on, press it. Then copy your Booking link and share it.",
+      "After a meeting, open the Bookings tab, press Past 30 days and press Attended or No-show."
+    ],
+    "health": "Booking pages do not change your scores on their own. New people who book land in Contacts, and they count toward your Customer Acquisition pillar.",
+    "tips": [
+      "Finish Email sending setup first, or confirmation and reminder emails stay off. Bookings still work, and invites from a host's connected calendar still go out.",
+      "Write a No-show follow-up email on the calendar. It goes out when you press No-show, with a button to choose a new time.",
+      "Tick Add each booking to the Pipeline as a deal to have a deal open for each new booking."
+    ],
+    "questions": [
+      {
+        "q": "How do I use Zoom or Google Meet?",
+        "a": "Under Where, choose Somewhere else and paste your own meeting link in Details."
+      },
+      {
+        "q": "Can more than one person take these calls?",
+        "a": "Yes. Under Who takes these calls, choose Round robin among the hosts ticked and tick each host."
+      },
+      {
+        "q": "What happens to the deal if someone cancels?",
+        "a": "It moves to Lost, and the same happens with No-show. If they book again it reopens. Mark it Won in your Pipeline when they buy."
+      }
+    ],
+    "related": [
+      "paid-and-deposit-booking",
+      "email-sending-setup",
+      "contacts",
+      "pipeline"
+    ],
+    "who": "Everyone. Team members need the Calendars area. Hosts need a connected calendar for their busy times to be checked, but they do not need a Suite account to connect it.",
+    "keywords": [
+      "booking",
+      "booking link",
+      "booking page",
+      "calendly",
+      "schedule",
+      "appointments",
+      "hosts",
+      "round robin",
+      "buffer",
+      "gap",
+      "notice",
+      "no-show",
+      "attended",
+      "reminders",
+      "reschedule",
+      "cancel",
+      "working hours"
+    ],
+    "sections": [
+      {
+        "id": "public-booking-page",
+        "title": "Your public booking page",
+        "body": "This is where people pick a time. Once they book, they get a confirmation and a calendar invite, then reminders 24 hours and 1 hour before. Name, email and phone are always asked.",
+        "keywords": [
+          "public page",
+          "pick a time",
+          "confirmation",
+          "24 hour reminder",
+          "1 hour reminder"
+        ]
+      },
+      {
+        "id": "manage-booking",
+        "title": "Rescheduling or canceling",
+        "body": "Each booking has a private link so the person can reschedule or cancel without logging in. You can also press Cancel on the Bookings tab, add a note, and they are told.",
+        "keywords": [
+          "reschedule",
+          "cancel booking",
+          "change my time",
+          "manage booking"
+        ]
+      },
+      {
+        "id": "host-calendar-connect",
+        "title": "Connecting a host's calendars",
+        "body": "Each host has a private link for connecting Google or Microsoft calendars, with no Suite account needed. People can only book times when all connected calendars are free. New link makes a fresh one and stops the old one.",
+        "keywords": [
+          "connect calendar",
+          "google calendar",
+          "microsoft calendar",
+          "outlook calendar",
+          "connect link",
+          "busy times"
+        ]
+      },
+      {
+        "id": "calendar-connection-alert",
+        "title": "If a calendar stops working",
+        "body": "Every connected host calendar is checked every 30 minutes. If one stops working, you get a bell alert and an email with a Reconnect link, then a reminder every 3 days. Until it is fixed, your booking page may show no open times. The alert clears itself once the calendar works again. There is nothing to set up.",
+        "keywords": [
+          "calendar broken",
+          "reconnect",
+          "no times showing",
+          "no available times",
+          "calendar alert",
+          "expired"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "paid-and-deposit-booking",
+    "name": "Paid and deposit booking",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Calendars > Calendars tab > a calendar > Payment when they book",
+    "href": "/calendars?tab=calendars",
+    "what": "Lets a booking calendar ask for the full price or a deposit before the time is theirs. People pay on your own Stripe account, and the booking is confirmed once they have paid.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI.",
+    "steps": [
+      "Connect your Stripe account in Settings > Integrations.",
+      "Open Calendars, press the Calendars tab and choose a calendar.",
+      "Under Payment when they book, choose Pay the full price to book or Pay a deposit to book.",
+      "Enter the Price, and the Deposit if you chose one.",
+      "Press Save calendar.",
+      "Open your Booking link to see the amount people will be shown."
+    ],
+    "health": "Paid bookings post to your Finance Center as income, and income feeds your Finance dimension.",
+    "tips": [
+      "Once paid, the person gets the usual confirmation emails and calendar event, and their contact and any deal are set up as with a free booking.",
+      "To collect the rest of a deposit, send an invoice from Payments & Invoices."
+    ],
+    "questions": [
+      {
+        "q": "What if someone starts paying and does not finish?",
+        "a": "Their time is held for 30 minutes while they pay. An unpaid hold is released and the time goes back on the calendar."
+      },
+      {
+        "q": "Does the Suite refund people who cancel?",
+        "a": "No. You get an email saying what they paid, and you make any refund in your own Stripe account if your policy allows."
+      },
+      {
+        "q": "If a paid booking moves to a new time, are they charged again?",
+        "a": "No. A paid booking that moves keeps its payment."
+      }
+    ],
+    "related": [
+      "calendars-and-booking-pages",
+      "payment-links-on-offers",
+      "offers-packages"
+    ],
+    "who": "Everyone. Team members need the Calendars area. You need your own Stripe account connected first.",
+    "keywords": [
+      "paid booking",
+      "deposit",
+      "charge for a call",
+      "payment when they book",
+      "stripe",
+      "take payment",
+      "refund",
+      "held time",
+      "hold",
+      "pay to book"
+    ]
+  },
+  {
+    "id": "outreach-pipelines",
+    "name": "Outreach Pipelines",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Outreach Pipelines",
+    "href": "/dm-pipeline",
+    "what": "Boards for tracking your DMs and other outreach, one person per card. Drag a card to its next stage and its follow-up, tag and timeline update on their own. You send each message yourself, and the Suite keeps count.",
+    "ai": "Has an AI button",
+    "aiNote": "In the message window, your assistant can customize a message for one person, and the Prospect Qualifier section on a card can score them. Both use your own AI key. A customized message only fills the box, and nothing is sent or saved until you copy it and press I sent it. In chat, your assistant can also create pipelines and add or move people, and those changes wait behind Approve.",
+    "steps": [
+      "Open Outreach Pipelines and choose a pipeline from the row at the top, or press New pipeline.",
+      "Press Add a person. For many people at once, open Add people faster.",
+      "On a card, use Choose a DM to send and pick one of your scripts.",
+      "In the small window, fill in anything in [brackets], press Copy message and Open their profile, then paste and send it yourself.",
+      "Choose where to move them under After you send it, and press I sent it.",
+      "Drag a card to its next stage at any time. Its follow-up date sets itself and becomes a task."
+    ],
+    "health": "Each DM you log with I sent it counts as a sales activity. Your activity in the last 30 days feeds your Sales dimension and your Customer Acquisition pillar. Follow-ups made here are regular tasks, so finishing them counts toward your task follow-through.",
+    "tips": [
+      "Your scripts must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there.",
+      "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.",
+      "On LinkedIn, send a connection request first and wait in Connect request sent: waiting until they accept."
+    ],
+    "questions": [
+      {
+        "q": "Does the Suite send my DMs?",
+        "a": "No. Platforms do not let any app read or send your DMs. You paste and send each message, then press I sent it to log it."
+      },
+      {
+        "q": "What does a Booked stage do?",
+        "a": "Moving a card there adds the person to your Pipeline as a deal. Set which stage is Booked under Stages & settings."
+      },
+      {
+        "q": "Can I have more than one pipeline?",
+        "a": "Yes. Press New pipeline and start from DM outreach stages, Cold email stages or Three simple stages. Rename stages, tags and follow-ups under Stages & settings."
+      }
+    ],
+    "related": [
+      "add-people-to-an-outreach-pipeline",
+      "cold-email-stages-and-updates",
+      "scripts-templates",
+      "prospect-qualifier",
+      "pipeline",
+      "sales-activities"
+    ],
+    "who": "Everyone. Team members need the Outreach Pipelines, Prospect Qualifier & Meta leads area.",
+    "keywords": [
+      "outreach",
+      "dm",
+      "dms",
+      "direct message",
+      "dm pipeline",
+      "prospecting",
+      "social selling",
+      "linkedin",
+      "instagram",
+      "facebook",
+      "whatsapp",
+      "follow up",
+      "stages",
+      "daily limit",
+      "scripts",
+      "connect request",
+      "new pipeline"
+    ],
+    "sections": [
+      {
+        "id": "message-window",
+        "title": "The message window",
+        "body": "Picking a script opens the message in its own small window, with the person's name filled in. Press Make it warmer, Make it shorter or another button, or type what to change, and Back to the original undoes it. I sent it logs the DM on the card, their timeline and Sales Activities. Not yet closes it with nothing logged.",
+        "keywords": [
+          "choose a dm to send",
+          "copy message",
+          "open their profile",
+          "i sent it",
+          "not yet",
+          "customize message",
+          "make it warmer"
+        ]
+      },
+      {
+        "id": "daily-dm-limit",
+        "title": "Daily DM counter",
+        "body": "Above the board, each platform shows new DMs sent in the last 24 hours against your daily limit, such as LinkedIn 3 / 25. It starts at 25. Follow-up DMs show beside it. It turns gold when you are close and red at the limit, with the time the next one opens. Press the limit number to change it.",
+        "keywords": [
+          "daily limit",
+          "dm limit",
+          "counter",
+          "how many dms",
+          "restricted account",
+          "25 a day"
+        ]
+      },
+      {
+        "id": "whatsapp-outreach",
+        "title": "WhatsApp and other platforms",
+        "body": "Each card shows its platform: Instagram, Facebook, LinkedIn, WhatsApp, Email or Text. The buttons above the board filter by platform. Contacts reached there get a matching tag, such as from-whatsapp.",
+        "keywords": [
+          "whatsapp",
+          "platform",
+          "from-whatsapp",
+          "filter by platform"
+        ]
+      },
+      {
+        "id": "all-outreach-every-pipeline",
+        "title": "All outreach, every pipeline",
+        "body": "Press Show on this panel at the top to see where everyone is right now, by channel and by pipeline, across all your pipelines.",
+        "keywords": [
+          "all outreach",
+          "overview",
+          "every pipeline",
+          "by channel",
+          "totals"
+        ]
+      },
+      {
+        "id": "connect-request-stage",
+        "title": "Connect request sent: waiting",
+        "body": "DM pipelines include this stage after To reach out, for LinkedIn. The message window will not log a DM from this stage until you tick that they have accepted your request.",
+        "keywords": [
+          "connect request",
+          "linkedin connection",
+          "waiting",
+          "accepted"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "offers-packages",
+    "name": "Offers & Packages",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Offers & Packages",
+    "href": "/sales/offers",
+    "what": "One place for everything you sell: price, what is included, who it is for and your checkout link. Deals in your Pipeline point to these offers.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. In chat, your assistant can list, add and change offers, and changes wait behind Approve.",
+    "steps": [
+      "Open Offers & Packages from the left menu.",
+      "Press Add an offer.",
+      "Fill in the Offer name, Format, Status, Price and How it's paid.",
+      "Add The transformation, What's included, Who it's for and any Guarantee.",
+      "Paste your Sales page or checkout link, then press Save offer.",
+      "Drag the grip on a card to put your offers in the order you want."
+    ],
+    "health": "This does not change your scores. It helps by keeping your prices and offers in one place, ready for your deals.",
+    "tips": [
+      "To stop selling an offer but keep its history, set it to Retired instead of deleting it.",
+      "Choosing an offer on a deal fills in the deal value for you.",
+      "Keep unfinished ideas as Draft. The Active, Draft, Retired and All buttons show each group."
+    ],
+    "questions": [
+      {
+        "q": "Can I search my offers?",
+        "a": "Yes. The search box finds an offer by name, price or what is included."
+      },
+      {
+        "q": "Why can't I see an offer I added?",
+        "a": "Check the buttons above the cards. The page opens on Active, so a Draft or Retired offer is under its own button or All."
+      },
+      {
+        "q": "Can people pay from here?",
+        "a": "Yes, once your Stripe account is connected you can make a payment link on an offer. You can also paste a link from elsewhere in Sales page or checkout link."
+      }
+    ],
+    "related": [
+      "payment-links-on-offers",
+      "pipeline",
+      "paid-and-deposit-booking"
+    ],
+    "who": "Everyone. Team members need the Pipeline, Offers & Sales Plan area.",
+    "keywords": [
+      "offers",
+      "packages",
+      "products",
+      "services",
+      "programs",
+      "pricing",
+      "price list",
+      "what i sell",
+      "catalog",
+      "checkout link",
+      "guarantee",
+      "retainer",
+      "retired",
+      "reorder offers"
+    ]
+  },
+  {
+    "id": "payment-links-on-offers",
+    "name": "Payment links on offers",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Offers & Packages, the Payment link box on each offer card",
+    "href": "/sales/offers",
+    "what": "Turn any offer into a link people can pay through. The link is made on your own Stripe account, and payments go straight to your Stripe. You can share it anywhere.",
+    "ai": "No AI",
+    "aiNote": "This box does not use AI. If you ask, your assistant can make or remake a payment link for an offer, and that waits behind Approve.",
+    "steps": [
+      "Open Offers & Packages. If a card says Connect with Stripe, press it and connect your Stripe account first.",
+      "Press Edit on the offer. Set the price and How it's paid, then press Save offer. For a Payment plan, also fill in Number of payments.",
+      "Press Create payment link on the card. The words beside the button show what the buyer will be charged.",
+      "Press Copy link and share it, or press Open to see what your buyer sees.",
+      "If the price changes, press Remake. To stop selling through the link, press Turn off."
+    ],
+    "health": "A payment link does not change your scores on its own. Each payment adds income to your Finance records, and that income feeds your Finance dimension.",
+    "tips": [
+      "Your link does not follow a price change. Press Remake, and the old link stops working.",
+      "A TEST label beside Payment link means your Stripe connection is in test mode, so no real money moves."
+    ],
+    "questions": [
+      {
+        "q": "Why can't I see the Create payment link button?",
+        "a": "The offer needs a price, and a payment plan needs its number of payments, from 2 to 24. The box tells you what is missing. If it says Connect with Stripe, connect that first."
+      },
+      {
+        "q": "Why does the box not show for my team member?",
+        "a": "Only the account owner or a team admin can manage payments. The box stays hidden for everyone else."
+      },
+      {
+        "q": "Does my buyer pay tax through the link?",
+        "a": "Only if you collect GST/HST or a provincial sales tax. The link then opens a short page where the buyer picks their province, or Outside Canada, and sees the tax before paying. A link made before you turned tax on adds none, so press Remake."
+      }
+    ],
+    "related": [
+      "offers-packages",
+      "paid-and-deposit-booking",
+      "lc-plume",
+      "pipeline"
+    ],
+    "who": "Everyone, once Stripe is connected. Team members need the Pipeline area to open the page. Only the account owner or a team admin can create, remake or turn off a link.",
+    "keywords": [
+      "payment link",
+      "pay link",
+      "checkout link",
+      "get paid",
+      "take payment",
+      "stripe",
+      "sell an offer",
+      "buy button",
+      "payment plan",
+      "monthly payments",
+      "installments",
+      "subscription",
+      "remake link",
+      "turn off link",
+      "sales tax",
+      "gst"
+    ],
+    "sections": [
+      {
+        "id": "ways-to-charge",
+        "title": "The three ways to charge",
+        "body": "The link follows How it's paid on your offer. One-time is paid in full. Monthly charges every month until cancelled. Payment plan splits the offer's price into monthly payments, from 2 to 24, and stops by itself after the last one.",
+        "keywords": [
+          "paid in full",
+          "one-time",
+          "monthly until cancelled",
+          "payment plan",
+          "split payments",
+          "stops after last payment"
+        ]
+      },
+      {
+        "id": "copy-open-remake-turn-off",
+        "title": "Copy link, Open, Remake and Turn off",
+        "body": "Once a link exists, these four sit in the box. Copy link copies it, Open shows it, Remake makes a fresh link at the offer's current price and stops the old one, and Turn off stops the link.",
+        "keywords": [
+          "copy link",
+          "open link",
+          "remake",
+          "turn off",
+          "new link",
+          "price changed"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lc-plume",
+    "name": "LC Plume",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > LC Plume",
+    "href": "/agreements",
+    "what": "The Suite's own e-signature for agreements and proposals. Write or upload a document, send it for signature, and get back a sealed PDF with a certificate of completion. Every step is recorded.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. Your assistant can tell you who has signed, and it can draft an agreement or proposal for you. The draft waits behind Approve, and the assistant never sends it. You read it and send it yourself.",
+    "steps": [
+      "Under New, choose Agreement or Proposal. Pick a choice under Start from, add who it is For if you like, and press Create.",
+      "Write the document, or press Upload a PDF or Word file. Fill every blank in the Fill in the blanks box.",
+      "Under Signers, add each person's full name and email in the order they should sign. Tick I sign too if you sign last.",
+      "Add a Sign by date or a Note in the email if you want them, then press Save.",
+      "Press Preview and send. Check what each signer will see, then press Looks right, send for signature.",
+      "Follow the progress in your list. When everyone has signed, press Download signed PDF."
+    ],
+    "health": "LC Plume does not change your scores. It helps you keep every agreement and proposal signed, sealed and in one place.",
+    "tips": [
+      "Have your attorney review any starter template before you use it.",
+      "A document cannot be changed once it is sent. Void it, press Make a copy, fix the copy and send that.",
+      "Press Save as my template to keep your own wording for next time."
+    ],
+    "questions": [
+      {
+        "q": "Why can't I press Preview and send?",
+        "a": "A blank is still empty. Fill each one in the Fill in the blanks box. The Preview window also lists anything else to fix, such as a missing signer name or email."
+      },
+      {
+        "q": "A signer gave me the wrong email. What do I do?",
+        "a": "Open the agreement. Under Signers, press Send to a different email, type the right address and press Send to this email. The old link stops working."
+      },
+      {
+        "q": "Who does the email come from?",
+        "a": "Your own verified sending address, if you have set one up. Until then it comes from the Suite with your business name on it."
+      }
+    ],
+    "related": [
+      "contact-record",
+      "offers-packages",
+      "email-sending-setup",
+      "contacts"
+    ],
+    "who": "Everyone. Team members need the Contacts area.",
+    "keywords": [
+      "agreement",
+      "agreements",
+      "contract",
+      "proposal",
+      "e-signature",
+      "esignature",
+      "sign",
+      "signature",
+      "docusign",
+      "nda",
+      "contractor agreement",
+      "coaching agreement",
+      "signed pdf",
+      "certificate of completion",
+      "void",
+      "resend",
+      "sign now"
+    ],
+    "sections": [
+      {
+        "id": "write-or-upload",
+        "title": "Write it or upload it",
+        "body": "Write in the page, using {{Start date}} style blanks and ## at the start of a line for a heading. Or upload a PDF, and signatures go on a page added at the end. A Word .docx file becomes text you can edit. Files can be up to 15 MB. An older .doc needs saving as .docx or PDF first.",
+        "keywords": [
+          "upload pdf",
+          "upload word",
+          "docx",
+          "blanks",
+          "fill in the blanks",
+          "headings",
+          "double braces"
+        ]
+      },
+      {
+        "id": "templates",
+        "title": "Templates",
+        "body": "Start from one of four starter templates: coaching agreement, contractor agreement, NDA or proposal. Your own saved wording shows under My templates.",
+        "keywords": [
+          "template",
+          "starter template",
+          "my templates",
+          "save as my template",
+          "coaching agreement",
+          "nda"
+        ]
+      },
+      {
+        "id": "what-your-signer-does",
+        "title": "What your signer does",
+        "body": "They get an email with a private link and press Email me a code. They type the 6-digit code from that email. It lasts 15 minutes and allows 5 tries. Then they agree to sign electronically and type or draw their signature, or press Decline to sign and give a reason. If someone declines, you get an email.",
+        "keywords": [
+          "signer",
+          "private link",
+          "6-digit code",
+          "verification code",
+          "type signature",
+          "draw signature",
+          "decline"
+        ]
+      },
+      {
+        "id": "while-it-is-out",
+        "title": "While it is out for signature",
+        "body": "Signers get a gentle reminder after 3 days, then every 3 days. Remind now sends one straight away. Resend sends a fresh private link and the old one stops working. Void stops every link. If a Sign by date passes, the document expires. Only a draft can be deleted. Sent documents are kept for the record.",
+        "keywords": [
+          "remind now",
+          "reminder",
+          "resend",
+          "void",
+          "expired",
+          "sign by date",
+          "audit trail",
+          "delete an agreement"
+        ]
+      },
+      {
+        "id": "needs-your-signature",
+        "title": "Needs your signature",
+        "body": "When it is your turn, the list shows Needs your signature and a Sign now button. You are already signed in, so there is no email to find.",
+        "keywords": [
+          "sign now",
+          "needs your signature",
+          "my turn to sign",
+          "i sign too"
+        ]
+      },
+      {
+        "id": "signed-copy",
+        "title": "The signed copy",
+        "body": "When everyone has signed, the sealed PDF is emailed to every signer and to you. It includes a signature page and a certificate of completion. Email signed copy sends it again. If the document is linked to a contact, their timeline notes it and their record lists it with Download signed PDF.",
+        "keywords": [
+          "signed copy",
+          "sealed pdf",
+          "certificate of completion",
+          "email signed copy",
+          "download signed pdf",
+          "contact record"
+        ]
+      },
+      {
+        "id": "proposals",
+        "title": "Proposals",
+        "body": "On a proposal you can pick an offer and an amount. The signer sees the amount as Investment.",
+        "keywords": [
+          "proposal",
+          "amount",
+          "investment",
+          "offer",
+          "proposal price"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prospect-qualifier",
+    "name": "Prospect Qualifier",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Prospect Qualifier",
+    "href": "/qualifier",
+    "what": "Find out whether someone is a good fit before you message them. Score one person's profile, or a whole list, against your Ideal Client Profile. Then send the right people to an Outreach Pipeline.",
+    "ai": "AI-powered",
+    "aiNote": "Scoring and Draft it for me both use your own AI key. A drafted profile is not saved until you press Save profile. Nobody goes on a pipeline until you press the add button.",
+    "steps": [
+      "Open the Ideal Client Profiles tab. Fill in who you serve, or press Draft it for me, and read it over.",
+      "Reword the levels to fit your market, mark This is my ideal client on one, and press Save profile.",
+      "Open Qualify a prospect, pick the profile under Score against, and paste their profile text.",
+      "Press Score this prospect. Read the priority, the fit, their level, the gap and the warm DM angle.",
+      "Choose a pipeline and press Add to pipeline if you want to reach out."
+    ],
+    "health": "Scoring prospects does not change your scores or your plans. Draft it for me reads your plans and offers, but it does not change them. This page helps you spend your outreach time on the right people.",
+    "tips": [
+      "Keep one Ideal Client Profile for each offer, because each has a different ideal client.",
+      "For the best read, paste their profile page and their recent posts.",
+      "Use a list score to see who to look at first, then do the full score on that person's pipeline card."
+    ],
+    "questions": [
+      {
+        "q": "Why do I have to paste the text? Can't I just paste their link?",
+        "a": "The Suite cannot open a profile link, because the platforms block it. Open the profile, select everything on the page, copy it and paste it in. It needs a fair amount of text before the button will work."
+      },
+      {
+        "q": "What do the priorities mean?",
+        "a": "High: send the warm DM this week. Medium: engage with a few of their posts first, then message later. Low: follow them and watch. Skip: move on to the next profile."
+      },
+      {
+        "q": "Why does it say to connect my AI key?",
+        "a": "Scoring runs on your own AI key. Add it under AI Assistant, then try again."
+      }
+    ],
+    "related": [
+      "outreach-pipelines",
+      "add-people-to-an-outreach-pipeline",
+      "offers-packages",
+      "scripts-templates"
+    ],
+    "who": "Everyone with an AI key connected. Team members need the Outreach area.",
+    "keywords": [
+      "qualifier",
+      "prospect qualifier",
+      "qualify",
+      "ideal client",
+      "ideal client profile",
+      "icp",
+      "score a prospect",
+      "score a list",
+      "audience qualifier",
+      "good fit",
+      "fit",
+      "priority",
+      "warm dm",
+      "dm angle",
+      "lead scoring"
+    ],
+    "sections": [
+      {
+        "id": "ideal-client-profiles",
+        "title": "Ideal Client Profiles",
+        "body": "Every score is measured against one of these. You describe who you serve, the problem you solve, what your ideal client has and is missing, and your red flags. Then you reword the four levels and mark one as your ideal client. You can tie a profile to an offer, and empty answers start from what that offer says.",
+        "keywords": [
+          "ideal client profile",
+          "icp",
+          "levels",
+          "red flags",
+          "draft it for me",
+          "new profile"
+        ]
+      },
+      {
+        "id": "qualify-a-prospect",
+        "title": "Qualify a prospect",
+        "body": "Paste one person's profile text to get a fit of yes, borderline or no, their level, the gap, a warm DM angle and a priority of High, Medium, Low or Skip, with what to do next. Past scores sit under Recently scored.",
+        "keywords": [
+          "qualify a prospect",
+          "score this prospect",
+          "recently scored",
+          "fit",
+          "gap",
+          "dm angle"
+        ]
+      },
+      {
+        "id": "audience-qualifier",
+        "title": "Audience Qualifier",
+        "body": "Score a whole list from a spreadsheet (.xlsx or .csv) or pasted cells. The first row must be your column headings. The score uses only what the list holds, such as title, headline and company, because it cannot see their posts. Up to 1,000 people are scored per list. Keep the page open while it runs.",
+        "keywords": [
+          "audience qualifier",
+          "score a whole list",
+          "spreadsheet",
+          "csv",
+          "excel",
+          "bulk",
+          "template"
+        ]
+      },
+      {
+        "id": "adding-a-scored-list",
+        "title": "Adding a scored list to a pipeline",
+        "body": "Open a list under Your scored lists. Everyone scored High who is not already on a pipeline starts ticked. Change the ticks, choose a pipeline and press the Add selected to pipeline button. It warns you who is already on a pipeline, and nobody goes on the same pipeline twice. High priority starts in To reach out, and Medium and Low start in Nurture. If your pipeline does not have that stage, they go to its first open stage.",
+        "keywords": [
+          "your scored lists",
+          "add selected to pipeline",
+          "already on a pipeline",
+          "duplicates",
+          "which stage"
+        ]
+      },
+      {
+        "id": "qualifier-on-a-pipeline-card",
+        "title": "On a pipeline card",
+        "body": "Open any card on an Outreach Pipeline and use its Prospect Qualifier section. The score stays on the card, and you can press Score again later.",
+        "keywords": [
+          "pipeline card",
+          "score on a card",
+          "score again",
+          "outreach pipeline card"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tag-library",
+    "name": "Tag Library",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Tag Library",
+    "href": "/tags",
+    "what": "Every tag in your account on one page. You can see how many people carry each one, what adds it, and your own note on what it means. You can also rename or retire a tag.",
+    "ai": "No AI",
+    "aiNote": "This page does not use AI. Your assistant can add a tag to contacts or take one off, and that waits behind Approve.",
+    "steps": [
+      "Open Tag Library. Tags are grouped by family, so tags that share a first word sit together.",
+      "Search by tag, note or where it comes from, or press Most people first to sort by size.",
+      "Press the number under People to see those contacts in Contacts.",
+      "Type in Your note to record what a tag means. It saves when you click away or press Enter.",
+      "Press Rename to change a tag on everyone who has it, or Retire to take it off everyone."
+    ],
+    "health": "Tags do not change your scores. They help you keep your contacts organized, so your broadcasts and campaigns reach the right people.",
+    "tips": [
+      "Rename changes the tag on your contacts only. If a form, calendar or pipeline adds the old name, change it there too, or the old tag will come back.",
+      "Retire never removes anyone from Contacts. The page warns you when something still adds that tag, so it can come back."
+    ],
+    "questions": [
+      {
+        "q": "Why does a tag say Added by hand?",
+        "a": "Nothing in the Suite adds that tag by itself. Someone typed it on a contact."
+      },
+      {
+        "q": "How do I add a new tag?",
+        "a": "Add it on a contact, or use it on a form, calendar or pipeline. It shows here as soon as it is used."
+      },
+      {
+        "q": "Why is my tag list empty?",
+        "a": "No contact, form, calendar or pipeline has used a tag yet."
+      }
+    ],
+    "related": [
+      "contacts",
+      "forms",
+      "contact-record",
+      "import-contacts"
+    ],
+    "who": "Everyone. Team members need the Contacts area.",
+    "keywords": [
+      "tags",
+      "tag library",
+      "all tags",
+      "tag list",
+      "rename tag",
+      "retire tag",
+      "remove tag",
+      "delete tag",
+      "what does this tag mean",
+      "who has this tag",
+      "labels"
+    ],
+    "sections": [
+      {
+        "id": "what-adds-it",
+        "title": "What adds it",
+        "body": "This column shows where a tag comes from, such as a form, a calendar, a pipeline stage, a broadcast, an invite list or the Suite itself.",
+        "keywords": [
+          "what adds it",
+          "where a tag comes from",
+          "automatic tag",
+          "added by hand"
+        ]
+      },
+      {
+        "id": "rename-and-retire",
+        "title": "Rename and Retire",
+        "body": "Rename moves a tag to a new name on every contact who has it, and your note moves with it. Retire takes a tag off everyone after you press Yes, retire it. Nobody is removed from Contacts.",
+        "keywords": [
+          "rename",
+          "retire",
+          "yes retire it",
+          "change a tag name",
+          "take a tag off everyone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "affiliates",
+    "name": "Affiliates",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Affiliates",
+    "href": "/affiliates",
+    "what": "Run your own affiliate program. Recruit partners, give each one tracked links, set commissions by product, record sales and show each affiliate a private report. You can also keep the programs you promote in one place.",
+    "ai": "Has an AI button",
+    "aiNote": "Most of this page does not use AI. On the Recruiting tab, each card has a Prospect Qualifier section whose Score this prospect button uses your own AI key.",
+    "steps": [
+      "On Commission rates, set the % for each offer, or add one of your own programs or offerings.",
+      "On My affiliates, press Add an affiliate. Fill in their name and link code, then press Add affiliate. You can also drag someone to Active affiliate on Recruiting.",
+      "Press their name to open their page. Under Product links, add a link for each product you want them to share.",
+      "Copy their link and their private dashboard link, and send both to them.",
+      "Under Sales & commissions, check each sale. Press Add sale for anything sold elsewhere.",
+      "When you pay a commission, set that sale's status to Paid."
+    ],
+    "health": "How many affiliates you have and how many people they refer both feed your Referral Process pillar. That pillar counts toward your Operations dimension.",
+    "tips": [
+      "Set a number of days under Pay commission this many days after the payment, so a refund window passes before you pay.",
+      "Every product link lasts 365 days. You and the affiliate get an email before it ends, and Renew 365 days adds another year.",
+      "Sales and commissions on this page are tracked in US dollars."
+    ],
+    "questions": [
+      {
+        "q": "Why does a sale say Needs a %?",
+        "a": "That sale has no commission rate yet. Type the % on the sale, or set a rate for that offer on Commission rates. Once it has a rate it moves to Owed."
+      },
+      {
+        "q": "What happens if a customer gets a refund?",
+        "a": "A full refund before the payable date, on a sale you have not paid, marks the sale Void by itself. Any other refund is never changed for you. The sale shows Refund to review, and you press Done once you have decided."
+      },
+      {
+        "q": "Does an affiliate need a login to see their report?",
+        "a": "No. Their private dashboard link opens with no login. Press New link on their page if it ever needs changing, and the old one stops working."
+      }
+    ],
+    "related": [
+      "offers-packages",
+      "payment-links-on-offers",
+      "your-own-lifecharter-affiliate-links",
+      "contacts",
+      "lc-plume"
+    ],
+    "who": "Everyone. Team members need the Contacts area. The Recruiting tab also needs the Outreach area.",
+    "keywords": [
+      "affiliate",
+      "affiliates",
+      "affiliate program",
+      "referral",
+      "referral link",
+      "partner",
+      "commission",
+      "commissions",
+      "payout",
+      "tracked link",
+      "monthly report",
+      "amazon associates",
+      "recruit affiliates"
+    ],
+    "sections": [
+      {
+        "id": "recruiting",
+        "title": "Recruiting",
+        "body": "A board for people you would like as affiliates. Move someone to Active affiliate and they are added to My affiliates with their own link.",
+        "keywords": [
+          "recruiting",
+          "recruit",
+          "active affiliate",
+          "new recruiting board"
+        ]
+      },
+      {
+        "id": "my-affiliates",
+        "title": "My affiliates",
+        "body": "Shows your totals and a line for each affiliate: their links, clicks, people referred, sales, owed and paid. A note beside a name tells you when a sale or refund needs your review. Remove affiliate stops their link and deletes their history, so set their Status to Paused under Details if you want to keep it.",
+        "keywords": [
+          "my affiliates",
+          "add an affiliate",
+          "clicks",
+          "referred",
+          "owed",
+          "paid",
+          "remove affiliate"
+        ]
+      },
+      {
+        "id": "commission-rates",
+        "title": "Commission rates",
+        "body": "Set the % an affiliate earns on each offer. You can set a different % for one affiliate on their page. A program you add here is yours alone, and it also shows in Offers & Packages.",
+        "keywords": [
+          "commission rates",
+          "commission by product",
+          "add a program",
+          "percent",
+          "different rate for one affiliate"
+        ]
+      },
+      {
+        "id": "product-links",
+        "title": "Product links",
+        "body": "Give an affiliate one tracked link per product, each with its own code and landing page. A visitor is remembered for 365 days, and sign-ups and bookings from your Suite forms and calendars are credited to the affiliate.",
+        "keywords": [
+          "product links",
+          "tracked link",
+          "365 days",
+          "renew",
+          "landing page",
+          "implementation fee"
+        ]
+      },
+      {
+        "id": "affiliate-dashboard",
+        "title": "The affiliate's private dashboard",
+        "body": "A no-login page you send to each affiliate. It shows their monthly report, and they can download it as a spreadsheet. You see the same report on their page under Monthly report.",
+        "keywords": [
+          "affiliate dashboard",
+          "private dashboard",
+          "monthly report",
+          "spreadsheet download",
+          "no login"
+        ]
+      },
+      {
+        "id": "sales-and-commissions",
+        "title": "Sales & commissions",
+        "body": "Each affiliate's page lists their sales, with the amount, the %, the commission, the payable date and the status. Mark a sale Paid and the commission goes into Finance as an Affiliate Commissions expense.",
+        "keywords": [
+          "sales and commissions",
+          "add sale",
+          "mark paid",
+          "owed",
+          "void",
+          "affiliate commissions expense",
+          "finance"
+        ]
+      },
+      {
+        "id": "credit-from-your-stripe-sales",
+        "title": "Credit from your own Stripe sales",
+        "body": "When someone buys through your connected Stripe and is already in your Contacts, matched by email, the sale is credited to the affiliate who referred them. Each charge counts once. A sale with no commission rate waits as Needs a %.",
+        "keywords": [
+          "stripe",
+          "automatic credit",
+          "auto",
+          "matched by email",
+          "needs a %",
+          "review"
+        ]
+      },
+      {
+        "id": "programs-i-promote",
+        "title": "Programs I promote",
+        "body": "Keep the affiliate programs you belong to in one place, with your links, codes, terms and earnings. Earnings you mark Paid are added to Finance as income.",
+        "keywords": [
+          "programs i promote",
+          "my affiliate links",
+          "amazon",
+          "affiliate income",
+          "earnings"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "add-people-to-an-outreach-pipeline",
+    "name": "Add people to an Outreach Pipeline",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Outreach Pipelines > Add people faster",
+    "href": "/dm-pipeline",
+    "what": "Quick ways to get people onto a pipeline without adding them one by one. Paste a list, upload a spreadsheet, click a browser button on a profile, or pull in LinkedIn connection requests from your inbox.",
+    "ai": "No AI",
+    "aiNote": "Adding people does not use AI. Your assistant can put people on a pipeline for you, and that waits behind Approve. Once someone is on a card, its Prospect Qualifier section can score them with your own AI key.",
+    "steps": [
+      "Open Outreach Pipelines and choose the pipeline you want at the top.",
+      "Press Add people faster.",
+      "To paste, type or paste one person per line under Paste a list, choose They are on, and press Add to my pipeline.",
+      "To upload, choose your .csv under Upload a list, check how many people were found, and press the Add button.",
+      "Read the note under the box. It tells you who was added and who was skipped."
+    ],
+    "health": "Cards on a pipeline do not change your scores. This helps you keep your outreach moving.",
+    "tips": [
+      "Facebook, LinkedIn and Instagram do not let anyone export a group or follower list, so build your list from what you can see.",
+      "Not sure about a list? Score it first in the Audience Qualifier. The same spreadsheet template works there.",
+      "Use Download the do-not-email list before you load a list into another email tool."
+    ],
+    "questions": [
+      {
+        "q": "Will I get the same person twice?",
+        "a": "Anyone already on that pipeline is skipped. For a paste, that means the same profile link, or the same name on the same platform. For an upload, it means the same email or profile link. Adding one person at a time also refuses a repeat."
+      },
+      {
+        "q": "Do people I upload get my marketing emails?",
+        "a": "No. An upload does not add anyone to your marketing contacts. Anyone unsubscribed or marked Do Not Contact is left out. Someone already in Contacts is linked to their card."
+      },
+      {
+        "q": "Why can't I switch on LinkedIn requests from my inbox?",
+        "a": "It reads a connected Microsoft 365 inbox. A Gmail connection can send but not read. Connect Microsoft 365 in Settings > Integrations first."
+      }
+    ],
+    "related": [
+      "outreach-pipelines",
+      "prospect-qualifier",
+      "cold-email-stages-and-updates",
+      "import-contacts",
+      "contacts"
+    ],
+    "who": "Everyone. Team members need the Outreach area.",
+    "keywords": [
+      "add people",
+      "add people faster",
+      "paste a list",
+      "upload a list",
+      "csv",
+      "spreadsheet",
+      "bulk add",
+      "import to pipeline",
+      "facebook group",
+      "group members",
+      "linkedin requests",
+      "connection requests",
+      "bookmark",
+      "browser button",
+      "do not email list",
+      "template"
+    ],
+    "sections": [
+      {
+        "id": "paste-a-list",
+        "title": "Paste a list",
+        "body": "One person per line: their name, then their profile link and a line about them if you have them. Spreadsheet cells, commas, pipes and tabs all read. Up to 100 at a time. They land in the first stage. Download the spreadsheet template (.csv) gives you the columns: Name, Profile link, Headline and Group.",
+        "keywords": [
+          "paste a list",
+          "one per line",
+          "up to 100",
+          "spreadsheet template",
+          "they are on"
+        ]
+      },
+      {
+        "id": "upload-a-list",
+        "title": "Upload a list (.csv)",
+        "body": "A spreadsheet with a header row: First name, Last name, Email, Company, Title, Location, Profile link. A name plus an email or profile link is enough. Up to 2,000 people in a file under 4 MB. You see how many were found before you add them, and each person becomes a card in the first stage.",
+        "keywords": [
+          "upload a list",
+          "csv",
+          "email list",
+          "2,000",
+          "reached by",
+          "download the template"
+        ]
+      },
+      {
+        "id": "add-to-my-pipeline-button",
+        "title": "The + Add to my pipeline browser button",
+        "body": "Drag this button to your bookmarks bar. Click it on a LinkedIn, Instagram or Facebook profile, and the Add card window opens with their name and profile link filled in. You click it yourself, so nothing runs in the background.",
+        "keywords": [
+          "bookmark",
+          "browser button",
+          "bookmarks bar",
+          "add to my pipeline",
+          "linkedin profile",
+          "copy the button code"
+        ]
+      },
+      {
+        "id": "linkedin-connection-requests",
+        "title": "LinkedIn connection requests, from your inbox",
+        "body": "Tick Add LinkedIn connection requests from my inbox. Each new request becomes a card in To reach out, with their profile link and a reminder for today. It is checked about every 15 minutes. The Suite reads only LinkedIn's invitation emails and never touches your LinkedIn.",
+        "keywords": [
+          "linkedin",
+          "connection requests",
+          "microsoft 365",
+          "inbox",
+          "every 15 minutes"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cold-email-stages-and-updates",
+    "name": "Cold email stages and updates",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Outreach Pipelines > New pipeline, and Add people faster > Update from your cold-email tool",
+    "href": "/dm-pipeline",
+    "what": "A ready-made pipeline for cold email, and a quick way to keep it up to date. Your cold-email tool sends the emails. You paste the addresses here, and the cards move for you.",
+    "ai": "No AI",
+    "aiNote": "This does not use AI. Your assistant can create a pipeline or move people on one, and that waits behind Approve.",
+    "steps": [
+      "On Outreach Pipelines, press New pipeline. Give it a name, choose Cold email stages, and press Create pipeline.",
+      "Open Add people faster and add your list under Upload a list.",
+      "Send your emails from your own cold-email tool.",
+      "Back in Add people faster, find Update from your cold-email tool. Paste the addresses, one per line or as a column from a spreadsheet.",
+      "Under What happened, choose what happened to those people, and press Update their cards."
+    ],
+    "health": "Cards on a pipeline do not change your scores. This helps you see where every cold email conversation stands.",
+    "tips": [
+      "Stages that are only waiting make no follow-up tasks, so a big upload does not flood your Tasks. A reply makes one.",
+      "Choose Asked to stop as soon as someone asks, so the Suite never emails them either.",
+      "One update covers every pipeline a person is on, so paste each address once."
+    ],
+    "questions": [
+      {
+        "q": "Why did a card not move?",
+        "a": "Cards only move forward, so someone already further along stays where they are. The note after you update tells you how many were already further along and how many addresses are not on any pipeline."
+      },
+      {
+        "q": "What does Asked to stop do?",
+        "a": "It moves their card to the stop stage and marks them Do Not Contact in Contacts, even if they had no card. They are unsubscribed, tagged, and taken out of your email campaigns."
+      },
+      {
+        "q": "Is Bounced the same as Asked to stop?",
+        "a": "No. Bounced moves the card to the same stage, but it does not mark the person Do Not Contact."
+      }
+    ],
+    "related": [
+      "outreach-pipelines",
+      "add-people-to-an-outreach-pipeline",
+      "contacts",
+      "tasks"
+    ],
+    "who": "Everyone. Team members need the Outreach area.",
+    "keywords": [
+      "cold email",
+      "cold outreach",
+      "cold email pipeline",
+      "cold email stages",
+      "update cards",
+      "email 1 sent",
+      "replied",
+      "bounced",
+      "asked to stop",
+      "unsubscribe",
+      "do not contact",
+      "instantly",
+      "smartlead"
+    ],
+    "sections": [
+      {
+        "id": "cold-email-stages",
+        "title": "Cold email stages",
+        "body": "The pipeline starts with these stages: To email, Email 1 sent, Emails 2 and 3 sent (no reply yet), Replied, Invited, Registered, Attended, No-show, Consultation booked, Client, Nurture, and Asked to stop or bounced.",
+        "keywords": [
+          "cold email stages",
+          "to email",
+          "email 1 sent",
+          "emails 2 and 3 sent",
+          "consultation booked",
+          "new pipeline template"
+        ]
+      },
+      {
+        "id": "update-from-your-cold-email-tool",
+        "title": "Update from your cold-email tool",
+        "body": "Paste addresses and choose Email 1 sent, Emails 2 and 3 sent, They replied, Asked to stop or Bounced (bad address). Their cards move on every pipeline they are on.",
+        "keywords": [
+          "update from your cold-email tool",
+          "what happened",
+          "update their cards",
+          "they replied",
+          "paste addresses"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "contact-record",
+    "name": "Contact record",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Contacts, then click any contact",
+    "href": "/contacts",
+    "what": "Everything about one person, on one page. Their details, tags, pipelines, purchases, agreements, emails, notes and a timeline of every touch.",
+    "ai": "Has an AI button",
+    "aiNote": "Draft the email with AI, under Schedule a follow-up, uses your own AI key. Nothing goes out until you press Send in Daily Compass. The rest of the record does not use AI.",
+    "steps": [
+      "Open Contacts and click a person's name.",
+      "Press Edit to change their details, then press Save changes.",
+      "Under Tags, type to add a tag, press the x to remove one, or click a tag to see everyone who has it.",
+      "Type under Add a note and press Save note.",
+      "Under Schedule a follow-up, pick the day, say what it is about, and press Schedule follow-up."
+    ],
+    "health": "Each new contact added in the last 30 days counts toward your Customer Acquisition pillar. Editing a record or adding a note does not change your scores. The record helps you remember every person and every conversation.",
+    "tips": [
+      "Use + Add under Calls attended or Purchases to log something the Suite didn't see, such as a sale made elsewhere.",
+      "Fields you add under Add or remove fields appear on every contact in your account.",
+      "Removing a custom field deletes what was filled in for it on every contact."
+    ],
+    "questions": [
+      {
+        "q": "Where does a scheduled follow-up go?",
+        "a": "It becomes a task. If you added a draft, it waits in Daily Compass on that day, and nothing is sent until you press Send."
+      },
+      {
+        "q": "Why can't I see my emails with this person?",
+        "a": "Your emails show once you connect your mailbox in Settings > Integrations. Only the account owner sees mail from connected mailboxes."
+      },
+      {
+        "q": "How do I add someone to an email campaign?",
+        "a": "Under Email campaigns, choose Add to a campaign, then press Add. This does not show for someone who has unsubscribed."
+      }
+    ],
+    "related": [
+      "contacts",
+      "tag-library",
+      "tasks",
+      "lc-plume",
+      "outreach-pipelines",
+      "pipeline"
+    ],
+    "who": "Everyone. Team members need the Contacts area. Some parts, such as Emails and Payments & invoices, show only to the people who can see them.",
+    "keywords": [
+      "contact record",
+      "contact page",
+      "client record",
+      "edit contact",
+      "contact details",
+      "address",
+      "birthday",
+      "socials",
+      "notes",
+      "timeline",
+      "tag history",
+      "custom fields",
+      "relationship",
+      "purchases",
+      "follow up",
+      "history with a client"
+    ],
+    "sections": [
+      {
+        "id": "details-and-socials",
+        "title": "Details and socials",
+        "body": "Name, email, phone, company, title, website, address and birthday, plus Instagram, Facebook, LinkedIn and YouTube. Each social opens in one click.",
+        "keywords": [
+          "details",
+          "phone",
+          "address",
+          "birthday",
+          "instagram",
+          "facebook",
+          "linkedin",
+          "youtube"
+        ]
+      },
+      {
+        "id": "relationship",
+        "title": "Relationship",
+        "body": "Mark who this person is to you, using the choices in Edit or your own, such as Mentor. A person can have more than one.",
+        "keywords": [
+          "relationship",
+          "client",
+          "partner",
+          "coach",
+          "affiliate",
+          "add your own"
+        ]
+      },
+      {
+        "id": "custom-fields",
+        "title": "Custom fields",
+        "body": "Press Edit, then Add or remove fields to make your own, such as Referred by. A field can be short text, long text, a number, a date, a link or a choice list.",
+        "keywords": [
+          "custom fields",
+          "add or remove fields",
+          "referred by",
+          "choice list"
+        ]
+      },
+      {
+        "id": "calls-attended-and-purchases",
+        "title": "Calls attended and Purchases",
+        "body": "Calls attended lists the calls this person came to, and Purchases lists what they bought. Press + Add to log one by hand.",
+        "keywords": [
+          "calls attended",
+          "purchases",
+          "what they bought",
+          "log a call",
+          "log a purchase"
+        ]
+      },
+      {
+        "id": "agreements-on-the-record",
+        "title": "Agreements",
+        "body": "Shows their LC Plume agreements and where each one stands. A finished one has Download signed PDF.",
+        "keywords": [
+          "agreements",
+          "lc plume",
+          "signed pdf",
+          "out for signature"
+        ]
+      },
+      {
+        "id": "pipelines-on-the-record",
+        "title": "Pipelines",
+        "body": "Shows each Outreach Pipeline they are on, their stage and their next follow-up date.",
+        "keywords": [
+          "pipelines",
+          "outreach pipeline",
+          "stage",
+          "follow up date"
+        ]
+      },
+      {
+        "id": "tags-and-tag-history",
+        "title": "Tags and Tag history",
+        "body": "Tags show as buttons you can add, remove or click. Tag history lists each tag added or removed, when, and where it came from.",
+        "keywords": [
+          "tags",
+          "tag history",
+          "add a tag",
+          "remove a tag"
+        ]
+      },
+      {
+        "id": "email-campaigns-on-the-record",
+        "title": "Email campaigns",
+        "body": "Shows the campaigns this person is in, their status and how many emails they have been sent.",
+        "keywords": [
+          "email campaigns",
+          "sequence",
+          "add to a campaign"
+        ]
+      },
+      {
+        "id": "schedule-a-follow-up",
+        "title": "Schedule a follow-up",
+        "body": "Pick a day and say what it is about. Draft the email with AI writes a draft you can edit, or you can write your own. Then press Schedule follow-up.",
+        "keywords": [
+          "schedule a follow-up",
+          "follow up",
+          "draft the email with ai",
+          "reminder to follow up"
+        ]
+      },
+      {
+        "id": "payments-and-portal",
+        "title": "Payments & invoices and Client portal",
+        "body": "Payments & invoices lists what this person has paid and been invoiced. Client portal opens their private page for sessions, homework, files, notes and messages.",
+        "keywords": [
+          "payments",
+          "invoices",
+          "client portal",
+          "portal"
+        ]
+      },
+      {
+        "id": "emails-on-the-record",
+        "title": "Emails",
+        "body": "Shows emails with this person from your connected mailbox, plus emails the Suite sent them. Press Refresh emails to check again.",
+        "keywords": [
+          "emails",
+          "email history",
+          "refresh emails",
+          "connected mailbox"
+        ]
+      },
+      {
+        "id": "timeline",
+        "title": "Timeline",
+        "body": "A running list of every touch with this person, with the date and time, including your notes.",
+        "keywords": [
+          "timeline",
+          "activity",
+          "history",
+          "notes",
+          "every touch"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "your-own-lifecharter-affiliate-links",
+    "name": "Your own LifeCharter affiliate links",
+    "area": "Clients & Sales",
+    "where": "Clients & Sales > Affiliates > My partnerships",
+    "href": "/affiliates",
+    "what": "Your account comes with your own affiliate links for LifeCharter products. Copy any of them, share them, and see your month-by-month report here.",
+    "ai": "No AI",
+    "aiNote": "This tab does not use AI.",
+    "steps": [
+      "Open Affiliates and press the My partnerships tab.",
+      "Find your LifeCharter product links.",
+      "Press Copy link beside the one you want, and share it.",
+      "Check your report at the bottom of the tab for your numbers, month by month.",
+      "To keep other programs here too, press Add one under Your own additional links."
+    ],
+    "health": "This does not change your scores. These links sit with LifeCharter, so they do not count as affiliates in your own program. They help you share what you already use.",
+    "tips": [
+      "A sale through your link is credited to you.",
+      "Each link shows the date it runs until. Paused beside a link means it is not active right now."
+    ],
+    "questions": [
+      {
+        "q": "Why don't I see the My partnerships tab?",
+        "a": "It shows only when your login email is set up as an affiliate. If you expected to see it, ask LifeCharter support."
+      },
+      {
+        "q": "Is this the same as running my own affiliates?",
+        "a": "No. This tab is for links you share as someone else's affiliate. The other tabs on the page are for your own program and the people who promote you."
+      },
+      {
+        "q": "Where do my additional links show?",
+        "a": "They are yours alone, and they also show on Programs I promote."
+      }
+    ],
+    "related": [
+      "affiliates"
+    ],
+    "who": "Clients whose login email is set up as an affiliate. This tab belongs to the person signed in, not their team.",
+    "keywords": [
+      "my partnerships",
+      "my affiliate link",
+      "my links",
+      "lifecharter affiliate",
+      "refer lifecharter",
+      "share lifecharter",
+      "referral link",
+      "partner link",
+      "my commission report"
+    ]
   },
   {
     "id": "brain-profile",
