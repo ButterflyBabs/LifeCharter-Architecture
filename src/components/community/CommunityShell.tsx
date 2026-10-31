@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Bell, CalendarDays, ChevronDown, HelpCircle, Home, NotebookPen, Library, Sparkles, LogOut, Menu, MessageCircle, Settings2, Shield, Users, X, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SUITE_HOST } from "@/lib/collective";
 import { CommunityProvider, useCommunity } from "@/lib/community/context";
 import { SECTION_LABELS, type Space, type SpaceSection } from "@/lib/community/types";
 import { Avatar, Button, PageLoading } from "./ui";
@@ -355,7 +356,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <Settings2 className="h-4 w-4 text-[#F3EEE4]/50" />
         </Link>
         {apps.suite && (
-          <Link href="/" className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
+          <Link href={`https://${SUITE_HOST}/`} className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#F3EEE4]/70 hover:bg-white/[0.06] hover:text-white">
             <ArrowLeftRight className="h-4 w-4" /> Command Suite
           </Link>
         )}
