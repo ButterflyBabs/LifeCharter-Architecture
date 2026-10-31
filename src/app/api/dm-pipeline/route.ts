@@ -381,17 +381,18 @@ export async function POST(request: Request) {
       const hit = new Set<string>();
       for (const c of (cards ?? []) as { id: string; board_id: string; stage_id: string; name: string; email: string }[]) {
         hit.add(c.email.toLowerCase());
+        const isStop = status === "stop" || status === "bounced";
+        // Recorded before any skip: someone who asked to stop is Do Not Contact even if their card is already closed.
+        if (isStop) stopNames.set(c.email.toLowerCase(), c.name);
         const cur = stageById.get(c.stage_id);
         const target = (stagesByBoard.get(c.board_id) ?? []).find((s) => s.key === TARGET[status]);
         if (!target || !cur) continue;
-        const isStop = status === "stop" || status === "bounced";
         if (isStop ? cur.kind === "closed" : !movesForward(cur.key, cur.kind, TARGET[status])) {
           alreadyFurther++;
           continue;
         }
         const bd = boards.find((x) => x.id === c.board_id);
         if (await moveCard(db, a.planId, c.id, target, bd?.name ?? "Pipeline", tz)) moved++;
-        if (isStop) stopNames.set(c.email.toLowerCase(), c.name);
       }
       list.slice(i, i + 200).forEach((e) => {
         if (!hit.has(e)) {
