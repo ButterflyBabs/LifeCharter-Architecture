@@ -1,6 +1,5 @@
-// Client User Guide (task 1604). Babs and the Eloise Practice account only until the entries are written and approved;
-// switch USER_GUIDE_OPEN_TO_ALL on at release.
-export const USER_GUIDE_OPEN_TO_ALL = false;
+// Client User Guide (task 1604). Open to every account since 2026-10-31.
+export const USER_GUIDE_OPEN_TO_ALL = true;
 const USER_GUIDE_TESTERS = ["msamilynne+eloise-practice@gmail.com"];
 
 export const isGuideTester = (email: string | null | undefined) => USER_GUIDE_TESTERS.includes((email || "").toLowerCase());

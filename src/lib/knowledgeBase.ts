@@ -1625,6 +1625,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["help", "support", "volant help", "spark help", "fledge help", "contact support", "get help", "which app"],
   },
   {
+    id: "gs-user-guide",
+    category: "Getting Started",
+    question: "Where is the User Guide, and how do I find a feature?",
+    answer:
+      "Open Getting Started in the left menu, then User Guide. Type what you want to do in your own words, or browse by menu area. The search box at the top of every page searches the guide too. Each entry says what the feature is, where to find it, how AI is part of it, how to use it day to day, how it helps your business health, tips, common questions and who sees it. The guide also opens while you finish your three assessments. Search runs inside the Suite and does not use your AI key.",
+    keywords: ["user guide", "manual", "how to", "guide", "find a feature", "what does this do", "search", "instructions", "help"],
+  },
+  {
     id: "as-whats-new",
     category: "Account & Settings",
     question: "Where can I see what's new in the Suite?",
